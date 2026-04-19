@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mentifaber</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --black: #080808;
+      --gold: #b8964a;
+      --gold-dim: #6b5628;
+      --white: #e8e0d0;
+      --muted: #4a4540;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Cormorant Garamond', serif;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* Radial vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, #000 100%);
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0 10vw;
+      position: relative;
+    }
+
+    /* Vertical rule */
+    .rule {
+      position: absolute;
+      left: 7vw;
+      top: 15vh;
+      bottom: 15vh;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--gold-dim) 30%, var(--gold-dim) 70%, transparent);
+      opacity: 0;
+      animation: fadeIn 2s ease 0.5s forwards;
+    }
+
+    /* Latin root label */
+    .etymology {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(9px, 1vw, 11px);
+      letter-spacing: 0.25em;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: slideUp 1s ease 0.8s forwards;
+    }
+
+    /* Main name */
+    .name {
+      font-size: clamp(4rem, 10vw, 9rem);
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: -0.02em;
+      line-height: 0.9;
+      color: var(--white);
+      opacity: 0;
+      animation: slideUp 1.2s ease 1s forwards;
+      position: relative;
+    }
+
+    .name span {
+      color: var(--gold);
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    /* Tagline */
+    .tagline {
+      margin-top: 2rem;
+      font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      opacity: 0;
+      animation: slideUp 1s ease 1.4s forwards;
+    }
+
+    /* Divider */
+    .divider {
+      margin-top: 3rem;
+      width: clamp(60px, 8vw, 120px);
+      height: 1px;
+      background: linear-gradient(to right, var(--gold), transparent);
+      opacity: 0;
+      animation: fadeIn 1s ease 1.8s forwards;
+    }
+
+    /* Links */
+    .links {
+      margin-top: 2.5rem;
+      display: flex;
+      gap: 2.5rem;
+      opacity: 0;
+      animation: slideUp 1s ease 2s forwards;
+    }
+
+    .links a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(9px, 1vw, 12px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    .links a::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--gold);
+      transition: width 0.3s ease;
+    }
+
+    .links a:hover {
+      color: var(--gold);
+    }
+
+    .links a:hover::after {
+      width: 100%;
+    }
+
+    /* Bottom stamp */
+    .stamp {
+      position: fixed;
+      bottom: 4vh;
+      right: 5vw;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeIn 1s ease 2.5s forwards;
+    }
+
+    /* Year marker */
+    .year {
+      position: fixed;
+      top: 4vh;
+      right: 5vw;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: var(--gold-dim);
+      opacity: 0;
+      animation: fadeIn 1s ease 2.5s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Subtle cursor glow */
+    .cursor-glow {
+      position: fixed;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(184,150,74,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: left 0.3s ease, top 0.3s ease;
+      z-index: 98;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cursor-glow" id="glow"></div>
+
+  <div class="container">
+    <div class="rule"></div>
+
+    <p class="etymology">mens · mentis — faber · fabri</p>
+
+    <h1 class="name">Menti<span>faber</span></h1>
+
+    <p class="tagline">Builder of minds. Architect of cognitive systems.</p>
+
+    <div class="divider"></div>
+
+    <nav class="links">
+      <a href="https://github.com/mentifaber" target="_blank">GitHub</a>
+      <a href="https://x.com/mentifaber" target="_blank">X</a>
+      <a href="https://instagram.com/mentifaber" target="_blank">Instagram</a>
+    </nav>
+  </div>
+
+  <div class="year">MMXXVI</div>
+  <div class="stamp">This is the archive.</div>
+
+  <script>
+    const glow = document.getElementById('glow');
+    document.addEventListener('mousemove', e => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    });
+  </script>
+
+</body>
+</html>
