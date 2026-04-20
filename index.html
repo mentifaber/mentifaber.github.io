@@ -9,12 +9,12 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --black: #050505;
-      --gold: #b8964a;
-      --gold-dim: #5c4a2f;
-      --white: #e8e0d0;
-      --muted: #3f3a35;
-      --blood: #8b2a2a;
+      --black: #030303;
+      --gold: #d4b17f;
+      --gold-dim: #6b5a3f;
+      --white: #f0e6d2;
+      --muted: #4a4238;
+      --blood: #9c2f2f;
     }
 
     html, body {
@@ -30,8 +30,8 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E");
-      opacity: 0.42;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.45'/%3E%3C/svg%3E");
+      opacity: 0.45;
       pointer-events: none;
       z-index: 100;
     }
@@ -40,7 +40,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse at center, transparent 35%, #000 95%);
+      background: radial-gradient(ellipse at center, transparent 30%, #000 92%);
       pointer-events: none;
       z-index: 99;
     }
@@ -52,35 +52,25 @@
       justify-content: center;
       align-items: center;
       text-align: center;
-      padding: 0 8vw;
+      padding: 0 10vw;
       position: relative;
-    }
-
-    .rule {
-      position: absolute;
-      left: 50%;
-      top: 15vh;
-      bottom: 15vh;
-      width: 1px;
-      background: linear-gradient(to bottom, transparent, var(--gold-dim) 25%, var(--gold-dim) 75%, transparent);
-      transform: translateX(-50%);
     }
 
     .etymology {
       font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(9px, 1vw, 11px);
-      letter-spacing: 0.35em;
+      font-size: clamp(9.5px, 1.05vw, 11.5px);
+      letter-spacing: 0.4em;
       color: var(--gold-dim);
       text-transform: uppercase;
-      margin-bottom: 2.2rem;
+      margin-bottom: 2.4rem;
     }
 
     .name {
-      font-size: clamp(4.2rem, 10vw, 9.2rem);
+      font-size: clamp(4.8rem, 11vw, 10rem);
       font-weight: 300;
       font-style: italic;
-      letter-spacing: -0.03em;
-      line-height: 0.88;
+      letter-spacing: -0.035em;
+      line-height: 0.85;
       color: var(--white);
     }
 
@@ -91,94 +81,92 @@
     }
 
     .tagline {
-      margin-top: 2.2rem;
-      font-size: clamp(0.95rem, 1.9vw, 1.35rem);
+      margin-top: 2.4rem;
+      font-size: clamp(1rem, 2vw, 1.45rem);
       font-weight: 300;
       font-style: italic;
       color: var(--muted);
-      letter-spacing: 0.07em;
-      max-width: 80ch;
+      letter-spacing: 0.08em;
+      max-width: 78ch;
     }
 
     .divider {
-      margin: 3.8rem auto;
-      width: clamp(70px, 9vw, 130px);
+      margin: 4rem auto 3.5rem;
+      width: clamp(80px, 10vw, 140px);
       height: 1px;
       background: linear-gradient(to right, transparent, var(--gold), transparent);
     }
 
     .links {
-      margin-top: 2.5rem;
+      margin-top: 2rem;
       display: flex;
       flex-direction: column;
-      gap: 1.1rem;
+      gap: 1.15rem;
       align-items: center;
     }
 
     .links a {
       font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(9px, 1vw, 12px);
-      letter-spacing: 0.25em;
+      font-size: clamp(9.5px, 1.05vw, 12.5px);
+      letter-spacing: 0.28em;
       text-transform: uppercase;
       color: var(--muted);
       text-decoration: none;
-      transition: color 0.4s ease;
+      transition: color 0.5s ease;
     }
 
-    .links a:hover {
-      color: var(--gold);
-    }
+    .links a:hover { color: var(--gold); }
 
     .weaver-link {
-      margin-top: 4.2rem;
+      margin-top: 4.5rem;
       font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(11.5px, 1.35vw, 14.5px);
-      letter-spacing: 0.42em;
+      font-size: clamp(12px, 1.4vw, 15px);
+      letter-spacing: 0.45em;
       text-transform: uppercase;
       color: var(--blood);
       text-decoration: none;
-      padding: 1rem 0;
-      transition: all 0.5s ease;
-      animation: pulse-red 4s infinite ease-in-out;
+      padding: 1.1rem 0;
+      transition: all 0.6s ease;
+      animation: pulse-red 5s infinite ease-in-out;
     }
 
     .weaver-link:hover {
-      color: #c33;
-      letter-spacing: 0.55em;
+      color: #c94a4a;
+      letter-spacing: 0.6em;
     }
 
     @keyframes pulse-red {
-      0%, 100% { opacity: 0.72; }
+      0%, 100% { opacity: 0.68; }
       50% { opacity: 1; }
     }
 
     .stamp {
       position: fixed;
-      bottom: 5vh;
-      right: 6vw;
+      bottom: 5.5vh;
+      right: 6.5vw;
       font-family: 'Share Tech Mono', monospace;
       font-size: 9px;
-      letter-spacing: 0.35em;
+      letter-spacing: 0.4em;
       text-transform: uppercase;
       color: var(--muted);
     }
 
     .year {
       position: fixed;
-      top: 5vh;
-      right: 6vw;
+      top: 5.5vh;
+      right: 6.5vw;
       font-family: 'Share Tech Mono', monospace;
       font-size: 9px;
-      letter-spacing: 0.3em;
+      letter-spacing: 0.35em;
       color: var(--gold-dim);
     }
 
     .cursor-glow {
       position: fixed;
-      width: 360px;
-      height: 360px;
+      width: 380px;
+      height: 380px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(139,42,42,0.04) 0%, transparent 78%);
+      background: radial-gradient(circle, rgba(156,47,47,0.045) 0%, transparent 80%);
       pointer-events: none;
       transform: translate(-50%, -50%);
       z-index: 98;
@@ -190,8 +178,6 @@
   <div class="cursor-glow" id="glow"></div>
 
   <div class="container">
-    <div class="rule"></div>
-
     <p class="etymology">mens · mentis — faber · fabri</p>
 
     <h1 class="name">Menti<span>faber</span></h1>
