@@ -9,11 +9,12 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --black: #080808;
+      --black: #050505;
       --gold: #b8964a;
-      --gold-dim: #6b5628;
+      --gold-dim: #5c4a2f;
       --white: #e8e0d0;
-      --muted: #4a4540;
+      --muted: #3f3a35;
+      --blood: #8b2a2a;
     }
 
     html, body {
@@ -25,23 +26,21 @@
       cursor: crosshair;
     }
 
-    /* Grain overlay */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      opacity: 0.35;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E");
+      opacity: 0.4;
       pointer-events: none;
       z-index: 100;
     }
 
-    /* Radial vignette */
     body::after {
       content: '';
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse at center, transparent 40%, #000 100%);
+      background: radial-gradient(ellipse at center, transparent 35%, #000 95%);
       pointer-events: none;
       z-index: 99;
     }
@@ -56,41 +55,31 @@
       position: relative;
     }
 
-    /* Vertical rule */
     .rule {
       position: absolute;
       left: 7vw;
       top: 15vh;
       bottom: 15vh;
       width: 1px;
-      background: linear-gradient(to bottom, transparent, var(--gold-dim) 30%, var(--gold-dim) 70%, transparent);
-      opacity: 0;
-      animation: fadeIn 2s ease 0.5s forwards;
+      background: linear-gradient(to bottom, transparent, var(--gold-dim) 25%, var(--gold-dim) 75%, transparent);
     }
 
-    /* Latin root label */
     .etymology {
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(9px, 1vw, 11px);
-      letter-spacing: 0.25em;
+      letter-spacing: 0.3em;
       color: var(--gold-dim);
       text-transform: uppercase;
       margin-bottom: 2rem;
-      opacity: 0;
-      animation: slideUp 1s ease 0.8s forwards;
     }
 
-    /* Main name */
     .name {
-      font-size: clamp(4rem, 10vw, 9rem);
+      font-size: clamp(4.2rem, 10vw, 9.2rem);
       font-weight: 300;
       font-style: italic;
-      letter-spacing: -0.02em;
-      line-height: 0.9;
+      letter-spacing: -0.03em;
+      line-height: 0.88;
       color: var(--white);
-      opacity: 0;
-      animation: slideUp 1.2s ease 1s forwards;
-      position: relative;
     }
 
     .name span {
@@ -99,150 +88,98 @@
       font-weight: 600;
     }
 
-    /* Tagline */
     .tagline {
       margin-top: 2rem;
-      font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+      font-size: clamp(0.95rem, 1.9vw, 1.35rem);
       font-weight: 300;
       font-style: italic;
       color: var(--muted);
-      letter-spacing: 0.05em;
-      opacity: 0;
-      animation: slideUp 1s ease 1.4s forwards;
+      letter-spacing: 0.06em;
     }
 
-    /* Divider */
     .divider {
-      margin-top: 3rem;
-      width: clamp(60px, 8vw, 120px);
+      margin-top: 3.5rem;
+      width: clamp(70px, 9vw, 130px);
       height: 1px;
       background: linear-gradient(to right, var(--gold), transparent);
-      opacity: 0;
-      animation: fadeIn 1s ease 1.8s forwards;
     }
 
-    /* Links */
     .links {
-      margin-top: 2.5rem;
+      margin-top: 2.8rem;
       display: flex;
       flex-direction: column;
-      gap: 1.2rem;
-      opacity: 0;
-      animation: slideUp 1s ease 2s forwards;
+      gap: 1.1rem;
     }
 
     .links a {
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(9px, 1vw, 12px);
-      letter-spacing: 0.2em;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
       color: var(--muted);
       text-decoration: none;
-      transition: color 0.3s ease;
-      position: relative;
-      width: fit-content;
-    }
-
-    .links a::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      width: 0;
-      height: 1px;
-      background: var(--gold);
-      transition: width 0.3s ease;
+      transition: color 0.4s ease;
     }
 
     .links a:hover {
       color: var(--gold);
     }
 
-    .links a:hover::after {
-      width: 100%;
-    }
-
-    /* Ominous Weaver link */
     .weaver-link {
-      margin-top: 3.5rem;
+      margin-top: 4rem;
       font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(11px, 1.3vw, 14px);
-      letter-spacing: 0.35em;
+      font-size: clamp(11.5px, 1.35vw, 14.5px);
+      letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: var(--gold-dim);
+      color: var(--blood);
       text-decoration: none;
       position: relative;
-      padding: 0.8rem 0;
-      transition: all 0.4s ease;
-      opacity: 0;
-      animation: slideUp 1s ease 2.4s forwards;
+      padding: 1rem 0;
+      transition: all 0.5s ease;
+      animation: pulse 4s infinite ease-in-out;
     }
 
     .weaver-link:hover {
-      color: var(--gold);
-      letter-spacing: 0.45em;
+      color: #c33;
+      letter-spacing: 0.5em;
     }
 
-    .weaver-link::after {
-      content: '→';
-      position: absolute;
-      right: -28px;
-      opacity: 0;
-      transition: all 0.4s ease;
+    @keyframes pulse {
+      0%, 100% { opacity: 0.75; }
+      50% { opacity: 1; }
     }
 
-    .weaver-link:hover::after {
-      opacity: 1;
-      right: -22px;
-    }
-
-    /* Bottom stamp */
     .stamp {
       position: fixed;
-      bottom: 4vh;
-      right: 5vw;
+      bottom: 5vh;
+      right: 6vw;
       font-family: 'Share Tech Mono', monospace;
       font-size: 9px;
-      letter-spacing: 0.3em;
+      letter-spacing: 0.35em;
       text-transform: uppercase;
       color: var(--muted);
-      opacity: 0;
-      animation: fadeIn 1s ease 2.5s forwards;
     }
 
-    /* Year marker */
     .year {
       position: fixed;
-      top: 4vh;
-      right: 5vw;
+      top: 5vh;
+      right: 6vw;
       font-family: 'Share Tech Mono', monospace;
       font-size: 9px;
       letter-spacing: 0.3em;
       color: var(--gold-dim);
-      opacity: 0;
-      animation: fadeIn 1s ease 2.5s forwards;
     }
 
-    @keyframes fadeIn {
-      to { opacity: 1; }
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Subtle cursor glow */
     .cursor-glow {
       position: fixed;
-      width: 300px;
-      height: 300px;
+      width: 340px;
+      height: 340px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(184,150,74,0.04) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(139,42,42,0.035) 0%, transparent 75%);
       pointer-events: none;
       transform: translate(-50%, -50%);
-      transition: left 0.3s ease, top 0.3s ease;
       z-index: 98;
+      transition: left 0.3s ease, top 0.3s ease;
     }
   </style>
 </head>
@@ -267,7 +204,6 @@
       <a href="https://instagram.com/mentifaber" target="_blank">Instagram</a>
     </nav>
 
-    <!-- Ominous Weaver Link -->
     <a href="weaver.html" class="weaver-link">
       ENTER THE ARCHIVE — WEAVER AWAITS
     </a>
