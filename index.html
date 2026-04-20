@@ -31,7 +31,7 @@
       position: fixed;
       inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E");
-      opacity: 0.4;
+      opacity: 0.42;
       pointer-events: none;
       z-index: 100;
     }
@@ -50,27 +50,29 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: flex-start;
-      padding: 0 10vw;
+      align-items: center;
+      text-align: center;
+      padding: 0 8vw;
       position: relative;
     }
 
     .rule {
       position: absolute;
-      left: 7vw;
+      left: 50%;
       top: 15vh;
       bottom: 15vh;
       width: 1px;
       background: linear-gradient(to bottom, transparent, var(--gold-dim) 25%, var(--gold-dim) 75%, transparent);
+      transform: translateX(-50%);
     }
 
     .etymology {
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(9px, 1vw, 11px);
-      letter-spacing: 0.3em;
+      letter-spacing: 0.35em;
       color: var(--gold-dim);
       text-transform: uppercase;
-      margin-bottom: 2rem;
+      margin-bottom: 2.2rem;
     }
 
     .name {
@@ -89,26 +91,28 @@
     }
 
     .tagline {
-      margin-top: 2rem;
+      margin-top: 2.2rem;
       font-size: clamp(0.95rem, 1.9vw, 1.35rem);
       font-weight: 300;
       font-style: italic;
       color: var(--muted);
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
+      max-width: 80ch;
     }
 
     .divider {
-      margin-top: 3.5rem;
+      margin: 3.8rem auto;
       width: clamp(70px, 9vw, 130px);
       height: 1px;
-      background: linear-gradient(to right, var(--gold), transparent);
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
     }
 
     .links {
-      margin-top: 2.8rem;
+      margin-top: 2.5rem;
       display: flex;
       flex-direction: column;
       gap: 1.1rem;
+      align-items: center;
     }
 
     .links a {
@@ -126,26 +130,25 @@
     }
 
     .weaver-link {
-      margin-top: 4rem;
+      margin-top: 4.2rem;
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(11.5px, 1.35vw, 14.5px);
-      letter-spacing: 0.4em;
+      letter-spacing: 0.42em;
       text-transform: uppercase;
       color: var(--blood);
       text-decoration: none;
-      position: relative;
       padding: 1rem 0;
       transition: all 0.5s ease;
-      animation: pulse 4s infinite ease-in-out;
+      animation: pulse-red 4s infinite ease-in-out;
     }
 
     .weaver-link:hover {
       color: #c33;
-      letter-spacing: 0.5em;
+      letter-spacing: 0.55em;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 0.75; }
+    @keyframes pulse-red {
+      0%, 100% { opacity: 0.72; }
       50% { opacity: 1; }
     }
 
@@ -172,14 +175,13 @@
 
     .cursor-glow {
       position: fixed;
-      width: 340px;
-      height: 340px;
+      width: 360px;
+      height: 360px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(139,42,42,0.035) 0%, transparent 75%);
+      background: radial-gradient(circle, rgba(139,42,42,0.04) 0%, transparent 78%);
       pointer-events: none;
       transform: translate(-50%, -50%);
       z-index: 98;
-      transition: left 0.3s ease, top 0.3s ease;
     }
   </style>
 </head>
