@@ -26,6 +26,7 @@
       cursor: crosshair;
     }
 
+    /* Exact same background as index */
     body::before {
       content: '';
       position: fixed;
@@ -72,12 +73,14 @@
     .back-link:hover { color: var(--gold); }
 
     h1 {
-      font-size: clamp(4rem, 9.5vw, 8.5rem);
+      font-size: clamp(4.2rem, 10vw, 9rem);
       font-weight: 300;
       font-style: italic;
-      letter-spacing: -0.045em;
+      letter-spacing: -0.04em;
       line-height: 0.88;
-      margin-bottom: 2.6rem;
+      color: var(--white);
+      margin-bottom: 2.8rem;
+      animation: pulse-red 5s infinite ease-in-out;
     }
 
     h1 span {
@@ -128,10 +131,15 @@
       width: 380px;
       height: 380px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(156,47,47,0.05) 0%, transparent 80%);
+      background: radial-gradient(circle, rgba(156,47,47,0.045) 0%, transparent 80%);
       pointer-events: none;
       transform: translate(-50%, -50%);
       z-index: 98;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { opacity: 0.72; color: var(--white); }
+      50% { opacity: 1; color: var(--blood); }
     }
   </style>
 </head>
