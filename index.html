@@ -56,6 +56,15 @@
       position: relative;
     }
 
+    .rule {
+      position: absolute;
+      left: 12vw;
+      top: 15vh;
+      bottom: 15vh;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--gold-dim) 25%, var(--gold-dim) 75%, transparent);
+    }
+
     .etymology {
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(9.5px, 1.05vw, 11.5px);
@@ -178,6 +187,8 @@
   <div class="cursor-glow" id="glow"></div>
 
   <div class="container">
+    <div class="rule"></div>
+
     <p class="etymology">mens · mentis — faber · fabri</p>
 
     <h1 class="name">Menti<span>faber</span></h1>
