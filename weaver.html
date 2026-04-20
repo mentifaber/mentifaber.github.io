@@ -6,7 +6,6 @@
   <title>Weaver</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <style>
-    /* Same base styles as index for consistency */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
@@ -27,60 +26,65 @@
       cursor: crosshair;
     }
 
-    body::before, body::after {
+    body::before {
       content: '';
       position: fixed;
       inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.42'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 35%, #000 95%);
       pointer-events: none;
       z-index: 99;
     }
 
-    body::before {
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E");
-      opacity: 0.4;
-    }
-
-    body::after {
-      background: radial-gradient(ellipse at center, transparent 35%, #000 95%);
-    }
-
     .container {
       min-height: 100vh;
-      padding: 12vh 10vw 15vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 0 8vw;
       position: relative;
-      max-width: 1100px;
     }
 
     .back-link {
       position: absolute;
       top: 6vh;
-      left: 10vw;
+      left: 50%;
+      transform: translateX(-50%);
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(9px, 1vw, 11px);
-      letter-spacing: 0.3em;
+      letter-spacing: 0.35em;
       color: var(--gold-dim);
       text-decoration: none;
       text-transform: uppercase;
     }
 
-    .back-link:hover { color: var(--gold); }
-
     .rule {
       position: absolute;
-      left: 7vw;
+      left: 50%;
       top: 15vh;
       bottom: 15vh;
       width: 1px;
       background: linear-gradient(to bottom, transparent, var(--gold-dim) 25%, var(--gold-dim) 75%, transparent);
+      transform: translateX(-50%);
     }
 
     h1 {
-      font-size: clamp(3.5rem, 8.5vw, 7.5rem);
+      font-size: clamp(3.6rem, 8.8vw, 7.8rem);
       font-weight: 300;
       font-style: italic;
       letter-spacing: -0.04em;
       line-height: 0.9;
-      margin-bottom: 2rem;
+      margin-bottom: 2.2rem;
     }
 
     h1 span {
@@ -90,19 +94,19 @@
     }
 
     .standout {
-      font-size: clamp(1.25rem, 2.4vw, 1.85rem);
-      line-height: 1.4;
+      font-size: clamp(1.22rem, 2.3vw, 1.78rem);
+      line-height: 1.42;
       font-weight: 300;
       color: var(--white);
-      max-width: 88ch;
+      max-width: 78ch;
       margin: 2.5rem 0 4rem;
     }
 
     .content {
-      font-size: 1.1rem;
-      line-height: 1.7;
+      font-size: 1.08rem;
+      line-height: 1.75;
       color: var(--muted);
-      max-width: 82ch;
+      max-width: 76ch;
     }
 
     .stamp {
@@ -128,10 +132,10 @@
 
     .cursor-glow {
       position: fixed;
-      width: 340px;
-      height: 340px;
+      width: 360px;
+      height: 360px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(139,42,42,0.04) 0%, transparent 75%);
+      background: radial-gradient(circle, rgba(139,42,42,0.04) 0%, transparent 78%);
       pointer-events: none;
       transform: translate(-50%, -50%);
       z-index: 98;
@@ -142,7 +146,7 @@
 
   <div class="cursor-glow" id="glow"></div>
 
-  <a href="index (1).html" class="back-link">← RETURN</a>
+  <a href="index.html" class="back-link">← RETURN</a>
 
   <div class="container">
     <div class="rule"></div>
