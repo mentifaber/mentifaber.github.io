@@ -125,7 +125,8 @@
     .links {
       margin-top: 2.5rem;
       display: flex;
-      gap: 2.5rem;
+      flex-direction: column;
+      gap: 1.2rem;
       opacity: 0;
       animation: slideUp 1s ease 2s forwards;
     }
@@ -139,6 +140,7 @@
       text-decoration: none;
       transition: color 0.3s ease;
       position: relative;
+      width: fit-content;
     }
 
     .links a::after {
@@ -158,6 +160,40 @@
 
     .links a:hover::after {
       width: 100%;
+    }
+
+    /* Ominous Weaver link */
+    .weaver-link {
+      margin-top: 3.5rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(11px, 1.3vw, 14px);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      text-decoration: none;
+      position: relative;
+      padding: 0.8rem 0;
+      transition: all 0.4s ease;
+      opacity: 0;
+      animation: slideUp 1s ease 2.4s forwards;
+    }
+
+    .weaver-link:hover {
+      color: var(--gold);
+      letter-spacing: 0.45em;
+    }
+
+    .weaver-link::after {
+      content: '→';
+      position: absolute;
+      right: -28px;
+      opacity: 0;
+      transition: all 0.4s ease;
+    }
+
+    .weaver-link:hover::after {
+      opacity: 1;
+      right: -22px;
     }
 
     /* Bottom stamp */
@@ -230,6 +266,11 @@
       <a href="https://x.com/mentifaber" target="_blank">X</a>
       <a href="https://instagram.com/mentifaber" target="_blank">Instagram</a>
     </nav>
+
+    <!-- Ominous Weaver Link -->
+    <a href="weaver.html" class="weaver-link">
+      ENTER THE ARCHIVE — WEAVER AWAITS
+    </a>
   </div>
 
   <div class="year">MMXXVI</div>
