@@ -1,42 +1,36 @@
-name: Build and Deploy Website
+name: Deploy Static Website
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6     # ← Updated to v6 (Node 24)
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20          # or 24 if you prefer
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build site
-        run: npm run build          # or whatever your build command is (e.g. hugo, vite build, etc.)
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4   # Keep v4 for now — it still works
+        uses: actions/upload-artifact@v4
         with:
           name: github-pages
-          path: ./dist                    # or ./public, ./build, etc. — adjust to your output folder
+          path: .          # Uploads everything in the repo root (your HTML files)
+          retention-days: 1
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-
-    steps:
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
