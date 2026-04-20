@@ -24,12 +24,11 @@ jobs:
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      # This is the key fix — use the Pages-specific uploader
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages
-          path: .          # Uploads everything in the repo root (your HTML files)
-          retention-days: 1
+          path: '.'                    # Uploads everything in the repo root
 
       - name: Deploy to GitHub Pages
         id: deployment
