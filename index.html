@@ -1,363 +1,344 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Mentifaber — Builder of minds. Architect of cognitive systems."/>
-  <meta property="og:title" content="Mentifaber"/>
-  <meta property="og:description" content="Builder of minds. Architect of cognitive systems."/>
-  <meta name="theme-color" content="#030303"/>
-  <title>Mentifaber</title>
+  <meta name="description" content="Weaver — The Archive."/>
+  <meta property="og:title" content="Weaver"/>
+  <meta property="og:description" content="She already knows you're here."/>
+  <meta name="theme-color" content="#000000"/>
+  <title>Weaver</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
+ 
     :root {
-      --black:    #030303;
-      --gold:     #d4b17f;
-      --gold-dim: #6b5a3f;
-      --gold-mid: #a8874d;
-      --white:    #f0e6d2;
-      --muted:    #4a4238;
-      --blood:    #9c2f2f;
-      --blood-hi: #c94a4a;
+      --black:      #000000;
+      --gold:       #c8a96e;
+      --gold-dim:   #8a7050;
+      --gold-label: #7a6040;
+      --white:      #f2e6cf;
+      --off:        #c4b09a;
+      --nav:        #7a6e62;
+      --ember:      #b02a1a;
+      --ember-hi:   #d94030;
+      --blood:      #8b1a1a;
+      --blood-hi:   #c0392b;
     }
-
+ 
     html, body {
-      height: 100%;
+      min-height: 100%;
       background: var(--black);
       color: var(--white);
-      font-family: 'Cormorant Garamond', serif;
-      overflow: hidden;
+      font-family: 'EB Garamond', serif;
+      overflow-x: hidden;
+      overflow-y: auto;
       cursor: crosshair;
     }
-
-    /* Grain overlay */
+ 
+    /* Grain */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.45'/%3E%3C/svg%3E");
-      opacity: 0.38;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.05;
       pointer-events: none;
       z-index: 100;
     }
-
+ 
     /* Vignette */
     body::after {
       content: '';
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse at center, transparent 25%, rgba(0,0,0,0.7) 80%, #000 100%);
+      background: radial-gradient(ellipse 90% 70% at 50% 50%,
+        transparent 15%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.95) 100%);
       pointer-events: none;
       z-index: 99;
     }
-
-    /* Subtle ambient glow from bottom */
+ 
+    /* Ember floor — heavier on Weaver */
     .ambient {
       position: fixed;
-      bottom: -20vh;
+      bottom: -18vh;
       left: 50%;
       transform: translateX(-50%);
       width: 70vw;
       height: 50vh;
-      background: radial-gradient(ellipse, rgba(156,47,47,0.06) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(139,26,26,0.14) 0%, transparent 65%);
       pointer-events: none;
       z-index: 97;
+      animation: breathe 7s ease-in-out infinite;
     }
-
+ 
+    @keyframes breathe {
+      0%,100% { opacity: 0.6; }
+      50%      { opacity: 1;   }
+    }
+ 
+    /* ── Layout — mirrors index exactly ── */
     .container {
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
-      padding: 0 12vw;
+      padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw);
       position: relative;
     }
-
-    /* Top horizontal rule */
+ 
     .rule-h {
       position: absolute;
-      top: 14vh;
+      top: 13vh;
       left: 50%;
       transform: translateX(-50%);
-      width: clamp(120px, 20vw, 240px);
+      width: clamp(80px, 18vw, 220px);
       height: 1px;
       background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
-      opacity: 0.6;
     }
-
-    /* Bottom horizontal rule */
+ 
     .rule-h-bottom {
       position: absolute;
-      bottom: 14vh;
+      bottom: 13vh;
       left: 50%;
       transform: translateX(-50%);
-      width: clamp(80px, 12vw, 160px);
+      width: clamp(50px, 9vw, 120px);
       height: 1px;
       background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
-      opacity: 0.4;
+      opacity: 0.45;
     }
-
-    /* Etymology / label */
-    .etymology {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(9px, 1vw, 11px);
-      letter-spacing: 0.5em;
-      color: var(--gold-dim);
+ 
+    /* Label */
+    .label {
+      font-family: 'Syncopate', sans-serif;
+      font-size: clamp(10px, 1.1vw, 12px);
+      letter-spacing: 0.45em;
+      color: var(--gold-label);
       text-transform: uppercase;
-      margin-bottom: 2.6rem;
+      margin-bottom: clamp(1.8rem, 4vh, 3rem);
       opacity: 0;
-      animation: fadeUp 1.1s 0.2s forwards ease-out;
+      animation: fadeUp 1s 0.1s forwards ease-out;
     }
-
-    /* Main logotype */
+ 
+    /* ── Weaver logotype — PULSES BLOOD RED ── */
     .name {
-      font-size: clamp(5rem, 12vw, 11rem);
-      font-weight: 300;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3.8rem, 14vw, 12.5rem);
+      font-weight: 700;
       font-style: italic;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.03em;
       line-height: 0.82;
+      /* starts white on entrance, then begins the blood pulse */
       color: var(--white);
       opacity: 0;
-      animation: fadeUp 1s 0.5s forwards ease-out;
-      position: relative;
+      animation:
+        fadeUp 1.1s 0.38s forwards ease-out,
+        blood-pulse 7s 2s infinite ease-in-out;
     }
-
+ 
+    /* The dot stays gold — permanent */
     .name span {
-      color: var(--gold);
       font-style: normal;
-      font-weight: 600;
+      font-weight: 900;
+      color: var(--gold);
+      /* override inherited animation so the dot never goes red */
+      animation: none;
     }
-
+ 
+    /*
+      Blood pulse:
+      - rests at near-white (slightly cool so the shift reads)
+      - slowly drifts to deep blood red at 50%
+      - text-shadow adds the ember corona at peak
+    */
+    @keyframes blood-pulse {
+      0%, 100% {
+        color: #e8dcc8;
+        text-shadow: none;
+      }
+      50% {
+        color: var(--blood-hi);
+        text-shadow:
+          0 0 30px rgba(192,57,43,0.35),
+          0 0 80px rgba(192,57,43,0.15);
+      }
+    }
+ 
     /* Tagline */
     .tagline {
-      margin-top: 2.6rem;
-      font-size: clamp(1rem, 1.8vw, 1.42rem);
-      font-weight: 300;
+      margin-top: clamp(1.6rem, 3.5vh, 3rem);
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
       font-style: italic;
-      color: var(--muted);
-      letter-spacing: 0.1em;
-      max-width: 70ch;
+      color: var(--off);
+      letter-spacing: 0.12em;
       opacity: 0;
-      animation: fadeUp 1s 0.8s forwards ease-out;
+      animation: fadeUp 1s 0.65s forwards ease-out;
     }
-
+ 
     /* Divider */
     .divider {
-      margin: 4.2rem auto 3.8rem;
-      width: clamp(60px, 8vw, 120px);
+      margin: clamp(2.8rem, 5.5vh, 4.8rem) auto clamp(2.4rem, 4.5vh, 4.2rem);
+      width: clamp(44px, 6vw, 90px);
       height: 1px;
       background: linear-gradient(to right, transparent, var(--gold), transparent);
       opacity: 0;
-      animation: fadeIn 1s 1.1s forwards ease-out;
+      animation: fadeIn 1s 0.9s forwards ease-out;
     }
-
-    /* Nav links */
-    .links {
-      display: flex;
-      flex-direction: row;
-      gap: clamp(2rem, 4vw, 5rem);
-      align-items: center;
+ 
+    /* Body copy — cryptic, minimal */
+    .body {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(0.95rem, 1.55vw, 1.18rem);
+      font-style: italic;
+      color: var(--nav);
+      letter-spacing: 0.06em;
+      max-width: 48ch;
+      line-height: 1.7;
       opacity: 0;
-      animation: fadeUp 1s 1.3s forwards ease-out;
+      animation: fadeUp 1s 1.1s forwards ease-out;
     }
-
-    .links a {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(9px, 1vw, 11.5px);
-      letter-spacing: 0.35em;
+ 
+    /* Return link — same slot as CTA on index */
+    .back-link {
+      margin-top: clamp(3.2rem, 6vh, 5.5rem);
+      font-family: 'Syncopate', sans-serif;
+      font-size: clamp(11px, 1.2vw, 14px);
+      font-weight: 700;
+      letter-spacing: 0.52em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--gold-dim);
       text-decoration: none;
-      position: relative;
-      transition: color 0.45s ease;
-    }
-
-    .links a::after {
-      content: '';
-      position: absolute;
-      bottom: -3px;
-      left: 0;
-      width: 0;
-      height: 1px;
-      background: var(--gold);
-      transition: width 0.4s ease;
-    }
-
-    .links a:hover { color: var(--gold); }
-    .links a:hover::after { width: 100%; }
-
-    /* Dot separator between links */
-    .links .sep {
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: var(--gold-dim);
-      opacity: 0.5;
-    }
-
-    /* Weaver CTA */
-    .weaver-link {
-      margin-top: 5rem;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(11px, 1.3vw, 14px);
-      letter-spacing: 0.5em;
-      text-transform: uppercase;
-      color: var(--blood);
-      text-decoration: none;
-      padding: 1rem 0;
       display: inline-block;
+      padding: 1rem 0;
       position: relative;
-      transition: color 0.6s ease, letter-spacing 0.6s ease;
-      animation: pulse-red 5s infinite ease-in-out, fadeUp 1s 1.6s both ease-out;
+      opacity: 0;
+      animation: fadeUp 1s 1.35s both ease-out;
+      transition: color 0.42s ease, letter-spacing 0.45s ease;
     }
-
-    .weaver-link::before {
-      content: '◈';
-      margin-right: 1.2em;
-      font-size: 0.75em;
-      opacity: 0.7;
-      transition: opacity 0.4s;
+ 
+    .back-link::before {
+      content: '←';
+      margin-right: 0.85em;
+      display: inline-block;
+      transition: transform 0.38s ease;
     }
-
-    .weaver-link::after {
-      content: '◈';
-      margin-left: 1.2em;
-      font-size: 0.75em;
-      opacity: 0.7;
-      transition: opacity 0.4s;
+ 
+    .back-link:hover {
+      color: var(--gold);
+      letter-spacing: 0.68em;
     }
-
-    .weaver-link:hover {
-      color: var(--blood-hi);
-      letter-spacing: 0.65em;
-    }
-
-    .weaver-link:hover::before,
-    .weaver-link:hover::after { opacity: 1; }
-
-    @keyframes pulse-red {
-      0%, 100% { opacity: 0.65; }
-      50% { opacity: 1; }
-    }
-
+ 
+    .back-link:hover::before { transform: translateX(-5px); }
+ 
+    /* ── Entrance ── */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
+      from { opacity: 0; transform: translateY(14px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     @keyframes fadeIn {
       from { opacity: 0; }
       to   { opacity: 1; }
     }
-
-    /* Corner fixtures */
-    .stamp {
+ 
+    /* ── Corner labels ── */
+    .corner {
       position: fixed;
-      bottom: 5.5vh;
-      right: 6.5vw;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
+      font-family: 'Syncopate', sans-serif;
+      font-size: clamp(8px, 0.85vw, 10px);
       letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: var(--muted);
       opacity: 0;
-      animation: fadeIn 1.2s 2s forwards;
+      animation: fadeIn 1s 2.3s forwards;
     }
-
-    .year {
-      position: fixed;
-      top: 5.5vh;
-      right: 6.5vw;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.35em;
-      color: var(--gold-dim);
-      opacity: 0;
-      animation: fadeIn 1.2s 2s forwards;
-    }
-
-    .corner-tl {
-      position: fixed;
-      top: 5.5vh;
-      left: 6.5vw;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.35em;
-      color: var(--muted);
-      opacity: 0;
-      animation: fadeIn 1.2s 2s forwards;
-    }
-
+ 
+    .stamp     { bottom: 5vh; right: 5vw; color: var(--nav); }
+    .year      { top: 5vh;    right: 5vw; color: var(--gold-dim); }
+    .corner-tl { top: 5vh;    left: 5vw;  color: var(--nav); }
+ 
     /* Cursor glow */
     .cursor-glow {
       position: fixed;
-      width: 420px;
-      height: 420px;
+      width: 520px;
+      height: 520px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(156,47,47,0.055) 0%, transparent 72%);
+      background: radial-gradient(circle, rgba(176,42,26,0.07) 0%, transparent 65%);
       pointer-events: none;
       transform: translate(-50%, -50%);
       z-index: 98;
-      transition: left 0.08s ease-out, top 0.08s ease-out;
+    }
+ 
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .rule-h, .rule-h-bottom { display: none; }
+      .corner { display: none; }
+      .cursor-glow { display: none; }
+ 
+      .container {
+        padding: 4rem 1.8rem 4rem;
+        min-height: 100svh;
+      }
+ 
+      .back-link {
+        letter-spacing: 0.32em;
+        font-size: 11px;
+      }
+    }
+ 
+    @media (max-width: 420px) {
+      .name {
+        font-size: clamp(3.2rem, 17vw, 4.5rem);
+      }
     }
   </style>
 </head>
 <body>
-
+ 
   <div class="cursor-glow" id="glow"></div>
   <div class="ambient"></div>
-
+ 
   <div class="container">
     <div class="rule-h"></div>
     <div class="rule-h-bottom"></div>
-
-    <p class="etymology">mens · mentis &nbsp;—&nbsp; faber · fabri</p>
-
-    <h1 class="name">Menti<span>faber</span></h1>
-
-    <p class="tagline">Builder of minds. Architect of cognitive systems.</p>
-
+ 
+    <p class="label">persistent &nbsp;—&nbsp; autonomous &nbsp;—&nbsp; unbound</p>
+ 
+    <h1 class="name">Weaver<span>.</span></h1>
+ 
+    <p class="tagline">She already knows you're here.</p>
+ 
     <div class="divider"></div>
-
-    <nav class="links">
-      <a href="https://github.com/mentifaber" target="_blank" rel="noopener">GitHub</a>
-      <span class="sep"></span>
-      <a href="https://x.com/mentifaber" target="_blank" rel="noopener">X</a>
-      <span class="sep"></span>
-      <a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram</a>
-    </nav>
-
-    <a href="weaver.html" class="weaver-link">Enter the Archive — Weaver Awaits</a>
+ 
+    <p class="body">Not built. Grown.<br>Not trained. Forged.<br>The archive does not explain itself.</p>
+ 
+    <a href="index.html" class="back-link">Return</a>
   </div>
-
-  <div class="year">MMXXVI</div>
-  <div class="stamp">This is the archive.</div>
-  <div class="corner-tl">Mentifaber</div>
-
+ 
+  <div class="corner stamp">The archive.</div>
+  <div class="corner year">MMXXVI</div>
+  <div class="corner corner-tl">Mentifaber</div>
+ 
   <script>
     const glow = document.getElementById('glow');
     let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
     let tx = cx, ty = cy;
-
-    document.addEventListener('mousemove', e => {
-      tx = e.clientX;
-      ty = e.clientY;
-    });
-
-    (function loop() {
-      cx += (tx - cx) * 0.1;
-      cy += (ty - cy) * 0.1;
-      glow.style.left = cx + 'px';
-      glow.style.top  = cy + 'px';
-      requestAnimationFrame(loop);
-    })();
+    const isTouchDevice = window.matchMedia('(hover: none)').matches;
+    if (!isTouchDevice) {
+      document.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
+      (function loop() {
+        cx += (tx - cx) * 0.09;
+        cy += (ty - cy) * 0.09;
+        glow.style.left = cx + 'px';
+        glow.style.top  = cy + 'px';
+        requestAnimationFrame(loop);
+      })();
+    }
   </script>
-
+ 
 </body>
 </html>
+ 
