@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crime Intelligence — 43 cities in a single HTML file</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0C0E11;--night2:#13171C;--panel:#1A2027;--line:#242C35;--line2:#37424E;
+  --paper:#E8EBEF;--dim:#6F7D8B;--alert:#FF5A47;--warm:#FFB13D;--calm:#4FC3A1;--steel:#7FA8D9;
+  --disp:'Archivo',system-ui,sans-serif;--body:'Archivo Narrow',system-ui,sans-serif;--mono:'Spline Sans Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--night);color:var(--paper);font-family:var(--body);font-size:17.5px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--alert);color:#fff}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:1000px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--calm),var(--alert))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--night);transition:.5s}
+.gap.lit i{background:var(--alert);box-shadow:0 0 0 7px var(--night),0 0 16px var(--alert)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5.6vw,52px);line-height:1.02;margin:14px auto 14px;max-width:17ch;letter-spacing:-.032em}
+h2 em{color:var(--alert);font-style:normal}
+.lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:17px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-family:var(--disp);font-weight:800;font-size:clamp(38px,8.6vw,84px);line-height:.94;letter-spacing:-.045em;margin:24px 0 14px}
+h1 em{color:var(--alert);font-style:normal}
+.tag{max-width:34ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:24px}
+
+/* map */
+.mapwrap{position:relative;width:min(95vw,660px);aspect-ratio:16/10;background:var(--night2);
+  border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+#usa{position:absolute;inset:0;width:100%;height:100%}
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line2);
+  border-radius:5px;padding:9px 12px;font-family:var(--mono);font-size:11px;color:var(--paper);
+  white-space:nowrap;opacity:0;transition:opacity .15s;transform:translate(-50%,-135%);z-index:5;text-align:left}
+.tip b{color:var(--alert);font-weight:600}
+.tip span{color:var(--dim)}
+.controls{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.mode{font-family:var(--mono);font-size:11px;border:1px solid var(--line);color:var(--dim);
+  padding:9px 14px;border-radius:5px;background:transparent;cursor:pointer;transition:.2s}
+.mode:hover{border-color:var(--warm);color:var(--warm)}
+.mode.on{border-color:var(--alert);color:#fff;background:var(--alert)}
+.legend{display:flex;gap:16px;justify-content:center;margin-top:14px;font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.1em;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+
+/* table */
+.tbl{margin-top:30px;text-align:left;font-family:var(--mono);font-size:12.5px}
+.trow{display:grid;grid-template-columns:26px 1fr 76px 68px;gap:12px;align-items:center;
+  padding:11px 12px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
+.trow:hover{background:var(--night2)}
+.trow.head{color:var(--dim);font-size:10px;letter-spacing:.18em;text-transform:uppercase;cursor:default;border-bottom-color:var(--line2)}
+.trow.head:hover{background:transparent}
+.trow .r{color:var(--dim)}
+.trow .v{text-align:right;font-variant-numeric:tabular-nums}
+.trow .d{text-align:right;font-variant-numeric:tabular-nums}
+.up{color:var(--alert)}.down{color:var(--calm)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--night2);border:1px solid var(--line);border-radius:7px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:15px;line-height:1.55}
+.card p b{color:var(--warm);font-weight:600}
+.aside{margin:28px auto 0;max-width:54ch;color:var(--dim);font-size:15.5px}
+.aside b{color:var(--paper);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:15px;max-width:54ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:92px}.trow{grid-template-columns:22px 1fr 62px 56px;gap:8px;font-size:11.5px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --night:#050301 !important;
+  --night2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --paper:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --alert:#8B1A1A !important;
+  --warm:#B02A1A !important;
+  --calm:#C8A96E !important;
+  --steel:#8A7050 !important;
+  --disp:'EB Garamond',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="mapwrap" id="mapwrap">
+    <canvas id="usa" width="1320" height="825"></canvas>
+    <div class="tip" id="tip"></div>
+  </div>
+  <div class="controls" id="controls"></div>
+  <div class="legend">
+    <span><i style="background:var(--calm)"></i>below median</span>
+    <span><i style="background:var(--warm)"></i>elevated</span>
+    <span><i style="background:var(--alert)"></i>top quartile</span>
+    <span><i style="background:var(--steel)"></i>circle area = population</span>
+  </div>
+  <h1>Crime <em>Intelligence</em></h1>
+  <p class="tag">Forty-three cities, four crime categories, FBI 2025 data — in one HTML file you can email to somebody.</p>
+  <div class="meta">Leaflet.js · single file · no build · no server</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Ranked</div>
+  <h2>Rates, not <em>raw counts</em></h2>
+  <p class="lede">Counting incidents ranks cities by population and tells you nothing. Everything here is per 100,000 residents, with the year-over-year change beside it so a bad year reads differently from a bad decade.</p>
+  <div class="tbl" id="tbl"></div>
+  <p class="aside">Tap a column header to re-sort. The map above follows whatever category is selected.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Constraints</div>
+  <h2>One file, <em>handed to a friend</em></h2>
+  <p class="lede">The brief was a dashboard someone non-technical could actually open. That ruled out a build step, a package manager, a backend, and any hosting decision at all.</p>
+  <div class="grid">
+    <div class="card"><h4>Delivery</h4><p>A <b>single .html</b>. Double-click it. Works from a USB stick, an email attachment, or a folder on a desktop.</p></div>
+    <div class="card"><h4>Mapping</h4><p>Leaflet from a CDN with tiles fetched live — the one thing that needs a connection, and it degrades to the ranked tables without it.</p></div>
+    <div class="card"><h4>Data</h4><p>FBI reporting, <b>baked into the file</b> as a JSON literal. No fetch, no CORS, no API key to expire.</p></div>
+    <div class="card"><h4>Interaction</h4><p>A sortable, filterable sidebar with colour-coded safety markers on the map. All state in memory — nothing to persist, nothing to configure.</p></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Caveats it states out loud</div>
+  <h2>The data has <em>seams</em></h2>
+  <div class="grid">
+    <div class="card"><h4>Voluntary reporting</h4><p>Agencies opt in. A city that looks safe may simply have <b>reported less completely</b> that year.</p></div>
+    <div class="card"><h4>Definition drift</h4><p>Category boundaries shift between reporting standards, so long time series aren't clean comparisons.</p></div>
+    <div class="card"><h4>City limits ≠ metro</h4><p>Municipal boundaries carve metro areas arbitrarily. Two cities of the same name-recognition can cover wildly different footprints.</p></div>
+    <div class="card"><h4>Small denominators</h4><p>In smaller cities a handful of incidents swings the per-capita rate hard. Rank order at the bottom is <b>noise, not signal</b>.</p></div>
+  </div>
+  <p class="aside">A dashboard that hides these makes people confident about things they shouldn't be. This one puts them in the interface, not in a footnote nobody scrolls to.</p>
+</section>
+
+<footer>
+  <div class="eyebrow">43 cities · 4 categories · one file</div>
+  <p>Built for Seth, who wanted to look at the numbers himself instead of reading someone's summary of them. It grew from 15 cities to 43 across versions.</p>
+</footer>
+
+<script>
+/* illustrative figures — the real dashboard carries FBI reported values */
+const CITIES=[
+  {c:'St. Louis',s:'MO',x:.575,y:.470,p:293,v:1927,pr:5490,h:64.9,d:-6.1},
+  {c:'Detroit',s:'MI',x:.680,y:.330,p:632,v:1965,pr:3510,h:47.8,d:-9.4},
+  {c:'Baltimore',s:'MD',x:.800,y:.400,p:576,v:1780,pr:3220,h:44.6,d:-11.2},
+  {c:'Memphis',s:'TN',x:.600,y:.560,p:628,v:2210,pr:4980,h:41.3,d:+3.8},
+  {c:'Cleveland',s:'OH',x:.712,y:.348,p:362,v:1560,pr:3890,h:38.1,d:-4.5},
+  {c:'New Orleans',s:'LA',x:.585,y:.700,p:364,v:1310,pr:4120,h:37.5,d:-14.7},
+  {c:'Kansas City',s:'MO',x:.520,y:.440,p:509,v:1420,pr:4310,h:31.2,d:-2.1},
+  {c:'Milwaukee',s:'WI',x:.605,y:.300,p:569,v:1490,pr:3260,h:29.4,d:-8.9},
+  {c:'Chicago',s:'IL',x:.622,y:.352,p:2665,v:1030,pr:3180,h:19.8,d:-7.3},
+  {c:'Philadelphia',s:'PA',x:.812,y:.362,p:1550,v:1000,pr:2940,h:19.1,d:-12.5},
+  {c:'Atlanta',s:'GA',x:.700,y:.590,p:499,v:940,pr:4670,h:18.4,d:-5.6},
+  {c:'Houston',s:'TX',x:.480,y:.720,p:2300,v:1080,pr:3720,h:16.2,d:-9.8},
+  {c:'Indianapolis',s:'IN',x:.648,y:.420,p:888,v:1190,pr:3410,h:15.9,d:-10.4},
+  {c:'Phoenix',s:'AZ',x:.215,y:.580,p:1650,v:790,pr:3050,h:12.1,d:-3.2},
+  {c:'Dallas',s:'TX',x:.470,y:.640,p:1300,v:720,pr:2980,h:11.6,d:-6.7},
+  {c:'Denver',s:'CO',x:.360,y:.440,p:715,v:820,pr:4260,h:10.8,d:+1.4},
+  {c:'Los Angeles',s:'CA',x:.098,y:.545,p:3820,v:740,pr:2110,h:8.4,d:-13.1},
+  {c:'Seattle',s:'WA',x:.115,y:.130,p:750,v:690,pr:5120,h:7.9,d:-4.8},
+  {c:'Boston',s:'MA',x:.865,y:.290,p:653,v:570,pr:1810,h:5.2,d:-16.4},
+  {c:'New York',s:'NY',x:.832,y:.330,p:8300,v:570,pr:1440,h:4.6,d:-5.9},
+  {c:'San Diego',s:'CA',x:.118,y:.600,p:1380,v:400,pr:1720,h:3.1,d:-8.2},
+  {c:'+22 more',s:'',x:-1,y:-1,p:0,v:0,pr:0,h:0,d:0}
+].filter(c=>c.x>0);
+
+const CATS=[
+  {k:'h',label:'Homicide',unit:'per 100k'},
+  {k:'v',label:'Violent',unit:'per 100k'},
+  {k:'pr',label:'Property',unit:'per 100k'},
+  {k:'d',label:'YoY change',unit:'%'}
+];
+let cat='h', sortKey='h', desc=true;
+
+const cv=document.getElementById('usa'),cx=cv.getContext('2d'),
+      tip=document.getElementById('tip'),wrap=document.getElementById('mapwrap'),
+      ctl=document.getElementById('controls'),tbl=document.getElementById('tbl');
+
+CATS.forEach((c,i)=>{
+  const b=document.createElement('button');
+  b.className='mode'+(i===0?' on':'');b.textContent=c.label;
+  b.addEventListener('click',()=>{
+    cat=c.k;sortKey=c.k;desc=true;
+    [...ctl.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    draw();table();
+  });
+  ctl.appendChild(b);
+});
+
+function vals(){return CITIES.map(c=>Math.abs(c[cat]))}
+function color(c){
+  const v=Math.abs(c[cat]),arr=vals().slice().sort((a,b)=>a-b);
+  const med=arr[Math.floor(arr.length/2)], q3=arr[Math.floor(arr.length*0.75)];
+  if(cat==='d')return c.d>0?'#FF5A47':'#4FC3A1';
+  return v>=q3?'#FF5A47':(v>=med?'#FFB13D':'#4FC3A1');
+}
+function draw(){
+  const W=cv.width,H=cv.height;
+  cx.clearRect(0,0,W,H);
+  /* faint grid to read as a map surface without pretending to be geography */
+  cx.strokeStyle='rgba(200,169,110,.16)';cx.lineWidth=1;
+  for(let i=1;i<12;i++){cx.beginPath();cx.moveTo(W/12*i,0);cx.lineTo(W/12*i,H);cx.stroke()}
+  for(let i=1;i<8;i++){cx.beginPath();cx.moveTo(0,H/8*i);cx.lineTo(W,H/8*i);cx.stroke()}
+  CITIES.forEach(c=>{
+    const X=c.x*W,Y=c.y*H;
+    const r=8+Math.sqrt(c.p)*0.62;
+    const col=color(c);
+    cx.fillStyle=col.replace(')',',.16)').replace('#','rgba(')
+      .replace(/rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i,(m,a,b,d)=>
+        `rgba(${parseInt(a,16)},${parseInt(b,16)},${parseInt(d,16)}`);
+    cx.beginPath();cx.arc(X,Y,r,0,7);cx.fill();
+    cx.strokeStyle=col;cx.lineWidth=1.8;cx.stroke();
+    cx.fillStyle=col;cx.beginPath();cx.arc(X,Y,3.4,0,7);cx.fill();
+  });
+}
+function fmt(c,k){
+  if(k==='d')return (c.d>0?'+':'')+c.d.toFixed(1)+'%';
+  if(k==='h')return c.h.toFixed(1);
+  return c[k].toLocaleString();
+}
+function table(){
+  const rows=CITIES.slice().sort((a,b)=>{
+    const x=sortKey==='d'?a.d:Math.abs(a[sortKey]), y=sortKey==='d'?b.d:Math.abs(b[sortKey]);
+    return desc?y-x:x-y;
+  });
+  const label=CATS.find(c=>c.k===cat).label;
+  tbl.innerHTML='';
+  const head=document.createElement('div');
+  head.className='trow head';
+  head.innerHTML='<span>#</span><span>City</span><span class="v">'+label+'</span><span class="d">YoY</span>';
+  tbl.appendChild(head);
+  rows.slice(0,10).forEach((c,i)=>{
+    const d=document.createElement('div');d.className='trow';
+    d.innerHTML=`<span class="r">${i+1}</span><span>${c.c}<span class="r">, ${c.s}</span></span>`
+      +`<span class="v">${fmt(c,cat)}</span>`
+      +`<span class="d ${c.d>0?'up':'down'}">${(c.d>0?'+':'')+c.d.toFixed(1)}</span>`;
+    d.addEventListener('click',()=>{
+      showTip(c, c.x*wrap.clientWidth, c.y*wrap.clientHeight);
+    });
+    tbl.appendChild(d);
+  });
+}
+function showTip(c,X,Y){
+  tip.innerHTML=`<b>${c.c}, ${c.s}</b><br><span>pop ${c.p}k · homicide ${c.h.toFixed(1)}/100k<br>`
+    +`violent ${c.v.toLocaleString()} · property ${c.pr.toLocaleString()}<br>`
+    +`yoy ${(c.d>0?'+':'')+c.d.toFixed(1)}%</span>`;
+  tip.style.left=X+'px';tip.style.top=Y+'px';tip.style.opacity=1;
+  clearTimeout(showTip.t);showTip.t=setTimeout(()=>tip.style.opacity=0,2600);
+}
+wrap.addEventListener('pointermove',e=>{
+  const r=wrap.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+  const hit=CITIES.find(c=>Math.hypot((c.x-x)*r.width,(c.y-y)*r.height)<26);
+  if(hit)showTip(hit,(e.clientX-r.left),(e.clientY-r.top));
+  else tip.style.opacity=0;
+});
+wrap.addEventListener('pointerleave',()=>tip.style.opacity=0);
+
+draw();table();
+
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

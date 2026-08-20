@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proximity — seeing people through walls with ambient WiFi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deep:#05080C;--deep2:#0A1017;--panel:#0E161F;--line:#182430;--line2:#243646;
+  --ice:#DCE8F2;--dim:#63798E;--cyan:#3FD2E8;--magenta:#FF4D8D;--lime:#9BE86B;
+  --disp:'Chakra Petch',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif;--mono:'Roboto Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--deep);color:var(--ice);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--cyan);color:var(--deep)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:960px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--cyan),var(--magenta))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--deep);transition:.5s}
+.gap.lit i{background:var(--cyan);box-shadow:0 0 0 7px var(--deep),0 0 16px var(--cyan)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:700;font-size:clamp(29px,5.4vw,50px);line-height:1.05;margin:14px auto 14px;max-width:17ch;letter-spacing:-.015em}
+h2 em{color:var(--cyan);font-style:normal}
+.lede{color:var(--dim);max-width:51ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-family:var(--disp);font-weight:300;font-size:clamp(44px,10vw,96px);line-height:.94;letter-spacing:-.04em;margin:28px 0 16px}
+h1 b{font-weight:700;color:var(--cyan)}
+.tag{max-width:33ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
+.tag b{font-weight:500;color:var(--magenta)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-top:26px}
+
+/* floorplan */
+.plan{position:relative;width:min(94vw,620px);aspect-ratio:16/10;background:var(--deep2);
+  border:1px solid var(--line2);border-radius:8px;overflow:hidden;cursor:crosshair;touch-action:none}
+.plan canvas{position:absolute;inset:0;width:100%;height:100%}
+.room{position:absolute;border:1px solid var(--line2);border-radius:3px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:flex-end;padding:5px 7px;transition:background .25s,border-color .25s;pointer-events:none}
+.room.hot{background:rgba(255,77,141,.10);border-color:var(--magenta);color:var(--magenta)}
+.ap{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 12px var(--cyan);transform:translate(-50%,-50%);pointer-events:none}
+.ap::after{content:attr(data-n);position:absolute;left:13px;top:-4px;font-family:var(--mono);
+  font-size:8.5px;color:var(--dim);white-space:nowrap;letter-spacing:.1em}
+.dot{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--magenta);
+  box-shadow:0 0 22px var(--magenta);transform:translate(-50%,-50%);pointer-events:none;
+  transition:left .28s cubic-bezier(.2,.7,.2,1),top .28s cubic-bezier(.2,.7,.2,1)}
+.planhint{font-family:var(--mono);font-size:10.5px;color:var(--line2);margin-top:14px;letter-spacing:.1em}
+
+/* z-score bars */
+.zs{margin:30px auto 0;max-width:560px;text-align:left}
+.zrow{display:grid;grid-template-columns:112px 1fr 58px;gap:12px;align-items:center;margin-bottom:10px;
+  font-family:var(--mono);font-size:11px;color:var(--dim)}
+.ztrack{height:6px;background:var(--line);border-radius:3px;position:relative;overflow:hidden}
+.zmid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2)}
+.zfill{position:absolute;top:0;bottom:0;background:var(--cyan);border-radius:3px;transition:all .18s}
+.zfill.trip{background:var(--magenta)}
+.zrow b{font-weight:500;text-align:right;color:var(--ice);font-variant-numeric:tabular-nums}
+.zrow.trip b{color:var(--magenta)}
+
+.state{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.pill{font-family:var(--mono);font-size:11px;border:1px solid var(--line);color:var(--dim);
+  padding:9px 15px;border-radius:100px;background:transparent;cursor:pointer;transition:.2s}
+.pill:hover{border-color:var(--cyan);color:var(--cyan)}
+.pill.on{border-color:var(--cyan);color:var(--deep);background:var(--cyan)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--deep2);border:1px solid var(--line);border-radius:7px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.5px;line-height:1.55}
+.card p b{color:var(--cyan);font-weight:500}
+.wrong{border-left:2px solid var(--magenta)}
+.right{border-left:2px solid var(--lime)}
+.stepnum{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.2em}
+.steps{counter-reset:s;margin-top:32px;text-align:left;max-width:600px;margin-left:auto;margin-right:auto}
+.step{display:grid;grid-template-columns:36px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+.step .k{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.1em}
+.step h5{font-family:var(--disp);font-weight:500;font-size:18px;margin-bottom:5px}
+.step p{color:var(--dim);font-size:14.5px;line-height:1.55}
+.aside{margin:28px auto 0;max-width:52ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--ice);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:54ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:92px}.zrow{grid-template-columns:88px 1fr 48px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --deep:#050301 !important;
+  --deep2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --ice:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --cyan:#C8A96E !important;
+  --magenta:#8B1A1A !important;
+  --lime:#B02A1A !important;
+  --disp:'EB Garamond',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="plan" id="plan">
+    <canvas id="field" width="1240" height="775"></canvas>
+    <div class="dot" id="dot" style="left:50%;top:55%"></div>
+  </div>
+  <div class="planhint" id="hint">move your cursor through the rooms — no camera, no wearable, no app on their phone</div>
+  <h1>Proximity<b>.</b></h1>
+  <p class="tag">Detecting a person walking through a house by watching <b>the shadow their body casts</b> on ambient WiFi.</p>
+  <div class="meta">FastAPI · WebSockets · Python · one stationary laptop</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Live perturbation</div>
+  <h2>A body is <em>60% water</em></h2>
+  <p class="lede">Water absorbs 2.4 and 5 GHz. Walking through a room shifts RSSI by one to three dBm — and crucially, it shifts each access point by a different amount depending on what's between it and the receiver. That difference is the signal.</p>
+
+  <div class="zs" id="zs"></div>
+  <div class="state">
+    <button class="pill on" data-s="live">Live detection</button>
+    <button class="pill" data-s="base">Baseline (empty house)</button>
+  </div>
+  <p class="aside" id="statenote">Z-scores against the calibrated baseline. Anything past <b>2.5σ</b> trips the zone. Drag through the floorplan above and watch which BSSIDs react.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The rewrite</div>
+  <h2>The first architecture was <em>solving the wrong problem</em></h2>
+  <p class="lede">It treated RSSI as a location fingerprint for the scanner's own position — which room is the laptop in. That's a solved and useless question when the laptop never moves.</p>
+  <div class="grid">
+    <div class="card wrong"><h4>Original model</h4><p>Fingerprint the receiver. Walk the house, label rooms, classify live readings with KNN. Answers <b>"where am I"</b> — for a machine sitting on a desk.</p></div>
+    <div class="card right"><h4>Corrected model</h4><p>The scanner is fixed. Detect <b>someone else</b> by how their body perturbs the ambient field. The dot tracks the most disturbed zone, not the receiver.</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="k">01</div><div><h5>Baseline</h5><p>Scan an empty house for 30 seconds. Compute a stable mean and standard deviation per BSSID.</p></div></div>
+    <div class="step"><div class="k">02</div><div><h5>Perturbation</h5><p>Live RSSI expressed as a Z-score against that baseline. The deviation is the motion signal — raw dBm never is.</p></div></div>
+    <div class="step"><div class="k">03</div><div><h5>Zone inference</h5><p>Each calibrated zone has a signature: which BSSIDs deviate, and in which direction. Match live deviations against the library.</p></div></div>
+    <div class="step"><div class="k">04</div><div><h5>Track</h5><p>Zone transitions over time become a path. Room-level resolution, no better — and the code doesn't pretend otherwise.</p></div></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Honest limits</div>
+  <h2>Single-router RSSI is <em>noisy as hell</em></h2>
+  <div class="grid">
+    <div class="card"><h4>What works</h4><p>Presence and motion detection are reliable. Room-level zoning works after calibration. Path tracking is a sequence of transitions.</p></div>
+    <div class="card"><h4>What doesn't</h4><p>Sub-room positioning. Counting people. Anything through more than a couple of interior walls without a second AP in the geometry.</p></div>
+    <div class="card"><h4>The upgrade path</h4><p><b>CSI</b> — per-subcarrier phase and amplitude — is sensitive enough to detect breathing, but needs a card with an exposed CSI driver.</p></div>
+    <div class="card"><h4>The other path</h4><p><b>802.11mc FTM</b> gives real round-trip distance instead of inferred attenuation, if the router supports it.</p></div>
+    <div class="card"><h4>Bugs that cost real time</h4><p>An <code>asyncio.Lock()</code> constructed <b>outside the event loop</b>, and a deprecated <code>@app.on_event</code> startup hook.</p></div>
+    <div class="card"><h4>The dumbest one</h4><p>The Windows batch launcher died on a folder path containing <b>spaces and a trailing backslash</b>. Nothing to do with RF at all.</p></div>
+  </div>
+  <p class="aside">Windows-side scanning goes through <code>netsh</code>, which caps the poll rate and quietly caches results. That ceiling is the real constraint on temporal resolution, not the physics.</p>
+</section>
+
+<footer>
+  <div class="eyebrow">core/ · passive_detector.py</div>
+  <p>Ambient RF is already everywhere in the house, already bouncing off everything, already carrying the information. This just reads what was always being broadcast.</p>
+</footer>
+
+<script>
+const plan=document.getElementById('plan'),cv=document.getElementById('field'),cx=cv.getContext('2d'),
+      dot=document.getElementById('dot'),zsEl=document.getElementById('zs'),hint=document.getElementById('hint'),
+      statenote=document.getElementById('statenote');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* rooms in normalised coords */
+const ROOMS=[
+  {n:'kitchen',x:.03,y:.06,w:.30,h:.40},
+  {n:'living',  x:.35,y:.06,w:.40,h:.55},
+  {n:'hall',    x:.03,y:.50,w:.30,h:.44},
+  {n:'bedroom', x:.35,y:.64,w:.40,h:.30},
+  {n:'garage',  x:.77,y:.06,w:.20,h:.88}
+];
+const APS=[
+  {n:'router 2G',x:.40,y:.14,base:-42},
+  {n:'router 5G',x:.42,y:.18,base:-49},
+  {n:'nbr-A',    x:.94,y:.30,base:-67},
+  {n:'nbr-B',    x:.06,y:.86,base:-71},
+  {n:'ext-1',    x:.72,y:.78,base:-58}
+];
+ROOMS.forEach(r=>{
+  const d=document.createElement('div');d.className='room';d.dataset.n=r.n;
+  d.style.cssText=`left:${r.x*100}%;top:${r.y*100}%;width:${r.w*100}%;height:${r.h*100}%`;
+  d.textContent=r.n;plan.appendChild(d);
+});
+APS.forEach(a=>{
+  const d=document.createElement('div');d.className='ap';d.dataset.n=a.n;
+  d.style.cssText=`left:${a.x*100}%;top:${a.y*100}%`;plan.appendChild(d);
+});
+
+/* z bars */
+const rows=APS.map(a=>{
+  const d=document.createElement('div');d.className='zrow';
+  d.innerHTML=`<span>${a.n}</span><span class="ztrack"><span class="zmid"></span><span class="zfill"></span></span><b>0.0σ</b>`;
+  zsEl.appendChild(d);
+  return {row:d,fill:d.querySelector('.zfill'),val:d.querySelector('b')};
+});
+
+let px=.5,py=.55,mode='live',t=0;
+
+function update(){
+  t+=0.016;
+  const zs=APS.map(a=>{
+    if(mode==='base') return (Math.random()-.5)*0.9;
+    const dx=px-a.x, dy=py-a.y;
+    const dist=Math.hypot(dx,dy);
+    /* occlusion: strongest when the body is close to the AP-receiver line */
+    const shade=Math.exp(-dist*dist*11)*6.2;
+    const wobble=Math.sin(t*2.2+a.x*9)*0.5+(Math.random()-.5)*0.7;
+    return -(shade)+wobble;
+  });
+  rows.forEach((r,i)=>{
+    const z=zs[i], mag=Math.min(1,Math.abs(z)/6);
+    const trip=Math.abs(z)>2.5;
+    r.fill.style.width=(mag*50)+'%';
+    r.fill.style.left = z<0 ? (50-mag*50)+'%' : '50%';
+    r.fill.classList.toggle('trip',trip);
+    r.row.classList.toggle('trip',trip);
+    r.val.textContent=z.toFixed(1)+'σ';
+  });
+  /* zone */
+  let hot=null;
+  if(mode==='live'){
+    hot=ROOMS.find(r=>px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h);
+  }
+  document.querySelectorAll('.room').forEach(el=>{
+    el.classList.toggle('hot',!!hot&&el.dataset.n===hot.n);
+  });
+  paint(zs);
+  requestAnimationFrame(update);
+}
+
+function paint(zs){
+  const W=cv.width,H=cv.height;
+  cx.clearRect(0,0,W,H);
+  /* ap-to-receiver rays */
+  APS.forEach((a,i)=>{
+    const strength=Math.min(1,Math.abs(zs[i])/6);
+    cx.strokeStyle=`rgba(${strength>0.42?'139,26,26':'200,169,110'},${0.06+strength*0.34})`;
+    cx.lineWidth=1+strength*2.2;
+    cx.beginPath();cx.moveTo(a.x*W,a.y*H);cx.lineTo(0.5*W,0.93*H);cx.stroke();
+  });
+  /* receiver */
+  cx.fillStyle='#C8A96E';cx.beginPath();cx.arc(.5*W,.93*H,6,0,7);cx.fill();
+  cx.fillStyle='rgba(200,169,110,.14)';cx.beginPath();cx.arc(.5*W,.93*H,20,0,7);cx.fill();
+  cx.font='16px monospace';cx.fillStyle='#8a7d6c';
+  cx.fillText('scanner (fixed)',.5*W+26,.93*H+5);
+}
+
+function move(e){
+  const r=plan.getBoundingClientRect();
+  const c=e.touches?e.touches[0]:e;
+  px=Math.max(0,Math.min(1,(c.clientX-r.left)/r.width));
+  py=Math.max(0,Math.min(1,(c.clientY-r.top)/r.height));
+  dot.style.left=(px*100)+'%';dot.style.top=(py*100)+'%';
+  hint.textContent='tracking — the dot follows the most disturbed zone, not the scanner';
+}
+plan.addEventListener('pointermove',move);
+plan.addEventListener('touchmove',e=>{e.preventDefault();move(e)},{passive:false});
+
+document.querySelectorAll('.pill').forEach(p=>{
+  p.addEventListener('click',()=>{
+    document.querySelectorAll('.pill').forEach(q=>q.classList.remove('on'));
+    p.classList.add('on');mode=p.dataset.s;
+    statenote.innerHTML = mode==='base'
+      ? 'Empty house, 30 seconds. Every BSSID sits inside <b>±1σ</b> of its own mean. This is the reference every live reading is measured against.'
+      : 'Z-scores against the calibrated baseline. Anything past <b>2.5σ</b> trips the zone. Drag through the floorplan above and watch which BSSIDs react.';
+  });
+});
+
+if(!reduce){
+  /* idle drift so it's alive before you touch it */
+  let idle=true;
+  plan.addEventListener('pointerdown',()=>idle=false);
+  plan.addEventListener('pointermove',()=>idle=false);
+  setInterval(()=>{
+    if(!idle)return;
+    px=.18+Math.random()*.55;py=.18+Math.random()*.6;
+    dot.style.left=(px*100)+'%';dot.style.top=(py*100)+'%';
+  },2400);
+}
+update();
+
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

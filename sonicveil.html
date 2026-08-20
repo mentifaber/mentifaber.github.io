@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sonic Veil — composer, since 2016</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#050301;--panel:#0B0805;--panel2:#100C08;--line:rgba(200,169,110,.14);--line2:rgba(200,169,110,.30);
+  --parch:#F2E6CF;--dim:#8a7d6c;--gold:#C8A96E;--gold-dim:#8A7050;--ember:#B02A1A;--ember-hi:#D94030;--blood:#8B1A1A;
+  --disp:'Playfair Display',serif;--body:'EB Garamond',serif;--mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--black);color:var(--parch);font-family:var(--body);font-size:17.5px;line-height:1.65;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;cursor:crosshair}
+::selection{background:var(--gold);color:var(--black)}
+.col{max-width:700px;margin:0 auto;padding:0 24px}.wide{max-width:920px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--gold),var(--ember))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--black);transition:.5s}
+.gap.lit i{background:var(--gold);box-shadow:0 0 0 7px var(--black),0 0 16px var(--gold)}
+.eyebrow{font-family:'Syncopate',sans-serif;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(30px,5.4vw,50px);line-height:1.1;margin:16px auto 16px;max-width:19ch;letter-spacing:-.01em}
+h2 em{color:var(--gold);font-style:italic}
+.lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:17px}
+.rv{opacity:0;transform:translateY(20px);transition:.9s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+#veil{width:min(94vw,640px);height:190px;display:block}
+.label{font-family:'Syncopate',sans-serif;font-size:11px;letter-spacing:.4em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px}
+h1{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(58px,13vw,124px);line-height:.9;letter-spacing:-.02em;margin:14px 0 18px}
+h1 em{color:var(--gold);font-style:normal;font-weight:900}
+.tagline{font-family:var(--body);font-style:italic;font-size:clamp(17px,2.2vw,20px);color:var(--dim);letter-spacing:.03em;max-width:38ch;margin:0 auto}
+.meta{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:28px}
+
+/* transport */
+.transport{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:30px;flex-wrap:wrap}
+.play{width:54px;height:54px;border-radius:50%;border:1px solid var(--line2);background:transparent;
+  color:var(--parch);cursor:pointer;transition:.2s;display:grid;place-items:center;font-size:15px}
+.play:hover{border-color:var(--gold);color:var(--gold)}
+.play.on{border-color:var(--ember);color:var(--ember-hi);box-shadow:0 0 24px rgba(176,42,26,.25)}
+.readout{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.1em;text-align:left;min-width:210px}
+.readout b{color:var(--parch);font-weight:400}
+
+/* discography */
+.disco{margin-top:34px;text-align:left;max-width:640px;margin-left:auto;margin-right:auto}
+.trow{display:grid;grid-template-columns:96px 1fr auto;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer;transition:.18s}
+.trow:hover{background:rgba(200,169,110,.04)}
+.trow .d{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+.trow .n{font-family:var(--disp);font-style:italic;font-size:17px}
+.trow .n b{font-style:normal;color:var(--gold);font-weight:400}
+.trow .s{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold-dim);letter-spacing:.08em;text-align:right}
+.trow.head{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;cursor:default;border-bottom-color:var(--line2)}
+.trow.head:hover{background:transparent}
+
+.stat-row{display:flex;gap:34px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.stat{text-align:center}
+.stat b{display:block;font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:34px;color:var(--gold)}
+.stat span{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+.bio{margin:32px auto 0;max-width:560px;background:var(--panel);border-left:2px solid var(--gold);
+  padding:26px 28px;text-align:left;font-family:var(--body);font-style:italic;font-size:18px;line-height:1.75;color:var(--parch)}
+.bio cite{display:block;margin-top:14px;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:22px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:'Syncopate',sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.card p{font-size:15.5px;line-height:1.6}
+.card p b{color:var(--gold);font-weight:600}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:32px;text-align:left}
+.aside{margin:30px auto 0;max-width:54ch;color:var(--dim);font-size:15.5px}
+.aside b{color:var(--parch);font-weight:600}
+footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-width:52ch;margin:16px auto 0}
+
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:.3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}.mf-return{bottom:3.2vh;left:4vw}.mf-return::before{content:"\2190 "}.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+
+@media(max-width:680px){.gap{height:92px}.split{grid-template-columns:1fr}.trow{grid-template-columns:70px 1fr;gap:10px}.trow .s{grid-column:1/-1;text-align:left}
+  .mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh}.mf-return{bottom:2.2vh}.mf-year{bottom:2.2vh}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+</style></head><body>
+
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <canvas id="veil" width="1280" height="380" aria-hidden="true"></canvas>
+  <div class="transport">
+    <button class="play" id="play" aria-label="Play">▶</button>
+    <div class="readout" id="readout">stopped · composer since 2016<br>86 tracks · 1,181 followers</div>
+  </div>
+  <p class="label">mens · mentis — faber · fabri</p>
+  <h1>Sonic <em>Veil</em></h1>
+  <p class="tagline">Ambient, experimental, electronic — genre-bending explorations, ten years running.</p>
+  <div class="meta">SoundCloud · Spotify · Apple Music · 150+ platforms</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">In their own words</div>
+  <h2>What the <em>bio</em> actually says</h2>
+  <div class="bio">
+    "I'm Sonic Veil, a composer crafting ambient, experimental, and electronic soundscapes. Join me on an audio journey that spans my work from 2016 to today. Expect genre-bending explorations through captivating compositions."
+    <cite>soundcloud.com/sonicveil</cite>
+  </div>
+  <p class="aside">Not one genre held down for ten years — the bio calls it "genre-bending" outright, and the catalogue backs that up: folk one release, ambient electronic the next, something that sounds like it's arguing with a machine learning paper after that.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Recent releases</div>
+  <h2>Ten tracks in <em>five months</em></h2>
+  <p class="lede">Everything below is real, pulled straight from the catalogue — titles, dates, in order. Click a row to hear the transport read it back.</p>
+  <div class="disco" id="disco"></div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Further back</div>
+  <h2>Where the <em>range</em> shows</h2>
+  <div class="grid">
+    <div class="card"><h4>Strings</h4><p>Feat. <b>Austin Corbett</b> — out on Amazon Music, iTunes and the rest of the 150-platform spread. The collaboration credit, in writing.</p></div>
+    <div class="card"><h4>Equinox</h4><p>Released Aug 26, 2024. 3:35. A solo instrumental single — no vocal, no feature, just the composition on its own.</p></div>
+    <div class="card"><h4>Spirits</h4><p>Published March 26, 2023, tagged <b>Folk & Singer-Songwriter</b> — the most lyrically direct thing in the catalogue. Copyright X2 Studios.</p></div>
+  </div>
+  <p class="aside">Three releases, three different genre tags, three different modes — a feature collaboration, a solo instrumental, and a lyric-forward folk song. That spread is the actual evidence for "genre-bending," not just the word in the bio.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">By the numbers</div>
+  <h2>Ten years, <em>quietly</em></h2>
+  <div class="stat-row">
+    <div class="stat"><b>2016</b><span>first work</span></div>
+    <div class="stat"><b>86</b><span>tracks</span></div>
+    <div class="stat"><b>1,181</b><span>followers</span></div>
+    <div class="stat"><b>150+</b><span>platforms</span></div>
+  </div>
+  <div class="split" style="margin-top:34px">
+    <div class="card"><h4>Close collaborator</h4><p>Austin Corbett is named directly in the SoundCloud profile as a close collaborator, with his own work pointed to as "Indy Vibe originals" — not an occasional feature, a standing partnership.</p></div>
+    <div class="card"><h4>Distribution</h4><p>SoundCloud is the working feed — releases land there first — but the catalogue is fully distributed out to Spotify, Apple Music, iHeartRadio, and the rest of the 150-platform spread through a standard distributor pipeline.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="eyebrow">Sonic Veil · composer · since 2016</div>
+  <p>The canvas above is a rough sonic silhouette, not a waveform recording — press play and it reads the discography back to you in order.</p>
+</footer>
+
+<script>
+/* ===== veil canvas ===== */
+const cv=document.getElementById('veil'),cx=cv.getContext('2d');
+let t=0,amp=0,target=0;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function draw(){
+  t+=reduce?0:0.014;
+  target*=0.93;amp+=(target-amp)*0.15;
+  const W=cv.width,H=cv.height;
+  cx.clearRect(0,0,W,H);
+  const grad=cx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'rgba(200,169,110,.12)');
+  grad.addColorStop(.5,'#C8A96E');
+  grad.addColorStop(1,'rgba(200,169,110,.12)');
+  cx.strokeStyle=grad;cx.lineWidth=2;cx.beginPath();
+  for(let x=0;x<W;x++){
+    const u=x/W;
+    let y=0;
+    for(let k=1;k<=6;k++){
+      const a=Math.pow(k,-1.5-amp*0.4);
+      y+=a*Math.sin(u*(k*3.2)*Math.PI*2+t*(0.4+k*0.05));
+    }
+    const env=Math.sin(u*Math.PI)**0.5;
+    const py=H/2+y*env*H*0.28*(1+amp*0.6);
+    x?cx.lineTo(x,py):cx.moveTo(x,py);
+  }
+  cx.stroke();
+  cx.globalAlpha=.12;cx.lineWidth=8;cx.stroke();cx.globalAlpha=1;
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ===== discography ===== */
+const TRACKS=[
+  {d:'2026-05-16',n:'Stride'},
+  {d:'2026-04-05',n:'Love Is (S)pain'},
+  {d:'2026-03-16',n:'Deep Learning'},
+  {d:'2026-03-15',n:'Reflections'},
+  {d:'2026-03-14',n:'Imagined It'},
+  {d:'2026-02-05',n:'Mesh'},
+  {d:'2026-01-27',n:'Reflection — Instrumental'},
+  {d:'2026-01-27',n:'Algorithm'},
+  {d:'2026-01-26',n:'Sweetest'},
+  {d:'2026-01-26',n:'Fears To Flee'}
+];
+const disco=document.getElementById('disco');
+const head=document.createElement('div');
+head.className='trow head';
+head.innerHTML='<div>date</div><div>track</div><div>soundcloud</div>';
+disco.appendChild(head);
+TRACKS.forEach(tr=>{
+  const row=document.createElement('div');row.className='trow';
+  row.innerHTML=`<div class="d">${tr.d}</div><div class="n">${tr.n}</div><div class="s">sonicveil</div>`;
+  row.addEventListener('click',()=>play(tr.n));
+  disco.appendChild(row);
+});
+
+/* ===== transport (illustrative, not real audio) ===== */
+const playBtn=document.getElementById('play'),readout=document.getElementById('readout');
+let playing=false,queue=[...TRACKS],qi=0,timer=null;
+function play(name){
+  clearInterval(timer);
+  playing=true;playBtn.classList.add('on');playBtn.textContent='❚❚';
+  readout.innerHTML='playing · <b>'+name+'</b><br>86 tracks · 1,181 followers';
+  target=1;
+  timer=setTimeout(()=>{target=0.3},1400);
+}
+playBtn.addEventListener('click',()=>{
+  if(playing){
+    playing=false;playBtn.classList.remove('on');playBtn.textContent='▶';
+    readout.innerHTML='stopped · composer since 2016<br>86 tracks · 1,181 followers';
+    clearInterval(timer);target=0;return;
+  }
+  qi=(qi+1)%queue.length;
+  play(queue[qi].n);
+});
+
+/* ===== scroll ===== */
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+
+/* ===== cursor glow ===== */
+(function(){
+  const g=document.getElementById('mfGlow');
+  let cx2=innerWidth/2,cy2=innerHeight/2,tx=cx2,ty=cy2;
+  if(matchMedia('(hover: none)').matches){g.style.display='none';return}
+  addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY});
+  (function loop(){cx2+=(tx-cx2)*.09;cy2+=(ty-cy2)*.09;g.style.left=cx2+'px';g.style.top=cy2+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

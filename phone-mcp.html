@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phone MCP — handing a model the keys to an Android</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --carbon:#0A0A0C;--carbon2:#121216;--panel:#18181E;--line:#22232B;--line2:#33343F;
+  --chalk:#E8E8EC;--dim:#75768A;--wire:#8B7BFF;--live:#4ADE80;--halt:#FF6B6B;--cable:#F5C542;
+  --disp:'Syne',system-ui,sans-serif;--body:'Public Sans',system-ui,sans-serif;--mono:'Fira Code',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--carbon);color:var(--chalk);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--wire);color:#fff}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:960px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--wire),var(--live))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--carbon);transition:.5s}
+.gap.lit i{background:var(--wire);box-shadow:0 0 0 7px var(--carbon),0 0 16px var(--wire)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:800;font-size:clamp(29px,5.4vw,50px);line-height:1.04;margin:14px auto 14px;max-width:17ch;letter-spacing:-.03em}
+h2 em{color:var(--wire);font-style:normal}
+.lede{color:var(--dim);max-width:51ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-family:var(--disp);font-weight:800;font-size:clamp(40px,9vw,88px);line-height:.94;letter-spacing:-.05em;margin:26px 0 14px}
+h1 em{color:var(--wire);font-style:normal}
+.tag{max-width:33ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
+.tag b{font-weight:600;color:var(--live)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:24px}
+
+/* the chain */
+.chain{display:flex;align-items:stretch;gap:0;width:min(95vw,720px);margin:0 auto}
+.link{flex:1;background:var(--carbon2);border:1px solid var(--line);border-radius:7px;padding:16px 12px;
+  font-family:var(--mono);font-size:10.5px;color:var(--dim);transition:.3s;position:relative}
+.link b{display:block;color:var(--chalk);font-size:12px;font-weight:500;margin-bottom:6px}
+.link.act{border-color:var(--wire);background:rgba(139,123,255,.07);color:var(--wire)}
+.link.act b{color:var(--wire)}
+.hopline{flex:0 0 26px;position:relative}
+.hopline::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line2)}
+.hopline.act::before{background:var(--wire);box-shadow:0 0 10px var(--wire)}
+
+.term{background:#07070A;border:1px solid var(--line);border-radius:7px;padding:20px;
+  margin-top:26px;text-align:left;font-family:var(--mono);font-size:12.5px;line-height:2;min-height:200px;
+  width:min(95vw,720px);margin-left:auto;margin-right:auto}
+.term .p{color:var(--dim)}
+.term .p::before{content:"$ ";color:var(--line2)}
+.term .o{color:var(--live)}
+.term .w{color:var(--cable)}
+.term .e{color:var(--halt)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.chip{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);color:var(--dim);
+  padding:10px 15px;border-radius:5px;background:transparent;cursor:pointer;transition:.2s}
+.chip:hover{border-color:var(--wire);color:var(--wire)}
+.chip.danger:hover{border-color:var(--halt);color:var(--halt)}
+.chip:disabled{opacity:.35;cursor:default}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--carbon2);border:1px solid var(--line);border-radius:7px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.5px;line-height:1.55}
+.card p b{color:var(--wire);font-weight:600}
+.card.warn{border-left:2px solid var(--halt)}
+.aside{margin:28px auto 0;max-width:53ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--chalk);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
+@media(max-width:700px){.gap{height:92px}.chain{flex-direction:column}.hopline{flex:0 0 18px}
+  .hopline::before{left:50%;right:auto;top:0;bottom:0;width:1px;height:auto}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --carbon:#050301 !important;
+  --carbon2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --chalk:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --wire:#C8A96E !important;
+  --live:#8A7050 !important;
+  --halt:#8B1A1A !important;
+  --cable:#B02A1A !important;
+  --disp:'EB Garamond',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="chain" id="chain">
+    <div class="link"><b>Claude</b>tool call<br>over MCP</div>
+    <div class="hopline"></div>
+    <div class="link"><b>Cloudflare</b>named tunnel<br>public https</div>
+    <div class="hopline"></div>
+    <div class="link"><b>MCP server</b>tool schema<br>→ shell</div>
+    <div class="hopline"></div>
+    <div class="link"><b>ADB</b>SM-S731U<br>on the desk</div>
+  </div>
+  <div class="term" id="term"></div>
+  <div class="chips" id="chips"></div>
+
+  <h1>Phone <em>MCP</em></h1>
+  <p class="tag">A model on the internet, holding <b>a real Android device</b> at the other end of a tunnel.</p>
+  <div class="meta">MCP · Cloudflare Tunnel · ADB · Samsung SM-S731U</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The hop</div>
+  <h2>Four links, and <em>any one can break</em></h2>
+  <p class="lede">Nothing here is a managed service. It's a tunnel to a laptop to a USB cable to a phone, and each junction fails in its own way with its own unhelpful error.</p>
+  <div class="grid">
+    <div class="card"><h4>Tunnel</h4><p>A Cloudflare Quick Tunnel gives a throwaway https URL with no account. Convenient, and the hostname <b>changes every restart</b> — the MCP config goes stale silently.</p></div>
+    <div class="card"><h4>MCP layer</h4><p>Tool schemas wrap shell invocations. The schema is the contract — a vague description gets a model calling the wrong tool confidently.</p></div>
+    <div class="card"><h4>ADB</h4><p>Authorisation is per host key and lives on the phone. Replug into a different port and you're re-approving the fingerprint on the device screen.</p></div>
+    <div class="card warn"><h4>The device</h4><p>Doze and battery optimisation will kill a background listener without telling anyone. <b>It looks like a network fault and isn't.</b></p></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Scope</div>
+  <h2>This is a <em>lot</em> of access</h2>
+  <p class="lede">Screen capture, input injection, app launching, file transfer, log access. ADB was built for developers holding their own hardware, and every bit of that surface is now reachable from a chat window.</p>
+  <div class="grid">
+    <div class="card"><h4>Own device only</h4><p>The phone is yours, the tunnel is yours, the endpoint is yours. Nothing about this generalises to a device you don't own.</p></div>
+    <div class="card"><h4>Tunnel URL is the key</h4><p>An unauthenticated Quick Tunnel URL <b>is</b> the credential. Anyone with the string has the phone. Named tunnels with access policies are the real answer.</p></div>
+    <div class="card"><h4>No standing state</h4><p>The server holds no session. Kill the tunnel and the whole capability disappears — which is the intended off switch.</p></div>
+    <div class="card"><h4>Read before write</h4><p>Inspection tools are safe to call freely. Anything that injects input or moves files deserves a gate, the same way Pi gates SMS.</p></div>
+  </div>
+  <p class="aside">It pairs with <b>Pi</b> from the other direction: Pi is a model living <em>on</em> the phone reaching outward; this is a model living outside reaching <em>in</em>.</p>
+</section>
+
+<footer>
+  <div class="eyebrow">cloudflared · adb · mcp</div>
+  <p>The console above runs a scripted version of the real command set. Every command shown is one that actually ran on the device.</p>
+</footer>
+
+<script>
+const term=document.getElementById('term'),chips=document.getElementById('chips'),
+      links=[...document.querySelectorAll('.link')],hops=[...document.querySelectorAll('.hopline')];
+let busy=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+const CMDS=[
+  {n:'List devices',c:'adb devices -l',out:[
+    ['o','List of devices attached'],
+    ['o','R5CX90ABCDE  device  product:q7q  model:SM_S731U  transport_id:3']
+  ]},
+  {n:'Battery',c:'adb shell dumpsys battery | head -6',out:[
+    ['o','  level: 54'],['o','  status: 2 (charging)'],
+    ['o','  temperature: 312'],['o','  health: 2 (good)']
+  ]},
+  {n:'Screencap',c:'adb exec-out screencap -p > /tmp/screen.png',out:[
+    ['o','1.42 MB written  ·  1080x2340'],
+    ['w','note: exec-out, not shell — shell mangles binary on CRLF hosts']
+  ]},
+  {n:'Open an app',c:'adb shell monkey -p com.termux 1',out:[
+    ['o','Events injected: 1'],['o','## Network stats: elapsed time=42ms']
+  ]},
+  {n:'Tunnel status',c:'cloudflared tunnel info phone',out:[
+    ['o','NAME     phone'],['o','CONN     2 healthy  (ord04, ord07)'],
+    ['w','hostname rotates on restart — update the MCP config or calls 404']
+  ]},
+  {n:'Unplug it',c:'adb shell input tap 540 1200',danger:1,out:[
+    ['e','error: no devices/emulators found'],
+    ['w','cable, authorisation, or doze. In that order, every time.']
+  ]}
+];
+
+CMDS.forEach((cmd,i)=>{
+  const b=document.createElement('button');
+  b.className='chip'+(cmd.danger?' danger':'');
+  b.textContent=cmd.n;
+  b.addEventListener('click',()=>run(i));
+  chips.appendChild(b);
+});
+
+function line(cls,text){
+  const d=document.createElement('div');d.className=cls;
+  term.appendChild(d);
+  return d;
+}
+async function type(el,text,ms){
+  for(const ch of text){el.textContent+=ch;await sleep(ms)}
+}
+function trim(){while(term.children.length>8)term.firstChild.remove()}
+
+async function run(i){
+  if(busy)return;busy=true;
+  [...chips.children].forEach(c=>c.disabled=true);
+  const cmd=CMDS[i];
+  term.innerHTML='';
+  const p=line('p','');
+  await type(p,cmd.c,16);
+  await sleep(220);
+  /* walk the chain */
+  for(let k=0;k<links.length;k++){
+    links.forEach(l=>l.classList.remove('act'));
+    hops.forEach(h=>h.classList.remove('act'));
+    links[k].classList.add('act');
+    if(k>0)hops[k-1].classList.add('act');
+    await sleep(190);
+  }
+  if(cmd.danger){
+    links.forEach(l=>l.classList.remove('act'));
+    hops.forEach(h=>h.classList.remove('act'));
+    links[3].style.borderColor='var(--halt)';
+    setTimeout(()=>links[3].style.borderColor='',1600);
+  }
+  for(const [cls,txt] of cmd.out){
+    const d=line(cls,'');
+    await type(d,txt,7);
+    trim();
+    await sleep(90);
+  }
+  links.forEach(l=>l.classList.remove('act'));
+  hops.forEach(h=>h.classList.remove('act'));
+  busy=false;
+  [...chips.children].forEach(c=>c.disabled=false);
+}
+
+line('p','').textContent='adb devices -l';
+line('o','').textContent='R5CX90ABCDE  device  model:SM_S731U';
+line('o','').textContent='tunnel healthy · 2 connections';
+line('w','').textContent='pick a command below';
+
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

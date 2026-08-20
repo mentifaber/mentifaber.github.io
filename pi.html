@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pi — a voice that lives on the phone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#090D12;
+  --slate:#111820;
+  --slate2:#0D131A;
+  --line:#1E2A35;
+  --line2:#2A3A48;
+  --bone:#E9E5DC;
+  --dim:#6E8194;
+  --ember:#FF6A2B;
+  --phosphor:#5FE0C0;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --body:'Instrument Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--void);color:var(--bone);
+  font-family:var(--body);font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  text-align:center;
+}
+::selection{background:var(--ember);color:var(--void)}
+
+.col{max-width:720px;margin:0 auto;padding:0 24px}
+.wide{max-width:940px;margin:0 auto;padding:0 24px}
+
+#thread{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;
+  background:linear-gradient(90deg,var(--phosphor),var(--ember));
+  box-shadow:0 0 14px rgba(255,106,43,.5)}
+
+.node{height:120px;position:relative}
+.node::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;
+  background:linear-gradient(180deg,transparent,var(--line) 22%,var(--line) 78%,transparent)}
+.node i{position:absolute;left:50%;top:50%;width:7px;height:7px;
+  margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--line2);
+  box-shadow:0 0 0 6px var(--void);transition:background .5s,box-shadow .5s}
+.node.lit i{background:var(--ember);box-shadow:0 0 0 6px var(--void),0 0 18px var(--ember)}
+
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--display);font-weight:800;
+  font-size:clamp(29px,5.4vw,49px);line-height:1.03;
+  letter-spacing:-.03em;margin:16px auto 14px;max-width:16ch}
+.lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:16.5px}
+
+.rv{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+.hero{min-height:100svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:70px 24px 40px}
+.orb-stage{position:relative;width:min(58vw,300px);aspect-ratio:1;
+  display:grid;place-items:center;cursor:pointer;touch-action:manipulation}
+.orb-stage::after{content:"";position:absolute;inset:8%;border-radius:50%;
+  background:radial-gradient(circle,rgba(95,224,192,.22),transparent 68%);
+  filter:blur(42px);z-index:0;transition:background .6s}
+.orb-stage.hot::after{background:radial-gradient(circle,rgba(255,106,43,.38),transparent 68%)}
+#orb{width:100%;height:100%;position:relative;z-index:1;display:block}
+.ring{position:absolute;inset:2%;border-radius:50%;border:1px solid var(--line);z-index:2;pointer-events:none}
+.ring.two{inset:-8%;border-color:rgba(30,42,53,.55)}
+
+h1{font-family:var(--display);font-weight:800;
+  font-size:clamp(70px,17vw,132px);line-height:.82;
+  letter-spacing:-.055em;margin:30px 0 16px}
+h1 em{font-style:normal;color:var(--ember)}
+.tagline{font-size:clamp(17px,2.4vw,21px);max-width:30ch;margin:0 auto;color:var(--bone)}
+.tagline b{font-weight:500;color:var(--phosphor)}
+.meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim);margin-top:26px}
+.scrollcue{margin-top:40px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.24em;color:var(--line2);animation:bob 2.6s infinite ease-in-out}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(7px);opacity:1}}
+
+.chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin:28px auto 0;max-width:640px}
+.chip{font-family:var(--mono);font-size:12px;background:transparent;
+  color:var(--dim);border:1px solid var(--line);padding:10px 15px;
+  border-radius:100px;cursor:pointer;transition:all .2s}
+.chip:hover,.chip:focus-visible{border-color:var(--ember);color:var(--ember);outline:none}
+.chip:disabled{opacity:.35;cursor:default}
+.chip.pick{border-color:var(--phosphor);color:var(--phosphor)}
+
+.console{background:var(--slate2);border:1px solid var(--line);
+  border-radius:6px;margin:30px auto 0;text-align:left;
+  min-height:196px;padding:22px;position:relative;overflow:hidden}
+.console::before{content:"pi · localhost:8420";position:absolute;top:0;left:0;right:0;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dim);padding:9px 14px;border-bottom:1px solid var(--line);background:var(--slate)}
+.log{margin-top:34px;font-family:var(--mono);font-size:13.5px;line-height:1.85}
+.log .you{color:var(--dim)}
+.log .you::before{content:"you  ";color:var(--line2)}
+.log .call{color:var(--phosphor);font-size:12px}
+.log .call.gated{color:var(--ember)}
+.log .call .badge{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+  border:1px solid currentColor;padding:1px 6px;border-radius:3px;margin-left:8px;opacity:.75}
+.log .pi{color:var(--bone);font-size:15px;font-family:var(--body);margin:6px 0 16px}
+.log .pi::after{content:"▍";color:var(--ember);animation:blink 1s steps(1) infinite}
+.log .pi.done::after{content:""}
+@keyframes blink{50%{opacity:0}}
+.gate{border:1px solid var(--ember);border-radius:5px;padding:14px;margin:8px 0 16px;
+  background:rgba(255,106,43,.05)}
+.gate p{font-family:var(--mono);font-size:12px;color:var(--ember);margin-bottom:11px}
+.gate .tok{color:var(--dim)}
+.gate button{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;background:transparent;border:1px solid var(--line2);
+  color:var(--bone);padding:8px 16px;border-radius:3px;cursor:pointer;margin-right:8px;transition:all .18s}
+.gate button.ok:hover{border-color:var(--phosphor);color:var(--phosphor)}
+.gate button.no:hover{border-color:var(--ember);color:var(--ember)}
+.hint{font-family:var(--mono);font-size:11px;color:var(--line2);
+  margin-top:14px;letter-spacing:.06em}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:36px;text-align:left}
+.pane{border:1px solid var(--line);border-radius:6px;padding:22px;background:var(--slate2);
+  transition:border-color .3s,transform .3s}
+.pane:hover{border-color:var(--line2);transform:translateY(-3px)}
+.pane h3{font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;font-weight:700;margin-bottom:16px}
+.pane.stay h3{color:var(--phosphor)}
+.pane.go h3{color:var(--ember)}
+.pane ul{list-style:none;font-family:var(--mono);font-size:12.5px}
+.pane li{padding:8px 0;border-bottom:1px solid rgba(30,42,53,.6);color:var(--dim);
+  transition:color .2s,padding-left .2s}
+.pane li:last-child{border-bottom:0}
+.pane.stay li:hover{color:var(--phosphor);padding-left:6px}
+.pane.go li:hover{color:var(--ember);padding-left:6px}
+
+.dial{margin:34px auto 0;max-width:420px}
+.dial label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);display:block;margin-bottom:14px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;
+  background:var(--line2);outline:none;border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;
+  border-radius:50%;background:var(--bone);cursor:grab;border:3px solid var(--void);
+  box-shadow:0 0 0 1px var(--line2)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+  background:var(--bone);cursor:grab;border:3px solid var(--void)}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--phosphor)}
+.bars{display:flex;gap:3px;justify-content:center;margin-top:16px;height:18px;align-items:flex-end}
+.bars span{width:5px;background:var(--line2);border-radius:1px;transition:background .3s}
+.bars span.on{background:var(--phosphor)}
+.bars span:nth-child(1){height:6px}.bars span:nth-child(2){height:9px}
+.bars span:nth-child(3){height:12px}.bars span:nth-child(4){height:15px}
+.bars span:nth-child(5){height:18px}
+
+.tiers{margin-top:32px;display:grid;gap:12px;text-align:left}
+.tier{border:1px solid var(--line);border-radius:6px;padding:20px 22px;
+  background:var(--slate2);opacity:.4;transition:all .45s cubic-bezier(.2,.7,.2,1)}
+.tier.live{opacity:1;border-color:var(--ember);background:rgba(255,106,43,.045)}
+.tier.dead{opacity:.22}
+.tier .top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tier .n{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.14em}
+.tier .name{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:-.02em}
+.tier.live .name{color:var(--ember)}
+.tier .state{margin-left:auto;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.tier.live .state{color:var(--ember)}
+.tier .note{color:var(--dim);font-size:14px;margin-top:9px;line-height:1.6}
+
+.tools{margin-top:32px;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tool{border:1px solid var(--line);border-radius:5px;padding:15px 14px;
+  font-family:var(--mono);font-size:12.5px;background:var(--slate2);
+  cursor:pointer;text-align:left;color:var(--bone);transition:all .2s}
+.tool:hover,.tool:focus-visible{border-color:var(--phosphor);color:var(--phosphor);
+  transform:translateY(-2px);outline:none}
+.tool.gate-t:hover,.tool.gate-t:focus-visible{border-color:var(--ember);color:var(--ember)}
+.tool span{display:block;font-size:9px;color:var(--dim);letter-spacing:.16em;
+  text-transform:uppercase;margin-top:7px}
+.tool.gate-t span{color:var(--ember);opacity:.8}
+.tool.dead{cursor:default;opacity:.5}
+.tool.dead:hover{transform:none;border-color:var(--line);color:var(--bone)}
+
+.stages{display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--line2);
+  margin:12px auto 0;max-width:420px}
+.stages b{font-weight:400;transition:color .3s}
+.stages b.on{color:var(--ember)}
+.sample{margin:30px auto 0;max-width:600px;background:var(--slate2);
+  border-left:2px solid var(--phosphor);border-radius:0 5px 5px 0;
+  padding:24px 26px;text-align:left;font-size:17px;line-height:1.7;min-height:120px;
+  display:flex;align-items:center;transition:border-color .4s}
+.sample.raw{border-left-color:var(--ember)}
+.sample s{color:var(--dim);text-decoration-color:var(--ember);
+  text-decoration-thickness:1.5px;opacity:.5}
+.count{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:14px;letter-spacing:.1em}
+.count b{color:var(--ember);font-weight:400}
+
+.prompt{margin:30px auto 0;max-width:600px;background:var(--slate);
+  border:1px solid var(--line);border-left:2px solid var(--phosphor);
+  padding:22px 24px;font-family:var(--mono);font-size:13px;line-height:1.9;
+  text-align:left;white-space:pre-wrap;color:var(--bone);border-radius:0 5px 5px 0}
+
+.aside{margin:28px auto 0;max-width:54ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--bone);font-weight:600}
+
+.stack{margin-top:32px;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;text-align:left}
+.cell{border:1px solid var(--line);border-radius:5px;padding:20px;background:var(--slate2);
+  transition:border-color .25s}
+.cell:hover{border-color:var(--line2)}
+.cell dt{font-family:var(--mono);font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:11px}
+.cell dd{font-family:var(--mono);font-size:12.5px;line-height:1.85}
+
+footer{padding:110px 24px 90px}
+footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
+
+@media(max-width:700px){
+  .split{grid-template-columns:1fr}
+  .node{height:96px}
+  .console{padding:18px}
+  .log{font-size:12.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none}
+  .scrollcue{animation:none}
+  *{transition-duration:.01ms!important}
+}
+:root{
+  --void:#050301 !important;
+  --slate:#0B0805 !important;
+  --slate2:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --bone:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --ember:#B02A1A !important;
+  --phosphor:#C8A96E !important;
+  --display:'Playfair Display',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style>
+</head>
+<body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+
+<div id="thread"></div>
+
+<header class="hero">
+  <div class="orb-stage" id="stage" role="button" tabindex="0" aria-label="Pi">
+    <canvas id="orb" width="700" height="700" aria-hidden="true"></canvas>
+    <div class="ring"></div><div class="ring two"></div>
+  </div>
+  <h1>P<em>i</em></h1>
+  <p class="tagline">A voice assistant that runs <b>on</b> the phone. Not in an app store. Not in someone else's cloud.</p>
+  <div class="meta">Termux · Android · localhost:8420</div>
+  <div class="scrollcue">↓ scroll</div>
+</header>
+
+<div class="node"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Talk to it</div>
+  <h2>Say something</h2>
+  <p class="lede">A real turn, played back — tool call, gate, reply. The orb rides the amplitude envelope, same as the running build.</p>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="console">
+    <div class="log" id="log"></div>
+  </div>
+  <div class="hint" id="hint">pick a line above · tap the orb to interrupt</div>
+</section>
+
+<div class="node"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The split</div>
+  <h2>What leaves the phone</h2>
+  <p class="lede">Chat text goes to Groq because a 70B model won't fit in your pocket. Everything else stays put — including every photo, because vision runs locally on moondream.</p>
+  <div class="split">
+    <div class="pane stay">
+      <h3>◦ Never leaves the device</h3>
+      <ul>
+        <li>Camera frames + vision inference</li>
+        <li>GPS coordinates</li>
+        <li>Clipboard contents</li>
+        <li>Contacts and call log</li>
+        <li>Every device action</li>
+      </ul>
+    </div>
+    <div class="pane go">
+      <h3>→ Goes over the wire</h3>
+      <ul>
+        <li>Conversation text → Groq</li>
+        <li>Reply text → Orpheus TTS</li>
+        <li>Search queries → Groq Compound</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="node"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Voice</div>
+  <h2>It degrades. It doesn't go quiet.</h2>
+  <p class="lede">Three engines, tried in order. Drop the signal and watch it fall through — Pi keeps talking instead of dying silent.</p>
+
+  <div class="dial">
+    <label for="sig">Drag to kill the signal</label>
+    <input type="range" id="sig" min="0" max="100" value="100" aria-label="Signal strength">
+    <div class="bars" id="bars"><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="tiers" id="tiers">
+    <div class="tier" data-min="67">
+      <div class="top"><span class="n">tier 1</span><span class="name">Orpheus / Troy</span><span class="state">standby</span></div>
+      <div class="note">Groq neural TTS. Real prosody and breathing. Ships wav only, 200 characters per request — so replies get chunked and re-stitched gapless through WebAudio scheduling.</div>
+    </div>
+    <div class="tier" data-min="25">
+      <div class="top"><span class="n">tier 2</span><span class="name">speechSynthesis</span><span class="state">standby</span></div>
+      <div class="note">The phone's own voices, handled client-side. Free, instant, noticeably worse. No network required.</div>
+    </div>
+    <div class="tier" data-min="0">
+      <div class="top"><span class="n">tier 3</span><span class="name">termux-tts-speak</span><span class="state">standby</span></div>
+      <div class="note">Android's built-in engine. Robotic, but it works headless with no browser open at all.</div>
+    </div>
+  </div>
+
+  <p class="aside">All six of Groq's English voices are American. <b>ElevenLabs sits alongside as a fourth engine</b> — the only way to get a British voice out of this stack.</p>
+</section>
+
+<div class="node"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">22 device tools</div>
+  <h2>It can actually touch the phone</h2>
+  <p class="lede">Termux:API from the F-Droid build — the Play Store build silently lacks camera capture, which cost an entire debugging session to find. Tap one to fire it.</p>
+
+  <div class="tools" id="tools"></div>
+
+  <div class="console" style="max-width:640px">
+    <div class="log" id="toolog"></div>
+  </div>
+  <p class="aside">Anything destructive sits behind a <b>confirmation gate keyed to a token ID</b>, so a stray "no" in the next sentence can't be misread as denying something you already approved. Waiting on you doesn't count against the turn deadline.</p>
+</section>
+
+<div class="node"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">The prompt</div>
+  <h2>Nobody is home. That's the design.</h2>
+  <p class="lede">Every version of assistant-voice got cut, one session at a time. Drag the slider to strip it back.</p>
+
+  <div class="dial">
+    <label for="pers">Persona removal</label>
+    <input type="range" id="pers" min="0" max="3" step="1" value="0" aria-label="Persona removal">
+    <div class="stages">
+      <b data-s="0">Assistant</b><b data-s="1">Polite</b><b data-s="2">Terse</b><b data-s="3">Pi</b>
+    </div>
+  </div>
+
+  <div class="sample" id="sample"></div>
+  <div class="count" id="count"></div>
+
+  <div class="prompt">You are Pi, running locally on the user's phone.
+Answer. Be brief. Don't apologize.
+Don't ask what they meant. Don't offer more help.
+Use tools for device data.</div>
+
+  <p class="aside">The contrast with <b>Weaver</b> is the whole point. Weaver's identity layer is load-bearing — its prompt opens with <em>"You exist. You are running."</em> Pi got the inverse: no self, only capability.</p>
+</section>
+
+<div class="node"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Stack</div>
+  <h2>Under it</h2>
+  <div class="stack">
+    <div class="cell"><dt>Runtime</dt><dd>Termux (F-Droid)<br>Termux:API<br>proot-distro / Ubuntu</dd></div>
+    <div class="cell"><dt>Server</dt><dd>Flask · :8420<br>SSE streaming<br>threading.Lock per turn</dd></div>
+    <div class="cell"><dt>Chat</dt><dd>Groq llama-3.3-70b<br>gpt-oss-120b<br>↳ Ollama qwen2.5:1.5b</dd></div>
+    <div class="cell"><dt>Vision</dt><dd>Ollama · moondream<br>fully local</dd></div>
+    <div class="cell"><dt>Interface</dt><dd>WebGL fluid orb<br>glow wired to real<br>TTS amplitude</dd></div>
+    <div class="cell"><dt>Files</dt><dd>agent.py — cli<br>server.py — ui<br>core.py — agent loop<br>tools/ — device layer</dd></div>
+  </div>
+</section>
+
+<footer>
+  <div class="eyebrow">Built in Termux, on the phone it runs on</div>
+  <p id="footnote">The orb is the real shader. In the running build its brightness is wired to live TTS output amplitude.</p>
+</footer>
+
+<script>
+/* ==================== ORB ==================== */
+const Orb = (()=>{
+  const cv=document.getElementById('orb');
+  const stage=document.getElementById('stage');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:false});
+  let target=0, amp=0, hover=0;
+
+  if(!gl){
+    cv.style.background='radial-gradient(circle,#C8A96E 0%,#050301 68%)';
+    cv.style.borderRadius='50%';
+    return {pulse(){},hot(){}};
+  }
+  const vs=`attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
+  const fs=`precision highp float;varying vec2 v;uniform float u_t,u_a,u_h;
+  float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);
+    return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}
+  float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<5;i++){s+=a*n(p);p*=2.03;a*=.5;}return s;}
+  void main(){
+    vec2 uv=(v-.5)*2.;float r=length(uv);
+    if(r>1.03)discard;
+    float t=u_t*.13;
+    vec2 q=vec2(fbm(uv*2.1+t),fbm(uv*2.1+vec2(5.2,1.3)-t));
+    vec2 w=vec2(fbm(uv*2.1+q*(1.4+u_a*1.7)+t*.7),fbm(uv*2.1+q*1.5+vec2(8.3,2.8)-t*.5));
+    float f=fbm(uv*2.1+w*(1.1+u_a*1.3));
+    vec3 cold=vec3(.78,.66,.43), hot=vec3(.69,.16,.10);
+    vec3 c=mix(cold,hot,clamp(f*.55+u_a*.95,0.,1.));
+    c*=.40+f*1.3+u_a*.4+u_h*.18;
+    float e=1.-smoothstep(.70,1.,r);
+    c*=e; c+=hot*exp(-r*r*2.4)*u_a*.6;
+    gl_FragColor=vec4(c*e,e*.93);
+  }`;
+  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
+  const pr=gl.createProgram();
+  gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));
+  gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(pr);gl.useProgram(pr);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const L=gl.getAttribLocation(pr,'p');
+  gl.enableVertexAttribArray(L);gl.vertexAttribPointer(L,2,gl.FLOAT,false,0,0);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  const uT=gl.getUniformLocation(pr,'u_t'),uA=gl.getUniformLocation(pr,'u_a'),uH=gl.getUniformLocation(pr,'u_h');
+
+  stage.addEventListener('pointerenter',()=>hover=1);
+  stage.addEventListener('pointerleave',()=>hover=0);
+
+  const t0=performance.now();
+  (function loop(){
+    const t=(performance.now()-t0)/1000;
+    target*=.90;
+    const idle=reduce?.05:.05+Math.sin(t*.85)*.035;
+    amp+=((target+idle)-amp)*.17;
+    gl.uniform1f(uT,reduce?0:t);gl.uniform1f(uA,amp);gl.uniform1f(uH,hover);
+    gl.viewport(0,0,cv.width,cv.height);
+    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    requestAnimationFrame(loop);
+  })();
+
+  return {
+    pulse:v=>{target=Math.min(1.15,target+v)},
+    hot:on=>stage.classList.toggle('hot',on)
+  };
+})();
+
+/* ==================== VOICE (degrades silently) ==================== */
+const Voice=(()=>{
+  let ok = 'speechSynthesis' in window;
+  let voice=null;
+  if(ok){
+    const load=()=>{
+      let vs=[];
+      try{vs=speechSynthesis.getVoices()}catch(e){ok=false;return}
+      if(!vs.length)return;
+      voice=vs.find(v=>/en-US/.test(v.lang)&&/Google|Daniel|Alex|Male/i.test(v.name))
+          ||vs.find(v=>/^en/.test(v.lang))||vs[0];
+    };
+    load();
+    try{speechSynthesis.onvoiceschanged=load}catch(e){}
+  }
+  return {
+    get available(){return ok && !!voice},
+    say(t){ if(!ok||!voice)return;
+      try{speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(t);
+        u.rate=1.03;u.pitch=.92;u.voice=voice;
+        speechSynthesis.speak(u);
+      }catch(e){ok=false} },
+    stop(){ if(ok){try{speechSynthesis.cancel()}catch(e){}} }
+  };
+})();
+
+function envelope(s){
+  return [...s].map(c=>{
+    if(c===' ')return 0;
+    if(/[aeiouAEIOU]/.test(c))return .75+Math.random()*.35;
+    if(/[.,!?]/.test(c))return .08;
+    return .30+Math.random()*.30;
+  });
+}
+
+/* ==================== TURN PLAYER ==================== */
+const log=document.getElementById('log');
+const hint=document.getElementById('hint');
+const chipsEl=document.getElementById('chips');
+let busy=false, abort=false;
+
+const TURNS=[
+  {q:"turn on the flashlight", call:"flashlight(on)", tag:"system", a:"Flashlight's on."},
+  {q:"what am I looking at?", call:"look_at_surroundings()", tag:"local · moondream",
+   a:"A coffee mug on a desk. About half full."},
+  {q:"any missed calls?", call:"call_log(missed=true)", tag:"on device",
+   a:"Two. Both this morning, same number."},
+  {q:"text Kurt I'm running late", call:'send_sms("Kurt", "running late")', tag:"confirmation gate",
+   gate:true, a:"Sent.", denied:"Left it."}
+];
+
+TURNS.forEach((t,i)=>{
+  const b=document.createElement('button');
+  b.className='chip';b.textContent=t.q;
+  b.addEventListener('click',()=>play(i));
+  chipsEl.appendChild(b);
+});
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const setChips=on=>[...chipsEl.children].forEach(c=>c.disabled=!on);
+
+async function play(i){
+  if(busy)return;
+  busy=true;abort=false;setChips(false);
+  [...chipsEl.children].forEach((c,n)=>c.classList.toggle('pick',n===i));
+  const t=TURNS[i];
+  log.innerHTML='';
+
+  const you=document.createElement('div');
+  you.className='you';log.appendChild(you);
+  for(const ch of t.q){ if(abort)break; you.textContent+=ch; await sleep(24); }
+  await sleep(260);
+  if(abort)return finish();
+
+  const call=document.createElement('div');
+  call.className='call'+(t.gate?' gated':'');
+  call.textContent='▸ '+t.call;
+  const badge=document.createElement('span');
+  badge.className='badge';badge.textContent=t.tag;
+  call.appendChild(badge);
+  call.style.opacity=0;log.appendChild(call);
+  requestAnimationFrame(()=>{call.style.transition='opacity .35s';call.style.opacity=1});
+  await sleep(560);
+  if(abort)return finish();
+
+  let text=t.a;
+  if(t.gate){
+    const approved=await askGate();
+    if(abort)return finish();
+    text=approved?t.a:t.denied;
+  }
+  await speak(text);
+  finish();
+}
+
+function askGate(){
+  return new Promise(res=>{
+    const g=document.createElement('div');
+    g.className='gate';
+    const tok=Math.random().toString(36).slice(2,8);
+    const p=document.createElement('p');
+    p.innerHTML='Send SMS to Kurt — "running late"?<br><span class="tok">token '+tok+' · held open, no deadline</span>';
+    g.appendChild(p);
+    const ok=document.createElement('button');ok.className='ok';ok.textContent='Approve';
+    const no=document.createElement('button');no.className='no';no.textContent='Deny';
+    g.appendChild(ok);g.appendChild(no);log.appendChild(g);
+    hint.textContent='waiting on you · the turn clock is paused';
+    const done=v=>{g.remove();hint.textContent='pick a line above · tap the orb to interrupt';res(v)};
+    ok.onclick=()=>done(true);
+    no.onclick=()=>done(false);
+  });
+}
+
+async function speak(text){
+  const line=document.createElement('div');
+  line.className='pi';log.appendChild(line);
+  Orb.hot(true);
+  Voice.say(text);
+  const env=envelope(text);
+  for(let k=0;k<text.length;k++){
+    if(abort)break;
+    line.textContent+=text[k];
+    Orb.pulse(env[k]*.62);
+    await sleep(text[k]===' '?34:44);
+  }
+  line.classList.add('done');
+  await sleep(280);
+  Orb.hot(false);
+}
+
+function finish(){
+  busy=false;abort=false;setChips(true);Orb.hot(false);
+  document.querySelectorAll('#log .pi').forEach(e=>e.classList.add('done'));
+}
+
+const stageEl=document.getElementById('stage');
+stageEl.addEventListener('click',()=>{
+  if(busy){abort=true;Voice.stop();hint.textContent='interrupted — the lock releases immediately'}
+  else Orb.pulse(.9);
+});
+stageEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();stageEl.click()}
+});
+
+/* ==================== SIGNAL / TIERS ==================== */
+const sig=document.getElementById('sig'),
+      tiers=[...document.querySelectorAll('.tier')],
+      bars=[...document.querySelectorAll('#bars span')];
+function signal(){
+  const v=+sig.value;
+  bars.forEach((b,i)=>b.classList.toggle('on',v>i*20));
+  let picked=false;
+  tiers.forEach(t=>{
+    const reachable = v>=+t.dataset.min;
+    const live = !picked && reachable;
+    t.classList.toggle('live',live);
+    t.classList.toggle('dead',!reachable);
+    t.querySelector('.state').textContent = live?'speaking':(reachable?'standby':'unreachable');
+    if(live)picked=true;
+  });
+  Orb.pulse(.22);
+}
+sig.addEventListener('input',signal);signal();
+
+/* ==================== TOOLS ==================== */
+const TOOLS=[
+  {n:"Send SMS",s:"confirmation gate",g:1,r:"held — awaiting token approval"},
+  {n:"Place call",s:"confirmation gate",g:1,r:"held — awaiting token approval"},
+  {n:"Look at surroundings",s:"local · moondream",r:'"A coffee mug on a desk."'},
+  {n:"Read contacts",s:"on device",r:"214 entries"},
+  {n:"Call log",s:"on device",r:"2 missed, 1 outgoing"},
+  {n:"Web search",s:"groq compound",r:"4 results"},
+  {n:"Toggle wifi",s:"system",r:"wifi → on"},
+  {n:"Set alarm",s:"system",r:"alarm 06:00"},
+  {n:"Push notification",s:"system",r:"posted"},
+  {n:"Set volume",s:"system",r:"media → 7/15"},
+  {n:"Flashlight",s:"system",r:"torch → on"},
+  {n:"Take photo",s:"camera",r:"IMG_0412.jpg · 2.1 MB"},
+  {n:"+ ten more",s:"see tools/",d:1}
+];
+const toolsEl=document.getElementById('tools'), toolog=document.getElementById('toolog');
+TOOLS.forEach(t=>{
+  const b=document.createElement('button');
+  b.className='tool'+(t.g?' gate-t':'')+(t.d?' dead':'');
+  b.textContent=t.n;
+  const s=document.createElement('span');s.textContent=t.s;b.appendChild(s);
+  if(!t.d)b.addEventListener('click',()=>fire(t));
+  toolsEl.appendChild(b);
+});
+function fire(t){
+  const name=t.n.toLowerCase().replace(/ /g,'_');
+  const row=document.createElement('div');
+  row.className='call'+(t.g?' gated':'');
+  row.textContent='▸ '+name+'()  ';
+  const r=document.createElement('span');
+  r.style.color='var(--dim)';r.textContent=t.r;
+  row.appendChild(r);
+  row.style.opacity=0;
+  toolog.appendChild(row);
+  requestAnimationFrame(()=>{row.style.transition='opacity .3s';row.style.opacity=1});
+  while(toolog.children.length>6)toolog.firstChild.remove();
+  Orb.pulse(.5);
+}
+fire(TOOLS[10]);
+
+/* ==================== PERSONA ==================== */
+const SAMPLES=[
+  `Great question! I'd be happy to help you with that. <s>Let me go ahead and</s> turn on the flashlight for you now. <s>Is there anything else I can assist you with today?</s>`,
+  `Sure thing! I'll turn on the flashlight for you. <s>Let me know if you need anything else.</s>`,
+  `Turning on the flashlight now.`,
+  `Flashlight's on.`
+];
+const WORDS=[31,18,5,2];
+const pers=document.getElementById('pers'),
+      sample=document.getElementById('sample'),
+      count=document.getElementById('count'),
+      stages=[...document.querySelectorAll('.stages b')];
+function persona(){
+  const v=+pers.value;
+  sample.innerHTML=SAMPLES[v];
+  sample.classList.toggle('raw',v===3);
+  count.innerHTML='<b>'+WORDS[v]+'</b> words'+(v===3?' · nothing left telling it who to be':'');
+  stages.forEach(s=>s.classList.toggle('on',+s.dataset.s===v));
+  Orb.pulse(.28);
+}
+pers.addEventListener('input',persona);persona();
+
+/* ==================== SCROLL ==================== */
+const thread=document.getElementById('thread');
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  thread.style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting)
+      e.target.classList.add(e.target.classList.contains('node')?'lit':'in');
+  });
+},{threshold:.15,rootMargin:'0px 0px -6% 0px'});
+document.querySelectorAll('.rv,.node').forEach(e=>io.observe(e));
+
+/* honest footnote when there's no speech engine */
+setTimeout(()=>{
+  if(!Voice.available){
+    document.getElementById('footnote').textContent =
+      "This browser has no speech engine, so the orb runs on the text's amplitude envelope instead of live audio. In the running build its brightness is wired to real TTS output.";
+  }
+},900);
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body>
+</html>

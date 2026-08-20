@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NovarAC — HF chat with the internet switched off</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --case:#100C08;--case2:#1A130C;--panel:#221A11;--line:#33281B;--line2:#4A3A25;
+  --lamp:#F5E7CE;--dim:#9A836A;--amber:#FFB000;--amber2:#FF8A2B;--green:#6FD48A;--red:#E5573F;
+  --disp:'Exo 2',system-ui,sans-serif;--mono:'Share Tech Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--case);color:var(--lamp);font-family:var(--disp);font-weight:300;font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:var(--case)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--green),var(--amber))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--case);transition:.5s}
+.gap.lit i{background:var(--amber);box-shadow:0 0 0 7px var(--case),0 0 16px var(--amber)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h2{font-weight:700;font-size:clamp(30px,5.6vw,52px);line-height:1.05;margin:14px auto 14px;max-width:16ch;letter-spacing:-.02em}
+h2 em{color:var(--amber);font-style:normal}
+.lede{color:var(--dim);max-width:50ch;margin:0 auto;font-size:16.5px;font-weight:300}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-weight:700;font-size:clamp(52px,12vw,116px);line-height:.9;letter-spacing:-.045em;margin:26px 0 16px}
+h1 em{color:var(--amber);font-style:normal}
+.tag{max-width:32ch;margin:0 auto;font-size:clamp(17px,2.3vw,21px)}
+.tag b{font-weight:600;color:var(--green)}
+.meta{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:26px}
+
+/* ------- the rig ------- */
+.rig{width:min(94vw,560px);background:linear-gradient(180deg,var(--case2),var(--panel));
+  border:1px solid var(--line2);border-radius:10px;padding:22px;box-shadow:0 22px 60px rgba(0,0,0,.6)}
+.vfd{background:#0A0704;border:1px solid var(--line);border-radius:6px;padding:18px 20px;text-align:left;
+  box-shadow:inset 0 0 34px rgba(255,176,0,.07)}
+.freq{font-family:var(--mono);font-size:clamp(34px,8vw,54px);color:var(--amber);
+  letter-spacing:.03em;text-shadow:0 0 18px rgba(255,176,0,.45);line-height:1;font-variant-numeric:tabular-nums}
+.freq small{font-size:.42em;color:var(--dim);text-shadow:none;margin-left:8px;letter-spacing:.2em}
+.vrow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;
+  font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.14em}
+.vrow b{color:var(--green);font-weight:400}
+.smeter{display:flex;gap:2px;align-items:flex-end;height:16px;margin-top:12px}
+.smeter span{width:6px;background:var(--line2);border-radius:1px;transition:background .18s}
+.smeter span.on{background:var(--amber)}
+.smeter span.pk{background:var(--red)}
+.knob{margin-top:20px}
+.knob label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:12px;text-align:left}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--line2);border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#4A3A25,#1A130C);border:1px solid var(--line2);cursor:grab;
+  box-shadow:0 3px 8px rgba(0,0,0,.6)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#2A2116;border:1px solid var(--line2);cursor:grab}
+.bands{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:18px}
+.band{font-family:var(--mono);font-size:11px;background:transparent;border:1px solid var(--line);
+  color:var(--dim);padding:8px 13px;border-radius:4px;cursor:pointer;transition:.2s}
+.band:hover{border-color:var(--amber);color:var(--amber)}
+.band.on{background:var(--amber);color:var(--case);border-color:var(--amber)}
+.ptt{margin-top:18px;width:100%;font-family:var(--mono);font-size:13px;letter-spacing:.24em;
+  text-transform:uppercase;background:var(--case2);border:1px solid var(--line2);color:var(--lamp);
+  padding:16px;border-radius:6px;cursor:pointer;transition:.12s;touch-action:manipulation;user-select:none}
+.ptt.tx{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 30px rgba(229,87,63,.45)}
+
+/* ------- chat ------- */
+.term{background:#0A0704;border:1px solid var(--line);border-radius:6px;padding:20px;
+  margin-top:30px;text-align:left;font-family:var(--mono);font-size:13px;line-height:2;min-height:190px}
+.term .rx{color:var(--green)}.term .tx{color:var(--amber)}.term .sys{color:var(--dim)}
+.term .cs{color:var(--lamp)}
+
+/* ------- generic ------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--case2);border:1px solid var(--line);border-radius:6px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.5px;line-height:1.55}
+.card p b{color:var(--amber);font-weight:600}
+.aside{margin:28px auto 0;max-width:52ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--lamp);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:92px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --case:#050301 !important;
+  --case2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --lamp:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --amber:#C8A96E !important;
+  --amber2:#B02A1A !important;
+  --green:#8A7050 !important;
+  --red:#8B1A1A !important;
+  --disp:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="rig">
+    <div class="vfd">
+      <div class="freq" id="freq">14.105.00 <small>MHz</small></div>
+      <div class="vrow"><span>MODE <b id="mode">USB</b></span><span id="bandlbl">20 m · VARA HF</span></div>
+      <div class="smeter" id="sm"></div>
+    </div>
+    <div class="knob">
+      <label for="vfo">VFO — drag to tune</label>
+      <input type="range" id="vfo" min="1800" max="29700" value="14105" step="1" aria-label="Frequency">
+    </div>
+    <div class="bands" id="bands"></div>
+    <button class="ptt" id="ptt">Hold to transmit</button>
+  </div>
+  <h1>Novar<em>AC</em></h1>
+  <p class="tag">HF chat that works with <b>the internet switched off</b>. Every font, every asset, served from the box in front of you.</p>
+  <div class="meta">formerly PyVarAC · FastAPI · VARA HF · Hamlib</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Rig control</div>
+  <h2>283 radios, <em>62 manufacturers</em></h2>
+  <p class="lede">A parsed Hamlib database wired to <code>rigctld</code> over TCP on port 4532. Pick a radio, set the COM port, baud and PTT method, and the sidebar drives it — frequency, mode, band quick-tune, and a touch-compatible hold button.</p>
+  <div class="term" id="term"></div>
+  <p class="aside">Tune the dial above or hold PTT and this log follows along. The band buttons jump straight to the VARA calling frequencies.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Offline means offline</div>
+  <h2>Zero external URLs, <em>verified</em></h2>
+  <p class="lede">The first build looked offline and wasn't — it pulled Google Fonts. Stripped and replaced with five TTF files served from a FastAPI static mount, then checked the rendered HTML for any remaining outbound request.</p>
+  <div class="grid">
+    <div class="card"><h4>Fonts</h4><p>Exo 2 at <b>300/400/600/700</b> plus Share Tech Mono, mounted at <code>/fonts/</code>.</p></div>
+    <div class="card"><h4>Transport</h4><p>Tablet browser over <b>local WiFi hotspot</b> to the mini-PC. No router upstream, no DNS.</p></div>
+    <div class="card"><h4>Radio link</h4><p>VARA modem on the PC, <b>Digirig or SignaLink</b> to the rig. Audio never touches a network.</p></div>
+    <div class="card"><h4>Fallback</h4><p><b>ardopcf</b> is documented as the open-source path — runs natively on a Pi if VARA's closed binary ever becomes a problem.</p></div>
+  </div>
+  <p class="aside">Built for a friend who needs communications that survive the infrastructure going away. That constraint drove every decision in the stack.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Files</div>
+  <h2>Six files, <em>no build step</em></h2>
+  <div class="grid">
+    <div class="card"><h4>launch.py</h4><p>Entry point. Optional Cloudflare Quick Tunnel when you actually do want it reachable.</p></div>
+    <div class="card"><h4>server.py</h4><p>FastAPI + WebSocket bridge to the VARA modem on TCP, with a demo mode when no modem is present.</p></div>
+    <div class="card"><h4>rig_control.py</h4><p>Hamlib <code>rigctld</code> wrapper — frequency, mode, PTT.</p></div>
+    <div class="card"><h4>rig_list.json</h4><p>283 radios, parsed once so the UI never shells out to enumerate.</p></div>
+    <div class="card"><h4>index.html</h4><p>The whole operator UI. Amber, deliberately — the first pass was too gloomy to read at 3am.</p></div>
+    <div class="card"><h4>fonts/</h4><p>Five TTFs. The difference between "offline" and offline.</p></div>
+    <div class="card"><h4>The rename</h4><p>PyVarAC became <b>NovarAC</b> — a module-by-module rename still working its way through the tree. Components: WebSocket server, VARA HF protocol engine, audio bridge, rig control, frequency scheduler.</p></div>
+  </div>
+  <p class="aside">Every file was syntax-checked, import-tested and run end-to-end against a live server before handoff. <b>Nothing shipped untested.</b></p>
+</section>
+
+<footer>
+  <div class="eyebrow">Prepper comms · air-gapped by design</div>
+  <p>A browser-based VARA client any ham can run from a tablet, with no Windows requirement and no assumption that the internet still exists.</p>
+</footer>
+
+<script>
+/* ---------- bands ---------- */
+const BANDS=[
+  {n:'80 m',f:3598,m:'LSB'},{n:'40 m',f:7048,m:'LSB'},{n:'30 m',f:10148,m:'USB'},
+  {n:'20 m',f:14105,m:'USB'},{n:'17 m',f:18108,m:'USB'},{n:'15 m',f:21108,m:'USB'},
+  {n:'10 m',f:28108,m:'USB'}
+];
+const vfo=document.getElementById('vfo'),freq=document.getElementById('freq'),
+      modeEl=document.getElementById('mode'),bandlbl=document.getElementById('bandlbl'),
+      bandsEl=document.getElementById('bands'),term=document.getElementById('term'),
+      sm=document.getElementById('sm'),ptt=document.getElementById('ptt');
+
+for(let i=0;i<13;i++){const s=document.createElement('span');s.style.height=(5+i*0.9)+'px';sm.appendChild(s)}
+
+BANDS.forEach(b=>{
+  const el=document.createElement('button');
+  el.className='band';el.textContent=b.n;
+  el.addEventListener('click',()=>{vfo.value=b.f;tune(true)});
+  bandsEl.appendChild(el);
+});
+
+function fmt(khz){
+  const mhz=Math.floor(khz/1000), rest=khz-mhz*1000;
+  return mhz+'.'+String(Math.floor(rest)).padStart(3,'0')+'.00';
+}
+function nearest(khz){
+  let best=BANDS[0],d=1e9;
+  BANDS.forEach(b=>{const x=Math.abs(b.f-khz);if(x<d){d=x;best=b}});
+  return {b:best,d};
+}
+function tune(fromBand){
+  const k=+vfo.value;
+  freq.innerHTML=fmt(k)+' <small>MHz</small>';
+  const {b,d}=nearest(k);
+  modeEl.textContent = k<10000?'LSB':'USB';
+  const onFreq=d<3;
+  bandlbl.textContent = onFreq ? b.n+' · VARA HF calling' : b.n+' · off calling freq';
+  [...bandsEl.children].forEach((c,i)=>c.classList.toggle('on',onFreq&&BANDS[i].f===b.f));
+  const s = onFreq? 11 : Math.max(2,11-Math.round(d/60));
+  meter(s);
+  if(fromBand)push('sys','QSY '+fmt(k)+' — '+b.n+' VARA calling');
+}
+function meter(n){
+  [...sm.children].forEach((s,i)=>{
+    s.classList.toggle('on',i<n);
+    s.classList.toggle('pk',i<n&&i>=10);
+  });
+}
+vfo.addEventListener('input',()=>tune(false));
+
+/* ---------- chat log ---------- */
+function push(kind,text,call){
+  const d=document.createElement('div');
+  d.className=kind;
+  d.textContent=(call?call+'  ':'')+text;
+  term.appendChild(d);
+  while(term.children.length>7)term.firstChild.remove();
+}
+push('sys','VARA HF modem connected · 8300');
+push('rx','de KD9XXX  QSL, copy 5x7 here in Bedford','◂');
+push('tx','KD9XXX de W9XYZ  RR, running 40 W to a doublet','▸');
+push('sys','link established · 4.2 kbps · BW 2300');
+
+let txing=false;
+function startTx(){ if(txing)return; txing=true; ptt.classList.add('tx');
+  ptt.textContent='Transmitting'; meter(13); }
+function stopTx(){ if(!txing)return; txing=false; ptt.classList.remove('tx');
+  ptt.textContent='Hold to transmit'; tune(false);
+  push('tx','...over','▸');
+}
+['mousedown','touchstart'].forEach(e=>ptt.addEventListener(e,ev=>{ev.preventDefault();startTx()}));
+['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>ptt.addEventListener(e,stopTx));
+ptt.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();startTx()}});
+ptt.addEventListener('keyup',stopTx);
+
+tune(false);
+
+/* ---------- scroll ---------- */
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

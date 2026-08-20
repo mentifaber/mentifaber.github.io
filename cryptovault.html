@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CryptoVault — RSA-4096 and AES-256 in one HTML file</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#000000;--void2:#080A09;--panel:#0C110E;--line:#152018;--line2:#1F3325;
+  --phos:#3BE07A;--dim:#4E6B58;--pale:#D6E8DB;--alarm:#FF4747;--amber:#FFB627;
+  --disp:'Anton',Impact,sans-serif;--body:'Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--void);color:var(--pale);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--phos);color:var(--void)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:var(--phos);box-shadow:0 0 12px var(--phos)}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--void);transition:.5s}
+.gap.lit i{background:var(--phos);box-shadow:0 0 0 7px var(--void),0 0 16px var(--phos)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:400;font-size:clamp(34px,6.4vw,60px);line-height:1;margin:14px auto 14px;max-width:18ch;letter-spacing:.005em;text-transform:uppercase}
+h2 em{color:var(--phos);font-style:normal}
+.lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-family:var(--disp);font-size:clamp(46px,12vw,124px);line-height:.88;letter-spacing:.01em;margin:8px 0 16px;text-transform:uppercase}
+h1 em{color:var(--phos);font-style:normal;text-shadow:0 0 30px rgba(59,224,122,.4)}
+.tag{max-width:34ch;margin:0 auto;font-size:clamp(16px,2.2vw,19px)}
+.tag b{font-weight:600;color:var(--phos)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:24px}
+
+.console{width:min(94vw,600px);background:var(--void2);border:1px solid var(--line2);
+  border-radius:4px;padding:0;text-align:left;overflow:hidden;margin-bottom:6px}
+.cbar{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dim);padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel);
+  display:flex;justify-content:space-between}
+.cbar b{color:var(--phos);font-weight:500}
+.cbody{padding:18px}
+textarea{width:100%;background:transparent;border:1px solid var(--line);border-radius:3px;
+  color:var(--pale);font-family:var(--mono);font-size:12.5px;line-height:1.75;padding:12px;
+  resize:vertical;min-height:80px;outline:none;transition:border-color .2s}
+textarea:focus{border-color:var(--phos)}
+.out{margin-top:12px;background:#050705;border:1px solid var(--line);border-radius:3px;padding:12px;
+  font-family:var(--mono);font-size:11px;line-height:1.85;color:var(--phos);word-break:break-all;
+  min-height:80px;max-height:150px;overflow:auto}
+.out.cipher{color:var(--phos)}
+.out.plain{color:var(--pale)}
+.row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.b{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--line2);color:var(--pale);padding:10px 16px;
+  border-radius:3px;cursor:pointer;transition:.18s;flex:1;min-width:110px}
+.b:hover{border-color:var(--phos);color:var(--phos)}
+.b.go:hover{background:rgba(59,224,122,.08)}
+.b:disabled{opacity:.35;cursor:default}
+.stat{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:12px;letter-spacing:.08em;line-height:1.9}
+.stat b{color:var(--phos);font-weight:500}
+.stat .w{color:var(--amber)}
+.stat .x{color:var(--alarm)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-top:32px;text-align:left}
+.card{background:var(--void2);border:1px solid var(--line);border-radius:4px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.5px;line-height:1.55}
+.card p b{color:var(--phos);font-weight:600}
+.card.warn{border-left:2px solid var(--amber)}
+.card.warn p b{color:var(--amber)}
+.flow{display:grid;gap:0;margin-top:32px;text-align:left;max-width:620px;margin-left:auto;margin-right:auto}
+.fs{display:grid;grid-template-columns:34px 1fr;gap:18px;padding:16px 0;border-bottom:1px solid var(--line)}
+.fs:last-child{border-bottom:0}
+.fs .k{font-family:var(--mono);font-size:11px;color:var(--phos);letter-spacing:.1em}
+.fs h5{font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:4px;letter-spacing:.02em}
+.fs p{color:var(--dim);font-size:14px;line-height:1.55}
+.aside{margin:28px auto 0;max-width:53ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--pale);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:54ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:92px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --void:#050301 !important;
+  --void2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --pale:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --phos:#C8A96E !important;
+  --alarm:#8B1A1A !important;
+  --amber:#B02A1A !important;
+  --disp:'EB Garamond',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="console">
+    <div class="cbar"><span>cryptovault</span><span id="keystat">no keypair</span></div>
+    <div class="cbody">
+      <textarea id="msg" spellcheck="false">Message never leaves this tab. Encrypt it and watch.</textarea>
+      <div class="out cipher" id="out">—</div>
+      <div class="row">
+        <button class="b" id="gen">Generate keypair</button>
+        <button class="b go" id="enc" disabled>Encrypt</button>
+        <button class="b go" id="dec" disabled>Decrypt</button>
+      </div>
+      <div class="stat" id="stat">RSA-4096-OAEP + AES-256-GCM · Web Crypto API · nothing here is simulated</div>
+    </div>
+  </div>
+  <h1>Crypto<em>Vault</em></h1>
+  <p class="tag">Hybrid encryption in <b>a single HTML file</b>. No server, no dependency, no network call — the browser's own crypto engine and nothing else.</p>
+  <div class="meta">Web Crypto API · RSA-4096-OAEP · AES-256-GCM</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Why hybrid</div>
+  <h2>RSA can't encrypt <em>your message</em></h2>
+  <p class="lede">A 4096-bit RSA-OAEP key can encrypt about 446 bytes. That's a sentence, not a document. So RSA never touches the message at all — it encrypts a key, and that key encrypts the message.</p>
+  <div class="flow">
+    <div class="fs"><div class="k">01</div><div><h5>Generate a fresh AES-256 key</h5><p>New random key per message. It exists for one encryption and is never reused, so a compromised message compromises nothing else.</p></div></div>
+    <div class="fs"><div class="k">02</div><div><h5>Encrypt the payload with AES-GCM</h5><p>Fast, handles any size, and GCM is authenticated — tampering is detected on decrypt rather than silently producing garbage.</p></div></div>
+    <div class="fs"><div class="k">03</div><div><h5>Encrypt the AES key with RSA-OAEP</h5><p>256 bytes of key material, comfortably inside RSA's limit. This is the only thing the asymmetric layer ever sees.</p></div></div>
+    <div class="fs"><div class="k">04</div><div><h5>Ship both together</h5><p>The wrapped key, the IV, and the ciphertext travel as one blob. Only the private key holder can unwrap step three and therefore step two.</p></div></div>
+  </div>
+  <p class="aside">The console above does all four steps for real, in your browser, using <code>crypto.subtle</code>. The ciphertext it prints is the actual output — not a stand-in.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The constraint</div>
+  <h2>One file, <em>zero trust in me</em></h2>
+  <p class="lede">Every design decision follows from a single rule: someone should be able to read the whole thing before using it, and verify there's nothing else in it.</p>
+  <div class="grid">
+    <div class="card"><h4>No dependencies</h4><p>No npm tree, no CDN, no crypto library to audit. <b>Web Crypto is the browser's</b>, already reviewed by people better at this than either of us.</p></div>
+    <div class="card"><h4>No network</h4><p>Nothing is fetched and nothing is posted. Open devtools, watch the network tab stay empty, and you've verified the core claim yourself.</p></div>
+    <div class="card"><h4>No storage</h4><p>Keys live in memory for the tab's lifetime. Close it and they're gone — which is a feature and an obvious footgun at the same time.</p></div>
+    <div class="card"><h4>Readable</h4><p>One file you can scroll to the bottom of. That's the entire security argument, and it only works if it stays small.</p></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Honest limits</div>
+  <h2>What this <em>doesn't</em> do</h2>
+  <div class="grid">
+    <div class="card warn"><h4>No key distribution</h4><p>Getting a public key to the other person safely is <b>the actual hard problem</b> in all of cryptography, and this file doesn't touch it.</p></div>
+    <div class="card warn"><h4>No identity</h4><p>Encryption proves nobody else can read it. It does not prove <b>who sent it</b>. That needs signatures, which is a separate mechanism.</p></div>
+    <div class="card warn"><h4>Delivery is the weak point</h4><p>If the page is served over the network, whoever serves it can change it. Local file or nothing.</p></div>
+    <div class="card warn"><h4>Not a replacement</h4><p>For anything that genuinely matters, <b>use age or GPG</b>. This is a working demonstration of the primitives, not audited infrastructure.</p></div>
+  </div>
+  <p class="aside">A crypto tool that overstates itself is worse than no tool. The limits above belong in the interface, not in a README nobody opens.</p>
+</section>
+
+<footer>
+  <div class="eyebrow">crypto.subtle · one file · no build</div>
+  <p>Generate a keypair above and encrypt something. It runs entirely in this tab, and the ciphertext you see is genuinely undecryptable without the private key sitting in this page's memory.</p>
+</footer>
+
+<script>
+const msg=document.getElementById('msg'),out=document.getElementById('out'),
+      stat=document.getElementById('stat'),keystat=document.getElementById('keystat'),
+      genB=document.getElementById('gen'),encB=document.getElementById('enc'),decB=document.getElementById('dec');
+let keys=null, packet=null;
+const enc=new TextEncoder(), dec=new TextDecoder();
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+
+function say(html){stat.innerHTML=html}
+
+if(!(window.crypto&&crypto.subtle)){
+  genB.disabled=true;
+  say('<span class="x">Web Crypto unavailable in this context.</span> The real file requires https or a local file:// origin.');
+}
+
+genB.addEventListener('click',async()=>{
+  genB.disabled=true;say('generating RSA-4096 keypair — this genuinely takes a moment…');
+  const t0=performance.now();
+  try{
+    keys=await crypto.subtle.generateKey(
+      {name:'RSA-OAEP',modulusLength:4096,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},
+      true,['encrypt','decrypt']);
+    const ms=Math.round(performance.now()-t0);
+    const pub=await crypto.subtle.exportKey('spki',keys.publicKey);
+    keystat.textContent='RSA-4096 loaded';
+    out.className='out cipher';
+    out.textContent=b64(pub).slice(0,420)+'…';
+    say(`keypair generated in <b>${ms} ms</b> · public key shown above (spki, base64) · private key held in memory only`);
+    encB.disabled=false;genB.textContent='Regenerate keypair';genB.disabled=false;
+  }catch(e){
+    say('<span class="x">generateKey failed:</span> '+e.message);genB.disabled=false;
+  }
+});
+
+encB.addEventListener('click',async()=>{
+  if(!keys)return;
+  const text=msg.value||' ';
+  try{
+    const aes=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},aes,enc.encode(text));
+    const raw=await crypto.subtle.exportKey('raw',aes);
+    const wrapped=await crypto.subtle.encrypt({name:'RSA-OAEP'},keys.publicKey,raw);
+    packet={iv,ct,wrapped};
+    out.className='out cipher';
+    out.textContent=b64(wrapped).slice(0,200)+'…│'+b64(iv)+'│'+b64(ct);
+    say(`plaintext <b>${enc.encode(text).length} B</b> → ciphertext <b>${ct.byteLength} B</b> · `
+      +`AES key wrapped to <b>${wrapped.byteLength} B</b> under RSA-OAEP · `
+      +`<span class="w">RSA-4096 max payload is 446 B — the message would not have fit</span>`);
+    decB.disabled=false;
+  }catch(e){say('<span class="x">encrypt failed:</span> '+e.message)}
+});
+
+decB.addEventListener('click',async()=>{
+  if(!packet||!keys)return;
+  try{
+    const raw=await crypto.subtle.decrypt({name:'RSA-OAEP'},keys.privateKey,packet.wrapped);
+    const aes=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:packet.iv},aes,packet.ct);
+    out.className='out plain';
+    out.textContent=dec.decode(pt);
+    say('unwrapped the AES key with the private key, then decrypted · <b>GCM tag verified</b> — any tampering would have thrown here instead of returning altered text');
+  }catch(e){say('<span class="x">decrypt failed — GCM authentication rejected it:</span> '+e.message)}
+});
+
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

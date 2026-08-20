@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Watch Your Grass — a garden that fights back</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --soil:#0B1510;--soil2:#122019;--panel:#182B21;--line:#223B2D;--line2:#33553F;
+  --leaf:#D6EED6;--dim:#7DA089;--moss:#7BC96F;--bloom:#F2A65A;--thorn:#E0605E;--sky:#63C2D6;
+  --disp:'Fredoka',system-ui,sans-serif;--body:'Nunito Sans',system-ui,sans-serif;--mono:'Space Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--soil);color:var(--leaf);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--moss);color:var(--soil)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:960px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--moss),var(--bloom))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--soil);transition:.5s}
+.gap.lit i{background:var(--moss);box-shadow:0 0 0 7px var(--soil),0 0 16px var(--moss)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:600;font-size:clamp(30px,5.6vw,52px);line-height:1.05;margin:14px auto 14px;max-width:17ch;letter-spacing:-.015em}
+h2 em{color:var(--moss);font-style:normal}
+.lede{color:var(--dim);max-width:51ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(38px,8.4vw,80px);line-height:.98;letter-spacing:-.035em;margin:26px 0 14px}
+h1 em{color:var(--moss);font-style:normal}
+.tag{max-width:33ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
+.tag b{font-weight:600;color:var(--bloom)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:24px}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(94vw,440px);margin:0 auto;
+  background:var(--soil2);border:1px solid var(--line2);border-radius:10px;padding:10px}
+.tile{aspect-ratio:1;background:var(--panel);border-radius:5px;position:relative;cursor:pointer;
+  display:grid;place-items:center;font-size:clamp(15px,4vw,22px);transition:background .15s,transform .1s;
+  border:1px solid transparent}
+.tile:hover{background:#1E3527;border-color:var(--line2)}
+.tile.rock{background:#1A1E1B;cursor:not-allowed}
+.tile.spawn{background:rgba(224,96,94,.10)}
+.tile.goal{background:rgba(123,201,111,.10)}
+.tile .e{position:absolute;font-size:clamp(14px,3.6vw,20px);transition:all .55s linear;pointer-events:none}
+.hud{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:16px;
+  font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.1em}
+.hud b{color:var(--leaf);font-weight:400}
+.hud .hp b{color:var(--thorn)}
+.hud .sun b{color:var(--bloom)}
+.shop{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.buy{font-family:var(--mono);font-size:12px;background:var(--soil2);border:1px solid var(--line);
+  color:var(--dim);padding:10px 14px;border-radius:7px;cursor:pointer;transition:.18s;line-height:1.3}
+.buy:hover{border-color:var(--moss);color:var(--leaf)}
+.buy.on{border-color:var(--moss);color:var(--soil);background:var(--moss)}
+.buy small{display:block;font-size:9px;letter-spacing:.1em;opacity:.75;margin-top:3px}
+.buy:disabled{opacity:.4;cursor:not-allowed}
+.ctl{margin-top:16px}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--line2);color:var(--leaf);padding:11px 20px;
+  border-radius:100px;cursor:pointer;transition:.2s;margin:0 5px}
+.btn:hover{border-color:var(--bloom);color:var(--bloom)}
+.gamelog{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:16px;min-height:2.4em;line-height:1.9}
+.gamelog b{color:var(--moss)}
+.gamelog .warn{color:var(--thorn)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--soil2);border:1px solid var(--line);border-radius:8px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.5px;line-height:1.55}
+.card p b{color:var(--moss);font-weight:600}
+.swatches{display:flex;gap:0;margin:30px auto 0;max-width:560px;border-radius:8px;overflow:hidden;border:1px solid var(--line2)}
+.sw{flex:1;height:70px;display:grid;place-items:end center;padding-bottom:8px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.55)}
+.aside{margin:28px auto 0;max-width:52ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--leaf);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:92px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --soil:#050301 !important;
+  --soil2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --leaf:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --moss:#C8A96E !important;
+  --bloom:#B02A1A !important;
+  --thorn:#8B1A1A !important;
+  --sky:#8A7050 !important;
+  --disp:'EB Garamond',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="board" id="board"></div>
+  <div class="hud">
+    <span class="sun">sun <b id="sun">120</b></span>
+    <span>round <b id="round">1</b></span>
+    <span class="hp">lawn <b id="hp">10</b></span>
+    <span>trees <b id="trees">0</b>/3</span>
+  </div>
+  <div class="shop" id="shop"></div>
+  <div class="ctl">
+    <button class="btn" id="start">Send the round</button>
+    <button class="btn" id="reset">Reset</button>
+  </div>
+  <div class="gamelog" id="glog">Plant something. They come from the left.</div>
+
+  <h1>Watch Your <em>Grass</em></h1>
+  <p class="tag">A browser arena defense on a <b>6&times;6 grid</b>, drawn up on paper first — ten plant and terrain types, six player classes, one lawn to lose.</p>
+  <div class="meta">a.k.a. Arm A Garden / Arena Garden · vanilla JS · Cloudflare Quick Tunnel</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Softlocks</div>
+  <h2>Enemies that could be <em>walled in forever</em></h2>
+  <p class="lede">Wall off every adjacent tile and a unit has nowhere legal to step. It doesn't die, doesn't reroute, doesn't time out — it just stops, and the round can never end.</p>
+  <div class="grid">
+    <div class="card"><h4>The fix</h4><p><code>getNextMove</code> got a fallback: zero valid moves triggers a scan of adjacent tiles and <b>removes one non-boulder plant</b> to force a path open, logged so it's visible.</p></div>
+    <div class="card"><h4>The related one</h4><p><code>clearSpawnTile</code> runs before every spawn. Trees, honey locust and boulders get cleared off the landing tile so nothing ever materialises inside a wall.</p></div>
+    <div class="card"><h4>Tree cap</h4><p><code>PLANT_CAPS.trees = [3, 0]</code> — the zero increment means it never grows with the round. Honey locust and regular trees share the cap.</p></div>
+    <div class="card"><h4>Animation timing</h4><p>Every duration doubled. Humans 0.35→0.7s, runners 0.4→0.8s, grass 2.5→5s, roses 1.4→2.8s. The board stopped feeling frantic.</p></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Palette</div>
+  <h2>It was too <em>gloomy</em></h2>
+  <p class="lede">The original background sat at #060e0c — near-black with a green cast that read as sickly rather than lush. Every surface value shifted warmer and brighter, and the text came up with it.</p>
+  <div class="swatches">
+    <div class="sw" style="background:#060e0c">#060e0c<br>before</div>
+    <div class="sw" style="background:#0b1510">#0b1510<br>after</div>
+    <div class="sw" style="background:#ceeace;color:#0b1510">#ceeace<br>before</div>
+    <div class="sw" style="background:#d6eed6;color:#0b1510">#d6eed6<br>after</div>
+  </div>
+  <p class="aside">Small numbers, big difference. The shop icons also needed work — Rose Vines, Mushroom and Mint all use animation strips, so the shop clips to the <b>first frame</b> via overflow hidden plus a full-width image trick rather than maintaining separate static art.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Build</div>
+  <h2>No engine, <em>no bundler</em></h2>
+  <div class="grid">
+    <div class="card"><h4>Rendering</h4><p>DOM grid with CSS transitions. Sprite strips animate by stepping <b>background-position</b>, not by swapping images.</p></div>
+    <div class="card"><h4>Layout</h4><p>Three-column: board centre, shop left, log right. CSS-driven filters on the event log so you can mute spawn spam.</p></div>
+    <div class="card"><h4>Scaling</h4><p>Enemy stats and plant caps both scale per round from a single table, so difficulty is one place to tune.</p></div>
+    <div class="card"><h4>Sharing</h4><p>A Cloudflare Quick Tunnel launcher — no account needed, Ctrl+C to stop. Hand someone a URL and they're playing.</p></div>
+  </div>
+  <p class="aside">Also known as <b>Arm A Garden</b>. Same game, two names, depending on how much the joke is landing that day.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">On paper first</div>
+  <h2>It started as <em>handwritten notes</em></h2>
+  <p class="lede">The design existed as pen on paper before any of it existed as code — arena dimensions, plant table, class stats, movement rules. Digitising it into a formal spec came before the first line of JavaScript.</p>
+  <div class="grid">
+    <div class="card"><h4>The arena</h4><p>A <b>6&times;6</b> grid. Small enough that every tile placement is a real decision and a bad wall can strand you.</p></div>
+    <div class="card"><h4>Ten types</h4><p>Plants and terrain in one table, each with its own effect — offensive, blocking, slowing, or purely structural.</p></div>
+    <div class="card"><h4>Six classes</h4><p>Each with HP, speed and an ability. The player is a piece on the board, not a disembodied cursor.</p></div>
+    <div class="card"><h4>Movement rules</h4><p>Written before implementation, which is why the pathfinding edge cases were findable rather than mysterious.</p></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Damage model</div>
+  <h2>Effects that wouldn't stop <em>stacking</em></h2>
+  <div class="grid">
+    <div class="card"><h4>Exponential per plant</h4><p>Damage tracked per plant and scaled exponentially, so a plant that survives contributes more the longer it holds.</p></div>
+    <div class="card"><h4>Frost per step</h4><p>Frost recalculates <b>per step</b> rather than per turn, which is the only way slow reads correctly against variable enemy speeds.</p></div>
+    <div class="card"><h4>Effect locking</h4><p>Flags added to stop the same effect applying twice in one resolution — the stacking bug that made frost look like an instant kill.</p></div>
+    <div class="card"><h4>Combo plants</h4><p>Adjacency-triggered combinations, which is where most of the balance work went and where most of the bugs lived.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="eyebrow">Boulders · combo plants · honey locust</div>
+  <p>The board above is a stripped-down 6&times;6 — same pathfinding fallback, same tree cap, same spawn-clearing rule as the real thing.</p>
+</footer>
+
+<script>
+const W=6,H=6,SPAWN={r:2,c:0},GOAL={r:2,c:5};
+const PLANTS={
+  grass:{icon:'🌱',cost:25,dmg:1,rate:2,cap:99,name:'Grass'},
+  rose:{icon:'🌹',cost:50,dmg:3,rate:3,cap:99,name:'Roses'},
+  tree:{icon:'🌳',cost:75,dmg:2,rate:4,cap:3,name:'Tree'},
+  rock:{icon:'🪨',cost:15,dmg:0,rate:0,cap:99,name:'Boulder'}
+};
+let grid,sun,round,hp,running,enemies,sel='grass',tickTimer;
+const boardEl=document.getElementById('board'),shopEl=document.getElementById('shop'),
+      glog=document.getElementById('glog');
+
+function reset(){
+  clearInterval(tickTimer);running=false;
+  grid=Array.from({length:H},()=>Array(W).fill(null));
+  sun=120;round=1;hp=10;enemies=[];
+  document.getElementById('start').textContent='Send the round';
+  render();say('Plant something. They come from the left.');
+}
+function say(t,warn){glog.innerHTML=warn?'<span class="warn">'+t+'</span>':t}
+function count(k){return grid.flat().filter(x=>x===k).length}
+
+function render(){
+  boardEl.innerHTML='';
+  for(let r=0;r<H;r++)for(let c=0;c<W;c++){
+    const t=document.createElement('div');
+    t.className='tile'+(grid[r][c]==='rock'?' rock':'')
+      +(r===SPAWN.r&&c===SPAWN.c?' spawn':'')+(r===GOAL.r&&c===GOAL.c?' goal':'');
+    t.textContent=grid[r][c]?PLANTS[grid[r][c]].icon:'';
+    t.addEventListener('click',()=>place(r,c));
+    boardEl.appendChild(t);
+  }
+  enemies.forEach(e=>{
+    const idx=e.r*W+e.c, tile=boardEl.children[idx];
+    if(!tile)return;
+    const s=document.createElement('div');s.className='e';s.textContent=e.icon;
+    tile.appendChild(s);
+  });
+  document.getElementById('sun').textContent=sun;
+  document.getElementById('round').textContent=round;
+  document.getElementById('hp').textContent=hp;
+  document.getElementById('trees').textContent=count('tree');
+  [...shopEl.children].forEach(b=>{
+    const k=b.dataset.k;
+    b.disabled = sun<PLANTS[k].cost || (k==='tree'&&count('tree')>=3);
+    b.classList.toggle('on',k===sel);
+  });
+}
+function place(r,c){
+  if(r===SPAWN.r&&c===SPAWN.c)return say('Spawn tile stays clear — clearSpawnTile() would just wipe it.',true);
+  if(grid[r][c])return say('Occupied.');
+  const p=PLANTS[sel];
+  if(sun<p.cost)return say('Not enough sun.',true);
+  if(sel==='tree'&&count('tree')>=3)return say('Tree cap is 3 and never grows with the round.',true);
+  grid[r][c]=sel;sun-=p.cost;render();
+  say('Planted <b>'+p.name+'</b>.');
+}
+
+Object.keys(PLANTS).forEach(k=>{
+  const p=PLANTS[k];
+  const b=document.createElement('button');
+  b.className='buy'+(k===sel?' on':'');b.dataset.k=k;
+  b.innerHTML=p.icon+' '+p.name+'<small>'+p.cost+' sun</small>';
+  b.addEventListener('click',()=>{sel=k;render()});
+  shopEl.appendChild(b);
+});
+
+/* pathfinding: BFS toward goal, with the softlock fallback */
+function nextMove(e){
+  const q=[[e.r,e.c,null]],seen=new Set([e.r+','+e.c]);
+  while(q.length){
+    const [r,c,first]=q.shift();
+    if(r===GOAL.r&&c===GOAL.c)return first;
+    for(const [dr,dc] of [[0,1],[1,0],[-1,0],[0,-1]]){
+      const nr=r+dr,nc=c+dc,key=nr+','+nc;
+      if(nr<0||nc<0||nr>=H||nc>=W||seen.has(key))continue;
+      if(grid[nr][nc])continue;
+      seen.add(key);q.push([nr,nc,first||[nr,nc]]);
+    }
+  }
+  /* no legal path — force one open */
+  for(const [dr,dc] of [[0,1],[1,0],[-1,0],[0,-1]]){
+    const nr=e.r+dr,nc=e.c+dc;
+    if(nr<0||nc<0||nr>=H||nc>=W)continue;
+    if(grid[nr][nc]&&grid[nr][nc]!=='rock'){
+      grid[nr][nc]=null;
+      say('Softlock fallback — removed a plant at ['+nr+','+nc+'] to force a path.',true);
+      return [nr,nc];
+    }
+  }
+  return null;
+}
+
+function tick(){
+  /* plants shoot */
+  let killed=0;
+  for(let r=0;r<H;r++)for(let c=0;c<W;c++){
+    const k=grid[r][c];if(!k||!PLANTS[k].dmg)continue;
+    const t=enemies.find(e=>Math.abs(e.r-r)+Math.abs(e.c-c)<=PLANTS[k].rate);
+    if(t){t.hp-=PLANTS[k].dmg;if(t.hp<=0){enemies=enemies.filter(x=>x!==t);sun+=12;killed++}}
+  }
+  /* enemies move */
+  enemies.forEach(e=>{
+    if(e.r===GOAL.r&&e.c===GOAL.c){
+      enemies=enemies.filter(x=>x!==e);hp--;
+      say('One got through. Lawn at '+hp+'.',true);
+      return;
+    }
+    const m=nextMove(e);
+    if(m){e.r=m[0];e.c=m[1]}
+  });
+  render();
+  if(hp<=0){clearInterval(tickTimer);running=false;say('Lawn is gone. Reset to try again.',true);return}
+  if(!enemies.length){
+    clearInterval(tickTimer);running=false;round++;sun+=60;
+    document.getElementById('start').textContent='Send round '+round;
+    say('Round cleared. <b>+60 sun</b>.');render();
+  }
+}
+
+document.getElementById('start').addEventListener('click',()=>{
+  if(running)return;
+  running=true;
+  /* clearSpawnTile before every spawn */
+  if(grid[SPAWN.r][SPAWN.c]){grid[SPAWN.r][SPAWN.c]=null;say('Spawn tile cleared before spawn.')}
+  const n=2+round;
+  enemies=[];
+  for(let i=0;i<n;i++){
+    const runner=i%3===2;
+    enemies.push({r:Math.max(0,Math.min(H-1,SPAWN.r+(i%3)-1)),c:0,
+      hp:runner?3+round:5+round*2,icon:runner?'🐇':'🚶'});
+  }
+  say('Round '+round+' — <b>'+n+'</b> incoming.');
+  render();
+  tickTimer=setInterval(tick,800);
+});
+document.getElementById('reset').addEventListener('click',reset);
+reset();
+
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>

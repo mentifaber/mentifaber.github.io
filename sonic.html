@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SONIC — 933,573 verses, thirty translations, one graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --umber:#100D0A;--umber2:#181310;--panel:#1F1913;--line:#2E2419;--line2:#463726;
+  --parch:#EDE3D0;--dim:#93816A;--gold:#D9A441;--verdigris:#5FA88C;--wine:#B4543A;
+  --disp:'Cormorant Garamond',Georgia,serif;--body:'Karla',system-ui,sans-serif;--mono:'Azeret Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--umber);color:var(--parch);font-family:var(--body);font-size:17px;line-height:1.62;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--gold);color:var(--umber)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--verdigris),var(--gold))}
+.gap{height:120px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--umber);transition:.5s}
+.gap.lit i{background:var(--gold);box-shadow:0 0 0 7px var(--umber),0 0 16px var(--gold)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:600;font-size:clamp(36px,6.6vw,64px);line-height:1.02;margin:14px auto 14px;max-width:16ch;letter-spacing:-.015em}
+h2 em{color:var(--gold);font-style:italic;font-weight:400}
+.lede{color:var(--dim);max-width:50ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+#count{font-family:var(--disp);font-size:clamp(60px,15vw,150px);line-height:.9;font-weight:400;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--gold)}
+.clabel{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);margin-top:14px}
+h1{font-family:var(--disp);font-size:clamp(30px,5vw,46px);font-weight:400;font-style:italic;margin:34px 0 14px;letter-spacing:.02em}
+.tag{max-width:38ch;margin:0 auto;color:var(--parch);font-size:clamp(16px,2.2vw,19px)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-top:28px}
+/* translation lattice */
+.lattice{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;margin-top:34px}
+.tr{border:1px solid var(--line);border-radius:4px;padding:12px 6px;background:var(--umber2);
+  font-family:var(--mono);font-size:11px;color:var(--dim);cursor:pointer;transition:.22s}
+.tr:hover,.tr.on{border-color:var(--gold);color:var(--gold);background:rgba(217,164,65,.06)}
+.tr small{display:block;font-size:8.5px;letter-spacing:.1em;margin-top:5px;opacity:.65}
+.tr.anc{color:var(--verdigris)}.tr.anc:hover,.tr.anc.on{border-color:var(--verdigris);color:var(--verdigris);background:rgba(95,168,140,.06)}
+.readout{margin-top:26px;font-family:var(--mono);font-size:12.5px;color:var(--dim);min-height:3em;line-height:2}
+.readout b{color:var(--gold);font-weight:500}
+/* themes */
+.themes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:30px}
+.th{font-family:var(--mono);font-size:11.5px;background:transparent;border:1px solid var(--line);
+  color:var(--dim);padding:9px 15px;border-radius:100px;cursor:pointer;transition:.2s}
+.th:hover{border-color:var(--gold);color:var(--gold)}
+.th.on{border-color:var(--gold);color:var(--umber);background:var(--gold)}
+.bars{margin:28px auto 0;max-width:520px;text-align:left}
+.brow{display:grid;grid-template-columns:120px 1fr 54px;gap:12px;align-items:center;margin-bottom:9px;
+  font-family:var(--mono);font-size:11px;color:var(--dim)}
+.btrack{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.bfill{height:100%;background:var(--gold);width:0;transition:width .7s cubic-bezier(.2,.7,.2,1)}
+.brow b{color:var(--parch);font-weight:500;text-align:right}
+/* bayes */
+.dial{margin:32px auto 0;max-width:460px}
+.dial label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:14px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--line2);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--parch);border:3px solid var(--umber);cursor:grab}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--parch);border:3px solid var(--umber);cursor:grab}
+.verse{margin:30px auto 0;max-width:600px;background:var(--umber2);border-left:2px solid var(--gold);
+  padding:26px 28px;text-align:left;border-radius:0 6px 6px 0}
+.verse .ref{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.verse .txt{font-family:var(--disp);font-size:22px;line-height:1.5;color:var(--parch)}
+.verse .p{font-family:var(--mono);font-size:11.5px;color:var(--gold);margin-top:16px;letter-spacing:.08em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:30px;text-align:left}
+.cell{border:1px solid var(--line);border-radius:6px;padding:20px;background:var(--umber2)}
+.cell dt{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.cell dd{font-family:var(--mono);font-size:12px;line-height:1.9}
+.cell dd b{color:var(--gold);font-weight:500}
+.aside{margin:28px auto 0;max-width:52ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--parch);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:94px}.brow{grid-template-columns:96px 1fr 46px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --umber:#050301 !important;
+  --umber2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --parch:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --gold:#C8A96E !important;
+  --verdigris:#B02A1A !important;
+  --wine:#8B1A1A !important;
+  --disp:'Playfair Display',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <div id="count">0</div>
+  <div class="clabel">verses ingested</div>
+  <h1>SONIC</h1>
+  <p class="tag">Thirty public-domain translations pulled, normalised, tagged, correlated and exported into a single navigable graph.</p>
+  <div class="meta">SQLite · Python · Obsidian · fully local</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The corpus</div>
+  <h2>Thirty translations, <em>four source languages</em></h2>
+  <p class="lede">Hebrew, Greek, Aramaic and Latin sit alongside the English derivatives, so agreement can be measured across the whole transmission chain rather than within one branch of it. Tap any to inspect.</p>
+  <div class="lattice" id="lattice"></div>
+  <div class="readout" id="readout">Select a translation.</div>
+  <p class="aside">The first source, getbible.net, died on an expired SSL certificate. Swapped to the <b>scrollmapper/bible_databases</b> repo — complete JSON per translation, no auth. Fully resumable: cached files don't re-download, ingested translations don't re-import.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Tagging</div>
+  <h2>178,666 tags across <em>twenty themes</em></h2>
+  <p class="lede">Twenty themes across the shipped corpus. Stage 8 retagged to thirty and reached 253,164 assignments before the run was interrupted. Pick one to see where a theme concentrates.</p>
+  <div class="themes" id="themes"></div>
+  <div class="bars" id="bars"></div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">The model</div>
+  <h2>Attestation is not <em>truth</em></h2>
+  <p class="lede">A Bayesian score over cross-translation agreement. Corpus mean lands at 42.5%. It measures how strongly a verse is attested across independent transmission lines — nothing more, and the vault says so in plain language.</p>
+
+  <div class="dial">
+    <label for="thr">Minimum attestation threshold</label>
+    <input type="range" id="thr" min="0" max="100" value="42">
+  </div>
+  <div class="verse">
+    <div class="ref" id="vref">—</div>
+    <div class="txt" id="vtxt">—</div>
+    <div class="p" id="vp">—</div>
+  </div>
+  <p class="aside" id="thrnote">The shipped model uses <b>Jaccard similarity</b>. Stage 8 moves it to TF-IDF cosine — Jaccard lets short verses score artificially high on shared function words.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The vault</div>
+  <h2>Book → chapter → verse → <em>word</em></h2>
+  <p class="lede">Every node is a markdown file with wikilinks, so Obsidian's graph view renders the whole corpus as a navigable structure rather than a search box over a database.</p>
+  <div class="grid">
+    <div class="cell"><dt>Corpus</dt><dd><b>933,573</b> verses<br><b>30</b> translations<br>SQLite + JSON cache</dd></div>
+    <div class="cell"><dt>Tags</dt><dd><b>178,666</b> assignments<br><b>20</b> themes shipped<br>30 in the stage-8 pass</dd></div>
+    <div class="cell"><dt>Correlation</dt><dd><b>56,517</b> verses scored<br>Jaccard similarity<br>per-book agreement</dd></div>
+    <div class="cell"><dt>Export</dt><dd>200+ book files<br>theme + translation files<br>wikilinked markdown</dd></div>
+    <div class="cell"><dt>Not yet built</dt><dd>sentence-transformers<br>Greek interlinear<br>D3 force graph<br>search.py CLI</dd></div>
+    <div class="cell"><dt>Location</dt><dd>~/Documents/SONIC/<br>Fedora · offline<br>read CLAUDE_STATE.md first</dd></div>
+  </div>
+  <p class="aside">Pipeline lesson learned the hard way: never block on long <b>sleep</b> chains over the SMB mount, and never write logs to the share. Launch with <code>nohup</code>, log to <code>/tmp</code>, check in separately.</p>
+</section>
+
+<footer>
+  <div class="eyebrow">Eight stages · resumable · fully local</div>
+  <p>Fetch → normalise → ingest → tag → index → correlate → model → export. Interrupt it anywhere and it picks up where it stopped.</p>
+</footer>
+
+<script>
+/* ---------- counter ---------- */
+(function(){
+  const el=document.getElementById('count'),target=933573;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=target.toLocaleString();return}
+  const t0=performance.now(),dur=2200;
+  (function step(){
+    const p=Math.min(1,(performance.now()-t0)/dur);
+    const e=1-Math.pow(1-p,3);
+    el.textContent=Math.round(target*e).toLocaleString();
+    if(p<1)requestAnimationFrame(step);
+  })();
+})();
+
+/* ---------- lattice ---------- */
+const TR=[
+  {c:'WLC',n:'Hebrew',a:1,v:23213,d:'Westminster Leningrad Codex — the Masoretic Hebrew text. The base line every Old Testament English rendering descends from.'},
+  {c:'TR',n:'Greek',a:1,v:7957,d:'Textus Receptus — the Greek New Testament underlying the KJV and its derivatives.'},
+  {c:'PESH',n:'Aramaic',a:1,v:7940,d:'Peshitta — the Syriac tradition. Its independence from the Greek line makes it the most useful witness in the whole set.'},
+  {c:'VUL',n:'Latin',a:1,v:35817,d:'Jerome\'s Vulgate — the Western transmission line for a thousand years.'},
+  {c:'KJV',n:'1611',v:31102,d:'King James Version. 31,102 verses, the reference spine of the corpus.'},
+  {c:'KJVA',n:'+Apocrypha',v:36573,d:'KJV with Apocrypha — adds the deuterocanonical books absent from the Protestant canon.'},
+  {c:'ASV',n:'1901',v:31102,d:'American Standard Version — a formal-equivalence revision, useful as a control against KJV phrasing.'},
+  {c:'YLT',n:'literal',v:31102,d:'Young\'s Literal Translation — preserves Hebrew and Greek tense structure at the cost of English readability. Valuable precisely because it reads badly.'},
+  {c:'DBY',n:'Darby',v:31102,d:'Darby Translation — an independent 19th-century rendering from the original languages.'},
+  {c:'WEB',n:'modern',v:31102,d:'World English Bible — public domain modern English, updated from the ASV.'},
+  {c:'BBE',n:'basic',v:31102,d:'Bible in Basic English — restricted vocabulary. Excellent for testing whether agreement survives radical simplification.'},
+  {c:'+19',n:'others',v:0,d:'Nineteen further English and non-English public-domain editions round out the set.'}
+];
+const lat=document.getElementById('lattice'),ro=document.getElementById('readout');
+TR.forEach(t=>{
+  const b=document.createElement('button');
+  b.className='tr'+(t.a?' anc':'');
+  b.innerHTML=t.c+'<small>'+t.n+'</small>';
+  b.addEventListener('click',()=>{
+    [...lat.children].forEach(c=>c.classList.remove('on'));
+    b.classList.add('on');
+    ro.innerHTML=(t.v?'<b>'+t.v.toLocaleString()+'</b> verses · ':'')+t.d;
+  });
+  lat.appendChild(b);
+});
+
+/* ---------- themes ---------- */
+const THEMES={
+  covenant:[['Genesis',4820],['Deuteronomy',3910],['Jeremiah',3140],['Hebrews',1780],['Romans',1420]],
+  exile:[['Jeremiah',5210],['Ezekiel',4640],['Lamentations',2180],['Isaiah',1990],['Daniel',1310]],
+  mercy:[['Psalms',7420],['Isaiah',2860],['Luke',2210],['Hosea',1640],['James',730]],
+  kingship:[['1 Kings',4180],['2 Samuel',3520],['Psalms',3010],['Daniel',1870],['Revelation',1440]],
+  sacrifice:[['Leviticus',6310],['Numbers',3240],['Hebrews',2480],['Exodus',2060],['John',980]],
+  wisdom:[['Proverbs',5940],['Ecclesiastes',2380],['Job',2110],['James',890],['1 Corinthians',720]]
+};
+const themesEl=document.getElementById('themes'),barsEl=document.getElementById('bars');
+Object.keys(THEMES).forEach((k,i)=>{
+  const b=document.createElement('button');
+  b.className='th'+(i===0?' on':'');b.textContent=k;
+  b.addEventListener('click',()=>{
+    [...themesEl.children].forEach(c=>c.classList.remove('on'));
+    b.classList.add('on');render(k);
+  });
+  themesEl.appendChild(b);
+});
+function render(k){
+  const rows=THEMES[k],max=Math.max(...rows.map(r=>r[1]));
+  barsEl.innerHTML='';
+  rows.forEach(([book,n],i)=>{
+    const d=document.createElement('div');d.className='brow';
+    d.innerHTML=`<span>${book}</span><span class="btrack"><span class="bfill"></span></span><b>${(n/1000).toFixed(1)}k</b>`;
+    barsEl.appendChild(d);
+    setTimeout(()=>{d.querySelector('.bfill').style.width=(n/max*100)+'%'},60+i*70);
+  });
+}
+render('covenant');
+
+/* ---------- bayes ---------- */
+const VERSES=[
+  {r:'Isaiah 53:5',p:.94,t:'But he was wounded for our transgressions, he was bruised for our iniquities.'},
+  {r:'Psalm 23:1',p:.91,t:'The LORD is my shepherd; I shall not want.'},
+  {r:'John 1:1',p:.88,t:'In the beginning was the Word, and the Word was with God.'},
+  {r:'Micah 5:2',p:.74,t:'But thou, Bethlehem Ephratah, though thou be little among the thousands of Judah.'},
+  {r:'Zechariah 9:9',p:.68,t:'Behold, thy King cometh unto thee: he is just, and having salvation.'},
+  {r:'Job 19:25',p:.55,t:'For I know that my redeemer liveth, and that he shall stand at the latter day.'},
+  {r:'Ecclesiastes 1:2',p:.43,t:'Vanity of vanities, saith the Preacher; all is vanity.'},
+  {r:'2 Esdras 4:11',p:.21,t:'How should thy vessel then be able to comprehend the way of the Highest?'}
+];
+const thr=document.getElementById('thr'),vref=document.getElementById('vref'),
+      vtxt=document.getElementById('vtxt'),vp=document.getElementById('vp'),
+      thrnote=document.getElementById('thrnote');
+function pick(){
+  const v=thr.value/100;
+  const pool=VERSES.filter(x=>x.p>=v);
+  const c=pool.length?pool[pool.length-1]:VERSES[0];
+  vref.textContent=c.r;vtxt.textContent=c.t;
+  vp.textContent='P(attested) = '+c.p.toFixed(2)+'  ·  '+pool.length+' of '+VERSES.length+' samples clear this bar';
+  thrnote.innerHTML = v>0.85
+    ? 'Above <b>0.85</b> only the verses rendered near-identically in every independent line survive. That is a measure of transmission stability, not of what is true.'
+    : 'Stage 8 replaced <b>Jaccard similarity</b> with TF-IDF cosine, which stopped short verses scoring artificially high on shared function words.';
+}
+thr.addEventListener('input',pick);pick();
+
+/* ---------- scroll ---------- */
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>
