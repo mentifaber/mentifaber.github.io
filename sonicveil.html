@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e3d9c2">
 <title>Sonic Veil — composer, since 2016</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --black:#050301;--panel:#0B0805;--panel2:#100C08;--line:rgba(200,169,110,.14);--line2:rgba(200,169,110,.30);
-  --parch:#F2E6CF;--dim:#8a7d6c;--gold:#C8A96E;--gold-dim:#8A7050;--ember:#B02A1A;--ember-hi:#D94030;--blood:#8B1A1A;
-  --disp:'Playfair Display',serif;--body:'EB Garamond',serif;--mono:'JetBrains Mono',monospace;
+  --black:#e3d9c2;--panel:#ece3cd;--panel2:#ece3cd;--line:rgba(42,36,29,.14);--line2:rgba(42,36,29,.28);
+  --parch:#2a241d;--dim:#655b47;--gold:#3c5566;--gold-dim:#6e8792;--ember:#9a4f2e;--ember-hi:#b8623a;--blood:#9a4f2e;
+  --disp:'Bricolage Grotesque',sans-serif;--body:'Newsreader',serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--black);color:var(--parch);font-family:var(--body);font-size:17.5px;line-height:1.65;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;cursor:crosshair}
+body{background:var(--black);color:var(--parch);font-family:var(--body);font-size:17.5px;line-height:1.65;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 ::selection{background:var(--gold);color:var(--black)}
 .col{max-width:700px;margin:0 auto;padding:0 24px}.wide{max-width:920px;margin:0 auto;padding:0 24px}
 #bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--gold),var(--ember))}
@@ -19,18 +20,18 @@ body{background:var(--black);color:var(--parch);font-family:var(--body);font-siz
 .gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
 .gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--black);transition:.5s}
 .gap.lit i{background:var(--gold);box-shadow:0 0 0 7px var(--black),0 0 16px var(--gold)}
-.eyebrow{font-family:'Syncopate',sans-serif;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
-h2{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(30px,5.4vw,50px);line-height:1.1;margin:16px auto 16px;max-width:19ch;letter-spacing:-.01em}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:'Bricolage Grotesque',sans-serif;font-style:italic;font-weight:700;font-size:clamp(30px,5.4vw,50px);line-height:1.1;margin:16px auto 16px;max-width:19ch;letter-spacing:-.01em}
 h2 em{color:var(--gold);font-style:italic}
 .lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:17px}
 .rv{opacity:0;transform:translateY(20px);transition:.9s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
 .hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
 #veil{width:min(94vw,640px);height:190px;display:block}
-.label{font-family:'Syncopate',sans-serif;font-size:11px;letter-spacing:.4em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px}
-h1{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(58px,13vw,124px);line-height:.9;letter-spacing:-.02em;margin:14px 0 18px}
+.label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.4em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-style:italic;font-weight:700;font-size:clamp(58px,13vw,124px);line-height:.9;letter-spacing:-.02em;margin:14px 0 18px}
 h1 em{color:var(--gold);font-style:normal;font-weight:900}
 .tagline{font-family:var(--body);font-style:italic;font-size:clamp(17px,2.2vw,20px);color:var(--dim);letter-spacing:.03em;max-width:38ch;margin:0 auto}
-.meta{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:28px}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:28px}
 
 /* transport */
 .transport{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:30px;flex-wrap:wrap}
@@ -38,33 +39,33 @@ h1 em{color:var(--gold);font-style:normal;font-weight:900}
   color:var(--parch);cursor:pointer;transition:.2s;display:grid;place-items:center;font-size:15px}
 .play:hover{border-color:var(--gold);color:var(--gold)}
 .play.on{border-color:var(--ember);color:var(--ember-hi);box-shadow:0 0 24px rgba(176,42,26,.25)}
-.readout{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.1em;text-align:left;min-width:210px}
+.readout{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.1em;text-align:left;min-width:210px}
 .readout b{color:var(--parch);font-weight:400}
 
 /* discography */
 .disco{margin-top:34px;text-align:left;max-width:640px;margin-left:auto;margin-right:auto}
 .trow{display:grid;grid-template-columns:96px 1fr auto;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer;transition:.18s}
 .trow:hover{background:rgba(200,169,110,.04)}
-.trow .d{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+.trow .d{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
 .trow .n{font-family:var(--disp);font-style:italic;font-size:17px}
 .trow .n b{font-style:normal;color:var(--gold);font-weight:400}
-.trow .s{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold-dim);letter-spacing:.08em;text-align:right}
-.trow.head{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;cursor:default;border-bottom-color:var(--line2)}
+.trow .s{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold-dim);letter-spacing:.08em;text-align:right}
+.trow.head{color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;cursor:default;border-bottom-color:var(--line2)}
 .trow.head:hover{background:transparent}
 
 .stat-row{display:flex;gap:34px;justify-content:center;flex-wrap:wrap;margin-top:34px}
 .stat{text-align:center}
-.stat b{display:block;font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:34px;color:var(--gold)}
-.stat span{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-style:italic;font-weight:700;font-size:34px;color:var(--gold)}
+.stat span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 
 .bio{margin:32px auto 0;max-width:560px;background:var(--panel);border-left:2px solid var(--gold);
   padding:26px 28px;text-align:left;font-family:var(--body);font-style:italic;font-size:18px;line-height:1.75;color:var(--parch)}
-.bio cite{display:block;margin-top:14px;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.bio cite{display:block;margin-top:14px;font-family:'IBM Plex Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-top:32px;text-align:left}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:22px;transition:border-color .25s}
 .card:hover{border-color:var(--line2)}
-.card h4{font-family:'Syncopate',sans-serif;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.card h4{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
 .card p{font-size:15.5px;line-height:1.6}
 .card p b{color:var(--gold);font-weight:600}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:32px;text-align:left}
@@ -75,7 +76,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
 .mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
 .mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
 .mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
-.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:.3s}
+.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:.3s}
 .mf-corner:hover{color:#c8a96e;opacity:1}
 .mf-tl{top:3.2vh;left:4vw}.mf-return{bottom:3.2vh;left:4vw}.mf-return::before{content:"\2190 "}.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
 
