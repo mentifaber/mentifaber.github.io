@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e3d9c2">
 <title>Watch Your Grass — a garden that fights back</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --soil:#0B1510;--soil2:#122019;--panel:#182B21;--line:#223B2D;--line2:#33553F;
-  --leaf:#D6EED6;--dim:#7DA089;--moss:#7BC96F;--bloom:#F2A65A;--thorn:#E0605E;--sky:#63C2D6;
-  --disp:'Fredoka',system-ui,sans-serif;--body:'Nunito Sans',system-ui,sans-serif;--mono:'Space Mono',monospace;
+  --soil:#e3d9c2;--soil2:#ece3cd;--panel:#ece3cd;--line:rgba(42,36,29,.14);--line2:rgba(42,36,29,.30);
+  --leaf:#2a241d;--dim:#655b47;--moss:#3c5566;--bloom:#9a4f2e;--thorn:#b8623a;--sky:#6e8792;
+  --disp:'Bricolage Grotesque',sans-serif;--body:'Newsreader',serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--soil);color:var(--leaf);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--soil);color:var(--leaf);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
 ::selection{background:var(--moss);color:var(--soil)}
 .col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:960px;margin:0 auto;padding:0 24px}
 #bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--moss),var(--bloom))}
@@ -77,44 +78,37 @@ h1 em{color:var(--moss);font-style:normal}
 footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
 @media(max-width:680px){.gap{height:92px}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
-:root{
-  --soil:#050301 !important;
-  --soil2:#0B0805 !important;
-  --panel:#100C08 !important;
-  --line:rgba(200,169,110,.14) !important;
-  --line2:rgba(200,169,110,.30) !important;
-  --leaf:#F2E6CF !important;
-  --dim:#8a7d6c !important;
-  --moss:#C8A96E !important;
-  --bloom:#B02A1A !important;
-  --thorn:#8B1A1A !important;
-  --sky:#8A7050 !important;
-  --disp:'EB Garamond',serif !important;
-  --body:'EB Garamond',serif !important;
-  --mono:'JetBrains Mono',monospace !important;
-}
 
-/* ===== mentifaber brand chrome ===== */
-.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
-.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
-.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
-.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:#c8a96e;opacity:1}
+/* ===== atlas brand chrome ===== */
+.contours{position:fixed;inset:0;z-index:-2;opacity:.55;pointer-events:none}
+.contours svg{width:100%;height:100%}
+.mf-grain{position:fixed;inset:0;z-index:-1;opacity:.05;mix-blend-mode:multiply;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:var(--moss);opacity:1}
 .mf-tl{top:3.2vh;left:4vw}
 .mf-return{bottom:3.2vh;left:4vw}
 .mf-return::before{content:"\2190 ";}
 .mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
 @media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
-/* ---- typographic alignment ---- */
-h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
-.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
-body{cursor:crosshair;}
+h1,h2{font-family:'Bricolage Grotesque',sans-serif;}
 </style></head><body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+    </g>
+  </svg>
+</div>
 <div class="mf-grain"></div>
-<div class="mf-vignette"></div>
-<div class="mf-glow" id="mfGlow"></div>
-<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
-<a href="index.html" class="mf-corner mf-return">Return</a>
+<a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
+<a href="index.html" class="mf-corner mf-return">Atlas</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
 <div id="bar"></div>
@@ -363,15 +357,4 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
-<script>
-(function(){
-  var g=document.getElementById('mfGlow');
-  if(!g)return;
-  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
-  var touch=matchMedia('(hover: none)').matches;
-  if(touch){g.style.display='none';return}
-  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
-  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
-})();
-</script>
 </body></html>
