@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e3d9c2">
 <title>NovarAC — HF chat with the internet switched off</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --case:#100C08;--case2:#1A130C;--panel:#221A11;--line:#33281B;--line2:#4A3A25;
-  --lamp:#F5E7CE;--dim:#9A836A;--amber:#FFB000;--amber2:#FF8A2B;--green:#6FD48A;--red:#E5573F;
-  --disp:'Exo 2',system-ui,sans-serif;--mono:'Share Tech Mono',monospace;
+  --case:#e3d9c2;--case2:#ece3cd;--panel:#ece3cd;--line:rgba(42,36,29,.14);--line2:rgba(42,36,29,.30);
+  --lamp:#2a241d;--dim:#655b47;--amber:#9a4f2e;--amber2:#b8623a;--green:#3c5566;--red:#9a4f2e;
+  --disp:'Bricolage Grotesque',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--case);color:var(--lamp);font-family:var(--disp);font-weight:300;font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--case);color:var(--lamp);font-family:'Newsreader',serif;font-weight:400;font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
 ::selection{background:var(--amber);color:var(--case)}
 .col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
 #bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--green),var(--amber))}
@@ -20,12 +21,12 @@ body{background:var(--case);color:var(--lamp);font-family:var(--disp);font-weigh
 .gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--case);transition:.5s}
 .gap.lit i{background:var(--amber);box-shadow:0 0 0 7px var(--case),0 0 16px var(--amber)}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
-h2{font-weight:700;font-size:clamp(30px,5.6vw,52px);line-height:1.05;margin:14px auto 14px;max-width:16ch;letter-spacing:-.02em}
+h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(30px,5.6vw,52px);line-height:1.05;margin:14px auto 14px;max-width:16ch;letter-spacing:-.02em}
 h2 em{color:var(--amber);font-style:normal}
 .lede{color:var(--dim);max-width:50ch;margin:0 auto;font-size:16.5px;font-weight:300}
 .rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
 .hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
-h1{font-weight:700;font-size:clamp(52px,12vw,116px);line-height:.9;letter-spacing:-.045em;margin:26px 0 16px}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(52px,12vw,116px);line-height:.9;letter-spacing:-.045em;margin:26px 0 16px}
 h1 em{color:var(--amber);font-style:normal}
 .tag{max-width:32ch;margin:0 auto;font-size:clamp(17px,2.3vw,21px)}
 .tag b{font-weight:600;color:var(--green)}
@@ -33,8 +34,8 @@ h1 em{color:var(--amber);font-style:normal}
 
 /* ------- the rig ------- */
 .rig{width:min(94vw,560px);background:linear-gradient(180deg,var(--case2),var(--panel));
-  border:1px solid var(--line2);border-radius:10px;padding:22px;box-shadow:0 22px 60px rgba(0,0,0,.6)}
-.vfd{background:#0A0704;border:1px solid var(--line);border-radius:6px;padding:18px 20px;text-align:left;
+  border:1px solid var(--line2);border-radius:10px;padding:22px;box-shadow:0 22px 60px rgba(42,36,29,.35)}
+.vfd{background:#1c1710;border:1px solid var(--line);border-radius:6px;padding:18px 20px;text-align:left;
   box-shadow:inset 0 0 34px rgba(255,176,0,.07)}
 .freq{font-family:var(--mono);font-size:clamp(34px,8vw,54px);color:var(--amber);
   letter-spacing:.03em;text-shadow:0 0 18px rgba(255,176,0,.45);line-height:1;font-variant-numeric:tabular-nums}
@@ -51,7 +52,7 @@ h1 em{color:var(--amber);font-style:normal}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--line2);border-radius:3px;outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#4A3A25,#1A130C);border:1px solid var(--line2);cursor:grab;
-  box-shadow:0 3px 8px rgba(0,0,0,.6)}
+  box-shadow:0 3px 8px rgba(42,36,29,.35)}
 input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#2A2116;border:1px solid var(--line2);cursor:grab}
 .bands{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:18px}
 .band{font-family:var(--mono);font-size:11px;background:transparent;border:1px solid var(--line);
@@ -64,7 +65,7 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 .ptt.tx{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 30px rgba(229,87,63,.45)}
 
 /* ------- chat ------- */
-.term{background:#0A0704;border:1px solid var(--line);border-radius:6px;padding:20px;
+.term{background:#1c1710;border:1px solid var(--line);border-radius:6px;padding:20px;
   margin-top:30px;text-align:left;font-family:var(--mono);font-size:13px;line-height:2;min-height:190px}
 .term .rx{color:var(--green)}.term .tx{color:var(--amber)}.term .sys{color:var(--dim)}
 .term .cs{color:var(--lamp)}
@@ -81,43 +82,36 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
 @media(max-width:680px){.gap{height:92px}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
-:root{
-  --case:#050301 !important;
-  --case2:#0B0805 !important;
-  --panel:#100C08 !important;
-  --line:rgba(200,169,110,.14) !important;
-  --line2:rgba(200,169,110,.30) !important;
-  --lamp:#F2E6CF !important;
-  --dim:#8a7d6c !important;
-  --amber:#C8A96E !important;
-  --amber2:#B02A1A !important;
-  --green:#8A7050 !important;
-  --red:#8B1A1A !important;
-  --disp:'EB Garamond',serif !important;
-  --mono:'JetBrains Mono',monospace !important;
-}
 
-/* ===== mentifaber brand chrome ===== */
-.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
-.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
-.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
-.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:#c8a96e;opacity:1}
+/* ===== atlas brand chrome ===== */
+.contours{position:fixed;inset:0;z-index:-2;opacity:.55;pointer-events:none}
+.contours svg{width:100%;height:100%}
+.mf-grain{position:fixed;inset:0;z-index:-1;opacity:.05;mix-blend-mode:multiply;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:var(--amber);opacity:1}
 .mf-tl{top:3.2vh;left:4vw}
 .mf-return{bottom:3.2vh;left:4vw}
 .mf-return::before{content:"\2190 ";}
 .mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
 @media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
-/* ---- typographic alignment ---- */
-h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
-.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
-body{cursor:crosshair;}
 </style></head><body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+    </g>
+  </svg>
+</div>
 <div class="mf-grain"></div>
-<div class="mf-vignette"></div>
-<div class="mf-glow" id="mfGlow"></div>
-<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
-<a href="index.html" class="mf-corner mf-return">Return</a>
+<a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
+<a href="index.html" class="mf-corner mf-return">Atlas</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
 <div id="bar"></div>
@@ -276,15 +270,4 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
-<script>
-(function(){
-  var g=document.getElementById('mfGlow');
-  if(!g)return;
-  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
-  var touch=matchMedia('(hover: none)').matches;
-  if(touch){g.style.display='none';return}
-  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
-  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
-})();
-</script>
 </body></html>

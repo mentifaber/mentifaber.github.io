@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pi — a voice that lives on the phone</title>
+<meta name="theme-color" content="#e3d9c2"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --void:#090D12;
@@ -227,42 +228,56 @@ footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
   *{transition-duration:.01ms!important}
 }
 :root{
-  --void:#050301 !important;
-  --slate:#0B0805 !important;
-  --slate2:#100C08 !important;
-  --line:rgba(200,169,110,.14) !important;
-  --line2:rgba(200,169,110,.30) !important;
-  --bone:#F2E6CF !important;
-  --dim:#8a7d6c !important;
-  --ember:#B02A1A !important;
-  --phosphor:#C8A96E !important;
-  --display:'Playfair Display',serif !important;
-  --body:'EB Garamond',serif !important;
-  --mono:'JetBrains Mono',monospace !important;
+  --void:#e3d9c2 !important;
+  --slate:#ece3cd !important;
+  --slate2:#ece3cd !important;
+  --line:rgba(42,36,29,.14) !important;
+  --line2:rgba(42,36,29,.30) !important;
+  --bone:#2a241d !important;
+  --dim:#655b47 !important;
+  --ember:#9a4f2e !important;
+  --phosphor:#3c5566 !important;
+  --display:'Bricolage Grotesque',sans-serif !important;
+  --body:'Newsreader',serif !important;
+  --mono:'IBM Plex Mono',monospace !important;
 }
 
 /* ===== mentifaber brand chrome ===== */
-.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
-.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
-.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
-.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:#c8a96e;opacity:1}
+.contours{position:fixed;inset:0;z-index:198;opacity:.55;pointer-events:none}
+.contours svg{width:100%;height:100%}
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
+.mf-vignette{display:none}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(154,79,46,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:197}
+.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#655b47;text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#9a4f2e;opacity:1}
 .mf-tl{top:3.2vh;left:4vw}
 .mf-return{bottom:3.2vh;left:4vw}
 .mf-return::before{content:"\2190 ";}
 .mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
 @media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
 /* ---- typographic alignment ---- */
-h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
-.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
-body{cursor:crosshair;}
+h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
+.eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
 </style>
 </head>
 <body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+    </g>
+  </svg>
+</div>
 <div class="mf-grain"></div>
 <div class="mf-vignette"></div>
 <div class="mf-glow" id="mfGlow"></div>
-<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-tl">← Atlas</a>
 <a href="index.html" class="mf-corner mf-return">Return</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
@@ -425,7 +440,7 @@ const Orb = (()=>{
   let target=0, amp=0, hover=0;
 
   if(!gl){
-    cv.style.background='radial-gradient(circle,#C8A96E 0%,#050301 68%)';
+    cv.style.background='radial-gradient(circle,#b8623a 0%,#e3d9c2 68%)';
     cv.style.borderRadius='50%';
     return {pulse(){},hot(){}};
   }
