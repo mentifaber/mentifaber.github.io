@@ -44,7 +44,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .btn.on{border-color:var(--violet);color:var(--violet)}
 .gauge{margin:30px auto 0;max-width:540px}
 .track{height:34px;border:1px solid var(--line);border-radius:6px;position:relative;background:var(--ink2);overflow:hidden}
-.zone{position:absolute;top:0;bottom:0;background:rgba(176,42,26,.10);border-left:1px dashed var(--line2);border-right:1px dashed var(--line2)}
+.zone{position:absolute;top:0;bottom:0;background:rgba(154,79,46,.10);border-left:1px dashed var(--line2);border-right:1px dashed var(--line2)}
 .needle{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--sodium);box-shadow:0 0 12px var(--sodium);transition:left .5s cubic-bezier(.2,.7,.2,1)}
 .needle.bad{background:var(--rose);box-shadow:0 0 12px var(--rose)}
 .scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.1em}
@@ -208,9 +208,9 @@ function draw(){
   cx.clearRect(0,0,W,H);
   const partials=Math.round(2+T.d*9);
   const grad=cx.createLinearGradient(0,0,W,0);
-  grad.addColorStop(0,'rgba(200,169,110,.15)');
-  grad.addColorStop(.5,flip?'#FF7A9C':'#FFC24B');
-  grad.addColorStop(1,'rgba(200,169,110,.15)');
+  grad.addColorStop(0,'rgba(42,36,29,.15)');
+  grad.addColorStop(.5,flip?'#3c5566':'#b8623a');
+  grad.addColorStop(1,'rgba(42,36,29,.15)');
   cx.strokeStyle=grad;cx.lineWidth=2.2;cx.beginPath();
   for(let x=0;x<W;x++){
     const u=x/W;let y=0,amp=0;

@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e3d9c2">
 <title>Proximity — seeing people through walls with ambient WiFi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --deep:#05080C;--deep2:#0A1017;--panel:#0E161F;--line:#182430;--line2:#243646;
-  --ice:#DCE8F2;--dim:#63798E;--cyan:#3FD2E8;--magenta:#FF4D8D;--lime:#9BE86B;
-  --disp:'Chakra Petch',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif;--mono:'Roboto Mono',monospace;
+  --deep:#e3d9c2;--deep2:#ece3cd;--panel:#ece3cd;--line:rgba(42,36,29,.14);--line2:rgba(42,36,29,.30);
+  --ice:#2a241d;--dim:#655b47;--cyan:#3c5566;--magenta:#9a4f2e;--lime:#b8623a;
+  --disp:'Bricolage Grotesque',sans-serif;--body:'Newsreader',serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--deep);color:var(--ice);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--deep);color:var(--ice);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
 ::selection{background:var(--cyan);color:var(--deep)}
 .col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:960px;margin:0 auto;padding:0 24px}
 #bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--cyan),var(--magenta))}
