@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Cartograph — a 3D map of everything in orbit."/>
+<meta name="description" content="Cartograph — a live 3D atlas of the solar system, the stellar neighborhood, the galaxy, and the exotic."/>
 <meta property="og:title" content="Cartograph"/>
-<meta property="og:description" content="A 3D map of everything in orbit, rendered live in the browser."/>
+<meta property="og:description" content="A 3D atlas of everything in orbit — planets, stars, galaxies, black holes — rendered live in the browser."/>
 <meta name="theme-color" content="#e3d9c2"/>
 <title>Cartograph</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -26,26 +26,56 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
 .grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
+.container { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: clamp(4rem, 8vh, 6.5rem) clamp(1.5rem, 12vw, 14vw) clamp(2rem, 5vh, 3.5rem); position: relative; z-index: 2; }
 .label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
   color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
 .name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3.4rem, 12vw, 9rem);
   font-weight: 700; letter-spacing: -0.02em; line-height: 0.9; color: var(--ink); }
 .name span { color: var(--indigo); }
 .tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 46ch; }
+  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 50ch; }
 .divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
   background: linear-gradient(to right, transparent, var(--indigo), transparent); }
 .status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
   font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--rust-hi); }
+.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo); }
 
-/* orbit render */
-.orbit-wrap { max-width: 620px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
-.orbit-box { border: 1px solid var(--contour); background: var(--paper-hi); aspect-ratio: 16/10; position: relative; overflow: hidden; }
-.orbit-box canvas { width: 100%; height: 100%; display: block; }
-.orbit-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
+/* ── the stage — live 3D viewer ── */
+.stage-wrap { max-width: 900px; margin: 0 auto; padding: 0 clamp(1.5rem,6vw,6rem) 4vh; position: relative; z-index: 2; }
+.carto-stage { position: relative; width: 100%; aspect-ratio: 16/10; min-height: 380px; background: #04040a;
+  border: 1px solid var(--contour); overflow: hidden; font-family: 'IBM Plex Mono', monospace; }
+.carto-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.cs-top { position: absolute; top: 0; left: 0; right: 0; padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(4,4,10,.85) 0%, transparent 100%);
+  display: flex; align-items: center; justify-content: space-between; z-index: 5; pointer-events: none; }
+.cs-title { font-size: 10px; font-weight: 600; letter-spacing: .25em; color: #8fb0c2; text-transform: uppercase; }
+.cs-count { font-size: 10px; color: #5a6a78; }
+.cs-legend { position: absolute; top: 44px; right: 8px; background: rgba(4,4,10,.8); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 6px; padding: 8px 10px; z-index: 5; font-size: 9.5px; max-width: 152px; }
+.cs-legend h4 { font-size: 8px; color: #5a6a78; letter-spacing: .14em; margin-bottom: 6px; text-transform: uppercase; }
+.cs-li { display: flex; align-items: center; gap: 6px; color: #8a97a3; margin-bottom: 4px; }
+.cs-ld { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cs-modes { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
+  z-index: 5; flex-wrap: wrap; justify-content: center; padding: 0 8px; width: 100%; }
+.cs-mbtn { padding: 6px 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.16); background: rgba(4,4,10,.72);
+  color: #8a97a3; font-size: 10px; letter-spacing: .03em; cursor: pointer; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+.cs-mbtn.active { background: rgba(58,85,102,.6); border-color: #6e8792; color: #dce8ee; }
+.cs-panel { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(4,4,10,.97) 0%, rgba(4,4,10,.9) 100%);
+  border-top: 1px solid rgba(110,135,146,.3); padding: 14px 14px 18px; z-index: 8; transform: translateY(100%);
+  transition: transform .3s ease; max-height: 68%; overflow-y: auto; }
+.cs-panel.open { transform: translateY(0); }
+.cs-pname { font-size: 15px; font-weight: 600; color: #dce8ee; margin-bottom: 2px; font-family: 'Bricolage Grotesque', sans-serif; }
+.cs-ptype { font-size: 10px; color: #8fb0c2; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+.cs-pdesc { font-size: 11.5px; color: #a9b4bd; line-height: 1.55; }
+.cs-pstats { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cs-sbox { background: rgba(255,255,255,.05); padding: 6px 8px; border-radius: 5px; }
+.cs-slbl { font-size: 8.5px; color: #5a6a78; letter-spacing: .06em; text-transform: uppercase; }
+.cs-sval { font-size: 11px; color: #dce8ee; font-weight: 600; margin-top: 2px; }
+.cs-pclose { position: absolute; top: 12px; right: 14px; font-size: 18px; cursor: pointer; color: #5a6a78; line-height: 1; }
+.cs-hint { position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); font-size: 9.5px;
+  color: rgba(255,255,255,.28); pointer-events: none; white-space: nowrap; z-index: 4; }
+.stage-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
   color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .6rem .2rem 0; }
 
 .frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
@@ -75,7 +105,13 @@ footer.mf-foot a:hover { color: var(--rust); }
   letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
 .corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
 .corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
+@media (max-width: 600px) {
+  .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; }
+  .corner-tl { top: 3vh; left: 3vw; }
+  .carto-stage { aspect-ratio: 3/4; min-height: 460px; }
+  .cs-legend { display: none; }
+  .cs-hint { display: none; }
+}
 </style>
 </head>
 <body>
@@ -98,14 +134,29 @@ footer.mf-foot a:hover { color: var(--rust); }
 <div class="container">
   <p class="label">orbital mechanics — rendered live</p>
   <h1 class="name">Cartograph<span>.</span></h1>
-  <p class="tagline">A 3D map of everything in orbit — satellites, debris, and the paths they trace — built to run in a browser tab.</p>
+  <p class="tagline">A 3D atlas of the solar system, the stellar neighborhood, the galaxy, and the exotic — black holes, supernovae, first exoplanets — built to run in a browser tab.</p>
   <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>standing up — pre-alpha</span>
+  <span class="status-pill"><span class="sw"></span>live — v1</span>
 </div>
 
-<div class="orbit-wrap">
-  <div class="orbit-box"><canvas id="orbitCanvas"></canvas></div>
-  <div class="orbit-cap"><span>early render — placeholder orbits</span><span id="orbitFrame">FRAME 0</span></div>
+<div class="stage-wrap">
+  <div class="carto-stage" id="cartoStage">
+    <div class="cs-top">
+      <div class="cs-title">◈ Cartograph</div>
+      <div class="cs-count" id="csCount">Loading…</div>
+    </div>
+    <div class="cs-legend" id="csLegend"></div>
+    <div class="cs-hint">Drag to rotate · scroll/pinch to zoom · tap an object</div>
+    <div class="cs-modes" id="csModes"></div>
+    <div class="cs-panel" id="csPanel">
+      <div class="cs-pclose" id="csClose">✕</div>
+      <div class="cs-pname" id="csPname"></div>
+      <div class="cs-ptype" id="csPtype"></div>
+      <div class="cs-pdesc" id="csPdesc"></div>
+      <div class="cs-pstats" id="csPstats"></div>
+    </div>
+  </div>
+  <div class="stage-cap"><span>71 charted objects across four scales</span><span>WebGL / Three.js</span></div>
 </div>
 
 <section class="frag-wrap">
@@ -116,55 +167,636 @@ footer.mf-foot a:hover { color: var(--rust); }
 
   <div class="frag">
     <span class="tag">what it is</span>
-    <p>A 3D orbital cartograph — satellites, tracked debris, and the ground tracks they leave, plotted on a live-rotating globe rather than a flat 2D pass predictor. <b>Sibling project to Orbit Watch</b>: where Orbit Watch is the single-satellite pass tracker, Cartograph is the wide view — everything, at once, in one scene.</p>
+    <p>A 3D cartograph of <b>everything, at every scale</b> — the eight planets and the dwarf planets and the interstellar visitor passing through right now; 35 real stars out to about 25 light-years — plus a few bright naked-eye landmarks farther out for scale — plotted from true right ascension, declination, and distance; the Milky Way and its Local Group neighbors; and a fourth room for the exotic — black holes, supernova remnants, the first exoplanets ever confirmed. <b>Sibling project to Orbit Watch</b>: where Orbit Watch is the single-satellite pass tracker, Cartograph is the wide view — the whole universe, in one scene, at whatever scale you ask for.</p>
   </div>
 
   <div class="frag">
     <span class="tag">how it works</span>
-    <p>Public TLE (two-line element) data feeds an SGP4 propagator to get real position vectors, rendered as a 3D scene the browser draws directly — no plugin, no native app. Objects are colored and filtered by class (active satellite, debris, station), and the camera orbits freely around the globe.</p>
+    <p>Four modes, one renderer. Solar System places each planet by its true orbital radius; Stellar Neighborhood converts real RA/Dec/distance into 3D position for every star it plots; Galaxy Scale marks the Milky Way, Andromeda, the Magellanic Clouds, and M87 at their true relative separations; Exotic groups sixteen black holes, remnants, exoplanets, and deep-field objects for browsing rather than to scale — nothing at this range of scales renders honestly on one axis. Tap anything for its full data panel. Built on Three.js and WebGL, no plugin, no native app.</p>
   </div>
 
   <div class="frag">
     <span class="tag">status</span>
-    <p>Pre-alpha. The render above is a placeholder — real TLE ingest and the SGP4 propagation loop are still being wired up. Treat this page as a marker for where the finished system will live, not a demo of it yet.</p>
+    <p>Live. All four modes are real and interactive — drag to orbit, pinch or scroll to zoom, tap any object for its data. Data drawn from <em>Gaia DR3, NASA, SIMBAD, LIGO/Virgo, and the Event Horizon Telescope collaboration</em>. Next: real TLE ingest and SGP4 propagation for a fifth, live-satellite layer, shared with Orbit Watch.</p>
     <div class="stack-row">
-      <span>WebGL / Three.js</span><span>SGP4 propagation</span><span>Public TLE feeds</span>
+      <span>WebGL / Three.js</span><span>Real RA/Dec/distance</span><span>Gaia DR3 · NASA · SIMBAD</span>
     </div>
   </div>
 </section>
 
 <footer class="mf-foot">
-  <p>Under construction. Check back once the propagator's live.</p>
+  <p>Four views of the universe, one HTML file. More objects added as they're found.</p>
   <a href="index.html">Return to Mentifaber</a>
 </footer>
 
+<script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const canvas = document.getElementById('orbitCanvas');
-const frameLabel = document.getElementById('orbitFrame');
-function resize(){ const r = canvas.getBoundingClientRect(); canvas.width = r.width*devicePixelRatio; canvas.height = r.height*devicePixelRatio; }
-resize(); window.addEventListener('resize', resize);
-const ctx = canvas.getContext('2d');
-const INK = '#2a241d', INDIGO = '#3c5566', RUST = '#9a4f2e', FAINT='rgba(42,36,29,.25)';
-const sats = Array.from({length: 14}, (_,i) => ({ r: 60 + (i%5)*22, speed: 0.004 + (i%4)*0.0015, phase: Math.random()*Math.PI*2, tilt: (i%3)*0.4 - 0.4, hue: i%3===0?RUST:INDIGO }));
-let t = 0, frame = 0;
-function draw(){
-  const w = canvas.width, h = canvas.height, cx = w/2, cy = h/2;
-  ctx.clearRect(0,0,w,h);
-  ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(cx,cy, Math.min(w,h)*0.16, 0, Math.PI*2); ctx.stroke();
-  sats.forEach(s=>{
-    const a = t*s.speed + s.phase;
-    const rx = s.r * (w/300), ry = rx * (0.42 + s.tilt*0.3 + 0.3);
-    ctx.strokeStyle = FAINT;
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx, Math.abs(ry), s.tilt, 0, Math.PI*2); ctx.stroke();
-    const x = cx + Math.cos(a)*rx, y = cy + Math.sin(a)*ry*Math.cos(s.tilt*2);
-    ctx.fillStyle = s.hue; ctx.beginPath(); ctx.arc(x,y, w*0.006+1, 0, Math.PI*2); ctx.fill();
-  });
-  t += 1; frame += 1;
-  frameLabel.textContent = 'FRAME ' + frame;
-  requestAnimationFrame(draw);
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const STARS = [
+  {name:"Sun",ra:0,dec:0,dist:0.00001,type:"G2V – Yellow Dwarf",col:"#FFEE44",sz:2.5,
+   desc:"Our host star. 4.6 billion years old. Contains 99.86% of the solar system's total mass. Surface temperature 5,778 K. Diameter 1.4 million km.",
+   stats:{"Mass":"1 M☉","Radius":"696,000 km","Temp":"5,778 K","Age":"4.6 billion yr"}},
+  {name:"Proxima Centauri",ra:14.4953,dec:-62.6794,dist:4.2465,type:"M5.5Ve – Red Dwarf",col:"#FF3300",sz:0.4,
+   desc:"Closest known star to Earth. Active flare star. Confirmed rocky exoplanet Proxima b potentially in habitable zone. Part of the Alpha Centauri triple system.",
+   stats:{"Distance":"4.25 ly","Mass":"0.12 M☉","Temp":"3,050 K","Exoplanets":"Proxima b (habitable zone candidate)"}},
+  {name:"α Centauri A",ra:14.6601,dec:-60.8339,dist:4.3671,type:"G2V – Yellow Dwarf",col:"#FFFF44",sz:1.2,
+   desc:"Nearest solar twin. Part of binary system with α Cen B, orbiting each other every 79.9 years. Closest star system to the Sun.",
+   stats:{"Distance":"4.37 ly","Mass":"1.10 M☉","Temp":"5,790 K","Luminosity":"1.52 L☉"}},
+  {name:"α Centauri B",ra:14.661,dec:-60.835,dist:4.3694,type:"K1V – Orange Dwarf",col:"#FFAA00",sz:0.9,
+   desc:"Orange dwarf. Binary companion to α Centauri A. Together they are the two brightest components of the Alpha Centauri system.",
+   stats:{"Distance":"4.37 ly","Mass":"0.91 M☉","Temp":"5,260 K","Luminosity":"0.50 L☉"}},
+  {name:"Barnard's Star",ra:17.9629,dec:4.6933,dist:5.963,type:"M4Ve – Red Dwarf",col:"#FF4400",sz:0.35,
+   desc:"Fastest proper motion of any known star (10.36 arcsec/year). Very old — 9–10 billion years. Second nearest star system to Earth.",
+   stats:{"Distance":"5.96 ly","Mass":"0.16 M☉","Temp":"3,134 K","Proper Motion":"10.36\"/yr — fastest known"}},
+  {name:"Luhman 16 A/B",ra:10.9583,dec:-53.3191,dist:6.52,type:"T1/T6 – Brown Dwarf Binary",col:"#993300",sz:0.45,
+   desc:"Closest brown dwarfs to Earth. Discovered 2013 by Kevin Luhman using WISE satellite data. Too small to sustain hydrogen fusion. Show atmospheric weather patterns.",
+   stats:{"Distance":"6.52 ly","Mass A":"0.032 M☉","Mass B":"0.027 M☉","Temp":"~1,350 K / ~1,210 K"}},
+  {name:"WISE 0855−0714",ra:8.9238,dec:-7.2381,dist:7.53,type:"Y3-Y4 – Sub-brown Dwarf",col:"#550044",sz:0.25,
+   desc:"Coldest known object outside our solar system (~250 K / -23°C). May have water-ice clouds. Discovered 2014 by WISE. Bridges gap between brown dwarfs and giant planets.",
+   stats:{"Distance":"7.53 ly","Mass":"3–10 MJ","Temp":"~250 K (-23°C)","Clouds":"Possible water-ice"}},
+  {name:"Wolf 359",ra:10.9414,dec:7.0178,dist:7.78,type:"M6Ve – Red Dwarf",col:"#FF2200",sz:0.28,
+   desc:"Faint red dwarf in Leo; not visible to naked eye. One of the least luminous and smallest known stars. Has occasional intense flares. Famous as fictional Battle of Wolf 359 site (Star Trek).",
+   stats:{"Distance":"7.78 ly","Mass":"0.09 M☉","Temp":"2,800 K","Luminosity":"0.001 L☉"}},
+  {name:"Lalande 21185",ra:11.0477,dec:35.9728,dist:8.29,type:"M2V – Red Dwarf",col:"#FF5500",sz:0.4,
+   desc:"Named after French astronomer Lalande. Fourth-nearest individual star system to Earth. Red dwarf; visible only through a telescope.",
+   stats:{"Distance":"8.29 ly","Mass":"0.39 M☉","Temp":"3,382 K","Age":"~5.2 Gyr"}},
+  {name:"Sirius A",ra:6.7525,dec:-16.7161,dist:8.59,type:"A1V – White Star",col:"#CCEEFF",sz:2.0,
+   desc:"Brightest star in the night sky (-1.46 mag). Hot white star 25× more luminous than the Sun. Binary with white dwarf Sirius B. The 'Dog Star' — worshipped by ancient Egyptians.",
+   stats:{"Distance":"8.59 ly","Mass":"2.06 M☉","Temp":"9,940 K","Luminosity":"25 L☉"}},
+  {name:"Sirius B",ra:6.754,dec:-16.718,dist:8.59,type:"DA2 – White Dwarf",col:"#AAAAFF",sz:0.2,
+   desc:"First white dwarf ever discovered. Earth-sized but Sun-mass. Extremely dense — a teaspoon weighs ~15 tonnes. Originally a star ~5× the Sun's mass that has burned out.",
+   stats:{"Distance":"8.59 ly","Mass":"1.02 M☉","Radius":"~6,000 km","Temp":"25,200 K"}},
+  {name:"Luyten 726-8 A/B",ra:1.6222,dec:-17.95,dist:8.73,type:"M5.5Ve – Red Dwarf Binary",col:"#FF3300",sz:0.28,
+   desc:"Binary red dwarf. Component B (UV Ceti) is the prototype flare star — sudden powerful energy bursts. Both stars are magnetically hyperactive.",
+   stats:{"Distance":"8.73 ly","Mass":"0.10 M☉ each","Temp":"~2,670 K","Activity":"Prototype flare stars"}},
+  {name:"Ross 154",ra:18.4966,dec:-23.8338,dist:9.681,type:"M3.5Ve – Red Dwarf",col:"#FF4400",sz:0.35,
+   desc:"Active flare star. Emits occasional powerful X-ray bursts. One of the nearest red dwarfs to Earth.",
+   stats:{"Distance":"9.68 ly","Mass":"0.17 M☉","Temp":"3,340 K","Activity":"X-ray flare star"}},
+  {name:"Ross 248",ra:23.5921,dec:43.9228,dist:10.32,type:"M6Ve – Red Dwarf",col:"#FF2200",sz:0.28,
+   desc:"Will briefly become the nearest star to Earth in approximately 36,000 years, approaching within 3.13 light-years before receding. Currently in Andromeda.",
+   stats:{"Distance":"10.32 ly","Mass":"0.136 M☉","Temp":"2,799 K","Closest approach":"In ~36,000 years"}},
+  {name:"Epsilon Eridani",ra:3.5481,dec:-9.4583,dist:10.475,type:"K2V – Orange Dwarf",col:"#FFAA00",sz:0.85,
+   desc:"One of nearest Sun-like stars. Confirmed debris disk indicating a planetary system. Probable giant planet (ε Eri b). Major SETI search target since the 1960s. Carl Sagan referenced it in Cosmos.",
+   stats:{"Distance":"10.47 ly","Mass":"0.82 M☉","Temp":"5,084 K","Exoplanets":"1 suspected giant"}},
+  {name:"Lacaille 9352",ra:23.08,dec:-35.8513,dist:10.742,type:"M1.5Ve – Red Dwarf",col:"#FF6600",sz:0.42,
+   desc:"Red dwarf in Piscis Austrinus. Named after French astronomer Nicolas de Lacaille who catalogued southern-hemisphere stars in the 1750s.",
+   stats:{"Distance":"10.74 ly","Mass":"0.50 M☉","Temp":"3,626 K","Constellation":"Piscis Austrinus"}},
+  {name:"Ross 128",ra:11.7917,dec:0.8081,dist:10.89,type:"M4Vn – Red Dwarf",col:"#FF4400",sz:0.32,
+   desc:"Host to Ross 128 b — a temperate rocky world ~1.35× Earth's mass, possibly in habitable zone. Relatively quiet red dwarf with few flares, making it a strong habitability candidate.",
+   stats:{"Distance":"10.89 ly","Mass":"0.17 M☉","Temp":"3,192 K","Exoplanets":"Ross 128 b (habitable zone)"}},
+  {name:"Procyon A",ra:7.6553,dec:5.225,dist:11.46,type:"F5IV – Yellow-White Subgiant",col:"#FFFFCC",sz:1.5,
+   desc:"8th brightest star in the sky. Yellow-white star slowly evolving off the main sequence. Binary with Procyon B (white dwarf). Part of the Winter Triangle asterism with Sirius and Betelgeuse.",
+   stats:{"Distance":"11.46 ly","Mass":"1.50 M☉","Temp":"6,530 K","Luminosity":"6.9 L☉"}},
+  {name:"61 Cygni A/B",ra:21.1146,dec:38.745,dist:11.41,type:"K5V/K7V – Orange Dwarf Binary",col:"#FF9900",sz:0.75,
+   desc:"Historic star: first to have its distance measured via stellar parallax (Friedrich Bessel, 1838). Known as Piazzi's Flying Star for its fast apparent motion. Both are orange dwarfs.",
+   stats:{"Distance":"11.41 ly","Mass":"0.70 / 0.63 M☉","Temp":"4,526 K","Historic":"First star with measured parallax (1838)"}},
+  {name:"Tau Ceti",ra:1.7346,dec:-15.9375,dist:11.91,type:"G8V – Yellow Dwarf",col:"#FFFF66",sz:0.9,
+   desc:"Nearest single Sun-like star. Strong evidence for 4-5 rocky planets; two (e and f) are near the habitable zone. Massive debris disk. SETI target since Project Ozma in 1960. Featured in many science fiction works.",
+   stats:{"Distance":"11.91 ly","Mass":"0.78 M☉","Temp":"5,344 K","Exoplanets":"4-5 candidates incl. habitable zone"}},
+  {name:"Teegarden's Star",ra:2.53,dec:16.876,dist:12.43,type:"M7.0V – Red Dwarf",col:"#FF2200",sz:0.22,
+   desc:"Ultra-faint red dwarf discovered only in 2003 despite its proximity. Two planets with extremely high Earth Similarity Index: Teegarden b (ESI 0.95) and c (ESI 0.68) — among best habitability candidates known.",
+   stats:{"Distance":"12.43 ly","Mass":"0.089 M☉","Temp":"2,900 K","Exoplanets":"2 — Teegarden b & c (habitable zone)"}},
+  {name:"Kapteyn's Star",ra:5.2372,dec:-45.0171,dist:12.76,type:"M1V – Red Sub-dwarf",col:"#FF6600",sz:0.4,
+   desc:"Halo star: extraordinarily old at ~11.5 Gyr (older than the Milky Way disk). Second fastest proper motion known. Likely captured from the Omega Centauri dwarf galaxy. Two super-Earth candidates.",
+   stats:{"Distance":"12.76 ly","Mass":"0.28 M☉","Age":"~11.5 Gyr","Exoplanets":"2 super-Earth candidates"}},
+  {name:"Lacaille 8760",ra:21.072,dec:-38.868,dist:12.87,type:"M1V – Red Dwarf",col:"#FF6600",sz:0.42,
+   desc:"The brightest known red dwarf visible to the naked eye (just barely, at magnitude 6.7). Named after Nicolas de Lacaille. Also catalogued as AX Microscopii.",
+   stats:{"Distance":"12.87 ly","Mass":"0.60 M☉","Temp":"3,843 K","Note":"Brightest naked-eye red dwarf"}},
+  {name:"Kruger 60 A/B",ra:22.2938,dec:57.7014,dist:13.08,type:"M3V/M4V – Red Dwarf Binary",col:"#FF4400",sz:0.35,
+   desc:"Binary red dwarf. Proposed as a possible origin system for interstellar comet 2I/Borisov. Component B (DO Cep) is a flare star. Orbit each other every 44.6 years.",
+   stats:{"Distance":"13.08 ly","Mass":"0.27 / 0.18 M☉","Temp":"~3,100 K","Note":"Possible origin of 2I/Borisov"}},
+  {name:"Wolf 1061",ra:16.5744,dec:-12.055,dist:13.82,type:"M3V – Red Dwarf",col:"#FF4400",sz:0.35,
+   desc:"Three confirmed planets. Wolf 1061c sits in or near the habitable zone and is one of the nearest potentially habitable exoplanets. A relatively quiet red dwarf with low flare activity.",
+   stats:{"Distance":"13.82 ly","Mass":"0.29 M☉","Temp":"3,145 K","Exoplanets":"3 (Wolf 1061c in habitable zone)"}},
+  {name:"Van Maanen's Star",ra:0.825,dec:5.378,dist:14.07,type:"DZ8 – White Dwarf",col:"#AAAAFF",sz:0.2,
+   desc:"Nearest single white dwarf to Earth. Discovered 1917. Was originally a Sun-like star that exhausted its fuel and shed outer layers. Accreted rocky planetary material detected in spectrum.",
+   stats:{"Distance":"14.07 ly","Mass":"0.68 M☉","Radius":"~8,700 km","Temp":"6,220 K"}},
+  {name:"Gliese 687",ra:17.4792,dec:68.31,dist:14.84,type:"M3.5V – Red Dwarf",col:"#FF4400",sz:0.35,
+   desc:"Confirmed planet Gliese 687 b — a warm super-Earth/mini-Neptune (~18 Earth masses) on a 38.1-day orbit. Located in the northern constellation Draco.",
+   stats:{"Distance":"14.84 ly","Mass":"0.40 M☉","Temp":"3,445 K","Exoplanets":"Gliese 687 b (super-Earth/mini-Neptune)"}},
+  {name:"Gliese 674",ra:17.47,dec:-46.884,dist:14.8,type:"M2.5V – Red Dwarf",col:"#FF5500",sz:0.37,
+   desc:"Confirmed planet Gliese 674 b — a hot Neptune or super-Earth (~11 Earth masses) orbiting very close to the star. Discovered 2007 by radial velocity.",
+   stats:{"Distance":"14.80 ly","Mass":"0.35 M☉","Temp":"3,602 K","Exoplanets":"Gliese 674 b (hot Neptune)"}},
+  {name:"70 Ophiuchi A/B",ra:18.1078,dec:2.5003,dist:16.59,type:"K0V/K4V – Orange Dwarf Binary",col:"#FFAA00",sz:0.88,
+   desc:"Binary orange dwarf. Historically one of the most studied star systems. An 1855 false claim of a planet here became an early cautionary tale in exoplanet research. The two stars orbit each other every 83.4 years.",
+   stats:{"Distance":"16.59 ly","Mass":"0.91 / 0.71 M☉","Temp":"~5,300 K","Orbital period":"83.4 years"}},
+  {name:"Altair",ra:19.8458,dec:8.8683,dist:16.73,type:"A7V – White Star",col:"#CCEEFF",sz:1.7,
+   desc:"Brightest star in Aquila. Corner of the Summer Triangle. Spins so fast (once every 9 hours vs. Sun's 25 days) it is visibly oblate — 20% wider at equator than poles. One of the nearest A-type main sequence stars.",
+   stats:{"Distance":"16.73 ly","Mass":"1.86 M☉","Temp":"7,670 K","Rotation":"Once per 9 hours — oblate shaped"}},
+  {name:"Vega",ra:18.6157,dec:38.7836,dist:25.05,type:"A0Va – White Star",col:"#DDEEFF",sz:2.0,
+   desc:"5th brightest star in sky. Was the North Star ~14,000 years ago; will be again in ~26,000 years (axial precession). Debris disk suggests planetary system. Standard calibration star for photometry.",
+   stats:{"Distance":"25.05 ly","Mass":"2.10 M☉","Temp":"9,602 K","Luminosity":"40 L☉"}},
+  {name:"Fomalhaut",ra:22.9608,dec:-29.623,dist:25.13,type:"A4V – White Star",col:"#CCEEFF",sz:1.8,
+   desc:"Brightest star in Piscis Austrinus. Spectacular visible debris ring. In 2008, Hubble directly imaged exoplanet candidate Fomalhaut b inside the ring. Very young (~440 Myr old). Sometimes called 'Autumn's Star'.",
+   stats:{"Distance":"25.13 ly","Mass":"1.92 M☉","Age":"~440 Myr","Notable":"First directly-imaged exoplanet candidate (2008)"}},
+  {name:"Betelgeuse",ra:5.9195,dec:7.407,dist:700.0,type:"M2Iab – Red Supergiant",col:"#FF7700",sz:4.5,
+   desc:"Red supergiant in Orion. One of the largest stars visible to the naked eye (~1,000× Sun's diameter). Will explode as a Type II supernova — probably within 100,000 years. The 'Great Dimming' of 2019-20 caused by a massive surface eruption.",
+   stats:{"Distance":"~700 ly","Mass":"~16 M☉","Radius":"~1,000 R☉","Future":"Type II supernova imminent (astronomically)"}},
+  {name:"Rigel",ra:5.2422,dec:-8.2017,dist:860.0,type:"B8Ia – Blue-White Supergiant",col:"#AADDFF",sz:4.0,
+   desc:"Brightest star in Orion. 7th brightest in the sky. Blue-white supergiant of tremendous luminosity. Multiple star system. Much younger than our Sun at ~8 million years old.",
+   stats:{"Distance":"~860 ly","Mass":"~21 M☉","Luminosity":"~120,000 L☉","Temp":"12,100 K"}},
+  {name:"Deneb",ra:20.6905,dec:45.2803,dist:2615.0,type:"A2Ia – Blue-White Supergiant",col:"#DDEEFF",sz:5.0,
+   desc:"Brightest star in Cygnus. Corner of the Summer Triangle. Despite being ~2,600 ly away, it is one of the most intrinsically luminous stars in the Milky Way visible to naked eye. Radius ~203× the Sun's.",
+   stats:{"Distance":"~2,600 ly","Mass":"~19 M☉","Luminosity":"~200,000 L☉","Radius":"~203 R☉"}},
+];
+
+const PLANETS = [
+  {name:"Mercury",au:0.387,col:"#888888",sz:0.38,type:"Terrestrial Planet",
+   desc:"Smallest planet. No atmosphere; temperature swings from -180°C to 430°C. Heavily cratered. A solar day on Mercury lasts 176 Earth days.",
+   stats:{"Orbit":"0.39 AU","Diameter":"4,879 km","Moons":"0","Year":"88 Earth days"}},
+  {name:"Venus",au:0.723,col:"#E8C55C",sz:0.95,type:"Terrestrial Planet",
+   desc:"Hottest planet (465°C surface — hotter than Mercury). Thick CO₂ atmosphere creates extreme greenhouse effect. Rotates backwards (retrograde). Covered in volcanoes. Atmospheric pressure 92× Earth's.",
+   stats:{"Orbit":"0.72 AU","Diameter":"12,104 km","Moons":"0","Year":"225 Earth days"}},
+  {name:"Earth",au:1.0,col:"#4488FF",sz:1.0,type:"Terrestrial Planet — Our Home",
+   desc:"Only confirmed life-bearing world in the universe. 71% surface covered by liquid water oceans. Protected by a global magnetic field and ozone layer. Plate tectonics actively reshape the surface.",
+   stats:{"Orbit":"1.00 AU","Diameter":"12,742 km","Moons":"1 (Luna)","Year":"365.25 days"}},
+  {name:"Mars",au:1.524,col:"#CC4422",sz:0.53,type:"Terrestrial Planet",
+   desc:"The Red Planet. Olympus Mons (21 km tall) is the tallest volcano in the solar system. Valles Marineris canyon stretches 4,000 km. Strong evidence of ancient liquid water. Target for human exploration. Currently hosting multiple rovers and orbiters.",
+   stats:{"Orbit":"1.52 AU","Diameter":"6,779 km","Moons":"2 (Phobos, Deimos)","Year":"687 Earth days"}},
+  {name:"Ceres",au:2.77,col:"#AAAAAA",sz:0.19,type:"Dwarf Planet — Asteroid Belt",
+   desc:"Largest body in the asteroid belt; contains ~25% of the belt's total mass. Dawn spacecraft revealed bright salt deposits (faculae) in Occator Crater. Possibly harbors liquid brine subsurface.",
+   stats:{"Orbit":"2.77 AU","Diameter":"939 km","Moons":"0","Year":"4.6 Earth years"}},
+  {name:"Jupiter",au:5.203,col:"#E8A060",sz:11.2,type:"Gas Giant",
+   desc:"Largest planet — 1,300 Earths could fit inside. 95+ confirmed moons. Europa has a global subsurface ocean with more water than all Earth's oceans. Great Red Spot is a storm that has lasted 350+ years. Acts as solar system's 'vacuum cleaner' deflecting comets.",
+   stats:{"Orbit":"5.20 AU","Diameter":"139,820 km","Moons":"95+","Year":"12 Earth years"}},
+  {name:"Saturn",au:9.537,col:"#E8D070",sz:9.45,type:"Gas Giant",
+   desc:"Iconic ring system made of billions of ice and rock particles. 146+ moons — Titan has a thick nitrogen atmosphere and methane lakes/rivers. Lowest density of any planet (would float on water). Hexagonal polar vortex.",
+   stats:{"Orbit":"9.54 AU","Diameter":"116,460 km","Moons":"146+","Year":"29 Earth years"}},
+  {name:"Uranus",au:19.191,col:"#88DDEE",sz:4.01,type:"Ice Giant",
+   desc:"Rotates on its side (98° axial tilt) — likely knocked over by a massive ancient impact. This gives it extreme 42-year-long seasons. Faint ring system. 28 moons named after Shakespeare and Pope characters. Interior made of icy slush.",
+   stats:{"Orbit":"19.19 AU","Diameter":"50,724 km","Moons":"28","Year":"84 Earth years"}},
+  {name:"Neptune",au:30.069,col:"#4466BB",sz:3.88,type:"Ice Giant",
+   desc:"Strongest winds in solar system (~2,100 km/h). Predicted by math before observation (1846). Large moon Triton orbits retrograde — captured Kuiper Belt object, slowly spiraling inward. Will eventually be torn apart to form new ring system.",
+   stats:{"Orbit":"30.07 AU","Diameter":"49,244 km","Moons":"16","Year":"165 Earth years"}},
+  {name:"Pluto",au:39.5,col:"#CCAA88",sz:0.27,type:"Dwarf Planet — Kuiper Belt",
+   desc:"Largest known Kuiper Belt object by volume. New Horizons flyby (2015) revealed surprisingly active geology: heart-shaped nitrogen ice plain (Tombaugh Regio), mountains of water ice, and possible cryovolcanism. 5 moons.",
+   stats:{"Orbit":"39.5 AU (avg)","Diameter":"2,377 km","Moons":"5 (Charon, Styx, Nix, Kerberos, Hydra)","Year":"248 Earth years"}},
+  {name:"Haumea",au:43.1,col:"#BBBBAA",sz:0.22,type:"Dwarf Planet — Kuiper Belt",
+   desc:"Egg-shaped due to rapid rotation (once every 3.9 hours) — one of the fastest-rotating large objects in the solar system. Two moons (Hiʻiaka, Namaka) and a ring system discovered 2017.",
+   stats:{"Orbit":"43.1 AU","Shape":"2,100×1,700×1,000 km","Moons":"2 + ring","Year":"285 Earth years"}},
+  {name:"Makemake",au:45.8,col:"#CC9966",sz:0.22,type:"Dwarf Planet — Kuiper Belt",
+   desc:"Bright methane ice surface. Third largest dwarf planet. One known moon (MK2) discovered 2016. No detectable atmosphere. One of the brightest trans-Neptunian objects.",
+   stats:{"Orbit":"45.8 AU","Diameter":"~1,430 km","Moons":"1 (MK2)","Year":"305 Earth years"}},
+  {name:"Eris",au:67.8,col:"#DDDDDD",sz:0.27,type:"Dwarf Planet — Scattered Disc",
+   desc:"Most massive known dwarf planet. Its 2005 discovery triggered the 2006 reclassification of Pluto. Surface of methane frost, making it extremely reflective. One moon, Dysnomia. Currently near aphelion.",
+   stats:{"Orbit":"~68 AU (avg)","Diameter":"~2,326 km","Moons":"1 (Dysnomia)","Year":"559 Earth years"}},
+  {name:"3I/ATLAS ★",au:7.2,col:"#00FFAA",sz:0.35,type:"Interstellar Comet — Visitor",
+   desc:"Third known interstellar object to pass through our solar system. Discovered July 1, 2025 by ATLAS telescope in Chile. Currently exiting past Jupiter. Contains anomalous heavy water (high D/H ratio) unlike any solar system body. JWST mapped its chemistry. Age: ~4.6 billion years; origin: Milky Way thick disk.",
+   stats:{"Discovery":"July 1, 2025 (ATLAS, Chile)","Nucleus":"440 m – 5.6 km","Status":"Exiting solar system (past Jupiter)","Chemistry":"Anomalous heavy water — alien origin"}},
+];
+
+const DEEP = [
+  {name:"Sagittarius A*",x:0,y:0,z:0,col:"#FF8800",sz:1200,type:"Supermassive Black Hole — Milky Way Center",
+   desc:"The supermassive black hole at the center of our Milky Way galaxy. Mass: 4.1 million solar masses. First directly photographed by the Event Horizon Telescope (EHT) collaboration in 2022. Emits flares of infrared and X-ray radiation.",
+   stats:{"Distance from Sun":"26,700 ly","Mass":"4.1 million M☉","Photographed":"EHT 2022","Event horizon":"~24 million km"}},
+  {name:"Our Solar System",x:26700,y:0,z:0,col:"#FFFF44",sz:400,type:"G2V Star System — Orion Arm, Milky Way",
+   desc:"Our Sun's position in the Milky Way: located in the Orion Arm (a minor spiral arm), ~26,700 light-years from the galactic center, ~20 light-years above the galactic midplane. One galactic orbit ('cosmic year') takes ~225 million years.",
+   stats:{"Galactic distance":"26,700 ly from center","Galactic arm":"Orion Arm (Orion Spur)","Galactic orbit":"~225 million years","Above plane":"~20 ly"}},
+  {name:"Andromeda Galaxy (M31)",x:-30000,y:15000,z:180000,col:"#AABBFF",sz:5000,type:"Barred Spiral Galaxy — Local Group",
+   desc:"Our nearest large galactic neighbor. Contains ~1 trillion stars. On a direct collision course with the Milky Way — they will merge in approximately 4.5 billion years. Visible to the naked eye from dark skies. Has two large satellite galaxies (M32, M110).",
+   stats:{"Distance":"2.537 million ly","Stars":"~1 trillion","Diameter":"~220,000 ly","Collision":"In ~4.5 Gyr — will merge with Milky Way"}},
+  {name:"Large Magellanic Cloud",x:20000,y:-80000,z:40000,col:"#BBAAFF",sz:3000,type:"Irregular Dwarf Galaxy — Milky Way Satellite",
+   desc:"Satellite galaxy of the Milky Way visible from southern hemisphere. Contains ~30 billion stars. Home to the Tarantula Nebula — the largest and most active star-forming region in the Local Group. Interacts gravitationally with the Milky Way.",
+   stats:{"Distance":"160,000 ly","Stars":"~30 billion","Notable":"Tarantula Nebula (30 Doradus)","Status":"Milky Way satellite"}},
+  {name:"Small Magellanic Cloud",x:30000,y:-85000,z:55000,col:"#BBAAFF",sz:2000,type:"Irregular Dwarf Galaxy — Milky Way Satellite",
+   desc:"Smaller companion to the Large Magellanic Cloud. Contains ~3 billion stars. Both Magellanic Clouds are slowly being consumed by the Milky Way's gravity. Visible as a faint cloud from southern hemisphere.",
+   stats:{"Distance":"197,000 ly","Stars":"~3 billion","Status":"Milky Way satellite","Type":"Irregular dwarf galaxy"}},
+  {name:"M87 / Virgo A",x:-10000,y:20000,z:400000,col:"#FFAA66",sz:4000,type:"Giant Elliptical Galaxy — Virgo Cluster",
+   desc:"Giant elliptical galaxy at the heart of the Virgo Cluster. Contains the first black hole ever directly photographed (M87*, 6.5 billion solar masses, EHT 2019). Shoots a bright relativistic jet 5,000 light-years long. Contains 1–2 trillion stars.",
+   stats:{"Distance":"~53.5 million ly","Black Hole":"6.5 billion M☉","BH Imaged":"EHT 2019 (first ever)","Jet":"5,000 ly relativistic plasma jet"}},
+];
+
+// Exotic — 16 objects across black holes, supernovae, first exoplanets, and deep-field structure.
+// Every object carries the same 8-field stat schema: Category, Distance, Discovered, Mass, Method, Notable, Location, Status.
+const EXOTIC = [
+  {name:"Cygnus X-1",cat:"blackhole",col:"#3a1a5e",glowcol:"#FF8800",sz:1.1,type:"Stellar-mass Black Hole",
+   desc:"An X-ray binary 7,200 light-years away, feeding on a blue supergiant companion. The first object the astronomical community widely accepted as a black hole.",
+   stats:{"Category":"Black hole","Distance":"~7,200 ly","Discovered":"1964 · confirmed 1971","Mass":"~21 M☉","Method":"X-ray binary dynamics","Notable":"First widely-accepted black hole","Location":"Cygnus","Status":"Actively accreting"}},
+  {name:"TON 618",cat:"blackhole",col:"#3a1a5e",glowcol:"#FFAA33",sz:1.6,type:"Ultramassive Black Hole",
+   desc:"The engine of a hyperluminous quasar 10.4 billion light-years away — one of the most massive black holes ever measured.",
+   stats:{"Category":"Black hole","Distance":"~10.4 billion ly","Discovered":"Catalogued 1957 · BH mass est. 2004","Mass":"~66 billion M☉","Method":"Quasar spectroscopy","Notable":"One of the most massive black holes known","Location":"Canes Venatici","Status":"Powering a hyperluminous quasar"}},
+  {name:"GW150914",cat:"blackhole",col:"#2a1a4e",glowcol:"#88AAFF",sz:1.0,type:"Black Hole Merger Remnant",
+   desc:"Two black holes, 36 and 29 solar masses, spiraled together and merged — the ripples reached Earth on September 14, 2015 as the first confirmed gravitational-wave detection.",
+   stats:{"Category":"Black hole merger","Distance":"~1.3 billion ly","Discovered":"Sept 14, 2015","Mass":"~62 M☉ remnant (36+29 M☉ in)","Method":"Gravitational-wave detection (LIGO)","Notable":"First direct gravitational-wave detection","Location":"Host galaxy undetermined","Status":"Confirmed by LIGO/Virgo"}},
+  {name:"Phoenix A*",cat:"blackhole",col:"#3a1a5e",glowcol:"#FF6644",sz:1.4,type:"Supermassive Black Hole",
+   desc:"Sits at the heart of the Phoenix Cluster, one of the most massive and fastest cooling galaxy clusters known, driving furious star formation in its host.",
+   stats:{"Category":"Black hole","Distance":"~5.7 billion ly","Discovered":"Cluster identified 2012","Mass":"~10–20 billion M☉ (est.)","Method":"X-ray + dynamical modeling","Notable":"Engine of an extreme cooling-flow cluster","Location":"Phoenix","Status":"Fueling extreme star formation"}},
+
+  {name:"SN 1987A",cat:"supernova",col:"#FF6633",glowcol:"#FFCC88",sz:0.9,type:"Core-collapse Supernova",
+   desc:"A blue supergiant in the Large Magellanic Cloud detonated on February 23, 1987 — the closest supernova observed since 1604, and the first confirmed by a burst of neutrinos.",
+   stats:{"Category":"Supernova","Distance":"~168,000 ly","Discovered":"Feb 23, 1987","Mass":"Progenitor ~20 M☉","Method":"Naked-eye + neutrino detection","Notable":"Closest observed supernova since 1604","Location":"Dorado (LMC)","Status":"Remnant still expanding"}},
+  {name:"Crab Nebula",cat:"supernova",col:"#FF4400",glowcol:"#FFAA66",sz:1.1,type:"Supernova Remnant + Pulsar",
+   desc:"Chinese and Arab astronomers recorded this explosion in 1054 CE. At its heart, the Crab Pulsar spins 30 times a second — the collapsed core of the star that died.",
+   stats:{"Category":"Supernova remnant","Distance":"~6,500 ly","Discovered":"Observed 1054 CE","Mass":"~4.6 M☉ (visible nebula)","Method":"Naked-eye historical record","Notable":"Contains the Crab Pulsar (~30 Hz)","Location":"Taurus","Status":"Expanding at ~1,500 km/s"}},
+  {name:"Tycho's SNR",cat:"supernova",col:"#FF5522",glowcol:"#FFBB77",sz:0.85,type:"Type Ia Supernova Remnant",
+   desc:"Tycho Brahe watched a 'new star' appear in November 1572 — proof the heavens could change, and a direct challenge to Aristotelian cosmology.",
+   stats:{"Category":"Supernova remnant","Distance":"~8,000–9,000 ly","Discovered":"Nov 1572 (Tycho Brahe)","Mass":"Type Ia · ~1.4 M☉ progenitor","Method":"Naked-eye historical record","Notable":"Disproved an unchanging heaven","Location":"Cassiopeia","Status":"Visible shell in X-ray/radio"}},
+  {name:"Cassiopeia A",cat:"supernova",col:"#FF7744",glowcol:"#FFCCAA",sz:0.95,type:"Supernova Remnant",
+   desc:"The strongest radio source outside the solar system, from a star that likely exploded around 1680 — unseen at the time, hidden behind interstellar dust.",
+   stats:{"Category":"Supernova remnant","Distance":"~11,000 ly","Discovered":"Radio source found 1947","Mass":"Progenitor ~15–20 M☉","Method":"Radio astronomy","Notable":"Strongest radio source outside the solar system","Location":"Cassiopeia","Status":"One of the youngest known remnants (~340 yr)"}},
+
+  {name:"51 Pegasi b",cat:"exoplanet",col:"#33DD99",glowcol:"#88FFCC",sz:0.5,type:"Hot Jupiter",
+   desc:"The first planet ever found orbiting a Sun-like star, in 1995 — a discovery that opened the entire field of exoplanet science and won a Nobel Prize in 2019.",
+   stats:{"Category":"Exoplanet","Distance":"~50 ly","Discovered":"1995 (Mayor & Queloz)","Mass":"~0.47 MJ","Method":"Radial velocity","Notable":"First exoplanet around a Sun-like star","Location":"Pegasus","Status":"Confirmed · 4.2-day orbit"}},
+  {name:"TRAPPIST-1",cat:"exoplanet",col:"#22CC88",glowcol:"#77FFBB",sz:0.6,type:"Seven-planet Rocky System",
+   desc:"An ultra-cool red dwarf with seven roughly Earth-sized worlds — three sitting in the habitable zone. JWST is studying several of their atmospheres right now.",
+   stats:{"Category":"Exoplanet system","Distance":"~40 ly","Discovered":"2016–2017","Mass":"Host star ~0.09 M☉","Method":"Transit photometry","Notable":"3 of 7 planets in the habitable zone","Location":"Aquarius","Status":"Under active JWST study"}},
+  {name:"HD 209458 b",cat:"exoplanet",col:"#33DD99",glowcol:"#88FFCC",sz:0.55,type:"Hot Jupiter — \"Osiris\"",
+   desc:"The first exoplanet ever caught transiting its star, in 1999 — and the first with a detected atmosphere, which it is actively losing to its star's wind.",
+   stats:{"Category":"Exoplanet","Distance":"~159 ly","Discovered":"1999","Mass":"~0.69 MJ","Method":"Transit photometry","Notable":"First transiting exoplanet & detected atmosphere","Location":"Pegasus","Status":"Actively losing atmosphere"}},
+  {name:"PSR B1257+12",cat:"exoplanet",col:"#44EEAA",glowcol:"#99FFDD",sz:0.55,type:"Pulsar Planetary System",
+   desc:"Three rocky worlds circling the burned-out core of a supernova — a millisecond pulsar. Confirmed in 1992, they were the first exoplanets ever found, years before any around a normal star.",
+   stats:{"Category":"Exoplanet system","Distance":"~2,300 ly","Discovered":"1992 (Wolszczan & Frail)","Mass":"Host ~1.4 M☉ neutron star","Method":"Pulsar timing","Notable":"First confirmed exoplanets ever found","Location":"Virgo","Status":"3 rocky planets confirmed"}},
+
+  {name:"GN-z11",cat:"deepfield",col:"#AABBFF",glowcol:"#CCDDFF",sz:1.3,type:"Deep-field Galaxy",
+   desc:"Light left this galaxy when the universe was about 430 million years old. It's one of the earliest and most distant galaxies ever confirmed.",
+   stats:{"Category":"Deep-field galaxy","Distance":"~13.4 billion ly (light travel time)","Discovered":"2016 (Hubble) · refined 2023 (JWST)","Mass":"~1 billion M☉ in stars","Method":"Redshift spectroscopy (z≈10.6)","Notable":"One of the earliest known galaxies","Location":"Ursa Major","Status":"Seen ~430 Myr after the Big Bang"}},
+  {name:"The Great Attractor",cat:"deepfield",col:"#8899CC",glowcol:"#AABBEE",sz:1.6,type:"Gravitational Anomaly",
+   desc:"Something enormous, hidden behind the Milky Way's own disk, is pulling our galaxy and thousands of others toward it at hundreds of kilometers per second.",
+   stats:{"Category":"Deep-field anomaly","Distance":"~150–250 million ly","Discovered":"Inferred 1986","Mass":"~10¹⁶ M☉ (gravitational estimate)","Method":"Galaxy peculiar-velocity mapping","Notable":"Pulls the Milky Way and thousands of galaxies","Location":"Norma/Centaurus (Zone of Avoidance)","Status":"Still being mapped"}},
+  {name:"Laniakea",cat:"deepfield",col:"#99AADD",glowcol:"#BBCCFF",sz:1.8,type:"Galaxy Supercluster",
+   desc:"The supercluster the Milky Way calls home — 100,000 galaxies spanning 500 million light-years, all slowly flowing toward the Great Attractor.",
+   stats:{"Category":"Supercluster","Distance":"Spans ~500 million ly","Discovered":"Named/mapped 2014","Mass":"~10¹⁷ M☉ · ~100,000 galaxies","Method":"Galaxy flow-field mapping","Notable":"Contains the Milky Way & Local Group","Location":"Spans multiple constellations","Status":"Flowing toward the Great Attractor"}},
+  {name:"Bullet Cluster",cat:"deepfield",col:"#77AACC",glowcol:"#AADDFF",sz:1.4,type:"Colliding Galaxy Clusters",
+   desc:"Two galaxy clusters slammed through each other. Their hot gas collided and lagged behind — but gravitational lensing shows most of the mass sailed straight through, untouched. The best direct evidence for dark matter.",
+   stats:{"Category":"Colliding clusters","Distance":"~3.7 billion ly","Discovered":"Imaged in detail 2006","Mass":"~10¹⁵ M☉ combined","Method":"X-ray + gravitational lensing","Notable":"Best direct evidence for dark matter","Location":"Carina","Status":"Post-collision · mass and gas separated"}},
+];
+
+// ─────────────────────────────────────────────
+// THREE.JS SETUP — scoped to the .carto-stage container
+// ─────────────────────────────────────────────
+const stage = document.getElementById('cartoStage');
+let scene, camera, renderer, controls;
+let sceneObjects = [];
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function stageSize(){ const r = stage.getBoundingClientRect(); return {w: Math.max(1,r.width), h: Math.max(1,r.height)}; }
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x04040a);
+  const {w,h} = stageSize();
+  camera = new THREE.PerspectiveCamera(55, w/h, 0.001, 2000000);
+  camera.position.set(5, 18, 38);
+  renderer = new THREE.WebGLRenderer({antialias: devicePixelRatio < 2});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(w, h);
+  stage.insertBefore(renderer.domElement, stage.firstChild);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.06;
+  controls.minDistance = 0.01; controls.maxDistance = 800000;
+  makeBG();
+  buildLegend();
+  buildModeBar();
+  new ResizeObserver(onResize).observe(stage);
+  window.addEventListener('resize', onResize);
+  renderer.domElement.addEventListener('click', onClick);
+  renderer.domElement.addEventListener('touchend', onTouch, {passive:true});
+  document.getElementById('csClose').addEventListener('click', closePanel);
 }
-if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(draw); else draw();
+
+// ─────────────────────────────────────────────
+// BACKGROUND STARFIELD
+// ─────────────────────────────────────────────
+function makeBG() {
+  const N = 3000;
+  const pos = new Float32Array(N*3);
+  const col = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), r=900000+Math.random()*100000;
+    pos[i*3]=r*Math.sin(ph)*Math.cos(th); pos[i*3+1]=r*Math.sin(ph)*Math.sin(th); pos[i*3+2]=r*Math.cos(ph);
+    const t=Math.random();
+    if(t<0.25){col[i*3]=0.6;col[i*3+1]=0.7;col[i*3+2]=1.0;}
+    else if(t<0.5){col[i*3]=1;col[i*3+1]=1;col[i*3+2]=1;}
+    else if(t<0.8){col[i*3]=1;col[i*3+1]=0.9;col[i*3+2]=0.7;}
+    else{col[i*3]=1;col[i*3+1]=0.5;col[i*3+2]=0.3;}
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({size:2,sizeAttenuation:false,vertexColors:true})));
+}
+
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+function rd2xyz(ra,dec,d){
+  const r=ra*Math.PI/12, de=dec*Math.PI/180;
+  return new THREE.Vector3(d*Math.cos(de)*Math.cos(r), d*Math.sin(de), -d*Math.cos(de)*Math.sin(r));
+}
+function hex(h){return new THREE.Color(h);}
+function clear(){
+  for(const o of sceneObjects){
+    scene.remove(o);
+    if(o.geometry)o.geometry.dispose();
+    if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}
+  }
+  sceneObjects=[];
+}
+function add(o){scene.add(o);sceneObjects.push(o);return o;}
+function sphere(r,col,seg=10){
+  return new THREE.Mesh(new THREE.SphereGeometry(r,seg,seg),new THREE.MeshBasicMaterial({color:hex(col)}));
+}
+function glow(pos,col,sz){
+  const c=document.createElement('canvas'); c.width=c.height=64;
+  const cx=c.getContext('2d'),g=cx.createRadialGradient(32,32,0,32,32,32),cc=new THREE.Color(col);
+  g.addColorStop(0,`rgba(${Math.round(cc.r*255)},${Math.round(cc.g*255)},${Math.round(cc.b*255)},0.9)`);
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  cx.fillStyle=g; cx.fillRect(0,0,64,64);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+  sp.position.copy(pos); sp.scale.set(sz,sz,1); sp.userData.noclick=true;
+  return sp;
+}
+function label(txt,x,y,z,col,sc=1){
+  const c=document.createElement('canvas'); c.width=256; c.height=48;
+  const cx=c.getContext('2d');
+  cx.font='bold 18px Arial'; cx.fillStyle=col||'#fff'; cx.textAlign='center'; cx.textBaseline='middle';
+  txt.split('\n').forEach((l,i,a)=>cx.fillText(l,128,24+(i-(a.length-1)/2)*20));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  sp.position.set(x,y,z); sp.scale.set(sc*5.5,sc*1.1,1); sp.userData.noclick=true;
+  return sp;
+}
+function ring(r,col,op=0.5){
+  const m=new THREE.Mesh(new THREE.RingGeometry(r*.98,r*1.02,72),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:op}));
+  m.rotation.x=-Math.PI/2; m.userData.noclick=true; return m;
+}
+
+// ─────────────────────────────────────────────
+// BUILD STELLAR NEIGHBORHOOD
+// ─────────────────────────────────────────────
+function buildStars(){
+  clear();
+  add(new THREE.GridHelper(50,20,0x111122,0x111122)).userData.noclick=true;
+  for(const r of [5,10,15,20,25]){
+    add(ring(r,0x223344));
+    add(label(`${r} ly`, r+0.4,0.1,0,'#334455',0.45));
+  }
+  for(const s of STARS){
+    const pos=s.dist<0.001?new THREE.Vector3():rd2xyz(s.ra,s.dec,s.dist);
+    const ds=Math.max(0.15,Math.min(s.sz*0.22,0.9));
+    const m=sphere(ds,s.col);
+    m.position.copy(pos);
+    m.userData={...s,_pos:pos.clone()};
+    add(m);
+    if(s.sz>1.2||s.name==='Sun') add(glow(pos,s.col,ds*5));
+    add(label(s.name.replace(' A/B','').replace(/ [AB]$/,''),pos.x,pos.y+ds+0.35,pos.z,s.col,0.45));
+  }
+  const sl=new THREE.PointLight(0xFFEE44,1.5,25); sl.userData.noclick=true; add(sl);
+  camera.position.set(5,20,38); controls.target.set(0,0,0);
+  controls.minDistance=0.5; controls.maxDistance=70;
+  document.getElementById('csCount').textContent=`${STARS.length} stellar objects · nearby stars & landmarks`;
+}
+
+// ─────────────────────────────────────────────
+// BUILD SOLAR SYSTEM
+// ─────────────────────────────────────────────
+function auScale(au){return au<4.5?au*4.5:4.5*4.5+(au-4.5)*1.4;}
+
+function buildSolar(){
+  clear();
+  const sunM=sphere(1.8,'#FFEE44',16); sunM.userData={
+    name:'Sun',type:'G2V – Yellow Dwarf',col:'#FFEE44',
+    desc:'Our host star. 4.6 billion years old. Contains 99.86% of the solar system mass. Diameter 1.4 million km. Surface temperature 5,778 K.',
+    stats:{"Mass":"1 M☉","Radius":"696,000 km","Temp":"5,778 K","Age":"4.6 Gyr"},_pos:new THREE.Vector3()};
+  add(sunM);
+  add(glow(new THREE.Vector3(),'#FFEE44',6));
+  add(label('Sun',0,2.5,0,'#FFEE44',0.8));
+  const sl=new THREE.PointLight(0xFFEE44,2.5,300); sl.userData.noclick=true; add(sl);
+  add(new THREE.AmbientLight(0x112233,0.4)).userData.noclick=true;
+
+  const angles=[0.6,1.4,2.2,3.1,0.2,1.0,2.5,3.8,4.5,5.2,0.9,1.8,2.7,4.1];
+  PLANETS.forEach((p,i)=>{
+    const r=auScale(p.au);
+    const ang=angles[i]||i*0.7;
+    let x,z;
+    if(p.name==='3I/ATLAS ★'){x=r*0.6;z=r*0.8;}
+    else{x=r*Math.cos(ang);z=r*Math.sin(ang);}
+    if(p.name!=='3I/ATLAS ★') add(ring(r,0x1a2a3a,0.5));
+    const ds=Math.max(0.18,Math.min(p.sz*0.13,1.3));
+    const m=sphere(ds,p.col,12);
+    m.position.set(x,0,z);
+    m.userData={...p,_pos:new THREE.Vector3(x,0,z)};
+    if(p.name==='Saturn'){
+      const rg=new THREE.Mesh(new THREE.RingGeometry(ds*1.5,ds*2.4,36),
+        new THREE.MeshBasicMaterial({color:0xCCAA55,side:THREE.DoubleSide,transparent:true,opacity:0.55}));
+      rg.rotation.x=-Math.PI/2.6; rg.userData.noclick=true;
+      const g=new THREE.Group(); g.add(m); g.add(rg);
+      g.position.set(x,0,z); g.userData=m.userData; g.userData._pos=new THREE.Vector3(x,0,z);
+      m.position.set(0,0,0);
+      add(g);
+    } else { add(m); }
+    if(p.name==='3I/ATLAS ★') add(glow(new THREE.Vector3(x,0,z),'#00FFAA',ds*5));
+    add(label(p.name,x,ds+0.6,z,p.col,0.55));
+  });
+
+  const ab=new THREE.Mesh(new THREE.RingGeometry(auScale(2.1),auScale(3.3),80),
+    new THREE.MeshBasicMaterial({color:0x443322,side:THREE.DoubleSide,transparent:true,opacity:0.2}));
+  ab.rotation.x=-Math.PI/2; ab.userData.noclick=true; add(ab);
+  add(label('Asteroid Belt',auScale(2.7)+0.4,0.3,0,'#665533',0.5));
+
+  const kb=new THREE.Mesh(new THREE.RingGeometry(auScale(30),auScale(50),80),
+    new THREE.MeshBasicMaterial({color:0x223344,side:THREE.DoubleSide,transparent:true,opacity:0.18}));
+  kb.rotation.x=-Math.PI/2; kb.userData.noclick=true; add(kb);
+  add(label('Kuiper Belt',auScale(40)+0.5,0.3,0,'#334455',0.5));
+
+  camera.position.set(0,55,90); controls.target.set(0,0,0);
+  controls.minDistance=2; controls.maxDistance=350;
+  document.getElementById('csCount').textContent=`${PLANETS.length} solar system objects · incl. 3I/ATLAS`;
+}
+
+// ─────────────────────────────────────────────
+// BUILD GALAXY SCALE
+// ─────────────────────────────────────────────
+function buildGalaxy(){
+  clear();
+  const disk=new THREE.Mesh(new THREE.RingGeometry(3000,50000,80),
+    new THREE.MeshBasicMaterial({color:0x223355,side:THREE.DoubleSide,transparent:true,opacity:0.12}));
+  disk.rotation.x=-Math.PI/2; disk.userData.noclick=true; add(disk);
+  add(glow(new THREE.Vector3(),'#FF8800',12000));
+
+  for(const d of DEEP){
+    const pos=new THREE.Vector3(d.x,d.y,d.z);
+    const m=sphere(d.sz,d.col,8); m.position.copy(pos);
+    m.userData={...d,_pos:pos.clone()}; add(m);
+    add(glow(pos,d.col,d.sz*4));
+    add(label(d.name,d.x,d.y+d.sz*2,d.z,d.col,d.sz/800));
+  }
+  const pts=[new THREE.Vector3(18000,0,-8000),new THREE.Vector3(22000,0,-3000),
+    new THREE.Vector3(26700,0,0),new THREE.Vector3(31000,0,5000),new THREE.Vector3(36000,0,11000)];
+  const armG=new THREE.BufferGeometry().setFromPoints(new THREE.CatmullRomCurve3(pts).getPoints(60));
+  const armL=new THREE.Line(armG,new THREE.LineBasicMaterial({color:0x335566,transparent:true,opacity:0.5}));
+  armL.userData.noclick=true; add(armL);
+  add(label('Orion Arm',31000,1000,7000,'#335566',15));
+  add(label('Milky Way\n(100,000 ly dia.)',0,-6000,0,'#556688',40));
+
+  camera.position.set(0,80000,120000); controls.target.set(0,0,0);
+  controls.minDistance=500; controls.maxDistance=600000;
+  document.getElementById('csCount').textContent=`Galaxy scale · Milky Way + Local Group neighbors`;
+}
+
+// ─────────────────────────────────────────────
+// BUILD EXOTIC — black holes, supernovae, first exoplanets, deep field
+// Positions are illustrative groupings for browsing, not physically to scale —
+// nothing spanning stellar-mass black holes to superclusters renders honestly on one axis.
+// ─────────────────────────────────────────────
+const EXOTIC_SECTORS = [
+  {cat:"blackhole",label:"Black Holes",angle:-135,ring:0x2a1a44},
+  {cat:"supernova",label:"Supernovae",angle:-45,ring:0x442211},
+  {cat:"exoplanet",label:"First Exoplanets",angle:45,ring:0x114433},
+  {cat:"deepfield",label:"Deep Field",angle:135,ring:0x223355},
+];
+function buildExotic(){
+  clear();
+  add(new THREE.GridHelper(90,18,0x0e0e18,0x0e0e18)).userData.noclick=true;
+  const R=32, r2=13;
+  EXOTIC_SECTORS.forEach(sec=>{
+    const items=EXOTIC.filter(e=>e.cat===sec.cat);
+    const baseAng=sec.angle*Math.PI/180;
+    add(ring(R,sec.ring,0.35));
+    const cx=Math.cos(baseAng)*R*0.55, cz=Math.sin(baseAng)*R*0.55;
+    add(label(sec.label.toUpperCase(),cx,9,cz,'#5a6a78',1.4));
+    items.forEach((e,i)=>{
+      const spread=(i-(items.length-1)/2)*0.34;
+      const ang=baseAng+spread;
+      const x=Math.cos(ang)*R, z=Math.sin(ang)*R;
+      const ds=0.9+e.sz*0.9;
+      const m=sphere(ds,e.col,14);
+      m.position.set(x,0,z);
+      m.userData={...e,_pos:new THREE.Vector3(x,0,z)};
+      add(m);
+      add(glow(new THREE.Vector3(x,0,z),e.glowcol||e.col,ds*6));
+      add(label(e.name,x,ds+1.1,z,e.glowcol||e.col,0.6));
+    });
+  });
+  add(new THREE.PointLight(0x8899ff,1.2,80)).userData.noclick=true;
+  camera.position.set(0,42,58); controls.target.set(0,0,0);
+  controls.minDistance=4; controls.maxDistance=200;
+  document.getElementById('csCount').textContent=`${EXOTIC.length} exotic objects · 4 categories`;
+}
+
+// ─────────────────────────────────────────────
+// LEGEND (per-mode)
+// ─────────────────────────────────────────────
+const LEGENDS = {
+  stars: {title:"Object Types", rows:[
+    ["#DDEEFF","O/B Blue Giant"],["#CCDDFF","A White Star"],["#FFFFCC","F Yellow-White"],
+    ["#FFFF44","G Yellow Dwarf"],["#FFAA00","K Orange Dwarf"],["#FF4400","M Red Dwarf"],
+    ["#882200","Brown Dwarf"],["#AAAAFF","White Dwarf"],
+  ]},
+  solar: {title:"Object Types", rows:[
+    ["#4488FF","Terrestrial"],["#E8A060","Gas Giant"],["#88DDEE","Ice Giant"],
+    ["#CCAA88","Dwarf Planet"],["#00FFAA","Interstellar Visitor"],
+  ]},
+  galaxy: {title:"Object Types", rows:[
+    ["#FF8800","Black Hole"],["#FFFF44","Our Solar System"],["#AABBFF","Spiral Galaxy"],
+    ["#BBAAFF","Dwarf Galaxy"],["#FFAA66","Elliptical Galaxy"],
+  ]},
+  exotic: {title:"Categories", rows:[
+    ["#7a4fbb","Black Holes"],["#FF6633","Supernovae"],["#33DD99","First Exoplanets"],["#99AADD","Deep Field"],
+  ]},
+};
+function buildLegend(){ renderLegend('stars'); }
+function renderLegend(mode){
+  const L=LEGENDS[mode]; const el=document.getElementById('csLegend');
+  el.innerHTML = `<h4>${L.title}</h4>` + L.rows.map(([c,t])=>
+    `<div class="cs-li"><div class="cs-ld" style="background:${c}"></div>${t}</div>`).join('');
+}
+
+// ─────────────────────────────────────────────
+// MODE BAR
+// ─────────────────────────────────────────────
+const MODES = [
+  {id:'solar', label:'☀ Solar System', build:buildSolar},
+  {id:'stars', label:'✦ Stellar Neighborhood', build:buildStars},
+  {id:'galaxy', label:'⬡ Galaxy Scale', build:buildGalaxy},
+  {id:'exotic', label:'✳ Exotic', build:buildExotic},
+];
+function buildModeBar(){
+  const bar=document.getElementById('csModes');
+  bar.innerHTML='';
+  MODES.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='cs-mbtn'+(m.id==='stars'?' active':'');
+    b.id='cs-btn-'+m.id;
+    b.textContent=m.label;
+    b.addEventListener('click',()=>setMode(m.id));
+    bar.appendChild(b);
+  });
+}
+function setMode(id){
+  const m=MODES.find(mm=>mm.id===id); if(!m)return;
+  document.querySelectorAll('.cs-mbtn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('cs-btn-'+id); if(btn)btn.classList.add('active');
+  closePanel();
+  renderLegend(id);
+  m.build();
+}
+
+// ─────────────────────────────────────────────
+// CLICK / TAP
+// ─────────────────────────────────────────────
+function pick(cx,cy){
+  const {w,h}=stageSize();
+  mouse.x=(cx/w)*2-1; mouse.y=-(cy/h)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(sceneObjects.filter(o=>o.isMesh&&!o.userData.noclick&&o.userData.name),true);
+  if(!hits.length){closePanel();return;}
+  let obj=hits[0].object;
+  while(obj&&!obj.userData.name&&obj.parent)obj=obj.parent;
+  if(obj&&obj.userData.name)showPanel(obj.userData);
+  else closePanel();
+}
+function localCoords(clientX,clientY){
+  const r=stage.getBoundingClientRect();
+  return {x:clientX-r.left,y:clientY-r.top};
+}
+let lastT=0;
+function onTouch(e){
+  const now=Date.now(); if(now-lastT<400)return; lastT=now;
+  if(e.changedTouches&&e.changedTouches.length){
+    const p=localCoords(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+    pick(p.x,p.y);
+  }
+}
+function onClick(e){
+  if(e.pointerType==='touch')return;
+  const p=localCoords(e.clientX,e.clientY);
+  pick(p.x,p.y);
+}
+
+// ─────────────────────────────────────────────
+// INFO PANEL
+// ─────────────────────────────────────────────
+function showPanel(d){
+  document.getElementById('csPname').textContent=d.name||'';
+  document.getElementById('csPtype').textContent=d.type||'';
+  document.getElementById('csPdesc').textContent=d.desc||'';
+  const st=document.getElementById('csPstats'); st.innerHTML='';
+  if(d.stats)for(const[k,v]of Object.entries(d.stats))
+    st.innerHTML+=`<div class="cs-sbox"><div class="cs-slbl">${k}</div><div class="cs-sval">${v}</div></div>`;
+  document.getElementById('csPanel').classList.add('open');
+}
+function closePanel(){document.getElementById('csPanel').classList.remove('open');}
+
+// ─────────────────────────────────────────────
+// RESIZE / ANIMATE
+// ─────────────────────────────────────────────
+function onResize(){
+  const {w,h}=stageSize();
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+}
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}
+
+// ─────────────────────────────────────────────
+// ENTRY POINT — runs after every const/function above is defined
+// ─────────────────────────────────────────────
+init(); setMode('stars'); animate();
 </script>
 </body>
 </html>
