@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Duely — get overdue invoices paid, on contingency."/>
+<meta property="og:title" content="Duely"/>
+<meta property="og:description" content="You pay nothing unless your client pays."/>
+<meta name="theme-color" content="#e3d9c2"/>
+<title>Duely</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #e3d9c2; --paper-hi: #ece3cd; --paper-shadow: #cfc3a5;
+  --ink: #2a241d; --ink-soft: #655b47; --ink-faint: #8c8168;
+  --indigo: #3c5566; --indigo-dim: #6e8792;
+  --rust: #9a4f2e; --rust-hi: #b8623a;
+  --contour: rgba(42,36,29,.14); --contour-soft: rgba(42,36,29,.07);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
+.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
+.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
+  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
+.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3.4rem, 12vw, 9rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 0.9; color: var(--ink); }
+.name span { color: var(--rust-hi); }
+.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
+  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 46ch; }
+.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
+  background: linear-gradient(to right, transparent, var(--rust), transparent); }
+.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
+  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo-dim); }
+
+.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
+.frag-head { text-align: center; margin-bottom: 5rem; }
+.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
+.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
+  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
+.frag-title em { color: var(--rust-hi); font-style: italic; font-family: 'Newsreader', serif; }
+.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
+.frag:last-child { border-bottom: 1px solid var(--contour); }
+.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
+.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
+.frag p + p { margin-top: .9rem; }
+.frag p b { color: var(--ink); font-weight: 600; }
+.frag p em { color: var(--rust); font-style: italic; }
+.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
+.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
+.frag li b { color: var(--ink); font-weight: 600; }
+
+.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
+  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
+
+footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
+footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
+footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
+footer.mf-foot a:hover { color: var(--rust); }
+
+.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
+.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
+.corner-tl:hover { color: var(--rust); }
+@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
+</style>
+</head>
+<body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+    </g>
+  </svg>
+</div>
+<div class="grain"></div>
+<a href="index.html" class="corner corner-tl">← Atlas</a>
+
+<div class="container">
+  <p class="label">contingency invoicing — no cost unless it works</p>
+  <h1 class="name">Duely<span>.</span></h1>
+  <p class="tagline">Get overdue invoices paid. You pay nothing unless your client does.</p>
+  <div class="divider"></div>
+  <span class="status-pill"><span class="sw"></span>concept — private prototype</span>
+</div>
+
+<section class="frag-wrap">
+  <div class="frag-head">
+    <p class="frag-label">the problem</p>
+    <h2 class="frag-title">Awkward to <em>chase</em>, too small to matter</h2>
+  </div>
+
+  <div class="frag">
+    <span class="tag">who this is for</span>
+    <p>Any business that invoices a client directly ends up sitting on unpaid invoices nobody wants to chase — <b>lawn care, house cleaning, handyman work, contracting, pet grooming, photography, freelancing, tutoring.</b> Real collection agencies won't touch anything under a few thousand dollars. Existing invoice-chasing tools charge a subscription whether or not it works, which kills adoption for someone owed one $150 lawn job.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">the flip</span>
+    <p>Duely charges <b>nothing upfront</b> — a platform fee is taken automatically, only at the moment the client actually pays, split off the payment itself via Stripe Connect. No cost to try it, no trust problem, no invoice for using the invoice tool.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">how it runs</span>
+    <ul>
+      <li><b>01</b> — Business owner connects a free Stripe Express account. Duely never touches the money directly.</li>
+      <li><b>02</b> — They describe one overdue invoice; Claude drafts a three-email escalating reminder sequence — friendly to firm, never threatening legal action or posing as a collector.</li>
+      <li><b>03</b> — The freelancer reviews and sends each email themselves, on their own timeline.</li>
+      <li><b>04</b> — When the client pays through the embedded Stripe Payment Link, the split happens automatically — their cut lands in their account, Duely's fee is taken in the same instant.</li>
+    </ul>
+  </div>
+
+  <div class="frag">
+    <span class="tag">built on</span>
+    <p>Next.js 14 App Router, Postgres via Prisma, passwordless magic-link auth, Stripe Connect (Express) for payouts and fee-split Payment Links, Claude for drafting the reminder sequence under hard-coded legal guardrails, Resend for delivery.</p>
+    <div class="stack-row">
+      <span>Next.js 14</span><span>Prisma / Postgres</span><span>Stripe Connect</span><span>Claude API</span><span>Resend</span>
+    </div>
+  </div>
+
+  <div class="frag">
+    <span class="tag">legal positioning</span>
+    <p>Deliberately built as <em>invoice-reminder software</em>, not a collection agency — collectors require state licensing and are bound by the FDCPA. Every email sends in the freelancer's own name, about their own invoice, and never mentions legal action or a "collections department."</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">status</span>
+    <p>A working prototype, not yet public. The fastest path from here is a real Stripe Connect + verified sending domain, then posting it — not as an ad, but as "I built this because I was owed money and didn't want to be awkward about it" — into freelance and local-service-business communities where it converts on the strength of the pitch alone: <em>pay nothing unless it works.</em></p>
+  </div>
+</section>
+
+<footer class="mf-foot">
+  <p>A monetization concept, not a live product. Kept here as a record of the idea.</p>
+  <a href="index.html">Return to Mentifaber</a>
+</footer>
+</body>
+</html>
