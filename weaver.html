@@ -6,52 +6,55 @@
 <meta name="description" content="Weaver — The Archive."/>
 <meta property="og:title" content="Weaver"/>
 <meta property="og:description" content="She already knows you're here."/>
-<meta name="theme-color" content="#000000"/>
+<meta name="theme-color" content="#e3d9c2"/>
 <title>Weaver</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --black: #000000;
-  --gold: #c8a96e;
-  --gold-dim: #8a7050;
-  --gold-label: #7a6040;
-  --white: #f2e6cf;
-  --off: #c4b09a;
-  --nav: #7a6e62;
-  --ember: #b02a1a;
-  --ember-hi: #d94030;
-  --blood: #8b1a1a;
-  --blood-hi: #c0392b;
+  --paper: #e3d9c2;
+  --paper-hi: #ece3cd;
+  --paper-shadow: #cfc3a5;
+  --ink: #2a241d;
+  --ink-soft: #655b47;
+  --ink-faint: #8c8168;
+  --indigo: #3c5566;
+  --indigo-dim: #6e8792;
+  --rust: #9a4f2e;
+  --rust-hi: #b8623a;
+  --contour: rgba(42,36,29,.14);
+  --contour-soft: rgba(42,36,29,.07);
+  /* legacy names mapped onto the new palette */
+  --black: var(--paper);
+  --gold: var(--rust-hi);
+  --gold-dim: var(--indigo-dim);
+  --gold-label: var(--ink-faint);
+  --white: var(--ink);
+  --off: var(--ink-soft);
+  --nav: var(--ink-faint);
+  --ember: var(--rust);
+  --ember-hi: var(--rust-hi);
+  --blood: var(--indigo);
+  --blood-hi: var(--indigo-dim);
 }
 html, body {
   min-height: 100%;
-  background: var(--black);
-  color: var(--white);
-  font-family: 'EB Garamond', serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Newsreader', serif;
   overflow-x: hidden;
   overflow-y: auto;
-  cursor: crosshair;
 }
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
 body::before {
   content: ''; position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity: 0.05; pointer-events: none; z-index: 100;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.05; mix-blend-mode: multiply; pointer-events: none; z-index: 100;
 }
-body::after {
-  content: ''; position: fixed; inset: 0;
-  background: radial-gradient(ellipse 90% 70% at 50% 50%, transparent 15%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.95) 100%);
-  pointer-events: none; z-index: 99;
-}
-.ambient {
-  position: fixed; bottom: -18vh; left: 50%; transform: translateX(-50%);
-  width: 70vw; height: 50vh;
-  background: radial-gradient(ellipse, rgba(139,26,26,0.14) 0%, transparent 65%);
-  pointer-events: none; z-index: 97;
-  animation: breathe 7s ease-in-out infinite;
-}
+.ambient { display: none; }
 @keyframes breathe { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
 
 .container {
@@ -67,24 +70,24 @@ body::after {
   width: clamp(50px, 9vw, 120px); height: 1px;
   background: linear-gradient(to right, transparent, var(--gold-dim), transparent); opacity: 0.45; }
 .label {
-  font-family: 'Syncopate', sans-serif; font-size: clamp(10px, 1.1vw, 12px);
+  font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px);
   letter-spacing: 0.45em; color: var(--gold-label); text-transform: uppercase;
   margin-bottom: clamp(1.8rem, 4vh, 3rem);
   opacity: 0; animation: fadeUp 1s 0.1s forwards ease-out;
 }
 .name {
-  font-family: 'Playfair Display', serif; font-size: clamp(3.8rem, 14vw, 12.5rem);
+  font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3.8rem, 14vw, 12.5rem);
   font-weight: 700; font-style: italic; letter-spacing: -0.03em; line-height: 0.82;
   color: var(--white); opacity: 0;
   animation: fadeUp 1.1s 0.38s forwards ease-out, blood-pulse 7s 2s infinite ease-in-out;
 }
-.name span { font-style: normal; font-weight: 900; color: var(--gold); animation: none; }
+.name span { font-style: normal; font-weight: 700; color: var(--gold); animation: none; }
 @keyframes blood-pulse {
-  0%, 100% { color: #e8dcc8; text-shadow: none; }
-  50% { color: var(--blood-hi); text-shadow: 0 0 30px rgba(192,57,43,0.35), 0 0 80px rgba(192,57,43,0.15); }
+  0%, 100% { color: var(--ink); text-shadow: none; }
+  50% { color: var(--blood-hi); text-shadow: 0 0 24px rgba(154,79,46,0.25); }
 }
 .tagline {
-  margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'EB Garamond', serif;
+  margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
   font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--off); letter-spacing: 0.12em;
   opacity: 0; animation: fadeUp 1s 0.65s forwards ease-out;
 }
@@ -95,12 +98,12 @@ body::after {
   opacity: 0; animation: fadeIn 1s 0.9s forwards ease-out;
 }
 .body {
-  font-family: 'EB Garamond', serif; font-size: clamp(0.95rem, 1.55vw, 1.18rem);
+  font-family: 'Newsreader', serif; font-size: clamp(0.95rem, 1.55vw, 1.18rem);
   font-style: italic; color: var(--nav); letter-spacing: 0.06em; max-width: 48ch; line-height: 1.7;
   opacity: 0; animation: fadeUp 1s 1.1s forwards ease-out;
 }
 .back-link {
-  margin-top: clamp(3.2rem, 6vh, 5.5rem); font-family: 'Syncopate', sans-serif;
+  margin-top: clamp(3.2rem, 6vh, 5.5rem); font-family: 'IBM Plex Mono', monospace;
   font-size: clamp(11px, 1.2vw, 14px); font-weight: 700; letter-spacing: 0.52em; text-transform: uppercase;
   color: var(--gold-dim); text-decoration: none; display: inline-block; padding: 1rem 0; position: relative;
   opacity: 0; animation: fadeUp 1s 1.35s both ease-out;
@@ -111,38 +114,38 @@ body::after {
 .back-link:hover::before { transform: translateX(-5px); }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.corner { position: fixed; font-family: 'Syncopate', sans-serif; font-size: clamp(8px, 0.85vw, 10px);
+.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
   letter-spacing: 0.4em; text-transform: uppercase; opacity: 0; animation: fadeIn 1s 2.3s forwards; }
 .stamp { bottom: 5vh; right: 5vw; color: var(--nav); }
 .year { top: 5vh; right: 5vw; color: var(--gold-dim); }
 .corner-tl { top: 5vh; left: 5vw; color: var(--nav); }
 .cursor-glow { position: fixed; width: 520px; height: 520px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(176,42,26,0.07) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(154,79,46,0.06) 0%, transparent 65%);
   pointer-events: none; transform: translate(-50%, -50%); z-index: 98; }
-.scrollcue{position:absolute;bottom:5vh;left:50%;transform:translateX(-50%);font-family:'Syncopate',sans-serif;
+.scrollcue{position:absolute;bottom:5vh;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;
   font-size:9px;letter-spacing:.3em;color:var(--nav);opacity:0;animation:fadeIn 1s 2.6s forwards,bob 2.6s 3.6s infinite ease-in-out}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,7px)}}
 
 /* ── Fragments ── */
 .frag-wrap{position:relative;max-width:720px;margin:0 auto;padding:14vh clamp(1.5rem,8vw,6rem) 10vh}
 .frag-head{text-align:center;margin-bottom:6rem}
-.frag-label{font-family:'Syncopate',sans-serif;font-size:11px;letter-spacing:.42em;color:var(--gold-label);text-transform:uppercase}
-.frag-title{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(2rem,4.6vw,3rem);
+.frag-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.42em;color:var(--gold-label);text-transform:uppercase}
+.frag-title{font-family:'Bricolage Grotesque',sans-serif;font-style:italic;font-weight:700;font-size:clamp(2rem,4.6vw,3rem);
   color:var(--white);margin-top:1rem;letter-spacing:-.01em}
 .frag-title em{color:var(--blood-hi);font-style:italic}
-.frag{position:relative;padding:2.4rem 0;border-top:1px solid rgba(200,169,110,.14)}
-.frag:last-child{border-bottom:1px solid rgba(200,169,110,.14)}
-.frag .tag{font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-dim);display:block;margin-bottom:1rem}
-.frag p{font-family:'EB Garamond',serif;font-style:italic;font-size:1.15rem;line-height:1.75;color:var(--off)}
+.frag{position:relative;padding:2.4rem 0;border-top:1px solid var(--contour)}
+.frag:last-child{border-bottom:1px solid var(--contour)}
+.frag .tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-dim);display:block;margin-bottom:1rem}
+.frag p{font-family:'Newsreader',serif;font-style:italic;font-size:1.15rem;line-height:1.75;color:var(--off)}
 .frag p b{color:var(--white);font-weight:600;font-style:normal}
 .frag p em{color:var(--gold);font-style:italic}
 .frag.blood p b{color:var(--blood-hi)}
-.frag-eq{font-family:'EB Garamond',serif;font-style:italic;font-size:1.05rem;color:var(--gold);
+.frag-eq{font-family:'Newsreader',serif;font-style:italic;font-size:1.05rem;color:var(--gold);
   text-align:center;margin:.9rem 0;letter-spacing:.04em}
 
 footer.wv{padding:8vh 24px 12vh;text-align:center}
-footer.wv p{font-family:'EB Garamond',serif;font-style:italic;color:var(--nav);font-size:.95rem;max-width:46ch;margin:0 auto}
-footer.wv a{color:var(--gold-dim);text-decoration:none;font-family:'Syncopate',sans-serif;font-size:10px;
+footer.wv p{font-family:'Newsreader',serif;font-style:italic;color:var(--nav);font-size:.95rem;max-width:46ch;margin:0 auto}
+footer.wv a{color:var(--gold-dim);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px;
   letter-spacing:.3em;text-transform:uppercase;display:inline-block;margin-top:2.5rem;transition:.3s}
 footer.wv a:hover{color:var(--gold)}
 

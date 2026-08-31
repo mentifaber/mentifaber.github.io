@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e3d9c2">
 <title>NovarAC — HF chat with the internet switched off</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --case:#100C08;--case2:#1A130C;--panel:#221A11;--line:#33281B;--line2:#4A3A25;
-  --lamp:#F5E7CE;--dim:#9A836A;--amber:#FFB000;--amber2:#FF8A2B;--green:#6FD48A;--red:#E5573F;
-  --disp:'Exo 2',system-ui,sans-serif;--mono:'Share Tech Mono',monospace;
+  --case:#e3d9c2;--case2:#ece3cd;--panel:#ece3cd;--line:rgba(42,36,29,.14);--line2:rgba(42,36,29,.30);
+  --lamp:#2a241d;--dim:#655b47;--amber:#9a4f2e;--amber2:#b8623a;--green:#3c5566;--red:#9a4f2e;
+  --disp:'Bricolage Grotesque',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--case);color:var(--lamp);font-family:var(--disp);font-weight:300;font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--case);color:var(--lamp);font-family:'Newsreader',serif;font-weight:400;font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
 ::selection{background:var(--amber);color:var(--case)}
 .col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
 #bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--green),var(--amber))}
