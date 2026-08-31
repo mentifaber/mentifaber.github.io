@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SONIC — 933,573 verses, thirty translations, one graph</title>
-<meta name="theme-color" content="#e3d9c2"/>
+<title>Omnilogos — 933,573 verses, thirty translations, one graph</title>
+<meta name="theme-color" content="#000000"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -74,16 +74,16 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 @media(max-width:680px){.gap{height:94px}.brow{grid-template-columns:96px 1fr 46px}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 :root{
-  --umber:#e3d9c2 !important;
-  --umber2:#ece3cd !important;
-  --panel:#ece3cd !important;
-  --line:rgba(42,36,29,.14) !important;
-  --line2:rgba(42,36,29,.30) !important;
-  --parch:#2a241d !important;
-  --dim:#655b47 !important;
-  --gold:#b8623a !important;
-  --verdigris:#3c5566 !important;
-  --wine:#9a4f2e !important;
+  --umber:#000000 !important;
+  --umber2:#120f0a !important;
+  --panel:#120f0a !important;
+  --line:rgba(242,230,207,.14) !important;
+  --line2:rgba(242,230,207,.30) !important;
+  --parch:#f2e6cf !important;
+  --dim:#c4b09a !important;
+  --gold:#d94030 !important;
+  --verdigris:#c8a96e !important;
+  --wine:#b02a1a !important;
   --disp:'Bricolage Grotesque',sans-serif !important;
   --body:'Newsreader',serif !important;
   --mono:'IBM Plex Mono',monospace !important;
@@ -95,8 +95,8 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 .mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
 .mf-vignette{display:none}
 .mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(154,79,46,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:197}
-.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#655b47;text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:#9a4f2e;opacity:1}
+.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#c4b09a;text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#b02a1a;opacity:1}
 .mf-tl{top:3.2vh;left:4vw}
 .mf-return{bottom:3.2vh;left:4vw}
 .mf-return::before{content:"\2190 ";}
@@ -108,14 +108,14 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 </style></head><body>
 <div class="contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-    <g fill="none" stroke="#2a241d" stroke-width="1">
+    <g fill="none" stroke="#f2e6cf" stroke-width="1">
       <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
       <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
       <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
       <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
       <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
-      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
-      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
     </g>
   </svg>
 </div>
@@ -131,7 +131,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 <header class="hero">
   <div id="count">0</div>
   <div class="clabel">verses ingested</div>
-  <h1>SONIC</h1>
+  <h1>Omnilogos</h1>
   <p class="tag">Thirty public-domain translations pulled, normalised, tagged, correlated and exported into a single navigable graph.</p>
   <div class="meta">SQLite · Python · Obsidian · fully local</div>
 </header>
@@ -188,7 +188,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
     <div class="cell"><dt>Correlation</dt><dd><b>56,517</b> verses scored<br>Jaccard similarity<br>per-book agreement</dd></div>
     <div class="cell"><dt>Export</dt><dd>200+ book files<br>theme + translation files<br>wikilinked markdown</dd></div>
     <div class="cell"><dt>Not yet built</dt><dd>sentence-transformers<br>Greek interlinear<br>D3 force graph<br>search.py CLI</dd></div>
-    <div class="cell"><dt>Location</dt><dd>~/Documents/SONIC/<br>Fedora · offline<br>read CLAUDE_STATE.md first</dd></div>
+    <div class="cell"><dt>Location</dt><dd>~/Documents/Omnilogos/<br>Fedora · offline<br>read CLAUDE_STATE.md first</dd></div>
   </div>
   <p class="aside">Pipeline lesson learned the hard way: never block on long <b>sleep</b> chains over the SMB mount, and never write logs to the share. Launch with <code>nohup</code>, log to <code>/tmp</code>, check in separately.</p>
 </section>

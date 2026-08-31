@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#e3d9c2">
+<meta name="theme-color" content="#000000">
 <title>NovarAC — HF chat with the internet switched off</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --case:#e3d9c2;--case2:#ece3cd;--panel:#ece3cd;--line:rgba(42,36,29,.14);--line2:rgba(42,36,29,.30);
-  --lamp:#2a241d;--dim:#655b47;--amber:#9a4f2e;--amber2:#b8623a;--green:#3c5566;--red:#9a4f2e;
+  --case:#000000;--case2:#120f0a;--panel:#120f0a;--line:rgba(242,230,207,.14);--line2:rgba(242,230,207,.30);
+  --lamp:#f2e6cf;--dim:#c4b09a;--amber:#b02a1a;--amber2:#d94030;--green:#c8a96e;--red:#b02a1a;
   --disp:'Bricolage Grotesque',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -34,7 +34,7 @@ h1 em{color:var(--amber);font-style:normal}
 
 /* ------- the rig ------- */
 .rig{width:min(94vw,560px);background:linear-gradient(180deg,var(--case2),var(--panel));
-  border:1px solid var(--line2);border-radius:10px;padding:22px;box-shadow:0 22px 60px rgba(42,36,29,.35)}
+  border:1px solid var(--line2);border-radius:10px;padding:22px;box-shadow:0 22px 60px rgba(242,230,207,.35)}
 .vfd{background:#1c1710;border:1px solid var(--line);border-radius:6px;padding:18px 20px;text-align:left;
   box-shadow:inset 0 0 34px rgba(255,176,0,.07)}
 .freq{font-family:var(--mono);font-size:clamp(34px,8vw,54px);color:var(--amber);
@@ -52,7 +52,7 @@ h1 em{color:var(--amber);font-style:normal}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--line2);border-radius:3px;outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#4A3A25,#1A130C);border:1px solid var(--line2);cursor:grab;
-  box-shadow:0 3px 8px rgba(42,36,29,.35)}
+  box-shadow:0 3px 8px rgba(242,230,207,.35)}
 input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#2A2116;border:1px solid var(--line2);cursor:grab}
 .bands{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:18px}
 .band{font-family:var(--mono);font-size:11px;background:transparent;border:1px solid var(--line);
@@ -98,14 +98,14 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 </style></head><body>
 <div class="contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-    <g fill="none" stroke="#2a241d" stroke-width="1">
+    <g fill="none" stroke="#f2e6cf" stroke-width="1">
       <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
       <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
       <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
       <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
       <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
-      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
-      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
     </g>
   </svg>
 </div>
