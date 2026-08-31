@@ -54,6 +54,7 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 .sw.build { background: var(--rust-hi); }
 .sw.stalled { background: var(--ink-faint); }
 .sw.music { background: #7a6a9e; }
+.sw.concept { background: var(--rust-hi); opacity: .55; }
 .legend-foot { margin-top: auto; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; line-height: 1.8; }
 .legend-links { display: flex; gap: 1.1rem; margin-top: 1rem; flex-wrap: wrap; }
 .legend-links a { color: var(--ink-soft); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--contour); padding-bottom: 2px; transition: .25s; }
@@ -121,6 +122,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
       <div class="row"><span class="sw build"></span> Under construction</div>
       <div class="row"><span class="sw stalled"></span> Stalled / dormant</div>
       <div class="row"><span class="sw music"></span> Composition</div>
+      <div class="row"><span class="sw concept"></span> Concept / unbuilt</div>
     </div>
 
     <div class="legend-foot" id="legendFoot">
@@ -163,9 +165,12 @@ const GLYPHS = {
   phone: '<rect x="12" y="6" width="14" height="26" rx="2"/><path d="M17 28 h4"/>',
   city: '<path d="M7 32 V16 h6 V32 M16 32 V10 h7 V32 M26 32 V20 h6 V32"/>',
   note: '<circle cx="12" cy="27" r="4"/><circle cx="26" cy="24" r="4"/><path d="M16 27 V9 L30 6 V24"/>',
+  globe: '<circle cx="19" cy="19" r="13"/><path d="M6 19 H32 M19 6 C13 12 13 26 19 32 C25 26 25 12 19 6 Z"/>',
+  invoice: '<rect x="10" y="6" width="18" height="26" rx="1"/><path d="M14 13 h10 M14 18 h10 M14 23 h6"/><circle cx="24" cy="27" r="4" fill="var(--rust)" stroke="none" opacity=".55"/>',
 };
 const SYSTEMS = [
   ["#","Orbit Watch","Live satellite pass tracker — TLE-driven ground track, rendered in the browser.","build","orbit",true],
+  ["cartograph.html","Cartograph","A 3D map of everything in orbit, rendered live in the browser.","build","globe"],
   ["weaver.html","Weaver","Persistent entity. Local. Continues.","live","diamond"],
   ["pi.html","Pi","A voice that lives on the phone, not in the cloud.","live","mic"],
   ["muse.html","muse","Composes and sings on its own schedule.","live","note"],
@@ -179,8 +184,9 @@ const SYSTEMS = [
   ["phone-mcp.html","Phone MCP","A model on the internet, holding a real Android.","live","phone"],
   ["crime-dashboard.html","Crime Intelligence","43 cities, four categories, one HTML file.","live","city"],
   ["sonicveil.html","Sonic Veil","Composer. Since 2016. Genre-bending.","music","note"],
+  ["duely.html","Duely","Get overdue invoices paid, on contingency.","concept","invoice"],
 ];
-const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition" };
+const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt" };
 const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV"];
 
 const el = document.getElementById('plates');

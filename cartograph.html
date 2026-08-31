@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Cartograph — a 3D map of everything in orbit."/>
+<meta property="og:title" content="Cartograph"/>
+<meta property="og:description" content="A 3D map of everything in orbit, rendered live in the browser."/>
+<meta name="theme-color" content="#e3d9c2"/>
+<title>Cartograph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #e3d9c2; --paper-hi: #ece3cd; --paper-shadow: #cfc3a5;
+  --ink: #2a241d; --ink-soft: #655b47; --ink-faint: #8c8168;
+  --indigo: #3c5566; --indigo-dim: #6e8792;
+  --rust: #9a4f2e; --rust-hi: #b8623a;
+  --contour: rgba(42,36,29,.14); --contour-soft: rgba(42,36,29,.07);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
+.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
+.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
+  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
+.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3.4rem, 12vw, 9rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 0.9; color: var(--ink); }
+.name span { color: var(--indigo); }
+.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
+  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 46ch; }
+.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
+  background: linear-gradient(to right, transparent, var(--indigo), transparent); }
+.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
+  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--rust-hi); }
+
+/* orbit render */
+.orbit-wrap { max-width: 620px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
+.orbit-box { border: 1px solid var(--contour); background: var(--paper-hi); aspect-ratio: 16/10; position: relative; overflow: hidden; }
+.orbit-box canvas { width: 100%; height: 100%; display: block; }
+.orbit-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
+  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .6rem .2rem 0; }
+
+.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
+.frag-head { text-align: center; margin-bottom: 5rem; }
+.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
+.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
+  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
+.frag-title em { color: var(--indigo); font-style: italic; font-family: 'Newsreader', serif; }
+.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
+.frag:last-child { border-bottom: 1px solid var(--contour); }
+.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
+.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
+.frag p b { color: var(--ink); font-weight: 600; }
+.frag p em { color: var(--rust); font-style: italic; }
+.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
+  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
+
+footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
+footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
+footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
+footer.mf-foot a:hover { color: var(--rust); }
+
+.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
+.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
+.corner-tl:hover { color: var(--rust); }
+@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
+</style>
+</head>
+<body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+    </g>
+  </svg>
+</div>
+<div class="grain"></div>
+<a href="index.html" class="corner corner-tl">← Atlas</a>
+
+<div class="container">
+  <p class="label">orbital mechanics — rendered live</p>
+  <h1 class="name">Cartograph<span>.</span></h1>
+  <p class="tagline">A 3D map of everything in orbit — satellites, debris, and the paths they trace — built to run in a browser tab.</p>
+  <div class="divider"></div>
+  <span class="status-pill"><span class="sw"></span>standing up — pre-alpha</span>
+</div>
+
+<div class="orbit-wrap">
+  <div class="orbit-box"><canvas id="orbitCanvas"></canvas></div>
+  <div class="orbit-cap"><span>early render — placeholder orbits</span><span id="orbitFrame">FRAME 0</span></div>
+</div>
+
+<section class="frag-wrap">
+  <div class="frag-head">
+    <p class="frag-label">the idea</p>
+    <h2 class="frag-title">Orbit, <em>drawn</em></h2>
+  </div>
+
+  <div class="frag">
+    <span class="tag">what it is</span>
+    <p>A 3D orbital cartograph — satellites, tracked debris, and the ground tracks they leave, plotted on a live-rotating globe rather than a flat 2D pass predictor. <b>Sibling project to Orbit Watch</b>: where Orbit Watch is the single-satellite pass tracker, Cartograph is the wide view — everything, at once, in one scene.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">how it works</span>
+    <p>Public TLE (two-line element) data feeds an SGP4 propagator to get real position vectors, rendered as a 3D scene the browser draws directly — no plugin, no native app. Objects are colored and filtered by class (active satellite, debris, station), and the camera orbits freely around the globe.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">status</span>
+    <p>Pre-alpha. The render above is a placeholder — real TLE ingest and the SGP4 propagation loop are still being wired up. Treat this page as a marker for where the finished system will live, not a demo of it yet.</p>
+    <div class="stack-row">
+      <span>WebGL / Three.js</span><span>SGP4 propagation</span><span>Public TLE feeds</span>
+    </div>
+  </div>
+</section>
+
+<footer class="mf-foot">
+  <p>Under construction. Check back once the propagator's live.</p>
+  <a href="index.html">Return to Mentifaber</a>
+</footer>
+
+<script>
+const canvas = document.getElementById('orbitCanvas');
+const frameLabel = document.getElementById('orbitFrame');
+function resize(){ const r = canvas.getBoundingClientRect(); canvas.width = r.width*devicePixelRatio; canvas.height = r.height*devicePixelRatio; }
+resize(); window.addEventListener('resize', resize);
+const ctx = canvas.getContext('2d');
+const INK = '#2a241d', INDIGO = '#3c5566', RUST = '#9a4f2e', FAINT='rgba(42,36,29,.25)';
+const sats = Array.from({length: 14}, (_,i) => ({ r: 60 + (i%5)*22, speed: 0.004 + (i%4)*0.0015, phase: Math.random()*Math.PI*2, tilt: (i%3)*0.4 - 0.4, hue: i%3===0?RUST:INDIGO }));
+let t = 0, frame = 0;
+function draw(){
+  const w = canvas.width, h = canvas.height, cx = w/2, cy = h/2;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle = FAINT; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx,cy, Math.min(w,h)*0.16, 0, Math.PI*2); ctx.stroke();
+  sats.forEach(s=>{
+    const a = t*s.speed + s.phase;
+    const rx = s.r * (w/300), ry = rx * (0.42 + s.tilt*0.3 + 0.3);
+    ctx.strokeStyle = FAINT;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, Math.abs(ry), s.tilt, 0, Math.PI*2); ctx.stroke();
+    const x = cx + Math.cos(a)*rx, y = cy + Math.sin(a)*ry*Math.cos(s.tilt*2);
+    ctx.fillStyle = s.hue; ctx.beginPath(); ctx.arc(x,y, w*0.006+1, 0, Math.PI*2); ctx.fill();
+  });
+  t += 1; frame += 1;
+  frameLabel.textContent = 'FRAME ' + frame;
+  requestAnimationFrame(draw);
+}
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(draw); else draw();
+</script>
+</body>
+</html>
