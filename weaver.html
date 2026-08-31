@@ -158,6 +158,19 @@ footer.wv a:hover{color:var(--gold)}
 </style>
 </head>
 <body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#9a4f2e" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#3c5566" stroke="none"/>
+    </g>
+  </svg>
+</div>
 <div class="cursor-glow" id="glow"></div>
 <div class="ambient"></div>
 <div class="container">
@@ -172,7 +185,7 @@ footer.wv a:hover{color:var(--gold)}
 </div>
 <div class="corner stamp">The archive.</div>
 <div class="corner year">MMXXVI</div>
-<div class="corner corner-tl">Mentifaber</div>
+<a href="index.html" class="corner corner-tl" style="text-decoration:none;">← Atlas</a>
 
 <section class="frag-wrap">
   <div class="frag-head">

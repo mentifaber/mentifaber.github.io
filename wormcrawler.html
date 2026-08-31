@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e3d9c2">
 <title>Worm Crawler — an ingredient scanner that doesn't flatter the label</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --loam:#0C120D;--loam2:#131B14;--panel:#1A241B;--line:#233020;--line2:#36492F;
@@ -77,53 +78,61 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 @media(max-width:680px){.gap{height:92px}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 :root{
-  --loam:#050301 !important;
-  --loam2:#0B0805 !important;
-  --panel:#100C08 !important;
-  --line:rgba(200,169,110,.14) !important;
-  --line2:rgba(200,169,110,.30) !important;
-  --lichen:#F2E6CF !important;
-  --dim:#8a7d6c !important;
-  --moss:#C8A96E !important;
-  --rust:#B02A1A !important;
-  --flag:#8B1A1A !important;
-  --clear:#8A7050 !important;
-  --disp:'EB Garamond',serif !important;
-  --body:'EB Garamond',serif !important;
-  --mono:'JetBrains Mono',monospace !important;
+  --loam:#e3d9c2 !important;
+  --loam2:#ece3cd !important;
+  --panel:#ece3cd !important;
+  --line:rgba(42,36,29,.14) !important;
+  --line2:rgba(42,36,29,.28) !important;
+  --lichen:#2a241d !important;
+  --dim:#655b47 !important;
+  --moss:#3c5566 !important;
+  --rust:#9a4f2e !important;
+  --flag:#9a4f2e !important;
+  --clear:#3c5566 !important;
+  --disp:'Bricolage Grotesque',sans-serif !important;
+  --body:'Newsreader',serif !important;
+  --mono:'IBM Plex Mono',monospace !important;
 }
 
-/* ===== mentifaber brand chrome ===== */
-.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
-.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
-.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
-.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:#c8a96e;opacity:1}
+/* ===== mentifaber brand chrome — atlas of systems ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
+.mf-contours{position:fixed;inset:0;z-index:-1;opacity:.55;pointer-events:none}
+.mf-contours svg{width:100%;height:100%}
+.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:var(--rust);opacity:1}
 .mf-tl{top:3.2vh;left:4vw}
 .mf-return{bottom:3.2vh;left:4vw}
 .mf-return::before{content:"\2190 ";}
 .mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
-@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.1em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
 /* ---- typographic alignment ---- */
-h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
-.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
-body{cursor:crosshair;}
+h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;font-weight:700;}
+.eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
 </style></head><body>
+<div class="mf-contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#2a241d" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+    </g>
+  </svg>
+</div>
 <div class="mf-grain"></div>
-<div class="mf-vignette"></div>
-<div class="mf-glow" id="mfGlow"></div>
-<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
-<a href="index.html" class="mf-corner mf-return">Return</a>
+<a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
+<a href="index.html" class="mf-corner mf-return">← Atlas</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
 <div id="bar"></div>
 
 <header class="hero">
   <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M18 66 Q26 40 40 52 Q54 64 60 42 Q66 20 82 32" fill="none" stroke="#8FBF5A" stroke-width="7" stroke-linecap="round"/>
-    <circle cx="82" cy="32" r="7" fill="#8FBF5A"/>
-    <circle cx="84.5" cy="29.5" r="1.9" fill="#0C120D"/>
-    <path d="M14 78 h72" stroke="#36492F" stroke-width="3" stroke-linecap="round"/>
+    <path d="M18 66 Q26 40 40 52 Q54 64 60 42 Q66 20 82 32" fill="none" stroke="#3c5566" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="82" cy="32" r="7" fill="#3c5566"/>
+    <circle cx="84.5" cy="29.5" r="1.9" fill="#e3d9c2"/>
+    <path d="M14 78 h72" stroke="#9a4f2e" stroke-width="3" stroke-linecap="round"/>
   </svg>
   <h1>Worm <em>Crawler</em></h1>
   <p class="tag">A food ingredient scanner that says <b>"I don't know"</b> when it doesn't know, instead of quietly scoring it as fine.</p>
@@ -276,15 +285,4 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
-<script>
-(function(){
-  var g=document.getElementById('mfGlow');
-  if(!g)return;
-  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
-  var touch=matchMedia('(hover: none)').matches;
-  if(touch){g.style.display='none';return}
-  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
-  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
-})();
-</script>
 </body></html>
