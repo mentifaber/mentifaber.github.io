@@ -72,7 +72,17 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 }
 .plate:hover { transform: translateY(-3px); box-shadow: 0 10px 22px -12px rgba(242,230,207,.35); border-color: var(--indigo-dim); }
 .plate-top { display: flex; justify-content: space-between; align-items: flex-start; font-family: 'IBM Plex Mono', monospace; font-size: .62rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; }
+.plate { padding: 0 0 1.4rem; overflow: hidden; }
+.plate-top, .plate h3, .plate p, .plate-status { padding-left: 1.5rem; padding-right: 1.5rem; }
+.plate-top { padding-top: 1.2rem; }
+.plate-shot-wrap { position: relative; margin: .9rem 0 1.1rem; }
+.plate-shot { width: 100%; aspect-ratio: 16/10; object-fit: cover; object-position: top; display: block;
+  border-bottom: 1px solid var(--contour); background: var(--paper); filter: saturate(.85);
+  transition: filter .3s ease; }
+.plate:hover .plate-shot { filter: saturate(1) contrast(1.03); }
 .plate-glyph { width: 38px; height: 38px; margin: 1.2rem 0 1rem; }
+.plate-shot-wrap .plate-glyph { position: absolute; bottom: -14px; right: 12px; width: 28px; height: 28px;
+  margin: 0; background: var(--paper-hi); border: 1px solid var(--contour); border-radius: 50%; padding: 5px; }
 .plate-glyph svg { width: 100%; height: 100%; stroke: var(--indigo); fill: none; stroke-width: 1.1; }
 .plate:hover .plate-glyph svg { stroke: var(--rust); }
 .plate h3 { font-family: 'Newsreader', serif; font-style: italic; font-weight: 500; font-size: 1.5rem; color: var(--ink); }
@@ -194,9 +204,14 @@ SYSTEMS.forEach(([href,name,desc,status,glyph,wide],i)=>{
   const a=document.createElement(href==='#' ? 'div' : 'a');
   a.className='plate'+(wide?' wide':'')+(href==='#'?' disabled':'');
   if(href!=='#') a.href=href;
+  const shotName = href==='#' ? null : href.replace('.html','');
+  const glyphHtml = `<div class="plate-glyph"><svg viewBox="0 0 38 38">${GLYPHS[glyph]}</svg></div>`;
+  const media = shotName
+    ? `<div class="plate-shot-wrap"><img class="plate-shot" src="assets/previews/${shotName}.png" alt="${name} preview" loading="lazy">${glyphHtml}</div>`
+    : glyphHtml;
   a.innerHTML=`
     <div class="plate-top"><span>PL. ${ROMAN[i]}</span></div>
-    <div class="plate-glyph"><svg viewBox="0 0 38 38">${GLYPHS[glyph]}</svg></div>
+    ${media}
     <h3>${name}</h3>
     <p>${desc}</p>
     <div class="plate-status"><span class="sw ${status}"></span>${STATUS_LABEL[status]}</div>`;
