@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -35,6 +36,63 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 .grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Descent — scroll-driven arrival sequence ──
+   #descent-wrap is 300vh tall; #descent-pin sticks for that whole span, so the canvas
+   never leaves the viewport mid-sequence and un-sticks cleanly once the atlas grid arrives. */
+#descent-wrap { position: relative; z-index: 2; height: 300vh; }
+#descent-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+#descent-pin canvas { display: block; width: 100%; height: 100%; }
+#glfail { position: absolute; inset: 0; z-index: 1; display: none; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rust-hi); text-align: center; padding: 2rem; background: rgba(0,0,0,.4); }
+#fogveil { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 60%, transparent 0%, rgba(12,9,6,.4) 55%, rgba(0,0,0,.92) 100%); }
+#dprogress { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(to right, var(--rust-hi), var(--indigo));
+  z-index: 6; width: 0%; opacity: 0; transition: opacity .4s ease; }
+#dprogress.on { opacity: 1; }
+
+.dsection { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 6vh 6vw;
+  pointer-events: none; opacity: 0; transition: opacity .5s ease; }
+.dsection.active { pointer-events: auto; opacity: 1; }
+
+/* fallback: no WebGL/GSAP — stack the three phases in normal document flow instead of
+   overlapping absolutely-positioned layers, so nothing reads as garbled text on top of text */
+#descent-wrap.static-fallback { height: auto; }
+#descent-wrap.static-fallback #descent-pin { position: relative; height: auto; overflow: visible; }
+#descent-wrap.static-fallback #fogveil, #descent-wrap.static-fallback canvas { display: none; }
+#descent-wrap.static-fallback .dsection { position: relative; inset: auto; min-height: 70vh; opacity: 1; pointer-events: auto; }
+
+.d-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; letter-spacing: .42em; text-transform: uppercase;
+  color: var(--indigo-dim); opacity: 0; transform: translateY(14px); transition: opacity .8s ease, transform .8s ease; }
+.d-eyebrow.in { opacity: 1; transform: translateY(0); }
+.d-hero-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(3.2rem,11vw,8.5rem);
+  letter-spacing: -.02em; line-height: .9; margin-top: 1.4rem; color: var(--ink);
+  text-shadow: 0 0 60px rgba(200,169,110,.18);
+  opacity: 0; transform: translateY(20px); transition: opacity 1s ease .1s, transform 1s ease .1s; }
+.d-hero-name.in { opacity: 1; transform: translateY(0); }
+.d-hero-name i { font-style: italic; color: var(--indigo); text-shadow: 0 0 46px rgba(200,169,110,.55); }
+.d-hero-sub { margin-top: 1.6rem; font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft);
+  font-size: clamp(1rem,1.8vw,1.25rem); max-width: 44ch; opacity: 0; transition: opacity 1s ease .3s; }
+.d-hero-sub.in { opacity: 1; }
+.d-scrollcue { margin-top: 4rem; font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em;
+  color: var(--ink-faint); text-transform: uppercase; opacity: 0; }
+.d-scrollcue.in { opacity: 1; animation: dbob 2.4s ease-in-out infinite; }
+@keyframes dbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+
+.d-telemetry { font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-faint); letter-spacing: .08em;
+  text-transform: uppercase; line-height: 2.1; text-align: left; border-left: 1px solid var(--contour); padding-left: 1.4rem; }
+.d-telemetry b { color: var(--indigo); font-weight: 400; }
+.d-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-style: italic; font-size: clamp(1.8rem,4vw,3rem);
+  color: var(--ink); margin-bottom: 2rem; }
+.d-row { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; max-width: 900px; margin: 0 auto; }
+.d-copy { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); max-width: 40ch; }
+@media (max-width: 760px) { .d-row { grid-template-columns: 1fr; text-align: left; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .d-eyebrow, .d-hero-name, .d-hero-sub, .d-scrollcue { opacity: 1 !important; transform: none !important; animation: none !important; }
 }
 
 .atlas { position: relative; z-index: 2; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
@@ -120,6 +178,46 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
   </svg>
 </div>
 <div class="grain"></div>
+
+<div id="dprogress"></div>
+
+<div id="descent-wrap">
+  <div id="descent-pin">
+    <canvas id="dgl"></canvas>
+    <div id="glfail">3D scene unavailable here — the archive below still works.</div>
+    <div id="fogveil"></div>
+
+    <section class="dsection" id="d-hero">
+      <p class="d-eyebrow" data-reveal>mens · mentis — faber · fabri</p>
+      <h1 class="d-hero-name" data-reveal>Menti<i>faber</i></h1>
+      <p class="d-hero-sub" data-reveal>Every system charted like a site — surveyed, marked, and returned to. Scroll to descend from orbit into the archive.</p>
+      <p class="d-scrollcue" data-reveal>↓ begin the descent</p>
+    </section>
+
+    <section class="dsection" id="d-telemetry">
+      <div class="d-row">
+        <div style="text-align:left">
+          <p class="d-eyebrow" data-reveal>altitude falling</p>
+          <h2 class="d-title" data-reveal>Through the <i style="color:var(--indigo)">telemetry</i></h2>
+          <p class="d-copy" data-reveal>Fourteen tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.</p>
+        </div>
+        <div class="d-telemetry" data-reveal>
+          OBJECT&nbsp;&nbsp;<b>MF-07 · Cartograph</b><br>
+          CLASS&nbsp;&nbsp;<b>active / live</b><br>
+          ALT&nbsp;&nbsp;<b id="dAlt">412 km</b><br>
+          VEL&nbsp;&nbsp;<b id="dVel">7.66 km/s</b><br>
+          BEARING&nbsp;&nbsp;<b id="dBear">041°</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="dsection" id="d-atmosphere">
+      <p class="d-eyebrow" data-reveal>atmosphere</p>
+      <h2 class="d-title" data-reveal>The fog is <i style="color:var(--rust-hi)">ember</i>, not water</h2>
+      <p class="d-copy" data-reveal style="margin:0 auto">Re-entry heat, not depth. The archive is close now.</p>
+    </section>
+  </div>
+</div>
 
 <div class="atlas">
   <aside class="legend">
@@ -220,6 +318,201 @@ SYSTEMS.forEach(([href,name,desc,status,glyph,wide],i)=>{
 document.getElementById('plateCount').textContent = `PL. I — PL. ${ROMAN[SYSTEMS.length-1]}`;
 const liveCount = SYSTEMS.filter(s=>s[3]==='live').length;
 document.getElementById('legendFoot').firstChild.textContent = `${SYSTEMS.length} sites surveyed — ${liveCount} live`;
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+/* ── Descent scene ── one big try/catch: if any CDN script is blocked or WebGL is
+   unsupported, the fallback below shows every hero/telemetry section fully visible
+   and static instead of leaving them stuck at opacity:0. */
+function showDescentFallback(){
+  document.getElementById('descent-wrap').classList.add('static-fallback');
+  document.querySelectorAll('#descent-wrap [data-reveal]').forEach(el => el.classList.add('in'));
+  document.querySelectorAll('#descent-wrap .dsection').forEach(el => el.classList.add('active'));
+}
+
+try {
+  if (typeof THREE === 'undefined' || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+    throw new Error('descent dependency failed to load');
+  }
+  gsap.registerPlugin(ScrollTrigger);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const canvas = document.getElementById('dgl');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.85;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 4000);
+  camera.position.set(0, 0, 900);
+
+  function makeGlowTexture(hex){
+    const SIZE = 256, R = SIZE/2;
+    const c = document.createElement('canvas'); c.width = c.height = SIZE;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(R,R,0,R,R,R);
+    const STOPS = 24;
+    for (let i=0;i<=STOPS;i++){
+      const t = i/STOPS;
+      const alpha = Math.pow(1-t, 2.6);
+      g.addColorStop(t, `rgba(${hex},${alpha.toFixed(4)})`);
+    }
+    ctx.fillStyle = g; ctx.fillRect(0,0,SIZE,SIZE);
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    return tex;
+  }
+  const glowTex = makeGlowTexture('242,230,207');
+  const glowTexGold = makeGlowTexture('200,169,110');
+
+  function buildStarLayer(count, spread, zDepth, size, tex, opacity){
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count*3);
+    for (let i=0;i<count;i++){
+      const r = spread[0] + Math.random()*(spread[1]-spread[0]);
+      const theta = Math.random()*Math.PI*2;
+      const phi = Math.acos((Math.random()*2)-1);
+      pos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
+      pos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+      pos[i*3+2] = -Math.random()*zDepth;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    const mat = new THREE.PointsMaterial({
+      map: tex, size, sizeAttenuation: true, transparent: true, opacity,
+      depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    return new THREE.Points(geo, mat);
+  }
+  const starsFar  = buildStarLayer(2200, [300,1900], 3200, 2.6, glowTex, .38);
+  const starsMid  = buildStarLayer(700,  [200,1300], 2600, 4.2, glowTex, .5);
+  const starsGold = buildStarLayer(60,   [150,1100], 2400, 4.8, glowTexGold, .38);
+  scene.add(starsFar, starsMid, starsGold);
+
+  function makeNebula(hex, x, y, z, scale, opacity){
+    const mat = new THREE.SpriteMaterial({ map: makeGlowTexture(hex), transparent:true, opacity, depthWrite:false, blending: THREE.AdditiveBlending });
+    const s = new THREE.Sprite(mat);
+    s.position.set(x,y,z); s.scale.set(scale,scale,1);
+    return s;
+  }
+  scene.add(makeNebula('176,42,26', 260, 120, -1800, 1600, .07));
+  scene.add(makeNebula('200,169,110', -320, -80, -2400, 1900, .05));
+
+  const trackedGeo = new THREE.SphereGeometry(6, 32, 32);
+  const trackedMat = new THREE.MeshStandardMaterial({ color: 0xd94030, emissive: 0xd94030, emissiveIntensity: .6, roughness:.4, metalness:.2 });
+  const tracked = new THREE.Mesh(trackedGeo, trackedMat);
+  tracked.position.set(120, -40, -600);
+  scene.add(tracked);
+  const trackedGlow = new THREE.PointLight(0xd94030, 1.6, 500);
+  trackedGlow.position.copy(tracked.position);
+  scene.add(trackedGlow);
+  const trackedHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeGlowTexture('217,64,48'), transparent:true, opacity:.2, depthWrite:false, blending: THREE.AdditiveBlending }));
+  trackedHalo.scale.set(42,42,1);
+  tracked.add(trackedHalo);
+  const keyLight = new THREE.DirectionalLight(0xc8a96e, .5);
+  keyLight.position.set(-1,1,1);
+  scene.add(keyLight);
+  scene.add(new THREE.AmbientLight(0x2a2018, .6));
+
+  const groundGeo = new THREE.PlaneGeometry(4000, 4000, 40, 40);
+  const groundMat = new THREE.MeshBasicMaterial({ color: 0x8a7050, wireframe: true, transparent: true, opacity: 0 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2.3;
+  ground.position.set(0, -220, -300);
+  scene.add(ground);
+
+  function resize(){
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize);
+
+  const fogveil = document.getElementById('fogveil');
+  const dAlt = document.getElementById('dAlt');
+  const dVel = document.getElementById('dVel');
+  const dBear = document.getElementById('dBear');
+  const dprogress = document.getElementById('dprogress');
+  const phases = [
+    document.getElementById('d-hero'),
+    document.getElementById('d-telemetry'),
+    document.getElementById('d-atmosphere'),
+  ];
+
+  function render(){ renderer.render(scene, camera); }
+  render();
+
+  // show the hero immediately — don't wait on ScrollTrigger's first onUpdate to avoid a blank flash
+  phases[0].classList.add('active');
+  phases[0].querySelectorAll('[data-reveal]').forEach(r => r.classList.add('in'));
+
+  ScrollTrigger.create({
+    trigger: '#descent-wrap',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 0.35,
+    onUpdate(self){
+      const p = self.progress;
+      dprogress.classList.add('on');
+      dprogress.style.width = (p*100).toFixed(1) + '%';
+      if (p >= 0.995) dprogress.classList.remove('on');
+
+      const fall = 1 - Math.pow(1-p, 2);
+      camera.position.z = 900 - fall*1180;
+      camera.position.y = -fall*40;
+      camera.lookAt(0, -fall*10, camera.position.z - 400);
+
+      starsFar.rotation.y = p*0.35;
+      starsMid.rotation.y = p*0.55;
+      starsGold.rotation.y = p*0.7;
+      tracked.position.z = -600 + p*700;
+      tracked.rotation.y += 0.002;
+
+      const mid = Math.sin(p*Math.PI);
+      const warm = `rgba(${Math.round(60+mid*116)},${Math.round(30+mid*42)},${Math.round(20+mid*10)},${0.15+mid*0.55})`;
+      fogveil.style.background =
+        `radial-gradient(ellipse 70% 60% at 50% 60%, transparent 0%, ${warm} 55%, rgba(0,0,0,${0.9-mid*0.3}) 100%)`;
+
+      keyLight.intensity = .3 + Math.max(0, Math.sin((p-0.15)*Math.PI/0.7)) * .6;
+      groundMat.opacity = Math.max(0, (p-0.75)/0.25) * .35;
+
+      dAlt.textContent = Math.round(412 - p*412) + ' km';
+      dVel.textContent = (7.66 - p*3.1).toFixed(2) + ' km/s';
+      dBear.textContent = String(Math.round(41 + p*260) % 360).padStart(3,'0') + '°';
+
+      // three phases share the pinned viewport — crossfade whichever third we're in
+      const phaseIdx = Math.min(2, Math.floor(p*3));
+      phases.forEach((el,i)=>{
+        const active = i === phaseIdx;
+        if (active && !el.classList.contains('active')){
+          el.classList.add('active');
+          el.querySelectorAll('[data-reveal]').forEach(r => r.classList.add('in'));
+        } else if (!active && el.classList.contains('active') && Math.abs(i-phaseIdx) > 0){
+          el.classList.remove('active');
+        }
+      });
+
+      render();
+    }
+  });
+
+  (function loop(){
+    if (!reduceMotion){
+      starsFar.rotation.x += 0.00004;
+      starsMid.rotation.x += 0.00007;
+      render();
+    }
+    requestAnimationFrame(loop);
+  })();
+} catch (err) {
+  console.error('Descent scene disabled:', err);
+  showDescentFallback();
+}
 </script>
 </body>
 </html>
