@@ -145,6 +145,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
   <h1>Crypto<em>Vault</em></h1>
   <p class="tag">Hybrid encryption in <b>a single HTML file</b>. No server, no dependency, no network call — the browser's own crypto engine and nothing else.</p>
   <div class="meta">Web Crypto API · RSA-4096-OAEP · AES-256-GCM</div>
+  <div class="meta" style="margin-top:8px;opacity:.7">status: dormant — the primitives below still run cold, nothing here has rotted</div>
 </header>
 
 <div class="gap"><i></i></div>
@@ -192,7 +193,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
 
 <footer>
   <div class="eyebrow">crypto.subtle · one file · no build</div>
-  <p>Generate a keypair above and encrypt something. It runs entirely in this tab, and the ciphertext you see is genuinely undecryptable without the private key sitting in this page's memory.</p>
+  <p>Generate a keypair above and encrypt something. It runs entirely in this tab, and the ciphertext you see is genuinely undecryptable without the private key sitting in this page's memory. No maintenance and no network calls turn out to be the same guarantee — this file has nothing left to break.</p>
 </footer>
 
 <script>
