@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Mentifaber — every system charted like a site, surveyed and returned to."/>
+<meta name="description" content="Mentifaber — builder of minds and systems. Every system charted like a site, surveyed and returned to."/>
 <meta property="og:title" content="Mentifaber"/>
-<meta property="og:description" content="Atlas of systems. Builder of minds."/>
+<meta property="og:description" content="Atlas of systems. Builder of minds and systems."/>
 <meta name="theme-color" content="#000000"/>
 <title>Mentifaber</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -40,9 +40,10 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 }
 
 /* ── Descent — scroll-driven arrival sequence ──
-   #descent-wrap is 300vh tall; #descent-pin sticks for that whole span, so the canvas
-   never leaves the viewport mid-sequence and un-sticks cleanly once the atlas grid arrives. */
-#descent-wrap { position: relative; z-index: 2; height: 300vh; }
+   #descent-wrap is 400vh tall (four phases, ~100vh of scroll each); #descent-pin sticks
+   for that whole span, so the canvas never leaves the viewport mid-sequence and un-sticks
+   cleanly once the atlas grid arrives. */
+#descent-wrap { position: relative; z-index: 2; height: 400vh; }
 #descent-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 #descent-pin canvas { display: block; width: 100%; height: 100%; }
 #glfail { position: absolute; inset: 0; z-index: 1; display: none; align-items: center; justify-content: center;
@@ -211,7 +212,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
         <div style="text-align:left">
           <p class="d-eyebrow" data-reveal>altitude falling</p>
           <h2 class="d-title" data-reveal>Through the <i style="color:var(--indigo)">telemetry</i></h2>
-          <p class="d-copy" data-reveal>Fourteen tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.</p>
+          <p class="d-copy" data-reveal>Sixteen tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.</p>
         </div>
         <div class="d-telemetry" data-reveal>
           OBJECT&nbsp;&nbsp;<b>MF-07 · Cartograph</b><br>
@@ -219,6 +220,24 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
           ALT&nbsp;&nbsp;<b id="dAlt">412 km</b><br>
           VEL&nbsp;&nbsp;<b id="dVel">7.66 km/s</b><br>
           BEARING&nbsp;&nbsp;<b id="dBear">041°</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="dsection" id="d-who">
+      <div class="d-row">
+        <div style="text-align:left">
+          <p class="d-eyebrow" data-reveal>who's building this</p>
+          <h2 class="d-title" data-reveal>Builder of <i style="color:var(--indigo)">minds</i>, and the <i style="color:var(--rust-hi)">systems</i> that hold them</h2>
+          <p class="d-copy" data-reveal>Mentifaber isn't a studio name over a portfolio — <i>mens · mentis</i>, mind, and <i>faber · fabri</i>, maker. Every system charted here, agents that persist, trackers that watch orbit, archives that hold years of work, comes from the same practice: build the mind, then build what holds it together.</p>
+        </div>
+        <div class="d-telemetry" data-reveal>
+          PRACTICE&nbsp;&nbsp;<b>minds + systems</b><br>
+          SYSTEMS&nbsp;&nbsp;<b>16 charted</b><br>
+          STATUS&nbsp;&nbsp;<b>active, ongoing</b><br>
+          FOCUS&nbsp;&nbsp;<b>autonomous agents</b><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>orbital data</b><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>local-first tools</b>
         </div>
       </div>
     </section>
@@ -419,10 +438,34 @@ try {
     });
     return new THREE.Points(geo, mat);
   }
-  const starsFar  = buildStarLayer(2200, [300,1900], 3200, 2.6, glowTex, .38);
-  const starsMid  = buildStarLayer(700,  [200,1300], 2600, 4.2, glowTex, .5);
-  const starsGold = buildStarLayer(60,   [150,1100], 2400, 4.8, glowTexGold, .38);
+  const starsFar  = buildStarLayer(3000, [300,1900], 3200, 2.6, glowTex, .38);
+  const starsMid  = buildStarLayer(900,  [200,1300], 2600, 4.2, glowTex, .5);
+  const starsGold = buildStarLayer(70,   [150,1100], 2400, 4.8, glowTexGold, .38);
   scene.add(starsFar, starsMid, starsGold);
+
+  // galaxy dust band — a flattened, spiral-biased disk of faint points behind everything,
+  // the kind of soft haze a wide starfield photo actually has instead of scattered dots on flat black
+  const bandGeo = new THREE.BufferGeometry();
+  const BAND_COUNT = 2600;
+  const bandPos = new Float32Array(BAND_COUNT*3);
+  for (let i=0;i<BAND_COUNT;i++){
+    const arm = Math.floor(Math.random()*2) * Math.PI;
+    const t = Math.random();
+    const r = 200 + t*2200;
+    const spiral = arm + t*3.6 + (Math.random()-0.5)*0.9;
+    bandPos[i*3]   = Math.cos(spiral)*r;
+    bandPos[i*3+1] = (Math.random()-0.5)*140*(1-t*0.5);
+    bandPos[i*3+2] = Math.sin(spiral)*r - 1600;
+  }
+  bandGeo.setAttribute('position', new THREE.BufferAttribute(bandPos,3));
+  const bandMat = new THREE.PointsMaterial({
+    map: glowTex, size: 5.5, sizeAttenuation: true, transparent: true, opacity: .16,
+    depthWrite: false, blending: THREE.AdditiveBlending, color: 0x6e5a46
+  });
+  const galaxyBand = new THREE.Points(bandGeo, bandMat);
+  galaxyBand.rotation.x = 0.5;
+  galaxyBand.rotation.z = 0.3;
+  scene.add(galaxyBand);
 
   function makeNebula(hex, x, y, z, scale, opacity){
     const mat = new THREE.SpriteMaterial({ map: makeGlowTexture(hex), transparent:true, opacity, depthWrite:false, blending: THREE.AdditiveBlending });
@@ -432,6 +475,37 @@ try {
   }
   scene.add(makeNebula('176,42,26', 260, 120, -1800, 1600, .07));
   scene.add(makeNebula('200,169,110', -320, -80, -2400, 1900, .05));
+  scene.add(makeNebula('110,90,140', 500, -260, -2100, 1300, .045));
+  scene.add(makeNebula('90,120,140', -600, 300, -2800, 2100, .04));
+
+  // a handful of named "hero" stars with independent twinkle, plus faint lines connecting
+  // them — a constellation standing in for the idea of systems networked together
+  const heroCount = 7;
+  const heroStars = [];
+  const heroPositions = [];
+  for (let i=0;i<heroCount;i++){
+    const x = (Math.random()-0.5)*900, y = (Math.random()-0.5)*500, z = -300 - Math.random()*1200;
+    heroPositions.push(new THREE.Vector3(x,y,z));
+    const mat = new THREE.SpriteMaterial({ map: glowTexGold, transparent:true, opacity:.7, depthWrite:false, blending: THREE.AdditiveBlending });
+    const s = new THREE.Sprite(mat);
+    s.position.set(x,y,z);
+    const sc = 9 + Math.random()*6;
+    s.scale.set(sc,sc,1);
+    s.userData.phase = Math.random()*Math.PI*2;
+    s.userData.speed = 0.6 + Math.random()*0.8;
+    s.userData.baseScale = sc;
+    scene.add(s);
+    heroStars.push(s);
+  }
+  const constellationGeo = new THREE.BufferGeometry();
+  const linePts = [];
+  for (let i=0;i<heroPositions.length-1;i++){
+    linePts.push(heroPositions[i], heroPositions[i+1]);
+  }
+  constellationGeo.setFromPoints(linePts);
+  const constellationMat = new THREE.LineBasicMaterial({ color: 0x8a7050, transparent: true, opacity: .16 });
+  const constellation = new THREE.LineSegments(constellationGeo, constellationMat);
+  scene.add(constellation);
 
   const trackedGeo = new THREE.SphereGeometry(6, 32, 32);
   const trackedMat = new THREE.MeshStandardMaterial({ color: 0xd94030, emissive: 0xd94030, emissiveIntensity: .6, roughness:.4, metalness:.2 });
@@ -471,6 +545,7 @@ try {
   const phases = [
     document.getElementById('d-hero'),
     document.getElementById('d-telemetry'),
+    document.getElementById('d-who'),
     document.getElementById('d-atmosphere'),
   ];
 
@@ -500,6 +575,7 @@ try {
       starsFar.rotation.y = p*0.35;
       starsMid.rotation.y = p*0.55;
       starsGold.rotation.y = p*0.7;
+      galaxyBand.rotation.y = p*0.18;
       tracked.position.z = -600 + p*700;
       tracked.rotation.y += 0.002;
 
@@ -515,8 +591,8 @@ try {
       dVel.textContent = (7.66 - p*3.1).toFixed(2) + ' km/s';
       dBear.textContent = String(Math.round(41 + p*260) % 360).padStart(3,'0') + '°';
 
-      // three phases share the pinned viewport — crossfade whichever third we're in
-      const phaseIdx = Math.min(2, Math.floor(p*3));
+      // four phases share the pinned viewport — crossfade whichever quarter we're in
+      const phaseIdx = Math.min(phases.length-1, Math.floor(p*phases.length));
       phases.forEach((el,i)=>{
         const active = i === phaseIdx;
         if (active && !el.classList.contains('active')){
@@ -531,10 +607,18 @@ try {
     }
   });
 
+  let clock = 0;
   (function loop(){
     if (!reduceMotion){
+      clock += 0.016;
       starsFar.rotation.x += 0.00004;
       starsMid.rotation.x += 0.00007;
+      heroStars.forEach(s => {
+        const tw = 0.75 + Math.sin(clock*s.userData.speed + s.userData.phase) * 0.25;
+        s.material.opacity = tw * 0.7;
+        const sc = s.userData.baseScale * (0.9 + tw*0.15);
+        s.scale.set(sc, sc, 1);
+      });
       render();
     }
     requestAnimationFrame(loop);
