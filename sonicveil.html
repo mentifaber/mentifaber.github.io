@@ -32,6 +32,16 @@ h1{font-family:'Bricolage Grotesque',sans-serif;font-style:normal;font-weight:70
 h1 em{color:var(--ember);font-family:'Newsreader',serif;font-style:italic;font-weight:500}
 .tagline{font-family:var(--body);font-style:italic;font-size:clamp(17px,2.2vw,20px);color:var(--dim);letter-spacing:.03em;max-width:38ch;margin:0 auto}
 .meta{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:28px}
+.meta a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-dim)}
+.meta a:hover{color:var(--ember-hi);border-color:var(--ember-hi)}
+.bio cite a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line2)}
+.bio cite a:hover{color:var(--gold)}
+.trow .s a{color:inherit;text-decoration:none}
+.trow:hover .s{color:var(--gold)}
+a.card{color:inherit;text-decoration:none;display:block}
+a.card:hover h4{color:var(--gold)}
+a.card .cta{display:block;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim)}
+a.card:hover .cta{color:var(--gold)}
 
 /* transport */
 .transport{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:30px;flex-wrap:wrap}
@@ -71,6 +81,8 @@ h1 em{color:var(--ember);font-family:'Newsreader',serif;font-style:italic;font-w
 .split{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:32px;text-align:left}
 .aside{margin:30px auto 0;max-width:54ch;color:var(--dim);font-size:15.5px}
 .aside b{color:var(--parch);font-weight:600}
+.aside a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-dim)}
+.aside a:hover{color:var(--ember-hi);border-color:var(--ember-hi)}
 footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-width:52ch;margin:16px auto 0}
 
 .mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
@@ -112,7 +124,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
   <p class="label">mens · mentis — faber · fabri</p>
   <h1>Sonic <em>Veil</em></h1>
   <p class="tagline">Ambient, experimental, electronic — genre-bending explorations, ten years running.</p>
-  <div class="meta">SoundCloud · Spotify · Apple Music · 150+ platforms</div>
+  <div class="meta"><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud</a> · Spotify · Apple Music · 150+ platforms</div>
 </header>
 
 <div class="gap"><i></i></div>
@@ -122,7 +134,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
   <h2>What the <em>bio</em> actually says</h2>
   <div class="bio">
     "I'm Sonic Veil, a composer crafting ambient, experimental, and electronic soundscapes. Join me on an audio journey that spans my work from 2016 to today. Expect genre-bending explorations through captivating compositions."
-    <cite>soundcloud.com/sonicveil</cite>
+    <cite><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">soundcloud.com/sonicveil</a></cite>
   </div>
   <p class="aside">Not one genre held down for ten years — the bio calls it "genre-bending" outright, and the catalogue backs that up: folk one release, ambient electronic the next, something that sounds like it's arguing with a machine learning paper after that.</p>
 </section>
@@ -142,11 +154,12 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
   <div class="eyebrow">Further back</div>
   <h2>Where the <em>range</em> shows</h2>
   <div class="grid">
-    <div class="card"><h4>Strings</h4><p>Feat. <b>Austin Corbett</b> — out on Amazon Music, iTunes and the rest of the 150-platform spread. The collaboration credit, in writing.</p></div>
+    <a class="card" href="https://www.amazon.co.uk/Strings/dp/B0D9ZMG6Q3" target="_blank" rel="noopener"><h4>Strings</h4><p>Feat. <b>Austin Corbett</b> — out on Amazon Music, iTunes and the rest of the 150-platform spread. The collaboration credit, in writing.<span class="cta">Listen on Amazon Music ↗</span></p></a>
     <div class="card"><h4>Equinox</h4><p>Released Aug 26, 2024. 3:35. A solo instrumental single — no vocal, no feature, just the composition on its own.</p></div>
     <div class="card"><h4>Spirits</h4><p>Published March 26, 2023, tagged <b>Folk & Singer-Songwriter</b> — the most lyrically direct thing in the catalogue. Copyright X2 Studios.</p></div>
   </div>
   <p class="aside">Three releases, three different genre tags, three different modes — a feature collaboration, a solo instrumental, and a lyric-forward folk song. That spread is the actual evidence for "genre-bending," not just the word in the bio.</p>
+  <p class="aside">Deeper catalogue, straight from SoundCloud: <a href="https://soundcloud.com/sonicveil/echo-park" target="_blank" rel="noopener">Echo Park</a> · <a href="https://soundcloud.com/sonicveil/earthquake-instrumental" target="_blank" rel="noopener">EARTHQUAKE (Instrumental)</a> · <a href="https://soundcloud.com/sonicveil/ambiatic" target="_blank" rel="noopener">Ambiatic</a> · <a href="https://soundcloud.com/sonicveil/titan-opium" target="_blank" rel="noopener">Titan Opium</a></p>
 </section>
 
 <div class="gap"><i></i></div>
@@ -223,7 +236,7 @@ head.innerHTML='<div>date</div><div>track</div><div>soundcloud</div>';
 disco.appendChild(head);
 TRACKS.forEach(tr=>{
   const row=document.createElement('div');row.className='trow';
-  row.innerHTML=`<div class="d">${tr.d}</div><div class="n">${tr.n}</div><div class="s">sonicveil</div>`;
+  row.innerHTML=`<div class="d">${tr.d}</div><div class="n">${tr.n}</div><div class="s"><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener" onclick="event.stopPropagation()">sonicveil ↗</a></div>`;
   row.addEventListener('click',()=>play(tr.n));
   disco.appendChild(row);
 });
