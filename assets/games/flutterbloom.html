@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Flutterbloom</title>
+<style>
+  :root {
+    --bg-a: #fff2e4;
+    --bg-b: #ffd9ec;
+    --panel: #ffffffb5;
+    --border: #f2d9c2;
+    --text: #4a3626;
+    --text-dim: #8a7359;
+    --accent: #ff8fc0;
+    --accent-2: #b98bff;
+    --gold: #ffb84d;
+    --leaf: #6fbf73;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+    user-select: none;
+    transition: background 2.5s ease;
+  }
+
+  body.time-dawn  { background: linear-gradient(180deg, #ffe1d6, #ffd6e8 60%, #ffe9cf); }
+  body.time-day    { background: linear-gradient(180deg, #fff2e4, #ffe6f2 60%, #eaf6ff); }
+  body.time-dusk   { background: linear-gradient(180deg, #ffcfa3, #ffb3c6 55%, #d9b8ff); }
+  body.time-night  { background: linear-gradient(180deg, #1c1b3a, #2c2455 55%, #3a2a52); }
+  body.time-night { color: #f1e9ff; }
+  body.time-night .stat, body.time-night .item,
+  body.time-night .sprite-row, body.time-night .achv {
+    background: #ffffff14 !important;
+    border-color: #ffffff22 !important;
+    color: #f1e9ff;
+  }
+  body.time-night .desc, body.time-night .owned, body.time-night .label,
+  body.time-night header p, body.time-night .sprite-label,
+  body.time-night .section h2 { color: #cfc3f0 !important; }
+  body.time-night .sprite-label b { color: #f1e9ff !important; }
+
+  #ambient {
+    position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
+  }
+  .drift {
+    position: absolute;
+    bottom: -30px;
+    font-size: 1rem;
+    opacity: 0.55;
+    animation: driftUp linear infinite;
+  }
+  @keyframes driftUp {
+    from { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.5; }
+    to { transform: translate(var(--dx, 20px), -108vh) rotate(360deg); opacity: 0; }
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 14px 48px;
+    gap: 14px;
+  }
+
+  header { text-align: center; }
+  header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #ff8fc0, #ffb15e 55%, #b98bff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p { margin: 4px 0 0; color: var(--text-dim); font-size: 0.82rem; }
+  header .dedication { font-size: 0.78rem; color: var(--accent); font-weight: 700; margin-top: 2px; }
+
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .stat {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 9px 15px; text-align: center; backdrop-filter: blur(6px);
+    min-width: 88px; box-shadow: 0 2px 10px rgba(160,110,60,0.06);
+  }
+  .stat .label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+  .stat .value { font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #b5548a; }
+
+  .garden { position: relative; width: min(66vw, 270px); height: min(66vw, 270px); margin: 4px 0; display: flex; align-items: center; justify-content: center; }
+
+  #bfly-btn { border: none; background: transparent; cursor: pointer; padding: 0; width: 100%; height: 100%; position: relative; }
+  #bfly-btn:active .bfly { transform: scale(0.93); }
+
+  .bfly {
+    position: absolute; left: 50%; top: 50%;
+    width: 60%; height: 60%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease-out;
+    animation: hover 3s ease-in-out infinite;
+  }
+  @keyframes hover { 0%,100% { margin-top: 0; } 50% { margin-top: -10px; } }
+
+  .wing {
+    position: absolute; top: 8%; width: 46%; height: 62%;
+    background: radial-gradient(circle at 35% 30%, #fff 0%, var(--accent) 45%, #d15f9a 100%);
+    box-shadow: 0 0 22px rgba(255,143,192,0.55);
+    animation: flap 0.5s ease-in-out infinite;
+  }
+  .wing.left  { left: 4%;  border-radius: 90% 10% 90% 10%; transform-origin: right center; }
+  .wing.right { right: 4%; border-radius: 10% 90% 10% 90%; transform-origin: left center; }
+  @keyframes flap { 0%, 100% { transform: rotateY(0deg) scaleX(1); } 50% { transform: rotateY(35deg) scaleX(0.86); } }
+
+  .wing.lower { top: 42%; height: 40%; opacity: 0.9; animation-delay: 0.05s; }
+  .body-bar {
+    position: absolute; left: 50%; top: 14%; width: 6%; height: 72%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #4a3626, #2c1f16);
+    border-radius: 8px; z-index: 2;
+  }
+  .antenna {
+    position: absolute; left: 50%; top: 4%; width: 2px; height: 16%;
+    background: #2c1f16; z-index: 2;
+  }
+  .antenna.l { transform: translateX(-6px) rotate(-20deg); }
+  .antenna.r { transform: translateX(4px) rotate(20deg); }
+
+  .particle {
+    position: absolute; pointer-events: none; font-weight: 800; font-size: 1rem;
+    color: #b5548a; text-shadow: 0 1px 0 #fff; animation: rise 1s ease-out forwards; z-index: 3;
+  }
+  @keyframes rise { from { opacity: 1; transform: translate(-50%,0) scale(1);} to { opacity: 0; transform: translate(-50%,-74px) scale(1.15);} }
+
+  .firefly {
+    position: absolute; width: 32px; height: 32px; border-radius: 50%;
+    background: radial-gradient(circle, #fff7c9, var(--gold) 70%);
+    box-shadow: 0 0 18px 6px rgba(255,184,77,0.7);
+    cursor: pointer; animation: float 2.6s ease-in-out infinite; z-index: 5;
+  }
+  @keyframes float { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-14px);} }
+
+  .garden-bed {
+    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
+    max-width: 320px; min-height: 22px;
+  }
+  .garden-bed span { font-size: 1.1rem; }
+
+  .sprite-row {
+    display: flex; align-items: center; gap: 12px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 18px; padding: 12px 18px;
+    box-shadow: 0 2px 10px rgba(160,110,60,0.06);
+  }
+  .switch {
+    position: relative; width: 50px; height: 28px; border-radius: 999px;
+    background: #f0e2d2; border: 1px solid var(--border); cursor: pointer;
+    transition: background 0.2s; flex: 0 0 auto;
+  }
+  .switch.on { background: linear-gradient(90deg, var(--leaf), #58b96a); }
+  .switch .knob {
+    position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: left 0.2s;
+  }
+  .switch.on .knob { left: 24px; }
+  .sprite-label { font-size: 0.9rem; color: var(--text-dim); }
+  .sprite-label b { color: var(--text); }
+
+  #prestige-row { display: none; }
+  #prestige-row.show { display: flex; }
+  .prestige-btn {
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    color: #fff; border: none; padding: 10px 18px; border-radius: 14px;
+    font-weight: 800; font-size: 0.85rem; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(185,139,255,0.4);
+  }
+
+  .section { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 10px; }
+  .section h2 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin: 8px 4px 0; }
+
+  .item {
+    display: flex; align-items: center; gap: 12px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 16px; padding: 11px 13px;
+    cursor: pointer; transition: border-color 0.15s, transform 0.08s;
+    box-shadow: 0 2px 8px rgba(160,110,60,0.05);
+  }
+  .item:active { transform: scale(0.98); }
+  .item.affordable { border-color: #ffb3d6; }
+  .item .icon {
+    width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+    background: linear-gradient(145deg, #fff2e2, #ffe3c8); border: 1px solid var(--border);
+  }
+  .item .info { flex: 1; min-width: 0; }
+  .item .info .name { font-weight: 800; font-size: 0.94rem; }
+  .item .info .desc { font-size: 0.74rem; color: var(--text-dim); }
+  .item .owned { font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; }
+  .item .cost { font-size: 0.9rem; font-weight: 800; color: #b5548a; white-space: nowrap; }
+
+  .achv {
+    display: flex; align-items: center; gap: 10px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 14px; padding: 9px 12px; font-size: 0.82rem;
+  }
+  .achv.locked { opacity: 0.4; }
+  .achv .mark { font-size: 1.1rem; }
+
+  #toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-140%);
+    background: #fff; border: 1px solid var(--border); color: var(--text);
+    padding: 10px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+    box-shadow: 0 6px 18px rgba(160,110,60,0.18); transition: transform 0.35s ease;
+    z-index: 60; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  footer { margin-top: 8px; }
+  .ghost-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 8px 16px; border-radius: 12px; font-size: 0.72rem; cursor: pointer;
+  }
+
+  #splash {
+    position: fixed; inset: 0; z-index: 100;
+    background: radial-gradient(ellipse at 50% 20%, #ffe1f0 0%, #ffe9d6 60%);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  #splash .card {
+    background: #fffdfa; border-radius: 24px; padding: 32px 26px; max-width: 380px;
+    text-align: center; box-shadow: 0 20px 60px rgba(160,110,60,0.25);
+  }
+  #splash h1 { margin: 0 0 6px; font-size: 1.8rem; font-weight: 800;
+    background: linear-gradient(90deg, #ff8fc0, #ffb15e 55%, #b98bff);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #splash p { color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; margin: 8px 0 18px; }
+  #splash input {
+    width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border);
+    font-size: 0.95rem; margin-bottom: 14px; text-align: center;
+  }
+  #splash button {
+    width: 100%; padding: 12px; border: none; border-radius: 14px; font-weight: 800;
+    font-size: 0.95rem; color: #fff; cursor: pointer;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow: 0 6px 18px rgba(255,143,192,0.4);
+  }
+</style>
+</head>
+<body>
+<div id="ambient"></div>
+<div id="toast"></div>
+
+<div id="splash">
+  <div class="card">
+    <h1>Flutterbloom</h1>
+    <p>A garden grown for <b>Adrianna</b> — our Butterfly 🦋<br>Give her your name, and let's grow something beautiful.</p>
+    <input id="bfly-name-input" type="text" placeholder="Name your butterfly (optional)" maxlength="24" />
+    <button id="splash-begin">Begin ✨</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <h1>Flutterbloom</h1>
+    <p id="bfly-name-display">🦋 Adrianna's Garden</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Wingdust</div><div class="value" id="stat-dust">0</div></div>
+    <div class="stat"><div class="label">Per Tap</div><div class="value" id="stat-power">1</div></div>
+    <div class="stat"><div class="label">Per Sec</div><div class="value" id="stat-rate">0</div></div>
+  </div>
+
+  <div class="garden" id="garden">
+    <button id="bfly-btn" aria-label="Tap the butterfly">
+      <div class="bfly" id="bfly">
+        <div class="antenna l"></div>
+        <div class="antenna r"></div>
+        <div class="wing left"></div>
+        <div class="wing right"></div>
+        <div class="wing left lower"></div>
+        <div class="wing right lower"></div>
+        <div class="body-bar"></div>
+      </div>
+    </button>
+  </div>
+
+  <div class="garden-bed" id="garden-bed"></div>
+
+  <div class="sprite-row">
+    <div class="switch" id="sprite-switch"><div class="knob"></div></div>
+    <div class="sprite-label">Everbloom Fairy <b id="sprite-rate-label">(locked)</b></div>
+  </div>
+
+  <div id="prestige-row" class="sprite-row">
+    <button class="prestige-btn" id="prestige-btn">Replant the Garden 🌙</button>
+  </div>
+
+  <div class="section">
+    <h2>Garden Helpers</h2>
+    <div id="shop-list"></div>
+  </div>
+
+  <div class="section">
+    <h2>Milestones</h2>
+    <div id="achv-list"></div>
+  </div>
+
+  <footer>
+    <button class="ghost-btn" id="reset-btn">Start completely over</button>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const SAVE_KEY = "flutterbloom-save-v1";
+
+  const UPGRADES = [
+    { id: "dew",      name: "Morning Dew",      icon: "💧", desc: "+1 Wingdust per tap",        baseCost: 15,     power: 1,    rate: 0 },
+    { id: "sun",      name: "Sunlit Petals",    icon: "☀️", desc: "+1 Wingdust per second",     baseCost: 40,     power: 0,    rate: 1 },
+    { id: "chrys",    name: "Chrysalis Charm",  icon: "🦋", desc: "Wakes / speeds your Fairy",  baseCost: 120,    power: 0,    rate: 3,    fairyHelper: true },
+    { id: "nectar",   name: "Nectar Bloom",     icon: "🌺", desc: "+6 Wingdust per tap",         baseCost: 400,    power: 6,    rate: 0 },
+    { id: "breeze",   name: "Whispering Breeze",icon: "🍃", desc: "+20 Wingdust per second",     baseCost: 1200,   power: 0,    rate: 20 },
+    { id: "moonf",    name: "Moonflower Patch", icon: "🌙", desc: "+40 Wingdust per tap",        baseCost: 5000,   power: 40,   rate: 0 },
+    { id: "lantern",  name: "Firefly Lantern",  icon: "🏮", desc: "+120 Wingdust per second",    baseCost: 20000,  power: 0,    rate: 120,  fairyHelper: true },
+    { id: "silk",     name: "Silk Wing Charm",  icon: "🎗️", desc: "+300 Wingdust per tap",      baseCost: 90000,  power: 300,  rate: 0 },
+    { id: "hatch",    name: "Rainbow Hatchery", icon: "🌈", desc: "+900 Wingdust per second",    baseCost: 400000, power: 0,    rate: 900,  fairyHelper: true },
+    { id: "star",     name: "Starlight Meadow", icon: "⭐", desc: "+2,000 Wingdust per tap",     baseCost: 2000000, power: 2000, rate: 0 },
+    { id: "aurora",   name: "Aurora Canopy",    icon: "🌌", desc: "+6,000 Wingdust per second",  baseCost: 9000000, power: 0,    rate: 6000 },
+    { id: "heart",    name: "Everbloom Heart",  icon: "💖", desc: "+20,000 Wingdust per tap",    baseCost: 40000000, power: 20000, rate: 0 },
+  ];
+
+  const MILESTONES = [
+    { at: 100,        text: "Your first Wingdust shimmers in the light! 🦋" },
+    { at: 1000,       text: "The garden hums with new life." },
+    { at: 10000,      text: "Butterflies gather from every corner. 🦋🦋" },
+    { at: 100000,     text: "A whole canopy of blooms rises around you." },
+    { at: 1000000,    text: "This meadow could rival the stars. ✨" },
+    { at: 10000000,   text: "Legends will speak of this garden, Butterfly. 🌙" },
+    { at: 100000000,  text: "Adrianna's garden is truly one of a kind. 💖" },
+  ];
+
+  const BED_ICONS = ["🌸","🌼","🌷","🌻","🍄","🦋","🌙","✨"];
+
+  let state = {
+    wingdust: 0,
+    lifetimeWingdust: 0,
+    clickPower: 1,
+    passiveRate: 0,
+    owned: {},
+    fairyOn: false,
+    fairyRate: 0,
+    seenMilestones: [],
+    moonSeeds: 0,
+    butterflyName: "",
+    seenSplash: false,
+  };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) state = Object.assign(state, JSON.parse(raw));
+    } catch (e) { /* fresh garden */ }
+  }
+  function save() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function multiplier() { return 1 + state.moonSeeds * 0.02; }
+
+  function costFor(upg) {
+    const owned = state.owned[upg.id] || 0;
+    return Math.round(upg.baseCost * Math.pow(1.15, owned));
+  }
+
+  function fmt(n) {
+    if (n < 1000) return (Math.floor(n * 10) / 10).toString();
+    const units = ["K","M","B","T","Qa","Qi","Sx","Sp"];
+    let u = -1, v = n;
+    while (v >= 1000 && u < units.length - 1) { v /= 1000; u++; }
+    return v.toFixed(v < 10 ? 2 : 1) + units[u];
+  }
+
+  const els = {
+    dust: document.getElementById("stat-dust"),
+    power: document.getElementById("stat-power"),
+    rate: document.getElementById("stat-rate"),
+    garden: document.getElementById("garden"),
+    bfly: document.getElementById("bfly"),
+    bflyBtn: document.getElementById("bfly-btn"),
+    bflyNameDisplay: document.getElementById("bfly-name-display"),
+    shopList: document.getElementById("shop-list"),
+    achvList: document.getElementById("achv-list"),
+    gardenBed: document.getElementById("garden-bed"),
+    spriteSwitch: document.getElementById("sprite-switch"),
+    spriteLabel: document.getElementById("sprite-rate-label"),
+    prestigeRow: document.getElementById("prestige-row"),
+    prestigeBtn: document.getElementById("prestige-btn"),
+    resetBtn: document.getElementById("reset-btn"),
+    toast: document.getElementById("toast"),
+    splash: document.getElementById("splash"),
+    splashInput: document.getElementById("bfly-name-input"),
+    splashBegin: document.getElementById("splash-begin"),
+  };
+
+  let toastTimer = null;
+  function showToast(text) {
+    els.toast.textContent = text;
+    els.toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2800);
+  }
+
+  function checkMilestones() {
+    MILESTONES.forEach((m) => {
+      if (state.lifetimeWingdust >= m.at && !state.seenMilestones.includes(m.at)) {
+        state.seenMilestones.push(m.at);
+        showToast(m.text);
+      }
+    });
+  }
+
+  function renderGardenBed() {
+    const unlocked = MILESTONES.filter((m) => state.lifetimeWingdust >= m.at).length;
+    els.gardenBed.innerHTML = "";
+    for (let i = 0; i < unlocked * 3; i++) {
+      const s = document.createElement("span");
+      s.textContent = BED_ICONS[i % BED_ICONS.length];
+      els.gardenBed.appendChild(s);
+    }
+  }
+
+  function render() {
+    const effPower = state.clickPower * multiplier();
+    const effRate = state.passiveRate * multiplier();
+
+    els.dust.textContent = fmt(state.wingdust);
+    els.power.textContent = fmt(effPower);
+    els.rate.textContent = fmt(effRate);
+
+    els.bflyNameDisplay.textContent = "🦋 " + (state.butterflyName ? state.butterflyName + "'s" : "Adrianna's") + " Garden";
+
+    els.spriteSwitch.classList.toggle("on", state.fairyOn);
+    if (state.fairyRate > 0) {
+      els.spriteLabel.textContent = state.fairyOn
+        ? `(tending the garden, ${fmt(state.fairyRate * multiplier())}/s)`
+        : "(ready — tap to wake)";
+    } else {
+      els.spriteLabel.textContent = "(sleeping — buy a Chrysalis Charm)";
+    }
+
+    els.prestigeRow.classList.toggle("show", state.wingdust >= 1000 || state.moonSeeds > 0);
+    const gain = Math.floor(Math.sqrt(state.wingdust / 1000));
+    els.prestigeBtn.textContent = gain > 0
+      ? `Replant the Garden 🌙 (+${gain} Moon Seed${gain === 1 ? "" : "s"})`
+      : `Replant the Garden 🌙 (${fmt(state.moonSeeds)} Moon Seeds so far)`;
+
+    renderGardenBed();
+
+    els.shopList.innerHTML = "";
+    UPGRADES.forEach((upg) => {
+      const cost = costFor(upg);
+      const owned = state.owned[upg.id] || 0;
+      const affordable = state.wingdust >= cost;
+      const row = document.createElement("div");
+      row.className = "item" + (affordable ? " affordable" : "");
+      row.innerHTML = `
+        <div class="icon">${upg.icon}</div>
+        <div class="info">
+          <div class="name">${upg.name}</div>
+          <div class="desc">${upg.desc}</div>
+          <div class="owned">Owned: ${owned}</div>
+        </div>
+        <div class="cost">${fmt(cost)}</div>
+      `;
+      row.addEventListener("click", () => buy(upg));
+      els.shopList.appendChild(row);
+    });
+
+    els.achvList.innerHTML = "";
+    MILESTONES.forEach((m) => {
+      const reached = state.lifetimeWingdust >= m.at;
+      const row = document.createElement("div");
+      row.className = "achv" + (reached ? "" : " locked");
+      row.innerHTML = `<span class="mark">${reached ? "🌟" : "🔒"}</span><span>${reached ? m.text : "Reach " + fmt(m.at) + " lifetime Wingdust"}</span>`;
+      els.achvList.appendChild(row);
+    });
+  }
+
+  function buy(upg) {
+    const cost = costFor(upg);
+    if (state.wingdust < cost) return;
+    state.wingdust -= cost;
+    state.owned[upg.id] = (state.owned[upg.id] || 0) + 1;
+    state.clickPower += upg.power;
+    state.passiveRate += upg.rate;
+    if (upg.fairyHelper) state.fairyRate += upg.rate;
+    save();
+    render();
+  }
+
+  function spawnParticle(x, y, amount) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    p.textContent = "+" + fmt(amount);
+    p.style.left = x + "px";
+    p.style.top = y + "px";
+    els.garden.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+
+  function earn(baseAmount, clientX, clientY) {
+    const amount = baseAmount * multiplier();
+    state.wingdust += amount;
+    state.lifetimeWingdust += amount;
+    const rect = els.garden.getBoundingClientRect();
+    const x = clientX != null ? clientX - rect.left : rect.width / 2;
+    const y = clientY != null ? clientY - rect.top : rect.height / 2;
+    spawnParticle(x, y, amount);
+    checkMilestones();
+    render();
+  }
+
+  els.bflyBtn.addEventListener("click", (e) => earn(state.clickPower, e.clientX, e.clientY));
+
+  els.spriteSwitch.addEventListener("click", () => {
+    if (state.fairyRate <= 0) return;
+    state.fairyOn = !state.fairyOn;
+    save();
+    render();
+  });
+
+  els.prestigeBtn.addEventListener("click", () => {
+    const gain = Math.floor(Math.sqrt(state.wingdust / 1000));
+    if (gain <= 0) { showToast("Grow a bit more before replanting. 🌱"); return; }
+    if (!confirm(`Replant the garden for +${gain} Moon Seed${gain === 1 ? "" : "s"}? Your helpers reset, but Moon Seeds and milestones are forever.`)) return;
+    state.moonSeeds += gain;
+    state.wingdust = 0;
+    state.clickPower = 1;
+    state.passiveRate = 0;
+    state.owned = {};
+    state.fairyOn = false;
+    state.fairyRate = 0;
+    save();
+    render();
+    showToast(`The garden is reborn, stronger than ever! 🌙 +${gain} Moon Seeds`);
+  });
+
+  els.resetBtn.addEventListener("click", () => {
+    if (!confirm("Start completely over? Everything — even Moon Seeds — will be gone for good.")) return;
+    window.removeEventListener("beforeunload", save);
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  });
+
+  els.splashBegin.addEventListener("click", () => {
+    const name = els.splashInput.value.trim();
+    if (name) state.butterflyName = name;
+    state.seenSplash = true;
+    save();
+    els.splash.style.display = "none";
+    render();
+  });
+
+  // Passive income tick (from purchased upgrades).
+  setInterval(() => {
+    if (state.passiveRate > 0) {
+      const amt = (state.passiveRate * multiplier()) / 10;
+      state.wingdust += amt;
+      state.lifetimeWingdust += amt;
+      checkMilestones();
+      render();
+    }
+  }, 100);
+
+  // Everbloom Fairy: taps the butterfly automatically at its own rate when awake.
+  let fairyTimer = null;
+  function rescheduleFairy() {
+    if (fairyTimer) clearInterval(fairyTimer);
+    const rate = Math.max(1, state.fairyRate || 1);
+    fairyTimer = setInterval(() => {
+      if (state.fairyOn && state.fairyRate > 0) earn(state.clickPower);
+    }, 1000 / rate);
+  }
+  rescheduleFairy();
+  setInterval(rescheduleFairy, 2000);
+
+  // Occasional wandering bonus firefly.
+  function maybeSpawnFirefly() {
+    if (document.getElementById("firefly")) return;
+    const firefly = document.createElement("div");
+    firefly.id = "firefly";
+    firefly.className = "firefly";
+    const rect = els.garden.getBoundingClientRect();
+    firefly.style.left = (10 + Math.random() * (rect.width - 44)) + "px";
+    firefly.style.top = (Math.random() * (rect.height * 0.4)) + "px";
+    firefly.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const bonus = Math.max(10, Math.round(state.passiveRate * 8 + state.clickPower * 6));
+      earn(bonus, e.clientX, e.clientY);
+      showToast("A firefly blessed your garden! +" + fmt(bonus * multiplier()));
+      firefly.remove();
+    });
+    els.garden.appendChild(firefly);
+    setTimeout(() => firefly.remove(), 6000);
+  }
+  setInterval(() => { if (Math.random() < 0.25) maybeSpawnFirefly(); }, 20000);
+
+  // Ambient day/night backdrop, based on local time.
+  function applyTimeOfDay() {
+    const h = new Date().getHours();
+    let cls = "time-day";
+    if (h < 6) cls = "time-night";
+    else if (h < 9) cls = "time-dawn";
+    else if (h < 18) cls = "time-day";
+    else if (h < 21) cls = "time-dusk";
+    else cls = "time-night";
+    document.body.className = cls;
+  }
+  applyTimeOfDay();
+  setInterval(applyTimeOfDay, 5 * 60 * 1000);
+
+  // Drifting ambient petals/sparkles.
+  const DRIFT_ICONS = ["🌸","✨","🦋","🍃"];
+  function spawnDrift() {
+    const d = document.createElement("div");
+    d.className = "drift";
+    d.textContent = DRIFT_ICONS[Math.floor(Math.random() * DRIFT_ICONS.length)];
+    d.style.left = Math.random() * 100 + "vw";
+    d.style.setProperty("--dx", (Math.random() * 80 - 40) + "px");
+    const dur = 10 + Math.random() * 10;
+    d.style.animationDuration = dur + "s";
+    document.getElementById("ambient").appendChild(d);
+    setTimeout(() => d.remove(), dur * 1000);
+  }
+  setInterval(spawnDrift, 1800);
+  for (let i = 0; i < 5; i++) setTimeout(spawnDrift, i * 400);
+
+  setInterval(save, 4000);
+  window.addEventListener("beforeunload", save);
+
+  load();
+  if (state.seenSplash) {
+    els.splash.style.display = "none";
+  } else {
+    els.splashInput.focus();
+  }
+  render();
+})();
+</script>
+</body>
+</html>
