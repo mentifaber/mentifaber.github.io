@@ -126,6 +126,7 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 .sw.stalled { background: var(--ink-faint); }
 .sw.music { background: #7a6a9e; }
 .sw.concept { background: var(--rust-hi); opacity: .55; }
+.sw.private { background: #e0609a; }
 .legend-foot { margin-top: auto; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; line-height: 1.8; }
 .legend-links { display: flex; gap: 1.1rem; margin-top: 1rem; flex-wrap: wrap; }
 .legend-links a { color: var(--ink-soft); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--contour); padding-bottom: 2px; transition: .25s; }
@@ -308,6 +309,7 @@ const GLYPHS = {
   note: '<circle cx="12" cy="27" r="4"/><circle cx="26" cy="24" r="4"/><path d="M16 27 V9 L30 6 V24"/>',
   globe: '<circle cx="19" cy="19" r="13"/><path d="M6 19 H32 M19 6 C13 12 13 26 19 32 C25 26 25 12 19 6 Z"/>',
   invoice: '<rect x="10" y="6" width="18" height="26" rx="1"/><path d="M14 13 h10 M14 18 h10 M14 23 h6"/><circle cx="24" cy="27" r="4" fill="var(--rust)" stroke="none" opacity=".55"/>',
+  butterfly: '<path d="M19 11 V29"/><path d="M19 14 C11 6 4 12 8 20 C11 27 17 25 19 19"/><path d="M19 14 C27 6 34 12 30 20 C27 27 21 25 19 19"/><circle cx="19" cy="11" r="1.4" fill="var(--rust)" stroke="none"/>',
 };
 const SYSTEMS = [
   ["#","Orbit Watch","Live satellite pass tracker — TLE-driven ground track, rendered in the browser.","build","orbit",true],
@@ -326,9 +328,10 @@ const SYSTEMS = [
   ["crime-dashboard.html","Crime Intelligence","43 cities, four categories, one HTML file.","live","city"],
   ["sonicveil.html","Sonic Veil","Composer. Since 2016. Genre-bending.","music","note"],
   ["duely.html","Duely","Get overdue invoices paid, on contingency.","concept","invoice"],
+  ["flutterbloom.html","Flutterbloom","A living garden, grown for one person only.","private","butterfly"],
 ];
-const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt" };
-const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI"];
+const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt", private:"private — invite only" };
+const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII"];
 
 const el = document.getElementById('plates');
 SYSTEMS.forEach(([href,name,desc,status,glyph,wide],i)=>{
