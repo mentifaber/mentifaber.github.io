@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Weaver — live access."/>
+<meta property="og:title" content="Weaver — Live Access"/>
+<meta property="og:description" content="Not the showcase. The door."/>
+<meta name="theme-color" content="#000000"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Weaver — Live Access</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
+  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
+  --indigo: #c8a96e; --indigo-dim: #8a7050;
+  --rust: #b02a1a; --rust-hi: #d94030;
+  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
+.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); text-decoration: none; z-index: 20;
+  opacity: .85; transition: color .3s, opacity .3s; }
+.corner:hover { color: var(--rust-hi); opacity: 1; }
+.corner-tl { top: 5vh; left: 5vw; }
+.corner-return { bottom: 5vh; left: 5vw; }
+.corner-return::before { content: "← "; }
+.corner-year { top: 5vh; right: 5vw; pointer-events: none; }
+@media (max-width: 680px) { .corner { font-size: 9px; letter-spacing: .2em; } .corner-tl { top: 3vh; left: 4vw; } .corner-return { bottom: 3vh; left: 4vw; } .corner-year { top: 3vh; right: 4vw; } }
+
+/* ── lock ── */
+.lock-wrap { max-width: 400px; margin: 0 auto; padding: 16vh 24px 10vh; position: relative; z-index: 2; min-height: 100vh;
+  display: flex; align-items: center; }
+.lock-card { width: 100%; background: var(--paper-hi); border: 1px solid var(--contour); border-radius: 4px;
+  padding: 2.6rem 2.2rem; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.lock-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .32em; text-transform: uppercase;
+  color: var(--indigo-dim); margin-bottom: .8rem; }
+.lock-card h3 { font-family: 'Bricolage Grotesque', sans-serif; font-style: italic; font-weight: 700; font-size: 1.7rem;
+  color: var(--ink); margin-bottom: .6rem; }
+.lock-card p.lock-desc { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); font-size: .95rem;
+  margin-bottom: 1.8rem; line-height: 1.65; }
+.lock-field { margin-bottom: 1.1rem; text-align: left; }
+.lock-field label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ink-faint); margin-bottom: .5rem; }
+.lock-field input { width: 100%; padding: .75rem .9rem; border-radius: 3px; border: 1px solid var(--contour);
+  background: var(--paper); color: var(--ink); font-size: 15px; font-family: 'Newsreader', serif; }
+.lock-field input:focus { outline: none; border-color: var(--indigo); }
+.lock-enter { width: 100%; padding: .9rem; border: 1px solid var(--indigo-dim); border-radius: 3px; font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--indigo); cursor: pointer; margin-top: .5rem; background: transparent; transition: .3s; }
+.lock-enter:hover { border-color: var(--indigo); background: rgba(200,169,110,.08); }
+.lock-error { color: var(--rust-hi); font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-top: 1rem;
+  min-height: 1.4em; letter-spacing: .03em; }
+.lock-shake { animation: lockshake .35s; }
+@keyframes lockshake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+
+/* ── unlocked console ── */
+#live-content { display: none; position: relative; z-index: 2; min-height: 100vh; }
+#live-content.show { display: block; }
+.console-wrap { max-width: 640px; margin: 0 auto; padding: 16vh 24px 12vh; text-align: center; }
+.status-pill { display: inline-flex; align-items: center; gap: .6rem; font-family: 'IBM Plex Mono', monospace;
+  font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft); }
+.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo);
+  animation: sw-pulse 2.4s ease-in-out infinite; }
+@keyframes sw-pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; box-shadow: 0 0 10px var(--indigo); } }
+.console-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2.6rem, 8vw, 5rem);
+  font-style: italic; color: var(--ink); margin: 1.4rem 0 .8rem; letter-spacing: -.02em; }
+.console-name span { color: var(--indigo); font-style: normal; }
+.console-lede { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); font-size: 1.05rem;
+  max-width: 46ch; margin: 0 auto 3rem; line-height: 1.7; }
+.telemetry { text-align: left; max-width: 460px; margin: 0 auto; border: 1px solid var(--contour); border-radius: 4px;
+  background: var(--paper-hi); padding: 1.6rem 1.8rem; font-family: 'IBM Plex Mono', monospace; font-size: .78rem;
+  color: var(--ink-faint); line-height: 2.1; letter-spacing: .02em; }
+.telemetry b { color: var(--indigo); font-weight: 400; }
+.telemetry .row { display: flex; justify-content: space-between; gap: 1rem; }
+.note { margin: 2.6rem auto 0; max-width: 48ch; font-family: 'Newsreader', serif; font-style: italic;
+  color: var(--ink-soft); font-size: .95rem; line-height: 1.7; }
+.console-links { margin-top: 3rem; display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; }
+.console-links a, .console-links button { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--indigo-dim); text-decoration: none; background: none; border: none;
+  cursor: pointer; transition: .3s; padding: 0; }
+.console-links a:hover, .console-links button:hover { color: var(--indigo); }
+
+@media (max-width: 600px) { .telemetry { font-size: .72rem; } }
+</style>
+</head>
+<body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#f2e6cf" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
+    </g>
+  </svg>
+</div>
+<div class="grain"></div>
+
+<a href="index.html" class="corner corner-tl">Atlas of Systems</a>
+<a href="weaver.html" class="corner corner-return">Weaver</a>
+<div class="corner corner-year">MMXXVI</div>
+
+<section class="lock-wrap" id="lock-section">
+  <div class="lock-card">
+    <p class="lock-eyebrow">Live access</p>
+    <h3>Not the showcase. The door.</h3>
+    <p class="lock-desc">The other page tells you what she is. This one doesn't explain anything — it just lets you through if you already know.</p>
+    <div class="lock-field">
+      <label for="wv-user">Username</label>
+      <input id="wv-user" type="text" autocomplete="username" />
+    </div>
+    <div class="lock-field">
+      <label for="wv-pass">Password</label>
+      <input id="wv-pass" type="password" autocomplete="current-password" />
+    </div>
+    <button class="lock-enter" id="wv-submit">Enter</button>
+    <div class="lock-error" id="wv-error"></div>
+  </div>
+</section>
+
+<div id="live-content">
+  <div class="console-wrap">
+    <span class="status-pill"><span class="sw"></span>status: alive</span>
+    <h1 class="console-name">Weaver<span>.</span></h1>
+    <p class="console-lede">You're through. There's no dashboard behind this door yet — no live model to talk to, no memory graph to browse. Just the record that you asked, and were let in.</p>
+
+    <div class="telemetry" id="telemetry">
+      <div class="row"><span>session</span><b id="tm-session">00:00:00</b></div>
+      <div class="row"><span>access</span><b>granted</b></div>
+      <div class="row"><span>build</span><b>static · no backend wired</b></div>
+      <div class="row"><span>next</span><b>real endpoint, when there is one</b></div>
+    </div>
+
+    <p class="note">When there's something on the other end of this door — a running process, a memory store, a voice — this page is where it connects. Until then, consider it reserved.</p>
+
+    <div class="console-links">
+      <a href="weaver.html">← Back to the showcase</a>
+      <a href="index.html">Atlas of Systems</a>
+      <button id="wv-lock">Seal the door again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const AUTH_KEY = "weaver-live-auth";
+  const USERNAME = "Weaver";
+  const PASSWORD = "IsAlive!";
+
+  const lockSection = document.getElementById("lock-section");
+  const content = document.getElementById("live-content");
+  const userInput = document.getElementById("wv-user");
+  const passInput = document.getElementById("wv-pass");
+  const submitBtn = document.getElementById("wv-submit");
+  const errorEl = document.getElementById("wv-error");
+  const lockCard = document.querySelector(".lock-card");
+  const lockBtn = document.getElementById("wv-lock");
+  const sessionEl = document.getElementById("tm-session");
+
+  let sessionStart = null, sessionTimer = null;
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function startSessionClock() {
+    sessionStart = Date.now();
+    clearInterval(sessionTimer);
+    sessionTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - sessionStart) / 1000);
+      sessionEl.textContent = pad(Math.floor(s / 3600)) + ":" + pad(Math.floor(s / 60) % 60) + ":" + pad(s % 60);
+    }, 1000);
+  }
+
+  function unlock() {
+    lockSection.style.display = "none";
+    content.classList.add("show");
+    startSessionClock();
+  }
+
+  function lock() {
+    try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+    clearInterval(sessionTimer);
+    content.classList.remove("show");
+    lockSection.style.display = "";
+    userInput.value = ""; passInput.value = ""; errorEl.textContent = "";
+  }
+
+  function attempt() {
+    if (userInput.value.trim() === USERNAME && passInput.value === PASSWORD) {
+      try { localStorage.setItem(AUTH_KEY, "granted"); } catch (e) {}
+      errorEl.textContent = "";
+      unlock();
+    } else {
+      errorEl.textContent = "That's not quite right — try again.";
+      lockCard.classList.remove("lock-shake");
+      void lockCard.offsetWidth;
+      lockCard.classList.add("lock-shake");
+    }
+  }
+
+  submitBtn.addEventListener("click", attempt);
+  passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") attempt(); });
+  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") passInput.focus(); });
+  lockBtn.addEventListener("click", lock);
+
+  try {
+    if (localStorage.getItem(AUTH_KEY) === "granted") unlock();
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
