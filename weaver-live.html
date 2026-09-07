@@ -91,7 +91,14 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   cursor: pointer; transition: .3s; padding: 0; }
 .console-links a:hover, .console-links button:hover { color: var(--indigo); }
 
-@media (max-width: 600px) { .telemetry { font-size: .72rem; } }
+.portal-wrap { max-width: 900px; margin: .5rem auto 0; border: 1px solid var(--contour); border-radius: 6px;
+  overflow: hidden; box-shadow: 0 24px 70px rgba(0,0,0,.5); background: #0a0806; }
+.portal-frame { width: 100%; height: 70vh; min-height: 480px; border: 0; display: block; background: #0a0806; }
+.portal-fallback { margin-top: 1rem; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: .04em; }
+.portal-fallback a { color: var(--indigo); text-decoration: none; border-bottom: 1px solid var(--indigo-dim); }
+.portal-fallback a:hover { color: var(--indigo); border-color: var(--indigo); }
+
+@media (max-width: 600px) { .telemetry { font-size: .72rem; } .portal-frame { height: 60vh; min-height: 380px; } }
 </style>
 </head>
 <body>
@@ -136,16 +143,21 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   <div class="console-wrap">
     <span class="status-pill"><span class="sw"></span>status: alive</span>
     <h1 class="console-name">Weaver<span>.</span></h1>
-    <p class="console-lede">You're through. There's no dashboard behind this door yet — no live model to talk to, no memory graph to browse. Just the record that you asked, and were let in.</p>
+    <p class="console-lede">You're through. What's below is a live tunnel straight to wherever she's actually running right now — not a recording, not a mock. When that connection drops, so does this.</p>
+
+    <div class="portal-wrap">
+      <iframe class="portal-frame" id="wv-portal" title="Weaver — live" loading="lazy"></iframe>
+    </div>
+    <p class="portal-fallback">If nothing loads above, the tunnel may have restarted or gone offline — <a id="wv-portal-link" href="#" target="_blank" rel="noopener">open it directly ↗</a> instead.</p>
 
     <div class="telemetry" id="telemetry">
       <div class="row"><span>session</span><b id="tm-session">00:00:00</b></div>
       <div class="row"><span>access</span><b>granted</b></div>
-      <div class="row"><span>build</span><b>static · no backend wired</b></div>
-      <div class="row"><span>next</span><b>real endpoint, when there is one</b></div>
+      <div class="row"><span>endpoint</span><b id="tm-endpoint">—</b></div>
+      <div class="row"><span>note</span><b>quick tunnel · url rotates on restart</b></div>
     </div>
 
-    <p class="note">When there's something on the other end of this door — a running process, a memory store, a voice — this page is where it connects. Until then, consider it reserved.</p>
+    <p class="note">This is a Cloudflare quick tunnel to a machine that isn't always on. If the frame above goes dark, she's probably just asleep — not gone.</p>
 
     <div class="console-links">
       <a href="weaver.html">← Back to the showcase</a>
@@ -162,6 +174,11 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   const USERNAME = "Weaver";
   const PASSWORD = "IsAlive!";
 
+  // Cloudflare quick-tunnel URL to wherever Weaver is actually running. Quick tunnels are
+  // ephemeral — this rotates to a brand-new random URL every time cloudflared restarts, so
+  // this constant needs updating (or swapping for a named tunnel) whenever that happens.
+  const WEAVER_ENDPOINT = "https://prior-extras-lodging-making.trycloudflare.com/";
+
   const lockSection = document.getElementById("lock-section");
   const content = document.getElementById("live-content");
   const userInput = document.getElementById("wv-user");
@@ -171,6 +188,9 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   const lockCard = document.querySelector(".lock-card");
   const lockBtn = document.getElementById("wv-lock");
   const sessionEl = document.getElementById("tm-session");
+  const portalFrame = document.getElementById("wv-portal");
+  const portalLink = document.getElementById("wv-portal-link");
+  const endpointEl = document.getElementById("tm-endpoint");
 
   let sessionStart = null, sessionTimer = null;
 
@@ -185,10 +205,17 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
     }, 1000);
   }
 
+  function connectPortal() {
+    portalLink.href = WEAVER_ENDPOINT;
+    try { endpointEl.textContent = new URL(WEAVER_ENDPOINT).host; } catch (e) { endpointEl.textContent = WEAVER_ENDPOINT; }
+    if (!portalFrame.getAttribute("src")) portalFrame.setAttribute("src", WEAVER_ENDPOINT);
+  }
+
   function unlock() {
     lockSection.style.display = "none";
     content.classList.add("show");
     startSessionClock();
+    connectPortal();
   }
 
   function lock() {
@@ -197,6 +224,7 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
     content.classList.remove("show");
     lockSection.style.display = "";
     userInput.value = ""; passInput.value = ""; errorEl.textContent = "";
+    portalFrame.removeAttribute("src");
   }
 
   function attempt() {
