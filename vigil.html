@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vigil</title>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="theme-color" content="#000000"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --black: #000000; --panel: #060503; --panel-hi: #0c0a06;
+  --gold: #c8a96e; --gold-dim: #8a7050; --gold-hi: #e8cd9a;
+  --ember: #b02a1a; --ember-hi: #d94030;
+  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
+  --line: rgba(200,169,110,.22); --line-soft: rgba(200,169,110,.10);
+  --ok: #c8a96e; --warn: #d9a441; --bad: #d94030;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --disp: 'Bricolage Grotesque', sans-serif;
+}
+html, body { min-height: 100%; background: var(--black); color: var(--ink); font-family: var(--mono); overflow-x: hidden; }
+body { font-size: 14px; }
+::selection { background: var(--gold); color: var(--black); }
+
+/* ── ambient HUD backdrop ── */
+.scanlines { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(0deg, rgba(200,169,110,.025) 0px, rgba(200,169,110,.025) 1px, transparent 1px, transparent 3px); }
+.vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 40%, rgba(0,0,0,.75) 100%); }
+.gridfloor { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .35;
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 42px 42px; }
+.sweep { position: fixed; left: 0; right: 0; height: 140px; z-index: 2; pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(200,169,110,.05) 50%, transparent 100%);
+  animation: sweepdown 7s linear infinite; }
+@keyframes sweepdown { 0% { top: -140px; } 100% { top: 100vh; } }
+.corner-bracket { position: fixed; width: 26px; height: 26px; border-color: var(--gold-dim); z-index: 30; opacity: .7; pointer-events: none; }
+.cb-tl { top: 14px; left: 14px; border-top: 1px solid; border-left: 1px solid; }
+.cb-tr { top: 14px; right: 14px; border-top: 1px solid; border-right: 1px solid; }
+.cb-bl { bottom: 14px; left: 14px; border-bottom: 1px solid; border-left: 1px solid; }
+.cb-br { bottom: 14px; right: 14px; border-bottom: 1px solid; border-right: 1px solid; }
+
+@keyframes pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+@keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+.glow { text-shadow: 0 0 8px rgba(200,169,110,.55), 0 0 22px rgba(200,169,110,.25); }
+.glow-ember { text-shadow: 0 0 8px rgba(217,64,48,.6), 0 0 22px rgba(217,64,48,.3); }
+
+/* ── lock ── */
+.lock-wrap { max-width: 420px; margin: 0 auto; padding: 18vh 24px 10vh; position: relative; z-index: 5; min-height: 100vh;
+  display: flex; align-items: center; }
+.lock-card { width: 100%; position: relative; background: linear-gradient(135deg, rgba(200,169,110,.4), rgba(200,169,110,.06) 45%, rgba(176,42,26,.3));
+  padding: 1px; clip-path: polygon(0 18px, 18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+.lock-card-inner { background: var(--panel); padding: 2.6rem 2.2rem;
+  clip-path: polygon(0 17px, 17px 0, 100% 0, 100% calc(100% - 17px), calc(100% - 17px) 100%, 0 100%); }
+.lock-eyebrow { font-size: 10px; letter-spacing: .34em; text-transform: uppercase; color: var(--ember-hi); margin-bottom: .9rem; }
+.lock-eyebrow .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ember-hi); margin-right: .6em;
+  animation: pulse 1.6s ease-in-out infinite; }
+.lock-card h3 { font-family: var(--disp); font-weight: 700; font-size: 1.55rem; color: var(--ink); margin-bottom: .6rem; letter-spacing: -.01em; }
+.lock-card p.lock-desc { color: var(--ink-faint); font-size: .82rem; line-height: 1.7; margin-bottom: 1.8rem; }
+.lock-field { margin-bottom: 1.1rem; text-align: left; }
+.lock-field label { display: block; font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: .5rem; }
+.lock-field input { width: 100%; padding: .75rem .9rem; border: 1px solid var(--line); background: #0a0805; color: var(--gold-hi);
+  font-size: 14px; font-family: var(--mono); }
+.lock-field input:focus { outline: none; border-color: var(--gold); }
+.lock-enter { width: 100%; padding: .9rem; border: 1px solid var(--gold-dim); font-weight: 600;
+  font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); cursor: pointer; margin-top: .5rem;
+  background: transparent; transition: .25s; font-family: var(--mono); }
+.lock-enter:hover { border-color: var(--gold); background: rgba(200,169,110,.08); color: var(--gold-hi); }
+.lock-error { color: var(--ember-hi); font-size: 11px; margin-top: 1rem; min-height: 1.4em; letter-spacing: .03em; }
+.lock-shake { animation: lockshake .35s; }
+@keyframes lockshake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+
+/* ── boot sequence ── */
+#boot { display: none; position: fixed; inset: 0; z-index: 90; background: var(--black); flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer; }
+#boot.show { display: flex; }
+.boot-wrap { width: min(90vw, 560px); }
+.boot-title { font-family: var(--disp); font-weight: 800; font-size: 2.2rem; color: var(--gold); letter-spacing: -.02em; margin-bottom: 2rem; text-align: center; }
+.boot-lines { min-height: 220px; font-size: 12px; line-height: 2; color: var(--ink-faint); }
+.boot-lines .ln { opacity: 0; }
+.boot-lines .ln.in { opacity: 1; }
+.boot-lines .ln b { color: var(--gold); font-weight: 600; }
+.boot-lines .ln .ok { color: var(--gold); }
+.boot-bar { margin-top: 1.6rem; height: 3px; background: var(--line-soft); position: relative; overflow: hidden; }
+.boot-bar i { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, var(--ember), var(--gold)); transition: width .3s linear; }
+.boot-skip { margin-top: 1.6rem; text-align: center; font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-faint); opacity: .6; }
+
+/* ── dashboard shell ── */
+#dash { display: none; position: relative; z-index: 5; min-height: 100vh; }
+#dash.show { display: block; }
+
+.topbar { position: sticky; top: 0; z-index: 20; background: rgba(6,5,3,.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.ticker-wrap { overflow: hidden; border-bottom: 1px solid var(--line-soft); height: 28px; display: flex; align-items: center; }
+.ticker { display: flex; gap: 3rem; white-space: nowrap; animation: marquee 38s linear infinite; padding-left: 100%; }
+.ticker span { font-size: 10.5px; letter-spacing: .06em; color: var(--ink-soft); }
+.ticker span b { color: var(--gold); font-weight: 600; }
+.ticker span.up { color: var(--gold); } .ticker span.down { color: var(--ember-hi); }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+
+.hdr { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1.3rem; flex-wrap: wrap; }
+.hdr-brand { display: flex; align-items: center; gap: .9rem; }
+.hdr-title { font-family: var(--disp); font-weight: 800; font-size: 1.4rem; color: var(--gold); letter-spacing: .01em; position: relative; }
+.hdr-sub { font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-faint); margin-top: 2px; }
+.hdr-status { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.hdr-status b { color: var(--gold); }
+.hdr-clock { text-align: right; }
+.hdr-time { font-family: var(--disp); font-weight: 700; font-size: 1.6rem; color: var(--ink); letter-spacing: .02em; }
+.hdr-date { font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint); }
+.hdr-actions { display: flex; align-items: center; gap: .5rem; }
+.hud-btn { font-family: var(--mono); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-dim);
+  background: transparent; border: 1px solid var(--line); padding: .5rem .7rem; cursor: pointer; text-decoration: none; transition: .2s; }
+.hud-btn:hover { color: var(--gold); border-color: var(--gold-dim); background: rgba(200,169,110,.06); }
+
+.worldclocks { display: flex; gap: 1.6rem; padding: 0 1.3rem .8rem; flex-wrap: wrap; border-bottom: 1px solid var(--line-soft); }
+.wc { font-size: 10px; color: var(--ink-faint); letter-spacing: .04em; }
+.wc b { color: var(--ink-soft); font-weight: 600; display: block; font-size: 12px; margin-top: 1px; }
+
+/* ── grid ── */
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1px; background: var(--line-soft); padding: 1px; }
+.hud-panel { background: var(--panel); position: relative; min-height: 220px; display: flex; flex-direction: column; }
+.hud-panel.span2 { grid-column: span 2; }
+@media (max-width: 900px) { .hud-panel.span2 { grid-column: span 1; } }
+
+.ph { display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line-soft); }
+.ph-title { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-soft); display: flex; align-items: center; gap: .55em; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); flex-shrink: 0; }
+.status-dot.ok { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.status-dot.bad { background: var(--ember-hi); box-shadow: 0 0 6px var(--ember-hi); }
+.status-dot.pending { background: var(--ink-faint); animation: pulse 1.2s ease-in-out infinite; }
+.ph-meta { font-size: 9px; color: var(--ink-faint); letter-spacing: .06em; }
+.pb { padding: 1rem 1.1rem; flex: 1; overflow: auto; }
+.pb::-webkit-scrollbar { width: 5px; } .pb::-webkit-scrollbar-thumb { background: var(--line); }
+
+.readout { font-family: var(--disp); font-weight: 700; font-size: 2.1rem; color: var(--ink); line-height: 1; }
+.readout small { font-family: var(--mono); font-size: .9rem; color: var(--ink-faint); font-weight: 400; }
+.subrow { display: flex; gap: 1.4rem; margin-top: .7rem; flex-wrap: wrap; }
+.subrow div { font-size: 10px; color: var(--ink-faint); }
+.subrow div b { display: block; color: var(--ink-soft); font-size: 12px; margin-top: 1px; font-weight: 600; }
+.searchrow { display: flex; gap: .4rem; margin-bottom: .9rem; }
+.searchrow input { flex: 1; padding: .55rem .7rem; background: #0a0805; border: 1px solid var(--line); color: var(--ink); font-family: var(--mono); font-size: 11.5px; }
+.searchrow input:focus { outline: none; border-color: var(--gold-dim); }
+.searchrow button { padding: .55rem .8rem; background: transparent; border: 1px solid var(--line); color: var(--gold-dim); cursor: pointer; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; }
+.searchrow button:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+.evt-item { padding: .7rem 0; border-top: 1px solid var(--line-soft); font-size: 11.5px; line-height: 1.6; color: var(--ink-soft); }
+.evt-item:first-child { border-top: none; }
+.evt-item a { color: var(--gold); text-decoration: none; border-bottom: 1px solid var(--gold-dim); }
+.evt-item a:hover { color: var(--gold-hi); }
+
+.sensor-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+@media (max-width: 640px) { .sensor-layout { grid-template-columns: 1fr; } }
+.mapwrap { position: relative; border-right: 1px solid var(--line-soft); aspect-ratio: 2/1.15; background: #050403; overflow: hidden; }
+@media (max-width: 640px) { .mapwrap { border-right: none; border-bottom: 1px solid var(--line-soft); } }
+.mapwrap svg { width: 100%; height: 100%; display: block; }
+.radar-sweep { position: absolute; inset: 0; pointer-events: none;
+  background: conic-gradient(from 0deg, rgba(200,169,110,.28), transparent 26%);
+  animation: spin 5s linear infinite; mix-blend-mode: screen; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.quake-list { list-style: none; font-size: 11px; }
+.quake-list li { display: grid; grid-template-columns: 40px 1fr auto; gap: .6rem; padding: .5rem 0; border-top: 1px solid var(--line-soft); align-items: baseline; }
+.quake-list li:first-child { border-top: none; }
+.qmag { font-family: var(--disp); font-weight: 700; color: var(--ember-hi); }
+.qmag.mod { color: var(--gold); }
+.qloc { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qtime { color: var(--ink-faint); font-size: 9.5px; white-space: nowrap; }
+.magfilter { display: flex; gap: .4rem; padding: .6rem 1.1rem; border-top: 1px solid var(--line-soft); }
+.magfilter button { flex: 1; padding: .4rem; background: transparent; border: 1px solid var(--line); color: var(--ink-faint); cursor: pointer; font-family: var(--mono); font-size: 9.5px; }
+.magfilter button.on { color: var(--gold); border-color: var(--gold-dim); }
+
+.cryptorow { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .9rem; }
+.ccard { border: 1px solid var(--line-soft); padding: .7rem .8rem; }
+.ccard .sym { font-size: 9.5px; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; }
+.ccard .px { font-family: var(--disp); font-weight: 700; font-size: 1.15rem; color: var(--ink); margin-top: .2rem; }
+.ccard .chg { font-size: 10px; margin-top: .2rem; }
+.fxtable { width: 100%; border-collapse: collapse; font-size: 11px; }
+.fxtable td { padding: .35rem 0; border-top: 1px solid var(--line-soft); color: var(--ink-soft); }
+.fxtable td:last-child { text-align: right; color: var(--gold); font-weight: 600; }
+
+.launch-item { padding: .7rem 0; border-top: 1px solid var(--line-soft); }
+.launch-item:first-child { border-top: none; }
+.launch-name { font-size: 12px; color: var(--ink); font-weight: 600; }
+.launch-meta { font-size: 10px; color: var(--ink-faint); margin-top: .25rem; }
+.launch-t { color: var(--gold); }
+
+.apod-img { width: 100%; display: block; border: 1px solid var(--line-soft); margin-bottom: .8rem; }
+.apod-title { font-size: 12.5px; color: var(--ink); font-weight: 600; margin-bottom: .4rem; }
+.apod-text { font-size: 10.5px; color: var(--ink-faint); line-height: 1.6; max-height: 5.6em; overflow: hidden; cursor: pointer; }
+.apod-text.open { max-height: none; }
+
+.notes-area { width: 100%; min-height: 160px; background: #0a0805; border: 1px solid var(--line); color: var(--ink);
+  font-family: var(--mono); font-size: 12px; padding: .8rem; resize: vertical; line-height: 1.6; }
+.notes-area:focus { outline: none; border-color: var(--gold-dim); }
+.notes-meta { font-size: 9px; color: var(--ink-faint); margin-top: .5rem; letter-spacing: .06em; }
+
+.err-msg { color: var(--ink-faint); font-size: 10.5px; font-style: normal; padding: .5rem 0; }
+.moonrow { display: flex; align-items: center; gap: .7rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); }
+.moon-emoji { font-size: 1.6rem; }
+.footer-note { text-align: center; padding: 2.5rem 1rem 3rem; font-size: 9.5px; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; }
+
+@media (max-width: 600px) {
+  .hdr-time { font-size: 1.25rem; }
+  .cryptorow { grid-template-columns: 1fr; }
+  .corner-bracket { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="gridfloor"></div>
+<div class="scanlines"></div>
+<div class="sweep"></div>
+<div class="vignette"></div>
+<div class="corner-bracket cb-tl"></div>
+<div class="corner-bracket cb-tr"></div>
+<div class="corner-bracket cb-bl"></div>
+<div class="corner-bracket cb-br"></div>
+
+<section class="lock-wrap" id="lock-section">
+  <div class="lock-card">
+    <div class="lock-card-inner">
+      <p class="lock-eyebrow"><span class="dot"></span>Restricted</p>
+      <h3>Vigil</h3>
+      <p class="lock-desc">Personal command feed. Not linked, not indexed, not explained. If you're not supposed to be here, you already know it.</p>
+      <div class="lock-field">
+        <label for="vg-user">Operator</label>
+        <input id="vg-user" type="text" autocomplete="username" />
+      </div>
+      <div class="lock-field">
+        <label for="vg-pass">Access code</label>
+        <input id="vg-pass" type="password" autocomplete="current-password" />
+      </div>
+      <button class="lock-enter" id="vg-submit">Authenticate</button>
+      <div class="lock-error" id="vg-error"></div>
+    </div>
+  </div>
+</section>
+
+<div id="boot">
+  <div class="boot-wrap">
+    <div class="boot-title glow">VIGIL</div>
+    <div class="boot-lines" id="bootLines"></div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div class="boot-skip">click / press any key to skip</div>
+  </div>
+</div>
+
+<div id="dash">
+  <div class="topbar">
+    <div class="ticker-wrap"><div class="ticker" id="ticker"><span>SYNCING FEEDS…</span></div></div>
+    <div class="hdr">
+      <div class="hdr-brand">
+        <div>
+          <div class="hdr-title glow">VIGIL</div>
+          <div class="hdr-sub">Mentifaber // Personal Command</div>
+        </div>
+      </div>
+      <div class="hdr-status" id="hdrStatus">SYSTEMS: <b>0/8</b> ONLINE</div>
+      <div class="hdr-clock">
+        <div class="hdr-time glow" id="hdrTime">00:00:00</div>
+        <div class="hdr-date" id="hdrDate">—</div>
+      </div>
+      <div class="hdr-actions">
+        <button class="hud-btn" id="vg-fullscreen">⤢ Fullscreen</button>
+        <button class="hud-btn" id="vg-lock">Seal</button>
+      </div>
+    </div>
+    <div class="worldclocks" id="worldClocks"></div>
+  </div>
+
+  <div class="dash-grid">
+
+    <div class="hud-panel">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-local"></span>Local &amp; Anywhere</span><span class="ph-meta" id="localMeta">—</span></div>
+      <div class="pb">
+        <div class="searchrow">
+          <input type="text" id="citySearch" placeholder="check another city…" />
+          <button id="citySearchBtn">Go</button>
+        </div>
+        <div class="readout" id="wxTemp">—<small>°C</small></div>
+        <div class="ph-meta" id="wxPlace">Locating…</div>
+        <div class="subrow" id="wxSub"></div>
+        <div class="moonrow" id="moonRow"></div>
+      </div>
+    </div>
+
+    <div class="hud-panel">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-markets"></span>Markets</span><span class="ph-meta">crypto · fx</span></div>
+      <div class="pb">
+        <div class="cryptorow" id="cryptoRow"></div>
+        <table class="fxtable" id="fxTable"></table>
+      </div>
+    </div>
+
+    <div class="hud-panel span2">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-events"></span>World Signal</span><span class="ph-meta">wikipedia · in the news</span></div>
+      <div class="pb" id="eventsBody"><p class="err-msg">Syncing…</p></div>
+    </div>
+
+    <div class="hud-panel span2">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-sensors"></span>Global Sensors</span><span class="ph-meta" id="sensorMeta">quakes · orbital</span></div>
+      <div class="sensor-layout">
+        <div class="mapwrap">
+          <svg id="radarMap" viewBox="0 0 200 115" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="radar-sweep"></div>
+        </div>
+        <div>
+          <ul class="quake-list" id="quakeList"></ul>
+        </div>
+      </div>
+      <div class="magfilter" id="magFilter">
+        <button data-min="0" class="on">ALL</button>
+        <button data-min="4">M4+</button>
+        <button data-min="5">M5+</button>
+        <button data-min="6">M6+</button>
+      </div>
+    </div>
+
+    <div class="hud-panel">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-launch"></span>Launch Manifest</span><span class="ph-meta">upcoming</span></div>
+      <div class="pb" id="launchBody"><p class="err-msg">Syncing…</p></div>
+    </div>
+
+    <div class="hud-panel">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-astro"></span>Astro</span><span class="ph-meta">NASA APOD</span></div>
+      <div class="pb" id="astroBody"><p class="err-msg">Syncing…</p></div>
+    </div>
+
+    <div class="hud-panel span2">
+      <div class="ph"><span class="ph-title"><span class="status-dot ok"></span>Personal Log</span><span class="ph-meta">local only · never leaves this browser</span></div>
+      <div class="pb">
+        <textarea class="notes-area" id="notesArea" placeholder="Anything worth keeping. Saved only in this browser."></textarea>
+        <div class="notes-meta" id="notesMeta">not yet saved</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer-note">Vigil · client-side only · every feed above is fetched directly by your browser from its own source</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ══════════════════════════ GATE ══════════════════════════ */
+  const AUTH_KEY = "vigil-auth";
+  const USERNAME = "Mentifaber";
+  const PASSWORD = "Stonewall123!";
+
+  const lockSection = document.getElementById("lock-section");
+  const boot = document.getElementById("boot");
+  const dash = document.getElementById("dash");
+  const userInput = document.getElementById("vg-user");
+  const passInput = document.getElementById("vg-pass");
+  const submitBtn = document.getElementById("vg-submit");
+  const errorEl = document.getElementById("vg-error");
+  const lockCard = document.querySelector(".lock-card");
+  const lockBtn = document.getElementById("vg-lock");
+  const fullscreenBtn = document.getElementById("vg-fullscreen");
+
+  function attempt() {
+    if (userInput.value.trim() === USERNAME && passInput.value === PASSWORD) {
+      try { localStorage.setItem(AUTH_KEY, "granted"); } catch (e) {}
+      errorEl.textContent = "";
+      lockSection.style.display = "none";
+      runBoot();
+    } else {
+      errorEl.textContent = "Access denied. Try again.";
+      lockCard.classList.remove("lock-shake");
+      void lockCard.offsetWidth;
+      lockCard.classList.add("lock-shake");
+    }
+  }
+  submitBtn.addEventListener("click", attempt);
+  passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") attempt(); });
+  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") passInput.focus(); });
+
+  function sealDoor() {
+    try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+    if (isFullscreen()) toggleFullscreen();
+    Object.values(timers).forEach(clearInterval);
+    dash.classList.remove("show");
+    boot.classList.remove("show");
+    lockSection.style.display = "";
+    userInput.value = ""; passInput.value = ""; errorEl.textContent = "";
+  }
+  lockBtn.addEventListener("click", sealDoor);
+
+  function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function toggleFullscreen() {
+    if (!isFullscreen()) {
+      const req = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+      if (req) req.call(document.documentElement);
+    } else {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    }
+  }
+  if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) {
+    fullscreenBtn.addEventListener("click", toggleFullscreen);
+    document.addEventListener("fullscreenchange", () => { fullscreenBtn.textContent = isFullscreen() ? "⤡ Exit fullscreen" : "⤢ Fullscreen"; });
+  } else { fullscreenBtn.disabled = true; fullscreenBtn.style.opacity = ".4"; }
+
+  /* ══════════════════════════ BOOT SEQUENCE ══════════════════════════ */
+  const BOOT_LINES = [
+    "MENTIFABER OS — VIGIL MODULE",
+    "authenticating operator… <span class=\"ok\">OK</span>",
+    "establishing local uplink…",
+    "syncing world signal feed…",
+    "calibrating seismic array…",
+    "acquiring orbital telemetry…",
+    "opening market channels…",
+    "loading personal log… <span class=\"ok\">OK</span>",
+  ];
+  let bootTimer = null;
+  function runBoot() {
+    boot.classList.add("show");
+    const linesEl = document.getElementById("bootLines");
+    const barEl = document.getElementById("bootBar");
+    linesEl.innerHTML = "";
+    let i = 0;
+    function skip() {
+      clearTimeout(bootTimer);
+      boot.removeEventListener("click", skip);
+      document.removeEventListener("keydown", skip);
+      finishBoot();
+    }
+    boot.addEventListener("click", skip);
+    document.addEventListener("keydown", skip);
+    function step() {
+      if (i >= BOOT_LINES.length) { setTimeout(() => { boot.removeEventListener("click", skip); document.removeEventListener("keydown", skip); finishBoot(); }, 260); return; }
+      const d = document.createElement("div");
+      d.className = "ln";
+      d.innerHTML = BOOT_LINES[i];
+      linesEl.appendChild(d);
+      requestAnimationFrame(() => d.classList.add("in"));
+      barEl.style.width = Math.round(((i + 1) / BOOT_LINES.length) * 100) + "%";
+      i++;
+      bootTimer = setTimeout(step, 220);
+    }
+    step();
+  }
+  function finishBoot() {
+    boot.classList.remove("show");
+    dash.classList.add("show");
+    startDashboard();
+  }
+
+  try {
+    if (localStorage.getItem(AUTH_KEY) === "granted") { lockSection.style.display = "none"; runBoot(); }
+  } catch (e) {}
+
+  /* ══════════════════════════ SHARED HELPERS ══════════════════════════ */
+  const timers = {};
+  function setDot(id, state) { const el = document.getElementById("dot-" + id); if (el) el.className = "status-dot " + state; }
+  const totalPanels = 7;
+  function markOnline(id) { setDot(id, "ok"); refreshStatusLine(); }
+  function markOffline(id) { setDot(id, "bad"); refreshStatusLine(); }
+  function refreshStatusLine() {
+    const dots = document.querySelectorAll(".status-dot.ok").length;
+    document.getElementById("hdrStatus").innerHTML = "SYSTEMS: <b>" + dots + "/" + totalPanels + "</b> ONLINE";
+  }
+  async function fetchJSON(url, opts) {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const res = await fetch(url, Object.assign({ signal: ctrl.signal }, opts || {}));
+      clearTimeout(to);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    } finally { clearTimeout(to); }
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function timeAgo(ms) {
+    const s = Math.floor((Date.now() - ms) / 1000);
+    if (s < 60) return s + "s ago";
+    if (s < 3600) return Math.floor(s / 60) + "m ago";
+    if (s < 86400) return Math.floor(s / 3600) + "h ago";
+    return Math.floor(s / 86400) + "d ago";
+  }
+
+  /* ══════════════════════════ CLOCK ══════════════════════════ */
+  const WORLD_TZ = [
+    ["LOCAL", Intl.DateTimeFormat().resolvedOptions().timeZone],
+    ["NEW YORK", "America/New_York"],
+    ["LONDON", "Europe/London"],
+    ["TOKYO", "Asia/Tokyo"],
+    ["SYDNEY", "Australia/Sydney"],
+  ];
+  function renderClocks() {
+    const now = new Date();
+    document.getElementById("hdrTime").textContent = now.toLocaleTimeString([], { hour12: false });
+    document.getElementById("hdrDate").textContent = now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const wc = document.getElementById("worldClocks");
+    wc.innerHTML = WORLD_TZ.map(([label, tz]) => {
+      let t = "—";
+      try { t = new Intl.DateTimeFormat([], { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false }).format(now); } catch (e) {}
+      return '<div class="wc">' + label + '<b>' + t + '</b></div>';
+    }).join("");
+  }
+
+  /* ══════════════════════════ MOON PHASE (no API) ══════════════════════════ */
+  function moonPhase(date) {
+    const synodic = 29.530588853;
+    const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14) / 1000;
+    const days = (date.getTime() / 1000 - knownNewMoon) / 86400;
+    let phase = (days % synodic) / synodic;
+    if (phase < 0) phase += 1;
+    return phase;
+  }
+  function moonLabel(phase) {
+    const names = ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous", "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"];
+    const emoji = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+    const idx = Math.round(phase * 8) % 8;
+    return { name: names[idx], emoji: emoji[idx] };
+  }
+
+  /* ══════════════════════════ WEATHER ══════════════════════════ */
+  const WMO = {0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Rime fog",
+    51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",
+    66:"Freezing rain",67:"Heavy freezing rain",71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",
+    80:"Light showers",81:"Showers",82:"Violent showers",85:"Snow showers",86:"Heavy snow showers",
+    95:"Thunderstorm",96:"Thunderstorm w/ hail",99:"Severe thunderstorm"};
+
+  async function loadWeather(lat, lon, placeName) {
+    try {
+      const [wx, place] = await Promise.all([
+        fetchJSON("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+          "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=auto"),
+        placeName ? Promise.resolve(placeName) : reverseGeocode(lat, lon),
+      ]);
+      const c = wx.current;
+      document.getElementById("wxTemp").innerHTML = Math.round(c.temperature_2m) + "<small>°C / " + Math.round(c.temperature_2m * 9/5 + 32) + "°F</small>";
+      document.getElementById("wxPlace").textContent = (place || (lat.toFixed(2) + ", " + lon.toFixed(2))) + " — " + (WMO[c.weather_code] || "Unknown");
+      document.getElementById("wxSub").innerHTML =
+        '<div>Feels like<b>' + Math.round(c.apparent_temperature) + '°C</b></div>' +
+        '<div>Humidity<b>' + c.relative_humidity_2m + '%</b></div>' +
+        '<div>Wind<b>' + Math.round(c.wind_speed_10m) + ' km/h</b></div>';
+      const sunrise = wx.daily && wx.daily.sunrise ? new Date(wx.daily.sunrise[0]) : null;
+      const sunset = wx.daily && wx.daily.sunset ? new Date(wx.daily.sunset[0]) : null;
+      const mp = moonPhase(new Date()); const ml = moonLabel(mp);
+      document.getElementById("moonRow").innerHTML =
+        '<span class="moon-emoji">' + ml.emoji + '</span><div style="font-size:10px;color:var(--ink-faint)">' + ml.name +
+        (sunrise ? '<br>Sunrise ' + sunrise.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) + ' · Sunset ' + sunset.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : '') +
+        '</div>';
+      document.getElementById("localMeta").textContent = "live";
+      markOnline("local");
+    } catch (e) {
+      document.getElementById("wxPlace").textContent = "Feed unavailable.";
+      markOffline("local");
+    }
+  }
+  async function reverseGeocode(lat, lon) {
+    try {
+      const r = await fetchJSON("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat + "&longitude=" + lon + "&localityLanguage=en");
+      return [r.city || r.locality, r.principalSubdivision, r.countryName].filter(Boolean).join(", ");
+    } catch (e) { return null; }
+  }
+  async function searchCity(query) {
+    try {
+      const r = await fetchJSON("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(query));
+      if (r.results && r.results.length) {
+        const p = r.results[0];
+        loadWeather(p.latitude, p.longitude, [p.name, p.admin1, p.country].filter(Boolean).join(", "));
+      } else { document.getElementById("wxPlace").textContent = "No match for “" + query + "”."; }
+    } catch (e) { document.getElementById("wxPlace").textContent = "Search unavailable."; }
+  }
+  document.getElementById("citySearchBtn").addEventListener("click", () => {
+    const v = document.getElementById("citySearch").value.trim();
+    if (v) searchCity(v);
+  });
+  document.getElementById("citySearch").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { const v = e.target.value.trim(); if (v) searchCity(v); }
+  });
+  function initWeather() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
+        () => loadWeather(40.7128, -74.006, "New York, NY (default)"),
+        { timeout: 8000 }
+      );
+    } else { loadWeather(40.7128, -74.006, "New York, NY (default)"); }
+  }
+
+  /* ══════════════════════════ WORLD EVENTS (Wikipedia) ══════════════════════════ */
+  async function loadEvents() {
+    const el = document.getElementById("eventsBody");
+    try {
+      const d = new Date();
+      const url = "https://en.wikipedia.org/api/rest_v1/feed/featured/" + d.getFullYear() + "/" + pad(d.getMonth()+1) + "/" + pad(d.getDate());
+      const data = await fetchJSON(url);
+      const news = data.news || [];
+      if (!news.length) throw new Error("empty");
+      el.innerHTML = news.map(n => {
+        const link = (n.links && n.links[0] && n.links[0].content_urls) ? n.links[0].content_urls.desktop.page : null;
+        const story = n.story.replace(/<[^>]+>/g, m => /^<a /.test(m) ? m : (m === "</a>" ? m : ""));
+        return '<div class="evt-item">' + n.story + (link ? '' : '') + '</div>';
+      }).join("");
+      markOnline("events");
+    } catch (e) {
+      el.innerHTML = '<p class="err-msg">World signal feed unavailable right now.</p>';
+      markOffline("events");
+    }
+  }
+
+  /* ══════════════════════════ MARKETS ══════════════════════════ */
+  async function loadMarkets() {
+    try {
+      const c = await fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin&vs_currencies=usd&include_24hr_change=true");
+      const rows = [["bitcoin","BTC"],["ethereum","ETH"],["solana","SOL"],["dogecoin","DOGE"]];
+      document.getElementById("cryptoRow").innerHTML = rows.map(([id, sym]) => {
+        const d = c[id]; if (!d) return "";
+        const chg = d.usd_24h_change || 0;
+        return '<div class="ccard"><div class="sym">' + sym + '</div><div class="px">$' + d.usd.toLocaleString(undefined,{maximumFractionDigits: d.usd < 10 ? 4 : 0}) +
+          '</div><div class="chg ' + (chg >= 0 ? 'glow' : 'glow-ember') + '" style="color:' + (chg >= 0 ? 'var(--gold)' : 'var(--ember-hi)') + '">' + (chg >= 0 ? "▲" : "▼") + " " + Math.abs(chg).toFixed(2) + "%</div></div>";
+      }).join("");
+      markOnline("markets");
+      buildTicker(c);
+    } catch (e) { markOffline("markets"); }
+    try {
+      const fx = await fetchJSON("https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,JPY,CAD");
+      document.getElementById("fxTable").innerHTML = Object.entries(fx.rates).map(([k,v]) =>
+        "<tr><td>USD / " + k + "</td><td>" + v.toFixed(2) + "</td></tr>").join("");
+    } catch (e) {}
+  }
+  function buildTicker(crypto) {
+    const parts = [];
+    if (crypto) {
+      Object.entries(crypto).forEach(([id, d]) => {
+        const chg = d.usd_24h_change || 0;
+        parts.push('<span>' + id.toUpperCase() + ' <b>$' + d.usd.toLocaleString() + '</b> <span class="' + (chg>=0?'up':'down') + '">' + (chg>=0?'▲':'▼') + Math.abs(chg).toFixed(1) + '%</span></span>');
+      });
+    }
+    parts.push('<span>VIGIL ONLINE — ALL FEEDS DIRECT FROM SOURCE, NO MIDDLEMAN</span>');
+    const t = document.getElementById("ticker");
+    t.innerHTML = parts.concat(parts).join("");
+  }
+
+  /* ══════════════════════════ GLOBAL SENSORS: quakes + ISS ══════════════════════════ */
+  let allQuakes = [], issPos = null;
+  function projectToMap(lat, lon) {
+    const x = (lon + 180) / 360 * 200;
+    const y = (90 - lat) / 180 * 115;
+    return [x, y];
+  }
+  function drawMap() {
+    const svg = document.getElementById("radarMap");
+    let dots = "";
+    const grat = [];
+    for (let x = 0; x <= 200; x += 20) grat.push('<line x1="'+x+'" y1="0" x2="'+x+'" y2="115" stroke="rgba(200,169,110,.08)" stroke-width="0.3"/>');
+    for (let y = 0; y <= 115; y += 20) grat.push('<line x1="0" y1="'+y+'" x2="200" y2="'+y+'" stroke="rgba(200,169,110,.08)" stroke-width="0.3"/>');
+    allQuakes.forEach(q => {
+      const [x, y] = projectToMap(q.lat, q.lon);
+      const r = Math.max(1, q.mag * .9);
+      dots += '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="none" stroke="' + (q.mag >= 5 ? '#d94030' : '#c8a96e') + '" stroke-width="0.6" opacity="0.85"/>';
+    });
+    let issDot = "";
+    if (issPos) {
+      const [x, y] = projectToMap(issPos.lat, issPos.lon);
+      issDot = '<circle cx="'+x+'" cy="'+y+'" r="2" fill="#e8cd9a"><animate attributeName="opacity" values="1;.3;1" dur="1.6s" repeatCount="indefinite"/></circle>' +
+        '<text x="'+(x+3)+'" y="'+(y+1)+'" font-size="4" fill="#e8cd9a" font-family="IBM Plex Mono, monospace">ISS</text>';
+    }
+    svg.innerHTML = grat.join("") +
+      '<rect x="0" y="0" width="200" height="115" fill="none" stroke="rgba(200,169,110,.25)" stroke-width="0.5"/>' +
+      dots + issDot;
+  }
+  let quakeMinMag = 0;
+  function renderQuakeList() {
+    const list = allQuakes.filter(q => q.mag >= quakeMinMag).slice(0, 12);
+    document.getElementById("quakeList").innerHTML = list.map(q =>
+      '<li><span class="qmag ' + (q.mag < 5 ? 'mod' : '') + '">' + q.mag.toFixed(1) + '</span>' +
+      '<span class="qloc">' + q.place + '</span>' +
+      '<span class="qtime">' + timeAgo(q.time) + '</span></li>'
+    ).join("") || '<li><span class="qloc">No quakes at this threshold.</span></li>';
+  }
+  document.querySelectorAll("#magFilter button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#magFilter button").forEach(b => b.classList.remove("on"));
+      btn.classList.add("on");
+      quakeMinMag = Number(btn.dataset.min);
+      renderQuakeList();
+    });
+  });
+  async function loadQuakes() {
+    try {
+      const d = await fetchJSON("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson");
+      allQuakes = d.features.map(f => ({
+        mag: f.properties.mag || 0, place: f.properties.place || "Unknown", time: f.properties.time,
+        lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
+      })).sort((a,b) => b.time - a.time);
+      document.getElementById("sensorMeta").textContent = allQuakes.length + " quakes, 7d · orbital tracked";
+      renderQuakeList();
+      drawMap();
+      markOnline("sensors");
+    } catch (e) { markOffline("sensors"); document.getElementById("quakeList").innerHTML = '<li><span class="qloc">Seismic feed unavailable.</span></li>'; }
+  }
+  async function loadISS() {
+    try {
+      const d = await fetchJSON("https://api.wheretheiss.at/v1/satellites/25544");
+      issPos = { lat: d.latitude, lon: d.longitude };
+      drawMap();
+    } catch (e) {}
+  }
+
+  /* ══════════════════════════ LAUNCHES ══════════════════════════ */
+  async function loadLaunches() {
+    const el = document.getElementById("launchBody");
+    try {
+      const d = await fetchJSON("https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=5&mode=list");
+      const list = d.results || [];
+      if (!list.length) throw new Error("empty");
+      el.innerHTML = list.map(l => {
+        const t = new Date(l.net);
+        return '<div class="launch-item"><div class="launch-name">' + l.name + '</div>' +
+          '<div class="launch-meta"><span class="launch-t">' + t.toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}) + '</span> · ' +
+          (l.pad && l.pad.location ? l.pad.location.name : "TBD") + '</div></div>';
+      }).join("");
+      markOnline("launch");
+    } catch (e) {
+      el.innerHTML = '<p class="err-msg">Launch manifest unavailable.</p>';
+      markOffline("launch");
+    }
+  }
+
+  /* ══════════════════════════ ASTRO (NASA APOD) ══════════════════════════ */
+  async function loadAstro() {
+    const el = document.getElementById("astroBody");
+    try {
+      const d = await fetchJSON("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
+      const img = d.media_type === "image" ? (d.url || d.hdurl) : null;
+      el.innerHTML = (img ? '<img class="apod-img" src="' + img + '" alt="' + (d.title||"").replace(/"/g,"") + '"/>' : "") +
+        '<div class="apod-title">' + d.title + '</div>' +
+        '<div class="apod-text" id="apodText">' + d.explanation + '</div>';
+      document.getElementById("apodText").addEventListener("click", (e) => e.target.classList.toggle("open"));
+      markOnline("astro");
+    } catch (e) {
+      el.innerHTML = '<p class="err-msg">Astro feed unavailable.</p>';
+      markOffline("astro");
+    }
+  }
+
+  /* ══════════════════════════ NOTES ══════════════════════════ */
+  const NOTES_KEY = "vigil-notes";
+  const notesArea = document.getElementById("notesArea");
+  const notesMeta = document.getElementById("notesMeta");
+  try { notesArea.value = localStorage.getItem(NOTES_KEY) || ""; } catch (e) {}
+  if (notesArea.value) notesMeta.textContent = "restored from this browser";
+  let notesTimer = null;
+  notesArea.addEventListener("input", () => {
+    clearTimeout(notesTimer);
+    notesTimer = setTimeout(() => {
+      try { localStorage.setItem(NOTES_KEY, notesArea.value); } catch (e) {}
+      notesMeta.textContent = "saved " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+    }, 500);
+  });
+
+  /* ══════════════════════════ INIT ══════════════════════════ */
+  function startDashboard() {
+    renderClocks();
+    timers.clock = setInterval(renderClocks, 1000);
+
+    initWeather();
+    loadEvents();
+    loadMarkets();
+    loadQuakes();
+    loadISS();
+    loadLaunches();
+    loadAstro();
+
+    timers.markets = setInterval(loadMarkets, 60000);
+    timers.quakes = setInterval(loadQuakes, 120000);
+    timers.iss = setInterval(loadISS, 8000);
+    timers.events = setInterval(loadEvents, 900000);
+    timers.launches = setInterval(loadLaunches, 600000);
+  }
+})();
+</script>
+</body>
+</html>
