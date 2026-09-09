@@ -323,6 +323,7 @@ body { font-size: 14px; }
     <div class="hud-panel">
       <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-markets"></span>Markets</span><span class="ph-meta">crypto · fx</span></div>
       <div class="pb">
+        <div id="globalMarketStats" style="font-size:10px;color:var(--ink-faint);margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px solid var(--line-soft);"></div>
         <div class="cryptorow" id="cryptoRow"></div>
         <table class="fxtable" id="fxTable"></table>
       </div>
@@ -666,6 +667,20 @@ body { font-size: 14px; }
       const fx = await fetchJSON("https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,JPY,CAD");
       document.getElementById("fxTable").innerHTML = Object.entries(fx.rates).map(([k,v]) =>
         "<tr><td>USD / " + k + "</td><td>" + v.toFixed(2) + "</td></tr>").join("");
+    } catch (e) {}
+    try {
+      const global = await fetchJSON("https://api.coingecko.com/api/v3/global");
+      const data = global.data;
+      if (data && data.total_market_cap && data.total_market_cap.usd !== undefined) {
+        const mcap = data.total_market_cap.usd;
+        const chg24h = (data.market_cap_change_percentage_24h_usd || 0).toFixed(2);
+        const btcDom = (data.btc_market_cap_percentage || 0).toFixed(1);
+        document.getElementById("globalMarketStats").innerHTML =
+          '<div style="color:var(--ink-soft);font-weight:600;margin-bottom:.4rem;">Global Cap: $' +
+          (mcap >= 1e12 ? (mcap/1e12).toFixed(2) + 'T' : (mcap/1e9).toFixed(0) + 'B') +
+          ' <span style="color:' + (chg24h >= 0 ? 'var(--gold)' : 'var(--ember-hi)') + '">' + (chg24h >= 0 ? "▲" : "▼") + chg24h + '%</span></div>' +
+          '<div>BTC Dominance: <span style="color:var(--gold)">' + btcDom + '%</span></div>';
+      }
     } catch (e) {}
   }
   function buildTicker(crypto) {
