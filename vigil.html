@@ -674,7 +674,7 @@ body { font-size: 14px; }
       if (data && data.total_market_cap && data.total_market_cap.usd !== undefined) {
         const mcap = data.total_market_cap.usd;
         const chg24h = (data.market_cap_change_percentage_24h_usd || 0).toFixed(2);
-        const btcDom = (data.btc_market_cap_percentage || 0).toFixed(1);
+        const btcDom = (data.market_cap_percentage && data.market_cap_percentage.btc || 0).toFixed(1);
         document.getElementById("globalMarketStats").innerHTML =
           '<div style="color:var(--ink-soft);font-weight:600;margin-bottom:.4rem;">Global Cap: $' +
           (mcap >= 1e12 ? (mcap/1e12).toFixed(2) + 'T' : (mcap/1e9).toFixed(0) + 'B') +
