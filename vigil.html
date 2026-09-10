@@ -849,7 +849,27 @@ body { font-size: 14px; }
     throw lastErr || new Error("no sources");
   }
 
-  async function fetchJSON(url, opts, feedId, timeoutMs) {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // 5xx and transport errors are usually transient (Open-Meteo returned a 503 in
+  // the wild). Retry those with backoff; never retry a 4xx, which won't change.
+  async function fetchJSON(url, opts, feedId, timeoutMs, tries) {
+    const attempts = tries || 3;
+    let lastErr = null;
+    for (let i = 0; i < attempts; i++) {
+      try { return await fetchOnce(url, opts, feedId, timeoutMs); }
+      catch (e) {
+        lastErr = e;
+        const status = Number((/HTTP (\d+)/.exec(e.message) || [])[1]);
+        const retryable = !status || status >= 500 || status === 429;
+        if (!retryable || i === attempts - 1) break;
+        await sleep(600 * Math.pow(2, i));
+      }
+    }
+    throw lastErr;
+  }
+
+  async function fetchOnce(url, opts, feedId, timeoutMs) {
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), timeoutMs || 12000);
     const t0 = Date.now();
@@ -928,22 +948,30 @@ body { font-size: 14px; }
     95:"Thunderstorm",96:"Thunderstorm w/ hail",99:"Severe thunderstorm"};
 
   async function loadWeather(lat, lon, placeName) {
+    // Position is known from the arguments alone, so pin it before any network
+    // call: a weather outage used to leave the globe with no "you" marker and
+    // the radar centred on the wrong continent.
+    homePos = { lat, lon, name: placeName || null };
+    currentPlace = { lat, lon, name: placeName || null };
+    rebuildMarkers();
+    RADAR.lat = lat; RADAR.lon = lon;
+    drawRadar();
+    // independent feed — must not be blocked by the forecast request failing
+    loadAirQuality(lat, lon);
     try {
       const [wx, place] = await Promise.all([
         fetchJSON("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
           "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m" +
           "&hourly=temperature_2m,precipitation_probability,weather_code" +
           "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,sunrise,sunset" +
-          "&forecast_days=16&timezone=auto", null, "weather"),
+          // cap the hourly series: 16 days of hourly data is ~384 points per
+          // variable and only the next 48h are ever displayed
+          "&forecast_days=16&forecast_hours=48&timezone=auto", null, "weather"),
         placeName ? Promise.resolve(placeName) : reverseGeocode(lat, lon),
       ]);
-      homePos = { lat, lon, name: place || null };
-      currentPlace = { lat, lon, name: place || null };
+      homePos.name = place || null;
+      currentPlace.name = place || null;
       rebuildMarkers();
-      // follow the place you're actually looking at
-      RADAR.lat = lat; RADAR.lon = lon;
-      drawRadar();
-      loadAirQuality(lat, lon);
       const c = wx.current;
       document.getElementById("wxTemp").innerHTML = cToF(c.temperature_2m) + "<small>°F / " + Math.round(c.temperature_2m) + "°C</small>";
       document.getElementById("wxPlace").textContent = (place || (lat.toFixed(2) + ", " + lon.toFixed(2))) + " — " + (WMO[c.weather_code] || "Unknown");
@@ -964,7 +992,13 @@ body { font-size: 14px; }
       markOnline("local");
       markOnline("forecast");
     } catch (e) {
-      document.getElementById("wxPlace").textContent = "Feed unavailable.";
+      document.getElementById("wxPlace").textContent =
+        "Weather feed unavailable (" + (e.message || "error") + "). See Feed Diagnostics.";
+      document.getElementById("wxHourly").innerHTML =
+        '<p class="err-msg">Hourly forecast unavailable.</p>';
+      document.getElementById("wxForecast").innerHTML =
+        '<p class="err-msg">Long-range forecast unavailable — the source rejected the request. It retries automatically.</p>';
+      document.getElementById("wxFcMeta").textContent = "unavailable";
       markOffline("local");
       markOffline("forecast");
     }
@@ -1412,7 +1446,6 @@ body { font-size: 14px; }
       rebuildMarkers();
       drawGlobe();
       markOnline("conflict");
-      loadConflictHeadlines();
     } catch (e) {
       conflictPoints = [];
       el.innerHTML = '<p class="err-msg">Conflict geo feed unavailable. See Feed Diagnostics for the reason.</p>';
@@ -1448,16 +1481,27 @@ body { font-size: 14px; }
   }
 
   /* ══════════════════════════ SPACE WEATHER (NOAA SWPC) ══════════════════════════ */
+  function clampKp(v) { return Math.max(0, Math.min(9, Math.round(v))); }
   function parseKp(data) {
     if (!Array.isArray(data) || !data.length) return null;
     if (Array.isArray(data[0])) {
       // header row + [time_tag, Kp, ...]
-      const head = data[0].map(h => String(h).toLowerCase());
+      const head = data[0].map(h => String(h).toLowerCase().trim());
       let col = head.findIndex(h => h === "kp" || h === "kp_index" || h === "estimated_kp");
-      if (col < 0) col = 1;
+      if (col < 0) col = head.findIndex(h => h.indexOf("kp") >= 0);
       for (let i = data.length - 1; i > 0; i--) {
-        const v = Number(data[i] && data[i][col]);
-        if (isFinite(v)) return Math.round(v);
+        const row = data[i];
+        if (!Array.isArray(row)) continue;
+        if (col >= 0) {
+          const v = Number(row[col]);
+          if (isFinite(v)) return clampKp(v);
+        }
+        // No usable header: take the first plausible Kp-range number in the row,
+        // skipping the leading timestamp.
+        for (let j = 1; j < row.length; j++) {
+          const v = Number(row[j]);
+          if (isFinite(v) && v >= 0 && v <= 9) return clampKp(v);
+        }
       }
       return null;
     }
@@ -1465,7 +1509,7 @@ body { font-size: 14px; }
       for (let i = data.length - 1; i >= 0; i--) {
         const r = data[i] || {};
         const v = Number(r.kp_index != null ? r.kp_index : r.estimated_kp != null ? r.estimated_kp : r.kp);
-        if (isFinite(v)) return Math.round(v);
+        if (isFinite(v)) return clampKp(v);
       }
     }
     return null;
@@ -1489,36 +1533,45 @@ body { font-size: 14px; }
       // SWPC serves this product in two shapes depending on endpoint: array-of-arrays
       // with a header row, or array-of-objects. Parse whichever comes back — assuming
       // one of them is what made this panel fail while the fetch itself succeeded.
-      const kp = await fetchFirst([
-        "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",
-        "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
-      ], null, "kp");
-      const kpVal = parseKp(kp);
-      if (kpVal == null) throw new Error("unrecognised Kp shape");
-      const cells = [];
-      for (let i = 0; i <= 8; i++) {
-        const on = i <= kpVal;
-        cells.push('<div class="kp-cell' + (on ? " fill" : "") + (i >= 5 ? " storm" : "") +
-          (i === kpVal ? " cur" : "") + '"></div>');
+      // Fetch both products independently. Previously a Kp parse failure threw
+      // before the solar-wind request was ever made, blanking the whole panel
+      // while diagnostics still reported the Kp fetch itself as online.
+      const [kpRes, swRes] = await Promise.allSettled([
+        fetchFirst([
+          "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",
+          "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
+        ], null, "kp"),
+        fetchJSON("https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json", null, "solar"),
+      ]);
+      const kpVal = kpRes.status === "fulfilled" ? parseKp(kpRes.value) : null;
+      const solar = swRes.status === "fulfilled" ? parseSolarWind(swRes.value) : null;
+      if (kpVal == null && solar == null) throw new Error("no space weather data");
+      let html = "";
+      if (kpVal != null) {
+        const cells = [];
+        for (let i = 0; i <= 8; i++) {
+          cells.push('<div class="kp-cell' + (i <= kpVal ? " fill" : "") + (i >= 5 ? " storm" : "") +
+            (i === kpVal ? " cur" : "") + '"></div>');
+        }
+        const state = kpVal >= 7 ? "Severe storm" : kpVal >= 5 ? "Geomagnetic storm"
+          : kpVal >= 4 ? "Unsettled" : "Quiet";
+        html += '<div class="ph-meta">Planetary K-index — <b style="color:' +
+          (kpVal >= 5 ? "var(--ember-hi)" : "var(--gold)") + '">' + state + '</b></div>' +
+          '<div class="kp-scale">' + cells.join("") + '</div>' +
+          '<div class="kp-axis"><span>0</span><span>Kp ' + kpVal + '</span><span>8</span></div>';
+      } else {
+        html += '<div class="ph-meta">K-index unreadable — showing solar wind only</div>';
       }
-      const state = kpVal >= 7 ? "Severe storm" : kpVal >= 5 ? "Geomagnetic storm"
-        : kpVal >= 4 ? "Unsettled" : "Quiet";
-      let solar = null;
-      try {
-        const sw = await fetchJSON("https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json", null, "solar");
-        solar = parseSolarWind(sw);
-      } catch (e2) {}
-      el.innerHTML =
-        '<div class="ph-meta">Planetary K-index — <b style="color:' + (kpVal >= 5 ? "var(--ember-hi)" : "var(--gold)") + '">' + state + '</b></div>' +
-        '<div class="kp-scale">' + cells.join("") + '</div>' +
-        '<div class="kp-axis"><span>0</span><span>Kp ' + kpVal + '</span><span>8</span></div>' +
-        '<div class="sw-grid">' +
-          '<div class="sw-cell">Kp now<b>' + kpVal + '</b></div>' +
-          (solar ? '<div class="sw-cell">Solar wind<b>' + Math.round(solar.speed) + ' km/s</b></div>' : "") +
-          (solar && solar.density != null ? '<div class="sw-cell">Density<b>' + solar.density.toFixed(1) + '/cm³</b></div>' : "") +
-          '<div class="sw-cell">Aurora<b>' + (kpVal >= 5 ? "Likely" : kpVal >= 4 ? "Possible" : "Unlikely") + '</b></div>' +
+      html += '<div class="sw-grid">' +
+        (kpVal != null ? '<div class="sw-cell">Kp now<b>' + kpVal + '</b></div>' : "") +
+        (solar ? '<div class="sw-cell">Solar wind<b>' + Math.round(solar.speed) + ' km/s</b></div>' : "") +
+        (solar && solar.density != null ? '<div class="sw-cell">Density<b>' + solar.density.toFixed(1) + '/cm³</b></div>' : "") +
+        (kpVal != null ? '<div class="sw-cell">Aurora<b>' +
+          (kpVal >= 5 ? "Likely" : kpVal >= 4 ? "Possible" : "Unlikely") + '</b></div>' : "") +
         '</div>';
-      document.getElementById("spaceMeta").textContent = "NOAA SWPC · live";
+      el.innerHTML = html;
+      document.getElementById("spaceMeta").textContent =
+        kpVal != null && solar ? "NOAA SWPC · live" : "NOAA SWPC · partial";
       markOnline("space");
     } catch (e) {
       el.innerHTML = '<p class="err-msg">Space weather feed unavailable. See Feed Diagnostics.</p>';
@@ -1553,6 +1606,17 @@ body { font-size: 14px; }
           });
         }
       }
+      // NWS repeats one event across every affected zone, so the list filled up
+      // with identical rows ("Evacuation Immediate — Lake County" twice over).
+      const seen = new Set();
+      const unique = rows.filter(r => {
+        const k = r.event + "|" + r.area;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      rows.length = 0;
+      rows.push.apply(rows, unique);
       rows.sort((a, b) => (ALERT_RANK[a.severity] ?? 9) - (ALERT_RANK[b.severity] ?? 9));
       el.innerHTML = rows.length
         ? rows.slice(0, 10).map(r =>
@@ -2401,6 +2465,9 @@ body { font-size: 14px; }
     loadLaunches();
     loadAstro();
     loadConflict();
+    // GEO and DOC are separate GDELT services: the geo endpoint going dark must
+    // not leave the headline column stuck on "Loading…" forever.
+    loadConflictHeadlines();
     loadSpaceWeather();
     loadAlerts();
     loadRadar();
@@ -2411,6 +2478,7 @@ body { font-size: 14px; }
     timers.events = setInterval(loadEvents, 900000);
     timers.launches = setInterval(loadLaunches, 600000);
     timers.conflict = setInterval(loadConflict, 900000);
+    timers.headlines = setInterval(loadConflictHeadlines, 900000);
     timers.space = setInterval(loadSpaceWeather, 300000);
     timers.alerts = setInterval(loadAlerts, 180000);
     timers.diag = setInterval(renderDiagnostics, 15000);
