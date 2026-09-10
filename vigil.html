@@ -460,7 +460,7 @@ body { font-size: 14px; }
           <input type="text" id="citySearch" placeholder="check another city…" />
           <button id="citySearchBtn">Go</button>
         </div>
-        <div class="readout" id="wxTemp">—<small>°C</small></div>
+        <div class="readout" id="wxTemp">—<small>°F</small></div>
         <div class="ph-meta" id="wxPlace">Locating…</div>
         <div class="subrow" id="wxSub"></div>
         <div class="ph-meta" id="wxAir" style="margin-top:.7rem;"></div>
@@ -894,6 +894,7 @@ body { font-size: 14px; }
   }
 
   /* ══════════════════════════ WEATHER ══════════════════════════ */
+  function cToF(c) { return Math.round(c * 9 / 5 + 32); }
   const WMO = {0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Rime fog",
     51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",
     66:"Freezing rain",67:"Heavy freezing rain",71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",
@@ -918,12 +919,12 @@ body { font-size: 14px; }
       drawRadar();
       loadAirQuality(lat, lon);
       const c = wx.current;
-      document.getElementById("wxTemp").innerHTML = Math.round(c.temperature_2m) + "<small>°C / " + Math.round(c.temperature_2m * 9/5 + 32) + "°F</small>";
+      document.getElementById("wxTemp").innerHTML = cToF(c.temperature_2m) + "<small>°F / " + Math.round(c.temperature_2m) + "°C</small>";
       document.getElementById("wxPlace").textContent = (place || (lat.toFixed(2) + ", " + lon.toFixed(2))) + " — " + (WMO[c.weather_code] || "Unknown");
       document.getElementById("wxSub").innerHTML =
-        '<div>Feels like<b>' + Math.round(c.apparent_temperature) + '°C</b></div>' +
+        '<div>Feels like<b>' + cToF(c.apparent_temperature) + '°F</b></div>' +
         '<div>Humidity<b>' + c.relative_humidity_2m + '%</b></div>' +
-        '<div>Wind<b>' + Math.round(c.wind_speed_10m) + ' km/h</b></div>';
+        '<div>Wind<b>' + Math.round(c.wind_speed_10m * 0.621371) + ' mph</b></div>';
       const sunrise = wx.daily && wx.daily.sunrise ? new Date(wx.daily.sunrise[0]) : null;
       const sunset = wx.daily && wx.daily.sunset ? new Date(wx.daily.sunset[0]) : null;
       const mp = moonPhase(new Date()); const ml = moonLabel(mp);
@@ -954,7 +955,6 @@ body { font-size: 14px; }
   const WMO_ICON = {0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",48:"🌫",51:"🌦",53:"🌦",55:"🌧",56:"🌧",57:"🌧",
     61:"🌦",63:"🌧",65:"🌧",66:"🌧",67:"🌧",71:"🌨",73:"🌨",75:"❄",77:"🌨",80:"🌦",81:"🌧",82:"⛈",
     85:"🌨",86:"❄",95:"⛈",96:"⛈",99:"⛈"};
-  function cToF(c) { return Math.round(c * 9 / 5 + 32); }
 
   function renderHourly(h) {
     const el = document.getElementById("wxHourly");
@@ -975,7 +975,7 @@ body { font-size: 14px; }
         '<div class="hr-t">' + d.toLocaleTimeString([], { hour: "numeric" }).replace(" ", "") + '</div>' +
         '<div class="hr-ico">' + (WMO_ICON[h.weather_code[idx]] || "·") + '</div>' +
         '<div class="hr-bar"><span style="height:' + Math.round(((temp - lo) / span) * 100) + '%"></span></div>' +
-        '<div class="hr-deg">' + Math.round(temp) + '°</div>' +
+        '<div class="hr-deg">' + cToF(temp) + '°</div>' +
         (pop != null && pop >= 20 ? '<div class="hr-pop">' + pop + '%</div>' : '<div class="hr-pop"></div>') +
         '</div>';
     }).join("");
@@ -996,15 +996,15 @@ body { font-size: 14px; }
         '<div class="fc-day">' + (i === 0 ? "TODAY" : date.toLocaleDateString([], { weekday: "short" }).toUpperCase()) + '</div>' +
         '<div class="fc-date">' + date.toLocaleDateString([], { month: "numeric", day: "numeric" }) + '</div>' +
         '<div class="fc-ico">' + (WMO_ICON[d.weather_code[i]] || "·") + '</div>' +
-        '<div class="fc-hi">' + Math.round(hi) + '°</div>' +
+        '<div class="fc-hi">' + cToF(hi) + '°</div>' +
         '<div class="fc-track"><span style="top:' + top.toFixed(1) + '%;bottom:' + bot.toFixed(1) + '%"></span></div>' +
-        '<div class="fc-lo">' + Math.round(lo) + '°</div>' +
+        '<div class="fc-lo">' + cToF(lo) + '°</div>' +
         '<div class="fc-pop">' + (pop != null && pop > 0 ? pop + '%' : '·') + '</div>' +
         '</div>';
     }).join("");
     const days = d.time.length;
     const fmeta = document.getElementById("wxFcMeta");
-    if (fmeta) fmeta.textContent = days + "-day outlook · " + Math.round(gMin) + "° to " + Math.round(gMax) + "°C (" + cToF(gMin) + "–" + cToF(gMax) + "°F)";
+    if (fmeta) fmeta.textContent = days + "-day outlook · " + cToF(gMin) + "° to " + cToF(gMax) + "°F";
   }
   async function reverseGeocode(lat, lon) {
     try {
