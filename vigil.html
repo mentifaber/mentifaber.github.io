@@ -213,6 +213,10 @@ body { font-size: 14px; }
 .err-msg { color: var(--ink-faint); font-size: 10.5px; font-style: normal; padding: .5rem 0; }
 .moonrow { display: flex; align-items: center; gap: .7rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); }
 .moon-emoji { font-size: 1.6rem; }
+.key-hint { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.1rem; padding: 1.4rem 1rem .2rem;
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.key-hint b { color: var(--gold); font-weight: 600; border: 1px solid var(--line); padding: .15em .45em; margin-right: .4em; }
+@media (max-width: 600px) { .key-hint { display: none; } }
 .footer-note { text-align: center; padding: 2.5rem 1rem 3rem; font-size: 9.5px; letter-spacing: .1em; color: var(--ink-faint); text-transform: uppercase; }
 
 /* ── globe ── */
@@ -312,6 +316,15 @@ body { font-size: 14px; }
   text-transform: uppercase; color: var(--ink-faint); pointer-events: none; }
 
 /* ── conflict feed ── */
+.conflict-layout { display: grid; grid-template-columns: 1fr 1.35fr; }
+@media (max-width: 900px) { .conflict-layout { grid-template-columns: 1fr; } }
+.conflict-layout > .pb:first-child { border-right: 1px solid var(--line-soft); }
+@media (max-width: 900px) { .conflict-layout > .pb:first-child { border-right: none; border-bottom: 1px solid var(--line-soft); } }
+.hl-item { padding: .55rem 0; border-top: 1px solid var(--line-soft); }
+.hl-item:first-child { border-top: none; }
+.hl-item a { color: var(--ink-soft); text-decoration: none; font-size: 11.5px; line-height: 1.5; display: block; }
+.hl-item a:hover { color: var(--gold); }
+.hl-meta { font-size: 8.5px; color: var(--ink-faint); letter-spacing: .08em; margin-top: .25rem; text-transform: uppercase; }
 .cf-item { display: grid; grid-template-columns: auto 1fr; gap: .7rem; padding: .6rem 0; border-top: 1px solid var(--line-soft); font-size: 11px; align-items: baseline; }
 .cf-item:first-child { border-top: none; }
 .cf-item .cf-geo { font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ember-hi); white-space: nowrap; }
@@ -489,6 +502,8 @@ body { font-size: 14px; }
         <button id="radarZoomIn" title="Zoom in">+</button>
         <button id="radarZoomOut" title="Zoom out">−</button>
         <button id="radarHome" title="Center on my location">⌖</button>
+        <button id="radarRain" class="on" title="Precipitation layer">RAIN</button>
+        <button id="radarSat" title="Infrared cloud layer">CLOUD</button>
         <div class="radar-time" id="radarTime">—</div>
         <input type="range" class="radar-scrub" id="radarScrub" min="0" max="0" value="0"/>
         <div class="radar-legend">
@@ -514,7 +529,10 @@ body { font-size: 14px; }
 
     <div class="hud-panel span2">
       <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-conflict"></span>Conflict Monitor</span><span class="ph-meta" id="conflictMeta">gdelt · global news geo</span></div>
-      <div class="pb" id="conflictBody"><p class="err-msg">Syncing…</p></div>
+      <div class="conflict-layout">
+        <div class="pb" id="conflictBody"><p class="err-msg">Syncing…</p></div>
+        <div class="pb" id="conflictHeadlines"><p class="err-msg">Loading headlines…</p></div>
+      </div>
     </div>
 
     <div class="hud-panel">
@@ -538,6 +556,12 @@ body { font-size: 14px; }
         <button data-min="4">M4+</button>
         <button data-min="5">M5+</button>
         <button data-min="6">M6+</button>
+      </div>
+      <div class="magfilter" id="timeFilter">
+        <button data-hours="0" class="on">7 DAYS</button>
+        <button data-hours="72">72H</button>
+        <button data-hours="24">24H</button>
+        <button data-hours="6">6H</button>
       </div>
     </div>
 
@@ -570,6 +594,7 @@ body { font-size: 14px; }
     </div>
 
   </div>
+  <div class="key-hint" id="keyHint"></div>
   <div class="footer-note">Vigil · client-side only · every feed above is fetched directly by your browser from its own source</div>
 </div>
 
@@ -774,6 +799,7 @@ body { font-size: 14px; }
     { id: "fx",       label: "FX rates",       host: "api.frankfurter.app" },
     { id: "wiki",     label: "World signal",   host: "en.wikipedia.org" },
     { id: "gdelt",    label: "Conflict geo",   host: "api.gdeltproject.org" },
+    { id: "gdeltdoc", label: "Headlines",      host: "api.gdeltproject.org" },
     { id: "quakes",   label: "Seismic",        host: "earthquake.usgs.gov" },
     { id: "iss",      label: "ISS position",   host: "api.wheretheiss.at" },
     { id: "kp",       label: "Geomagnetic",    host: "services.swpc.noaa.gov" },
@@ -1079,10 +1105,21 @@ body { font-size: 14px; }
      of our own. Tiles are drawn with `screen` compositing so precipitation glows
      against the dark basemap instead of washing it out. */
   const RADAR = {
-    host: null, frames: [], idx: 0, playing: true,
+    host: null, frames: [], satFrames: [], idx: 0, playing: true,
     lat: 39.8, lon: -98.6, zoom: 5,
     tiles: new Map(), loaded: 0, dragging: false,
+    showRain: true, showSat: false,
   };
+  // Satellite frames are a separate, shorter series on their own cadence, so pick
+  // the one nearest the radar frame's timestamp rather than assuming index parity.
+  function satFrameFor(t) {
+    if (!RADAR.satFrames.length) return null;
+    let best = RADAR.satFrames[0];
+    for (const f of RADAR.satFrames) {
+      if (Math.abs(f.time - t) < Math.abs(best.time - t)) best = f;
+    }
+    return best;
+  }
   let rCanvas, rCtx, rW = 0, rH = 0, rDPR = 1, radarTimer = null;
 
   function lon2px(lon, z) { return (lon + 180) / 360 * 256 * Math.pow(2, z); }
@@ -1181,18 +1218,25 @@ body { font-size: 14px; }
       const n = Math.pow(2, z);
       const x0 = Math.floor(originX / 256), x1 = Math.floor((originX + rW) / 256);
       const y0 = Math.floor(originY / 256), y1 = Math.floor((originY + rH) / 256);
+      // clouds first so precipitation reads on top of them
+      const layers = [];
+      const sat = RADAR.showSat ? satFrameFor(frame.time) : null;
+      if (sat) layers.push({ path: sat.path, colour: "0", opts: "0_0", alpha: 0.5 });
+      if (RADAR.showRain) layers.push({ path: frame.path, colour: "2", opts: "1_1", alpha: 0.95 });
       rCtx.save();
       rCtx.globalCompositeOperation = "screen";
-      rCtx.globalAlpha = 0.95;
-      for (let tx = x0; tx <= x1; tx++) {
-        for (let ty = y0; ty <= y1; ty++) {
-          if (ty < 0 || ty >= n) continue;
-          const wrapX = ((tx % n) + n) % n;
-          const url = RADAR.host + frame.path + "/256/" + z + "/" + wrapX + "/" + ty + "/2/1_1.png";
-          const img = radarTile(url);
-          if (img.complete && !img.failed && img.naturalWidth) {
-            rCtx.drawImage(img, tx * 256 - originX, ty * 256 - originY, 256, 256);
-            drawn++;
+      for (const L of layers) {
+        rCtx.globalAlpha = L.alpha;
+        for (let tx = x0; tx <= x1; tx++) {
+          for (let ty = y0; ty <= y1; ty++) {
+            if (ty < 0 || ty >= n) continue;
+            const wrapX = ((tx % n) + n) % n;
+            const url = RADAR.host + L.path + "/256/" + z + "/" + wrapX + "/" + ty + "/" + L.colour + "/" + L.opts + ".png";
+            const img = radarTile(url);
+            if (img.complete && !img.failed && img.naturalWidth) {
+              rCtx.drawImage(img, tx * 256 - originX, ty * 256 - originY, 256, 256);
+              drawn++;
+            }
           }
         }
       }
@@ -1246,11 +1290,14 @@ body { font-size: 14px; }
       const past = (d.radar && d.radar.past) || [];
       const now = (d.radar && d.radar.nowcast) || [];
       RADAR.frames = past.concat(now.map(f => Object.assign({ nowcast: true }, f)));
+      RADAR.satFrames = (d.satellite && (d.satellite.infrared || d.satellite.past)) || [];
+      const satBtn = document.getElementById("radarSat");
+      if (satBtn) satBtn.disabled = !RADAR.satFrames.length;
       if (!RADAR.frames.length) throw new Error("no frames");
       const scrub = document.getElementById("radarScrub");
       if (scrub) { scrub.max = String(RADAR.frames.length - 1); }
-      document.getElementById("radarMeta").textContent =
-        past.length + " past · " + now.length + " forecast frames";
+      document.getElementById("radarMeta").textContent = past.length + " past" +
+        (now.length ? " · " + now.length + " forecast" : "") + " frames";
       setRadarFrame(Math.max(0, past.length - 1));
       markOnline("radar");
     } catch (e) {
@@ -1294,6 +1341,16 @@ body { font-size: 14px; }
     document.getElementById("radarZoomOut").addEventListener("click", () => setRadarZoom(RADAR.zoom - 1));
     document.getElementById("radarHome").addEventListener("click", () => {
       if (homePos) { RADAR.lat = homePos.lat; RADAR.lon = homePos.lon; drawRadar(); }
+    });
+    document.getElementById("radarRain").addEventListener("click", e => {
+      RADAR.showRain = !RADAR.showRain;
+      e.currentTarget.classList.toggle("on", RADAR.showRain);
+      drawRadar();
+    });
+    document.getElementById("radarSat").addEventListener("click", e => {
+      RADAR.showSat = !RADAR.showSat;
+      e.currentTarget.classList.toggle("on", RADAR.showSat);
+      drawRadar();
     });
     document.getElementById("radarPlay").addEventListener("click", e => {
       RADAR.playing = !RADAR.playing;
@@ -1351,15 +1408,42 @@ body { font-size: 14px; }
         '<div class="cf-item"><span class="cf-geo">' + c.count + '×</span>' +
         (c.url ? '<a href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.name) + '</a>'
                : '<span>' + esc(c.name) + '</span>') + '</div>').join("");
-      document.getElementById("conflictMeta").textContent = conflictPoints.length + " geolocated · 24h";
+      document.getElementById("conflictMeta").textContent = conflictPoints.length + " geolocated · 12h";
       rebuildMarkers();
       drawGlobe();
       markOnline("conflict");
+      loadConflictHeadlines();
     } catch (e) {
       conflictPoints = [];
       el.innerHTML = '<p class="err-msg">Conflict geo feed unavailable. See Feed Diagnostics for the reason.</p>';
       markOffline("conflict");
       rebuildMarkers();
+    }
+  }
+
+  // The GEO endpoint gives locations; DOC gives the actual reporting. Runs after
+  // the map points so a slow or failed headline fetch never blanks the markers.
+  async function loadConflictHeadlines() {
+    const el = document.getElementById("conflictHeadlines");
+    if (!el) return;
+    try {
+      const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" +
+        encodeURIComponent(CONFLICT_QUERY + " sourcelang:eng") +
+        "&mode=artlist&maxrecords=14&sort=datedesc&format=json";
+      const d = await fetchJSON(url, null, "gdeltdoc", 25000);
+      const arts = (d && d.articles) || [];
+      if (!arts.length) throw new Error("no articles");
+      el.innerHTML = arts.slice(0, 12).map(a => {
+        // GDELT stamps seendate as YYYYMMDDTHHMMSSZ, which Date.parse won't take
+        const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(a.seendate || "");
+        const when = m ? timeAgo(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : "";
+        return '<div class="hl-item">' +
+          '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.title || a.url) + '</a>' +
+          '<div class="hl-meta">' + esc(a.domain || "") + (when ? " · " + when : "") +
+          (a.sourcecountry ? " · " + esc(a.sourcecountry) : "") + '</div></div>';
+      }).join("");
+    } catch (e) {
+      el.innerHTML = '<p class="err-msg">Headline feed unavailable — map points above are unaffected.</p>';
     }
   }
 
@@ -1837,7 +1921,7 @@ body { font-size: 14px; }
     const out = [];
     const now = Date.now();
     allQuakes.forEach((q, idx) => {
-      if (q.mag < quakeMinMag) return;
+      if (!quakePasses(q)) return;
       out.push({
         layer: "quakes", lat: q.lat, lon: q.lon,
         // scaled off M1.5 rather than zero: with ~400 quakes on screen a flat
@@ -2091,7 +2175,7 @@ body { font-size: 14px; }
     selectedQuakeIdx = idx;
     const q = allQuakes[idx];
     const detailEl = document.getElementById("quakeDetail");
-    if (q && quakeMinMag <= q.mag) {
+    if (quakePasses(q)) {
       detailEl.innerHTML = '<span class="qmag ' + (q.mag < 5 ? 'mod' : '') + '">' + q.mag.toFixed(1) + '</span>' +
         '<span class="qloc">' + esc(q.place) + '</span> · ' +
         '<span class="qtime">' + timeAgo(q.time) + '</span>';
@@ -2119,9 +2203,16 @@ body { font-size: 14px; }
     }
   }
 
-  let quakeMinMag = 0;
+  let quakeMinMag = 0, quakeMaxAgeH = 0;
+  // One predicate used by the list, the globe markers and selection alike —
+  // duplicating this condition is what previously let map and list drift apart.
+  function quakePasses(q) {
+    if (!q || q.mag < quakeMinMag) return false;
+    if (quakeMaxAgeH && Date.now() - q.time > quakeMaxAgeH * 3600000) return false;
+    return true;
+  }
   function renderQuakeList() {
-    const list = allQuakes.filter(q => q.mag >= quakeMinMag).slice(0, 12);
+    const list = allQuakes.filter(quakePasses).slice(0, 12);
     const listEl = document.getElementById("quakeList");
     listEl.innerHTML = list.map(q => {
       const qIdx = allQuakes.indexOf(q);
@@ -2136,12 +2227,23 @@ body { font-size: 14px; }
     const li = e.target.closest("li[data-idx]");
     if (li) selectQuake(Number(li.dataset.idx));
   });
+  document.querySelectorAll("#timeFilter button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#timeFilter button").forEach(b => b.classList.remove("on"));
+      btn.classList.add("on");
+      quakeMaxAgeH = Number(btn.dataset.hours);
+      if (selectedQuakeIdx !== null && !quakePasses(allQuakes[selectedQuakeIdx])) clearQuakeSelection();
+      renderQuakeList();
+      rebuildMarkers();
+      drawGlobe();
+    });
+  });
   document.querySelectorAll("#magFilter button").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#magFilter button").forEach(b => b.classList.remove("on"));
       btn.classList.add("on");
       quakeMinMag = Number(btn.dataset.min);
-      if (selectedQuakeIdx !== null && allQuakes[selectedQuakeIdx].mag < quakeMinMag) clearQuakeSelection();
+      if (selectedQuakeIdx !== null && !quakePasses(allQuakes[selectedQuakeIdx])) clearQuakeSelection();
       renderQuakeList();
       rebuildMarkers();
       drawGlobe();
@@ -2243,6 +2345,41 @@ body { font-size: 14px; }
     }, 500);
   });
 
+  /* ══════════════════════════ KEYBOARD ══════════════════════════ */
+  const SHORTCUTS = [["F", "fullscreen"], ["R", "spin"], ["Space", "radar"],
+    ["← →", "frame"], ["/", "search"], ["L", "seal"]];
+  function initKeys() {
+    document.addEventListener("keydown", e => {
+      const t = e.target;
+      // never hijack typing
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
+        if (e.key === "Escape") t.blur();
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      switch (e.key) {
+        case "f": case "F": e.preventDefault(); toggleFullscreen(); break;
+        case "r": case "R":
+          globe.spin = !globe.spin;
+          document.getElementById("globeSpin").classList.toggle("on", globe.spin);
+          break;
+        case " ": e.preventDefault(); document.getElementById("radarPlay").click(); break;
+        case "ArrowLeft": e.preventDefault(); setRadarFrame(RADAR.idx - 1); break;
+        case "ArrowRight": e.preventDefault(); setRadarFrame(RADAR.idx + 1); break;
+        case "/": {
+          e.preventDefault();
+          const el = document.getElementById("citySearch");
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+          el.focus();
+          break;
+        }
+        case "l": case "L": sealDoor(); break;
+      }
+    });
+    const hint = document.getElementById("keyHint");
+    if (hint) hint.innerHTML = SHORTCUTS.map(([k, d]) => '<span><b>' + k + '</b> ' + d + '</span>').join("");
+  }
+
   /* ══════════════════════════ INIT ══════════════════════════ */
   function startDashboard() {
     renderClocks();
@@ -2250,6 +2387,7 @@ body { font-size: 14px; }
 
     initGlobe();
     initRadar();
+    initKeys();
     renderDiagnostics();
     rebuildMarkers();
     drawGlobe();
