@@ -330,6 +330,13 @@ body { font-size: 14px; }
 .cf-item .cf-geo { font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ember-hi); white-space: nowrap; }
 .cf-item a { color: var(--ink-soft); text-decoration: none; line-height: 1.55; }
 .cf-item a:hover { color: var(--gold); }
+.volc-item { display: grid; grid-template-columns: auto 1fr; gap: .7rem; padding: .6rem 0; border-top: 1px solid var(--line-soft); font-size: 11px; align-items: baseline; }
+.volc-item:first-child { border-top: none; }
+.volc-item .volc-level { font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; padding: .15rem .4rem; border: 1px solid currentColor; }
+.volc-item .volc-name { color: var(--ink-soft); }
+.volc-item .volc-meta { display: block; font-size: 9px; color: var(--ink-faint); margin-top: .2rem; letter-spacing: .04em; }
+.volc-item a { color: inherit; text-decoration: none; }
+.volc-item a:hover .volc-name { color: var(--gold); }
 
 @media (max-width: 600px) {
   body { font-size: 13px; }
@@ -543,6 +550,16 @@ body { font-size: 14px; }
     <div class="hud-panel">
       <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-alerts"></span>Active Alerts</span><span class="ph-meta">NWS severe weather</span></div>
       <div class="pb" id="alertsBody"><p class="err-msg">Syncing…</p></div>
+    </div>
+
+    <div class="hud-panel">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-tsunami"></span>Tsunami Watch</span><span class="ph-meta" id="tsunamiMeta">NWS · Pacific &amp; Atlantic</span></div>
+      <div class="pb" id="tsunamiBody"><p class="err-msg">Syncing…</p></div>
+    </div>
+
+    <div class="hud-panel span2">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-volcano"></span>Volcanic Activity</span><span class="ph-meta" id="volcanoMeta">USGS · elevated status</span></div>
+      <div class="pb" id="volcanoBody"><p class="err-msg">Syncing…</p></div>
     </div>
 
     <div class="hud-panel span2">
@@ -805,6 +822,9 @@ body { font-size: 14px; }
     { id: "kp",       label: "Geomagnetic",    host: "services.swpc.noaa.gov" },
     { id: "solar",    label: "Solar wind",     host: "services.swpc.noaa.gov" },
     { id: "alerts",   label: "Severe weather", host: "api.weather.gov" },
+    { id: "tsunami",  label: "Tsunami",        host: "api.weather.gov" },
+    { id: "volcano",  label: "Volcanic",       host: "volcanoes.usgs.gov" },
+    { id: "solarmag", label: "Solar magnetic", host: "services.swpc.noaa.gov" },
     { id: "radar",    label: "Radar",          host: "api.rainviewer.com" },
     { id: "launches", label: "Launches",       host: "ll.thespacedevs.com" },
     { id: "apod",     label: "NASA APOD",      host: "api.nasa.gov" },
@@ -1421,7 +1441,10 @@ body { font-size: 14px; }
       const url = "https://api.gdeltproject.org/api/v2/geo/geo?query=" +
         encodeURIComponent(CONFLICT_QUERY + " sourcelang:eng") +
         "&format=GeoJSON&timespan=12h&maxpoints=60";
-      const d = await fetchJSON(url, null, "gdelt", 25000);
+      // Successful GDELT responses have landed in well under 10s in practice; a
+      // shorter timeout surfaces a real failure sooner without cutting off a
+      // request that would otherwise have succeeded.
+      const d = await fetchJSON(url, null, "gdelt", 15000);
       const feats = (d && d.features) || [];
       conflictPoints = feats.filter(f => f.geometry && f.geometry.type === "Point").map(f => {
         const p = f.properties || {};
@@ -1463,7 +1486,7 @@ body { font-size: 14px; }
       const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" +
         encodeURIComponent(CONFLICT_QUERY + " sourcelang:eng") +
         "&mode=artlist&maxrecords=14&sort=datedesc&format=json";
-      const d = await fetchJSON(url, null, "gdeltdoc", 25000);
+      const d = await fetchJSON(url, null, "gdeltdoc", 15000);
       const arts = (d && d.articles) || [];
       if (!arts.length) throw new Error("no articles");
       el.innerHTML = arts.slice(0, 12).map(a => {
@@ -1506,9 +1529,15 @@ body { font-size: 14px; }
       return null;
     }
     if (typeof data[0] === "object") {
+      // NOAA's various endpoints don't agree on key casing (some send "Kp",
+      // others "kp"/"kp_index"); match case-insensitively rather than assuming one.
       for (let i = data.length - 1; i >= 0; i--) {
         const r = data[i] || {};
-        const v = Number(r.kp_index != null ? r.kp_index : r.estimated_kp != null ? r.estimated_kp : r.kp);
+        let v = null;
+        for (const key of Object.keys(r)) {
+          const lk = key.toLowerCase();
+          if (lk === "kp_index" || lk === "estimated_kp" || lk === "kp") { v = Number(r[key]); break; }
+        }
         if (isFinite(v)) return clampKp(v);
       }
     }
@@ -1526,6 +1555,21 @@ body { font-size: 14px; }
     }
     return null;
   }
+  // mag-1-day.json is a separate SWPC product from plasma-1-day.json — same
+  // directory, same cadence, carries the interplanetary magnetic field (bt/bz
+  // in nT, GSM coordinates) that the plasma file doesn't. Bz south of roughly
+  // -5nT is the standard rule-of-thumb threshold favoring visible aurora.
+  function parseSolarMag(data) {
+    if (!Array.isArray(data) || data.length < 2 || !Array.isArray(data[0])) return null;
+    const head = data[0].map(h => String(h).toLowerCase());
+    const bti = head.indexOf("bt"), bzi = head.indexOf("bz_gsm") >= 0 ? head.indexOf("bz_gsm") : head.indexOf("bz");
+    for (let i = data.length - 1; i > 0; i--) {
+      const bt = bti >= 0 ? Number(data[i][bti]) : null;
+      const bz = bzi >= 0 ? Number(data[i][bzi]) : null;
+      if (isFinite(bz) || isFinite(bt)) return { bt: isFinite(bt) ? bt : null, bz: isFinite(bz) ? bz : null };
+    }
+    return null;
+  }
 
   async function loadSpaceWeather() {
     const el = document.getElementById("spaceBody");
@@ -1536,15 +1580,17 @@ body { font-size: 14px; }
       // Fetch both products independently. Previously a Kp parse failure threw
       // before the solar-wind request was ever made, blanking the whole panel
       // while diagnostics still reported the Kp fetch itself as online.
-      const [kpRes, swRes] = await Promise.allSettled([
+      const [kpRes, swRes, magRes] = await Promise.allSettled([
         fetchFirst([
           "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",
           "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
         ], null, "kp"),
         fetchJSON("https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json", null, "solar"),
+        fetchJSON("https://services.swpc.noaa.gov/products/solar-wind/mag-1-day.json", null, "solarmag"),
       ]);
       const kpVal = kpRes.status === "fulfilled" ? parseKp(kpRes.value) : null;
       const solar = swRes.status === "fulfilled" ? parseSolarWind(swRes.value) : null;
+      const mag = magRes.status === "fulfilled" ? parseSolarMag(magRes.value) : null;
       if (kpVal == null && solar == null) throw new Error("no space weather data");
       let html = "";
       if (kpVal != null) {
@@ -1566,6 +1612,8 @@ body { font-size: 14px; }
         (kpVal != null ? '<div class="sw-cell">Kp now<b>' + kpVal + '</b></div>' : "") +
         (solar ? '<div class="sw-cell">Solar wind<b>' + Math.round(solar.speed) + ' km/s</b></div>' : "") +
         (solar && solar.density != null ? '<div class="sw-cell">Density<b>' + solar.density.toFixed(1) + '/cm³</b></div>' : "") +
+        (mag && mag.bz != null ? '<div class="sw-cell">Bz (IMF)<b style="color:' +
+          (mag.bz <= -5 ? "var(--ember-hi)" : "var(--ink)") + '">' + mag.bz.toFixed(1) + ' nT</b></div>' : "") +
         (kpVal != null ? '<div class="sw-cell">Aurora<b>' +
           (kpVal >= 5 ? "Likely" : kpVal >= 4 ? "Possible" : "Unlikely") + '</b></div>' : "") +
         '</div>';
@@ -1636,7 +1684,132 @@ body { font-size: 14px; }
     }
   }
 
-  /* ══════════════════════════ WORLD EVENTS (Wikipedia) ══════════════════════════ */
+  /* ══════════════════════════ TSUNAMI WATCH (NWS) ══════════════════════════
+     tsunami.gov itself (NOAA's NTWC/PTWC bulletins) sends no CORS header, so a
+     direct browser fetch fails outright. NWS's own alerts API mirrors tsunami
+     warnings/advisories/watches for US and territorial coasts as ordinary CAP
+     alerts, filtered here by the `event` parameter — a documented filter on
+     this endpoint, unlike the `limit` param that 400s it. */
+  async function loadTsunami() {
+    const el = document.getElementById("tsunamiBody");
+    try {
+      const url = "https://api.weather.gov/alerts/active?event=" +
+        encodeURIComponent("Tsunami Warning,Tsunami Watch,Tsunami Advisory");
+      const d = await fetchJSON(url, null, "tsunami", 20000);
+      const feats = (d && d.features) || [];
+      tsunamiPoints = [];
+      const rows = [];
+      for (const f of feats) {
+        const p = f.properties || {};
+        rows.push({ event: p.event || "Tsunami Alert", area: p.areaDesc || "—", sent: p.sent ? Date.parse(p.sent) : null });
+        if (f.geometry && f.geometry.type === "Polygon" && f.geometry.coordinates[0]) {
+          const ring = f.geometry.coordinates[0];
+          let sx = 0, sy = 0;
+          for (const c of ring) { sx += c[0]; sy += c[1]; }
+          tsunamiPoints.push({
+            lon: sx / ring.length, lat: sy / ring.length,
+            event: p.event || "Tsunami Alert", area: (p.areaDesc || "—").split(";")[0],
+            sent: p.sent ? Date.parse(p.sent) : null,
+          });
+        }
+      }
+      const seen = new Set();
+      const unique = rows.filter(r => {
+        const k = r.event + "|" + r.area;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      el.innerHTML = unique.length
+        ? unique.slice(0, 10).map(r =>
+            '<div class="cf-item"><span class="cf-geo" style="color:var(--ember-hi)">' + esc(r.event) + '</span>' +
+            '<span><span style="color:var(--ink-faint);font-size:10px">' +
+            esc(r.area.split(";").map(s => s.trim()).filter(Boolean).slice(0, 3).join(" · ")) +
+            '</span></span></div>').join("")
+        : '<p class="err-msg">No active tsunami warnings, watches, or advisories.</p>';
+      document.getElementById("tsunamiMeta").textContent = unique.length
+        ? unique.length + " active · NWS"
+        : "clear · NWS · Pacific & Atlantic";
+      rebuildMarkers();
+      drawGlobe();
+      markOnline("tsunami");
+    } catch (e) {
+      tsunamiPoints = [];
+      el.innerHTML = '<p class="err-msg">Tsunami feed unavailable. See Feed Diagnostics.</p>';
+      markOffline("tsunami");
+      rebuildMarkers();
+    }
+  }
+
+  /* ══════════════════════════ VOLCANIC ACTIVITY (USGS HANS) ══════════════════════════
+     getElevatedVolcanoes lists every volcano currently at WATCH/WARNING/ADVISORY,
+     but carries no coordinates — those live on the notice detail endpoint instead,
+     keyed by vnum inside notice_sections[]. Multiple volcanoes usually share one
+     notice (one observatory's roundup), so notices are fetched once each, deduped
+     by notice_identifier, rather than once per volcano. */
+  async function loadVolcano() {
+    const el = document.getElementById("volcanoBody");
+    try {
+      const list = await fetchJSON("https://volcanoes.usgs.gov/hans-public/api/volcano/getElevatedVolcanoes", null, "volcano", 15000);
+      if (!Array.isArray(list) || !list.length) {
+        volcanoPoints = [];
+        el.innerHTML = '<p class="err-msg">No volcanoes currently at elevated status.</p>';
+        document.getElementById("volcanoMeta").textContent = "clear · USGS";
+        rebuildMarkers();
+        drawGlobe();
+        markOnline("volcano");
+        return;
+      }
+      const noticeIds = Array.from(new Set(list.map(v => v.notice_identifier).filter(Boolean)));
+      const notices = await Promise.allSettled(
+        noticeIds.map(id => fetchJSON("https://volcanoes.usgs.gov/hans-public/api/notice/getNotice/" + encodeURIComponent(id), null, null, 15000))
+      );
+      const byVnum = {};
+      notices.forEach(r => {
+        if (r.status !== "fulfilled") return;
+        (r.value.notice_sections || []).forEach(s => { if (s.vnum) byVnum[s.vnum] = s; });
+      });
+      const RANK = { WARNING: 0, WATCH: 1, ADVISORY: 2, UNASSIGNED: 3 };
+      const merged = list.map(v => {
+        const s = byVnum[v.vnum] || {};
+        return {
+          name: s.vName || v.volcano_name, vnum: v.vnum,
+          level: v.alert_level, color: v.color_code,
+          obs: v.obs_fullname, sent: v.sent_unixtime ? v.sent_unixtime * 1000 : null,
+          lat: typeof s.lat === "number" ? s.lat : null, lon: typeof s.lng === "number" ? s.lng : null,
+          url: s.vUrl || v.notice_url, region: s.region || null,
+        };
+      }).sort((a, b) => (RANK[a.level] ?? 9) - (RANK[b.level] ?? 9));
+      volcanoPoints = merged.filter(v => v.lat != null && v.lon != null);
+      const COLOR_HEX = { RED: "#d94030", ORANGE: "#e0632e", YELLOW: "#d9a441", GREEN: "#3fa34d", UNASSIGNED: "#7a7268" };
+      el.innerHTML = merged.map(v => {
+        const hex = COLOR_HEX[v.color] || "#7a7268";
+        return '<div class="volc-item">' +
+          '<span class="volc-level" style="color:' + hex + '">' + esc(v.level || "—") + '</span>' +
+          '<span>' +
+          (v.url ? '<a href="' + esc(v.url) + '" target="_blank" rel="noopener"><span class="volc-name">' + esc(v.name) + '</span></a>' : '<span class="volc-name">' + esc(v.name) + '</span>') +
+          '<span class="volc-meta">' + esc(v.obs || "") + (v.sent ? " · " + timeAgo(v.sent) : "") +
+          (v.region ? " · " + esc(v.region) : "") + '</span></span></div>';
+      }).join("");
+      document.getElementById("volcanoMeta").textContent = merged.length + " elevated · USGS";
+      rebuildMarkers();
+      drawGlobe();
+      markOnline("volcano");
+    } catch (e) {
+      volcanoPoints = [];
+      el.innerHTML = '<p class="err-msg">Volcano feed unavailable. See Feed Diagnostics.</p>';
+      markOffline("volcano");
+      rebuildMarkers();
+    }
+  }
+
+  /* ══════════════════════════ WORLD EVENTS (Wikipedia) ══════════════════════════
+     Wikipedia's `story` field carries embedded <a href="./Article"> tags — MediaWiki's
+     own relative link convention, resolving fine on wikipedia.org but not from a page
+     served at a different origin, where the browser resolves them against this site
+     instead and 404s. Tags are stripped and the story re-wrapped in the absolute URL
+     each item already carries in links[0].content_urls, rather than trusting the
+     embedded markup. */
   async function loadEvents() {
     const el = document.getElementById("eventsBody");
     try {
@@ -1646,9 +1819,12 @@ body { font-size: 14px; }
       const news = data.news || [];
       if (!news.length) throw new Error("empty");
       el.innerHTML = news.map(n => {
-        const link = (n.links && n.links[0] && n.links[0].content_urls) ? n.links[0].content_urls.desktop.page : null;
-        const story = n.story.replace(/<[^>]+>/g, m => /^<a /.test(m) ? m : (m === "</a>" ? m : ""));
-        return '<div class="evt-item">' + n.story + (link ? '' : '') + '</div>';
+        const l0 = n.links && n.links[0];
+        const link = (l0 && l0.content_urls && l0.content_urls.desktop) ? l0.content_urls.desktop.page : null;
+        const text = esc((n.story || "").replace(/<[^>]+>/g, ""));
+        return '<div class="evt-item">' +
+          (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">' + text + '</a>' : text) +
+          '</div>';
       }).join("");
       markOnline("events");
     } catch (e) {
@@ -1732,6 +1908,8 @@ body { font-size: 14px; }
     { id: "alerts",   label: "Alerts",   color: "#d9a441", on: true },
     { id: "iss",      label: "Orbital",  color: "#e8cd9a", on: true },
     { id: "launch",   label: "Pads",     color: "#7ec8e3", on: true },
+    { id: "volcano",  label: "Volcanic", color: "#e0632e", on: true },
+    { id: "tsunami",  label: "Tsunami",  color: "#4a9fd9", on: true },
     { id: "home",     label: "You",      color: "#c8a96e", on: true },
   ];
   const layerOn = {};
@@ -2024,6 +2202,28 @@ body { font-size: 14px; }
         rows: [["Pad", p.pad], ["Vehicle", p.vehicle], ["T-0", p.when]],
       });
     });
+    volcanoPoints.forEach(v => {
+      const isSevere = v.color === "RED" || v.color === "ORANGE";
+      out.push({
+        layer: "volcano", lat: v.lat, lon: v.lon, r: isSevere ? 4.2 : 3.4,
+        color: v.color === "RED" ? "#d94030" : v.color === "ORANGE" ? "#e0632e" : v.color === "YELLOW" ? "#d9a441" : "#7a7268",
+        fill: isSevere ? "rgba(224,99,46,.26)" : null,
+        pulse: isSevere,
+        kind: "Volcanic activity", title: v.name,
+        rows: [["Alert level", v.level || "—"], ["Color code", v.color || "—"],
+               ["Observatory", v.obs || "—"], ["Position", fmtLat(v.lat) + " " + fmtLon(v.lon)]],
+        link: v.url, linkLabel: "Open observatory page ↗",
+      });
+    });
+    tsunamiPoints.forEach(t => {
+      out.push({
+        layer: "tsunami", lat: t.lat, lon: t.lon, r: 4, color: "#4a9fd9",
+        fill: "rgba(74,159,217,.24)", pulse: true,
+        kind: "Tsunami alert", title: t.event,
+        rows: [["Area", t.area], ["Issued", t.sent ? timeAgo(t.sent) : "—"],
+               ["Position", fmtLat(t.lat) + " " + fmtLon(t.lon)]],
+      });
+    });
     if (issPos) {
       out.push({
         layer: "iss", lat: issPos.lat, lon: issPos.lon, r: 4, color: "#e8cd9a",
@@ -2234,6 +2434,7 @@ body { font-size: 14px; }
   /* ══════════════════════════ GLOBAL SENSORS: quakes + ISS ══════════════════════════ */
   let allQuakes = [], issPos = null, selectedQuakeIdx = null;
   let conflictPoints = [], alertPoints = [], launchPads = [], homePos = null;
+  let volcanoPoints = [], tsunamiPoints = [];
 
   function selectQuake(idx) {
     selectedQuakeIdx = idx;
@@ -2470,6 +2671,8 @@ body { font-size: 14px; }
     loadConflictHeadlines();
     loadSpaceWeather();
     loadAlerts();
+    loadTsunami();
+    loadVolcano();
     loadRadar();
 
     timers.markets = setInterval(loadMarkets, 60000);
@@ -2481,6 +2684,12 @@ body { font-size: 14px; }
     timers.headlines = setInterval(loadConflictHeadlines, 900000);
     timers.space = setInterval(loadSpaceWeather, 300000);
     timers.alerts = setInterval(loadAlerts, 180000);
+    // Tsunami rides the same trusted CAP-alert host as Active Alerts, so it
+    // shares that cadence. Volcanic status is inherently slow-moving (weekly
+    // observatory updates) — 30 min avoids hammering USGS for data that
+    // rarely changes within a session.
+    timers.tsunami = setInterval(loadTsunami, 180000);
+    timers.volcano = setInterval(loadVolcano, 1800000);
     timers.diag = setInterval(renderDiagnostics, 15000);
     timers.radar = setInterval(loadRadar, 300000);
     timers.weather = setInterval(refreshWeather, 300000);
