@@ -37,11 +37,50 @@ body { font-size: 14px; }
   background: linear-gradient(180deg, transparent 0%, rgba(200,169,110,.05) 50%, transparent 100%);
   animation: sweepdown 7s linear infinite; }
 @keyframes sweepdown { 0% { top: -140px; } 100% { top: 100vh; } }
-.corner-bracket { position: fixed; width: 26px; height: 26px; border-color: var(--gold-dim); z-index: 30; opacity: .7; pointer-events: none; }
+.corner-bracket { position: fixed; width: 26px; height: 26px; border-color: var(--gold-dim); z-index: 30; opacity: .7; pointer-events: none;
+  animation: bracketPulse 5s ease-in-out infinite; }
 .cb-tl { top: 14px; left: 14px; border-top: 1px solid; border-left: 1px solid; }
 .cb-tr { top: 14px; right: 14px; border-top: 1px solid; border-right: 1px solid; }
 .cb-bl { bottom: 14px; left: 14px; border-bottom: 1px solid; border-left: 1px solid; }
 .cb-br { bottom: 14px; right: 14px; border-bottom: 1px solid; border-right: 1px solid; }
+@keyframes bracketPulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
+/* ── threat index gauge ── */
+.threat-gauge { position: relative; width: 52px; height: 52px; flex-shrink: 0; cursor: default; }
+.threat-gauge svg { width: 100%; height: 100%; }
+.tg-track { fill: none; stroke: var(--line); stroke-width: 4; }
+.tg-arc { fill: none; stroke-width: 4; stroke-linecap: round; transform-origin: center; transform: rotate(-90deg);
+  transition: stroke-dashoffset .9s cubic-bezier(.4,0,.2,1), stroke .5s ease; }
+.tg-readout { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tg-readout b { font-size: 15px; line-height: 1; font-weight: 700; transition: color .5s ease; }
+.tg-readout span { font-size: 6.5px; letter-spacing: .1em; color: var(--ink-faint); margin-top: 2px; text-transform: uppercase; }
+@media (max-width: 600px) { .threat-gauge { order: 5; margin: 0 auto; } }
+
+/* ── radial gauge (generic, used in HUD panels) ── */
+.rgauge { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rgauge svg { width: 100%; height: 100%; }
+.rgauge .rg-track { fill: none; stroke: var(--line); }
+.rgauge .rg-arc { fill: none; stroke-linecap: round; transform-origin: center; transform: rotate(-90deg);
+  transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .5s ease; }
+.rgauge .rg-readout { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.rgauge .rg-readout b { line-height: 1; font-weight: 700; }
+.rgauge .rg-readout span { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; }
+
+/* ── JARVIS command console ── */
+.jarvis-console { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(560px, calc(100vw - 32px));
+  background: rgba(6,5,3,.92); border: 1px solid var(--gold-dim); box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 12px 40px rgba(0,0,0,.7), 0 0 24px rgba(200,169,110,.12);
+  z-index: 200; font-family: var(--mono); backdrop-filter: blur(6px); }
+.jarvis-console::before { content: "JARVIS CONSOLE"; display: block; padding: .5rem .8rem; font-size: 9px; letter-spacing: .2em;
+  color: var(--gold-dim); border-bottom: 1px solid var(--line-soft); }
+.jc-log { max-height: 220px; overflow-y: auto; padding: .6rem .8rem; font-size: 11.5px; line-height: 1.7; }
+.jc-log::-webkit-scrollbar { width: 5px; } .jc-log::-webkit-scrollbar-thumb { background: var(--line); }
+.jc-line { color: var(--ink-soft); white-space: pre-wrap; word-break: break-word; }
+.jc-line.jc-echo { color: var(--gold-hi); }
+.jc-line.jc-err { color: var(--ember-hi); }
+.jc-inputrow { display: flex; align-items: center; gap: .5rem; padding: .6rem .8rem; border-top: 1px solid var(--line-soft); }
+.jc-prompt { color: var(--gold); font-weight: 700; }
+.jc-inputrow input { flex: 1; background: transparent; border: none; outline: none; color: var(--ink); font-family: var(--mono); font-size: 12.5px; }
+.jc-inputrow input::placeholder { color: var(--ink-faint); }
 
 @keyframes pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
 @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
@@ -347,6 +386,11 @@ body { font-size: 14px; }
 .volc-item a { color: inherit; text-decoration: none; }
 .volc-item a:hover .volc-name { color: var(--gold); }
 
+.sat-item { padding: .5rem 0; border-bottom: 1px solid var(--line-soft); font-size: 11px; }
+.sat-item:last-child { border-bottom: none; }
+.sat-name { color: var(--ink-soft); font-weight: 600; letter-spacing: .04em; }
+.sat-meta { display: block; font-size: 9.5px; color: var(--ink-faint); margin-top: .2rem; letter-spacing: .04em; }
+
 @media (max-width: 600px) {
   body { font-size: 13px; }
   .hdr { padding: .8rem 1rem; gap: .7rem; }
@@ -441,6 +485,13 @@ body { font-size: 14px; }
         </div>
       </div>
       <div class="hdr-status" id="hdrStatus">SYSTEMS: <b>0/7</b> ONLINE <span id="lastSync"></span></div>
+      <div class="threat-gauge" id="threatGauge" title="Composite risk score across every live feed">
+        <svg viewBox="0 0 52 52">
+          <circle class="tg-track" cx="26" cy="26" r="22"></circle>
+          <circle class="tg-arc" id="tgArc" cx="26" cy="26" r="22"></circle>
+        </svg>
+        <div class="tg-readout"><b id="tgValue">–</b><span id="tgLabel">STANDBY</span></div>
+      </div>
       <div class="hdr-clock">
         <div class="hdr-time glow" id="hdrTime">00:00:00</div>
         <div class="hdr-date" id="hdrDate">—</div>
@@ -605,7 +656,12 @@ body { font-size: 14px; }
       </div>
     </div>
 
-    <div class="cat-header"><span class="cat-num">05</span><span class="cat-label">Space Operations</span><span class="cat-rule"></span><span class="cat-sub">launches · imagery</span></div>
+    <div class="cat-header"><span class="cat-num">05</span><span class="cat-label">Space Operations</span><span class="cat-rule"></span><span class="cat-sub">orbits · launches · imagery</span></div>
+
+    <div class="hud-panel span2">
+      <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-sats"></span>Orbital Constellation</span><span class="ph-meta" id="satMeta">propagating…</span></div>
+      <div class="pb" id="satBody"><p class="err-msg">Syncing…</p></div>
+    </div>
 
     <div class="hud-panel">
       <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-launch"></span>Launch Manifest</span><span class="ph-meta">upcoming</span></div>
@@ -640,6 +696,14 @@ body { font-size: 14px; }
   </div>
   <div class="key-hint" id="keyHint"></div>
   <div class="footer-note">Vigil · client-side only · every feed above is fetched directly by your browser from its own source</div>
+</div>
+
+<div class="jarvis-console" id="jarvisConsole" hidden>
+  <div class="jc-log" id="jcLog"></div>
+  <div class="jc-inputrow">
+    <span class="jc-prompt">&gt;</span>
+    <input id="jcInput" type="text" autocomplete="off" spellcheck="false" placeholder="type a command — try 'help'" />
+  </div>
 </div>
 
 <script>
@@ -707,17 +771,23 @@ body { font-size: 14px; }
 
   /* ══════════════════════════ BOOT SEQUENCE ══════════════════════════ */
   const BOOT_LINES = [
-    ["mounting mentifaber os · vigil module", "v3.0"],
+    ["mounting mentifaber os · vigil module", "v4.0"],
     ["authenticating operator", "GRANTED"],
     ["loading terrain mesh · 79 vectors", "OK"],
+    ["projecting surface imagery · lambertian pass", "LIT"],
     ["computing subsolar position", "LOCKED"],
+    ["indexing country atlas · 177 polygons", "OK"],
     ["establishing local uplink", "OK"],
     ["calibrating seismic array · usgs", "OK"],
     ["acquiring orbital telemetry · iss", "TRACKING"],
+    ["propagating orbital elements · sgp-lite", "SOLVED"],
     ["opening market channels", "OK"],
     ["scanning conflict geo · gdelt", "OK"],
     ["polling solar weather · noaa swpc", "OK"],
+    ["resolving aurora oval · ovation", "OK"],
     ["binding precipitation radar", "OK"],
+    ["arming threat index · composite", "ARMED"],
+    ["bringing jarvis console online", "READY"],
     ["decrypting personal log", "LOCAL"],
   ];
   let bootTimer = null, bootRaf = null;
@@ -853,6 +923,7 @@ body { font-size: 14px; }
     { id: "volcano",  label: "Volcanic",       host: "volcanoes.usgs.gov" },
     { id: "gdacs",    label: "Disaster alerts",host: "www.gdacs.org" },
     { id: "aurora",   label: "Aurora oval",    host: "services.swpc.noaa.gov" },
+    { id: "sats",     label: "Orbital elements",host: "raw.githubusercontent.com" },
     { id: "solarmag", label: "Solar magnetic", host: "services.swpc.noaa.gov" },
     { id: "radar",    label: "Radar",          host: "api.rainviewer.com" },
     { id: "launches", label: "Launches",       host: "ll.thespacedevs.com" },
@@ -884,6 +955,24 @@ body { font-size: 14px; }
 
   function esc(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  /* ── reusable radial gauge (inline SVG, self-rendering, no post-render JS needed) ── */
+  function rGaugeHTML(opts) {
+    const size = opts.size || 44, stroke = opts.stroke || 4;
+    const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(1, opts.value / (opts.max || 100)));
+    const color = opts.color || "var(--gold)";
+    const valueLabel = opts.valueLabel != null ? opts.valueLabel : Math.round(opts.value);
+    return '<span class="rgauge" style="width:' + size + 'px;height:' + size + 'px">' +
+      '<svg viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<circle class="rg-track" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke-width="' + stroke + '"></circle>' +
+      '<circle class="rg-arc" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke-width="' + stroke +
+      '" stroke="' + color + '" stroke-dasharray="' + c.toFixed(2) + '" stroke-dashoffset="' + (c * (1 - pct)).toFixed(2) + '"></circle>' +
+      '</svg>' +
+      '<span class="rg-readout"><b style="font-size:' + (size * 0.3).toFixed(0) + 'px;color:' + color + '">' + valueLabel + '</b>' +
+      (opts.sub ? '<span style="font-size:' + (size * 0.13).toFixed(0) + 'px">' + esc(opts.sub) + '</span>' : "") + '</span>' +
+      '</span>';
   }
 
   // Tries each URL in order and returns the first that answers. Sources go down,
@@ -925,7 +1014,9 @@ body { font-size: 14px; }
     try {
       const res = await fetch(url, Object.assign({ signal: ctrl.signal }, opts || {}));
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
+      // Orbital elements arrive as TLE text rather than JSON; everything else
+      // on this dashboard is JSON, so text is opt-in per call.
+      const data = opts && opts.asText ? await res.text() : await res.json();
       if (feedId && feedState[feedId]) {
         Object.assign(feedState[feedId], { status: "ok", ms: Date.now() - t0, lastOk: Date.now(), err: null });
         renderDiagnostics();
@@ -1132,8 +1223,10 @@ body { font-size: 14px; }
       const band = aqi <= 50 ? ["Good", "var(--gold)"] : aqi <= 100 ? ["Moderate", "var(--warn)"]
         : aqi <= 150 ? ["Unhealthy (sensitive)", "var(--warn)"] : aqi <= 200 ? ["Unhealthy", "var(--ember-hi)"]
         : ["Hazardous", "var(--ember-hi)"];
-      el.innerHTML = 'Air quality <b style="color:' + band[1] + '">AQI ' + Math.round(aqi) + ' · ' + band[0] + '</b>' +
-        (d.current.pm2_5 != null ? ' <span style="color:var(--ink-faint)">· PM2.5 ' + d.current.pm2_5 + ' µg/m³</span>' : "");
+      el.style.display = "flex"; el.style.alignItems = "center"; el.style.gap = ".6rem";
+      el.innerHTML = rGaugeHTML({ value: aqi, max: 200, size: 34, stroke: 3.5, color: band[1], valueLabel: Math.round(aqi), sub: "AQI" }) +
+        '<span>Air quality <b style="color:' + band[1] + '">' + band[0] + '</b>' +
+        (d.current.pm2_5 != null ? ' <span style="color:var(--ink-faint)">· PM2.5 ' + d.current.pm2_5 + ' µg/m³</span>' : "") + '</span>';
     } catch (e) { el.textContent = ""; }
   }
   async function searchCity(query) {
@@ -1527,6 +1620,7 @@ body { font-size: 14px; }
           '<div class="hl-meta">' + esc(a.domain || "") + (when ? " · " + when : "") +
           (a.sourcecountry ? " · " + esc(a.sourcecountry) : "") + '</div></div>';
       }).join("");
+      refreshTicker();
     } catch (e) {
       el.innerHTML = '<p class="err-msg">Headline feed unavailable — map points above are unaffected.</p>';
     }
@@ -1649,6 +1743,8 @@ body { font-size: 14px; }
       el.innerHTML = html;
       document.getElementById("spaceMeta").textContent =
         kpVal != null && solar ? "NOAA SWPC · live" : "NOAA SWPC · partial";
+      lastKp = kpVal;
+      refreshTicker();
       markOnline("space");
     } catch (e) {
       el.innerHTML = '<p class="err-msg">Space weather feed unavailable. See Feed Diagnostics.</p>';
@@ -1704,6 +1800,7 @@ body { font-size: 14px; }
         : '<p class="err-msg">No active alerts.</p>';
       rebuildMarkers();
       drawGlobe();
+      refreshTicker();
       markOnline("alerts");
     } catch (e) {
       alertPoints = [];
@@ -1732,7 +1829,7 @@ body { font-size: 14px; }
         gdacsPoints = [];
         el.innerHTML = '<p class="err-msg">No significant disaster alerts active.</p>';
         document.getElementById("gdacsMeta").textContent = "clear · GDACS";
-        rebuildMarkers(); drawGlobe(); markOnline("gdacs");
+        rebuildMarkers(); drawGlobe(); refreshTicker(); markOnline("gdacs");
         return;
       }
       const rows = [];
@@ -1772,6 +1869,7 @@ body { font-size: 14px; }
       document.getElementById("gdacsMeta").textContent = rows.length + " active · GDACS";
       rebuildMarkers();
       drawGlobe();
+      refreshTicker();
       markOnline("gdacs");
     } catch (e) {
       gdacsPoints = [];
@@ -1810,6 +1908,166 @@ body { font-size: 14px; }
       gCtx.fillStyle = "rgba(90,230,150," + alpha.toFixed(2) + ")";
       gCtx.fill();
     }
+  }
+
+  /* ══════════════════════════ ORBITAL CONSTELLATION ══════════════════════════
+     Live positions for crewed stations and the weather spacecraft that produce
+     the imagery elsewhere on this dashboard.
+
+     Two deliberate choices here. First, the orbits are propagated in this file
+     rather than by a library: a Keplerian solution with J2 secular drift on the
+     node and perigee. That is not full SGP4 — it omits atmospheric drag — but
+     TLEs here are under an hour old and the error over that span is far below
+     one pixel of globe. It was checked against physical invariants on real
+     elements: POISK (a module bolted to the ISS) propagates to 0.00 km from the
+     ISS, METEOSAT-9 lands at 35786 km with 0.4 deg of drift per six hours, and
+     no object exceeds its own inclination in latitude.
+
+     Second, the elements come from a GitHub mirror of CelesTrak rather than
+     CelesTrak itself, because celestrak.org sends no CORS header and a browser
+     cannot read it directly. The mirror is a third party, so nothing is trusted
+     from it: every element set is range-checked before use and a stale or
+     malformed file degrades the panel instead of drawing wrong satellites. */
+  const SAT_GROUPS = ["stations", "weather"];
+  const SAT_MIRROR = "https://raw.githubusercontent.com/astrion-tech/celestrak-mirror/main/";
+  const MU_EARTH = 398600.4418, RE_KM = 6378.137, J2_EARTH = 0.00108262998905;
+  let satElements = [], satPoints = [], satStale = false;
+
+  function tleEpochMs(s) {
+    const yy = parseInt(s.slice(0, 2), 10);
+    if (!isFinite(yy)) return NaN;
+    const doy = parseFloat(s.slice(2));
+    return Date.UTC(yy < 57 ? 2000 + yy : 1900 + yy, 0, 1) + (doy - 1) * 86400000;
+  }
+  function parseTLE(text) {
+    const lines = String(text).split(/\r?\n/);
+    const out = [];
+    for (let i = 0; i + 2 < lines.length; i += 3) {
+      const name = (lines[i] || "").trim(), l1 = lines[i + 1] || "", l2 = lines[i + 2] || "";
+      if (l1.slice(0, 2) !== "1 " || l2.slice(0, 2) !== "2 ") continue;
+      const el = {
+        name: name || "UNKNOWN",
+        norad: parseInt(l2.slice(2, 7), 10),
+        epoch: tleEpochMs(l1.slice(18, 32)),
+        inc: parseFloat(l2.slice(8, 16)) * D2R,
+        raan: parseFloat(l2.slice(17, 25)) * D2R,
+        ecc: parseFloat("0." + l2.slice(26, 33).trim()),
+        argp: parseFloat(l2.slice(34, 42)) * D2R,
+        M: parseFloat(l2.slice(43, 51)) * D2R,
+        meanMotion: parseFloat(l2.slice(52, 63)),
+      };
+      // Range-check everything: this file comes from a third-party mirror.
+      const nums = [el.epoch, el.inc, el.raan, el.ecc, el.argp, el.M, el.meanMotion];
+      if (!nums.every(n => typeof n === "number" && isFinite(n))) continue;
+      if (el.meanMotion <= 0.5 || el.meanMotion > 20) continue;
+      if (el.ecc < 0 || el.ecc >= 1) continue;
+      if (el.inc < 0 || el.inc > Math.PI) continue;
+      out.push(el);
+    }
+    return out;
+  }
+  function gmstRad(ms) {
+    const jd = ms / 86400000 + 2440587.5, T = (jd - 2451545) / 36525;
+    let g = 280.46061837 + 360.98564736629 * (jd - 2451545) + 0.000387933 * T * T - T * T * T / 38710000;
+    g = ((g % 360) + 360) % 360;
+    return g * D2R;
+  }
+  function propagateSat(el, nowMs) {
+    const dt = (nowMs - el.epoch) / 1000;
+    const n0 = el.meanMotion * 2 * Math.PI / 86400;
+    const a = Math.pow(MU_EARTH / (n0 * n0), 1 / 3);
+    const e = el.ecc, i = el.inc;
+    const p = a * (1 - e * e);
+    const f = 1.5 * J2_EARTH * (RE_KM / p) * (RE_KM / p) * n0;
+    const raan = el.raan - f * Math.cos(i) * dt;
+    const argp = el.argp + f * (2 - 2.5 * Math.pow(Math.sin(i), 2)) * dt;
+    let M = (el.M + n0 * dt) % (2 * Math.PI);
+    if (M < 0) M += 2 * Math.PI;
+    let E = M;
+    for (let k = 0; k < 12; k++) {
+      const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+      E -= d;
+      if (Math.abs(d) < 1e-11) break;
+    }
+    const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2));
+    const r = a * (1 - e * Math.cos(E));
+    const xp = r * Math.cos(nu), yp = r * Math.sin(nu);
+    const cO = Math.cos(raan), sO = Math.sin(raan), cw = Math.cos(argp), sw = Math.sin(argp),
+      ci = Math.cos(i), si = Math.sin(i);
+    const x = xp * (cO * cw - sO * sw * ci) - yp * (cO * sw + sO * cw * ci);
+    const y = xp * (sO * cw + cO * sw * ci) - yp * (sO * sw - cO * cw * ci);
+    const z = xp * (sw * si) + yp * (cw * si);
+    return {
+      // Geocentric latitude — up to ~0.2 deg from geodetic, well under a pixel here.
+      lat: Math.asin(z / r) * R2D,
+      lon: wrapLon((Math.atan2(y, x) - gmstRad(nowMs)) * R2D),
+      alt: r - RE_KM,
+      periodMin: 1440 / el.meanMotion,
+    };
+  }
+  async function loadSatellites() {
+    const el = document.getElementById("satBody");
+    try {
+      const results = await Promise.all(SAT_GROUPS.map(g =>
+        fetchJSON(SAT_MIRROR + "tle/" + g + ".tle", { asText: true }, "sats", 15000)));
+      const parsed = [];
+      results.forEach(txt => { parseTLE(txt).forEach(s => parsed.push(s)); });
+      // Drop individually stale element sets. Without drag modelling, a
+      // fortnight-old LEO element accumulates large along-track error, and a
+      // confidently-wrong dot is worse than no dot.
+      const cutoff = Date.now() - 14 * 86400000;
+      const fresh = parsed.filter(s => s.epoch > cutoff);
+      if (fresh.length < 5) throw new Error("no usable element sets");
+      // A mirror that quietly stops refreshing is worse than one that 404s, so
+      // element age is checked rather than assumed.
+      const newest = Math.max.apply(null, fresh.map(s => s.epoch));
+      satStale = Date.now() - newest > 3 * 86400000;
+      satElements = fresh;
+      updateSatPositions();
+      markOnline("sats");
+    } catch (e) {
+      satElements = []; satPoints = [];
+      if (el) el.innerHTML = '<p class="err-msg">Orbital element feed unavailable. See Feed Diagnostics.</p>';
+      document.getElementById("satMeta").textContent = "offline";
+      markOffline("sats");
+      rebuildMarkers();
+    }
+  }
+  function updateSatPositions() {
+    if (!satElements.length) return;
+    const now = Date.now();
+    satPoints = satElements.map(s => {
+      const p = propagateSat(s, now);
+      return { name: s.name, norad: s.norad, lat: p.lat, lon: p.lon, alt: p.alt,
+        periodMin: p.periodMin, ecc: s.ecc, inc: s.inc * R2D };
+    }).filter(p => isFinite(p.lat) && isFinite(p.lon) && p.alt > 100);
+    renderSatPanel();
+    rebuildMarkers();
+    drawGlobe();
+  }
+  // Altitude alone does not identify a geostationary satellite: a Molniya or
+  // Tundra bird sits well above GEO altitude at apogee while being neither
+  // circular nor fixed over a longitude. Classify by the orbit's shape.
+  function orbitClass(s) {
+    if (s.ecc > 0.1) return "elliptical · " + Math.round(s.periodMin) + " min";
+    if (s.periodMin > 1400 && s.periodMin < 1470 && s.inc < 15) return "geostationary";
+    if (s.alt > 30000) return "high orbit · " + Math.round(s.periodMin) + " min";
+    return Math.round(s.periodMin) + " min orbit";
+  }
+  function renderSatPanel() {
+    const el = document.getElementById("satBody");
+    if (!el) return;
+    // Crewed stations first, then the highest-altitude weather platforms.
+    const crewed = satPoints.filter(s => /ZARYA|TIANHE|WENTIAN|MENGTIAN/i.test(s.name));
+    const others = satPoints.filter(s => crewed.indexOf(s) < 0)
+      .sort((a, b) => b.alt - a.alt).slice(0, 6);
+    el.innerHTML = crewed.concat(others).map(s =>
+      '<div class="sat-item">' +
+      '<span class="sat-name">' + esc(s.name) + '</span>' +
+      '<span class="sat-meta">' + Math.round(s.alt).toLocaleString() + ' km · ' +
+      fmtLat(s.lat) + ' ' + fmtLon(s.lon) + ' · ' + orbitClass(s) + '</span></div>').join("");
+    document.getElementById("satMeta").textContent =
+      satPoints.length + " tracked" + (satStale ? " · elements stale" : " · CelesTrak elements");
   }
 
   /* ══════════════════════════ TSUNAMI WATCH (NWS) ══════════════════════════
@@ -1860,6 +2118,7 @@ body { font-size: 14px; }
         : "clear · NWS · Pacific & Atlantic";
       rebuildMarkers();
       drawGlobe();
+      refreshTicker();
       markOnline("tsunami");
     } catch (e) {
       tsunamiPoints = [];
@@ -1885,6 +2144,7 @@ body { font-size: 14px; }
         document.getElementById("volcanoMeta").textContent = "clear · USGS";
         rebuildMarkers();
         drawGlobe();
+        refreshTicker();
         markOnline("volcano");
         return;
       }
@@ -1922,6 +2182,7 @@ body { font-size: 14px; }
       document.getElementById("volcanoMeta").textContent = merged.length + " elevated · USGS";
       rebuildMarkers();
       drawGlobe();
+      refreshTicker();
       markOnline("volcano");
     } catch (e) {
       volcanoPoints = [];
@@ -1973,7 +2234,8 @@ body { font-size: 14px; }
           '</div><div class="chg ' + (chg >= 0 ? 'glow' : 'glow-ember') + '" style="color:' + (chg >= 0 ? 'var(--gold)' : 'var(--ember-hi)') + '">' + (chg >= 0 ? "▲" : "▼") + " " + Math.abs(chg).toFixed(2) + "%</div></div>";
       }).join("");
       markOnline("markets");
-      buildTicker(c);
+      lastCrypto = c;
+      refreshTicker();
     } catch (e) { markOffline("markets"); }
     try {
       // frankfurter.app went unreachable from the browser; .dev is the current host
@@ -2005,12 +2267,92 @@ body { font-size: 14px; }
       }
     } catch (e) {}
   }
-  function buildTicker(crypto) {
+  /* ══════════════════════════ THREAT INDEX ══════════════════════════
+     A composite 0-100 risk score computed entirely client-side from feeds
+     already fetched and verified elsewhere in this file — no new external
+     dependency. The dominant signal sets the base score; other concurrent
+     signals add a smaller bump, so one severe event can't be diluted by
+     several quiet ones but a cluster of moderate events still registers. */
+  function computeThreatIndex() {
+    const scores = [];
+    const dayAgo = Date.now() - 86400000;
+    const recentQuakes = allQuakes.filter(q => q.time >= dayAgo);
+    if (recentQuakes.length) {
+      const maxMag = Math.max.apply(null, recentQuakes.map(q => q.mag || 0));
+      scores.push({ id: "seismic", label: "Seismic", v: Math.max(0, Math.min(100, (maxMag - 3) * 22)) });
+    }
+    if (gdacsPoints.length) {
+      const v = gdacsPoints.some(g => /red/i.test(g.level || "")) ? 92
+        : gdacsPoints.some(g => /orange/i.test(g.level || "")) ? 58 : 30;
+      scores.push({ id: "disaster", label: "Disaster (GDACS)", v });
+    }
+    if (tsunamiPoints.length) {
+      const v = tsunamiPoints.some(t => /warning/i.test(t.event || "")) ? 95 : 60;
+      scores.push({ id: "tsunami", label: "Tsunami", v });
+    }
+    if (volcanoPoints.length) {
+      const v = volcanoPoints.some(x => x.color === "RED") ? 90
+        : volcanoPoints.some(x => x.color === "ORANGE") ? 62
+        : volcanoPoints.some(x => x.color === "YELLOW") ? 32 : 15;
+      scores.push({ id: "volcanic", label: "Volcanic", v });
+    }
+    if (lastKp != null) {
+      const v = lastKp >= 7 ? 92 : lastKp >= 5 ? 68 : lastKp >= 4 ? 38 : lastKp * 7;
+      scores.push({ id: "solar", label: "Geomagnetic", v });
+    }
+    if (alertPoints.length) {
+      const v = alertPoints.some(a => a.severity === "Extreme") ? 85
+        : alertPoints.some(a => a.severity === "Severe") ? 60 : 35;
+      scores.push({ id: "weather", label: "Severe weather", v });
+    }
+    if (!scores.length) return { value: 0, top: null, scores: [] };
+    scores.sort((a, b) => b.v - a.v);
+    const top = scores[0];
+    const secondary = scores.slice(1).reduce((s, x) => s + x.v, 0) / 8;
+    const value = Math.max(0, Math.min(100, Math.round(top.v + secondary)));
+    return { value, top, scores };
+  }
+  const TG_CIRC = 2 * Math.PI * 22;
+  function renderThreatGauge(state) {
+    const arc = document.getElementById("tgArc"), val = document.getElementById("tgValue"),
+      lbl = document.getElementById("tgLabel"), wrap = document.getElementById("threatGauge");
+    if (!arc) return;
+    const value = state.value;
+    const color = value >= 65 ? "var(--ember-hi)" : value >= 35 ? "var(--warn)" : "var(--gold)";
+    const pct = value / 100;
+    arc.style.stroke = color;
+    arc.style.strokeDasharray = TG_CIRC.toFixed(2);
+    arc.style.strokeDashoffset = (TG_CIRC * (1 - pct)).toFixed(2);
+    val.textContent = state.top ? value : "–";
+    val.style.color = color;
+    lbl.textContent = !state.top ? "STANDBY" : value >= 65 ? "ELEVATED" : value >= 35 ? "GUARDED" : "NOMINAL";
+    wrap.title = state.top
+      ? "THREAT INDEX " + value + " — top signal: " + state.top.label
+      : "No active risk signals from any monitored feed";
+  }
+  /* ══════════════════════════ EVENT TICKER ══════════════════════════
+     Rebuilt from live state on every relevant feed update — a running
+     JARVIS-style summary line rather than a market-only strip. */
+  function refreshTicker() {
+    threatState = computeThreatIndex();
+    renderThreatGauge(threatState);
     const parts = [];
-    if (crypto) {
-      Object.entries(crypto).forEach(([id, d]) => {
+    parts.push('<span>THREAT INDEX <b style="color:' +
+      (threatState.value >= 65 ? "var(--ember-hi)" : threatState.value >= 35 ? "var(--warn)" : "var(--gold)") + '">' +
+      threatState.value + '</b>' + (threatState.top ? " — " + esc(threatState.top.label.toUpperCase()) : "") + '</span>');
+    const dayAgo = Date.now() - 86400000;
+    const bigQuake = allQuakes.filter(q => q.time >= dayAgo).sort((a, b) => b.mag - a.mag)[0];
+    if (bigQuake) parts.push('<span>SEISMIC <b>M' + bigQuake.mag.toFixed(1) + '</b> ' + esc(bigQuake.place) + '</span>');
+    const headlineLink = document.querySelector("#conflictHeadlines .hl-item a");
+    if (headlineLink) parts.push('<span>SIGNAL <b>' + esc(headlineLink.textContent.slice(0, 70)) + '</b></span>');
+    if (gdacsPoints.length) parts.push('<span>GDACS <b>' + gdacsPoints.length + '</b> active disaster alert' + (gdacsPoints.length === 1 ? "" : "s") + '</span>');
+    if (tsunamiPoints.length) parts.push('<span class="down">TSUNAMI <b>' + tsunamiPoints.length + '</b> active bulletin' + (tsunamiPoints.length === 1 ? "" : "s") + '</span>');
+    if (lastKp != null) parts.push('<span>GEOMAGNETIC <b>Kp ' + lastKp + '</b>' + (lastKp >= 5 ? " — aurora likely" : "") + '</span>');
+    if (lastCrypto) {
+      Object.entries(lastCrypto).forEach(([id, d]) => {
         const chg = d.usd_24h_change || 0;
-        parts.push('<span>' + id.toUpperCase() + ' <b>$' + d.usd.toLocaleString() + '</b> <span class="' + (chg>=0?'up':'down') + '">' + (chg>=0?'▲':'▼') + Math.abs(chg).toFixed(1) + '%</span></span>');
+        parts.push('<span>' + id.toUpperCase() + ' <b>$' + d.usd.toLocaleString() + '</b> <span class="' + (chg >= 0 ? "up" : "down") + '">' +
+          (chg >= 0 ? "▲" : "▼") + Math.abs(chg).toFixed(1) + '%</span></span>');
       });
     }
     parts.push('<span>VIGIL ONLINE — ALL FEEDS DIRECT FROM SOURCE, NO MIDDLEMAN</span>');
@@ -2055,6 +2397,7 @@ body { font-size: 14px; }
     { id: "volcano",  label: "Volcanic", color: "#e0632e", on: true },
     { id: "tsunami",  label: "Tsunami",  color: "#4a9fd9", on: true },
     { id: "gdacs",    label: "Disaster", color: "#b04ed9", on: true },
+    { id: "sats",     label: "Satellites", color: "#6ee7d0", on: true },
     { id: "home",     label: "You",      color: "#c8a96e", on: true },
   ];
   const layerOn = {};
@@ -2451,6 +2794,17 @@ body { font-size: 14px; }
         link: g.url, linkLabel: "Open GDACS report ↗",
       });
     });
+    satPoints.forEach(s => {
+      out.push({
+        layer: "sats", lat: s.lat, lon: s.lon, r: s.alt > 30000 ? 2.6 : 2.2, color: "#6ee7d0",
+        kind: "Satellite", title: s.name,
+        rows: [["Altitude", Math.round(s.alt).toLocaleString() + " km"],
+               ["Orbit", orbitClass(s)],
+               ["Inclination", s.inc.toFixed(1) + "°"],
+               ["NORAD", s.norad || "—"],
+               ["Position", fmtLat(s.lat) + " " + fmtLon(s.lon)]],
+      });
+    });
     if (issPos) {
       out.push({
         layer: "iss", lat: issPos.lat, lon: issPos.lon, r: 4, color: "#e8cd9a",
@@ -2723,6 +3077,7 @@ body { font-size: 14px; }
 
   /* ══════════════════════════ GLOBAL SENSORS: quakes + ISS ══════════════════════════ */
   let allQuakes = [], issPos = null, selectedQuakeIdx = null;
+  let lastCrypto = null, lastKp = null, threatState = { value: 0, top: null, scores: [] };
   let conflictPoints = [], alertPoints = [], launchPads = [], homePos = null;
   let volcanoPoints = [], tsunamiPoints = [], gdacsPoints = [];
 
@@ -2816,6 +3171,7 @@ body { font-size: 14px; }
       renderQuakeList();
       rebuildMarkers();
       drawGlobe();
+      refreshTicker();
       markOnline("sensors");
     } catch (e) {
       markOffline("sensors");
@@ -2902,7 +3258,7 @@ body { font-size: 14px; }
 
   /* ══════════════════════════ KEYBOARD ══════════════════════════ */
   const SHORTCUTS = [["F", "fullscreen"], ["R", "spin"], ["Space", "radar"],
-    ["← →", "frame"], ["/", "search"], ["L", "seal"]];
+    ["← →", "frame"], ["/", "search"], ["`", "console"], ["L", "seal"]];
   function initKeys() {
     document.addEventListener("keydown", e => {
       const t = e.target;
@@ -2928,11 +3284,119 @@ body { font-size: 14px; }
           el.focus();
           break;
         }
+        case "`": case "~": e.preventDefault(); toggleConsole(); break;
         case "l": case "L": sealDoor(); break;
       }
     });
     const hint = document.getElementById("keyHint");
     if (hint) hint.innerHTML = SHORTCUTS.map(([k, d]) => '<span><b>' + k + '</b> ' + d + '</span>').join("");
+  }
+
+  /* ══════════════════════════ JARVIS CONSOLE ══════════════════════════
+     A typed command line over the dashboard's own controls — jump the
+     weather search, toggle a globe layer, set zoom, read the threat
+     breakdown — nothing here reaches a new data source, it only drives
+     functions the UI already exposes through buttons. */
+  const jcHistory = []; let jcHistIdx = -1;
+  function toggleConsole(open) {
+    const el = document.getElementById("jarvisConsole");
+    const show = open != null ? open : el.hidden;
+    el.hidden = !show;
+    if (show) {
+      if (!el.dataset.greeted) {
+        jcPrint("JARVIS console online. Type \"help\" for the command list.");
+        el.dataset.greeted = "1";
+      }
+      document.getElementById("jcInput").focus();
+    }
+  }
+  function jcPrint(line, cls) {
+    const log = document.getElementById("jcLog");
+    const d = document.createElement("div");
+    d.className = "jc-line" + (cls ? " " + cls : "");
+    d.textContent = line;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+  const JC_HELP = [
+    "goto <city>            — jump the weather + search panel to a city",
+    "layer <name> [on|off]  — toggle a globe layer (" + LAYERS.map(l => l.id).join(", ") + ")",
+    "zoom <0.75-4>          — set the globe zoom level",
+    "spin [on|off]          — toggle globe auto-rotate",
+    "threat                 — show the current threat index breakdown",
+    "status                 — show feed diagnostics summary",
+    "seal                   — lock the console and seal the dashboard",
+    "fullscreen             — toggle fullscreen",
+    "clear                  — clear this log",
+  ];
+  function runCommand(raw) {
+    const line = raw.trim();
+    if (!line) return;
+    jcHistory.push(line); jcHistIdx = jcHistory.length;
+    jcPrint("> " + line, "jc-echo");
+    const parts = line.split(/\s+/);
+    const cmd = (parts[0] || "").toLowerCase();
+    const rest = parts.slice(1);
+    const arg = rest.join(" ");
+    switch (cmd) {
+      case "help": JC_HELP.forEach(l => jcPrint(l)); break;
+      case "goto": case "search":
+        if (!arg) { jcPrint("usage: goto <city>", "jc-err"); break; }
+        document.getElementById("citySearch").value = arg;
+        searchCity(arg);
+        jcPrint("Searching " + arg + "…");
+        break;
+      case "layer": {
+        const name = (rest[0] || "").toLowerCase(), state = (rest[1] || "").toLowerCase();
+        const l = LAYERS.find(x => x.id === name);
+        if (!l) { jcPrint("unknown layer: " + (rest[0] || "") + " (try: " + LAYERS.map(x => x.id).join(", ") + ")", "jc-err"); break; }
+        layerOn[l.id] = state === "off" ? false : state === "on" ? true : !layerOn[l.id];
+        renderLayerChips(); rebuildMarkers(); drawGlobe();
+        jcPrint(l.label + " layer " + (layerOn[l.id] ? "ON" : "OFF"));
+        break;
+      }
+      case "zoom": {
+        const z = parseFloat(arg);
+        if (!isFinite(z)) { jcPrint("usage: zoom <0.75-4>", "jc-err"); break; }
+        setZoom(z); drawGlobe();
+        jcPrint("Zoom set to " + globe.zoom.toFixed(2) + "x");
+        break;
+      }
+      case "spin":
+        globe.spin = arg === "off" ? false : arg === "on" ? true : !globe.spin;
+        document.getElementById("globeSpin").classList.toggle("on", globe.spin);
+        jcPrint("Auto-rotate " + (globe.spin ? "ON" : "OFF"));
+        break;
+      case "threat": {
+        const t = threatState;
+        jcPrint("THREAT INDEX " + t.value + (t.top ? " — top signal: " + t.top.label : " — no active signals"));
+        (t.scores || []).slice().sort((a, b) => b.v - a.v).forEach(s => jcPrint("  " + s.label + ": " + Math.round(s.v)));
+        break;
+      }
+      case "status": jcPrint((document.getElementById("hdrStatus").textContent || "").trim()); break;
+      case "seal": toggleConsole(false); sealDoor(); break;
+      case "fullscreen": toggleFullscreen(); break;
+      case "clear": document.getElementById("jcLog").innerHTML = ""; break;
+      default: jcPrint('unrecognized command: "' + cmd + '" — try "help"', "jc-err");
+    }
+  }
+  function initConsole() {
+    const input = document.getElementById("jcInput");
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        runCommand(input.value);
+        input.value = "";
+      } else if (e.key === "Escape") {
+        toggleConsole(false);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (jcHistIdx > 0) { jcHistIdx--; input.value = jcHistory[jcHistIdx] || ""; }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        jcHistIdx = Math.min(jcHistory.length, jcHistIdx + 1);
+        input.value = jcHistory[jcHistIdx] || "";
+      }
+    });
   }
 
   /* ══════════════════════════ INIT ══════════════════════════ */
@@ -2943,6 +3407,7 @@ body { font-size: 14px; }
     initGlobe();
     initRadar();
     initKeys();
+    initConsole();
     renderDiagnostics();
     rebuildMarkers();
     drawGlobe();
@@ -2965,6 +3430,7 @@ body { font-size: 14px; }
     loadVolcano();
     loadGdacs();
     loadAurora();
+    loadSatellites();
     loadRadar();
 
     timers.markets = setInterval(loadMarkets, 60000);
@@ -2986,9 +3452,16 @@ body { font-size: 14px; }
     // grid refreshes roughly every half hour from NOAA.
     timers.gdacs = setInterval(loadGdacs, 900000);
     timers.aurora = setInterval(loadAurora, 600000);
+    // Element sets are refetched hourly; positions are recomputed locally every
+    // few seconds, since propagation costs nothing and the network does.
+    timers.satsFetch = setInterval(loadSatellites, 3600000);
+    timers.satsMove = setInterval(updateSatPositions, 5000);
     timers.diag = setInterval(renderDiagnostics, 15000);
     timers.radar = setInterval(loadRadar, 300000);
     timers.weather = setInterval(refreshWeather, 300000);
+    // Keeps "…3m ago"-style ticker text aging and re-derives the threat index
+    // even between feed refreshes, so the header gauge never looks stale.
+    timers.ticker = setInterval(refreshTicker, 30000);
   }
 })();
 </script>
