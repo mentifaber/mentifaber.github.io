@@ -329,9 +329,18 @@ const SYSTEMS = [
   ["sonicveil.html","Sonic Veil","Composer. Since 2016. Genre-bending.","music","note"],
   ["duely.html","Duely","Get overdue invoices paid, on contingency.","concept","invoice"],
   ["flutterbloom.html","Flutterbloom","A living garden, grown for one person only.","private","butterfly"],
+  ["verel.html","Verel","Genuine presence without provable aliveness. A word that did not exist.","concept","diamond"],
+  ["conflict-atlas.html","Conflict Atlas","Twenty-eight active conflicts, tiered by cost rather than by coverage.","live","city"],
+  ["neural-sim.html","Neural Sim","Watching a network decide what it is — and what that cannot prove.","live","mesh"],
+  ["shop.html","The Shop","G-code and steel. No room to be approximately right.","live","key"],
+  ["frames.html","Frames","Twenty-eight photographs. The only thing here that does nothing.","live","globe"],
+  ["sketches.html","Sketches","Built in an afternoon, kept as sketches. Done, not unfinished.","live","leaf"],
 ];
 const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt", private:"private — invite only" };
-const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII"];
+// One numeral per surveyed site — this list must never be shorter than SYSTEMS,
+// or the extra plates render as "PL. undefined".
+const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII",
+  "XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX"];
 
 const el = document.getElementById('plates');
 SYSTEMS.forEach(([href,name,desc,status,glyph,wide],i)=>{
