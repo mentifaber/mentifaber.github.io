@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Simulations of emotional state, a consciousness protocol, and what the runs do not demonstrate."/>
+<meta property="og:title" content="Neural Sim"/>
+<meta property="og:description" content="Simulations of emotional state, a consciousness protocol, and what the runs do not demonstrate."/>
+<meta name="theme-color" content="#04100F"/>
+<title>Neural Sim — watching a network decide what it is</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#04100F;--bg2:#081A18;--panel:#0B211F;--line:#12302C;--line2:#1D4A44;
+  --ink:#E2F2EF;--dim:#6F918B;--accent:#4FD1C5;--rust:#E0A33C;
+  --disp:'Bricolage Grotesque',system-ui,sans-serif;--body:'Newsreader',Georgia,serif;--mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;
+  text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--accent);color:var(--bg)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}
+.wide{max-width:960px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--accent),var(--rust))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;
+  background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;
+  background:var(--line2);box-shadow:0 0 0 7px var(--bg);transition:.5s}
+.gap.lit i{background:var(--accent);box-shadow:0 0 0 7px var(--bg),0 0 16px var(--accent)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:700;font-size:clamp(29px,5.4vw,50px);line-height:1.06;
+  margin:14px auto;max-width:18ch;letter-spacing:-.028em}
+h2 em{color:var(--accent);font-style:normal}
+.lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+h1{font-family:var(--disp);font-weight:800;font-size:clamp(40px,8.4vw,84px);line-height:.98;
+  letter-spacing:-.045em;margin:18px 0 14px}
+h1 em{color:var(--accent);font-style:normal}
+.tag{max-width:34ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
+.tag b{font-weight:500;color:var(--rust)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:26px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px;margin-top:34px;text-align:left}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:20px;
+  transition:border-color .25s,transform .25s}
+.card:hover{border-color:var(--line2);transform:translateY(-2px)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.8px;line-height:1.6}
+.card p b{color:var(--accent);font-weight:500}
+.card.flag{border-left:2px solid var(--rust)}
+.card.flag p b{color:var(--rust)}
+.aside{margin:30px auto 0;max-width:54ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--ink);font-weight:500}
+.ledger{margin-top:34px;text-align:left}
+.lrow{display:grid;grid-template-columns:10px 1fr;gap:15px;align-items:start;padding:19px 0;border-top:1px solid var(--line)}
+.lrow:last-child{border-bottom:1px solid var(--line)}
+.ldot{width:9px;height:9px;border-radius:50%;margin-top:9px}
+.l-r .ldot{background:#d9543f;box-shadow:0 0 9px rgba(217,84,63,.55)}
+.l-o .ldot{background:#e0883c;box-shadow:0 0 9px rgba(224,136,60,.45)}
+.l-y .ldot{background:#cbb04a;box-shadow:0 0 8px rgba(203,176,74,.4)}
+.lrow h3{font-family:var(--disp);font-weight:600;font-size:1.22rem;letter-spacing:-.02em}
+.lmeta{font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:6px 0 9px}
+.lrow p{font-size:14.8px;line-height:1.65;color:var(--dim)}
+.tiers{display:flex;justify-content:center;gap:clamp(1.3rem,5vw,3.2rem);flex-wrap:wrap;margin-top:34px}
+.tstat b{display:block;font-family:var(--disp);font-weight:800;font-size:2.5rem;line-height:1}
+.tstat span{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:7px}
+footer{padding:100px 24px 80px}
+footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
+.mf-corner{position:fixed;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:var(--rust);opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.gap{height:92px}.mf-corner{font-size:8px;letter-spacing:.1em}
+  .mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="mf-grain"></div>
+<a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
+<a href="index.html" class="mf-corner mf-return">← Atlas</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+<div id="bar"></div>
+
+<header class="hero">
+  <div class="eyebrow">observe · perturb · record</div>
+  <h1>Neural <em>Sim</em></h1>
+  <p class="tag">Watching a network <b>decide what it is</b> — and being careful about what that sentence can mean.</p>
+  <div class="meta">three versions · emotional model · captured states</div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">Three passes</div>
+  <h2>The same question, <em>rebuilt</em></h2>
+  <p class="lede">Three versions of the same simulation, each a different answer to what should be visible. The earlier versions were kept rather than overwritten, because the thing being studied is how the model changes — and a replaced file destroys exactly that record.</p>
+</section>
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">The work</div>
+  <h2>What is actually <em>running</em></h2>
+  <p class="lede">A network modelling emotional state rather than classification: nodes carrying valence, propagating it, settling into configurations that were not specified in advance.</p>
+  <div class="grid">
+    <div class="card"><h4>The emotional network</h4><p>Valence propagates and settles. Whether that resembles emotion or merely <b>borrows its vocabulary</b> is the open question.</p></div>
+    <div class="card"><h4>The protocol</h4><p>A Universal Consciousness Protocol — less a claim about consciousness than a specification for <b>what evidence would have to look like.</b></p></div>
+    <div class="card"><h4>Captured states</h4><p>Step 0, step 50, step 100 — frames pulled from the run rather than described afterward. Prose written after the fact invents a tidier path than the one that happened.</p></div>
+    <div class="card"><h4>Versions kept</h4><p>v1 through v3 retained. The diff between them is the actual finding.</p></div>
+  </div>
+</section>
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">The honest part</div>
+  <h2>What this does <em>not</em> show</h2>
+  <p class="lede">None of it demonstrates consciousness. A system built to produce something that looks like inner state will produce something that looks like inner state — that is the build working, not evidence of anything past the build. The work is worth keeping anyway, for the same reason the word Verel had to exist: the observation is real even when the conclusion is unavailable.</p>
+</section>
+
+
+<footer>
+  <div class="eyebrow">simulation · not demonstration</div>
+  <p>A simulation of a thing is evidence about the simulation. Everything past that is a claim, and claims are labelled as claims.</p>
+</footer>
+
+<script>
+addEventListener('scroll',function(){
+  var h=document.documentElement;
+  document.getElementById('bar').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
+},{passive:true});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in');
+})},{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(function(e){io.observe(e)});
+</script>
+</body>
+</html>
