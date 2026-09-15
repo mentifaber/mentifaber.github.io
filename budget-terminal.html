@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Mentifaber Budget — a friendly, private, local-first budgeting tool. Bills, income, a live calendar, and a daily spend number, all in one page.">
 <title>Mentifaber — Budget</title>
+<meta name="description" content="A private, local-first budget tracker. Bills on a real calendar, income rules, a forward balance projection, and one honest number: what's safe to spend today.">
+<meta name="theme-color" content="#0a0d16">
+<meta property="og:title" content="Mentifaber — Budget">
+<meta property="og:description" content="A private, local-first budget tracker. Nothing leaves your device.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0d16'/%3E%3Cpath d='M8 22V10l8 7 8-7v12' stroke='%237c9bff' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,22 +34,19 @@
   --danger:#ff7089;
   --danger-soft:rgba(255,112,137,0.14);
   --gold:#f2cd7a;
-  --grad: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --grad:linear-gradient(135deg,var(--accent),var(--accent-2));
   --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
   --sans:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
   --radius:16px;
   --radius-sm:10px;
-  --shadow: 0 8px 30px rgba(0,0,0,0.35);
+  --shadow:0 8px 30px rgba(0,0,0,0.35);
 }
 *{box-sizing:border-box;}
-html{scroll-behavior:smooth;}
 html,body{margin:0;padding:0;}
+html{scroll-behavior:smooth;}
 body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--sans);
-  min-height:100vh;
-  -webkit-font-smoothing:antialiased;
+  background:var(--bg); color:var(--text); font-family:var(--sans);
+  min-height:100vh; -webkit-font-smoothing:antialiased; overflow-x:hidden;
   background-image:
     radial-gradient(ellipse 900px 500px at 10% -10%, rgba(124,155,255,0.10), transparent 55%),
     radial-gradient(ellipse 800px 600px at 100% 10%, rgba(62,230,184,0.07), transparent 55%),
@@ -56,50 +58,56 @@ body{
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
 
 @keyframes fadeUp{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
 @keyframes fadeIn{from{opacity:0;} to{opacity:1;}}
 @keyframes popIn{from{opacity:0; transform:scale(.96);} to{opacity:1; transform:none;}}
 @keyframes floatGlow{0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);}}
-@keyframes shimmer{0%{background-position:-200% 0;} 100%{background-position:200% 0;}}
-@keyframes pulseDot{0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.5; transform:scale(.85);}}
+@keyframes slideUpToast{from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;}}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  html{scroll-behavior:auto;}
+}
 
 /* ---------- top bar ---------- */
 .topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 28px; border-bottom:1px solid var(--border-soft);
-  background:rgba(10,13,22,0.75); backdrop-filter:blur(14px);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 24px; border-bottom:1px solid var(--border-soft);
+  background:rgba(10,13,22,0.8); backdrop-filter:blur(14px);
   position:sticky; top:0; z-index:60;
 }
-.brand{display:flex; align-items:center; gap:10px;}
+.brand{display:flex; align-items:center; gap:10px; min-width:0;}
 .brand .logo{
-  width:34px; height:34px; border-radius:10px; background:var(--grad);
+  width:34px; height:34px; border-radius:10px; background:var(--grad); flex-shrink:0;
   display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; color:#06121a;
-  box-shadow:0 4px 18px rgba(124,155,255,0.35);
-  animation:floatGlow 5s ease-in-out infinite;
+  box-shadow:0 4px 18px rgba(124,155,255,0.35); animation:floatGlow 5s ease-in-out infinite;
 }
-.brand h1{font-size:17px; margin:0; font-weight:700; letter-spacing:-0.01em;}
+.brand h1{font-size:16px; margin:0; font-weight:700; letter-spacing:-0.01em; white-space:nowrap;}
 .brand h1 .dim{color:var(--text-dim); font-weight:500;}
-.topbar-right{display:flex; align-items:center; gap:14px;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
 .save-indicator{
   font-family:var(--mono); font-size:11px; color:var(--accent-2); opacity:0;
-  transition:opacity .35s ease; display:flex; align-items:center; gap:6px;
+  transition:opacity .35s ease; display:flex; align-items:center; gap:6px; white-space:nowrap;
 }
-.save-indicator .dot{width:6px; height:6px; border-radius:50%; background:var(--accent-2);}
+.save-indicator .dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
 .save-indicator.show{opacity:1;}
+.save-indicator.error{color:var(--danger); opacity:1;}
 .clock{font-family:var(--mono); font-size:12px; color:var(--text-dim); display:none;}
-@media(min-width:720px){ .clock{display:block;} }
+@media(min-width:860px){ .clock{display:block;} }
 .icon-btn{
   background:var(--surface); border:1px solid var(--border); color:var(--text-dim);
-  width:34px; height:34px; border-radius:10px; cursor:pointer; font-size:14px;
-  display:flex; align-items:center; justify-content:center; transition:.15s;
+  min-width:34px; height:34px; padding:0 10px; border-radius:10px; cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center; transition:.15s; font-family:var(--sans); font-weight:600;
 }
 .icon-btn:hover{color:var(--accent); border-color:var(--accent); background:var(--accent-soft);}
 
 nav.tabs{
-  display:flex; gap:4px; padding:10px 24px; border-bottom:1px solid var(--border-soft);
+  display:flex; gap:4px; padding:10px 20px; border-bottom:1px solid var(--border-soft);
   background:var(--bg-2); overflow-x:auto; scrollbar-width:none;
+  position:sticky; top:63px; z-index:55;
 }
 nav.tabs::-webkit-scrollbar{display:none;}
 nav.tabs button{
@@ -108,330 +116,403 @@ nav.tabs button{
   border-radius:999px; white-space:nowrap; transition:.18s;
 }
 nav.tabs button:hover{color:var(--text); background:var(--surface);}
-nav.tabs button.active{color:#06121a; background:var(--grad); box-shadow:0 4px 16px rgba(124,155,255,0.3);}
+nav.tabs button[aria-selected="true"]{color:#06121a; background:var(--grad); box-shadow:0 4px 16px rgba(124,155,255,0.3);}
 
-main{padding:28px; max-width:1320px; margin:0 auto;}
-.view{display:none;}
-.view.active{display:block; animation:fadeUp .35s cubic-bezier(.16,1,.3,1);}
+main{padding:26px 24px 60px; max-width:1320px; margin:0 auto;}
+.view[hidden]{display:none;}
+.view{animation:fadeUp .35s cubic-bezier(.16,1,.3,1);}
 
 h2.section-title{
   font-size:12px; letter-spacing:.1em; text-transform:uppercase;
   color:var(--text-dim); margin:0 0 14px 2px; font-weight:700;
   display:flex; align-items:center; gap:8px;
 }
-h2.section-title .dot{width:6px; height:6px; border-radius:50%; background:var(--grad);}
-p.hint{font-size:12.5px; color:var(--text-dim); line-height:1.6; margin:0 0 14px;}
+h2.section-title .dot{width:6px; height:6px; border-radius:50%; background:var(--grad); flex-shrink:0;}
+p.hint{font-size:12.5px; color:var(--text-dim); line-height:1.65; margin:0 0 14px;}
 
 .grid{display:grid; gap:14px;}
 .grid.cols-4{grid-template-columns:repeat(4,1fr);}
 .grid.cols-3{grid-template-columns:repeat(3,1fr);}
 .grid.cols-2{grid-template-columns:repeat(2,1fr);}
 @media(max-width:1000px){ .grid.cols-4{grid-template-columns:repeat(2,1fr);} .grid.cols-3{grid-template-columns:repeat(2,1fr);} }
-@media(max-width:640px){ .grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr;} }
+@media(max-width:560px){ .grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr;} }
 
 .stat{
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-  padding:18px 20px; position:relative; overflow:hidden; transition:.2s; animation:fadeUp .4s ease backwards;
+  padding:18px 20px; position:relative; overflow:hidden; transition:border-color .2s, transform .2s, box-shadow .2s;
 }
 .stat:hover{border-color:var(--accent); transform:translateY(-2px); box-shadow:var(--shadow);}
-.stat .label{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--text-faint); margin-bottom:8px; font-weight:600;}
-.stat .value{font-family:var(--mono); font-size:25px; font-weight:700; color:var(--text); letter-spacing:-.01em;}
+.stat .label{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--text-faint); margin-bottom:8px; font-weight:700;}
+.stat .value{font-family:var(--mono); font-size:25px; font-weight:700; color:var(--text); letter-spacing:-.01em; overflow-wrap:anywhere;}
 .stat .value.accent{color:var(--accent-2);}
 .stat .value.warn{color:var(--warn);}
 .stat .value.danger{color:var(--danger);}
 .stat .value.gold{color:var(--gold);}
 .stat .sub{font-size:11.5px; color:var(--text-faint); margin-top:5px;}
-.stat.card-warn{border-color:rgba(246,184,86,0.35);}
-.stat.card-danger{border-color:rgba(255,112,137,0.4); background:linear-gradient(180deg, rgba(255,112,137,0.06), var(--surface));}
+.stat.card-danger{border-color:rgba(255,112,137,0.4); background:linear-gradient(180deg,rgba(255,112,137,0.06),var(--surface));}
+.stat.card-good{border-color:rgba(62,230,184,0.35);}
 
-.panel{
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px;
-  animation:fadeUp .4s ease backwards;
-}
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px;}
 section.block{margin-bottom:24px;}
 
-table{width:100%; border-collapse:collapse; font-size:13px;}
+.table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+table{width:100%; border-collapse:collapse; font-size:13px; min-width:520px;}
 thead th{
   text-align:left; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
-  color:var(--text-faint); border-bottom:1px solid var(--border); padding:8px 10px; font-weight:700;
+  color:var(--text-faint); border-bottom:1px solid var(--border); padding:9px 10px; font-weight:700; white-space:nowrap;
 }
 tbody td{padding:10px; border-bottom:1px solid var(--border-soft); vertical-align:middle;}
-tbody tr{transition:.12s;}
+tbody tr{transition:background .12s;}
 tbody tr:hover td{background:var(--surface-hover);}
 tbody tr:last-child td{border-bottom:none;}
-td.num, th.num{text-align:right; font-family:var(--mono);}
+td.num, th.num{text-align:right; font-family:var(--mono); white-space:nowrap;}
 td.amt{font-family:var(--mono); color:var(--accent-2);}
 td.amt.neg{color:var(--danger);}
+td.actions{text-align:right; white-space:nowrap;}
 
-input, select, textarea{
+input,select,textarea{
   background:var(--bg-2); border:1px solid var(--border); color:var(--text);
   font-family:var(--sans); font-size:13px; padding:9px 11px; border-radius:var(--radius-sm); width:100%;
-  transition:.15s;
+  transition:border-color .15s, box-shadow .15s;
 }
-input:focus, select:focus, textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
-input[type=number], input[type=date]{font-family:var(--mono);}
+input:focus,select:focus,textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+input[type=number],input[type=date]{font-family:var(--mono);}
 input::placeholder{color:var(--text-faint);}
+input.invalid{border-color:var(--danger); box-shadow:0 0 0 3px var(--danger-soft);}
 label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight:600;}
 
 .btn{
   background:var(--grad); color:#06121a; border:none; padding:10px 18px;
-  border-radius:var(--radius-sm); font-weight:700; font-size:13px; cursor:pointer; transition:.18s;
-  font-family:var(--sans); box-shadow:0 4px 14px rgba(124,155,255,0.25);
+  border-radius:var(--radius-sm); font-weight:700; font-size:13px; cursor:pointer;
+  transition:filter .18s, transform .18s, box-shadow .18s; font-family:var(--sans);
+  box-shadow:0 4px 14px rgba(124,155,255,0.25); white-space:nowrap;
 }
 .btn:hover{filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 6px 20px rgba(124,155,255,0.35);}
 .btn:active{transform:translateY(0);}
 .btn.ghost{background:var(--surface); border:1px solid var(--border); color:var(--text-dim); box-shadow:none;}
 .btn.ghost:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-1px);}
 .btn.small{padding:6px 12px; font-size:12px;}
-.btn.danger-btn{background:transparent; color:var(--text-faint); border:1px solid var(--border); padding:5px 9px; font-size:11px; box-shadow:none;}
-.btn.danger-btn:hover{color:var(--danger); border-color:var(--danger); background:var(--danger-soft);}
+.btn.row-btn{background:transparent; color:var(--text-faint); border:1px solid var(--border); padding:5px 10px; font-size:11px; box-shadow:none; font-weight:600;}
+.btn.row-btn:hover{color:var(--accent); border-color:var(--accent); background:var(--accent-soft); transform:none;}
+.btn.row-btn.del:hover{color:var(--danger); border-color:var(--danger); background:var(--danger-soft);}
 .btn:disabled{opacity:.4; cursor:not-allowed; transform:none; filter:none;}
 
 .row-form{display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:16px;}
-.row-form .field{display:flex; flex-direction:column; gap:5px; min-width:110px; flex:1;}
+.row-form .field{display:flex; flex-direction:column; gap:5px; min-width:112px; flex:1;}
 .row-form .field.grow{flex:2;}
+.form-msg{font-size:12px; color:var(--danger); margin:-8px 0 12px; min-height:16px;}
+.editing-banner{
+  display:none; align-items:center; gap:10px; background:var(--accent-soft); border:1px solid var(--accent);
+  border-radius:var(--radius-sm); padding:9px 14px; margin-bottom:14px; font-size:12.5px; color:var(--accent);
+}
+.editing-banner.on{display:flex;}
 
 /* ---------- calendar ---------- */
 .cal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
-.cal-title-wrap{display:flex; align-items:baseline; gap:10px;}
+.cal-title-wrap{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
 .cal-header .month-label{font-size:20px; font-weight:700; letter-spacing:-0.01em;}
 #cal-total{font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
 .cal-nav{display:flex; gap:6px;}
 .cal-nav button{
   background:var(--surface-2); border:1px solid var(--border); color:var(--text);
-  width:34px; height:34px; border-radius:var(--radius-sm); cursor:pointer; font-size:15px; transition:.15s;
+  min-width:34px; height:34px; padding:0 10px; border-radius:var(--radius-sm); cursor:pointer; font-size:15px; transition:.15s;
 }
 .cal-nav button:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
+.cal-legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--text-faint); margin-top:12px;}
+.cal-legend span{display:flex; align-items:center; gap:6px;}
+.cal-legend i{width:9px; height:9px; border-radius:3px; display:block;}
 
 .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
-.cal-dow{background:var(--surface-2); color:var(--text-faint); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; text-align:center; padding:9px 0; font-weight:700;}
-.cal-day{background:var(--surface); min-height:92px; padding:6px; position:relative; transition:.15s;}
+.cal-dow{background:var(--surface-2); color:var(--text-faint); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; text-align:center; padding:9px 2px; font-weight:700;}
+.cal-day{background:var(--surface); min-height:94px; padding:6px; position:relative; transition:background .15s;}
 .cal-day:hover{background:var(--surface-hover);}
 .cal-day.empty{background:var(--bg-2);}
-.cal-day.today{background:linear-gradient(160deg, var(--accent-soft), var(--surface)); box-shadow:inset 0 0 0 1px rgba(124,155,255,0.4);}
+.cal-day.today{background:linear-gradient(160deg,var(--accent-soft),var(--surface)); box-shadow:inset 0 0 0 1px rgba(124,155,255,0.45);}
 .cal-day.today .daynum{color:var(--accent); font-weight:800;}
 .daynum{font-family:var(--mono); font-size:12px; color:var(--text-faint); text-align:right; margin-bottom:4px;}
-.cal-bill{
-  font-size:10.5px; background:var(--warn-soft); color:var(--warn); border-radius:5px;
-  padding:2.5px 6px; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+.cal-item{
+  font-size:10.5px; border-radius:5px; padding:2.5px 6px; margin-bottom:3px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
+.cal-item.bill{background:var(--warn-soft); color:var(--warn);}
+.cal-item.pay{background:var(--accent2-soft); color:var(--accent-2);}
+.cal-item.more{background:transparent; color:var(--text-faint);}
 .cal-total{position:absolute; bottom:5px; right:7px; font-family:var(--mono); font-size:10.5px; color:var(--text-faint);}
 .cal-day.has-bills .cal-total{color:var(--warn); font-weight:700;}
-@media(max-width:700px){ .cal-day{min-height:64px; font-size:11px;} .cal-bill{font-size:9px;} }
+@media(max-width:760px){
+  .cal-day{min-height:62px; padding:4px;}
+  .cal-item{font-size:8.5px; padding:2px 4px;}
+  .daynum{font-size:10.5px;}
+  .cal-total{font-size:9px; bottom:3px; right:4px;}
+}
 
-.badge{display:inline-block; padding:3px 10px; border-radius:999px; font-size:10.5px; font-weight:700; letter-spacing:.02em;}
+.badge{display:inline-block; padding:3px 10px; border-radius:999px; font-size:10.5px; font-weight:700; white-space:nowrap;}
 .badge.active{background:var(--accent2-soft); color:var(--accent-2);}
 .badge.paused{background:var(--warn-soft); color:var(--warn);}
 .badge.cancelled{background:var(--danger-soft); color:var(--danger);}
 
-.empty-note{color:var(--text-faint); font-size:12.5px; padding:18px 4px; text-align:center;}
+.empty-note{color:var(--text-faint); font-size:12.5px; padding:20px 4px; text-align:center;}
 .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:16px;}
 @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
 .bar-row{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:12.5px;}
 .bar-row .bar-label{width:130px; color:var(--text-dim); flex-shrink:0;}
-.bar-track{flex:1; height:8px; background:var(--surface-2); border-radius:5px; overflow:hidden;}
-.bar-fill{height:100%; background:var(--grad); border-radius:5px; transition:width .5s cubic-bezier(.16,1,.3,1); width:0;}
-.bar-val{width:74px; text-align:right; font-family:var(--mono); color:var(--text-dim); flex-shrink:0;}
+.bar-track{flex:1; height:8px; background:var(--surface-2); border-radius:5px; overflow:hidden; min-width:40px;}
+.bar-fill{height:100%; background:var(--grad); border-radius:5px; transition:width .6s cubic-bezier(.16,1,.3,1); width:0;}
+.bar-val{width:78px; text-align:right; font-family:var(--mono); color:var(--text-dim); flex-shrink:0;}
+@media(max-width:560px){ .bar-row .bar-label{width:96px; font-size:11.5px;} .bar-val{width:66px; font-size:11.5px;} }
 
-.footnote{font-size:11.5px; color:var(--text-faint); margin-top:14px; line-height:1.65; border-top:1px solid var(--border-soft); padding-top:12px;}
+.footnote{font-size:11.5px; color:var(--text-faint); margin-top:14px; line-height:1.7; border-top:1px solid var(--border-soft); padding-top:12px;}
 .nav-card{
   display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--radius-sm);
   border:1px solid var(--border); cursor:pointer; transition:.15s; margin-bottom:8px; background:var(--bg-2);
+  width:100%; text-align:left; font-family:var(--sans); color:var(--text);
 }
 .nav-card:hover{border-color:var(--accent); background:var(--accent-soft); transform:translateX(3px);}
 .nav-card .ic{font-size:16px;}
 .nav-card .tt{font-size:13px; font-weight:600;}
 .nav-card .ds{font-size:11.5px; color:var(--text-faint);}
 
-/* ---------- big number ---------- */
 .big-figure{text-align:center; padding:34px 20px;}
 .big-figure .label{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:12px; font-weight:700;}
-.big-figure .num{font-family:var(--mono); font-size:52px; font-weight:800; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:-.02em;}
-.big-figure .num.danger{background:none; color:var(--danger);}
+.big-figure .num{font-family:var(--mono); font-size:clamp(36px,9vw,52px); font-weight:800; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:-.02em;}
+.big-figure .num.danger{background:none; -webkit-text-fill-color:var(--danger); color:var(--danger);}
 .big-figure .sub{margin-top:8px; color:var(--text-faint); font-size:12.5px;}
+
+/* ---------- projection ---------- */
+.spark{width:100%; height:120px; display:block; overflow:visible;}
+.proj-alert{
+  display:flex; gap:12px; align-items:flex-start; border-radius:var(--radius-sm); padding:13px 16px;
+  font-size:12.5px; line-height:1.6; margin-bottom:14px;
+}
+.proj-alert.ok{background:var(--accent2-soft); color:var(--accent-2); border:1px solid rgba(62,230,184,0.3);}
+.proj-alert.bad{background:var(--danger-soft); color:var(--danger); border:1px solid rgba(255,112,137,0.35);}
 
 /* ---------- wizard ---------- */
 .wizard-overlay{
-  position:fixed; inset:0; background:rgba(6,8,15,0.78); backdrop-filter:blur(6px);
-  display:flex; align-items:center; justify-content:center; z-index:200; padding:20px;
-  animation:fadeIn .25s ease;
+  position:fixed; inset:0; background:rgba(6,8,15,0.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; z-index:200; padding:18px; animation:fadeIn .25s ease;
 }
-.wizard-overlay.hidden{display:none;}
+.wizard-overlay[hidden]{display:none;}
 .wizard-card{
   background:var(--surface); border:1px solid var(--border); border-radius:20px;
-  max-width:560px; width:100%; padding:32px; box-shadow:0 30px 80px rgba(0,0,0,0.5);
+  max-width:580px; width:100%; padding:30px; box-shadow:0 30px 80px rgba(0,0,0,0.5);
   animation:popIn .35s cubic-bezier(.16,1,.3,1); max-height:88vh; overflow-y:auto;
 }
 .wizard-steps{display:flex; gap:6px; margin-bottom:22px;}
-.wizard-steps .seg{flex:1; height:4px; border-radius:3px; background:var(--border); transition:.3s;}
+.wizard-steps .seg{flex:1; height:4px; border-radius:3px; background:var(--border); transition:background .3s;}
 .wizard-steps .seg.done{background:var(--grad);}
 .wizard-steps .seg.current{background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent);}
 .wizard-eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--accent); font-weight:700; margin-bottom:8px;}
 .wizard-title{font-size:22px; font-weight:800; margin:0 0 10px; letter-spacing:-0.01em;}
-.wizard-body{font-size:13.5px; color:var(--text-dim); line-height:1.7; margin-bottom:20px;}
-.wizard-actions{display:flex; justify-content:space-between; align-items:center; margin-top:22px; gap:10px;}
-.wizard-actions .left{display:flex; gap:8px;}
+.wizard-body{font-size:13.5px; color:var(--text-dim); line-height:1.75; margin-bottom:20px;}
+.wizard-actions{display:flex; justify-content:space-between; align-items:center; margin-top:22px; gap:10px; flex-wrap:wrap;}
 .wizard-emoji{font-size:38px; margin-bottom:14px; animation:floatGlow 3s ease-in-out infinite;}
-.wizard-added-list{display:flex; flex-direction:column; gap:8px; margin-top:14px; max-height:180px; overflow-y:auto;}
+.wizard-added-list{display:flex; flex-direction:column; gap:8px; margin-top:14px; max-height:186px; overflow-y:auto;}
 .wizard-added-row{
-  display:flex; justify-content:space-between; align-items:center; background:var(--bg-2);
-  border:1px solid var(--border-soft); border-radius:10px; padding:9px 12px; font-size:12.5px; animation:fadeUp .3s ease backwards;
+  display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--bg-2);
+  border:1px solid var(--border-soft); border-radius:10px; padding:9px 12px; font-size:12.5px; animation:fadeUp .3s ease;
 }
-.wizard-added-row .n{font-weight:600;}
-.wizard-added-row .a{font-family:var(--mono); color:var(--accent-2);}
+.wizard-added-row .n{font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.wizard-added-row .a{font-family:var(--mono); color:var(--accent-2); white-space:nowrap;}
 .chip-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
 .chip{
   background:var(--bg-2); border:1px solid var(--border); color:var(--text-dim); font-size:12px;
-  padding:7px 13px; border-radius:999px; cursor:pointer; transition:.15s; font-weight:600;
+  padding:7px 13px; border-radius:999px; cursor:pointer; transition:.15s; font-weight:600; font-family:var(--sans);
 }
 .chip:hover{border-color:var(--accent); color:var(--accent);}
 
-::-webkit-scrollbar{width:9px; height:9px;}
+/* ---------- toast ---------- */
+#toast-host{position:fixed; left:50%; transform:translateX(-50%); bottom:24px; z-index:300; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; width:calc(100% - 32px); max-width:440px;}
+.toast{
+  background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:11px 16px; font-size:13px; box-shadow:var(--shadow); display:flex; align-items:center; gap:14px;
+  animation:slideUpToast .3s cubic-bezier(.16,1,.3,1); pointer-events:auto; width:100%;
+}
+.toast .msg{flex:1; min-width:0;}
+.toast button{background:none; border:none; color:var(--accent); font-weight:700; font-size:12.5px; cursor:pointer; font-family:var(--sans); padding:4px 6px;}
+.toast button:hover{text-decoration:underline;}
 
-.confetti-dot{position:fixed; top:-10px; border-radius:2px; pointer-events:none; z-index:300;}
+.sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+.confetti-dot{position:fixed; top:-10px; border-radius:2px; pointer-events:none; z-index:310;}
 
-@media(max-width:640px){ main{padding:16px;} .topbar{padding:12px 16px;} nav.tabs{padding:8px 12px;} .wizard-card{padding:22px;} }
+@media(max-width:640px){
+  main{padding:18px 14px 50px;} .topbar{padding:12px 14px;} nav.tabs{padding:8px 12px; top:59px;}
+  .wizard-card{padding:22px;} .panel{padding:16px;} .stat{padding:15px 16px;}
+  .brand h1{font-size:14px;}
+}
+@media print{
+  body{background:#fff; color:#000;}
+  .topbar,nav.tabs,#toast-host,.wizard-overlay,.btn,.icon-btn,.row-form,.cal-nav{display:none !important;}
+  .view[hidden]{display:block !important;}
+  .panel,.stat{border:1px solid #ccc; background:#fff; break-inside:avoid;}
+  .stat .value,.big-figure .num{color:#000 !important; -webkit-text-fill-color:#000 !important; background:none !important;}
+}
 </style>
 </head>
 <body>
 
-<div class="topbar">
+<header class="topbar">
   <div class="brand">
-    <div class="logo">M</div>
+    <div class="logo" aria-hidden="true">M</div>
     <h1>Mentifaber <span class="dim">Budget</span></h1>
   </div>
   <div class="topbar-right">
-    <span class="save-indicator" id="save-indicator"><span class="dot"></span>Saved</span>
+    <span class="save-indicator" id="save-indicator" role="status" aria-live="polite"><span class="dot"></span>Saved</span>
     <div class="clock" id="clock"></div>
-    <button class="icon-btn" id="help-btn" title="Setup guide">?</button>
+    <button class="icon-btn" id="help-btn" title="Run the setup guide">Setup</button>
   </div>
-</div>
+</header>
 
-<nav class="tabs" id="tabs">
-  <button data-view="dashboard" class="active">Dashboard</button>
-  <button data-view="income">Income</button>
-  <button data-view="ledger">Bills</button>
-  <button data-view="calendar">Calendar</button>
-  <button data-view="transactions">Transactions</button>
-  <button data-view="dailyspend">Daily Spend</button>
-  <button data-view="analysis">Analysis</button>
-  <button data-view="readme">Guide</button>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Budget sections">
+  <button role="tab" id="tab-dashboard" aria-controls="view-dashboard" aria-selected="true" data-view="dashboard">Dashboard</button>
+  <button role="tab" id="tab-income" aria-controls="view-income" aria-selected="false" tabindex="-1" data-view="income">Income</button>
+  <button role="tab" id="tab-ledger" aria-controls="view-ledger" aria-selected="false" tabindex="-1" data-view="ledger">Bills</button>
+  <button role="tab" id="tab-calendar" aria-controls="view-calendar" aria-selected="false" tabindex="-1" data-view="calendar">Calendar</button>
+  <button role="tab" id="tab-transactions" aria-controls="view-transactions" aria-selected="false" tabindex="-1" data-view="transactions">Transactions</button>
+  <button role="tab" id="tab-dailyspend" aria-controls="view-dailyspend" aria-selected="false" tabindex="-1" data-view="dailyspend">Daily Spend</button>
+  <button role="tab" id="tab-analysis" aria-controls="view-analysis" aria-selected="false" tabindex="-1" data-view="analysis">Analysis</button>
+  <button role="tab" id="tab-readme" aria-controls="view-readme" aria-selected="false" tabindex="-1" data-view="readme">Guide</button>
 </nav>
 
 <main>
 
   <!-- ============ DASHBOARD ============ -->
-  <div class="view active" id="view-dashboard">
-    <section class="block">
-      <h2 class="section-title"><span class="dot"></span>Current Status</h2>
-      <div class="grid cols-4">
-        <div class="stat" style="animation-delay:.02s"><div class="label">Current Balance</div><div class="value" id="stat-balance">$0</div><div class="sub" id="stat-balance-sub">as of —</div></div>
-        <div class="stat" style="animation-delay:.06s"><div class="label">This Month's Bills</div><div class="value warn" id="stat-bills">$0</div><div class="sub" id="stat-bills-sub">0 active bills</div></div>
-        <div class="stat" style="animation-delay:.1s"><div class="label">Monthly Net Income</div><div class="value accent" id="stat-net-income">$0</div><div class="sub">from income rules &amp; logs</div></div>
-        <div class="stat" id="stat-surplus-card" style="animation-delay:.14s"><div class="label">Monthly Surplus</div><div class="value" id="stat-surplus">$0</div><div class="sub">income − bills</div></div>
+  <div class="view" id="view-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" tabindex="0">
+    <section class="block" id="dashboard-empty-state" hidden>
+      <div class="panel" style="text-align:center; padding:44px 24px;">
+        <div style="font-size:34px; margin-bottom:10px;" aria-hidden="true">👋</div>
+        <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Nothing set up yet</div>
+        <p class="hint" style="max-width:420px; margin:0 auto 18px;">Run the quick setup guide and you'll have a working budget in about two minutes.</p>
+        <button class="btn" data-action="start-wizard">Start Setup Guide</button>
       </div>
     </section>
 
-    <section class="block" id="dashboard-empty-state" style="display:none;">
-      <div class="panel" style="text-align:center; padding:44px 24px;">
-        <div style="font-size:34px; margin-bottom:10px;">👋</div>
-        <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Nothing set up yet</div>
-        <div style="font-size:13px; color:var(--text-dim); max-width:420px; margin:0 auto 18px;">Run the quick setup guide and you'll have a working budget in about two minutes.</div>
-        <button class="btn" onclick="startWizard()">Start Setup Guide</button>
+    <section class="block">
+      <h2 class="section-title"><span class="dot"></span>Current Status</h2>
+      <div class="grid cols-4">
+        <div class="stat"><div class="label">Current Balance</div><div class="value" id="stat-balance" data-count>$0</div><div class="sub" id="stat-balance-sub">as of —</div></div>
+        <div class="stat"><div class="label">Monthly Bills</div><div class="value warn" id="stat-bills" data-count>$0</div><div class="sub" id="stat-bills-sub">0 active bills</div></div>
+        <div class="stat"><div class="label">Monthly Net Income</div><div class="value accent" id="stat-net-income" data-count>$0</div><div class="sub">from income rules &amp; logs</div></div>
+        <div class="stat" id="stat-surplus-card"><div class="label">Monthly Surplus</div><div class="value" id="stat-surplus" data-count>$0</div><div class="sub">income − bills</div></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="section-title"><span class="dot"></span>90-Day Balance Projection</h2>
+      <div class="panel">
+        <div id="proj-alert" class="proj-alert ok"></div>
+        <svg class="spark" id="proj-spark" viewBox="0 0 800 120" preserveAspectRatio="none" role="img" aria-labelledby="proj-spark-title"><title id="proj-spark-title">Projected balance over the next 90 days</title></svg>
+        <div class="grid cols-3" style="margin-top:16px;">
+          <div class="stat"><div class="label">Lowest Point</div><div class="value" id="proj-low">$0</div><div class="sub" id="proj-low-date">—</div></div>
+          <div class="stat"><div class="label">In 30 Days</div><div class="value" id="proj-30">$0</div></div>
+          <div class="stat"><div class="label">In 90 Days</div><div class="value" id="proj-90">$0</div></div>
+        </div>
+        <p class="footnote">Projected forward from your current balance using every bill due date and payday in your ledger. It assumes no discretionary spending at all — real life lands below this line, which is exactly why the Daily Spend number matters.</p>
       </div>
     </section>
 
     <section class="block">
       <h2 class="section-title"><span class="dot"></span>Income Summary</h2>
       <div class="grid cols-4">
-        <div class="stat"><div class="label">Monthly Gross</div><div class="value gold" id="d-mgross">$0</div></div>
-        <div class="stat"><div class="label">Monthly Net</div><div class="value gold" id="d-mnet">$0</div></div>
-        <div class="stat"><div class="label">Yearly Gross</div><div class="value gold" id="d-ygross">$0</div></div>
-        <div class="stat"><div class="label">Yearly Net</div><div class="value gold" id="d-ynet">$0</div></div>
+        <div class="stat"><div class="label">Monthly Gross</div><div class="value gold" id="d-mgross" data-count>$0</div></div>
+        <div class="stat"><div class="label">Monthly Net</div><div class="value gold" id="d-mnet" data-count>$0</div></div>
+        <div class="stat"><div class="label">Yearly Gross</div><div class="value gold" id="d-ygross" data-count>$0</div></div>
+        <div class="stat"><div class="label">Yearly Net</div><div class="value gold" id="d-ynet" data-count>$0</div></div>
       </div>
     </section>
 
     <section class="block two-col">
       <div class="panel">
-        <h2 class="section-title"><span class="dot"></span>Upcoming Bills — Next 14 Days</h2>
-        <table>
-          <thead><tr><th>Date</th><th>Bill</th><th>Category</th><th class="num">Amount</th></tr></thead>
-          <tbody id="upcoming-body"></tbody>
-        </table>
-        <div class="empty-note" id="upcoming-empty" style="display:none;">No bills due in the next 14 days.</div>
+        <h2 class="section-title"><span class="dot"></span>Upcoming — Next 14 Days</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Item</th><th>Category</th><th class="num">Amount</th></tr></thead>
+            <tbody id="upcoming-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-note" id="upcoming-empty" hidden>Nothing due in the next 14 days.</div>
       </div>
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Quick Nav</h2>
-        <div class="nav-card" data-goto="ledger"><span class="ic">🧾</span><div><div class="tt">Bills</div><div class="ds">Add or edit bills — source of truth</div></div></div>
-        <div class="nav-card" data-goto="calendar"><span class="ic">📅</span><div><div class="tt">Calendar</div><div class="ds">Visual month-by-month view</div></div></div>
-        <div class="nav-card" data-goto="transactions"><span class="ic">💳</span><div><div class="tt">Transactions</div><div class="ds">Log spending, sets your balance</div></div></div>
-        <div class="nav-card" data-goto="dailyspend"><span class="ic">🎯</span><div><div class="tt">Daily Spend</div><div class="ds">What's safe to spend today</div></div></div>
-        <div class="nav-card" data-goto="income"><span class="ic">💰</span><div><div class="tt">Income</div><div class="ds">Paychecks &amp; side income</div></div></div>
-        <div class="footnote">Your balance isn't pulled live from a bank — no page can safely do that without a licensed backend behind it. Set a starting balance and log transactions (or paste a CSV export) on the Transactions tab, and everything above updates automatically.</div>
+        <button class="nav-card" data-goto="ledger"><span class="ic" aria-hidden="true">🧾</span><span><span class="tt">Bills</span><br><span class="ds">Add or edit bills — source of truth</span></span></button>
+        <button class="nav-card" data-goto="calendar"><span class="ic" aria-hidden="true">📅</span><span><span class="tt">Calendar</span><br><span class="ds">Bills and paydays, month by month</span></span></button>
+        <button class="nav-card" data-goto="transactions"><span class="ic" aria-hidden="true">💳</span><span><span class="tt">Transactions</span><br><span class="ds">Log spending, sets your balance</span></span></button>
+        <button class="nav-card" data-goto="dailyspend"><span class="ic" aria-hidden="true">🎯</span><span><span class="tt">Daily Spend</span><br><span class="ds">What's safe to spend today</span></span></button>
+        <div class="footnote">Your balance isn't pulled live from a bank — no static page can safely do that. Set a starting balance and log transactions (or paste a CSV export) on the Transactions tab, and everything above updates automatically.</div>
       </div>
     </section>
   </div>
 
   <!-- ============ INCOME ============ -->
-  <div class="view" id="view-income">
+  <div class="view" id="view-income" role="tabpanel" aria-labelledby="tab-income" tabindex="0" hidden>
     <section class="block">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Recurring Income Rules</h2>
-        <p class="hint">These drive your rollup numbers automatically — no need to log every paycheck by hand. Log an actual paycheck below only if the real amount differs from the rule.</p>
+        <p class="hint">These drive your rollup numbers and the projection automatically — no need to log every paycheck by hand. Log an actual paycheck below only when the real amount differs from the rule.</p>
+        <div class="editing-banner" id="rule-editing"><span>Editing an existing rule</span><button class="btn row-btn" data-action="cancel-rule-edit">Cancel</button></div>
         <div class="row-form">
-          <div class="field grow"><label>Label</label><input type="text" id="rule-label" placeholder="e.g. Weekly job pay"></div>
-          <div class="field"><label>Frequency</label>
+          <div class="field grow"><label for="rule-label">Label</label><input type="text" id="rule-label" placeholder="e.g. Weekly job pay"></div>
+          <div class="field"><label for="rule-freq">Frequency</label>
             <select id="rule-freq"><option>Weekly</option><option>Biweekly</option></select>
           </div>
-          <div class="field"><label>Pay day</label>
-            <select id="rule-day"><option>Friday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Saturday</option><option>Sunday</option></select>
+          <div class="field"><label for="rule-dow">Pay day</label>
+            <select id="rule-dow"><option value="5">Friday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="6">Saturday</option><option value="0">Sunday</option></select>
           </div>
-          <div class="field"><label>First pay date (biweekly)</label><input type="date" id="rule-startdate"></div>
-          <div class="field"><label>Gross</label><input type="number" id="rule-gross" placeholder="0.00" step="0.01"></div>
-          <div class="field"><label>Tax/deductions</label><input type="number" id="rule-tax" placeholder="0.00" step="0.01"></div>
-          <button class="btn" onclick="addIncomeRule()">Add Rule</button>
+          <div class="field"><label for="rule-anchor">Next pay date</label><input type="date" id="rule-anchor"></div>
+          <div class="field"><label for="rule-gross">Gross</label><input type="number" id="rule-gross" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label for="rule-tax">Tax/deductions</label><input type="number" id="rule-tax" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <button class="btn" data-action="save-rule" id="rule-submit">Add Rule</button>
         </div>
-        <table>
-          <thead><tr><th>Label</th><th>Frequency</th><th>Pay Day</th><th class="num">Gross</th><th class="num">Tax</th><th class="num">Net</th><th></th></tr></thead>
-          <tbody id="rules-body"></tbody>
-        </table>
-        <div class="empty-note" id="rules-empty" style="display:none;">No recurring rules yet — add one above, or run the setup guide.</div>
+        <div class="form-msg" id="rule-msg"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Label</th><th>Frequency</th><th>Pay Day</th><th class="num">Gross</th><th class="num">Tax</th><th class="num">Net</th><th class="num">Monthly Net</th><th></th></tr></thead>
+            <tbody id="rules-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-note" id="rules-empty" hidden>No recurring rules yet — add one above, or run the setup guide.</div>
       </div>
     </section>
 
     <section class="block two-col">
       <div class="panel">
-        <h2 class="section-title"><span class="dot"></span>Weekly Job Income — Actual Log</h2>
+        <h2 class="section-title"><span class="dot"></span>Job Income — Actual Log</h2>
         <div class="row-form">
-          <div class="field"><label>Week of</label><input type="date" id="job-date"></div>
-          <div class="field"><label>Gross pay</label><input type="number" id="job-gross" placeholder="0.00" step="0.01"></div>
-          <div class="field"><label>Taxes/deductions</label><input type="number" id="job-ded" placeholder="0.00" step="0.01"></div>
-          <div class="field grow"><label>Notes</label><input type="text" id="job-notes" placeholder="optional"></div>
-          <button class="btn" onclick="addJobIncome()">Add</button>
+          <div class="field"><label for="job-date">Week of</label><input type="date" id="job-date"></div>
+          <div class="field"><label for="job-gross">Gross pay</label><input type="number" id="job-gross" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label for="job-ded">Deductions</label><input type="number" id="job-ded" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <div class="field grow"><label for="job-notes">Notes</label><input type="text" id="job-notes" placeholder="optional"></div>
+          <button class="btn" data-action="add-job">Add</button>
         </div>
-        <table>
-          <thead><tr><th>Week Of</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net</th><th>Notes</th><th></th></tr></thead>
-          <tbody id="job-body"></tbody>
-        </table>
-        <div class="empty-note" id="job-empty">No entries yet — log this week's pay above.</div>
+        <div class="form-msg" id="job-msg"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Week Of</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="job-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-note" id="job-empty">No entries yet. Logging real paychecks here overrides the rule estimate above.</div>
       </div>
 
       <div class="panel">
-        <h2 class="section-title"><span class="dot"></span>Side Income (Music / Software / Other)</h2>
+        <h2 class="section-title"><span class="dot"></span>Side Income</h2>
         <div class="row-form">
-          <div class="field"><label>Date</label><input type="date" id="side-date"></div>
-          <div class="field grow"><label>Source</label><input type="text" id="side-source" placeholder="e.g. Weaver license"></div>
-          <div class="field"><label>Category</label>
+          <div class="field"><label for="side-date">Date</label><input type="date" id="side-date"></div>
+          <div class="field grow"><label for="side-source">Source</label><input type="text" id="side-source" placeholder="e.g. Weaver license"></div>
+          <div class="field"><label for="side-cat">Category</label>
             <select id="side-cat"><option>Music</option><option>Software</option><option>Freelance</option><option>Other</option></select>
           </div>
-          <div class="field"><label>Gross</label><input type="number" id="side-gross" placeholder="0.00" step="0.01"></div>
-          <div class="field"><label>Net</label><input type="number" id="side-net" placeholder="0.00" step="0.01"></div>
-          <button class="btn" onclick="addSideIncome()">Add</button>
+          <div class="field"><label for="side-gross">Gross</label><input type="number" id="side-gross" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label for="side-net">Net</label><input type="number" id="side-net" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <button class="btn" data-action="add-side">Add</button>
         </div>
-        <table>
-          <thead><tr><th>Date</th><th>Source</th><th>Category</th><th class="num">Gross</th><th class="num">Net</th><th></th></tr></thead>
-          <tbody id="side-body"></tbody>
-        </table>
+        <div class="form-msg" id="side-msg"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Source</th><th>Category</th><th class="num">Gross</th><th class="num">Net</th><th></th></tr></thead>
+            <tbody id="side-body"></tbody>
+          </table>
+        </div>
         <div class="empty-note" id="side-empty">No side income logged yet.</div>
       </div>
     </section>
@@ -439,49 +520,60 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
     <section class="block">
       <h2 class="section-title"><span class="dot"></span>Income Rollup</h2>
       <div class="grid cols-4">
-        <div class="stat"><div class="label">Avg Weekly Net (Job)</div><div class="value" id="r-avgwn">$0</div></div>
+        <div class="stat"><div class="label">Avg Weekly Net</div><div class="value" id="r-avgwn">$0</div></div>
         <div class="stat"><div class="label">Monthly Net — Job</div><div class="value" id="r-mnj">$0</div></div>
         <div class="stat"><div class="label">Monthly Net — Side</div><div class="value" id="r-mns">$0</div></div>
         <div class="stat"><div class="label">Total Monthly Net</div><div class="value gold" id="r-tmn">$0</div></div>
       </div>
+      <p class="footnote" id="income-source-note"></p>
     </section>
   </div>
 
   <!-- ============ BILLS LEDGER ============ -->
-  <div class="view" id="view-ledger">
+  <div class="view" id="view-ledger" role="tabpanel" aria-labelledby="tab-ledger" tabindex="0" hidden>
     <section class="block">
       <h2 class="section-title"><span class="dot"></span>Add / Edit Bill</h2>
       <div class="panel">
+        <div class="editing-banner" id="bill-editing"><span>Editing an existing bill</span><button class="btn row-btn" data-action="cancel-bill-edit">Cancel</button></div>
         <div class="row-form">
-          <div class="field grow"><label>Bill name</label><input type="text" id="bill-name" placeholder="e.g. Rent"></div>
-          <div class="field"><label>Category</label>
-            <select id="bill-cat"><option>Housing</option><option>Utilities</option><option>Insurance</option><option>Subscriptions</option><option>Debt</option><option>Transportation</option><option>Health</option><option>Other</option></select>
+          <div class="field grow"><label for="bill-name">Bill name</label><input type="text" id="bill-name" placeholder="e.g. Rent"></div>
+          <div class="field"><label for="bill-cat">Category</label>
+            <select id="bill-cat"><option>Housing</option><option>Utilities</option><option>Insurance</option><option>Subscriptions</option><option>Debt</option><option>Transportation</option><option>Food</option><option>Health</option><option>Other</option></select>
           </div>
-          <div class="field"><label>Amount</label><input type="number" id="bill-amt" placeholder="0.00" step="0.01"></div>
-          <div class="field"><label>Due day</label><input type="number" id="bill-day" placeholder="1-31" min="1" max="31"></div>
-          <div class="field"><label>Frequency</label>
+          <div class="field"><label for="bill-amt">Amount</label><input type="number" id="bill-amt" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label for="bill-freq">Frequency</label>
             <select id="bill-freq"><option>Monthly</option><option>Weekly</option><option>Biweekly</option><option>Quarterly</option><option>Annual</option><option>One-Time</option></select>
           </div>
-          <div class="field"><label>Autopay</label><select id="bill-auto"><option>Yes</option><option>No</option></select></div>
-          <div class="field"><label>Status</label><select id="bill-status"><option>Active</option><option>Paused</option><option>Cancelled</option></select></div>
-          <button class="btn" onclick="addBill()">Add Bill</button>
+          <div class="field" id="field-bill-day"><label for="bill-day">Due day of month</label><input type="number" id="bill-day" placeholder="1-31" min="1" max="31" inputmode="numeric"></div>
+          <div class="field" id="field-bill-dow" hidden><label for="bill-dow">Due day of week</label>
+            <select id="bill-dow"><option value="5">Friday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="6">Saturday</option><option value="0">Sunday</option></select>
+          </div>
+          <div class="field" id="field-bill-date" hidden><label for="bill-date">Due date</label><input type="date" id="bill-date"></div>
+          <div class="field" id="field-bill-anchor" hidden><label for="bill-anchor">Next due date</label><input type="date" id="bill-anchor"></div>
+          <div class="field"><label for="bill-auto">Autopay</label><select id="bill-auto"><option>Yes</option><option>No</option></select></div>
+          <div class="field"><label for="bill-status">Status</label><select id="bill-status"><option>Active</option><option>Paused</option><option>Cancelled</option></select></div>
+          <button class="btn" data-action="save-bill" id="bill-submit">Add Bill</button>
         </div>
+        <div class="form-msg" id="bill-msg"></div>
+        <p class="hint" id="bill-freq-hint" style="margin-bottom:0;"></p>
       </div>
     </section>
 
     <section class="block">
       <h2 class="section-title"><span class="dot"></span>Bills Ledger — Source of Truth</h2>
-      <table>
-        <thead><tr><th>Bill</th><th>Category</th><th class="num">Amount</th><th class="num">Due Day</th><th>Frequency</th><th>Autopay</th><th>Status</th><th></th></tr></thead>
-        <tbody id="ledger-body"></tbody>
-      </table>
-      <div class="empty-note" id="ledger-empty" style="display:none;">No bills yet — add your first one above, or run the setup guide.</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bill</th><th>Category</th><th class="num">Amount</th><th>Due</th><th>Frequency</th><th class="num">Monthly Equiv.</th><th>Status</th><th></th></tr></thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-note" id="ledger-empty" hidden>No bills yet — add your first one above, or run the setup guide.</div>
       <div class="footnote" id="ledger-totals"></div>
     </section>
   </div>
 
   <!-- ============ CALENDAR ============ -->
-  <div class="view" id="view-calendar">
+  <div class="view" id="view-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabindex="0" hidden>
     <section class="block">
       <div class="cal-header">
         <div class="cal-title-wrap">
@@ -489,27 +581,32 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
           <div id="cal-total"></div>
         </div>
         <div class="cal-nav">
-          <button onclick="calShift(-1)">‹</button>
-          <button onclick="calToday()">•</button>
-          <button onclick="calShift(1)">›</button>
+          <button data-action="cal-prev" aria-label="Previous month">‹</button>
+          <button data-action="cal-today" aria-label="Jump to this month">•</button>
+          <button data-action="cal-next" aria-label="Next month">›</button>
         </div>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
-      <div class="footnote">Bills placed here come straight from the Bills Ledger by due day. Add or edit a bill on the Bills tab and it appears here automatically — this grid has no data of its own.</div>
+      <div class="cal-legend">
+        <span><i style="background:var(--warn)"></i>Bill due</span>
+        <span><i style="background:var(--accent-2)"></i>Payday</span>
+        <span><i style="background:var(--accent)"></i>Today</span>
+      </div>
+      <div class="footnote">Everything here comes straight from your Bills and Income Rules — this grid holds no data of its own. Weekly and biweekly items repeat properly across the month; quarterly, annual and one-time items only appear in the months they actually land in.</div>
     </section>
   </div>
 
   <!-- ============ TRANSACTIONS ============ -->
-  <div class="view" id="view-transactions">
+  <div class="view" id="view-transactions" role="tabpanel" aria-labelledby="tab-transactions" tabindex="0" hidden>
     <section class="block">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Starting Balance</h2>
-        <div class="row-form">
-          <div class="field"><label>Starting balance</label><input type="number" id="start-bal" placeholder="0.00" step="0.01" value="0"></div>
-          <div class="field"><label>As of date</label><input type="date" id="start-date"></div>
-          <button class="btn ghost" onclick="setStartingBalance()">Set</button>
+        <div class="row-form" style="margin-bottom:0;">
+          <div class="field"><label for="start-bal">Starting balance</label><input type="number" id="start-bal" placeholder="0.00" step="0.01" inputmode="decimal" value="0"></div>
+          <div class="field"><label for="start-date">As of date</label><input type="date" id="start-date"></div>
+          <button class="btn ghost" data-action="set-balance">Set</button>
           <div style="flex:2"></div>
-          <div class="stat" style="min-width:200px; animation:none;"><div class="label">Current Balance</div><div class="value" id="t-current-bal">$0</div></div>
+          <div class="stat" style="min-width:200px;"><div class="label">Current Balance</div><div class="value" id="t-current-bal">$0</div></div>
         </div>
       </div>
     </section>
@@ -518,41 +615,52 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
       <h2 class="section-title"><span class="dot"></span>Log a Transaction</h2>
       <div class="panel">
         <div class="row-form">
-          <div class="field"><label>Date</label><input type="date" id="txn-date"></div>
-          <div class="field grow"><label>Description</label><input type="text" id="txn-desc" placeholder="e.g. Groceries"></div>
-          <div class="field"><label>Category</label>
+          <div class="field"><label for="txn-date">Date</label><input type="date" id="txn-date"></div>
+          <div class="field grow"><label for="txn-desc">Description</label><input type="text" id="txn-desc" placeholder="e.g. Groceries"></div>
+          <div class="field"><label for="txn-cat">Category</label>
             <select id="txn-cat"><option>Housing</option><option>Utilities</option><option>Insurance</option><option>Subscriptions</option><option>Debt</option><option>Transportation</option><option>Health</option><option>Food</option><option>Fun</option><option>Music/Software</option><option>Other</option></select>
           </div>
-          <div class="field"><label>Amount (+/−)</label><input type="number" id="txn-amt" placeholder="-50.00 or 500.00" step="0.01"></div>
-          <div class="field"><label>Type</label>
+          <div class="field"><label for="txn-amt">Amount (+/−)</label><input type="number" id="txn-amt" placeholder="-50.00" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label for="txn-type">Type</label>
             <select id="txn-type"><option>Purchase</option><option>Income</option><option>Bill</option><option>Transfer</option><option>Fee</option><option>Refund</option><option>Other</option></select>
           </div>
-          <button class="btn" onclick="addTxn()">Add</button>
+          <button class="btn" data-action="add-txn">Add</button>
         </div>
+        <div class="form-msg" id="txn-msg"></div>
         <p class="hint" style="margin-bottom:0;">Amount is signed: negative for money out, positive for money in. Type "Income" is what Analysis uses to separate earnings from spending.</p>
       </div>
     </section>
 
     <section class="block">
-      <h2 class="section-title"><span class="dot"></span>Transaction Log</h2>
-      <table>
-        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Type</th><th class="num">Running Balance</th><th></th></tr></thead>
-        <tbody id="txn-body"></tbody>
-      </table>
-      <div class="empty-note" id="txn-empty" style="display:none;">No transactions logged yet.</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+        <h2 class="section-title" style="margin:0;"><span class="dot"></span>Transaction Log</h2>
+        <div style="max-width:260px; flex:1; min-width:180px;">
+          <label for="txn-search" class="sr-only">Search transactions</label>
+          <input type="search" id="txn-search" placeholder="Search description or category…">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Type</th><th class="num">Running Balance</th><th></th></tr></thead>
+          <tbody id="txn-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-note" id="txn-empty" hidden>No transactions logged yet.</div>
     </section>
 
     <section class="block">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Bank CSV Import</h2>
         <p class="hint">
-          Paste rows from a bank CSV export below — one transaction per line, comma-separated as <code style="color:var(--accent-2)">Date,Description,Amount</code>.
-          Most banks export in this order or close to it. Review the parsed preview, then import into the log above.
+          Paste rows from a bank CSV export — one transaction per line, comma-separated as
+          <code style="color:var(--accent-2)">Date,Description,Amount</code>. A header row is detected and skipped automatically.
+          Review the parsed preview, then import.
         </p>
+        <label for="csv-input" class="sr-only">CSV rows</label>
         <textarea id="csv-input" rows="6" style="font-family:var(--mono); font-size:12px;" placeholder="2026-09-01,Paycheck,650.00&#10;2026-09-03,Grocery Store,-84.12"></textarea>
-        <div style="margin-top:10px; display:flex; gap:8px;">
-          <button class="btn ghost" onclick="parseCsv()">Preview</button>
-          <button class="btn" onclick="importCsv()" id="csv-import-btn" disabled>Import All</button>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn ghost" data-action="csv-preview">Preview</button>
+          <button class="btn" data-action="csv-import" id="csv-import-btn" disabled>Import All</button>
         </div>
         <div id="csv-preview" style="margin-top:12px;"></div>
       </div>
@@ -560,20 +668,12 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
   </div>
 
   <!-- ============ DAILY SPEND ============ -->
-  <div class="view" id="view-dailyspend">
+  <div class="view" id="view-dailyspend" role="tabpanel" aria-labelledby="tab-dailyspend" tabindex="0" hidden>
     <section class="block">
-      <div class="panel">
-        <h2 class="section-title"><span class="dot"></span>Controls</h2>
-        <div class="row-form">
-          <div class="field"><label>Safety buffer %</label><input type="number" id="ds-ctrl-buffer" min="0" max="100" step="1" value="10"></div>
-          <div class="field"><label>Weeks per month</label><input type="number" id="ds-ctrl-weeks" min="4" max="4.5" step="0.001" value="4.333"></div>
-          <div class="field"><label>Treat %</label><input type="number" id="ds-ctrl-pct-treat" min="0" max="100" step="1" value="25"></div>
-          <div class="field"><label>Flex/social %</label><input type="number" id="ds-ctrl-pct-flex" min="0" max="100" step="1" value="45"></div>
-          <div class="field"><label>Extra savings %</label><input type="number" id="ds-ctrl-pct-save" min="0" max="100" step="1" value="30"></div>
-          <button class="btn" onclick="applyDailySpendControls()">Apply</button>
-          <button class="btn ghost" onclick="resetDailySpendControls()">Reset Defaults</button>
-        </div>
-        <p class="footnote" id="ds-ctrl-warning" style="margin-top:0;"></p>
+      <div class="panel big-figure">
+        <div class="label">Safe to Spend Per Day</div>
+        <div class="num" id="ds-daily-spend">$0.00</div>
+        <div class="sub" id="ds-daily-note">after bills and your buffer are already set aside</div>
       </div>
     </section>
 
@@ -588,31 +688,40 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
     </section>
 
     <section class="block">
-      <div class="panel big-figure">
-        <div class="label">Safe to Spend Per Day</div>
-        <div class="num" id="ds-daily-spend">$0.00</div>
-        <div class="sub" id="ds-daily-note">after bills, gas, food, and the buffer are already set aside</div>
+      <div class="panel">
+        <h2 class="section-title"><span class="dot"></span>Controls</h2>
+        <p class="hint">Every number on this tab recalculates live from these. Nothing here is hardcoded.</p>
+        <div class="row-form">
+          <div class="field"><label for="ds-ctrl-buffer">Safety buffer %</label><input type="number" id="ds-ctrl-buffer" min="0" max="100" step="1" value="10" inputmode="decimal"></div>
+          <div class="field"><label for="ds-ctrl-weeks">Weeks per month</label><input type="number" id="ds-ctrl-weeks" min="4" max="4.5" step="0.001" value="4.333" inputmode="decimal"></div>
+          <div class="field"><label for="ds-ctrl-pct-treat">Treat %</label><input type="number" id="ds-ctrl-pct-treat" min="0" max="100" step="1" value="25" inputmode="decimal"></div>
+          <div class="field"><label for="ds-ctrl-pct-flex">Flex/social %</label><input type="number" id="ds-ctrl-pct-flex" min="0" max="100" step="1" value="45" inputmode="decimal"></div>
+          <div class="field"><label for="ds-ctrl-pct-save">Extra savings %</label><input type="number" id="ds-ctrl-pct-save" min="0" max="100" step="1" value="30" inputmode="decimal"></div>
+          <button class="btn" data-action="apply-ds">Apply</button>
+          <button class="btn ghost" data-action="reset-ds">Reset Defaults</button>
+        </div>
+        <p class="footnote" id="ds-ctrl-warning" style="margin-top:0;"></p>
       </div>
     </section>
 
     <section class="block two-col">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Daily Split</h2>
-        <div class="bar-row"><div class="bar-label">Spend (discretionary)</div><div class="bar-track"><div class="bar-fill" id="ds-bar-spend" style="width:0%"></div></div><div class="bar-val" id="ds-val-spend">$0</div></div>
-        <div class="bar-row"><div class="bar-label">Save / buffer</div><div class="bar-track"><div class="bar-fill" id="ds-bar-save" style="width:0%; background:linear-gradient(90deg,var(--gold),#fbe3a3);"></div></div><div class="bar-val" id="ds-val-save">$0</div></div>
+        <div class="bar-row"><div class="bar-label">Spend (discretionary)</div><div class="bar-track"><div class="bar-fill" id="ds-bar-spend"></div></div><div class="bar-val" id="ds-val-spend">$0</div></div>
+        <div class="bar-row"><div class="bar-label">Save / buffer</div><div class="bar-track"><div class="bar-fill" id="ds-bar-save" style="background:linear-gradient(90deg,var(--gold),#fbe3a3);"></div></div><div class="bar-val" id="ds-val-save">$0</div></div>
         <p class="footnote" id="ds-explainer" style="margin-top:14px;"></p>
       </div>
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Suggested Daily Allocation</h2>
         <div id="ds-lifestyle-buckets"></div>
-        <p class="footnote">This is a suggested split of your daily discretionary amount, not a rule the app enforces — spend it however you actually need to. Gas and groceries are already covered separately in your Bills Ledger, so this is money on top of those.</p>
+        <p class="footnote">A suggested split of your daily discretionary amount, not a rule the app enforces. If groceries and gas are in your Bills Ledger, this is money on top of those.</p>
       </div>
     </section>
 
     <section class="block">
       <h2 class="section-title"><span class="dot"></span>Estimated Savings Projection</h2>
       <div class="panel">
-        <p class="hint">Projected growth of your buffer alone, assuming it's set aside and not spent — no interest included, just straight accumulation. Not a promise, an estimate based on your current numbers.</p>
+        <p class="hint">Growth of your buffer alone, assuming it's set aside and not spent — no interest, just straight accumulation. An estimate from your current numbers, not a promise.</p>
         <div class="grid cols-4">
           <div class="stat"><div class="label">1 Month</div><div class="value gold" id="ds-sav-1m">$0</div></div>
           <div class="stat"><div class="label">3 Months</div><div class="value gold" id="ds-sav-3m">$0</div></div>
@@ -625,26 +734,28 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
     <section class="block">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Monthly View</h2>
-        <table>
-          <thead><tr><th></th><th class="num">Monthly</th><th class="num">Weekly</th><th class="num">Daily</th></tr></thead>
-          <tbody>
-            <tr><td>Net Income</td><td class="num amt" id="ds-m-income">$0</td><td class="num amt" id="ds-w-income">$0</td><td class="num amt" id="ds-d-income">$0</td></tr>
-            <tr><td>Bills (incl. gas &amp; food)</td><td class="num amt neg" id="ds-m-bills">$0</td><td class="num amt neg" id="ds-w-bills">$0</td><td class="num amt neg" id="ds-d-bills">$0</td></tr>
-            <tr><td>Buffer</td><td class="num amt" id="ds-m-buffer" style="color:var(--gold)">$0</td><td class="num amt" id="ds-w-buffer" style="color:var(--gold)">$0</td><td class="num amt" id="ds-d-buffer" style="color:var(--gold)">$0</td></tr>
-            <tr><td><strong>Discretionary Spend</strong></td><td class="num amt" id="ds-m-spend" style="font-weight:700;">$0</td><td class="num amt" id="ds-w-spend" style="font-weight:700;">$0</td><td class="num amt" id="ds-d-spend" style="font-weight:700;">$0</td></tr>
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flow</th><th class="num">Monthly</th><th class="num">Weekly</th><th class="num">Daily</th></tr></thead>
+            <tbody>
+              <tr><td>Net Income</td><td class="num amt" id="ds-m-income">$0</td><td class="num amt" id="ds-w-income">$0</td><td class="num amt" id="ds-d-income">$0</td></tr>
+              <tr><td>Bills</td><td class="num amt neg" id="ds-m-bills">$0</td><td class="num amt neg" id="ds-w-bills">$0</td><td class="num amt neg" id="ds-d-bills">$0</td></tr>
+              <tr><td>Buffer</td><td class="num amt" id="ds-m-buffer" style="color:var(--gold)">$0</td><td class="num amt" id="ds-w-buffer" style="color:var(--gold)">$0</td><td class="num amt" id="ds-d-buffer" style="color:var(--gold)">$0</td></tr>
+              <tr><td><strong>Discretionary Spend</strong></td><td class="num amt" id="ds-m-spend" style="font-weight:700;">$0</td><td class="num amt" id="ds-w-spend" style="font-weight:700;">$0</td><td class="num amt" id="ds-d-spend" style="font-weight:700;">$0</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </div>
 
   <!-- ============ ANALYSIS ============ -->
-  <div class="view" id="view-analysis">
+  <div class="view" id="view-analysis" role="tabpanel" aria-labelledby="tab-analysis" tabindex="0" hidden>
     <section class="block two-col">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Spending by Category</h2>
         <div id="cat-bars"></div>
-        <div class="empty-note" id="cat-empty" style="display:none;">Log some transactions to see category breakdown.</div>
+        <div class="empty-note" id="cat-empty" hidden>Log some transactions to see a category breakdown.</div>
       </div>
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>This Month</h2>
@@ -653,602 +764,698 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
           <div class="stat"><div class="label">Total Spent</div><div class="value danger" id="an-spent">$0</div></div>
         </div>
         <div style="margin-top:14px;">
-          <div class="stat" style="width:100%;"><div class="label">Net This Month</div><div class="value gold" id="an-net">$0</div></div>
+          <div class="stat"><div class="label">Net This Month</div><div class="value gold" id="an-net">$0</div></div>
         </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="panel">
+        <h2 class="section-title"><span class="dot"></span>Last 6 Months — Spending Trend</h2>
+        <div id="trend-bars"></div>
+        <div class="empty-note" id="trend-empty" hidden>Not enough history yet — log transactions over a few weeks and a trend appears here.</div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="panel">
+        <h2 class="section-title"><span class="dot"></span>Budget vs. Actual — This Month</h2>
+        <p class="hint">Compares what you actually spent per category against the monthly equivalent of the bills you've budgeted in that category.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Category</th><th class="num">Budgeted</th><th class="num">Actual</th><th class="num">Difference</th></tr></thead>
+            <tbody id="bva-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-note" id="bva-empty" hidden>Add bills and log transactions to compare them here.</div>
       </div>
     </section>
   </div>
 
-  <!-- ============ READ ME ============ -->
-  <div class="view" id="view-readme">
+  <!-- ============ GUIDE ============ -->
+  <div class="view" id="view-readme" role="tabpanel" aria-labelledby="tab-readme" tabindex="0" hidden>
     <section class="block panel">
       <h2 class="section-title"><span class="dot"></span>How This Works</h2>
-      <div style="font-size:13.5px; line-height:1.9; color:var(--text);">
-        <p><strong style="color:var(--gold)">Dashboard</strong> — live overview: balance, income, upcoming bills, surplus/deficit.</p>
-        <p><strong style="color:var(--gold)">Income</strong> — weekly job pay log + side income (music/software) log, rolling up to monthly/yearly gross and net.</p>
-        <p><strong style="color:var(--gold)">Bills</strong> — the source of truth for every bill. Add or edit bills only here.</p>
-        <p><strong style="color:var(--gold)">Calendar</strong> — visual month view. Pulls bill names and amounts automatically from the Bills tab by due day.</p>
-        <p><strong style="color:var(--gold)">Transactions</strong> — set a starting balance once, then log transactions (or paste a bank CSV) — running balance and current balance calculate automatically and feed the Dashboard.</p>
-        <p><strong style="color:var(--gold)">Daily Spend</strong> — turns your weekly surplus into a real "safe to spend today" number, with a savings buffer and a suggested split you fully control.</p>
-        <p><strong style="color:var(--gold)">Analysis</strong> — spending by category and this month's income vs. spend, from the Transactions log.</p>
+      <div style="font-size:13.5px; line-height:1.9;">
+        <p><strong style="color:var(--gold)">Dashboard</strong> — live overview plus a 90-day projection showing the lowest point your balance is expected to hit, and when.</p>
+        <p><strong style="color:var(--gold)">Income</strong> — recurring rules (the fast way) plus optional real paycheck logs. If you log real paychecks, those override the rule estimate.</p>
+        <p><strong style="color:var(--gold)">Bills</strong> — the source of truth for every bill. Monthly bills use a day of the month; weekly and biweekly use a day of the week; one-time bills use a real date and disappear after it passes.</p>
+        <p><strong style="color:var(--gold)">Calendar</strong> — bills and paydays on a real month grid, with recurrence handled properly.</p>
+        <p><strong style="color:var(--gold)">Transactions</strong> — set a starting balance once, then log spending (or paste a bank CSV). Running balance and current balance calculate automatically.</p>
+        <p><strong style="color:var(--gold)">Daily Spend</strong> — turns your weekly surplus into one honest "safe to spend today" number, with a buffer and split you fully control.</p>
+        <p><strong style="color:var(--gold)">Analysis</strong> — category breakdown, a six-month trend, and budget vs. actual.</p>
       </div>
       <div class="footnote">
-        <strong style="color:var(--text-dim)">Data &amp; privacy:</strong> everything you enter is saved only in this browser's local storage — nothing is sent to a server, and nobody but you can see it. That means it survives refresh and closing the tab, but it's tied to this browser on this device; it won't follow you to a different browser or computer, and clearing site data will erase it. Use "Reset All Data" below for a clean slate, or "Export Backup" to save a copy you can re-import later.
+        <strong style="color:var(--text-dim)">Keyboard:</strong> press <kbd>1</kbd>–<kbd>8</kbd> to jump between tabs, arrow keys to move along the tab bar, and <kbd>Esc</kbd> to close the setup guide.
+      </div>
+    </section>
+
+    <section class="block panel">
+      <h2 class="section-title"><span class="dot"></span>Data &amp; Privacy</h2>
+      <div style="font-size:13.5px; line-height:1.9;">
+        <p>Everything you enter is saved <strong style="color:var(--accent-2)">only in this browser</strong>, using local storage. Nothing is transmitted anywhere — there is no server, no account, and no analytics on this page. Nobody but you can see any of it.</p>
+        <p>The trade-off: your data is tied to this browser on this device. It survives refreshes and closing the tab, but it won't follow you to another browser or computer, and clearing site data will erase it. <strong style="color:var(--gold)">Export a backup</strong> regularly if the data matters to you — that's the only copy that outlives this browser profile.</p>
       </div>
     </section>
 
     <section class="block panel">
       <h2 class="section-title"><span class="dot"></span>Connecting a Real Bank Feed</h2>
-      <div style="font-size:13.5px; line-height:1.9; color:var(--text);">
-        <p>A page like this one <strong style="color:var(--warn)">cannot</strong> connect directly to your bank, and no version of this tool ever safely could — that's not a limitation of this build specifically, it's how bank-data providers like Plaid work.</p>
-        <p><strong style="color:var(--gold)">Why not:</strong> Plaid Link (the bank-connection widget most apps use) requires a backend server holding a secret API key. That key can never be shipped inside a webpage's code — anyone could open dev tools and steal it, then pull data from every account it touches.</p>
-        <p><strong style="color:var(--gold)">Realistic paths:</strong></p>
-        <p style="margin-left:12px;">
-        <strong>Fastest:</strong> use an existing consumer app that already does this (Copilot, Monarch Money, YNAB, Rocket Money).<br><br>
-        <strong>Build it yourself:</strong> a real backend project — a server, a database, Plaid integration, and auth so only you can reach your data.<br><br>
-        <strong>Middle ground, no code:</strong> keep using the CSV import already built into the Transactions tab.
-        </p>
+      <div style="font-size:13.5px; line-height:1.9;">
+        <p>A page like this <strong style="color:var(--warn)">cannot</strong> connect directly to your bank, and no version of it safely could — that's not a shortcoming of this build, it's how bank-data providers work.</p>
+        <p><strong style="color:var(--gold)">Why not:</strong> Plaid Link and every comparable aggregator require a backend server holding a secret API key. That key can never ship inside a webpage — anyone could open dev tools, take it, and pull data from every account it touches.</p>
+        <p><strong style="color:var(--gold)">Realistic options:</strong> use a consumer app that already has that infrastructure (Copilot, Monarch, YNAB, Rocket Money); build a real backend with a server, database and auth; or keep using the CSV import on the Transactions tab, which needs nothing beyond what your bank already offers.</p>
       </div>
     </section>
 
     <section class="block">
       <div class="panel" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-        <button class="btn ghost" onclick="startWizard()">Run Setup Guide Again</button>
-        <button class="btn ghost" onclick="exportBackup()">Export Backup (JSON)</button>
-        <label class="btn ghost" style="cursor:pointer;">Import Backup
-          <input type="file" id="import-file" accept="application/json" style="display:none;" onchange="importBackup(event)">
-        </label>
+        <button class="btn ghost" data-action="start-wizard">Run Setup Guide Again</button>
+        <button class="btn ghost" data-action="export">Export Backup (JSON)</button>
+        <button class="btn ghost" data-action="import-click">Import Backup</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+        <button class="btn ghost" data-action="print">Print / Save as PDF</button>
         <div style="flex:1"></div>
-        <button class="btn ghost" style="border-color:var(--danger); color:var(--danger);" onclick="resetAllData()">Reset All Data</button>
+        <button class="btn ghost" style="border-color:var(--danger); color:var(--danger);" data-action="reset">Reset All Data</button>
       </div>
     </section>
   </div>
 
 </main>
 
-<!-- ============ WIZARD ============ -->
-<div class="wizard-overlay hidden" id="wizard-overlay">
+<div class="wizard-overlay" id="wizard-overlay" role="dialog" aria-modal="true" aria-labelledby="wizard-heading" hidden>
   <div class="wizard-card" id="wizard-card"></div>
 </div>
 
+<div id="toast-host" aria-live="polite"></div>
+
 <script>
+"use strict";
 /* ============================================================
-   STATE
+   1. UTILITIES
 ============================================================ */
-const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DOW_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DOW_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAY_MS = 86400000;
 
-function todayISO(){ return new Date().toISOString().slice(0,10); }
-function nextFridayISO(){
-  const d = new Date();
-  const day = d.getDay();
-  const diff = (5 - day + 7) % 7;
-  const f = new Date(d); f.setDate(d.getDate() + diff);
-  return f.toISOString().slice(0,10);
-}
-function fmt(n){
-  const v = Number(n)||0;
-  const neg = v < 0;
-  return (neg? "-":"") + "$" + Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-}
-function fmt0(n){
-  const v = Number(n)||0;
-  return "$" + Math.round(v).toLocaleString();
-}
-function esc(s){
-  const d = document.createElement('div');
-  d.textContent = s==null? '' : s;
-  return d.innerHTML;
-}
+const money = new Intl.NumberFormat(undefined, {style:'currency', currency:'USD'});
+const moneyCompact = new Intl.NumberFormat(undefined, {style:'currency', currency:'USD', maximumFractionDigits:0});
+function fmt(n){ return money.format(Number(n) || 0); }
+function fmt0(n){ return moneyCompact.format(Number(n) || 0); }
 
-/* ---------- persistence: browser localStorage (this is a static page, not a hosted backend) ---------- */
+/** Parse "YYYY-MM-DD" as a LOCAL date. `new Date(iso)` parses as UTC and
+    shifts the day backwards for anyone west of Greenwich. */
+function parseDate(iso){
+  if(iso instanceof Date) return startOfDay(iso);
+  if(typeof iso !== 'string') return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) { const d = new Date(iso); return isNaN(d) ? null : startOfDay(d); }
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function toISO(d){
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function today(){ return startOfDay(new Date()); }
+function todayISO(){ return toISO(today()); }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function daysBetween(a, b){ return Math.round((startOfDay(b) - startOfDay(a)) / DAY_MS); }
+function daysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
+/** Next date on or after `from` that falls on weekday `dow`. */
+function nextDow(dow, from){
+  const d = startOfDay(from || new Date());
+  return addDays(d, (dow - d.getDay() + 7) % 7);
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function esc(s){ const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+function clamp(n, lo, hi){ return Math.min(hi, Math.max(lo, n)); }
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   2. STATE + PERSISTENCE
+============================================================ */
 const STORAGE_KEY = 'mentifaber_budget_v1';
-const DEFAULT_STATE = {
-  bills: [],
-  jobIncome: [],
-  sideIncome: [],
-  transactions: [],
-  startBalance: 0,
-  startDate: todayISO(),
-  incomeRules: [],
-  dailySpendSettings: {
-    bufferPct: 10,
-    weeksPerMonth: 4.333,
-    bucketTreatPct: 25,
-    bucketFlexPct: 45,
-    bucketSavePct: 30,
-  },
-  __wizardDone: false,
-};
+const SCHEMA = 2;
 
+function defaultState(){
+  return {
+    v: SCHEMA,
+    bills: [], incomeRules: [], jobIncome: [], sideIncome: [], transactions: [],
+    startBalance: 0, startDate: todayISO(),
+    dailySpendSettings: { bufferPct:10, weeksPerMonth:4.333, bucketTreatPct:25, bucketFlexPct:45, bucketSavePct:30 },
+    ui: { activeTab:'dashboard' },
+    wizardDone: false,
+  };
+}
+
+/** v1 stored bills as {day:1-31} for every frequency, which made weekly bills
+    land on a single calendar day and quarterly/annual bills repeat monthly.
+    v2 splits placement by frequency, so v1 records need converting. */
+function migrate(raw){
+  const s = Object.assign(defaultState(), raw);
+  const version = raw.v || 1;
+  if(version < 2){
+    const now = today();
+    s.bills = (raw.bills || []).map(b => {
+      const day = clamp(parseInt(b.day, 10) || 1, 1, 31);
+      const out = {
+        id: uid(), name: b.name || 'Untitled', cat: b.cat || 'Other',
+        amt: Number(b.amt) || 0, freq: b.freq || 'Monthly',
+        auto: b.auto || 'No', status: b.status || 'Active', day,
+      };
+      const guess = new Date(now.getFullYear(), now.getMonth(), Math.min(day, daysInMonth(now.getFullYear(), now.getMonth())));
+      if(out.freq === 'Weekly' || out.freq === 'Biweekly'){ out.dow = guess.getDay(); out.anchor = toISO(guess); }
+      else if(out.freq === 'One-Time'){ out.date = toISO(guess); }
+      else if(out.freq === 'Quarterly' || out.freq === 'Annual'){ out.anchor = toISO(guess); }
+      return out;
+    });
+    s.incomeRules = (raw.incomeRules || []).map(r => {
+      const dowIndex = DOW_LONG.indexOf(r.day);
+      return {
+        id: uid(), label: r.label || 'Income', freq: r.freq || 'Weekly',
+        dow: dowIndex >= 0 ? dowIndex : 5,
+        gross: Number(r.gross) || 0, tax: Number(r.tax) || 0,
+        anchor: r.startDate || toISO(nextDow(dowIndex >= 0 ? dowIndex : 5)),
+      };
+    });
+    s.wizardDone = !!raw.__wizardDone || (s.bills.length > 0 || s.incomeRules.length > 0);
+    s.v = SCHEMA;
+  }
+  // Every record carries a stable id — index-based edits delete the wrong row
+  // as soon as two entries look alike.
+  ['bills','incomeRules','jobIncome','sideIncome','transactions'].forEach(k => {
+    s[k] = (s[k] || []).map(x => x.id ? x : Object.assign({id: uid()}, x));
+  });
+  s.dailySpendSettings = Object.assign(defaultState().dailySpendSettings, s.dailySpendSettings || {});
+  s.ui = Object.assign({activeTab:'dashboard'}, s.ui || {});
+  return s;
+}
+
+let storageOK = true;
 function loadState(){
-  let saved = null;
+  let raw = null;
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw) saved = JSON.parse(raw);
-  }catch(e){ saved = null; }
-  const merged = saved ? Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), saved) : JSON.parse(JSON.stringify(DEFAULT_STATE));
-  merged.calDate = new Date();
-  return merged;
+    const txt = localStorage.getItem(STORAGE_KEY);
+    if(txt) raw = JSON.parse(txt);
+  }catch(err){
+    storageOK = false;
+    console.warn('Could not read saved data:', err);
+  }
+  return raw ? migrate(raw) : defaultState();
 }
 
 let state = loadState();
+let calDate = today();
 
-let saveIndicatorTimeout;
+let saveTimer = null;
 function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(commitSave, 200);
+}
+function commitSave(){
   try{
-    const toSave = Object.assign({}, state);
-    delete toSave.calDate;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    flashSaveIndicator();
-  }catch(e){ console.warn('save failed:', e); }
-}
-function flashSaveIndicator(){
-  const el = document.getElementById('save-indicator');
-  if(!el) return;
-  el.classList.add('show');
-  clearTimeout(saveIndicatorTimeout);
-  saveIndicatorTimeout = setTimeout(()=> el.classList.remove('show'), 1400);
-}
-function resetAllData(){
-  if(!confirm('This clears everything — bills, income, transactions, balance — and cannot be undone. Continue?')) return;
-  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  state.calDate = new Date();
-  renderAll();
-  startWizard();
-}
-function exportBackup(){
-  const toSave = Object.assign({}, state);
-  delete toSave.calDate;
-  const blob = new Blob([JSON.stringify(toSave, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'mentifaber-budget-backup.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function importBackup(evt){
-  const file = evt.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const data = JSON.parse(reader.result);
-      state = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), data);
-      state.calDate = new Date();
-      renderAll();
-      alert('Backup imported.');
-    }catch(e){
-      alert('Could not read that file — make sure it\'s a backup exported from this app.');
-    }
-  };
-  reader.readAsText(file);
-  evt.target.value = '';
-}
-
-/* ============================================================
-   TABS
-============================================================ */
-document.getElementById('tabs').addEventListener('click', e=>{
-  const btn = e.target.closest('button[data-view]');
-  if(!btn) return;
-  goto(btn.dataset.view);
-});
-document.querySelectorAll('.nav-card').forEach(el=>{
-  el.addEventListener('click', ()=> goto(el.dataset.goto));
-});
-document.getElementById('help-btn').addEventListener('click', startWizard);
-function goto(view){
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
-  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
-  renderAll();
-}
-
-/* ============================================================
-   CLOCK
-============================================================ */
-function tickClock(){
-  const d = new Date();
-  const el = document.getElementById('clock');
-  if(el) el.textContent = d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) + '  ·  ' + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
-}
-tickClock(); setInterval(tickClock, 30000);
-
-/* ============================================================
-   BILLS LEDGER
-============================================================ */
-function addBill(){
-  const name = document.getElementById('bill-name').value.trim();
-  const amt = parseFloat(document.getElementById('bill-amt').value);
-  const day = parseInt(document.getElementById('bill-day').value);
-  if(!name || isNaN(amt) || isNaN(day) || day<1 || day>31){
-    flashInvalid(); return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    storageOK = true;
+    flashSave('Saved', false);
+  }catch(err){
+    storageOK = false;
+    flashSave('Not saved — storage blocked', true);
+    console.warn('Save failed:', err);
   }
-  state.bills.push({
-    name, cat: document.getElementById('bill-cat').value, amt, day,
-    freq: document.getElementById('bill-freq').value,
-    auto: document.getElementById('bill-auto').value,
-    status: document.getElementById('bill-status').value,
-  });
-  ['bill-name','bill-amt','bill-day'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
 }
-function flashInvalid(){
-  const f = document.getElementById('bill-name');
-  f.style.borderColor = 'var(--danger)';
-  setTimeout(()=>f.style.borderColor='', 700);
+let saveFlashTimer;
+function flashSave(text, isError){
+  const el = document.getElementById('save-indicator');
+  el.lastChild.textContent = text;
+  el.classList.toggle('error', isError);
+  el.classList.add('show');
+  clearTimeout(saveFlashTimer);
+  if(!isError) saveFlashTimer = setTimeout(() => el.classList.remove('show'), 1400);
 }
-function removeBill(i){ state.bills.splice(i,1); renderAll(); }
 
-function activeMonthlyEquivalent(bill){
-  if(bill.status !== "Active") return 0;
+/* ---- undo ---- */
+let undoSnapshot = null;
+function snapshot(){ undoSnapshot = JSON.stringify(state); }
+function undo(){
+  if(!undoSnapshot) return;
+  state = migrate(JSON.parse(undoSnapshot));
+  undoSnapshot = null;
+  renderAll();
+  toast('Change undone.');
+}
+function toast(msg, withUndo){
+  const host = document.getElementById('toast-host');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span class="msg">${esc(msg)}</span>`;
+  if(withUndo){
+    const b = document.createElement('button');
+    b.textContent = 'Undo';
+    b.addEventListener('click', () => { undo(); el.remove(); });
+    el.appendChild(b);
+  }
+  host.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, withUndo ? 6000 : 3000);
+}
+
+/* ============================================================
+   3. RECURRENCE ENGINE
+   One source of truth for "does this land on this date" — the calendar,
+   the upcoming list and the projection all read from it, so they can
+   never disagree with each other.
+============================================================ */
+/** Monthly-style bills due on the 31st still land in February — on the 28th. */
+function clampedDay(day, year, month){ return Math.min(day, daysInMonth(year, month)); }
+
+function billOccursOn(bill, date){
+  if(bill.status !== 'Active') return false;
+  const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
   switch(bill.freq){
-    case "Monthly": return bill.amt;
-    case "Weekly": return bill.amt * 4.333;
-    case "Biweekly": return bill.amt * 2.167;
-    case "Quarterly": return bill.amt / 3;
-    case "Annual": return bill.amt / 12;
-    default: return 0;
+    case 'Monthly':
+      return d === clampedDay(bill.day || 1, y, m);
+    case 'Weekly':
+      return date.getDay() === bill.dow;
+    case 'Biweekly': {
+      if(date.getDay() !== bill.dow) return false;
+      const anchor = parseDate(bill.anchor);
+      if(!anchor) return true;
+      return Math.abs(Math.round(daysBetween(anchor, date) / 7)) % 2 === 0;
+    }
+    case 'Quarterly': {
+      const anchor = parseDate(bill.anchor);
+      if(!anchor) return false;
+      if(d !== clampedDay(anchor.getDate(), y, m)) return false;
+      return (((m - anchor.getMonth()) % 3) + 3) % 3 === 0;
+    }
+    case 'Annual': {
+      const anchor = parseDate(bill.anchor);
+      if(!anchor) return false;
+      return m === anchor.getMonth() && d === clampedDay(anchor.getDate(), y, m);
+    }
+    case 'One-Time': {
+      const due = parseDate(bill.date);
+      return !!due && due.getTime() === date.getTime();
+    }
+    default: return false;
+  }
+}
+
+function ruleOccursOn(rule, date){
+  if(date.getDay() !== rule.dow) return false;
+  if(rule.freq === 'Weekly') return true;
+  if(rule.freq === 'Biweekly'){
+    const anchor = parseDate(rule.anchor);
+    if(!anchor) return true;
+    return Math.abs(Math.round(daysBetween(anchor, date) / 7)) % 2 === 0;
+  }
+  return false;
+}
+
+function billsOn(date){ return state.bills.filter(b => billOccursOn(b, date)); }
+function paydaysOn(date){ return state.incomeRules.filter(r => ruleOccursOn(r, date)); }
+
+function monthlyEquivalent(bill){
+  if(bill.status !== 'Active') return 0;
+  const a = Number(bill.amt) || 0;
+  switch(bill.freq){
+    case 'Monthly': return a;
+    case 'Weekly': return a * 4.333;
+    case 'Biweekly': return a * 2.167;
+    case 'Quarterly': return a / 3;
+    case 'Annual': return a / 12;
+    default: return 0; // One-Time is real but not recurring
+  }
+}
+function ruleMonthlyNet(r){
+  const net = (Number(r.gross)||0) - (Number(r.tax)||0);
+  return r.freq === 'Weekly' ? net * 4.333 : r.freq === 'Biweekly' ? net * 2.167 : 0;
+}
+function ruleMonthlyGross(r){
+  const g = Number(r.gross) || 0;
+  return r.freq === 'Weekly' ? g * 4.333 : r.freq === 'Biweekly' ? g * 2.167 : 0;
+}
+
+/* ============================================================
+   4. DERIVED CALCULATIONS
+============================================================ */
+function totalMonthlyBills(){ return state.bills.reduce((s,b) => s + monthlyEquivalent(b), 0); }
+
+function currentBalance(){
+  return state.transactions.reduce((s,t) => s + (Number(t.amt)||0), Number(state.startBalance)||0);
+}
+
+function incomeRollup(){
+  const rules = state.incomeRules;
+  const ruleMonthlyNetTotal = rules.reduce((s,r) => s + ruleMonthlyNet(r), 0);
+  const ruleMonthlyGrossTotal = rules.reduce((s,r) => s + ruleMonthlyGross(r), 0);
+  const weeklyRuleNet = rules.filter(r => r.freq==='Weekly').reduce((s,r) => s + (r.gross - r.tax), 0);
+  const weeklyRuleGross = rules.filter(r => r.freq==='Weekly').reduce((s,r) => s + r.gross, 0);
+
+  const jn = state.jobIncome;
+  const usingLogs = jn.length > 0;
+  const avgWeeklyNet = usingLogs ? jn.reduce((s,x) => s + (x.gross - x.ded), 0) / jn.length : weeklyRuleNet;
+  const avgWeeklyGross = usingLogs ? jn.reduce((s,x) => s + x.gross, 0) / jn.length : weeklyRuleGross;
+  const monthlyNetJob = usingLogs ? avgWeeklyNet * 4.333 : ruleMonthlyNetTotal;
+  const monthlyGrossJob = usingLogs ? avgWeeklyGross * 4.333 : ruleMonthlyGrossTotal;
+
+  const sn = state.sideIncome;
+  let monthsSpan = 1;
+  if(sn.length){
+    const earliest = sn.map(x => parseDate(x.date)).filter(Boolean).sort((a,b) => a-b)[0];
+    if(earliest) monthsSpan = Math.max(1, (today() - earliest) / (DAY_MS * 30.44));
+  }
+  const monthlyNetSide = sn.length ? sn.reduce((s,x) => s + (Number(x.net)||0), 0) / monthsSpan : 0;
+  const monthlyGrossSide = sn.length ? sn.reduce((s,x) => s + (Number(x.gross)||0), 0) / monthsSpan : 0;
+
+  const totalMonthlyNet = monthlyNetJob + monthlyNetSide;
+  const totalMonthlyGross = monthlyGrossJob + monthlyGrossSide;
+  return {
+    usingLogs, avgWeeklyNet, avgWeeklyGross, monthlyNetJob, monthlyGrossJob,
+    monthlyNetSide, monthlyGrossSide, totalMonthlyNet, totalMonthlyGross,
+    totalYearlyNet: totalMonthlyNet*12, totalYearlyGross: totalMonthlyGross*12,
+  };
+}
+
+/** Day-by-day forward projection. This is the number that actually
+    prevents an overdraft, so it walks real due dates rather than
+    smearing monthly averages across the period. */
+function projectBalance(days){
+  const start = today();
+  let balance = currentBalance();
+  const points = [{date:start, balance}];
+  let low = {date:start, balance};
+  let firstNegative = null;
+
+  for(let i = 1; i <= days; i++){
+    const d = addDays(start, i);
+    billsOn(d).forEach(b => { balance -= Number(b.amt) || 0; });
+    paydaysOn(d).forEach(r => { balance += (Number(r.gross)||0) - (Number(r.tax)||0); });
+    points.push({date:d, balance});
+    if(balance < low.balance) low = {date:d, balance};
+    if(balance < 0 && !firstNegative) firstNegative = {date:d, balance};
+  }
+  return {points, low, firstNegative, end:balance};
+}
+
+/* ============================================================
+   5. ANIMATED COUNTERS
+============================================================ */
+const counterValues = new WeakMap();
+function setMoney(el, value){
+  if(!el) return;
+  const target = Number(value) || 0;
+  if(!el.hasAttribute('data-count') || reduceMotion()){
+    el.textContent = fmt(target);
+    counterValues.set(el, target);
+    return;
+  }
+  const from = counterValues.get(el);
+  if(from === undefined || Math.abs(from - target) < 0.005){
+    el.textContent = fmt(target);
+    counterValues.set(el, target);
+    return;
+  }
+  counterValues.set(el, target);
+  const t0 = performance.now(), dur = 550;
+  function frame(now){
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(from + (target - from) * eased);
+    if(p < 1 && counterValues.get(el) === target) requestAnimationFrame(frame);
+    else if(counterValues.get(el) === target) el.textContent = fmt(target);
+  }
+  requestAnimationFrame(frame);
+}
+const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+const setMoneyId = (id, v) => setMoney(document.getElementById(id), v);
+
+/* ============================================================
+   6. RENDERERS
+============================================================ */
+function describeDue(bill){
+  switch(bill.freq){
+    case 'Monthly': return `Day ${bill.day}`;
+    case 'Weekly': return `Every ${DOW_SHORT[bill.dow]}`;
+    case 'Biweekly': return `Every other ${DOW_SHORT[bill.dow]}`;
+    case 'Quarterly': { const a = parseDate(bill.anchor); return a ? `Quarterly from ${MONTHS[a.getMonth()].slice(0,3)} ${a.getDate()}` : 'Quarterly'; }
+    case 'Annual': { const a = parseDate(bill.anchor); return a ? `${MONTHS[a.getMonth()].slice(0,3)} ${a.getDate()}` : 'Annual'; }
+    case 'One-Time': return bill.date || 'One-time';
+    default: return '—';
   }
 }
 
 function renderLedger(){
   const body = document.getElementById('ledger-body');
   body.innerHTML = '';
-  document.getElementById('ledger-empty').style.display = state.bills.length? 'none':'block';
-  state.bills.forEach((b,i)=>{
+  document.getElementById('ledger-empty').hidden = state.bills.length > 0;
+  state.bills.forEach(b => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${esc(b.name)}</td>
-      <td>${esc(b.cat)}</td>
+      <td style="color:var(--text-dim)">${esc(b.cat)}</td>
       <td class="num amt">${fmt(b.amt)}</td>
-      <td class="num">${b.day}</td>
-      <td>${b.freq}</td>
-      <td>${b.auto}</td>
-      <td><span class="badge ${b.status.toLowerCase()}">${b.status}</span></td>
-      <td><button class="btn danger-btn" onclick="removeBill(${i})">Remove</button></td>
-    `;
+      <td style="color:var(--text-dim)">${esc(describeDue(b))}</td>
+      <td>${esc(b.freq)}</td>
+      <td class="num" style="color:var(--text-faint)">${monthlyEquivalent(b) ? fmt(monthlyEquivalent(b)) : '—'}</td>
+      <td><span class="badge ${esc(b.status.toLowerCase())}">${esc(b.status)}</span></td>
+      <td class="actions">
+        <button class="btn row-btn" data-edit-bill="${esc(b.id)}">Edit</button>
+        <button class="btn row-btn del" data-del-bill="${esc(b.id)}">Delete</button>
+      </td>`;
     body.appendChild(tr);
   });
-  const totalMonthly = state.bills.reduce((s,b)=>s+activeMonthlyEquivalent(b),0);
+  const total = totalMonthlyBills();
+  const oneTime = state.bills.filter(b => b.freq === 'One-Time' && b.status === 'Active')
+    .reduce((s,b) => s + (Number(b.amt)||0), 0);
   document.getElementById('ledger-totals').innerHTML =
-    `<strong style="color:var(--accent-2)">Total active monthly bills: ${fmt(totalMonthly)}</strong> &nbsp;·&nbsp; Total active yearly: ${fmt(totalMonthly*12)}`;
+    `<strong style="color:var(--accent-2)">Recurring monthly total: ${esc(fmt(total))}</strong> · Yearly: ${esc(fmt(total*12))}` +
+    (oneTime ? ` · <span style="color:var(--warn)">Plus ${esc(fmt(oneTime))} in outstanding one-time bills</span>` : '');
 }
-
-/* ============================================================
-   INCOME
-============================================================ */
-function addIncomeRule(){
-  const label = document.getElementById('rule-label').value.trim();
-  const gross = parseFloat(document.getElementById('rule-gross').value);
-  const tax = parseFloat(document.getElementById('rule-tax').value) || 0;
-  const freq = document.getElementById('rule-freq').value;
-  const day = document.getElementById('rule-day').value;
-  const startDate = document.getElementById('rule-startdate').value || nextFridayISO();
-  if(!label || isNaN(gross)){ return; }
-  state.incomeRules.push({label, freq, day, gross, tax, startDate});
-  ['rule-label','rule-gross','rule-tax'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
-}
-function removeIncomeRule(i){ state.incomeRules.splice(i,1); renderAll(); }
 
 function renderIncomeRules(){
   const body = document.getElementById('rules-body');
-  if(!body) return;
   body.innerHTML = '';
-  document.getElementById('rules-empty').style.display = state.incomeRules.length? 'none':'block';
-  state.incomeRules.forEach((r,i)=>{
+  document.getElementById('rules-empty').hidden = state.incomeRules.length > 0;
+  state.incomeRules.forEach(r => {
     const tr = document.createElement('tr');
-    const freqLabel = r.freq === 'Biweekly' ? `${r.freq} (from ${r.startDate})` : r.freq;
-    tr.innerHTML = `<td>${esc(r.label)}</td><td>${freqLabel}</td><td>${r.day}</td><td class="num amt">${fmt(r.gross)}</td><td class="num amt neg">${fmt(r.tax)}</td><td class="num amt">${fmt(r.gross-r.tax)}</td><td><button class="btn danger-btn" onclick="removeIncomeRule(${i})">Remove</button></td>`;
+    tr.innerHTML = `
+      <td>${esc(r.label)}</td>
+      <td>${esc(r.freq)}</td>
+      <td style="color:var(--text-dim)">${esc(DOW_LONG[r.dow] || '—')}</td>
+      <td class="num amt">${fmt(r.gross)}</td>
+      <td class="num amt neg">${fmt(r.tax)}</td>
+      <td class="num amt">${fmt(r.gross - r.tax)}</td>
+      <td class="num" style="color:var(--text-faint)">${fmt(ruleMonthlyNet(r))}</td>
+      <td class="actions">
+        <button class="btn row-btn" data-edit-rule="${esc(r.id)}">Edit</button>
+        <button class="btn row-btn del" data-del-rule="${esc(r.id)}">Delete</button>
+      </td>`;
     body.appendChild(tr);
   });
-}
-
-function ruleMonthlyNet(rule){
-  const net = rule.gross - rule.tax;
-  if(rule.freq === "Weekly") return net * 4.333;
-  if(rule.freq === "Biweekly") return net * 2.167;
-  return 0;
-}
-function ruleMonthlyGross(rule){
-  if(rule.freq === "Weekly") return rule.gross * 4.333;
-  if(rule.freq === "Biweekly") return rule.gross * 2.167;
-  return 0;
-}
-
-function addJobIncome(){
-  const date = document.getElementById('job-date').value || todayISO();
-  const gross = parseFloat(document.getElementById('job-gross').value);
-  const ded = parseFloat(document.getElementById('job-ded').value) || 0;
-  if(isNaN(gross)) return;
-  state.jobIncome.push({date, gross, ded, notes: document.getElementById('job-notes').value.trim()});
-  ['job-gross','job-ded','job-notes'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
-}
-function removeJob(i){ state.jobIncome.splice(i,1); renderAll(); }
-
-function addSideIncome(){
-  const date = document.getElementById('side-date').value || todayISO();
-  const source = document.getElementById('side-source').value.trim();
-  const gross = parseFloat(document.getElementById('side-gross').value) || 0;
-  const net = parseFloat(document.getElementById('side-net').value);
-  if(!source || isNaN(net)) return;
-  state.sideIncome.push({date, source, cat: document.getElementById('side-cat').value, gross, net});
-  ['side-source','side-gross','side-net'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
-}
-function removeSide(i){ state.sideIncome.splice(i,1); renderAll(); }
-
-function incomeRollup(){
-  const ruleMonthlyNetTotal = state.incomeRules.reduce((s,r)=>s+ruleMonthlyNet(r),0);
-  const ruleMonthlyGrossTotal = state.incomeRules.reduce((s,r)=>s+ruleMonthlyGross(r),0);
-  const ruleAvgWeeklyNet = state.incomeRules
-    .filter(r=>r.freq==="Weekly")
-    .reduce((s,r)=>s+(r.gross-r.tax),0);
-  const ruleAvgWeeklyGross = state.incomeRules
-    .filter(r=>r.freq==="Weekly")
-    .reduce((s,r)=>s+r.gross,0);
-
-  const jn = state.jobIncome;
-  const loggedAvgWeeklyNet = jn.length? jn.reduce((s,x)=>s+(x.gross-x.ded),0)/jn.length : 0;
-  const loggedAvgWeeklyGross = jn.length? jn.reduce((s,x)=>s+x.gross,0)/jn.length : 0;
-
-  const avgWeeklyNet = jn.length? loggedAvgWeeklyNet : ruleAvgWeeklyNet;
-  const avgWeeklyGross = jn.length? loggedAvgWeeklyGross : ruleAvgWeeklyGross;
-  const monthlyNetJob = jn.length? avgWeeklyNet * 4.333 : ruleMonthlyNetTotal;
-  const monthlyGrossJob = jn.length? avgWeeklyGross * 4.333 : ruleMonthlyGrossTotal;
-
-  const sn = state.sideIncome;
-  const sideNetTotal = sn.reduce((s,x)=>s+x.net,0);
-  const sideGrossTotal = sn.reduce((s,x)=>s+x.gross,0);
-  let monthsSpan = 1;
-  if(sn.length){
-    const dates = sn.map(x=>new Date(x.date)).sort((a,b)=>a-b);
-    const span = (new Date() - dates[0]) / (1000*60*60*24*30.44);
-    monthsSpan = Math.max(1, span);
-  }
-  const monthlyNetSide = sn.length? sideNetTotal/monthsSpan : 0;
-  const monthlyGrossSide = sn.length? sideGrossTotal/monthsSpan : 0;
-
-  const totalMonthlyNet = monthlyNetJob + monthlyNetSide;
-  const totalMonthlyGross = monthlyGrossJob + monthlyGrossSide;
-
-  return {
-    avgWeeklyNet, avgWeeklyGross, monthlyNetJob, monthlyGrossJob,
-    monthlyNetSide, monthlyGrossSide, totalMonthlyNet, totalMonthlyGross,
-    totalYearlyNet: totalMonthlyNet*12, totalYearlyGross: totalMonthlyGross*12
-  };
 }
 
 function renderIncome(){
   const jb = document.getElementById('job-body');
   jb.innerHTML = '';
-  document.getElementById('job-empty').style.display = state.jobIncome.length? 'none':'block';
-  state.jobIncome.slice().reverse().forEach((x)=>{
-    const i = state.jobIncome.indexOf(x);
+  document.getElementById('job-empty').hidden = state.jobIncome.length > 0;
+  state.jobIncome.slice().sort((a,b) => (parseDate(b.date)||0) - (parseDate(a.date)||0)).forEach(x => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${x.date}</td><td class="num amt">${fmt(x.gross)}</td><td class="num amt neg">${fmt(x.ded)}</td><td class="num amt">${fmt(x.gross-x.ded)}</td><td style="color:var(--text-dim); font-size:12px;">${esc(x.notes||'')}</td><td><button class="btn danger-btn" onclick="removeJob(${i})">×</button></td>`;
+    tr.innerHTML = `<td>${esc(x.date)}</td><td class="num amt">${fmt(x.gross)}</td><td class="num amt neg">${fmt(x.ded)}</td><td class="num amt">${fmt(x.gross-x.ded)}</td><td style="color:var(--text-dim); font-size:12px;">${esc(x.notes||'')}</td><td class="actions"><button class="btn row-btn del" data-del-job="${esc(x.id)}">×</button></td>`;
     jb.appendChild(tr);
   });
 
   const sb = document.getElementById('side-body');
   sb.innerHTML = '';
-  document.getElementById('side-empty').style.display = state.sideIncome.length? 'none':'block';
-  state.sideIncome.slice().reverse().forEach((x)=>{
-    const i = state.sideIncome.indexOf(x);
+  document.getElementById('side-empty').hidden = state.sideIncome.length > 0;
+  state.sideIncome.slice().sort((a,b) => (parseDate(b.date)||0) - (parseDate(a.date)||0)).forEach(x => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${x.date}</td><td>${esc(x.source)}</td><td>${x.cat}</td><td class="num amt">${fmt(x.gross)}</td><td class="num amt">${fmt(x.net)}</td><td><button class="btn danger-btn" onclick="removeSide(${i})">×</button></td>`;
+    tr.innerHTML = `<td>${esc(x.date)}</td><td>${esc(x.source)}</td><td style="color:var(--text-dim)">${esc(x.cat)}</td><td class="num amt">${fmt(x.gross)}</td><td class="num amt">${fmt(x.net)}</td><td class="actions"><button class="btn row-btn del" data-del-side="${esc(x.id)}">×</button></td>`;
     sb.appendChild(tr);
   });
 
   const r = incomeRollup();
-  document.getElementById('r-avgwn').textContent = fmt(r.avgWeeklyNet);
-  document.getElementById('r-mnj').textContent = fmt(r.monthlyNetJob);
-  document.getElementById('r-mns').textContent = fmt(r.monthlyNetSide);
-  document.getElementById('r-tmn').textContent = fmt(r.totalMonthlyNet);
-
-  document.getElementById('d-mgross').textContent = fmt(r.totalMonthlyGross);
-  document.getElementById('d-mnet').textContent = fmt(r.totalMonthlyNet);
-  document.getElementById('d-ygross').textContent = fmt(r.totalYearlyGross);
-  document.getElementById('d-ynet').textContent = fmt(r.totalYearlyNet);
-
+  setMoneyId('r-avgwn', r.avgWeeklyNet);
+  setMoneyId('r-mnj', r.monthlyNetJob);
+  setMoneyId('r-mns', r.monthlyNetSide);
+  setMoneyId('r-tmn', r.totalMonthlyNet);
+  setMoneyId('d-mgross', r.totalMonthlyGross);
+  setMoneyId('d-mnet', r.totalMonthlyNet);
+  setMoneyId('d-ygross', r.totalYearlyGross);
+  setMoneyId('d-ynet', r.totalYearlyNet);
+  setText('income-source-note', r.usingLogs
+    ? `Job figures are averaged from your ${state.jobIncome.length} logged paycheck(s). Delete those logs to fall back to the recurring rule estimate.`
+    : 'Job figures are projected from your recurring rules. Log a real paycheck above and these switch to your actual averages.');
   return r;
-}
-
-/* ============================================================
-   TRANSACTIONS
-============================================================ */
-function setStartingBalance(){
-  const v = parseFloat(document.getElementById('start-bal').value);
-  state.startBalance = isNaN(v)? 0 : v;
-  state.startDate = document.getElementById('start-date').value || todayISO();
-  renderAll();
-}
-function addTxn(){
-  const date = document.getElementById('txn-date').value || todayISO();
-  const desc = document.getElementById('txn-desc').value.trim();
-  const amt = parseFloat(document.getElementById('txn-amt').value);
-  if(!desc || isNaN(amt)) return;
-  state.transactions.push({
-    date, desc, cat: document.getElementById('txn-cat').value,
-    amt, type: document.getElementById('txn-type').value
-  });
-  ['txn-desc','txn-amt'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
-}
-function removeTxn(i){ state.transactions.splice(i,1); renderAll(); }
-
-function currentBalance(){
-  const sorted = state.transactions.slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-  return state.startBalance + sorted.reduce((s,t)=>s+t.amt,0);
 }
 
 function renderTransactions(){
   document.getElementById('start-bal').value = state.startBalance;
   document.getElementById('start-date').value = state.startDate;
 
-  const sorted = state.transactions.slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-  let running = state.startBalance;
+  const query = (document.getElementById('txn-search').value || '').trim().toLowerCase();
+  const sorted = state.transactions.slice().sort((a,b) => (parseDate(a.date)||0) - (parseDate(b.date)||0));
+
+  // Running balance always follows true chronological order, even when the
+  // view is filtered — otherwise a search would silently rewrite history.
+  let running = Number(state.startBalance) || 0;
+  const withRunning = sorted.map(t => { running += Number(t.amt)||0; return {t, running}; });
+
+  const visible = query
+    ? withRunning.filter(({t}) => (t.desc||'').toLowerCase().includes(query) || (t.cat||'').toLowerCase().includes(query))
+    : withRunning;
+
   const body = document.getElementById('txn-body');
   body.innerHTML = '';
-  document.getElementById('txn-empty').style.display = state.transactions.length? 'none':'block';
-  sorted.forEach((t)=>{
-    running += t.amt;
-    const i = state.transactions.indexOf(t);
+  document.getElementById('txn-empty').hidden = visible.length > 0;
+  if(!visible.length && query) document.getElementById('txn-empty').textContent = 'No transactions match that search.';
+  else if(!visible.length) document.getElementById('txn-empty').textContent = 'No transactions logged yet.';
+
+  visible.slice().reverse().forEach(({t, running}) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${t.date}</td><td>${esc(t.desc)}</td><td>${t.cat}</td><td class="num amt ${t.amt<0?'neg':''}">${fmt(t.amt)}</td><td>${t.type}</td><td class="num amt">${fmt(running)}</td><td><button class="btn danger-btn" onclick="removeTxn(${i})">×</button></td>`;
+    tr.innerHTML = `<td>${esc(t.date)}</td><td>${esc(t.desc)}</td><td style="color:var(--text-dim)">${esc(t.cat)}</td><td class="num amt ${t.amt<0?'neg':''}">${fmt(t.amt)}</td><td style="color:var(--text-dim)">${esc(t.type)}</td><td class="num amt">${fmt(running)}</td><td class="actions"><button class="btn row-btn del" data-del-txn="${esc(t.id)}">×</button></td>`;
     body.appendChild(tr);
   });
 
   const bal = currentBalance();
-  document.getElementById('t-current-bal').textContent = fmt(bal);
+  setMoneyId('t-current-bal', bal);
   return bal;
 }
 
-/* ---- CSV import ---- */
-let parsedCsvRows = [];
-function parseCsv(){
-  const raw = document.getElementById('csv-input').value.trim();
-  const preview = document.getElementById('csv-preview');
-  const importBtn = document.getElementById('csv-import-btn');
-  if(!raw){ preview.innerHTML=''; importBtn.disabled = true; return; }
-  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  parsedCsvRows = [];
-  lines.forEach(line=>{
-    const parts = line.split(',');
-    if(parts.length < 3) return;
-    const date = parts[0].trim();
-    const amtRaw = parts[parts.length-1].trim().replace(/[^0-9.\-]/g,'');
-    const desc = parts.slice(1, parts.length-1).join(',').trim();
-    const amt = parseFloat(amtRaw);
-    if(date && desc && !isNaN(amt)) parsedCsvRows.push({date, desc, amt});
-  });
-  if(!parsedCsvRows.length){
-    preview.innerHTML = '<div class="empty-note">No valid rows found. Expected: Date,Description,Amount</div>';
-    importBtn.disabled = true;
-    return;
-  }
-  let html = '<table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead><tbody>';
-  parsedCsvRows.forEach(r=>{
-    html += `<tr><td>${esc(r.date)}</td><td>${esc(r.desc)}</td><td class="num amt ${r.amt<0?'neg':''}">${fmt(r.amt)}</td></tr>`;
-  });
-  html += '</tbody></table>';
-  preview.innerHTML = html;
-  importBtn.disabled = false;
-}
-function importCsv(){
-  parsedCsvRows.forEach(r=>{
-    state.transactions.push({date:r.date, desc:r.desc, cat:'Other', amt:r.amt, type: r.amt>0?'Income':'Purchase'});
-  });
-  parsedCsvRows = [];
-  document.getElementById('csv-input').value = '';
-  document.getElementById('csv-preview').innerHTML = '';
-  document.getElementById('csv-import-btn').disabled = true;
-  renderAll();
-  goto('transactions');
-}
-
-/* ============================================================
-   CALENDAR
-============================================================ */
-function billsOnDay(day){
-  return state.bills.filter(b=>b.status==="Active" && b.day===day);
-}
-function calShift(delta){
-  state.calDate = new Date(state.calDate.getFullYear(), state.calDate.getMonth()+delta, 1);
-  renderCalendar();
-}
-function calToday(){ state.calDate = new Date(); renderCalendar(); }
-
 function renderCalendar(){
-  const d = state.calDate;
-  const year = d.getFullYear(), month = d.getMonth();
-  document.getElementById('cal-month-label').innerHTML = `${MONTHS[month]} ${year}`;
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  setText('cal-month-label', `${MONTHS[month]} ${year}`);
+  const firstDow = new Date(year, month, 1).getDay();
+  const total = daysInMonth(year, month);
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
-  DOW.forEach(dname=>{
+
+  DOW_SHORT.forEach(name => {
     const el = document.createElement('div');
-    el.className = 'cal-dow'; el.textContent = dname;
+    el.className = 'cal-dow'; el.textContent = name;
     grid.appendChild(el);
   });
-  const todayStr = new Date().toDateString();
-  let monthTotal = 0;
-  for(let i=0;i<firstDay;i++){
+  for(let i = 0; i < firstDow; i++){
     const el = document.createElement('div');
     el.className = 'cal-day empty';
     grid.appendChild(el);
   }
-  for(let day=1; day<=daysInMonth; day++){
-    const bills = billsOnDay(day);
-    const dayTotal = bills.reduce((s,b)=>s+b.amt,0);
-    monthTotal += dayTotal;
-    const cellDate = new Date(year, month, day);
+
+  const todayStr = today().toDateString();
+  let monthBills = 0, monthPay = 0;
+  for(let day = 1; day <= total; day++){
+    const date = new Date(year, month, day);
+    const bills = billsOn(date);
+    const pays = paydaysOn(date);
+    const dayTotal = bills.reduce((s,b) => s + (Number(b.amt)||0), 0);
+    monthBills += dayTotal;
+    monthPay += pays.reduce((s,r) => s + ((Number(r.gross)||0) - (Number(r.tax)||0)), 0);
+
     const el = document.createElement('div');
-    el.className = 'cal-day' + (bills.length? ' has-bills':'') + (cellDate.toDateString()===todayStr? ' today':'');
-    let html = `<div class="daynum">${day}</div>`;
-    bills.slice(0,3).forEach(b=>{
-      html += `<div class="cal-bill" title="${esc(b.name)} — ${fmt(b.amt)}">${esc(b.name)}</div>`;
-    });
-    if(bills.length>3) html += `<div class="cal-bill">+${bills.length-3} more</div>`;
-    if(dayTotal>0) html += `<div class="cal-total">${fmt0(dayTotal)}</div>`;
-    el.innerHTML = html;
+    el.className = 'cal-day' + (bills.length ? ' has-bills' : '') + (date.toDateString() === todayStr ? ' today' : '');
+    const items = [];
+    pays.forEach(r => items.push(`<div class="cal-item pay" title="${esc(r.label)}">+ ${esc(r.label)}</div>`));
+    bills.forEach(b => items.push(`<div class="cal-item bill" title="${esc(b.name)} — ${esc(fmt(b.amt))}">${esc(b.name)}</div>`));
+    const shown = items.slice(0, 3).join('');
+    const extra = items.length > 3 ? `<div class="cal-item more">+${items.length-3} more</div>` : '';
+    el.innerHTML = `<div class="daynum">${day}</div>${shown}${extra}` +
+      (dayTotal > 0 ? `<div class="cal-total">${esc(fmt0(dayTotal))}</div>` : '');
     grid.appendChild(el);
   }
-  document.getElementById('cal-total').textContent = `Month total: ${fmt(monthTotal)}`;
+  setText('cal-total', `Bills ${fmt(monthBills)} · Income ${fmt(monthPay)}`);
 }
 
-/* ============================================================
-   DASHBOARD
-============================================================ */
-function renderDashboard(bal, incomeR){
-  document.getElementById('stat-balance').textContent = fmt(bal);
-  document.getElementById('stat-balance-sub').textContent = 'as of ' + state.startDate;
+function renderProjection(){
+  const horizon = 90;
+  const {points, low, firstNegative, end} = projectBalance(horizon);
+  const alert = document.getElementById('proj-alert');
+  if(firstNegative){
+    const days = daysBetween(today(), firstNegative.date);
+    alert.className = 'proj-alert bad';
+    alert.innerHTML = `<span aria-hidden="true">⚠</span><span><strong>Projected to go negative in ${days} day${days===1?'':'s'}</strong> — on ${esc(firstNegative.date.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'}))}, reaching ${esc(fmt(low.balance))} at the lowest. Trim a bill, add income, or move a due date to clear it.</span>`;
+  } else {
+    alert.className = 'proj-alert ok';
+    alert.innerHTML = `<span aria-hidden="true">✓</span><span><strong>Stays positive for the next ${horizon} days.</strong> Lowest projected point is ${esc(fmt(low.balance))} on ${esc(low.date.toLocaleDateString(undefined,{month:'long', day:'numeric'}))}.</span>`;
+  }
 
-  const monthlyBills = state.bills.reduce((s,b)=>s+activeMonthlyEquivalent(b),0);
-  document.getElementById('stat-bills').textContent = fmt(monthlyBills);
-  document.getElementById('stat-bills-sub').textContent = state.bills.filter(b=>b.status==="Active").length + ' active bills';
+  setMoney(document.getElementById('proj-low'), low.balance);
+  document.getElementById('proj-low').className = 'value ' + (low.balance < 0 ? 'danger' : 'accent');
+  setText('proj-low-date', low.date.toLocaleDateString(undefined, {month:'short', day:'numeric'}));
+  const at = n => (points[n] || points[points.length-1]).balance;
+  setMoney(document.getElementById('proj-30'), at(30));
+  setMoney(document.getElementById('proj-90'), at(horizon));
+  document.getElementById('proj-90').className = 'value ' + (end < 0 ? 'danger' : '');
 
-  document.getElementById('stat-net-income').textContent = fmt(incomeR.totalMonthlyNet);
+  // sparkline
+  const svg = document.getElementById('proj-spark');
+  const W = 800, H = 120, pad = 6;
+  const vals = points.map(p => p.balance);
+  const min = Math.min(...vals, 0), max = Math.max(...vals, 0);
+  const span = (max - min) || 1;
+  const x = i => (i / (points.length - 1)) * W;
+  const y = v => pad + (1 - (v - min) / span) * (H - pad*2);
+  const line = points.map((p,i) => `${i===0?'M':'L'}${x(i).toFixed(1)},${y(p.balance).toFixed(1)}`).join('');
+  const area = `${line}L${W},${H}L0,${H}Z`;
+  const zeroY = y(0).toFixed(1);
+  const stroke = firstNegative ? 'var(--danger)' : 'var(--accent-2)';
+  svg.innerHTML = `<title id="proj-spark-title">Projected balance over the next ${horizon} days</title>
+    <defs><linearGradient id="projfill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${stroke}" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="0" y1="${zeroY}" x2="${W}" y2="${zeroY}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/>
+    <path d="${area}" fill="url(#projfill)"/>
+    <path d="${line}" fill="none" stroke="${stroke}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    <circle cx="${x(points.indexOf(low)).toFixed(1)}" cy="${y(low.balance).toFixed(1)}" r="3.5" fill="${stroke}"/>`;
+}
 
-  const surplus = incomeR.totalMonthlyNet - monthlyBills;
-  const surplusEl = document.getElementById('stat-surplus');
-  surplusEl.textContent = fmt(surplus);
-  surplusEl.className = 'value ' + (surplus<0? 'danger':'accent');
-  document.getElementById('stat-surplus-card').className = 'stat' + (surplus<0? ' card-danger':'');
-
+function renderUpcoming(){
   const body = document.getElementById('upcoming-body');
   body.innerHTML = '';
-  const today = new Date();
-  let rows = [];
-  for(let i=0;i<14;i++){
-    const d = new Date(today); d.setDate(today.getDate()+i);
-    const bills = billsOnDay(d.getDate());
-    bills.forEach(b=>{
-      rows.push({date:d, bill:b});
-    });
+  const rows = [];
+  for(let i = 0; i < 14; i++){
+    const d = addDays(today(), i);
+    paydaysOn(d).forEach(r => rows.push({date:d, name:r.label, cat:'Payday', amt:(r.gross - r.tax), income:true}));
+    billsOn(d).forEach(b => rows.push({date:d, name:b.name, cat:b.cat, amt:-(Number(b.amt)||0), income:false}));
   }
-  document.getElementById('upcoming-empty').style.display = rows.length? 'none':'block';
-  rows.forEach(r=>{
+  document.getElementById('upcoming-empty').hidden = rows.length > 0;
+  rows.forEach(r => {
     const tr = document.createElement('tr');
-    const label = r.date.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'});
-    tr.innerHTML = `<td>${label}</td><td>${esc(r.bill.name)}</td><td style="color:var(--text-dim)">${r.bill.cat}</td><td class="num amt warn" style="color:var(--warn)">${fmt(r.bill.amt)}</td>`;
+    tr.innerHTML = `<td style="white-space:nowrap">${esc(r.date.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'}))}</td>
+      <td>${esc(r.name)}</td>
+      <td style="color:var(--text-dim)">${esc(r.cat)}</td>
+      <td class="num amt ${r.income ? '' : 'neg'}">${esc(fmt(r.amt))}</td>`;
     body.appendChild(tr);
   });
-
-  const hasData = state.bills.length || state.incomeRules.length || state.transactions.length;
-  document.getElementById('dashboard-empty-state').style.display = hasData ? 'none' : 'block';
 }
 
-/* ============================================================
-   ANALYSIS
-============================================================ */
+function renderDashboard(bal, income){
+  setMoney(document.getElementById('stat-balance'), bal);
+  document.getElementById('stat-balance').className = 'value' + (bal < 0 ? ' danger' : '');
+  setText('stat-balance-sub', 'started ' + state.startDate);
+
+  const bills = totalMonthlyBills();
+  setMoney(document.getElementById('stat-bills'), bills);
+  setText('stat-bills-sub', state.bills.filter(b => b.status === 'Active').length + ' active bills');
+  setMoney(document.getElementById('stat-net-income'), income.totalMonthlyNet);
+
+  const surplus = income.totalMonthlyNet - bills;
+  const el = document.getElementById('stat-surplus');
+  setMoney(el, surplus);
+  el.className = 'value ' + (surplus < 0 ? 'danger' : 'accent');
+  document.getElementById('stat-surplus-card').className = 'stat' + (surplus < 0 ? ' card-danger' : ' card-good');
+
+  const hasData = state.bills.length || state.incomeRules.length || state.transactions.length;
+  document.getElementById('dashboard-empty-state').hidden = !!hasData;
+
+  renderUpcoming();
+  renderProjection();
+}
+
 function renderAnalysis(){
   const cats = {};
   let totalSpend = 0;
-  state.transactions.forEach(t=>{
+  state.transactions.forEach(t => {
     if(t.type !== 'Income' && t.amt < 0){
       cats[t.cat] = (cats[t.cat]||0) + Math.abs(t.amt);
       totalSpend += Math.abs(t.amt);
@@ -1256,396 +1463,832 @@ function renderAnalysis(){
   });
   const catDiv = document.getElementById('cat-bars');
   catDiv.innerHTML = '';
-  const entries = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('cat-empty').style.display = entries.length? 'none':'block';
-  entries.forEach(([cat,amt])=>{
-    const pct = totalSpend? (amt/totalSpend*100):0;
+  const entries = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+  document.getElementById('cat-empty').hidden = entries.length > 0;
+  entries.forEach(([cat, amt]) => {
+    const pct = totalSpend ? (amt/totalSpend*100) : 0;
     const row = document.createElement('div');
     row.className = 'bar-row';
-    row.innerHTML = `<div class="bar-label">${cat}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><div class="bar-val">${fmt(amt)}</div>`;
+    row.innerHTML = `<div class="bar-label">${esc(cat)}</div><div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%"></div></div><div class="bar-val">${esc(fmt(amt))}</div>`;
     catDiv.appendChild(row);
   });
 
-  const now = new Date();
-  const thisMonthTxns = state.transactions.filter(t=>{
-    const d = new Date(t.date);
-    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  const now = today();
+  const inMonth = (d, back) => {
+    const ref = new Date(now.getFullYear(), now.getMonth() - back, 1);
+    return d && d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear();
+  };
+  const thisMonth = state.transactions.filter(t => inMonth(parseDate(t.date), 0));
+  const income = thisMonth.filter(t => t.type === 'Income').reduce((s,t) => s + t.amt, 0);
+  const spent = thisMonth.filter(t => t.type !== 'Income' && t.amt < 0).reduce((s,t) => s + Math.abs(t.amt), 0);
+  setMoneyId('an-income', income);
+  setMoneyId('an-spent', spent);
+  setMoneyId('an-net', income - spent);
+
+  // 6-month trend
+  const trend = [];
+  for(let back = 5; back >= 0; back--){
+    const ref = new Date(now.getFullYear(), now.getMonth() - back, 1);
+    const sum = state.transactions
+      .filter(t => { const d = parseDate(t.date); return d && d.getMonth()===ref.getMonth() && d.getFullYear()===ref.getFullYear() && t.type!=='Income' && t.amt<0; })
+      .reduce((s,t) => s + Math.abs(t.amt), 0);
+    trend.push({label: MONTHS[ref.getMonth()].slice(0,3), sum});
+  }
+  const trendMax = Math.max(...trend.map(t => t.sum), 0);
+  const trendDiv = document.getElementById('trend-bars');
+  trendDiv.innerHTML = '';
+  document.getElementById('trend-empty').hidden = trendMax > 0;
+  if(trendMax > 0){
+    trend.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `<div class="bar-label">${esc(t.label)}</div><div class="bar-track"><div class="bar-fill" style="width:${(t.sum/trendMax*100).toFixed(1)}%"></div></div><div class="bar-val">${esc(fmt(t.sum))}</div>`;
+      trendDiv.appendChild(row);
+    });
+  }
+
+  // budget vs actual
+  const budget = {};
+  state.bills.forEach(b => { const m = monthlyEquivalent(b); if(m) budget[b.cat] = (budget[b.cat]||0) + m; });
+  const allCats = [...new Set([...Object.keys(budget), ...Object.keys(cats)])].sort();
+  const bva = document.getElementById('bva-body');
+  bva.innerHTML = '';
+  document.getElementById('bva-empty').hidden = allCats.length > 0;
+  allCats.forEach(cat => {
+    const b = budget[cat] || 0;
+    const a = thisMonth.filter(t => t.cat === cat && t.type !== 'Income' && t.amt < 0).reduce((s,t) => s + Math.abs(t.amt), 0);
+    const diff = b - a;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${esc(cat)}</td><td class="num" style="color:var(--text-dim)">${esc(b?fmt(b):'—')}</td><td class="num amt neg">${esc(a?fmt(a):'—')}</td>
+      <td class="num amt ${diff<0?'neg':''}" style="${diff>=0?'color:var(--accent-2)':''}">${esc((diff>=0?'':'') + fmt(diff))}</td>`;
+    bva.appendChild(tr);
   });
-  const income = thisMonthTxns.filter(t=>t.type==='Income').reduce((s,t)=>s+t.amt,0);
-  const spent = thisMonthTxns.filter(t=>t.type!=='Income' && t.amt<0).reduce((s,t)=>s+Math.abs(t.amt),0);
-  document.getElementById('an-income').textContent = fmt(income);
-  document.getElementById('an-spent').textContent = fmt(spent);
-  document.getElementById('an-net').textContent = fmt(income-spent);
 }
 
-/* ============================================================
-   RENDER ALL
-============================================================ */
-function renderAll(){
-  renderLedger();
-  const incomeR = renderIncome();
-  const bal = renderTransactions();
-  renderCalendar();
-  renderDashboard(bal, incomeR);
-  renderAnalysis();
-  renderIncomeRules();
-  renderDailySpend(incomeR);
-  saveState();
-}
-
-/* ============================================================
-   DAILY SPEND
-============================================================ */
-function renderDailySpend(incomeR){
-  const s = state.dailySpendSettings || DEFAULT_STATE.dailySpendSettings;
-
-  const monthlyNet = incomeR.totalMonthlyNet;
-  const monthlyBills = state.bills.reduce((s2,b)=>s2+activeMonthlyEquivalent(b),0);
+function renderDailySpend(income){
+  const s = state.dailySpendSettings;
+  const monthlyNet = income.totalMonthlyNet;
+  const monthlyBills = totalMonthlyBills();
   const monthlySurplus = monthlyNet - monthlyBills;
 
-  const weeksPerMonth = s.weeksPerMonth;
-  const weeklyNet = monthlyNet / weeksPerMonth;
-  const weeklyBills = monthlyBills / weeksPerMonth;
-  const weeklySurplusRaw = weeklyNet - weeklyBills;
-
+  const weeks = s.weeksPerMonth;
+  const weeklyNet = monthlyNet / weeks;
+  const weeklyBills = monthlyBills / weeks;
+  const weeklySurplus = weeklyNet - weeklyBills;
   const bufferFrac = s.bufferPct / 100;
-  const weeklyBuffer = weeklySurplusRaw * bufferFrac;
-  const weeklySpendable = weeklySurplusRaw - weeklyBuffer;
-
+  const weeklyBuffer = weeklySurplus * bufferFrac;
+  const weeklySpendable = weeklySurplus - weeklyBuffer;
   const dailySpend = weeklySpendable / 7;
   const dailyBuffer = weeklyBuffer / 7;
-  const dailyBills = weeklyBills / 7;
-  const dailyIncome = weeklyNet / 7;
+  const negative = weeklySurplus < 0;
 
-  const negative = weeklySurplusRaw < 0;
-
-  const set = (id, val)=>{ const el = document.getElementById(id); if(el) el.textContent = val; };
-
-  const ctrlIds = {
-    'ds-ctrl-buffer': s.bufferPct, 'ds-ctrl-weeks': s.weeksPerMonth,
-    'ds-ctrl-pct-treat': s.bucketTreatPct, 'ds-ctrl-pct-flex': s.bucketFlexPct, 'ds-ctrl-pct-save': s.bucketSavePct,
-  };
-  Object.entries(ctrlIds).forEach(([id,val])=>{
+  // don't clobber a control the user is mid-edit on
+  Object.entries({'ds-ctrl-buffer':s.bufferPct, 'ds-ctrl-weeks':s.weeksPerMonth, 'ds-ctrl-pct-treat':s.bucketTreatPct,
+    'ds-ctrl-pct-flex':s.bucketFlexPct, 'ds-ctrl-pct-save':s.bucketSavePct}).forEach(([id,val]) => {
     const el = document.getElementById(id);
     if(el && document.activeElement !== el) el.value = val;
   });
 
-  document.getElementById('ds-buffer-label').textContent = s.bufferPct + '% Safety Buffer';
-
+  setText('ds-buffer-label', s.bufferPct + '% Safety Buffer');
   const bucketTotal = s.bucketTreatPct + s.bucketFlexPct + s.bucketSavePct;
-  const warnEl = document.getElementById('ds-ctrl-warning');
-  if(warnEl){
-    warnEl.textContent = Math.round(bucketTotal) !== 100
-      ? `Heads up: Treat + Flex + Save = ${bucketTotal}%, not 100% — the allocation below is scaled proportionally so it still adds up.`
-      : '';
-  }
+  setText('ds-ctrl-warning', Math.round(bucketTotal) !== 100
+    ? `Heads up: Treat + Flex + Save = ${bucketTotal}%, not 100% — the allocation below is scaled proportionally so it still adds up.` : '');
 
-  set('ds-weekly-net', fmt(weeklyNet));
-  set('ds-weekly-bills', fmt(weeklyBills));
-  set('ds-weekly-surplus', fmt(weeklySurplusRaw));
-  set('ds-weekly-buffer', fmt(weeklyBuffer));
+  setMoneyId('ds-weekly-net', weeklyNet);
+  setMoneyId('ds-weekly-bills', weeklyBills);
+  setMoneyId('ds-weekly-surplus', weeklySurplus);
+  setMoneyId('ds-weekly-buffer', weeklyBuffer);
 
   const dailyEl = document.getElementById('ds-daily-spend');
-  if(dailyEl){
-    dailyEl.textContent = negative ? fmt(0) : fmt(dailySpend);
-    dailyEl.classList.toggle('danger', negative);
-  }
-  const noteEl = document.getElementById('ds-daily-note');
-  if(noteEl){
-    noteEl.textContent = negative
-      ? 'bills exceed income this week — no discretionary room until that changes'
-      : `after bills, gas, food, and the ${s.bufferPct}% buffer are already set aside`;
-  }
+  dailyEl.textContent = fmt(negative ? 0 : dailySpend);
+  dailyEl.classList.toggle('danger', negative);
+  setText('ds-daily-note', negative
+    ? 'bills exceed income — no discretionary room until that changes'
+    : `after bills and the ${s.bufferPct}% buffer are already set aside`);
 
   const maxVal = Math.max(dailySpend, dailyBuffer, 0.01);
-  const spendPct = negative? 0 : (dailySpend/maxVal*100);
-  const savePct = negative? 0 : (dailyBuffer/maxVal*100);
-  const spendBar = document.getElementById('ds-bar-spend');
-  const saveBar = document.getElementById('ds-bar-save');
-  if(spendBar) spendBar.style.width = spendPct + '%';
-  if(saveBar) saveBar.style.width = savePct + '%';
-  set('ds-val-spend', fmt(negative? 0 : dailySpend));
-  set('ds-val-save', fmt(negative? 0 : dailyBuffer));
+  document.getElementById('ds-bar-spend').style.width = (negative ? 0 : dailySpend/maxVal*100) + '%';
+  document.getElementById('ds-bar-save').style.width = (negative ? 0 : dailyBuffer/maxVal*100) + '%';
+  setText('ds-val-spend', fmt(negative ? 0 : dailySpend));
+  setText('ds-val-save', fmt(negative ? 0 : dailyBuffer));
+  setText('ds-explainer', negative
+    ? `Weekly bills (${fmt(weeklyBills)}) currently exceed weekly income (${fmt(weeklyNet)}). No safe daily spend until income rises or bills fall.`
+    : `Each week: ${fmt(weeklyNet)} in, ${fmt(weeklyBills)} to bills, ${fmt(weeklyBuffer)} set aside as a ${s.bufferPct}% cushion, leaving ${fmt(weeklySpendable)} to spend freely — about ${fmt(dailySpend)}/day.`);
 
-  const explainer = document.getElementById('ds-explainer');
-  if(explainer){
-    explainer.textContent = negative
-      ? `Weekly bills (${fmt(weeklyBills)}) currently exceed weekly income (${fmt(weeklyNet)}). No safe daily spend until income increases or bills decrease.`
-      : `Each week: ${fmt(weeklyNet)} in, ${fmt(weeklyBills)} to bills, ${fmt(weeklyBuffer)} set aside as a ${s.bufferPct}% cushion, leaving ${fmt(weeklySpendable)} to spend freely — about ${fmt(dailySpend)}/day.`;
-  }
+  const buckets = [
+    {label:'Small daily treat', pct:s.bucketTreatPct},
+    {label:'Flex / social', pct:s.bucketFlexPct},
+    {label:'Rolls into savings', pct:s.bucketSavePct},
+  ];
+  const sum = buckets.reduce((t,b) => t + b.pct, 0) || 1;
+  document.getElementById('ds-lifestyle-buckets').innerHTML = buckets.map(b => {
+    const norm = b.pct / sum;
+    return `<div class="bar-row"><div class="bar-label">${esc(b.label)}</div><div class="bar-track"><div class="bar-fill" style="width:${(norm*100).toFixed(1)}%"></div></div><div class="bar-val">${esc(fmt((negative?0:dailySpend) * norm))}</div></div>`;
+  }).join('');
 
-  const bucketsEl = document.getElementById('ds-lifestyle-buckets');
-  if(bucketsEl){
-    const amt = negative? 0 : dailySpend;
-    const rawBuckets = [
-      {label:'Small daily treat (coffee, snack)', pct: s.bucketTreatPct},
-      {label:'Flex / social / entertainment', pct: s.bucketFlexPct},
-      {label:'Unspent — rolls into savings', pct: s.bucketSavePct},
-    ];
-    const total = rawBuckets.reduce((sum,b)=>sum+b.pct,0) || 1;
-    let html = '';
-    rawBuckets.forEach(b=>{
-      const normalizedPct = b.pct/total;
-      const val = amt * normalizedPct;
-      html += `<div class="bar-row"><div class="bar-label" style="width:220px;">${b.label}</div><div class="bar-track"><div class="bar-fill" style="width:${(normalizedPct*100)}%"></div></div><div class="bar-val">${fmt(val)}</div></div>`;
-    });
-    bucketsEl.innerHTML = html;
-  }
+  const safeBuffer = negative ? 0 : weeklyBuffer;
+  setMoneyId('ds-sav-1m', safeBuffer * weeks);
+  setMoneyId('ds-sav-3m', safeBuffer * weeks * 3);
+  setMoneyId('ds-sav-6m', safeBuffer * weeks * 6);
+  setMoneyId('ds-sav-1y', safeBuffer * weeks * 12);
 
-  const weeklyBufferSafe = negative ? 0 : weeklyBuffer;
-  const weeksIn = (months)=> months * weeksPerMonth;
-  set('ds-sav-1m', fmt(weeklyBufferSafe * weeksIn(1)));
-  set('ds-sav-3m', fmt(weeklyBufferSafe * weeksIn(3)));
-  set('ds-sav-6m', fmt(weeklyBufferSafe * weeksIn(6)));
-  set('ds-sav-1y', fmt(weeklyBufferSafe * weeksIn(12)));
-
-  set('ds-m-income', fmt(monthlyNet));
-  set('ds-w-income', fmt(weeklyNet));
-  set('ds-d-income', fmt(dailyIncome));
-
-  set('ds-m-bills', fmt(monthlyBills));
-  set('ds-w-bills', fmt(weeklyBills));
-  set('ds-d-bills', fmt(dailyBills));
-
-  set('ds-m-buffer', fmt(monthlySurplus>0? monthlySurplus*bufferFrac : 0));
-  set('ds-w-buffer', fmt(weeklyBuffer));
-  set('ds-d-buffer', fmt(dailyBuffer));
-
-  set('ds-m-spend', fmt(negative? 0 : monthlySurplus*(1-bufferFrac)));
-  set('ds-w-spend', fmt(negative? 0 : weeklySpendable));
-  set('ds-d-spend', fmt(negative? 0 : dailySpend));
+  setText('ds-m-income', fmt(monthlyNet));   setText('ds-w-income', fmt(weeklyNet));   setText('ds-d-income', fmt(weeklyNet/7));
+  setText('ds-m-bills', fmt(monthlyBills));  setText('ds-w-bills', fmt(weeklyBills));  setText('ds-d-bills', fmt(weeklyBills/7));
+  setText('ds-m-buffer', fmt(monthlySurplus>0 ? monthlySurplus*bufferFrac : 0)); setText('ds-w-buffer', fmt(weeklyBuffer)); setText('ds-d-buffer', fmt(dailyBuffer));
+  setText('ds-m-spend', fmt(negative?0:monthlySurplus*(1-bufferFrac))); setText('ds-w-spend', fmt(negative?0:weeklySpendable)); setText('ds-d-spend', fmt(negative?0:dailySpend));
 }
 
-function applyDailySpendControls(){
-  const bufferPct = parseFloat(document.getElementById('ds-ctrl-buffer').value);
-  const weeksPerMonth = parseFloat(document.getElementById('ds-ctrl-weeks').value);
-  const bucketTreatPct = parseFloat(document.getElementById('ds-ctrl-pct-treat').value);
-  const bucketFlexPct = parseFloat(document.getElementById('ds-ctrl-pct-flex').value);
-  const bucketSavePct = parseFloat(document.getElementById('ds-ctrl-pct-save').value);
-
-  if([bufferPct, weeksPerMonth, bucketTreatPct, bucketFlexPct, bucketSavePct].some(v=>isNaN(v) || v<0)){
-    alert('Please enter valid non-negative numbers for all fields.');
-    return;
-  }
-
-  state.dailySpendSettings = {
-    bufferPct: Math.min(100, bufferPct),
-    weeksPerMonth: Math.max(4, Math.min(4.5, weeksPerMonth)),
-    bucketTreatPct, bucketFlexPct, bucketSavePct,
-  };
-  renderAll();
-}
-
-function resetDailySpendControls(){
-  state.dailySpendSettings = Object.assign({}, DEFAULT_STATE.dailySpendSettings);
-  renderAll();
+function renderAll(){
+  renderLedger();
+  renderIncomeRules();
+  const income = renderIncome();
+  const bal = renderTransactions();
+  renderCalendar();
+  renderDashboard(bal, income);
+  renderAnalysis();
+  renderDailySpend(income);
+  saveState();
 }
 
 /* ============================================================
-   ONBOARDING WIZARD
+   7. FORM HELPERS + ACTIONS
 ============================================================ */
-let wizStep = 0;
-let wizDraft = { balance:'', balanceDate: todayISO(), rules: [], bills: [] };
-const WIZ_TOTAL = 5;
+function fail(msgId, inputId, message){
+  setText(msgId, message);
+  const el = document.getElementById(inputId);
+  if(el){ el.classList.add('invalid'); el.focus(); setTimeout(() => el.classList.remove('invalid'), 1800); }
+  return false;
+}
+function clearMsg(id){ setText(id, ''); }
+const val = id => document.getElementById(id).value.trim();
+const num = id => parseFloat(document.getElementById(id).value);
 
+/* ---- bills ---- */
+let editingBillId = null;
+function billFreqFields(){
+  const freq = document.getElementById('bill-freq').value;
+  document.getElementById('field-bill-day').hidden = !['Monthly'].includes(freq);
+  document.getElementById('field-bill-dow').hidden = !['Weekly','Biweekly'].includes(freq);
+  document.getElementById('field-bill-date').hidden = freq !== 'One-Time';
+  document.getElementById('field-bill-anchor').hidden = !['Biweekly','Quarterly','Annual'].includes(freq);
+  const hints = {
+    'Monthly':'Due the same day every month. A day past the end of a short month lands on its last day instead.',
+    'Weekly':'Repeats every week on the chosen weekday — counted as ×4.333 toward your monthly total.',
+    'Biweekly':'Repeats every other week, anchored to the next due date you set.',
+    'Quarterly':'Repeats every three months from the date you set.',
+    'Annual':'Once a year, on the date you set.',
+    'One-Time':'A single bill on one date. It stops appearing once that date passes, and is listed separately from recurring totals.',
+  };
+  setText('bill-freq-hint', hints[freq] || '');
+}
+function saveBill(){
+  clearMsg('bill-msg');
+  const name = val('bill-name');
+  const amt = num('bill-amt');
+  const freq = val('bill-freq');
+  if(!name) return fail('bill-msg','bill-name','Give the bill a name.');
+  if(isNaN(amt) || amt < 0) return fail('bill-msg','bill-amt','Enter a valid amount.');
+
+  const bill = {
+    id: editingBillId || uid(), name, cat: val('bill-cat'), amt, freq,
+    auto: val('bill-auto'), status: val('bill-status'),
+  };
+  if(freq === 'Monthly'){
+    const day = parseInt(val('bill-day'), 10);
+    if(isNaN(day) || day < 1 || day > 31) return fail('bill-msg','bill-day','Due day must be between 1 and 31.');
+    bill.day = day;
+  } else if(freq === 'Weekly' || freq === 'Biweekly'){
+    bill.dow = parseInt(val('bill-dow'), 10);
+    bill.anchor = val('bill-anchor') || toISO(nextDow(bill.dow));
+  } else if(freq === 'One-Time'){
+    if(!val('bill-date')) return fail('bill-msg','bill-date','Pick the date this bill is due.');
+    bill.date = val('bill-date');
+  } else {
+    if(!val('bill-anchor')) return fail('bill-msg','bill-anchor','Pick the next date this bill is due.');
+    bill.anchor = val('bill-anchor');
+  }
+
+  snapshot();
+  if(editingBillId){
+    const i = state.bills.findIndex(b => b.id === editingBillId);
+    if(i >= 0) state.bills[i] = bill;
+    cancelBillEdit();
+    toast('Bill updated.', true);
+  } else {
+    state.bills.push(bill);
+    toast(`Added "${name}".`, true);
+  }
+  ['bill-name','bill-amt','bill-day','bill-date','bill-anchor'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+}
+function editBill(id){
+  const b = state.bills.find(x => x.id === id);
+  if(!b) return;
+  editingBillId = id;
+  document.getElementById('bill-name').value = b.name;
+  document.getElementById('bill-cat').value = b.cat;
+  document.getElementById('bill-amt').value = b.amt;
+  document.getElementById('bill-freq').value = b.freq;
+  document.getElementById('bill-auto').value = b.auto;
+  document.getElementById('bill-status').value = b.status;
+  billFreqFields();
+  if(b.day) document.getElementById('bill-day').value = b.day;
+  if(b.dow != null) document.getElementById('bill-dow').value = b.dow;
+  if(b.date) document.getElementById('bill-date').value = b.date;
+  if(b.anchor) document.getElementById('bill-anchor').value = b.anchor;
+  document.getElementById('bill-editing').classList.add('on');
+  document.getElementById('bill-submit').textContent = 'Update Bill';
+  document.getElementById('bill-name').focus();
+  document.getElementById('bill-name').scrollIntoView({block:'center', behavior: reduceMotion() ? 'auto' : 'smooth'});
+}
+function cancelBillEdit(){
+  editingBillId = null;
+  document.getElementById('bill-editing').classList.remove('on');
+  document.getElementById('bill-submit').textContent = 'Add Bill';
+  ['bill-name','bill-amt','bill-day','bill-date','bill-anchor'].forEach(id => document.getElementById(id).value = '');
+  clearMsg('bill-msg');
+}
+function deleteBill(id){
+  const b = state.bills.find(x => x.id === id);
+  if(!b) return;
+  snapshot();
+  state.bills = state.bills.filter(x => x.id !== id);
+  if(editingBillId === id) cancelBillEdit();
+  renderAll();
+  toast(`Deleted "${b.name}".`, true);
+}
+
+/* ---- income rules ---- */
+let editingRuleId = null;
+function saveRule(){
+  clearMsg('rule-msg');
+  const label = val('rule-label');
+  const gross = num('rule-gross');
+  const tax = parseFloat(document.getElementById('rule-tax').value) || 0;
+  if(!label) return fail('rule-msg','rule-label','Give the income rule a label.');
+  if(isNaN(gross) || gross < 0) return fail('rule-msg','rule-gross','Enter a valid gross amount.');
+  if(tax > gross) return fail('rule-msg','rule-tax','Tax is higher than gross, which would make net negative. Check those two numbers.');
+
+  const dow = parseInt(val('rule-dow'), 10);
+  const rule = { id: editingRuleId || uid(), label, freq: val('rule-freq'), dow, gross, tax,
+                 anchor: val('rule-anchor') || toISO(nextDow(dow)) };
+  snapshot();
+  if(editingRuleId){
+    const i = state.incomeRules.findIndex(r => r.id === editingRuleId);
+    if(i >= 0) state.incomeRules[i] = rule;
+    cancelRuleEdit();
+    toast('Income rule updated.', true);
+  } else {
+    state.incomeRules.push(rule);
+    toast(`Added "${label}".`, true);
+  }
+  ['rule-label','rule-gross','rule-tax'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+}
+function editRule(id){
+  const r = state.incomeRules.find(x => x.id === id);
+  if(!r) return;
+  editingRuleId = id;
+  document.getElementById('rule-label').value = r.label;
+  document.getElementById('rule-freq').value = r.freq;
+  document.getElementById('rule-dow').value = r.dow;
+  document.getElementById('rule-anchor').value = r.anchor || '';
+  document.getElementById('rule-gross').value = r.gross;
+  document.getElementById('rule-tax').value = r.tax;
+  document.getElementById('rule-editing').classList.add('on');
+  document.getElementById('rule-submit').textContent = 'Update Rule';
+  document.getElementById('rule-label').focus();
+}
+function cancelRuleEdit(){
+  editingRuleId = null;
+  document.getElementById('rule-editing').classList.remove('on');
+  document.getElementById('rule-submit').textContent = 'Add Rule';
+  ['rule-label','rule-gross','rule-tax'].forEach(id => document.getElementById(id).value = '');
+  clearMsg('rule-msg');
+}
+function deleteRule(id){
+  const r = state.incomeRules.find(x => x.id === id);
+  if(!r) return;
+  snapshot();
+  state.incomeRules = state.incomeRules.filter(x => x.id !== id);
+  if(editingRuleId === id) cancelRuleEdit();
+  renderAll();
+  toast(`Deleted "${r.label}".`, true);
+}
+
+/* ---- logs ---- */
+function addJob(){
+  clearMsg('job-msg');
+  const gross = num('job-gross');
+  if(isNaN(gross) || gross < 0) return fail('job-msg','job-gross','Enter a valid gross amount.');
+  const ded = parseFloat(document.getElementById('job-ded').value) || 0;
+  snapshot();
+  state.jobIncome.push({id:uid(), date: val('job-date') || todayISO(), gross, ded, notes: val('job-notes')});
+  ['job-gross','job-ded','job-notes'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+  toast('Paycheck logged.', true);
+}
+function addSide(){
+  clearMsg('side-msg');
+  const source = val('side-source');
+  const net = num('side-net');
+  if(!source) return fail('side-msg','side-source','Where did this income come from?');
+  if(isNaN(net)) return fail('side-msg','side-net','Enter the net amount received.');
+  snapshot();
+  state.sideIncome.push({id:uid(), date: val('side-date') || todayISO(), source, cat: val('side-cat'),
+                         gross: parseFloat(document.getElementById('side-gross').value) || net, net});
+  ['side-source','side-gross','side-net'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+  toast('Side income logged.', true);
+}
+function removeById(key, id, label){
+  const item = state[key].find(x => x.id === id);
+  if(!item) return;
+  snapshot();
+  state[key] = state[key].filter(x => x.id !== id);
+  renderAll();
+  toast(label + ' removed.', true);
+}
+
+/* ---- transactions ---- */
+function setStartingBalance(){
+  const v = num('start-bal');
+  snapshot();
+  state.startBalance = isNaN(v) ? 0 : v;
+  state.startDate = val('start-date') || todayISO();
+  renderAll();
+  toast('Starting balance updated.', true);
+}
+function addTxn(){
+  clearMsg('txn-msg');
+  const desc = val('txn-desc');
+  const amt = num('txn-amt');
+  if(!desc) return fail('txn-msg','txn-desc','Describe the transaction.');
+  if(isNaN(amt)) return fail('txn-msg','txn-amt','Enter an amount — negative for money out, positive for money in.');
+  snapshot();
+  state.transactions.push({id:uid(), date: val('txn-date') || todayISO(), desc, cat: val('txn-cat'), amt, type: val('txn-type')});
+  ['txn-desc','txn-amt'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+  document.getElementById('txn-desc').focus();
+  toast('Transaction added.', true);
+}
+
+/* ---- CSV ---- */
+let parsedCsv = [];
+function parseCsvRows(){
+  const raw = document.getElementById('csv-input').value.trim();
+  const preview = document.getElementById('csv-preview');
+  const btn = document.getElementById('csv-import-btn');
+  parsedCsv = [];
+  if(!raw){ preview.innerHTML = ''; btn.disabled = true; return; }
+
+  raw.split('\n').map(l => l.trim()).filter(Boolean).forEach((line, i) => {
+    const parts = line.split(',');
+    if(parts.length < 3) return;
+    const date = parts[0].trim().replace(/^["']|["']$/g,'');
+    const amt = parseFloat(parts[parts.length-1].replace(/[^0-9.\-]/g,''));
+    const desc = parts.slice(1, -1).join(',').trim().replace(/^["']|["']$/g,'');
+    // Header rows parse to NaN on the amount column, so they drop out naturally.
+    if(!date || !desc || isNaN(amt)) return;
+    if(!parseDate(date) && isNaN(Date.parse(date))) return;
+    parsedCsv.push({date: parseDate(date) ? toISO(parseDate(date)) : toISO(new Date(date)), desc, amt});
+  });
+
+  if(!parsedCsv.length){
+    preview.innerHTML = '<div class="empty-note">No valid rows found. Each line should look like <code>2026-09-03,Grocery Store,-84.12</code>.</div>';
+    btn.disabled = true;
+    return;
+  }
+  preview.innerHTML = `<p class="hint">${parsedCsv.length} row(s) ready to import.</p><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead><tbody>` +
+    parsedCsv.map(r => `<tr><td>${esc(r.date)}</td><td>${esc(r.desc)}</td><td class="num amt ${r.amt<0?'neg':''}">${esc(fmt(r.amt))}</td></tr>`).join('') +
+    '</tbody></table></div>';
+  btn.disabled = false;
+}
+function importCsv(){
+  if(!parsedCsv.length) return;
+  snapshot();
+  const n = parsedCsv.length;
+  parsedCsv.forEach(r => state.transactions.push({
+    id: uid(), date: r.date, desc: r.desc, cat: 'Other', amt: r.amt,
+    type: r.amt > 0 ? 'Income' : 'Purchase',
+  }));
+  parsedCsv = [];
+  document.getElementById('csv-input').value = '';
+  document.getElementById('csv-preview').innerHTML = '';
+  document.getElementById('csv-import-btn').disabled = true;
+  renderAll();
+  toast(`Imported ${n} transaction(s).`, true);
+}
+
+/* ---- daily spend controls ---- */
+function applyDailySpend(){
+  const nums = ['ds-ctrl-buffer','ds-ctrl-weeks','ds-ctrl-pct-treat','ds-ctrl-pct-flex','ds-ctrl-pct-save'].map(id => parseFloat(document.getElementById(id).value));
+  if(nums.some(v => isNaN(v) || v < 0)){ toast('Enter valid non-negative numbers for every control.'); return; }
+  snapshot();
+  state.dailySpendSettings = {
+    bufferPct: clamp(nums[0], 0, 100),
+    weeksPerMonth: clamp(nums[1], 4, 4.5),
+    bucketTreatPct: nums[2], bucketFlexPct: nums[3], bucketSavePct: nums[4],
+  };
+  renderAll();
+  toast('Controls applied.', true);
+}
+function resetDailySpend(){
+  snapshot();
+  state.dailySpendSettings = defaultState().dailySpendSettings;
+  renderAll();
+  toast('Controls reset to defaults.', true);
+}
+
+/* ---- data management ---- */
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mentifaber-budget-${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Backup downloaded.');
+}
+function importBackup(evt){
+  const file = evt.target.files && evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || typeof data !== 'object' || !Array.isArray(data.bills)) throw new Error('not a budget backup');
+      snapshot();
+      state = migrate(data);
+      renderAll();
+      toast('Backup imported.', true);
+    }catch(err){
+      toast('Could not read that file — it needs to be a backup exported from this app.');
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+function resetAll(){
+  if(!confirm('This clears every bill, income rule, transaction and setting on this device. It cannot be undone except from a backup file. Continue?')) return;
+  snapshot();
+  state = defaultState();
+  renderAll();
+  toast('Everything cleared.', true);
+  startWizard();
+}
+
+/* ============================================================
+   8. TABS + KEYBOARD
+============================================================ */
+const TAB_ORDER = ['dashboard','income','ledger','calendar','transactions','dailyspend','analysis','readme'];
+function goto(view){
+  if(!TAB_ORDER.includes(view)) view = 'dashboard';
+  TAB_ORDER.forEach(name => {
+    const tab = document.getElementById('tab-' + name);
+    const panel = document.getElementById('view-' + name);
+    const on = name === view;
+    tab.setAttribute('aria-selected', String(on));
+    tab.tabIndex = on ? 0 : -1;
+    panel.hidden = !on;
+  });
+  state.ui.activeTab = view;
+  saveState();
+  window.scrollTo({top:0, behavior: reduceMotion() ? 'auto' : 'smooth'});
+}
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if(btn) goto(btn.dataset.view);
+});
+document.getElementById('tabs').addEventListener('keydown', e => {
+  const idx = TAB_ORDER.indexOf(state.ui.activeTab);
+  let next = null;
+  if(e.key === 'ArrowRight') next = (idx + 1) % TAB_ORDER.length;
+  else if(e.key === 'ArrowLeft') next = (idx - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+  else if(e.key === 'Home') next = 0;
+  else if(e.key === 'End') next = TAB_ORDER.length - 1;
+  if(next !== null){
+    e.preventDefault();
+    goto(TAB_ORDER[next]);
+    document.getElementById('tab-' + TAB_ORDER[next]).focus();
+  }
+});
+document.addEventListener('keydown', e => {
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if(e.key === 'Escape' && !document.getElementById('wizard-overlay').hidden){ closeWizard(); return; }
+  const n = parseInt(e.key, 10);
+  if(n >= 1 && n <= TAB_ORDER.length){ goto(TAB_ORDER[n-1]); document.getElementById('tab-' + TAB_ORDER[n-1]).focus(); }
+});
+
+/* ============================================================
+   9. WIZARD
+============================================================ */
 const COMMON_BILLS = [
   {name:'Rent / Mortgage', cat:'Housing', day:1, freq:'Monthly'},
   {name:'Electric', cat:'Utilities', day:15, freq:'Monthly'},
   {name:'Phone', cat:'Subscriptions', day:15, freq:'Monthly'},
   {name:'Internet', cat:'Utilities', day:5, freq:'Monthly'},
-  {name:'Gas (car)', cat:'Transportation', day:5, freq:'Weekly'},
-  {name:'Groceries', cat:'Other', day:5, freq:'Weekly'},
+  {name:'Car insurance', cat:'Insurance', day:10, freq:'Monthly'},
+  {name:'Gas (car)', cat:'Transportation', dow:5, freq:'Weekly'},
+  {name:'Groceries', cat:'Food', dow:5, freq:'Weekly'},
   {name:'Streaming', cat:'Subscriptions', day:20, freq:'Monthly'},
 ];
+let wizStep = 0;
+let wizDraft = null;
+let wizLastFocus = null;
+const WIZ_TOTAL = 5;
 
 function startWizard(){
   wizStep = 0;
-  wizDraft = { balance: state.startBalance || '', balanceDate: state.startDate || todayISO(), rules: [], bills: [] };
-  document.getElementById('wizard-overlay').classList.remove('hidden');
+  wizDraft = {balance: state.startBalance || '', balanceDate: state.startDate || todayISO(), rules: [], bills: []};
+  wizLastFocus = document.activeElement;
+  document.getElementById('wizard-overlay').hidden = false;
   renderWizard();
 }
-function closeWizard(markDone){
-  document.getElementById('wizard-overlay').classList.add('hidden');
-  if(markDone){ state.__wizardDone = true; saveState(); }
+function closeWizard(){
+  document.getElementById('wizard-overlay').hidden = true;
+  state.wizardDone = true;
+  saveState();
+  if(wizLastFocus && wizLastFocus.focus) wizLastFocus.focus();
 }
-function wizSteps(){
-  let html = '<div class="wizard-steps">';
-  for(let i=0;i<WIZ_TOTAL;i++){
-    html += `<div class="seg ${i<wizStep?'done':''} ${i===wizStep?'current':''}"></div>`;
-  }
-  return html + '</div>';
+function wizSegs(){
+  return '<div class="wizard-steps">' + Array.from({length:WIZ_TOTAL}, (_,i) =>
+    `<div class="seg ${i < wizStep ? 'done':''} ${i === wizStep ? 'current':''}"></div>`).join('') + '</div>';
 }
 function renderWizard(){
   const card = document.getElementById('wizard-card');
   if(wizStep === 0){
-    card.innerHTML = `
-      ${wizSteps()}
-      <div class="wizard-emoji">👋</div>
+    card.innerHTML = `${wizSegs()}
+      <div class="wizard-emoji" aria-hidden="true">👋</div>
       <div class="wizard-eyebrow">Setup Guide</div>
-      <div class="wizard-title">Let's build your budget</div>
-      <div class="wizard-body">Four quick steps: your balance, your income, your bills, and you're done. Everything saves right in this browser — nothing leaves your device.</div>
+      <h2 class="wizard-title" id="wizard-heading">Let's build your budget</h2>
+      <div class="wizard-body">Three quick steps — your balance, your income, your bills — and the whole thing works. Everything saves in this browser only; nothing leaves your device.</div>
       <div class="wizard-actions">
-        <button class="btn ghost" onclick="closeWizard(false)">Skip for now</button>
-        <button class="btn" onclick="wizNext()">Let's go →</button>
-      </div>
-    `;
+        <button class="btn ghost" data-wiz="skip">Skip for now</button>
+        <button class="btn" data-wiz="next">Let's go →</button>
+      </div>`;
   } else if(wizStep === 1){
-    card.innerHTML = `
-      ${wizSteps()}
+    card.innerHTML = `${wizSegs()}
       <div class="wizard-eyebrow">Step 1 of 3</div>
-      <div class="wizard-title">What's your starting balance?</div>
-      <div class="wizard-body">This is your current balance right now — everything else (income, bills, spending) tracks forward from here.</div>
+      <h2 class="wizard-title" id="wizard-heading">What's in your account right now?</h2>
+      <div class="wizard-body">Your current balance. Everything else — income, bills, spending — projects forward from this number.</div>
       <div class="row-form">
-        <div class="field"><label>Balance</label><input type="number" step="0.01" id="wiz-balance" placeholder="0.00" value="${wizDraft.balance}"></div>
-        <div class="field"><label>As of</label><input type="date" id="wiz-balance-date" value="${wizDraft.balanceDate}"></div>
+        <div class="field"><label for="wiz-balance">Balance</label><input type="number" step="0.01" id="wiz-balance" placeholder="0.00" inputmode="decimal" value="${esc(wizDraft.balance)}"></div>
+        <div class="field"><label for="wiz-balance-date">As of</label><input type="date" id="wiz-balance-date" value="${esc(wizDraft.balanceDate)}"></div>
       </div>
       <div class="wizard-actions">
-        <div class="left"><button class="btn ghost" onclick="wizBack()">← Back</button></div>
-        <button class="btn" onclick="wizSaveBalance()">Continue →</button>
-      </div>
-    `;
+        <button class="btn ghost" data-wiz="back">← Back</button>
+        <button class="btn" data-wiz="save-balance">Continue →</button>
+      </div>`;
   } else if(wizStep === 2){
-    let addedHtml = wizDraft.rules.map((r,i)=>`<div class="wizard-added-row"><span class="n">${esc(r.label)} · ${r.freq}</span><span class="a">${fmt(r.gross-r.tax)}/pay</span></div>`).join('');
-    card.innerHTML = `
-      ${wizSteps()}
+    card.innerHTML = `${wizSegs()}
       <div class="wizard-eyebrow">Step 2 of 3</div>
-      <div class="wizard-title">Add your income</div>
-      <div class="wizard-body">A paycheck or recurring deposit. Add as many as you like — job pay, side gigs, anything regular.</div>
+      <h2 class="wizard-title" id="wizard-heading">How do you get paid?</h2>
+      <div class="wizard-body">Add each regular paycheck or deposit. Gross is before tax, deductions are what gets taken out — the app tracks net.</div>
       <div class="row-form">
-        <div class="field grow"><label>Label</label><input type="text" id="wiz-inc-label" placeholder="e.g. Weekly job pay"></div>
-        <div class="field"><label>Frequency</label><select id="wiz-inc-freq"><option>Weekly</option><option>Biweekly</option></select></div>
-        <div class="field"><label>Gross</label><input type="number" step="0.01" id="wiz-inc-gross" placeholder="0.00"></div>
-        <div class="field"><label>Tax/ded.</label><input type="number" step="0.01" id="wiz-inc-tax" placeholder="0.00"></div>
+        <div class="field grow"><label for="wiz-inc-label">Label</label><input type="text" id="wiz-inc-label" placeholder="e.g. Weekly job pay"></div>
+        <div class="field"><label for="wiz-inc-freq">Frequency</label><select id="wiz-inc-freq"><option>Weekly</option><option>Biweekly</option></select></div>
+        <div class="field"><label for="wiz-inc-dow">Pay day</label><select id="wiz-inc-dow"><option value="5">Friday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></div>
+        <div class="field"><label for="wiz-inc-gross">Gross</label><input type="number" step="0.01" id="wiz-inc-gross" placeholder="0.00" inputmode="decimal"></div>
+        <div class="field"><label for="wiz-inc-tax">Deductions</label><input type="number" step="0.01" id="wiz-inc-tax" placeholder="0.00" inputmode="decimal"></div>
       </div>
-      <button class="btn ghost small" onclick="wizAddIncome()">+ Add Income Source</button>
-      <div class="wizard-added-list">${addedHtml}</div>
+      <div class="form-msg" id="wiz-inc-msg"></div>
+      <button class="btn ghost small" data-wiz="add-income">+ Add This Income</button>
+      <div class="wizard-added-list">${wizDraft.rules.map(r =>
+        `<div class="wizard-added-row"><span class="n">${esc(r.label)} · ${esc(r.freq)} ${esc(DOW_SHORT[r.dow])}</span><span class="a">${esc(fmt(r.gross - r.tax))} net</span></div>`).join('')}</div>
       <div class="wizard-actions">
-        <div class="left"><button class="btn ghost" onclick="wizBack()">← Back</button></div>
-        <button class="btn" onclick="wizNext()">${wizDraft.rules.length? 'Continue →' : 'Skip this step →'}</button>
-      </div>
-    `;
+        <button class="btn ghost" data-wiz="back">← Back</button>
+        <button class="btn" data-wiz="next">${wizDraft.rules.length ? 'Continue →' : 'Skip this step →'}</button>
+      </div>`;
   } else if(wizStep === 3){
-    let addedHtml = wizDraft.bills.map((b,i)=>`<div class="wizard-added-row"><span class="n">${esc(b.name)} · day ${b.day}</span><span class="a">${fmt(b.amt)}</span></div>`).join('');
-    let chips = COMMON_BILLS.map(b=>`<span class="chip" onclick="wizQuickBill('${b.name.replace(/'/g,"\\'")}','${b.cat}',${b.day},'${b.freq}')">+ ${b.name}</span>`).join('');
-    card.innerHTML = `
-      ${wizSteps()}
+    card.innerHTML = `${wizSegs()}
       <div class="wizard-eyebrow">Step 3 of 3</div>
-      <div class="wizard-title">Add your bills</div>
-      <div class="wizard-body">Tap a common bill to prefill it, or type your own. Set the real amount and due day for each.</div>
-      <div class="chip-row">${chips}</div>
+      <h2 class="wizard-title" id="wizard-heading">What do you pay out?</h2>
+      <div class="wizard-body">Tap a common bill to prefill it, then set your real amount. Weekly things like gas and groceries belong here too — that's what makes the daily number honest.</div>
+      <div class="chip-row">${COMMON_BILLS.map((b,i) => `<button class="chip" data-wiz-chip="${i}">+ ${esc(b.name)}</button>`).join('')}</div>
       <div class="row-form" style="margin-top:14px;">
-        <div class="field grow"><label>Bill name</label><input type="text" id="wiz-bill-name" placeholder="e.g. Rent"></div>
-        <div class="field"><label>Amount</label><input type="number" step="0.01" id="wiz-bill-amt" placeholder="0.00"></div>
-        <div class="field"><label>Due day</label><input type="number" min="1" max="31" id="wiz-bill-day" placeholder="1-31"></div>
-        <div class="field"><label>Frequency</label><select id="wiz-bill-freq"><option>Monthly</option><option>Weekly</option><option>Biweekly</option><option>Quarterly</option><option>Annual</option><option>One-Time</option></select></div>
+        <div class="field grow"><label for="wiz-bill-name">Bill name</label><input type="text" id="wiz-bill-name" placeholder="e.g. Rent"></div>
+        <div class="field"><label for="wiz-bill-amt">Amount</label><input type="number" step="0.01" id="wiz-bill-amt" placeholder="0.00" inputmode="decimal"></div>
+        <div class="field"><label for="wiz-bill-freq">Frequency</label><select id="wiz-bill-freq"><option>Monthly</option><option>Weekly</option><option>Biweekly</option></select></div>
+        <div class="field" id="wiz-field-day"><label for="wiz-bill-day">Day of month</label><input type="number" min="1" max="31" id="wiz-bill-day" placeholder="1-31" inputmode="numeric"></div>
+        <div class="field" id="wiz-field-dow" hidden><label for="wiz-bill-dow">Day of week</label><select id="wiz-bill-dow"><option value="5">Friday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></div>
       </div>
-      <button class="btn ghost small" onclick="wizAddBill()">+ Add Bill</button>
-      <div class="wizard-added-list">${addedHtml}</div>
+      <div class="form-msg" id="wiz-bill-msg"></div>
+      <button class="btn ghost small" data-wiz="add-bill">+ Add This Bill</button>
+      <div class="wizard-added-list">${wizDraft.bills.map(b =>
+        `<div class="wizard-added-row"><span class="n">${esc(b.name)} · ${esc(describeDue(b))}</span><span class="a">${esc(fmt(b.amt))}</span></div>`).join('')}</div>
       <div class="wizard-actions">
-        <div class="left"><button class="btn ghost" onclick="wizBack()">← Back</button></div>
-        <button class="btn" onclick="wizFinish()">${wizDraft.bills.length? 'Finish →' : 'Skip &amp; Finish →'}</button>
-      </div>
-    `;
-  } else if(wizStep === 4){
-    const monthlyBills = wizDraft.bills.reduce((s,b)=>{
-      const fakeBill = Object.assign({status:'Active'}, b);
-      return s + activeMonthlyEquivalent(fakeBill);
-    },0);
-    const monthlyNet = wizDraft.rules.reduce((s,r)=>s+ruleMonthlyNet(r),0);
-    card.innerHTML = `
-      ${wizSteps()}
-      <div class="wizard-emoji">🎉</div>
+        <button class="btn ghost" data-wiz="back">← Back</button>
+        <button class="btn" data-wiz="finish">${wizDraft.bills.length ? 'Finish →' : 'Skip &amp; finish →'}</button>
+      </div>`;
+    const sync = () => {
+      const f = document.getElementById('wiz-bill-freq').value;
+      document.getElementById('wiz-field-day').hidden = f !== 'Monthly';
+      document.getElementById('wiz-field-dow').hidden = f === 'Monthly';
+    };
+    document.getElementById('wiz-bill-freq').addEventListener('change', sync);
+    sync();
+  } else {
+    const monthlyBills = wizDraft.bills.reduce((s,b) => s + monthlyEquivalent(Object.assign({status:'Active'}, b)), 0);
+    const monthlyNet = wizDraft.rules.reduce((s,r) => s + ruleMonthlyNet(r), 0);
+    const surplus = monthlyNet - monthlyBills;
+    card.innerHTML = `${wizSegs()}
+      <div class="wizard-emoji" aria-hidden="true">🎉</div>
       <div class="wizard-eyebrow">All set</div>
-      <div class="wizard-title">You're ready to go</div>
+      <h2 class="wizard-title" id="wizard-heading">Here's where you stand</h2>
       <div class="wizard-body">
-        Starting balance: <strong style="color:var(--text)">${fmt(parseFloat(wizDraft.balance)||0)}</strong><br>
-        ${wizDraft.rules.length? `Estimated monthly income: <strong style="color:var(--accent-2)">${fmt(monthlyNet)}</strong><br>` : ''}
-        ${wizDraft.bills.length? `Estimated monthly bills: <strong style="color:var(--warn)">${fmt(monthlyBills)}</strong><br>` : ''}
-        You can always add more, edit anything, or re-run this guide from the <strong>?</strong> button up top.
+        Starting balance: <strong style="color:var(--text)">${esc(fmt(parseFloat(wizDraft.balance)||0))}</strong><br>
+        ${wizDraft.rules.length ? `Monthly income: <strong style="color:var(--accent-2)">${esc(fmt(monthlyNet))}</strong><br>` : ''}
+        ${wizDraft.bills.length ? `Monthly bills: <strong style="color:var(--warn)">${esc(fmt(monthlyBills))}</strong><br>` : ''}
+        ${wizDraft.rules.length && wizDraft.bills.length ? `Monthly surplus: <strong style="color:${surplus<0?'var(--danger)':'var(--accent-2)'}">${esc(fmt(surplus))}</strong><br>` : ''}
+        <br>Everything's editable from here, and you can re-run this guide anytime from the <strong>Setup</strong> button.
       </div>
       <div class="wizard-actions" style="justify-content:flex-end;">
-        <button class="btn" onclick="wizComplete()">Take me to my Dashboard →</button>
-      </div>
-    `;
-    launchConfetti();
+        <button class="btn" data-wiz="complete">Take me to my dashboard →</button>
+      </div>`;
+    confetti();
   }
+  const first = card.querySelector('input, select, button');
+  if(first) first.focus();
 }
-function wizNext(){ wizStep++; renderWizard(); }
-function wizBack(){ if(wizStep>0){ wizStep--; renderWizard(); } }
-function wizSaveBalance(){
-  const v = parseFloat(document.getElementById('wiz-balance').value);
-  wizDraft.balance = isNaN(v)? 0 : v;
-  wizDraft.balanceDate = document.getElementById('wiz-balance-date').value || todayISO();
-  wizNext();
-}
-function wizAddIncome(){
-  const label = document.getElementById('wiz-inc-label').value.trim();
-  const freq = document.getElementById('wiz-inc-freq').value;
-  const gross = parseFloat(document.getElementById('wiz-inc-gross').value);
-  const tax = parseFloat(document.getElementById('wiz-inc-tax').value) || 0;
-  if(!label || isNaN(gross)) return;
-  wizDraft.rules.push({label, freq, day:'Friday', gross, tax, startDate: nextFridayISO()});
-  renderWizard();
-}
-function wizQuickBill(name, cat, day, freq){
-  document.getElementById('wiz-bill-name').value = name;
-  document.getElementById('wiz-bill-day').value = day;
-  document.getElementById('wiz-bill-freq').value = freq;
-  document.getElementById('wiz-bill-amt').focus();
-}
-function wizAddBill(){
-  const name = document.getElementById('wiz-bill-name').value.trim();
-  const amt = parseFloat(document.getElementById('wiz-bill-amt').value);
-  const day = parseInt(document.getElementById('wiz-bill-day').value);
-  const freq = document.getElementById('wiz-bill-freq').value;
-  if(!name || isNaN(amt) || isNaN(day) || day<1 || day>31) return;
-  wizDraft.bills.push({name, cat:'Other', amt, day, freq, auto:'No', status:'Active'});
-  renderWizard();
-}
-function wizFinish(){ wizStep = 4; renderWizard(); }
-function wizComplete(){
-  state.startBalance = parseFloat(wizDraft.balance)||0;
-  state.startDate = wizDraft.balanceDate;
-  wizDraft.rules.forEach(r=> state.incomeRules.push(r));
-  wizDraft.bills.forEach(b=> state.bills.push(b));
-  state.__wizardDone = true;
-  closeWizard(true);
-  goto('dashboard');
-}
-function launchConfetti(){
+document.getElementById('wizard-card').addEventListener('click', e => {
+  const chip = e.target.closest('[data-wiz-chip]');
+  if(chip){
+    const b = COMMON_BILLS[Number(chip.dataset.wizChip)];
+    document.getElementById('wiz-bill-name').value = b.name;
+    document.getElementById('wiz-bill-freq').value = b.freq;
+    document.getElementById('wiz-bill-freq').dispatchEvent(new Event('change'));
+    if(b.day) document.getElementById('wiz-bill-day').value = b.day;
+    if(b.dow != null) document.getElementById('wiz-bill-dow').value = b.dow;
+    document.getElementById('wiz-bill-amt').focus();
+    return;
+  }
+  const btn = e.target.closest('[data-wiz]');
+  if(!btn) return;
+  const act = btn.dataset.wiz;
+  if(act === 'next'){ wizStep++; renderWizard(); }
+  else if(act === 'back'){ wizStep = Math.max(0, wizStep-1); renderWizard(); }
+  else if(act === 'skip'){ closeWizard(); }
+  else if(act === 'save-balance'){
+    const v = parseFloat(document.getElementById('wiz-balance').value);
+    wizDraft.balance = isNaN(v) ? 0 : v;
+    wizDraft.balanceDate = document.getElementById('wiz-balance-date').value || todayISO();
+    wizStep = 2; renderWizard();
+  }
+  else if(act === 'add-income'){
+    const label = document.getElementById('wiz-inc-label').value.trim();
+    const gross = parseFloat(document.getElementById('wiz-inc-gross').value);
+    const tax = parseFloat(document.getElementById('wiz-inc-tax').value) || 0;
+    if(!label){ setText('wiz-inc-msg','Give this income a label.'); return; }
+    if(isNaN(gross) || gross < 0){ setText('wiz-inc-msg','Enter a valid gross amount.'); return; }
+    if(tax > gross){ setText('wiz-inc-msg','Deductions are larger than gross — double-check those two.'); return; }
+    const dow = parseInt(document.getElementById('wiz-inc-dow').value, 10);
+    wizDraft.rules.push({id:uid(), label, freq: document.getElementById('wiz-inc-freq').value, dow, gross, tax, anchor: toISO(nextDow(dow))});
+    renderWizard();
+  }
+  else if(act === 'add-bill'){
+    const name = document.getElementById('wiz-bill-name').value.trim();
+    const amt = parseFloat(document.getElementById('wiz-bill-amt').value);
+    const freq = document.getElementById('wiz-bill-freq').value;
+    if(!name){ setText('wiz-bill-msg','Give the bill a name.'); return; }
+    if(isNaN(amt) || amt < 0){ setText('wiz-bill-msg','Enter a valid amount.'); return; }
+    const bill = {id:uid(), name, cat:'Other', amt, freq, auto:'No', status:'Active'};
+    if(freq === 'Monthly'){
+      const day = parseInt(document.getElementById('wiz-bill-day').value, 10);
+      if(isNaN(day) || day < 1 || day > 31){ setText('wiz-bill-msg','Day of month must be between 1 and 31.'); return; }
+      bill.day = day;
+    } else {
+      bill.dow = parseInt(document.getElementById('wiz-bill-dow').value, 10);
+      bill.anchor = toISO(nextDow(bill.dow));
+    }
+    wizDraft.bills.push(bill);
+    renderWizard();
+  }
+  else if(act === 'finish'){ wizStep = 4; renderWizard(); }
+  else if(act === 'complete'){
+    snapshot();
+    state.startBalance = parseFloat(wizDraft.balance) || 0;
+    state.startDate = wizDraft.balanceDate;
+    state.incomeRules.push(...wizDraft.rules);
+    state.bills.push(...wizDraft.bills);
+    state.wizardDone = true;
+    closeWizard();
+    goto('dashboard');
+    renderAll();
+  }
+});
+// focus trap
+document.getElementById('wizard-overlay').addEventListener('keydown', e => {
+  if(e.key !== 'Tab') return;
+  const items = document.getElementById('wizard-card').querySelectorAll('input, select, button, [href], textarea');
+  if(!items.length) return;
+  const first = items[0], last = items[items.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+function confetti(){
+  if(reduceMotion()) return;
   const colors = ['#7c9bff','#3ee6b8','#f2cd7a'];
-  for(let i=0;i<26;i++){
+  for(let i = 0; i < 26; i++){
     const dot = document.createElement('div');
     dot.className = 'confetti-dot';
     const size = 5 + Math.random()*5;
-    dot.style.width = size+'px';
-    dot.style.height = size+'px';
-    dot.style.left = (Math.random()*100)+'vw';
-    dot.style.background = colors[i % colors.length];
-    dot.style.animation = `fadeIn .1s ease, spin ${1+Math.random()}s linear infinite`;
-    dot.style.transition = `transform ${2+Math.random()*1.5}s cubic-bezier(.2,.6,.4,1), opacity 2.5s ease`;
+    dot.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;background:${colors[i%3]};` +
+      `transition:transform ${2+Math.random()*1.5}s cubic-bezier(.2,.6,.4,1), opacity 2.5s ease;`;
     document.body.appendChild(dot);
-    requestAnimationFrame(()=>{
-      dot.style.transform = `translateY(${70+Math.random()*30}vh) translateX(${(Math.random()-0.5)*120}px)`;
+    requestAnimationFrame(() => {
+      dot.style.transform = `translateY(${70+Math.random()*30}vh) translateX(${(Math.random()-0.5)*140}px) rotate(${Math.random()*540}deg)`;
       dot.style.opacity = '0';
     });
-    setTimeout(()=> dot.remove(), 3000);
+    setTimeout(() => dot.remove(), 3600);
   }
 }
 
 /* ============================================================
-   INIT
+   10. EVENT WIRING
 ============================================================ */
-document.getElementById('job-date').value = todayISO();
-document.getElementById('side-date').value = todayISO();
-document.getElementById('txn-date').value = todayISO();
-document.getElementById('start-date').value = state.startDate;
-document.getElementById('rule-startdate').value = nextFridayISO();
+const ACTIONS = {
+  'start-wizard': startWizard,
+  'save-bill': saveBill,
+  'cancel-bill-edit': cancelBillEdit,
+  'save-rule': saveRule,
+  'cancel-rule-edit': cancelRuleEdit,
+  'add-job': addJob,
+  'add-side': addSide,
+  'set-balance': setStartingBalance,
+  'add-txn': addTxn,
+  'csv-preview': parseCsvRows,
+  'csv-import': importCsv,
+  'apply-ds': applyDailySpend,
+  'reset-ds': resetDailySpend,
+  'export': exportBackup,
+  'import-click': () => document.getElementById('import-file').click(),
+  'print': () => window.print(),
+  'reset': resetAll,
+  'cal-prev': () => { calDate = new Date(calDate.getFullYear(), calDate.getMonth()-1, 1); renderCalendar(); },
+  'cal-next': () => { calDate = new Date(calDate.getFullYear(), calDate.getMonth()+1, 1); renderCalendar(); },
+  'cal-today': () => { calDate = today(); renderCalendar(); },
+};
+document.addEventListener('click', e => {
+  const actionBtn = e.target.closest('[data-action]');
+  if(actionBtn && ACTIONS[actionBtn.dataset.action]){ ACTIONS[actionBtn.dataset.action](); return; }
+  const nav = e.target.closest('[data-goto]');
+  if(nav){ goto(nav.dataset.goto); return; }
+  const map = [
+    ['editBill','data-edit-bill', editBill], ['delBill','data-del-bill', deleteBill],
+    ['editRule','data-edit-rule', editRule], ['delRule','data-del-rule', deleteRule],
+  ];
+  for(const [, attr, fn] of map){
+    const el = e.target.closest(`[${attr}]`);
+    if(el){ fn(el.getAttribute(attr)); return; }
+  }
+  const job = e.target.closest('[data-del-job]');
+  if(job) return removeById('jobIncome', job.getAttribute('data-del-job'), 'Paycheck');
+  const side = e.target.closest('[data-del-side]');
+  if(side) return removeById('sideIncome', side.getAttribute('data-del-side'), 'Side income');
+  const txn = e.target.closest('[data-del-txn]');
+  if(txn) return removeById('transactions', txn.getAttribute('data-del-txn'), 'Transaction');
+});
+document.getElementById('help-btn').addEventListener('click', startWizard);
+document.getElementById('bill-freq').addEventListener('change', billFreqFields);
+document.getElementById('import-file').addEventListener('change', importBackup);
+document.getElementById('txn-search').addEventListener('input', renderTransactions);
+// Enter submits the form row you're standing in
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  const form = e.target.closest('.row-form');
+  if(!form) return;
+  const btn = form.querySelector('[data-action]');
+  if(btn){ e.preventDefault(); ACTIONS[btn.dataset.action](); }
+});
 
+function tickClock(){
+  const d = new Date();
+  setText('clock', d.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'}) + '  ·  ' + d.toLocaleTimeString(undefined,{hour:'2-digit', minute:'2-digit'}));
+}
+
+/* ============================================================
+   11. INIT
+============================================================ */
+['job-date','side-date','txn-date'].forEach(id => document.getElementById(id).value = todayISO());
+document.getElementById('start-date').value = state.startDate;
+document.getElementById('rule-anchor').value = toISO(nextDow(5));
+billFreqFields();
+tickClock();
+setInterval(tickClock, 30000);
+
+goto(state.ui.activeTab || 'dashboard');
 renderAll();
 
-if(!state.__wizardDone && !state.bills.length && !state.incomeRules.length && !state.transactions.length){
-  setTimeout(startWizard, 300);
+if(!storageOK){
+  flashSave('Storage blocked — changes won\'t persist', true);
+}
+if(!state.wizardDone && !state.bills.length && !state.incomeRules.length && !state.transactions.length){
+  setTimeout(startWizard, 350);
 }
 </script>
 
