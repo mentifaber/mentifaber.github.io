@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}DocCrawler{% endblock %}</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --text:#e6e6e6; --muted:#9aa1ac; --accent:#5aa9ff; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 0.75rem 1rem;
+           display:flex; gap:1rem; align-items:center; flex-wrap: wrap; }
+  header a { color: var(--text); text-decoration:none; padding: 0.4rem 0.6rem; border-radius:6px; }
+  header a:hover { background: var(--border); }
+  header .brand { font-weight:700; color: var(--accent); margin-right: 1rem; }
+  main { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem 3rem; }
+  .card { background: var(--panel); border:1px solid var(--border); border-radius:10px; padding:1rem 1.25rem; margin-bottom:1rem; }
+  input[type=text], input[type=file], textarea, select {
+    background:#0c0e12; border:1px solid var(--border); color: var(--text);
+    padding:0.5rem 0.6rem; border-radius:6px; width:100%; font-size:1rem;
+  }
+  button, input[type=submit] {
+    background: var(--accent); color:#04101f; border:none; padding:0.55rem 1rem;
+    border-radius:6px; font-weight:600; cursor:pointer; font-size:1rem;
+  }
+  button:hover, input[type=submit]:hover { opacity:0.9; }
+  .muted { color: var(--muted); font-size:0.9rem; }
+  .flash { background:#1b2a1e; border:1px solid #2f5a35; padding:0.6rem 0.9rem; border-radius:8px; margin-bottom:1rem; }
+  table { width:100%; border-collapse: collapse; }
+  th, td { text-align:left; padding:0.5rem 0.4rem; border-bottom:1px solid var(--border); }
+  a.doclink { color: var(--accent); text-decoration:none; }
+  a.doclink:hover { text-decoration:underline; }
+  .tag { display:inline-block; background:#20262f; border:1px solid var(--border); border-radius: 999px;
+         padding:0.15rem 0.6rem; font-size:0.8rem; margin:0.1rem; color: var(--muted); }
+  .tag.auto::after { content:" (auto)"; font-size:0.7rem; }
+  .excerpt { border-left: 3px solid var(--accent); padding-left:0.75rem; margin:0.75rem 0; }
+  form.inline { display:inline; }
+  .row { display:flex; gap:0.5rem; flex-wrap: wrap; align-items:center; }
+  pre { white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">DocCrawler</span>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <a href="{{ url_for('upload') }}">Import</a>
+  <a href="{{ url_for('library') }}">Library</a>
+  <a href="{{ url_for('tags_view') }}">Tags</a>
+  <a href="{{ url_for('ask_view') }}">Ask</a>
+</header>
+<main>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

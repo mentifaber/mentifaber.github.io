@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ doc['source_name'] }} - DocCrawler{% endblock %}
+{% block content %}
+<h1>{{ doc['source_name'] }}</h1>
+<div class="card">
+  <p class="muted">
+    Path: {{ doc['path'] }}<br>
+    Hash: {{ doc['hash'] }}<br>
+    Size: {{ doc['size'] }} bytes<br>
+    Added: {{ doc['added_at'] }}<br>
+    Type: {{ doc['mime_type'] }}<br>
+    OCR used: {{ 'yes' if doc['ocr_used'] else 'no' }}
+  </p>
+</div>
+
+<div class="card">
+  <h3>Tags</h3>
+  {% for t in tags %}
+    <span class="tag {{ 'auto' if t['auto'] else '' }}">
+      {{ t['name'] }}
+      <form class="inline" method="post" action="{{ url_for('remove_tag_route', doc_id=doc['id']) }}">
+        <input type="hidden" name="tag" value="{{ t['name'] }}">
+        <button type="submit" style="padding:0 0.3rem; font-size:0.7rem;">x</button>
+      </form>
+    </span>
+  {% else %}
+    <span class="muted">No tags yet.</span>
+  {% endfor %}
+  <form method="post" action="{{ url_for('add_tag_route', doc_id=doc['id']) }}" style="margin-top:0.75rem;">
+    <div class="row">
+      <input type="text" name="tag" placeholder="Add a tag">
+      <button type="submit">Add</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Extracted text</h3>
+  {% if doc['text'] %}
+  <pre>{{ doc['text'][:5000] }}{% if doc['text']|length > 5000 %}
+
+... (truncated, {{ doc['text']|length }} chars total) ...{% endif %}</pre>
+  {% else %}
+  <p class="muted">No text extracted for this document.</p>
+  {% endif %}
+</div>
+{% endblock %}

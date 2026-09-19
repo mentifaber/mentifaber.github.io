@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Ask - DocCrawler{% endblock %}
+{% block content %}
+<h1>Ask your library</h1>
+<div class="card">
+  <form method="post">
+    <div class="row">
+      <input type="text" name="question" value="{{ question }}" placeholder="Ask a question about your documents...">
+      <button type="submit">Ask</button>
+    </div>
+  </form>
+  {% if has_key %}
+    <p class="muted">AI synthesis is enabled (ANTHROPIC_API_KEY detected).</p>
+  {% else %}
+    <p class="muted">Running in pure retrieval mode (set ANTHROPIC_API_KEY to enable AI-synthesized answers).</p>
+  {% endif %}
+</div>
+
+{% if answer %}
+<div class="card">
+  <h3>{{ 'AI Answer' if used_ai else 'Retrieved excerpts' }}</h3>
+  <pre>{{ answer }}</pre>
+</div>
+{% endif %}
+
+{% if excerpts %}
+<div class="card">
+  <h3>Sources</h3>
+  {% for ex in excerpts %}
+  <div class="excerpt">
+    <strong><a class="doclink" href="{{ url_for('doc_detail', doc_id=ex.doc_id) }}">{{ ex.filename }}</a></strong>
+    <p class="muted">{{ ex.snippet | safe }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
