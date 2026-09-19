@@ -28,9 +28,15 @@ proot-distro login "${DISTRO}" -- bash -lc '
   if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
     echo "Ollama is already running and responding."
   else
-    if pgrep -f "ollama serve" >/dev/null 2>&1; then
+    # Anchored (^...$) so this matches only a process whose *entire*
+    # command line is exactly "ollama serve" -- an unanchored substring
+    # match against "ollama serve" also matches THIS WRAPPER SCRIPT itself
+    # (its own bash -lc argument contains that text in these very echo
+    # lines), so an earlier unanchored pkill killed the script that was
+    # running it mid-execution instead of the actual stale ollama process.
+    if pgrep -f "^ollama serve$" >/dev/null 2>&1; then
       echo "Found a stale ollama serve process that is not responding; restarting it."
-      pkill -f "ollama serve" >/dev/null 2>&1 || true
+      pkill -f "^ollama serve$" >/dev/null 2>&1 || true
       sleep 1
     fi
     nohup ollama serve > /tmp/ollama-serve.log 2>&1 &
