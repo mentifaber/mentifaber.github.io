@@ -54,10 +54,13 @@
     {% endfor %}
   </div>
 
-  <form method="post" action="{{ url_for('chat_send') }}" class="chat-input-row">
-    <input type="text" name="message" placeholder="Ask a question about your documents..." autofocus autocomplete="off">
-    <button type="submit">Send</button>
+  <form method="post" action="{{ url_for('chat_send') }}" class="chat-input-row" id="chat-form">
+    <input type="text" name="message" placeholder="Ask a question about your documents..." autofocus autocomplete="off" id="chat-input">
+    <button type="submit" id="chat-send-btn">Send</button>
   </form>
+  <p class="muted" id="chat-thinking" style="display:none;">
+    The Librarian is thinking&hellip; a local model's first answer can take a minute or more on phone hardware, please wait.
+  </p>
 
   {% if has_key %}
     <p class="muted">AI synthesis is enabled: local Ollama is tried first, then Anthropic (ANTHROPIC_API_KEY detected) as a cloud fallback.</p>
@@ -70,6 +73,23 @@
   (function () {
     var el = document.getElementById("chat-scroll");
     if (el) { el.scrollTop = el.scrollHeight; }
+
+    var form = document.getElementById("chat-form");
+    var input = document.getElementById("chat-input");
+    var btn = document.getElementById("chat-send-btn");
+    var thinking = document.getElementById("chat-thinking");
+    if (form && btn) {
+      form.addEventListener("submit", function () {
+        if (!input || !input.value.trim()) { return; }
+        btn.disabled = true;
+        btn.textContent = "Thinking...";
+        if (thinking) { thinking.style.display = "block"; }
+        // The form still submits as a normal (blocking) navigation --
+        // this just gives immediate visual feedback before the browser
+        // freezes the page waiting on the response, so a slow local model
+        // doesn't look like the page silently hung.
+      });
+    }
   })();
 </script>
 {% endblock %}
