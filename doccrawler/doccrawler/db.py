@@ -124,6 +124,28 @@ def count_documents(conn: sqlite3.Connection) -> int:
     return conn.execute("SELECT COUNT(*) AS c FROM documents").fetchone()["c"]
 
 
+def _fts_match_expr(query: str) -> Optional[str]:
+    """Build an FTS5 MATCH expression from free-form user text.
+
+    Plain space-separated MATCH queries are an implicit AND of every term,
+    which makes natural-language questions ("What is the budget for
+    project apollo?") fail unless the document happens to contain every
+    stopword too. Instead, tokenize and OR the meaningful terms together
+    so any matching keyword can surface the document; bm25 ranking still
+    favors documents that match more of them.
+    """
+    from .tagging import STOPWORDS, WORD_RE
+
+    words = [w.lower() for w in WORD_RE.findall(query)]
+    terms = [w for w in words if w not in STOPWORDS]
+    if not terms:
+        terms = words
+    if not terms:
+        return None
+    quoted = ['"' + t.replace('"', '""') + '"' for t in terms]
+    return " OR ".join(quoted)
+
+
 def search_fts(conn: sqlite3.Connection, query: str, limit: int = 10) -> list:
     """Full text search using FTS5. Returns rows with document fields plus rank/snippet.
 
@@ -144,8 +166,12 @@ def search_fts(conn: sqlite3.Connection, query: str, limit: int = 10) -> list:
             (q, limit),
         ).fetchall()
 
+    match_expr = _fts_match_expr(query)
+    if match_expr is None:
+        return []
+
     try:
-        return _run(query)
+        return _run(match_expr)
     except sqlite3.OperationalError:
         # Query wasn't valid FTS5 syntax (special chars etc). Retry as a
         # quoted phrase so users can search arbitrary text safely.
