@@ -63,6 +63,24 @@ CREATE TRIGGER IF NOT EXISTS documents_au AFTER UPDATE ON documents BEGIN
     INSERT INTO documents_fts(rowid, filename, text)
     VALUES (new.id, new.source_name, new.text);
 END;
+
+CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    provider TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_conversation
+    ON messages(conversation_id, id);
 """
 
 
@@ -345,6 +363,87 @@ def documents_for_tag(conn: sqlite3.Connection, tag_name: str) -> list:
            WHERE t.name = ? ORDER BY d.added_at DESC""",
         (tag_name.strip().lower(),),
     ).fetchall()
+
+
+def create_conversation(conn: sqlite3.Connection, title: Optional[str] = None) -> int:
+    """Create a new conversation ("The Librarian" chat thread) and return its id."""
+    import datetime
+    created_at = datetime.datetime.utcnow().isoformat()
+    cur = conn.execute(
+        "INSERT INTO conversations (title, created_at) VALUES (?, ?)",
+        (title, created_at),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def list_conversations(conn: sqlite3.Connection, limit: int = 50) -> list:
+    """Most-recently-active conversations first (by their newest message, or
+    creation time if no messages yet), each with a message count."""
+    return conn.execute(
+        """
+        SELECT c.*, COUNT(m.id) AS message_count,
+               COALESCE(MAX(m.created_at), c.created_at) AS last_active
+        FROM conversations c
+        LEFT JOIN messages m ON m.conversation_id = c.id
+        GROUP BY c.id
+        ORDER BY last_active DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+
+def get_conversation(conn: sqlite3.Connection, conversation_id: int) -> Optional[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM conversations WHERE id = ?", (conversation_id,)
+    ).fetchone()
+
+
+def get_most_recent_conversation(conn: sqlite3.Connection) -> Optional[sqlite3.Row]:
+    rows = list_conversations(conn, limit=1)
+    return rows[0] if rows else None
+
+
+def list_messages(conn: sqlite3.Connection, conversation_id: int, limit: Optional[int] = None) -> list:
+    """All messages in a conversation, oldest first. With `limit`, returns
+    only the most recent `limit` messages (still oldest-first order)."""
+    if limit is None:
+        return conn.execute(
+            "SELECT * FROM messages WHERE conversation_id = ? ORDER BY id ASC",
+            (conversation_id,),
+        ).fetchall()
+    rows = conn.execute(
+        "SELECT * FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?",
+        (conversation_id, limit),
+    ).fetchall()
+    return list(reversed(rows))
+
+
+def add_message(
+    conn: sqlite3.Connection,
+    conversation_id: int,
+    role: str,
+    content: str,
+    provider: Optional[str] = None,
+) -> int:
+    import datetime
+    if role not in ("user", "assistant"):
+        raise ValueError(f"Invalid message role: {role!r}")
+    created_at = datetime.datetime.utcnow().isoformat()
+    cur = conn.execute(
+        """INSERT INTO messages (conversation_id, role, content, provider, created_at)
+           VALUES (?, ?, ?, ?, ?)""",
+        (conversation_id, role, content, provider, created_at),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def delete_conversation(conn: sqlite3.Connection, conversation_id: int) -> bool:
+    cur = conn.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+    conn.commit()
+    return cur.rowcount > 0
 
 
 def stats(conn: sqlite3.Connection) -> dict:

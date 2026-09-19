@@ -20,7 +20,7 @@ from markupsafe import Markup, escape
 from . import db as dbmod
 from .config import Config, load_config
 from .ingest import ingest_file, scan_folder
-from .query import ask
+from .query import ask, chat as chat_query
 
 log = logging.getLogger("doccrawler.web")
 
@@ -240,6 +240,8 @@ def create_app(cfg: Config = None) -> Flask:
 
     @app.route("/ask", methods=["GET", "POST"])
     def ask_view():
+        """Legacy one-shot ask endpoint, kept for anyone linking directly to
+        it. The nav now points at the multi-turn /chat page instead."""
         answer = None
         excerpts = []
         used_ai = False
@@ -258,6 +260,69 @@ def create_app(cfg: Config = None) -> Flask:
             "ask.html", answer=answer, excerpts=excerpts, used_ai=used_ai,
             provider=provider, question=question, has_key=bool(cfg.anthropic_api_key),
         )
+
+    def _current_conversation_id(conn):
+        conv_id = request.cookies.get("doccrawler_conversation_id")
+        if conv_id:
+            try:
+                conv = dbmod.get_conversation(conn, int(conv_id))
+                if conv is not None:
+                    return conv["id"]
+            except (ValueError, TypeError):
+                pass
+        existing = dbmod.get_most_recent_conversation(conn)
+        if existing is not None:
+            return existing["id"]
+        return dbmod.create_conversation(conn)
+
+    @app.route("/chat", methods=["GET"])
+    def chat_view():
+        conn = get_conn()
+        conv_id = _current_conversation_id(conn)
+        messages = dbmod.list_messages(conn, conv_id)
+        conversations = dbmod.list_conversations(conn, limit=20)
+        resp = app.make_response(render_template(
+            "chat.html", messages=messages, conversation_id=conv_id,
+            conversations=conversations, has_key=bool(cfg.anthropic_api_key),
+        ))
+        resp.set_cookie("doccrawler_conversation_id", str(conv_id), max_age=60 * 60 * 24 * 365)
+        return resp
+
+    @app.route("/chat/send", methods=["POST"])
+    def chat_send():
+        conn = get_conn()
+        conv_id = _current_conversation_id(conn)
+        message = request.form.get("message", "").strip()
+        if message:
+            chat_query(conn, conv_id, message, api_key=cfg.anthropic_api_key)
+        resp = redirect(url_for("chat_view"))
+        resp.set_cookie("doccrawler_conversation_id", str(conv_id), max_age=60 * 60 * 24 * 365)
+        return resp
+
+    @app.route("/chat/new", methods=["POST"])
+    def chat_new():
+        conn = get_conn()
+        new_id = dbmod.create_conversation(conn)
+        resp = redirect(url_for("chat_view"))
+        resp.set_cookie("doccrawler_conversation_id", str(new_id), max_age=60 * 60 * 24 * 365)
+        return resp
+
+    @app.route("/chat/switch/<int:conversation_id>", methods=["POST"])
+    def chat_switch(conversation_id: int):
+        conn = get_conn()
+        conv = dbmod.get_conversation(conn, conversation_id)
+        resp = redirect(url_for("chat_view"))
+        if conv is not None:
+            resp.set_cookie("doccrawler_conversation_id", str(conversation_id), max_age=60 * 60 * 24 * 365)
+        return resp
+
+    @app.route("/chat/<int:conversation_id>/delete", methods=["POST"])
+    def chat_delete(conversation_id: int):
+        conn = get_conn()
+        dbmod.delete_conversation(conn, conversation_id)
+        resp = redirect(url_for("chat_view"))
+        resp.set_cookie("doccrawler_conversation_id", "", expires=0)
+        return resp
 
     return app
 

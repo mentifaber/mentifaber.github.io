@@ -33,9 +33,13 @@ tag, and ask questions against your library.
   gracefully to the next — it never crashes or hangs for lack of a local
   model, a key, or the SDK.
 - **Web GUI**: a small Flask app (dashboard, import, library/search, tags,
-  The Librarian) rendered with server-side Jinja2 templates and
+  The Librarian chat) rendered with server-side Jinja2 templates and
   minimal CSS/JS — no build step, nothing heavy, friendly to a phone screen.
-- **CLI**: `doccrawler scan|serve|ask|tag|stats`.
+- **CLI**: `doccrawler scan|serve|ask|chat|tag|stats`.
+- **The Librarian is now multi-turn**: conversations (with full message
+  history) are persisted in SQLite, and a conversation can be continued from
+  either the web GUI or `doccrawler chat` interchangeably. See "The
+  Librarian: multi-turn chat" below.
 
 ## Security / deployment note (read this)
 
@@ -215,6 +219,34 @@ as usual — it will detect Ollama automatically and use it first.
 
 `organize_by` can be `"date"` (library files organized under `YYYY/MM/`) or
 `"hash"` (organized under the first bytes of the content hash).
+
+## The Librarian: multi-turn chat
+
+The "Ask" feature is now a real back-and-forth conversation, not a one-shot
+form. Conversations are stored in SQLite (`conversations` and `messages`
+tables) so history survives restarts and is shared between the web GUI and
+the CLI.
+
+- **Web**: open "The Librarian" in the nav (`/chat`). It's a chat-bubble UI
+  with your messages right-aligned and the Librarian's on the left, each
+  assistant reply labeled with which provider answered
+  (local/cloud/retrieval-only). Your current conversation is remembered via
+  a cookie. Use "New conversation" to reset, or open the "Past
+  conversations" list to switch back to an earlier one.
+- **CLI**: `doccrawler chat` starts an interactive REPL. By default it
+  continues your most recently active conversation (so you can pick up a
+  chat you started on the phone from a terminal, or vice versa); pass
+  `--new` to start fresh. Type `exit`/`quit`, or Ctrl+D/Ctrl+C, to leave.
+- Each turn still runs the same FTS5 retrieval grounding as before, and
+  falls through the same Ollama -> Anthropic -> plain-retrieval provider
+  chain. What's new is that recent prior turns (bounded to the last ~20
+  messages or ~6000 characters, to keep a small local model's context
+  window sane) are sent to the provider as conversation history: Ollama via
+  its `/api/chat` endpoint's `messages` array, Anthropic via its native
+  multi-turn `messages` API.
+- The original one-shot `ask()` function/`doccrawler ask` CLI command and
+  the legacy `/ask` web endpoint are unchanged and still work standalone
+  for scripting/automation use cases that don't want conversation state.
 
 ## Running the tests
 

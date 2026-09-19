@@ -10,7 +10,7 @@ from . import db as dbmod
 from .config import load_config
 from .ingest import scan_folder
 from .logging_setup import setup_logging
-from .query import ask as ask_query
+from .query import ask as ask_query, chat as chat_query
 
 log = logging.getLogger("doccrawler.cli")
 
@@ -41,16 +41,58 @@ def cmd_ask(args, cfg) -> int:
     conn = dbmod.connect(cfg.db_path)
     result = ask_query(conn, args.question, api_key=cfg.anthropic_api_key)
     print(result.answer)
-    provider_labels = {
-        "ollama": "The Librarian (local, via Ollama)",
-        "anthropic": "The Librarian (cloud, via Anthropic)",
-        "retrieval": "Retrieval only (no AI provider available)",
-    }
-    print(f"\nAnswered by: {provider_labels.get(result.provider, result.provider)}")
+    print(f"\nAnswered by: {_PROVIDER_LABELS.get(result.provider, result.provider)}")
     if result.excerpts:
         print("\nSources:")
         for ex in result.excerpts:
             print(f"  - {ex.filename} (doc id {ex.doc_id})")
+    conn.close()
+    return 0
+
+
+_PROVIDER_LABELS = {
+    "ollama": "The Librarian (local, via Ollama)",
+    "anthropic": "The Librarian (cloud, via Anthropic)",
+    "retrieval": "Retrieval only (no AI provider available)",
+}
+
+
+def cmd_chat(args, cfg) -> int:
+    """Interactive multi-turn REPL against the same conversation storage used
+    by the web GUI, so a conversation can move between CLI and browser.
+
+    By default, continues the most recently active conversation (creating
+    one if none exists yet). Pass --new to start a fresh conversation.
+    """
+    conn = dbmod.connect(cfg.db_path)
+    if args.new:
+        conv_id = dbmod.create_conversation(conn)
+        print(f"Started new conversation (id {conv_id}).")
+    else:
+        existing = dbmod.get_most_recent_conversation(conn)
+        if existing is not None:
+            conv_id = existing["id"]
+            print(f"Continuing conversation (id {conv_id}, "
+                  f"{existing['message_count']} prior message(s)). Use --new to start fresh.")
+        else:
+            conv_id = dbmod.create_conversation(conn)
+            print(f"Started new conversation (id {conv_id}).")
+
+    print("Type your question, or 'exit'/'quit' to leave (Ctrl+D / Ctrl+C also work).\n")
+    while True:
+        try:
+            line = input("you> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not line:
+            continue
+        if line.lower() in ("exit", "quit"):
+            break
+        result = chat_query(conn, conv_id, line, api_key=cfg.anthropic_api_key)
+        label = _PROVIDER_LABELS.get(result.provider, result.provider)
+        print(f"librarian [{label}]> {result.answer}\n")
+
     conn.close()
     return 0
 
@@ -146,6 +188,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_ask.add_argument("question", help="Natural language question")
     p_ask.set_defaults(func=cmd_ask)
+
+    p_chat = sub.add_parser(
+        "chat",
+        help="The Librarian: interactive multi-turn chat REPL against your document "
+             "library (same provider chain as 'ask', but remembers conversation history)",
+    )
+    p_chat.add_argument("--new", action="store_true", help="Start a new conversation instead of continuing the most recent one")
+    p_chat.set_defaults(func=cmd_chat)
 
     p_tag = sub.add_parser("tag", help="Manage tags")
     p_tag.add_argument("--list", action="store_true", help="List all tags")
