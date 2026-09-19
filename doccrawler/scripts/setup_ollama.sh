@@ -29,26 +29,26 @@ fi
 
 # 2. Install the Debian container if not already installed.
 #
-# `proot-distro list`'s output format isn't a stable thing to grep (its
-# columns/wording have changed across versions), and trusting it here was
-# itself a bug: it reported the container as not-installed on a device
-# where it demonstrably already was, so this re-ran `proot-distro install`
-# and hard-failed on "container 'debian' already exists" under `set -e`.
-# Check the actual rootfs directory instead -- that's what proot-distro
-# itself uses to decide whether a container exists.
-PROOT_DISTRO_ROOTFS="${PREFIX:-/data/data/com.termux/files/usr}/var/lib/proot-distro/installed-rootfs/${DISTRO}"
-if [ -d "${PROOT_DISTRO_ROOTFS}" ]; then
-  log "proot-distro '${DISTRO}' container already installed, skipping."
+# Two earlier approaches both proved unreliable across proot-distro
+# versions/devices: grepping `proot-distro list` output (its format isn't a
+# stable contract), and guessing proot-distro's internal rootfs directory
+# layout (it doesn't live at the path this script assumed on every
+# version). The one thing that's actually guaranteed to mean "the container
+# exists and works" is that we can log into it and run a command -- so use
+# that as the source of truth instead of guessing proot-distro's internals.
+if proot-distro login "${DISTRO}" -- true >/dev/null 2>&1; then
+  log "proot-distro '${DISTRO}' container already installed and usable, skipping."
 else
   log "Installing proot-distro '${DISTRO}' container (this downloads a base rootfs, may take a while)..."
-  # Tolerate a races-with-itself "already exists" error rather than letting
-  # set -e kill the whole script over something that isn't actually a
-  # failure for our purposes.
+  # Tolerate an "already exists" error from a container that's registered
+  # but that our login probe above couldn't reach for some other reason,
+  # rather than letting set -e kill the whole script over it.
   if ! proot-distro install "${DISTRO}"; then
-    if [ -d "${PROOT_DISTRO_ROOTFS}" ]; then
-      log "proot-distro reported an error but the '${DISTRO}' rootfs exists; continuing."
+    if proot-distro login "${DISTRO}" -- true >/dev/null 2>&1; then
+      log "proot-distro install reported an error but the '${DISTRO}' container logs in fine; continuing."
     else
-      log "proot-distro install failed and no '${DISTRO}' rootfs was found. Aborting." >&2
+      log "proot-distro install failed and the '${DISTRO}' container is still not usable." >&2
+      log "Try 'proot-distro reset ${DISTRO}' manually to force a clean reinstall, then re-run this script." >&2
       exit 1
     fi
   fi
