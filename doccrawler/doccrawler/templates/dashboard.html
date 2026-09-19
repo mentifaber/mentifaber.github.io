@@ -24,6 +24,7 @@
 <div class="card">
   <h3>Recent files</h3>
   {% if recent %}
+  <div class="table-wrap">
   <table>
     <tr><th>File</th><th>Added</th><th>Type</th></tr>
     {% for d in recent %}
@@ -34,6 +35,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% else %}
   <p class="muted">Nothing ingested yet.</p>
   {% endif %}

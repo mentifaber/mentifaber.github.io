@@ -54,6 +54,13 @@ def cmd_tag(args, cfg) -> int:
     if args.list:
         for t in dbmod.all_tags(conn):
             print(f"{t['name']}\t{t['n']}")
+    elif args.delete_name:
+        ok = dbmod.delete_tag(conn, args.delete_name)
+        print(f"Deleted tag '{args.delete_name}'." if ok else f"No such tag: '{args.delete_name}'")
+    elif args.rename:
+        old, new = args.rename
+        ok = dbmod.rename_tag(conn, old, new)
+        print(f"Renamed '{old}' -> '{new}'." if ok else f"No such tag: '{old}'")
     elif args.doc_id is not None and args.name:
         if args.remove:
             dbmod.untag_document(conn, args.doc_id, args.name)
@@ -62,8 +69,37 @@ def cmd_tag(args, cfg) -> int:
             dbmod.tag_document(conn, args.doc_id, args.name, auto=False)
             print(f"Tagged document {args.doc_id} with '{args.name}'")
     else:
-        print("Use --list, or provide --doc-id and --name to tag a document.")
+        print("Use --list, --delete-name, --rename OLD NEW, or --doc-id and --name to tag a document.")
         return 1
+    conn.close()
+    return 0
+
+
+def cmd_forget(args, cfg) -> int:
+    """Remove a document from the library (DB row + FTS + tags). By default
+    the on-disk file in library/ is left alone -- deleting it is opt-in via
+    --delete-file, since a mistaken forget shouldn't also destroy the only
+    copy of the original file.
+    """
+    conn = dbmod.connect(cfg.db_path)
+    doc = dbmod.get_document(conn, args.doc_id)
+    if doc is None:
+        print(f"No such document id: {args.doc_id}")
+        conn.close()
+        return 1
+    path = dbmod.delete_document(conn, args.doc_id)
+    print(f"Forgot document {args.doc_id} ({doc['source_name']}).")
+    if args.delete_file and path:
+        try:
+            library_root = cfg.library_dir.resolve()
+            file_path = Path(path).resolve()
+            file_path.relative_to(library_root)  # path-traversal guard
+            file_path.unlink(missing_ok=True)
+            print(f"Deleted file: {file_path}")
+        except ValueError:
+            print(f"Refused to delete file outside the library dir: {path}")
+        except OSError as exc:
+            print(f"Could not delete file {path}: {exc}")
     conn.close()
     return 0
 
@@ -106,7 +142,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_tag.add_argument("--doc-id", type=int, help="Document id to tag")
     p_tag.add_argument("--name", help="Tag name")
     p_tag.add_argument("--remove", action="store_true", help="Remove the tag instead of adding it")
+    p_tag.add_argument("--delete-name", help="Delete a tag entirely, from every document")
+    p_tag.add_argument("--rename", nargs=2, metavar=("OLD", "NEW"), help="Rename (or merge) a tag")
     p_tag.set_defaults(func=cmd_tag)
+
+    p_forget = sub.add_parser("forget", help="Remove a document from the library")
+    p_forget.add_argument("doc_id", type=int, help="Document id to forget")
+    p_forget.add_argument("--delete-file", action="store_true",
+                           help="Also delete the file from library/ on disk (default: keep it)")
+    p_forget.set_defaults(func=cmd_forget)
 
     p_stats = sub.add_parser("stats", help="Show library statistics")
     p_stats.set_defaults(func=cmd_stats)

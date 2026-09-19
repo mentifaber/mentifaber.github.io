@@ -52,6 +52,9 @@ def _dest_path(library_dir: Path, source: Path, file_hash: str, organize_by: str
     return dest_dir / f"{file_hash[:16]}{ext}"
 
 
+DEFAULT_MAX_FILE_MB = 200
+
+
 def ingest_file(
     conn: sqlite3.Connection,
     source: Path,
@@ -59,9 +62,11 @@ def ingest_file(
     *,
     organize_by: str = "date",
     move: bool = False,
+    max_file_mb: int = DEFAULT_MAX_FILE_MB,
 ) -> Optional[int]:
     """Ingest a single file. Returns the new document id, or None if it was a
-    duplicate, unsupported, or failed. Never raises for a single bad file.
+    duplicate, unsupported, too large, or failed. Never raises for a single
+    bad file.
     """
     source = Path(source)
     if not source.is_file():
@@ -69,6 +74,20 @@ def ingest_file(
         return None
     if not is_supported(source):
         log.info("Skipping unsupported file type: %s", source)
+        return None
+
+    try:
+        size_bytes = source.stat().st_size
+    except OSError as exc:
+        log.error("Could not stat %s: %s", source, exc)
+        return None
+    max_bytes = max_file_mb * 1024 * 1024
+    if max_file_mb and size_bytes > max_bytes:
+        log.warning(
+            "Skipping %s: %.1f MB exceeds the configured max_file_mb=%s "
+            "(set DOCCRAWLER_MAX_FILE_MB to change this)",
+            source, size_bytes / 1024 / 1024, max_file_mb,
+        )
         return None
 
     try:
@@ -134,6 +153,7 @@ def scan_folder(
     organize_by: str = "date",
     move: bool = False,
     recursive: bool = True,
+    max_file_mb: int = DEFAULT_MAX_FILE_MB,
 ) -> IngestResult:
     folder = Path(folder)
     result = IngestResult()
@@ -155,7 +175,18 @@ def scan_folder(
             result.skipped += 1
             continue
         try:
-            doc_id = ingest_file(conn, path, library_dir, organize_by=organize_by, move=move)
+            size_bytes = path.stat().st_size
+        except OSError:
+            size_bytes = 0
+        if max_file_mb and size_bytes > max_file_mb * 1024 * 1024:
+            log.warning("Skipping oversize file (%.1f MB): %s", size_bytes / 1024 / 1024, path)
+            result.skipped += 1
+            continue
+        try:
+            doc_id = ingest_file(
+                conn, path, library_dir, organize_by=organize_by, move=move,
+                max_file_mb=max_file_mb,
+            )
         except Exception as exc:  # pragma: no cover - defensive
             log.error("Unexpected error ingesting %s: %s", path, exc)
             result.errors += 1

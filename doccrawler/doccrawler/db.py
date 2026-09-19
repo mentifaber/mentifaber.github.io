@@ -120,8 +120,83 @@ def list_documents(conn: sqlite3.Connection, limit: int = 50, offset: int = 0) -
     ).fetchall()
 
 
+def list_documents_with_tags(conn: sqlite3.Connection, limit: int = 25, offset: int = 0) -> list:
+    """Paginated document listing with each doc's tag names pre-joined
+    (a single GROUP BY query) so the library page never does one query per
+    row per document -- important once the corpus grows into the hundreds
+    or thousands.
+    """
+    return conn.execute(
+        """
+        SELECT d.*, GROUP_CONCAT(t.name) AS tag_names
+        FROM documents d
+        LEFT JOIN document_tags dt ON dt.document_id = d.id
+        LEFT JOIN tags t ON t.id = dt.tag_id
+        GROUP BY d.id
+        ORDER BY d.added_at DESC
+        LIMIT ? OFFSET ?
+        """,
+        (limit, offset),
+    ).fetchall()
+
+
 def count_documents(conn: sqlite3.Connection) -> int:
     return conn.execute("SELECT COUNT(*) AS c FROM documents").fetchone()["c"]
+
+
+def delete_document(conn: sqlite3.Connection, doc_id: int) -> Optional[str]:
+    """Delete a document row (cascades to document_tags and the FTS index
+    via the schema's triggers/foreign keys). Returns the on-disk path that
+    was recorded for it, or None if no such document existed, so the
+    caller can decide whether to also remove the file from library/.
+    """
+    row = get_document(conn, doc_id)
+    if row is None:
+        return None
+    conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+    conn.commit()
+    return row["path"]
+
+
+def delete_tag(conn: sqlite3.Connection, tag_name: str) -> bool:
+    """Remove a tag entirely (from every document it's attached to)."""
+    name = tag_name.strip().lower()
+    if not name:
+        return False
+    cur = conn.execute("DELETE FROM tags WHERE name = ?", (name,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def rename_tag(conn: sqlite3.Connection, old_name: str, new_name: str) -> bool:
+    """Rename a tag. If a tag with the new name already exists, the two are
+    merged (documents keep the union of both, old tag id is dropped).
+    """
+    old_name = old_name.strip().lower()
+    new_name = new_name.strip().lower()
+    if not old_name or not new_name or old_name == new_name:
+        return False
+    old_row = conn.execute("SELECT id FROM tags WHERE name = ?", (old_name,)).fetchone()
+    if old_row is None:
+        return False
+    existing_new = conn.execute("SELECT id FROM tags WHERE name = ?", (new_name,)).fetchone()
+    if existing_new is None:
+        conn.execute("UPDATE tags SET name = ? WHERE id = ?", (new_name, old_row["id"]))
+    else:
+        # Merge: move document_tags rows to the existing target tag,
+        # ignoring ones that would collide with a (doc, tag) pair that
+        # already exists, then drop the now-orphaned old tag.
+        rows = conn.execute(
+            "SELECT document_id, auto FROM document_tags WHERE tag_id = ?", (old_row["id"],)
+        ).fetchall()
+        for r in rows:
+            conn.execute(
+                "INSERT OR IGNORE INTO document_tags (document_id, tag_id, auto) VALUES (?, ?, ?)",
+                (r["document_id"], existing_new["id"], r["auto"]),
+            )
+        conn.execute("DELETE FROM tags WHERE id = ?", (old_row["id"],))
+    conn.commit()
+    return True
 
 
 def _fts_match_expr(query: str) -> Optional[str]:
@@ -146,24 +221,40 @@ def _fts_match_expr(query: str) -> Optional[str]:
     return " OR ".join(quoted)
 
 
-def search_fts(conn: sqlite3.Connection, query: str, limit: int = 10) -> list:
-    """Full text search using FTS5. Returns rows with document fields plus rank/snippet.
+def search_fts(conn: sqlite3.Connection, query: str, limit: int = 10, offset: int = 0) -> list:
+    """Full text search using FTS5. Returns rows with document fields plus
+    rank/snippet/tag_names.
 
     Falls back gracefully (returns []) on malformed FTS query syntax by
     escaping the query as a plain phrase.
     """
     def _run(q: str):
+        # bm25()/snippet() must be evaluated directly against the FTS
+        # virtual table without an aggregating GROUP BY in the same query
+        # (sqlite raises "unable to use function bm25 in the requested
+        # context" otherwise), so rank/snippet are computed in a subquery
+        # and tag names are joined in separately.
         return conn.execute(
             """
-            SELECT d.*, bm25(documents_fts) AS rank,
-                   snippet(documents_fts, 1, '[', ']', ' ... ', 12) AS snippet
-            FROM documents_fts
-            JOIN documents d ON d.id = documents_fts.rowid
-            WHERE documents_fts MATCH ?
-            ORDER BY rank
-            LIMIT ?
+            SELECT d.*, hits.rank AS rank, hits.snippet AS snippet, tg.tag_names AS tag_names
+            FROM (
+                SELECT documents_fts.rowid AS doc_id,
+                       bm25(documents_fts) AS rank,
+                       snippet(documents_fts, 1, '[', ']', ' ... ', 12) AS snippet
+                FROM documents_fts
+                WHERE documents_fts MATCH ?
+                ORDER BY rank
+                LIMIT ? OFFSET ?
+            ) hits
+            JOIN documents d ON d.id = hits.doc_id
+            LEFT JOIN (
+                SELECT dt.document_id AS document_id, GROUP_CONCAT(t.name) AS tag_names
+                FROM document_tags dt JOIN tags t ON t.id = dt.tag_id
+                GROUP BY dt.document_id
+            ) tg ON tg.document_id = d.id
+            ORDER BY hits.rank
             """,
-            (q, limit),
+            (q, limit, offset),
         ).fetchall()
 
     match_expr = _fts_match_expr(query)
@@ -181,6 +272,26 @@ def search_fts(conn: sqlite3.Connection, query: str, limit: int = 10) -> list:
         except sqlite3.OperationalError as exc:
             log.warning("FTS query failed even when escaped: %s", exc)
             return []
+
+
+def count_search_fts(conn: sqlite3.Connection, query: str) -> int:
+    match_expr = _fts_match_expr(query)
+    if match_expr is None:
+        return 0
+
+    def _count(q: str) -> int:
+        return conn.execute(
+            "SELECT COUNT(*) AS c FROM documents_fts WHERE documents_fts MATCH ?", (q,)
+        ).fetchone()["c"]
+
+    try:
+        return _count(match_expr)
+    except sqlite3.OperationalError:
+        safe = '"' + query.replace('"', '""') + '"'
+        try:
+            return _count(safe)
+        except sqlite3.OperationalError:
+            return 0
 
 
 def add_tag(conn: sqlite3.Connection, name: str) -> int:

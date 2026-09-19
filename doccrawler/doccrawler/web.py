@@ -8,10 +8,14 @@ or 0.0.0.0 without adding your own auth layer.
 from __future__ import annotations
 
 import logging
+import math
 import tempfile
 from pathlib import Path
 
-from flask import Flask, g, redirect, render_template, request, url_for, flash
+from flask import (
+    Flask, abort, g, redirect, render_template, request, send_file, url_for, flash,
+)
+from markupsafe import Markup, escape
 
 from . import db as dbmod
 from .config import Config, load_config
@@ -28,6 +32,26 @@ def create_app(cfg: Config = None) -> Flask:
     app = Flask(__name__)
     app.secret_key = "doccrawler-local-secret"  # local single-user tool, no real session risk
     app.config["DOCCRAWLER_CFG"] = cfg
+    # Guard against a huge upload hanging the phone/browser: allow a modest
+    # multiple of the per-file limit so a batch of a few max-size files
+    # still fits, without letting an unbounded request body through.
+    app.config["MAX_CONTENT_LENGTH"] = max(cfg.max_file_mb, 1) * 1024 * 1024 * 5
+
+    @app.template_filter("highlight")
+    def highlight_filter(text):
+        """Render an FTS snippet (which uses literal '[' / ']' markers
+        around matched terms) as safe HTML: escape the raw text FIRST
+        (it comes straight from user-supplied document content, so it must
+        never be trusted as HTML), then turn the marker characters into
+        <mark> tags. This replaces a previous `| safe` in the templates
+        that skipped escaping entirely and was an XSS risk via a document's
+        extracted text.
+        """
+        if text is None:
+            return ""
+        escaped = str(escape(text))
+        escaped = escaped.replace("[", "<mark>").replace("]", "</mark>")
+        return Markup(escaped)
 
     def get_conn():
         if "conn" not in g:
@@ -62,10 +86,15 @@ def create_app(cfg: Config = None) -> Flask:
                     doc_id = ingest_file(
                         conn, tmp_path, cfg.library_dir,
                         organize_by=cfg.organize_by, move=False,
+                        max_file_mb=cfg.max_file_mb,
                     )
                     if doc_id is not None:
                         added += 1
-            flash(f"Imported {added} file(s).")
+            skipped = len(files) - added
+            msg = f"Imported {added} file(s)."
+            if skipped:
+                msg += f" ({skipped} skipped: unsupported, too large, or duplicate.)"
+            flash(msg)
             return redirect(url_for("upload"))
         return render_template("upload.html")
 
@@ -73,7 +102,10 @@ def create_app(cfg: Config = None) -> Flask:
     def scan():
         conn = get_conn()
         folder = request.form.get("folder") or str(cfg.watch_dir)
-        result = scan_folder(conn, Path(folder), cfg.library_dir, organize_by=cfg.organize_by)
+        result = scan_folder(
+            conn, Path(folder), cfg.library_dir, organize_by=cfg.organize_by,
+            max_file_mb=cfg.max_file_mb,
+        )
         flash(f"Scan of {folder}: added={result.added} duplicates={result.duplicates} "
               f"skipped={result.skipped} errors={result.errors}")
         return redirect(url_for("dashboard"))
@@ -82,11 +114,25 @@ def create_app(cfg: Config = None) -> Flask:
     def library():
         conn = get_conn()
         q = request.args.get("q", "").strip()
+        try:
+            page = max(1, int(request.args.get("page", 1)))
+        except ValueError:
+            page = 1
+        per_page = cfg.library_page_size
+        offset = (page - 1) * per_page
+
         if q:
-            rows = dbmod.search_fts(conn, q, limit=50)
+            rows = dbmod.search_fts(conn, q, limit=per_page, offset=offset)
+            total = dbmod.count_search_fts(conn, q)
         else:
-            rows = dbmod.list_documents(conn, limit=100)
-        return render_template("library.html", docs=rows, q=q)
+            rows = dbmod.list_documents_with_tags(conn, limit=per_page, offset=offset)
+            total = dbmod.count_documents(conn)
+
+        total_pages = max(1, math.ceil(total / per_page))
+        page = min(page, total_pages)
+        return render_template(
+            "library.html", docs=rows, q=q, page=page, total_pages=total_pages, total=total,
+        )
 
     @app.route("/doc/<int:doc_id>")
     def doc_detail(doc_id: int):
@@ -97,6 +143,56 @@ def create_app(cfg: Config = None) -> Flask:
             return redirect(url_for("library"))
         tags = dbmod.tags_for_document(conn, doc_id)
         return render_template("doc_detail.html", doc=doc, tags=tags)
+
+    def _safe_library_path(doc_row) -> Path:
+        """Resolve a document's stored path and make sure it's actually
+        inside the configured library directory before we ever open or
+        serve it. Defends against a corrupted/tampered DB row (or any
+        future code path that lets a path slip through unsanitized) being
+        used to read arbitrary files off disk.
+        """
+        library_root = cfg.library_dir.resolve()
+        try:
+            candidate = Path(doc_row["path"]).resolve()
+        except (OSError, RuntimeError):
+            abort(400)
+        try:
+            candidate.relative_to(library_root)
+        except ValueError:
+            log.warning("Refusing to serve out-of-library path for doc: %s", doc_row["path"])
+            abort(400)
+        return candidate
+
+    @app.route("/doc/<int:doc_id>/download")
+    def download_doc(doc_id: int):
+        conn = get_conn()
+        doc = dbmod.get_document(conn, doc_id)
+        if doc is None:
+            abort(404)
+        path = _safe_library_path(doc)
+        if not path.is_file():
+            abort(404)
+        return send_file(path, as_attachment=True, download_name=doc["source_name"])
+
+    @app.route("/doc/<int:doc_id>/delete", methods=["POST"])
+    def delete_doc_route(doc_id: int):
+        conn = get_conn()
+        doc = dbmod.get_document(conn, doc_id)
+        if doc is None:
+            flash("Document not found.")
+            return redirect(url_for("library"))
+        delete_file = request.form.get("delete_file") == "on"
+        path = doc["path"]
+        dbmod.delete_document(conn, doc_id)
+        if delete_file:
+            try:
+                safe_path = _safe_library_path(doc)
+                safe_path.unlink(missing_ok=True)
+            except Exception as exc:
+                log.warning("Could not delete file %s: %s", path, exc)
+        flash(f"Deleted '{doc['source_name']}' from the library"
+              f"{' (file also removed)' if delete_file else ' (file kept on disk)'}.")
+        return redirect(url_for("library"))
 
     @app.route("/doc/<int:doc_id>/tag", methods=["POST"])
     def add_tag_route(doc_id: int):
@@ -122,6 +218,25 @@ def create_app(cfg: Config = None) -> Flask:
         selected = request.args.get("tag", "")
         docs = dbmod.documents_for_tag(conn, selected) if selected else []
         return render_template("tags.html", tags=tags, selected=selected, docs=docs)
+
+    @app.route("/tags/delete", methods=["POST"])
+    def delete_tag_route():
+        conn = get_conn()
+        tag_name = request.form.get("tag", "").strip()
+        if tag_name:
+            dbmod.delete_tag(conn, tag_name)
+            flash(f"Deleted tag '{tag_name}'.")
+        return redirect(url_for("tags_view"))
+
+    @app.route("/tags/rename", methods=["POST"])
+    def rename_tag_route():
+        conn = get_conn()
+        old_name = request.form.get("old", "").strip()
+        new_name = request.form.get("new", "").strip()
+        if old_name and new_name:
+            dbmod.rename_tag(conn, old_name, new_name)
+            flash(f"Renamed tag '{old_name}' to '{new_name}'.")
+        return redirect(url_for("tags_view"))
 
     @app.route("/ask", methods=["GET", "POST"])
     def ask_view():

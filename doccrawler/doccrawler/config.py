@@ -30,6 +30,8 @@ class Config:
     port: int = 8765
     anthropic_api_key: str = ""
     organize_by: str = "date"  # "date" or "hash"
+    max_file_mb: int = 200  # files larger than this are skipped (not read into memory)
+    library_page_size: int = 25
 
     def __post_init__(self):
         if self.db_path is None:
@@ -72,6 +74,10 @@ def load_config() -> Config:
             cfg.port = int(data["port"])
         if "organize_by" in data:
             cfg.organize_by = data["organize_by"]
+        if "max_file_mb" in data:
+            cfg.max_file_mb = int(data["max_file_mb"])
+        if "library_page_size" in data:
+            cfg.library_page_size = int(data["library_page_size"])
         cfg.__post_init__()
 
     if os.environ.get("DOCCRAWLER_HOME"):
@@ -87,6 +93,8 @@ def load_config() -> Config:
         cfg.host = os.environ["DOCCRAWLER_HOST"]
     if os.environ.get("DOCCRAWLER_PORT"):
         cfg.port = int(os.environ["DOCCRAWLER_PORT"])
+    if os.environ.get("DOCCRAWLER_MAX_FILE_MB"):
+        cfg.max_file_mb = int(os.environ["DOCCRAWLER_MAX_FILE_MB"])
 
     cfg.anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
 
