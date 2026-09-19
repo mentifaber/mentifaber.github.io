@@ -33,10 +33,15 @@ _ANTHROPIC_WARNED = False
 DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
 DEFAULT_OLLAMA_MODEL = "llama3.2:3b"
 
-# Keep the reachability/generation call itself snappy so a container that
-# isn't running (or isn't listening yet) doesn't stall the whole ask().
+# Keep the reachability probe itself snappy so a container that isn't
+# running (or isn't listening yet) doesn't stall the whole ask(). The
+# generation timeout, by contrast, needs to be generous: a 3B model's first
+# real inference on phone CPU (no GPU, plus proot overhead) can easily take
+# well over a minute, especially cold. 30s was cutting that off before the
+# model had a chance to actually answer, silently falling back to
+# retrieval every time. Override via DOCCRAWLER_OLLAMA_TIMEOUT if needed.
 OLLAMA_CONNECT_TIMEOUT = 3
-OLLAMA_GENERATE_TIMEOUT = 30
+OLLAMA_GENERATE_TIMEOUT = int(os.environ.get("DOCCRAWLER_OLLAMA_TIMEOUT", "180"))
 
 
 @dataclass
@@ -321,7 +326,23 @@ def chat(
     to the messages table. Falls through the same Ollama -> Anthropic ->
     retrieval chain as ask(), tagging which provider answered.
     """
-    dbmod.add_message(conn, conversation_id, "user", user_message)
+    # A slow provider call (a local model's first inference can take well
+    # over a minute) leaves a window where the user can delete this same
+    # conversation from another request before we're done. When that
+    # happens, add_message's FOREIGN KEY constraint fails -- don't let that
+    # crash the whole request with a 500; the answer is still valid even if
+    # there's no conversation left to file it under.
+    def _add_message(role: str, content: str, provider: Optional[str] = None) -> None:
+        try:
+            dbmod.add_message(conn, conversation_id, role, content, provider=provider)
+        except sqlite3.IntegrityError:
+            log.warning(
+                "Could not save %s message -- conversation %s no longer exists "
+                "(likely deleted while this reply was still in progress).",
+                role, conversation_id,
+            )
+
+    _add_message("user", user_message)
 
     excerpts = search(conn, user_message, limit=limit)
     history = _recent_history(conn, conversation_id)
@@ -331,7 +352,7 @@ def chat(
         history = history[:-1]
 
     def _store_and_return(result: AskResult) -> AskResult:
-        dbmod.add_message(conn, conversation_id, "assistant", result.answer, provider=result.provider)
+        _add_message("assistant", result.answer, provider=result.provider)
         return result
 
     if not excerpts:
