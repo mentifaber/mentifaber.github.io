@@ -69,52 +69,60 @@ proot-distro login "${DISTRO}" -- bash -lc '
   fi
 '
 
-# 4. Start the Ollama server in the background (inside the container) if it
-#    is not already responding, then pull the requested model.
-log "Starting Ollama server and pulling model '${MODEL}'..."
-proot-distro login "${DISTRO}" -- bash -lc "
-  set -e
+# 4. Start the Ollama server if it is not already responding, then pull the
+#    requested model.
+#
+# IMPORTANT: `proot` traces its child process tree with ptrace. An earlier
+# version of this script backgrounded `ollama serve` *inside* a
+# `proot-distro login ... -- bash -lc '...'` session (nohup/disown run from
+# inside that session). That does not actually detach it: when the login
+# session's own shell exits, proot tears down its whole traced process
+# tree, killing the "backgrounded" Ollama along with it. The `curl` check
+# run inside that same session succeeded because it ran before the session
+# exited, which made this look like it worked right up until the script
+# returned and Ollama was gone.
+#
+# Fix: background the entire `proot-distro login ... -- ollama serve`
+# invocation at this outer Termux shell instead, so it's a background job
+# of this shell/session and survives the script finishing. proot does not
+# isolate networking, so `curl` against 127.0.0.1:11434 from Termux
+# directly reaches the server inside the container -- no need to go
+# through `proot-distro login` for that, or for finding/killing a stale
+# process (it's a normal process from Termux's point of view too).
+OLLAMA_LOG="${PREFIX:-/data/data/com.termux/files/usr}/tmp/doccrawler-ollama-serve.log"
 
-  # A pgrep hit alone doesn't prove the server is usable -- a previous
-  # attempt can crash under proot (e.g. OOM) and leave a dead/zombie
-  # process still visible in the process table. Confirm with a real HTTP
-  # probe before deciding whether to (re)start it.
-  if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
-    echo 'Ollama server already running and responding.'
-  else
-    # Anchored (^...\$) so this matches only a process whose *entire*
-    # command line is exactly \"ollama serve\" -- an unanchored substring
-    # match also matches THIS WRAPPER SCRIPT itself (its own bash -lc
-    # argument contains that text in these very echo lines), which can
-    # kill the script that's running it mid-execution instead of the
-    # actual stale ollama process.
-    if pgrep -f '^ollama serve\$' >/dev/null 2>&1; then
-      echo 'Found a stale ollama serve process that is not responding; restarting it.'
-      pkill -f '^ollama serve\$' >/dev/null 2>&1 || true
-      sleep 1
-    fi
-    echo 'Starting ollama serve in the background...'
-    nohup ollama serve > /tmp/ollama-serve.log 2>&1 &
-    disown
-    # Give the server a moment to bind before we try to talk to it.
-    ready=0
-    for i in \$(seq 1 20); do
-      if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
-        ready=1
-        break
-      fi
-      sleep 0.5
-    done
-    if [ \"\$ready\" -ne 1 ]; then
-      echo 'Ollama did not respond after starting it. Last log lines:' >&2
-      tail -n 30 /tmp/ollama-serve.log >&2 || true
-      exit 1
-    fi
+log "Starting Ollama server..."
+if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+  log "Ollama server already running and responding."
+else
+  # Anchored (^...$) so this matches only a process whose *entire* command
+  # line is exactly "ollama serve" -- an unanchored substring match also
+  # matches wrapper scripts that merely mention that text.
+  if pgrep -f "^ollama serve$" >/dev/null 2>&1; then
+    log "Found a stale ollama serve process that is not responding; restarting it."
+    pkill -f "^ollama serve$" >/dev/null 2>&1 || true
+    sleep 1
   fi
+  log "Starting ollama serve in the background (log: ${OLLAMA_LOG})..."
+  nohup proot-distro login "${DISTRO}" -- ollama serve > "${OLLAMA_LOG}" 2>&1 &
+  disown
+  ready=0
+  for i in $(seq 1 40); do
+    if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
+    sleep 0.5
+  done
+  if [ "${ready}" -ne 1 ]; then
+    log "Ollama did not respond after starting it. Last log lines:"
+    tail -n 30 "${OLLAMA_LOG}" >&2 || true
+    exit 1
+  fi
+fi
 
-  echo \"Pulling model '${MODEL}' (this can be several GB on first run)...\"
-  ollama pull '${MODEL}'
-"
+log "Pulling model '${MODEL}' (this can be several GB on first run)..."
+proot-distro login "${DISTRO}" -- ollama pull "${MODEL}"
 
 log "Done. Ollama is running inside the '${DISTRO}' proot container with model '${MODEL}' pulled."
 log "For future sessions (after closing Termux or restarting the container), run:"
