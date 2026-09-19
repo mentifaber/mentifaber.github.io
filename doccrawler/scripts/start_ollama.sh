@@ -49,7 +49,19 @@ else
     pkill -f "^ollama serve$" >/dev/null 2>&1 || true
     sleep 1
   fi
-  nohup proot-distro login "${DISTRO}" -- ollama serve > "${OLLAMA_LOG}" 2>&1 &
+  # Use `bash -lc` (a login shell) for the actual exec, not a raw
+  # `-- ollama serve`. A raw exec skips whatever the login wrapper does to
+  # set up the container's environment (HOME=/root and friends), so an
+  # earlier version of this script that dropped the login shell to fix the
+  # ptrace-teardown issue above ended up with `ollama serve` inheriting
+  # Termux's own $HOME instead of the container's -- OLLAMA_MODELS then
+  # defaulted to $HOME/.ollama/models on the *Termux* side (empty), not
+  # where `ollama pull` actually stored the model inside the container, so
+  # every chat request 404'd with "model not found" despite Ollama itself
+  # being reachable. `bash -lc` restores the correct container environment
+  # while the backgrounding still happens out here at the Termux shell, so
+  # both fixes apply at once.
+  nohup proot-distro login "${DISTRO}" -- bash -lc 'exec ollama serve' > "${OLLAMA_LOG}" 2>&1 &
   disown
   log "Started ollama serve in the background (log: ${OLLAMA_LOG})."
   ready=0
