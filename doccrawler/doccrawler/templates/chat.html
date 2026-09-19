@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}The Librarian - DocCrawler{% endblock %}
+{% block content %}
+<h1>The Librarian</h1>
+
+<div class="card">
+  <div class="chat-toolbar">
+    <form method="post" action="{{ url_for('chat_new') }}" class="inline">
+      <button type="submit" class="small">New conversation</button>
+    </form>
+    {% if messages %}
+    <form method="post" action="{{ url_for('chat_delete', conversation_id=conversation_id) }}" class="inline">
+      <button type="submit" class="small danger">Delete this conversation</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if conversations|length > 1 %}
+  <details>
+    <summary class="muted">Past conversations ({{ conversations|length }})</summary>
+    <div class="conv-list">
+      {% for c in conversations %}
+      <form method="post" action="{{ url_for('chat_switch', conversation_id=c.id) }}">
+        <span class="conv-label">
+          {{ c.title or ('Conversation #' ~ c.id) }} &middot; {{ c.message_count }} msg(s)
+          {% if c.id == conversation_id %}<strong>(current)</strong>{% endif %}
+        </span>
+        <button type="submit" class="small" {% if c.id == conversation_id %}disabled{% endif %}>Open</button>
+      </form>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
+  <div class="chat-scroll" id="chat-scroll">
+    {% if not messages %}
+      <p class="muted">Ask a question about your documents to start a conversation. The Librarian remembers this conversation's history as you go.</p>
+    {% endif %}
+    {% for m in messages %}
+      <div class="bubble-row {{ m.role }}">
+        <div class="bubble {{ m.role }}">
+          <pre>{{ m.content }}</pre>
+          {% if m.role == 'assistant' %}
+            {% if m.provider == 'ollama' %}
+              <span class="provider-label">The Librarian (local)</span>
+            {% elif m.provider == 'anthropic' %}
+              <span class="provider-label">The Librarian (cloud)</span>
+            {% else %}
+              <span class="provider-label">retrieval only</span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <form method="post" action="{{ url_for('chat_send') }}" class="chat-input-row">
+    <input type="text" name="message" placeholder="Ask a question about your documents..." autofocus autocomplete="off">
+    <button type="submit">Send</button>
+  </form>
+
+  {% if has_key %}
+    <p class="muted">AI synthesis is enabled: local Ollama is tried first, then Anthropic (ANTHROPIC_API_KEY detected) as a cloud fallback.</p>
+  {% else %}
+    <p class="muted">Local Ollama is tried first for AI-synthesized answers; without it (and without ANTHROPIC_API_KEY set) this runs in pure retrieval mode.</p>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    var el = document.getElementById("chat-scroll");
+    if (el) { el.scrollTop = el.scrollHeight; }
+  })();
+</script>
+{% endblock %}
