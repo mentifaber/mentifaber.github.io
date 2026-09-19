@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# setup_ollama.sh -- one-time setup of Ollama for DocCrawler's Engineering
-# Librarian, running inside a proot-distro Debian container on Termux.
+# setup_ollama.sh -- one-time setup of Ollama for DocCrawler's The
+# Librarian feature, running inside a proot-distro Debian container on Termux.
 #
 # Ollama has no native Termux/Android build, so it is installed and run
 # inside a proot Linux container (proot-distro). This script is idempotent:
@@ -51,23 +51,40 @@ proot-distro login "${DISTRO}" -- bash -lc '
 '
 
 # 4. Start the Ollama server in the background (inside the container) if it
-#    is not already running, then pull the requested model.
+#    is not already responding, then pull the requested model.
 log "Starting Ollama server and pulling model '${MODEL}'..."
 proot-distro login "${DISTRO}" -- bash -lc "
   set -e
-  if pgrep -f 'ollama serve' >/dev/null 2>&1; then
-    echo 'Ollama server already running.'
+
+  # A pgrep hit alone doesn't prove the server is usable -- a previous
+  # attempt can crash under proot (e.g. OOM) and leave a dead/zombie
+  # process still visible in the process table. Confirm with a real HTTP
+  # probe before deciding whether to (re)start it.
+  if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+    echo 'Ollama server already running and responding.'
   else
+    if pgrep -f 'ollama serve' >/dev/null 2>&1; then
+      echo 'Found a stale ollama serve process that is not responding; restarting it.'
+      pkill -f 'ollama serve' >/dev/null 2>&1 || true
+      sleep 1
+    fi
     echo 'Starting ollama serve in the background...'
     nohup ollama serve > /tmp/ollama-serve.log 2>&1 &
     disown
     # Give the server a moment to bind before we try to talk to it.
+    ready=0
     for i in \$(seq 1 20); do
       if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+        ready=1
         break
       fi
       sleep 0.5
     done
+    if [ \"\$ready\" -ne 1 ]; then
+      echo 'Ollama did not respond after starting it. Last log lines:' >&2
+      tail -n 30 /tmp/ollama-serve.log >&2 || true
+      exit 1
+    fi
   fi
 
   echo \"Pulling model '${MODEL}' (this can be several GB on first run)...\"
