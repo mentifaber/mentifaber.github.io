@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - DocCrawler{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="card row">
+  <div><strong>{{ stats.doc_count }}</strong> documents</div>
+  <div><strong>{{ stats.tag_count }}</strong> tags</div>
+  <div><strong>{{ (stats.total_size / 1024 / 1024) | round(2) }}</strong> MB stored</div>
+</div>
+
+<div class="card">
+  <h3>By type</h3>
+  {% if stats.by_type %}
+  <ul>
+    {% for t in stats.by_type %}
+      <li>{{ t.mime_type or 'unknown' }}: {{ t.c }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No documents yet. Go to Import to add some.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Recent files</h3>
+  {% if recent %}
+  <table>
+    <tr><th>File</th><th>Added</th><th>Type</th></tr>
+    {% for d in recent %}
+    <tr>
+      <td><a class="doclink" href="{{ url_for('doc_detail', doc_id=d['id']) }}">{{ d['source_name'] }}</a></td>
+      <td class="muted">{{ d['added_at'] }}</td>
+      <td class="muted">{{ d['mime_type'] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">Nothing ingested yet.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Scan a folder</h3>
+  <form method="post" action="{{ url_for('scan') }}">
+    <div class="row">
+      <input type="text" name="folder" placeholder="Folder path (defaults to watch dir)">
+      <button type="submit">Scan</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

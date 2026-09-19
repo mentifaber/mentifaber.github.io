@@ -1,0 +1,8 @@
+flask>=2.3
+pypdf>=3.0
+python-docx>=1.0
+Pillow>=9.0
+# Optional (install if you want OCR on images; requires the tesseract binary too):
+# pytesseract>=0.3
+# Optional (install if you want AI-synthesized answers via ANTHROPIC_API_KEY):
+# anthropic>=0.30

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doccrawler"
+version = "0.1.0"
+description = "Self-contained document crawler, indexer, and local RAG-style search/chat tool. Built to run on Termux/Android."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+    "flask>=2.3",
+    "pypdf>=3.0",
+    "python-docx>=1.0",
+    "Pillow>=9.0",
+]
+
+[project.optional-dependencies]
+ocr = ["pytesseract>=0.3"]
+ai = ["anthropic>=0.30"]
+
+[project.scripts]
+doccrawler = "doccrawler.cli:main"
+
+[tool.setuptools]
+packages = ["doccrawler"]
+
+[tool.setuptools.package-data]
+doccrawler = ["templates/*.html", "static/*"]
