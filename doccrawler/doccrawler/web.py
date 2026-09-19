@@ -243,6 +243,7 @@ def create_app(cfg: Config = None) -> Flask:
         answer = None
         excerpts = []
         used_ai = False
+        provider = None
         question = ""
         if request.method == "POST":
             conn = get_conn()
@@ -252,9 +253,10 @@ def create_app(cfg: Config = None) -> Flask:
                 answer = result.answer
                 excerpts = result.excerpts
                 used_ai = result.used_ai
+                provider = result.provider
         return render_template(
             "ask.html", answer=answer, excerpts=excerpts, used_ai=used_ai,
-            question=question, has_key=bool(cfg.anthropic_api_key),
+            provider=provider, question=question, has_key=bool(cfg.anthropic_api_key),
         )
 
     return app

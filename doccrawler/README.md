@@ -24,15 +24,17 @@ tag, and ask questions against your library.
   many-to-many schema. Auto-tagging picks the top keywords per document
   using a lightweight term-frequency heuristic; you can also add/remove tags
   manually.
-- **Ask**: a retrieval-based question answering function. It always does an
-  FTS5 search and returns ranked excerpts with filename citations. If
-  `ANTHROPIC_API_KEY` is set **and** the `anthropic` package is installed,
-  it additionally asks Claude to synthesize a natural-language answer from
-  those excerpts (RAG-style). Without a key it just returns the ranked
-  excerpts — it never crashes for lack of a key or the SDK.
+- **The Librarian**: a retrieval-based question answering feature. It
+  always does an FTS5 search and returns ranked excerpts with filename
+  citations. On top of that it tries, in order: (1) a **local** LLM via
+  Ollama (see "The Librarian: local LLM chat with Ollama" below),
+  (2) Anthropic's Claude if `ANTHROPIC_API_KEY` is set **and** the
+  `anthropic` package is installed, (3) plain retrieval. Each step degrades
+  gracefully to the next — it never crashes or hangs for lack of a local
+  model, a key, or the SDK.
 - **Web GUI**: a small Flask app (dashboard, import, library/search, tags,
-  ask) rendered with server-side Jinja2 templates and minimal CSS/JS — no
-  build step, nothing heavy, friendly to a phone screen.
+  The Librarian) rendered with server-side Jinja2 templates and
+  minimal CSS/JS — no build step, nothing heavy, friendly to a phone screen.
 - **CLI**: `doccrawler scan|serve|ask|tag|stats`.
 
 ## Security / deployment note (read this)
@@ -157,7 +159,59 @@ Environment variables (override the config file):
 | `DOCCRAWLER_HOST` | Web GUI bind host (default `127.0.0.1`) |
 | `DOCCRAWLER_PORT` | Web GUI bind port (default `8765`) |
 | `DOCCRAWLER_CONFIG` | Path to the JSON config file itself |
-| `ANTHROPIC_API_KEY` | If set (and `anthropic` is installed), enables AI-synthesized answers in `ask` |
+| `ANTHROPIC_API_KEY` | If set (and `anthropic` is installed), enables cloud AI-synthesized answers in `ask` (used as fallback if Ollama isn't reachable) |
+| `DOCCRAWLER_OLLAMA_HOST` | Base URL of the local Ollama server (default `http://127.0.0.1:11434`) |
+| `DOCCRAWLER_OLLAMA_MODEL` | Ollama model name to use (default `llama3.2:3b`) |
+
+## The Librarian: local LLM chat with Ollama
+
+DocCrawler's "Ask" / "The Librarian" feature can answer questions
+using a **local** LLM via [Ollama](https://ollama.com), so you don't need an
+API key or network access to get AI-synthesized (not just retrieved)
+answers. Ollama has no native Termux/Android build, so on Termux it runs
+inside a `proot-distro` Debian Linux container.
+
+**Read this before installing — set your expectations:**
+
+- This needs a **reasonably modern/capable Android device** with several GB
+  of free RAM and several GB of free storage. Small/older phones will
+  struggle or fail outright.
+- The **first-run model pull is several GB** over the network (e.g.
+  `llama3.2:3b` is roughly 2 GB; larger models are bigger). Do this on Wi-Fi.
+- `proot-distro` adds real overhead versus a native Linux install — inference
+  will be noticeably slower than the same model on a desktop GPU/CPU, and
+  slower than it would be on bare-metal Linux with the same hardware. Expect
+  a small model to be usable but not fast; do not expect large models to run
+  well, or at all, on typical phone hardware.
+- If Ollama isn't installed, isn't running, or times out, DocCrawler falls
+  back automatically to Anthropic (if configured) or plain retrieval — this
+  is optional, not required to use DocCrawler.
+
+**One-time setup (Termux):**
+
+```sh
+cd doccrawler
+bash scripts/setup_ollama.sh              # installs proot-distro + Debian container + Ollama, pulls llama3.2:3b
+# or, to use a different model:
+bash scripts/setup_ollama.sh llama3.2:1b
+```
+
+This installs `proot-distro` (via `pkg install proot-distro`) if missing,
+installs a Debian container (via `proot-distro install debian`) if not
+already present, installs Ollama inside that container using Ollama's
+official Linux install script, starts `ollama serve`, and pulls the model.
+It is idempotent — safe to re-run.
+
+**Every subsequent Termux session**, Ollama does **not** auto-start when the
+container restarts. Before running `doccrawler serve` or `doccrawler ask`,
+start it with:
+
+```sh
+bash scripts/start_ollama.sh
+```
+
+Then use `doccrawler ask "..."` or the web GUI's The Librarian page
+as usual — it will detect Ollama automatically and use it first.
 
 `organize_by` can be `"date"` (library files organized under `YYYY/MM/`) or
 `"hash"` (organized under the first bytes of the content hash).

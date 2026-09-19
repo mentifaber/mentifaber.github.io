@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Ask - DocCrawler{% endblock %}
+{% block title %}The Librarian - DocCrawler{% endblock %}
 {% block content %}
-<h1>Ask your library</h1>
+<h1>The Librarian</h1>
 <div class="card">
   <form method="post">
     <div class="row">
@@ -10,9 +10,9 @@
     </div>
   </form>
   {% if has_key %}
-    <p class="muted">AI synthesis is enabled (ANTHROPIC_API_KEY detected).</p>
+    <p class="muted">AI synthesis is enabled: local Ollama is tried first, then Anthropic (ANTHROPIC_API_KEY detected) as a cloud fallback.</p>
   {% else %}
-    <p class="muted">Running in pure retrieval mode (set ANTHROPIC_API_KEY to enable AI-synthesized answers).</p>
+    <p class="muted">Local Ollama is tried first for AI-synthesized answers; without it (and without ANTHROPIC_API_KEY set) this runs in pure retrieval mode.</p>
   {% endif %}
 </div>
 
@@ -20,6 +20,13 @@
 <div class="card">
   <h3>{{ 'AI Answer' if used_ai else 'Retrieved excerpts' }}</h3>
   <pre>{{ answer }}</pre>
+  {% if provider == 'ollama' %}
+    <p class="muted">Answered by: The Librarian (local)</p>
+  {% elif provider == 'anthropic' %}
+    <p class="muted">Answered by: The Librarian (cloud)</p>
+  {% else %}
+    <p class="muted">Retrieval only</p>
+  {% endif %}
 </div>
 {% endif %}
 
