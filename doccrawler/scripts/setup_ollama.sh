@@ -28,11 +28,30 @@ else
 fi
 
 # 2. Install the Debian container if not already installed.
-if proot-distro list 2>/dev/null | grep -qi "^${DISTRO}.*installed"; then
+#
+# `proot-distro list`'s output format isn't a stable thing to grep (its
+# columns/wording have changed across versions), and trusting it here was
+# itself a bug: it reported the container as not-installed on a device
+# where it demonstrably already was, so this re-ran `proot-distro install`
+# and hard-failed on "container 'debian' already exists" under `set -e`.
+# Check the actual rootfs directory instead -- that's what proot-distro
+# itself uses to decide whether a container exists.
+PROOT_DISTRO_ROOTFS="${PREFIX:-/data/data/com.termux/files/usr}/var/lib/proot-distro/installed-rootfs/${DISTRO}"
+if [ -d "${PROOT_DISTRO_ROOTFS}" ]; then
   log "proot-distro '${DISTRO}' container already installed, skipping."
 else
   log "Installing proot-distro '${DISTRO}' container (this downloads a base rootfs, may take a while)..."
-  proot-distro install "${DISTRO}"
+  # Tolerate a races-with-itself "already exists" error rather than letting
+  # set -e kill the whole script over something that isn't actually a
+  # failure for our purposes.
+  if ! proot-distro install "${DISTRO}"; then
+    if [ -d "${PROOT_DISTRO_ROOTFS}" ]; then
+      log "proot-distro reported an error but the '${DISTRO}' rootfs exists; continuing."
+    else
+      log "proot-distro install failed and no '${DISTRO}' rootfs was found. Aborting." >&2
+      exit 1
+    fi
+  fi
 fi
 
 # 3. Install Ollama inside the container (idempotent: the official install
