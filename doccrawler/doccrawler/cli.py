@@ -41,6 +41,12 @@ def cmd_ask(args, cfg) -> int:
     conn = dbmod.connect(cfg.db_path)
     result = ask_query(conn, args.question, api_key=cfg.anthropic_api_key)
     print(result.answer)
+    provider_labels = {
+        "ollama": "The Librarian (local, via Ollama)",
+        "anthropic": "The Librarian (cloud, via Anthropic)",
+        "retrieval": "Retrieval only (no AI provider available)",
+    }
+    print(f"\nAnswered by: {provider_labels.get(result.provider, result.provider)}")
     if result.excerpts:
         print("\nSources:")
         for ex in result.excerpts:
@@ -133,7 +139,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_serve.add_argument("--port", type=int, default=None, help="Port to bind (default: 8765)")
     p_serve.set_defaults(func=cmd_serve)
 
-    p_ask = sub.add_parser("ask", help="Ask a question against your document library")
+    p_ask = sub.add_parser(
+        "ask",
+        help="The Librarian: ask a question against your document library "
+             "(tries local Ollama, then Anthropic, then falls back to plain retrieval)",
+    )
     p_ask.add_argument("question", help="Natural language question")
     p_ask.set_defaults(func=cmd_ask)
 
