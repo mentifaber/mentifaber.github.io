@@ -4,7 +4,9 @@
 <h1>Tags</h1>
 <div class="card">
   {% for t in tags %}
-    <a class="tag" href="{{ url_for('tags_view', tag=t['name']) }}">{{ t['name'] }} ({{ t['n'] }})</a>
+    <span class="tag">
+      <a class="doclink" href="{{ url_for('tags_view', tag=t['name']) }}">{{ t['name'] }} ({{ t['n'] }})</a>
+    </span>
   {% else %}
     <p class="muted">No tags yet.</p>
   {% endfor %}
@@ -13,7 +15,22 @@
 {% if selected %}
 <div class="card">
   <h3>Documents tagged "{{ selected }}"</h3>
+
+  <div class="row" style="margin-bottom:0.75rem;">
+    <form method="post" action="{{ url_for('rename_tag_route') }}" class="row">
+      <input type="hidden" name="old" value="{{ selected }}">
+      <input type="text" name="new" placeholder="Rename to...">
+      <button type="submit">Rename</button>
+    </form>
+    <form method="post" action="{{ url_for('delete_tag_route') }}"
+          onsubmit="return confirm('Delete tag \'{{ selected }}\' from all documents?');">
+      <input type="hidden" name="tag" value="{{ selected }}">
+      <button type="submit" class="danger">Delete tag</button>
+    </form>
+  </div>
+
   {% if docs %}
+  <div class="table-wrap">
   <table>
     <tr><th>File</th><th>Added</th></tr>
     {% for d in docs %}
@@ -23,6 +40,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% else %}
   <p class="muted">No documents with this tag.</p>
   {% endif %}

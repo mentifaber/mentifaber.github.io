@@ -9,21 +9,56 @@
       <button type="submit">Search</button>
     </div>
   </form>
+  <p class="muted">{{ total }} document{{ '' if total == 1 else 's' }}{% if q %} matching "{{ q }}"{% endif %}.</p>
 </div>
 
 <div class="card">
   {% if docs %}
+  <div class="table-wrap">
   <table>
-    <tr><th>File</th><th>Snippet / Added</th></tr>
+    <tr><th>File</th><th>{{ 'Snippet' if q else 'Added' }}</th><th>Tags</th><th></th></tr>
     {% for d in docs %}
     <tr>
       <td><a class="doclink" href="{{ url_for('doc_detail', doc_id=d['id']) }}">{{ d['source_name'] }}</a></td>
       <td class="muted">
-        {% if q %}{{ d['snippet'] | safe }}{% else %}{{ d['added_at'] }}{% endif %}
+        {% if q %}{{ d['snippet'] | highlight }}{% else %}{{ d['added_at'] }}{% endif %}
+      </td>
+      <td>
+        <span class="tag-list">
+        {% if d['tag_names'] %}
+          {% for tn in d['tag_names'].split(',') %}<span class="tag">{{ tn }}</span>{% endfor %}
+        {% else %}
+          <span class="muted">&mdash;</span>
+        {% endif %}
+        </span>
+      </td>
+      <td>
+        <form class="inline" method="post" action="{{ url_for('delete_doc_route', doc_id=d['id']) }}"
+              onsubmit="return confirm('Delete {{ d['source_name'] }} from the library?');">
+          <button type="submit" class="danger small">Delete</button>
+        </form>
       </td>
     </tr>
     {% endfor %}
   </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="pager">
+    {% if page > 1 %}
+      <a href="{{ url_for('library', q=q, page=page-1) }}">&laquo; Prev</a>
+    {% else %}
+      <span class="disabled">&laquo; Prev</span>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+      <a href="{{ url_for('library', q=q, page=page+1) }}">Next &raquo;</a>
+    {% else %}
+      <span class="disabled">Next &raquo;</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% else %}
   <p class="muted">No documents found.</p>
   {% endif %}

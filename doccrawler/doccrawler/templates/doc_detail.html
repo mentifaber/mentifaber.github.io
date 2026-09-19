@@ -11,6 +11,20 @@
     Type: {{ doc['mime_type'] }}<br>
     OCR used: {{ 'yes' if doc['ocr_used'] else 'no' }}
   </p>
+  <div class="row">
+    <a class="doclink" href="{{ url_for('download_doc', doc_id=doc['id']) }}">Download original file</a>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Danger zone</h3>
+  <form method="post" action="{{ url_for('delete_doc_route', doc_id=doc['id']) }}"
+        onsubmit="return confirm('Delete {{ doc['source_name'] }} from the library? This cannot be undone.');">
+    <div class="row">
+      <label><input type="checkbox" name="delete_file"> Also delete the file from disk</label>
+      <button type="submit" class="danger">Delete document</button>
+    </div>
+  </form>
 </div>
 
 <div class="card">

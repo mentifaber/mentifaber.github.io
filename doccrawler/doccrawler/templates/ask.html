@@ -29,7 +29,7 @@
   {% for ex in excerpts %}
   <div class="excerpt">
     <strong><a class="doclink" href="{{ url_for('doc_detail', doc_id=ex.doc_id) }}">{{ ex.filename }}</a></strong>
-    <p class="muted">{{ ex.snippet | safe }}</p>
+    <p class="muted">{{ ex.snippet | highlight }}</p>
   </div>
   {% endfor %}
 </div>
