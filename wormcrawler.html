@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Worm Crawler — an ingredient scanner that doesn't flatter the label</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Syncopate:wght@400;700&family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --loam:#0C120D;--loam2:#131B14;--panel:#1A241B;--line:#233020;--line2:#36492F;
+  --lichen:#E6EFE2;--dim:#7E9478;--moss:#8FBF5A;--rust:#D9743F;--flag:#E2574C;--clear:#5FC9A0;
+  --disp:'Gabarito',system-ui,sans-serif;--body:'Figtree',system-ui,sans-serif;--mono:'Azeret Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--loam);color:var(--lichen);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--moss);color:var(--loam)}
+.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
+#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--moss),var(--rust))}
+.gap{height:118px;position:relative}
+.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
+.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--loam);transition:.5s}
+.gap.lit i{background:var(--moss);box-shadow:0 0 0 7px var(--loam),0 0 16px var(--moss)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h2{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5.6vw,52px);line-height:1.04;margin:14px auto 14px;max-width:17ch;letter-spacing:-.028em}
+h2 em{color:var(--moss);font-style:normal}
+.lede{color:var(--dim);max-width:51ch;margin:0 auto;font-size:16.5px}
+.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
+.logo{width:96px;height:96px;margin-bottom:6px}
+h1{font-family:var(--disp);font-weight:800;font-size:clamp(38px,8.6vw,82px);line-height:.96;letter-spacing:-.045em;margin:16px 0 12px}
+h1 em{color:var(--moss);font-style:normal}
+.tag{max-width:33ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
+.tag b{font-weight:600;color:var(--rust)}
+.meta{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:24px}
+
+/* scanner */
+.scan{width:min(94vw,520px);background:var(--loam2);border:1px solid var(--line2);
+  border-radius:12px;padding:22px;margin-top:28px;text-align:left}
+.pick{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.pk{font-family:var(--mono);font-size:11px;border:1px solid var(--line);color:var(--dim);
+  padding:9px 13px;border-radius:100px;background:transparent;cursor:pointer;transition:.2s}
+.pk:hover{border-color:var(--moss);color:var(--moss)}
+.pk.on{border-color:var(--moss);color:var(--loam);background:var(--moss)}
+.prod{font-family:var(--disp);font-weight:600;font-size:21px;margin-bottom:3px}
+.brand{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+.score{display:flex;align-items:baseline;gap:10px;margin:18px 0 6px}
+.big{font-family:var(--disp);font-weight:800;font-size:52px;line-height:1;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;transition:color .4s}
+.outof{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.meterbg{height:6px;background:var(--line);border-radius:4px;overflow:hidden}
+.meterfg{height:100%;width:0;border-radius:4px;transition:width .7s cubic-bezier(.2,.7,.2,1),background .4s}
+.ings{margin-top:20px;display:flex;flex-direction:column;gap:1px}
+.ing{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 12px;
+  background:var(--panel);font-family:var(--mono);font-size:12px;transition:background .2s}
+.ing:first-child{border-radius:6px 6px 0 0}.ing:last-child{border-radius:0 0 6px 6px}
+.ing:hover{background:#20302016}
+.ing .why{grid-column:1/-1;font-size:11px;color:var(--dim);line-height:1.6;max-height:0;overflow:hidden;transition:max-height .35s,margin .35s}
+.ing.open .why{max-height:90px;margin-top:8px}
+.badge{font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1px solid currentColor}
+.b-ok{color:var(--clear)}.b-mid{color:var(--rust)}.b-bad{color:var(--flag)}.b-unk{color:var(--dim)}
+.sub{margin-top:18px;padding:14px;border:1px dashed var(--line2);border-radius:7px;
+  font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.8}
+.sub b{color:var(--moss)}
+.sub.bug{border-color:var(--flag);color:var(--flag)}
+.sub.bug b{color:var(--flag)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin-top:32px;text-align:left}
+.card{background:var(--loam2);border:1px solid var(--line);border-radius:8px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--line2)}
+.card.open{border-left:2px solid var(--flag)}
+.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.card p{font-size:14.5px;line-height:1.55}
+.card p b{color:var(--moss);font-weight:600}
+.card.open p b{color:var(--flag)}
+.aside{margin:28px auto 0;max-width:53ch;color:var(--dim);font-size:15px}
+.aside b{color:var(--lichen);font-weight:600}
+footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
+@media(max-width:680px){.gap{height:92px}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
+:root{
+  --loam:#050301 !important;
+  --loam2:#0B0805 !important;
+  --panel:#100C08 !important;
+  --line:rgba(200,169,110,.14) !important;
+  --line2:rgba(200,169,110,.30) !important;
+  --lichen:#F2E6CF !important;
+  --dim:#8a7d6c !important;
+  --moss:#C8A96E !important;
+  --rust:#B02A1A !important;
+  --flag:#8B1A1A !important;
+  --clear:#8A7050 !important;
+  --disp:'EB Garamond',serif !important;
+  --body:'EB Garamond',serif !important;
+  --mono:'JetBrains Mono',monospace !important;
+}
+
+/* ===== mentifaber brand chrome ===== */
+.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:200}
+.mf-vignette{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 25%,rgba(0,0,0,.45) 65%,rgba(0,0,0,.9) 100%);pointer-events:none;z-index:199}
+.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(176,42,26,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:198}
+.mf-corner{position:fixed;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7a6e62;text-decoration:none;z-index:201;opacity:.75;transition:color .3s,opacity .3s}
+.mf-corner:hover{color:#c8a96e;opacity:1}
+.mf-tl{top:3.2vh;left:4vw}
+.mf-return{bottom:3.2vh;left:4vw}
+.mf-return::before{content:"\2190 ";}
+.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
+@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
+/* ---- typographic alignment ---- */
+h1,h2{font-family:'Playfair Display',serif!important;font-style:italic;}
+.eyebrow{font-family:'Syncopate',sans-serif!important;font-weight:400;}
+body{cursor:crosshair;}
+</style></head><body>
+<div class="mf-grain"></div>
+<div class="mf-vignette"></div>
+<div class="mf-glow" id="mfGlow"></div>
+<a href="index.html" class="mf-corner mf-tl">Mentifaber</a>
+<a href="index.html" class="mf-corner mf-return">Return</a>
+<div class="mf-corner mf-year">MMXXVI</div>
+
+<div id="bar"></div>
+
+<header class="hero">
+  <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M18 66 Q26 40 40 52 Q54 64 60 42 Q66 20 82 32" fill="none" stroke="#8FBF5A" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="82" cy="32" r="7" fill="#8FBF5A"/>
+    <circle cx="84.5" cy="29.5" r="1.9" fill="#0C120D"/>
+    <path d="M14 78 h72" stroke="#36492F" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+  <h1>Worm <em>Crawler</em></h1>
+  <p class="tag">A food ingredient scanner that says <b>"I don't know"</b> when it doesn't know, instead of quietly scoring it as fine.</p>
+  <div class="meta">v6 · formerly "Yuka But Honest" · Open Food Facts</div>
+
+  <div class="scan">
+    <div class="pick" id="pick"></div>
+    <div class="prod" id="prod">—</div>
+    <div class="brand" id="brand">—</div>
+    <div class="score"><span class="big" id="big">—</span><span class="outof">/ 100</span></div>
+    <div class="meterbg"><div class="meterfg" id="meter"></div></div>
+    <div class="ings" id="ings"></div>
+    <div class="sub" id="sub"></div>
+  </div>
+</header>
+
+<div class="gap"><i></i></div>
+
+<section class="col rv">
+  <div class="eyebrow">The premise</div>
+  <h2>The honest part is the <em>unknowns</em></h2>
+  <p class="lede">Every scanner app gives a number. The number is only meaningful if you know how much of the label it actually understood. Tap any ingredient above to see why it landed where it did — including the ones marked unclassified, which is the whole point of the rebuild.</p>
+  <div class="grid">
+    <div class="card"><h4>Classified</h4><p>Matched against the ingredient table with a rating and a stated reason. These are the ones the score can honestly stand on.</p></div>
+    <div class="card"><h4>Unclassified</h4><p>Present on the label, absent from the table. Surfaced explicitly rather than <b>silently treated as neutral</b> — which is how a mystery additive becomes a good score.</p></div>
+    <div class="card"><h4>AI classify</h4><p>An escape hatch for the unclassified ones: send the raw ingredient string to a model and get a provisional read, clearly marked as provisional.</p></div>
+    <div class="card"><h4>Coverage number</h4><p>What fraction of the label was understood. A 78/100 across four of eleven ingredients is a different claim than 78/100 across eleven of eleven.</p></div>
+  </div>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Open bugs</div>
+  <h2>Two things that are <em>still wrong</em></h2>
+  <p class="lede">Both live in <code>findAlternatives()</code>, and both trace back to the same root cause: trusting that upstream data is complete.</p>
+  <div class="grid">
+    <div class="card open"><h4>Bug 1 — self-substitution</h4><p>The recommended-substitute feature sometimes returns <b>the scanned product as its own alternative</b>. No identity check on the candidate set before ranking.</p></div>
+    <div class="card open"><h4>Bug 2 — truncated data</h4><p>Open Food Facts returns <b>truncated ingredient lists</b> for some products. A short list looks like a clean product, so substitute scoring ranks incomplete entries above complete ones.</p></div>
+    <div class="card"><h4>Why they're linked</h4><p>Both are the scorer treating absence as good news. The same instinct the app exists to argue against, reproduced inside the app.</p></div>
+    <div class="card"><h4>The shape of the fix</h4><p>Exclude the source barcode from the candidate pool, and gate any substitute below a coverage floor out of the ranking entirely.</p></div>
+  </div>
+  <p class="aside">The scanner card above demonstrates the self-substitution bug on the last sample — it is showing you the real failure rather than a cleaned-up version of it.</p>
+</section>
+
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">v6</div>
+  <h2>Moss green and a <em>worm</em></h2>
+  <p class="lede">The rebrand from "Yuka But Honest" mattered more than a rename usually does. The old name defined the product as a critique of another product.</p>
+  <div class="grid">
+    <div class="card"><h4>Palette</h4><p>Earthy moss green throughout — soil, lichen, rust. Nothing about it reads as a clinical health app, because that framing implies an authority the data doesn't support.</p></div>
+    <div class="card"><h4>Logo</h4><p>A custom SVG worm, drawn as a single stroke path. It's above this page's title — same file, no raster fallback.</p></div>
+    <div class="card"><h4>Name</h4><p>A crawler that goes through what's underneath. Also literally a worm in soil, which is the joke.</p></div>
+    <div class="card"><h4>Data source</h4><p><b>Open Food Facts</b> — open, community-maintained, and uneven in exactly the ways the app now surfaces instead of hiding.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="eyebrow">v6 · two open bugs · shipping anyway</div>
+  <p>Sample products above are illustrative. The scoring logic, the unclassified handling and both bugs are the real ones.</p>
+</footer>
+
+<script>
+const PRODUCTS=[
+  {n:'Strawberry Toaster Pastry',b:'generic',score:31,cov:'9 of 11 classified',
+   ings:[
+    ['Enriched flour','mid','Refined — stripped of bran and germ, then partially re-fortified. Not harmful, not the same as the whole grain.'],
+    ['High fructose corn syrup','bad','Added sugar in a form the liver processes differently from glucose. First-third of the list means it is a primary ingredient.'],
+    ['Palm oil','mid','Saturated fat, plus a supply chain with real deforestation problems depending on sourcing. Certification is not stated.'],
+    ['TBHQ','bad','Synthetic preservative with a regulated upper limit. Legal at the doses used, and the reason the limit exists is not nothing.'],
+    ['Soy lecithin','ok','Emulsifier. Well studied, no meaningful concern at food concentrations.'],
+    ['Red 40','bad','Petroleum-derived colour. Banned or warning-labelled in several jurisdictions, permitted here.'],
+    ['Xanthan gum','ok','Fermentation-derived thickener. Inert.'],
+    ['Natural flavors','unk','A legal category, not an ingredient. Could be almost anything. This is the single biggest hole in every scanner app including this one.'],
+    ['Datem','unk','Dough conditioner. Present in the label, absent from the table.']
+   ],
+   sub:['ok','Substitute found: <b>oat-based fruit bar</b> — 12 of 12 classified, score 74.']},
+
+  {n:'Plain Rolled Oats',b:'store brand',score:92,cov:'1 of 1 classified',
+   ings:[
+    ['Whole grain rolled oats','ok','One ingredient. Whole grain, minimally processed, nothing added. This is what a clean label actually looks like.']
+   ],
+   sub:['ok','No substitute needed — nothing scored above it.']},
+
+  {n:'Protein Snack Bar',b:'fitness brand',score:58,cov:'4 of 9 classified',
+   ings:[
+    ['Whey protein isolate','ok','Complete protein, heavily processed but well characterised.'],
+    ['Soluble corn fiber','mid','Counted as fiber on the panel. Behaves differently from intrinsic fiber in whole foods.'],
+    ['Sugar alcohols','mid','Low glycemic impact, gastrointestinal effects at volume.'],
+    ['Sucralose','mid','Non-nutritive sweetener. Long safety record, ongoing debate about gut microbiome effects.'],
+    ['Natural flavors','unk','Undefined category.'],
+    ['Palm kernel oil','unk','Present, unrated in the table.'],
+    ['Tocopherols','unk','Likely a vitamin E preservative, not confirmed against the table.'],
+    ['Cocoa processed with alkali','unk','Dutching changes polyphenol content. No entry.'],
+    ['Soy protein crisps','unk','Composite ingredient — the sub-ingredients are not disclosed.']
+   ],
+   sub:['bug','findAlternatives() returned <b>this same product</b> as its own substitute. Known bug — no identity check on the candidate set.']}
+];
+
+const pick=document.getElementById('pick'),prod=document.getElementById('prod'),
+      brand=document.getElementById('brand'),big=document.getElementById('big'),
+      meter=document.getElementById('meter'),ingsEl=document.getElementById('ings'),
+      subEl=document.getElementById('sub');
+
+PRODUCTS.forEach((p,i)=>{
+  const b=document.createElement('button');
+  b.className='pk'+(i===0?' on':'');b.textContent=p.n.split(' ').slice(-2).join(' ');
+  b.addEventListener('click',()=>{[...pick.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');show(i)});
+  pick.appendChild(b);
+});
+
+function tone(s){return s>=75?'var(--clear)':(s>=50?'var(--rust)':'var(--flag)')}
+
+function show(i){
+  const p=PRODUCTS[i];
+  prod.textContent=p.n;brand.textContent=p.b+' · '+p.cov;
+  big.style.color=tone(p.score);
+  meter.style.background=tone(p.score);
+  meter.style.width='0%';
+  let n=0;const t0=performance.now();
+  (function step(){
+    const k=Math.min(1,(performance.now()-t0)/700);
+    big.textContent=Math.round(p.score*(1-Math.pow(1-k,3)));
+    if(k<1)requestAnimationFrame(step);
+  })();
+  setTimeout(()=>meter.style.width=p.score+'%',40);
+  ingsEl.innerHTML='';
+  p.ings.forEach(([name,rate,why])=>{
+    const cls={ok:'b-ok',mid:'b-mid',bad:'b-bad',unk:'b-unk'}[rate];
+    const lbl={ok:'ok',mid:'caution',bad:'flagged',unk:'unclassified'}[rate];
+    const d=document.createElement('div');d.className='ing';
+    d.innerHTML=`<span>${name}</span><span class="badge ${cls}">${lbl}</span><span class="why">${why}</span>`;
+    d.addEventListener('click',()=>d.classList.toggle('open'));
+    ingsEl.appendChild(d);
+  });
+  subEl.className='sub'+(p.sub[0]==='bug'?' bug':'');
+  subEl.innerHTML=(p.sub[0]==='bug'?'⚠ ':'▸ ')+p.sub[1];
+}
+show(0);
+
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
+},{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
+}),{threshold:.15});
+document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
+</script>
+
+<script>
+(function(){
+  var g=document.getElementById('mfGlow');
+  if(!g)return;
+  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
+  var touch=matchMedia('(hover: none)').matches;
+  if(touch){g.style.display='none';return}
+  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
+  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
+})();
+</script>
+</body></html>
