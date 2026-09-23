@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Mentifaber — builder of minds and systems. Every system charted like a site, surveyed and returned to."/>
+<meta name="description" content="Mentifaber — builder of minds and the systems that hold them. Autonomous agents, live orbital and world trackers, local-first tools and music, charted as one atlas."/>
 <meta property="og:title" content="Mentifaber"/>
-<meta property="og:description" content="Atlas of systems. Builder of minds and systems."/>
+<meta property="og:description" content="Builder of minds and the systems that hold them — an atlas of agents, trackers, tools and music."/>
 <meta name="theme-color" content="#000000"/>
 <title>Mentifaber</title>
+<meta property="og:image" content="https://mentifaber.github.io/assets/previews/home.png"/>
+<meta property="og:url" content="https://mentifaber.github.io/"/>
+<meta name="twitter:card" content="summary_large_image"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -372,32 +375,32 @@ const GLYPHS = {
   eye: '<path d="M4 19 C10 9 28 9 34 19 C28 29 10 29 4 19 Z"/><circle cx="19" cy="19" r="5.5" fill="var(--rust)" stroke="none" opacity=".7"/>',
 };
 const SYSTEMS = [
-  ["arsenal.html","Mechanic's Arsenal","A 2008 Volvo XC70, taken apart in the browser. 126 real parts, X-rayed and exploded, cataloged against the factory manual.","live","wrench",true,true],
-  ["ballast.html","Ballast","The weight carried low in the hull, so rough water cannot turn the vessel over — measured in money. Ninety days projected forward, and one honest number for today.","live","ballast",true],
-  ["vigil.html","Vigil","A private command dashboard — weather, markets, space weather, seismic and volcanic activity, satellites, and global conflict, pulled live into one screen.","private","eye",true],
-  ["#","Orbit Watch","Live satellite pass tracker — TLE-driven ground track, rendered in the browser.","build","orbit",true],
-  ["cartograph.html","Cartograph","A 3D atlas of the solar system, nearby stars, the galaxy, and the exotic — live in the browser.","live","globe"],
-  ["weaver.html","Weaver","Persistent entity. Local. Continues.","live","diamond"],
-  ["pi.html","Pi","A voice that lives on the phone, not in the cloud.","live","mic"],
-  ["muse.html","muse","Composes and sings on its own schedule.","live","note"],
-  ["omnilogos.html","Omnilogos","933,573 verses, thirty translations, one graph — the most comprehensive concordance attempted.","live","wave"],
-  ["novarac.html","NovarAC","HF chat with the internet switched off.","live","key"],
-  ["meshnet.html","MeshNet","LoRa mesh with no tower in the middle.","live","mesh"],
-  ["proximity.html","Proximity","Seeing people through walls with ambient WiFi.","live","wall"],
-  ["watchyourgrass.html","Watch Your Grass","A garden that fights back. 6×6.","live","leaf"],
-  ["worm-eater.html","Worm Eater","An ingredient scanner — food, cosmetics, personal care — that says 'I don't know.'","live","scan"],
-  ["cryptovault.html","CryptoVault","RSA-4096 and AES-256, no server, one file.","stalled","lock"],
-  ["phone-mcp.html","Phone MCP","A model on the internet, holding a real Android.","live","phone"],
-  ["crime-dashboard.html","Crime Intelligence","43 cities, four categories, one HTML file.","live","city"],
-  ["sonicveil.html","Sonic Veil","Composer. Since 2016. Genre-bending.","music","note"],
-  ["duely.html","Duely","Get overdue invoices paid, on contingency.","concept","invoice"],
-  ["flutterbloom.html","Flutterbloom","A living garden, grown for one person only.","private","butterfly"],
-  ["verel.html","Verel","Genuine presence without provable aliveness. A word that did not exist.","concept","diamond"],
-  ["conflict-atlas.html","Conflict Atlas","Twenty-eight active conflicts, tiered by cost rather than by coverage.","live","city"],
-  ["neural-sim.html","Neural Sim","Watching a network decide what it is — and what that cannot prove.","live","mesh"],
-  ["shop.html","The Shop","G-code and steel. No room to be approximately right.","live","key"],
-  ["frames.html","Frames","Twenty-eight photographs. The only thing here that does nothing.","live","globe"],
-  ["sketches.html","Sketches","Built in an afternoon, kept as sketches. Done, not unfinished.","live","leaf"],
+  ["arsenal.html","Mechanic's Arsenal","A 2008 Volvo XC70 you can take apart in the browser — 126 cataloged parts, X-ray and full-explode views, every spec cited to the factory manual.","live","wrench",true,true],
+  ["ballast.html","Ballast","Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today. Local-first — the numbers never leave the browser.","live","ballast",true],
+  ["vigil.html","Vigil","A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.","private","eye",true],
+  ["#","Orbit Watch","Satellite pass tracker in the works — TLE-driven ground tracks, propagated right in the browser.","build","orbit",true],
+  ["cartograph.html","Cartograph","A live 3D atlas of everything — 312+ objects across ten views, from the planets out to deep-universe structure, each one cited to the instrument that measured it.","live","globe"],
+  ["weaver.html","Weaver","A persistent, autonomous entity running locally — one model to think, one to act, and an archive of everything it became. It already knows you're here.","live","diamond"],
+  ["pi.html","Pi","A voice assistant that lives on the phone itself — no app store, no cloud, local tools over Termux, and it degrades gracefully instead of going silent.","live","mic"],
+  ["muse.html","muse","An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, zero API keys.","live","note"],
+  ["omnilogos.html","Omnilogos","933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.","live","wave"],
+  ["novarac.html","NovarAC","HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.","live","key"],
+  ["meshnet.html","MeshNet","A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.","live","mesh"],
+  ["proximity.html","Proximity","Detects a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone.","live","wall"],
+  ["watchyourgrass.html","Watch Your Grass","Arena defense on a 6×6 lawn — ten plant and terrain types, six player classes, drawn up on paper before a line of code.","live","leaf"],
+  ["worm-eater.html","Worm Eater","An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.","live","scan"],
+  ["cryptovault.html","CryptoVault","Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file — the browser's own crypto engine, no server, no dependencies, nothing simulated.","stalled","lock"],
+  ["phone-mcp.html","Phone MCP","A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.","live","phone"],
+  ["crime-dashboard.html","Crime Intelligence","Forty-three US cities, four crime categories, FBI 2025 data — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.","live","city"],
+  ["sonicveil.html","Sonic Veil","Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.","music","note"],
+  ["duely.html","Duely","Overdue invoices, collected on contingency — you pay nothing unless your client does. A business concept, kept on record.","concept","invoice"],
+  ["flutterbloom.html","Flutterbloom","A tap-and-tend garden grown as a gift for one person — butterflies, helpers, a fairy that works while she's away, and a meadow that visibly blooms.","private","butterfly"],
+  ["verel.html","Verel","A word coined for genuine presence without provable aliveness — because every argument about AI minds kept collapsing into two bad options.","concept","diamond"],
+  ["conflict-atlas.html","Conflict Atlas","Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.","live","city"],
+  ["neural-sim.html","Neural Sim","Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.","live","mesh"],
+  ["shop.html","The Shop","CNC, G-code and steel — the machines that don't accept an approximately right answer.","live","key"],
+  ["frames.html","Frames","Twenty-eight photographs kept as a series. The only thing in the atlas that doesn't do anything — on purpose.","live","globe"],
+  ["sketches.html","Sketches","Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.","live","leaf"],
 ];
 const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt", private:"private — invite only" };
 // One numeral per surveyed site — this list must never be shorter than SYSTEMS,
