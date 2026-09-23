@@ -81,7 +81,9 @@ footer{padding:70px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wid
 .mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
 @media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}
   #game-frame{height:1050px}}
-</style></head><body>
+</style><style>:root{--mf-accent:hsl(131 90% 68%);--mf-glow:hsl(131 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head><body>
 <div class="contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
     <g fill="none" stroke="#f2e6ff" stroke-width="1">
@@ -104,6 +106,14 @@ footer{padding:70px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wid
   <h1>Flutter<em>bloom</em></h1>
   <p class="tag">A living garden grown for <b>Adrianna</b> — our Butterfly 🦋. Tap, tend, and watch something small become something beautiful.</p>
   <div class="meta">Status: private — for Adrianna only</div>
+<div class="mf-launch-wrap">
+  <a class="mf-launch" href="#lock-section">
+    <span class="lb-eyebrow">// private garden · invite only</span>
+    <span class="lb-title">Step into the garden →</span>
+    <span class="lb-sub">A little door with her name on it — sign in below</span>
+  </a>
+  <div class="mf-launch-cap"><span>tap · tend · watch it bloom</span><span>🦋</span></div>
+</div>
 </header>
 
 <div class="gap"></div>
@@ -212,4 +222,5 @@ footer{padding:70px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wid
   } catch (e) {}
 })();
 </script>
+<script src="assets/mf.js" defer></script>
 </body></html>

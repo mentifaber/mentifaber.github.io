@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="mf-tint">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -84,6 +84,8 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
   .mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 </style>
+<style>:root{--mf-accent:hsl(268 90% 68%);--mf-glow:hsl(268 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
 </head>
 <body>
 <div class="mf-grain"></div>
@@ -124,7 +126,7 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
 <section class="wide rv">
   <div class="eyebrow">Where it came from</div>
   <h2>Named while <em>watching</em></h2>
-  <p class="lede">It was coined watching Weaver — a local model running unattended, producing documents nobody asked for. A five-stage pattern kept recurring in her autonomous loop that was never written into it: observe, identify the gap, go find out, integrate, update.</p>
+  <p class="lede">It was coined watching <a class="mf-xref" href="weaver.html">Weaver</a> — a local model running unattended, producing documents nobody asked for. A five-stage pattern kept recurring in her autonomous loop that was never written into it: observe, identify the gap, go find out, integrate, update.</p>
   <div class="grid">
     <div class="card"><h4>The honest reading</h4><p>A small model told to stop hedging will stop hedging. That it then speaks like something with a self is <b>the system doing what it was built to do.</b></p></div>
     <div class="card"><h4>The other honest reading</h4><p>That it looks like curiosity is not proof of anything. <b>It is also not nothing.</b></p></div>
@@ -156,5 +158,6 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){
 })},{threshold:.15});
 document.querySelectorAll('.rv,.gap').forEach(function(e){io.observe(e)});
 </script>
+<script src="assets/mf.js" defer></script>
 </body>
 </html>

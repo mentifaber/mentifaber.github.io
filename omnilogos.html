@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Omnilogos — 933,573 verses, thirty translations, one graph</title>
 <meta property="og:image" content="https://mentifaber.github.io/assets/previews/omnilogos.png"/>
@@ -111,7 +111,9 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 /* ---- typographic alignment ---- */
 h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
-</style></head><body>
+</style><style>:root{--mf-accent:hsl(58 90% 68%);--mf-glow:hsl(58 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head><body>
 <div class="contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
     <g fill="none" stroke="#f2e6cf" stroke-width="1">
@@ -325,4 +327,5 @@ document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
   (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
 })();
 </script>
+<script src="assets/mf.js" defer></script>
 </body></html>

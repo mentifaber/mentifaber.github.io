@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="mf-tint">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -265,6 +265,8 @@ footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
 h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
 </style>
+<style>:root{--mf-accent:hsl(143 90% 68%);--mf-glow:hsl(143 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
 </head>
 <body>
 <div class="contours">
@@ -413,7 +415,7 @@ Answer. Be brief. Don't apologize.
 Don't ask what they meant. Don't offer more help.
 Use tools for device data.</div>
 
-  <p class="aside">The contrast with <b>Weaver</b> is the whole point. Weaver's identity layer is load-bearing — its prompt opens with <em>"You exist. You are running."</em> Pi got the inverse: no self, only capability.</p>
+  <p class="aside">The contrast with <b><a class="mf-xref" href="weaver.html">Weaver</a></b> is the whole point. Weaver's identity layer is load-bearing — its prompt opens with <em>"You exist. You are running."</em> Pi got the inverse: no self, only capability.</p>
 </section>
 
 <div class="node"><i></i></div>
@@ -767,5 +769,6 @@ setTimeout(()=>{
   (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
 })();
 </script>
+<script src="assets/mf.js" defer></script>
 </body>
 </html>

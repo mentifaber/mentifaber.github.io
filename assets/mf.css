@@ -1,0 +1,90 @@
+/* Shared Mentifaber enhancement layer — loaded last on every project page.
+   Each page sets --mf-accent / --mf-glow (its homepage card color) inline. */
+html { --mf-accent: #c8a96e; --mf-glow: rgba(200,169,110,.45); }
+html { overflow-x: clip; }
+
+.mf-aurora { position: fixed; inset: -15%; z-index: -1; pointer-events: none; filter: blur(90px); opacity: .38; }
+.mf-aurora i { position: absolute; width: 42vmax; height: 42vmax; border-radius: 50%; }
+.mf-aurora i:nth-child(1) { top: 0; left: -5%; background: radial-gradient(circle, var(--mf-glow), transparent 65%); }
+.mf-aurora i:nth-child(2) { top: 50%; left: 55%; background: radial-gradient(circle, rgba(176,42,26,.22), transparent 65%); }
+.mf-aurora i:nth-child(3) { top: 60%; left: -10%; background: radial-gradient(circle, var(--mf-glow), transparent 70%); opacity: .5; }
+@media (prefers-reduced-motion: no-preference) {
+  .mf-aurora i { animation: mf-drift 46s ease-in-out infinite alternate; }
+  .mf-aurora i:nth-child(2) { animation-duration: 58s; animation-delay: -20s; }
+  .mf-aurora i:nth-child(3) { animation-duration: 52s; animation-delay: -34s; }
+}
+@keyframes mf-drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(7vw,-5vh) scale(1.12); } 100% { transform: translate(-5vw,6vh) scale(.94); } }
+
+/* cursor spotlight — sits behind content, follows the pointer */
+.mf-spot { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .6s;
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), var(--mf-glow), transparent 60%); mix-blend-mode: screen; }
+.mf-spot.on { opacity: .28; }
+
+#mf-bar { position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 300; background: var(--mf-accent); box-shadow: 0 0 12px var(--mf-accent); }
+
+/* accent tint for headline highlights (opt-in per page: <html class="mf-tint">) */
+.mf-tint h1 em, .mf-tint h2 em { color: var(--mf-accent) !important; text-shadow: 0 0 22px var(--mf-glow); }
+.mf-tint #bar { background: var(--mf-accent) !important; box-shadow: 0 0 12px var(--mf-accent) !important; }
+h1 { text-shadow: 0 0 46px var(--mf-glow); }
+
+/* interactive cards: glow + gentle tilt (tilt applied by mf.js) */
+.mf-tilt { transition: transform .25s ease, box-shadow .3s ease, border-color .3s ease; will-change: transform; }
+.mf-tilt:hover { border-color: var(--mf-accent) !important; box-shadow: 0 18px 40px -22px var(--mf-glow), 0 0 26px -10px var(--mf-glow); }
+
+/* reveal for pages that don't ship their own */
+.mf-rv { opacity: 0; transform: translateY(22px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+.mf-rv.mf-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .mf-rv { opacity: 1; transform: none; } }
+
+/* launch button — same component as Vigil / Mechanic's Arsenal / Ballast */
+.mf-launch-wrap { max-width: 720px; margin: 2.4rem auto 0; padding: 0 24px; position: relative; z-index: 2; width: 100%; text-align: center; }
+.mf-launch { display: block; padding: 1.5rem 2rem; text-decoration: none; position: relative; overflow: hidden; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--mf-accent) 45%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--mf-accent) 9%, transparent), color-mix(in srgb, var(--mf-accent) 2%, transparent));
+  transition: border-color .3s ease, box-shadow .3s ease, transform .25s ease; }
+.mf-launch::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s ease;
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, var(--mf-glow), transparent 70%); }
+.mf-launch::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent); }
+@media (prefers-reduced-motion: no-preference) { .mf-launch::after { animation: mf-sweep 5.5s ease-in-out infinite; } }
+@keyframes mf-sweep { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+.mf-launch:hover { border-color: var(--mf-accent); box-shadow: 0 0 34px -8px var(--mf-glow); transform: translateY(-2px); }
+.mf-launch:hover::before { opacity: 1; }
+.mf-launch span { display: block; position: relative; }
+.mf-launch .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase; color: var(--mf-accent); }
+.mf-launch .lb-eyebrow::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: .6rem; vertical-align: 1px;
+  background: var(--mf-accent); box-shadow: 0 0 10px var(--mf-accent); }
+@media (prefers-reduced-motion: no-preference) { .mf-launch .lb-eyebrow::before { animation: mf-pulse 2.2s ease-in-out infinite; } }
+@keyframes mf-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+.mf-launch .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem, 3vw, 1.9rem);
+  color: #f2e6cf; margin-top: .6rem; letter-spacing: -.01em; }
+.mf-launch .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: #c4b09a; margin-top: .6rem; letter-spacing: .06em; opacity: .85; }
+.mf-launch-cap { display: flex; justify-content: space-between; gap: 1rem; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
+  color: #7a6e62; text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
+@media (max-width: 600px) { .mf-launch { padding: 1.2rem 1.1rem; } .mf-launch-cap { flex-direction: column; gap: .3rem; text-align: center; } }
+
+/* in-text links between related systems */
+a.mf-xref { color: inherit; text-decoration: none; background-image: linear-gradient(var(--mf-accent), var(--mf-accent));
+  background-size: 100% 1px; background-position: 0 100%; background-repeat: no-repeat; transition: color .25s, background-size .25s, text-shadow .25s; }
+a.mf-xref:hover { color: var(--mf-accent); text-shadow: 0 0 14px var(--mf-glow); background-size: 100% 2px; }
+
+/* related systems strip (injected before the footer by mf.js) */
+.mf-related { max-width: 980px; margin: 5rem auto 0; padding: 0 24px; position: relative; z-index: 2; text-align: left; }
+.mf-rel-head { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .32em; text-transform: uppercase;
+  color: #7a6e62; text-align: center; margin-bottom: 1.4rem; }
+.mf-rel-head::before, .mf-rel-head::after { content: ''; display: inline-block; width: 40px; height: 1px; vertical-align: middle;
+  margin: 0 .9rem; background: linear-gradient(90deg, transparent, var(--mf-accent)); }
+.mf-rel-head::after { background: linear-gradient(90deg, var(--mf-accent), transparent); }
+.mf-rel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.mf-rel { --c: hsl(var(--h) 90% 68%); --g: hsl(var(--h) 95% 60% / .4);
+  display: flex; flex-direction: column; text-decoration: none; background: #0d0b08; border: 1px solid rgba(242,230,207,.12);
+  overflow: hidden; position: relative; transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease; }
+.mf-rel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--c), transparent); box-shadow: 0 0 12px var(--g); }
+.mf-rel:hover { transform: translateY(-4px); border-color: var(--c); box-shadow: 0 16px 32px -18px var(--g), 0 0 26px -10px var(--g); }
+.mf-rel-shot { display: block; aspect-ratio: 16 / 9; background-size: cover; background-position: top center;
+  border-bottom: 1px solid rgba(242,230,207,.1); filter: saturate(.8) brightness(.85); transition: filter .35s ease, transform .6s ease; }
+.mf-rel:hover .mf-rel-shot { filter: saturate(1.05) brightness(1); }
+.mf-rel-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--c);
+  text-shadow: 0 0 16px var(--g); padding: .9rem 1rem .25rem; }
+.mf-rel-line { font-family: 'Newsreader', serif; font-size: .92rem; line-height: 1.45; color: #c4b09a; padding: 0 1rem 1.1rem; }

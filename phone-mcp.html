@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>Phone MCP — handing a model the keys to an Android</title>
@@ -108,7 +108,9 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 /* ---- typographic alignment ---- */
 h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;font-weight:700;}
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
-</style></head><body>
+</style><style>:root{--mf-accent:hsl(301 90% 68%);--mf-glow:hsl(301 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head><body>
 <div class="mf-contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
     <g fill="none" stroke="#f2e6cf" stroke-width="1">
@@ -122,7 +124,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
 </div>
 <div class="mf-grain"></div>
 <a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
-<a href="index.html" class="mf-corner mf-return">← Atlas</a>
+<a href="index.html" class="mf-corner mf-return">Atlas</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
 <div id="bar"></div>
@@ -131,7 +133,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
   <div class="chain" id="chain">
     <div class="link"><b>Claude</b>tool call<br>over MCP</div>
     <div class="hopline"></div>
-    <div class="link"><b>Cloudflare</b>named tunnel<br>public https</div>
+    <div class="link"><b>Cloudflare</b>quick tunnel<br>public https</div>
     <div class="hopline"></div>
     <div class="link"><b>MCP server</b>tool schema<br>→ shell</div>
     <div class="hopline"></div>
@@ -171,7 +173,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
     <div class="card"><h4>No standing state</h4><p>The server holds no session. Kill the tunnel and the whole capability disappears — which is the intended off switch.</p></div>
     <div class="card"><h4>Read before write</h4><p>Inspection tools are safe to call freely. Anything that injects input or moves files deserves a gate, the same way Pi gates SMS.</p></div>
   </div>
-  <p class="aside">It pairs with <b>Pi</b> from the other direction: Pi is a model living <em>on</em> the phone reaching outward; this is a model living outside reaching <em>in</em>.</p>
+  <p class="aside">It pairs with <b><a class="mf-xref" href="pi.html">Pi</a></b> from the other direction: Pi is a model living <em>on</em> the phone reaching outward; this is a model living outside reaching <em>in</em>.</p>
 </section>
 
 <footer>
@@ -278,4 +280,5 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
+<script src="assets/mf.js" defer></script>
 </body></html>

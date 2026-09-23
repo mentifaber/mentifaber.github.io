@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>NovarAC — HF chat with the internet switched off</title>
@@ -101,7 +101,9 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 .mf-return::before{content:"\2190 ";}
 .mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
 @media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
-</style></head><body>
+</style><style>:root{--mf-accent:hsl(196 90% 68%);--mf-glow:hsl(196 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head><body>
 <div class="contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
     <g fill="none" stroke="#f2e6cf" stroke-width="1">
@@ -276,4 +278,5 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
+<script src="assets/mf.js" defer></script>
 </body></html>
