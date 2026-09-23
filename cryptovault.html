@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>CryptoVault — RSA-4096 and AES-256 in one HTML file</title>
@@ -115,7 +115,9 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
 /* ---- typographic alignment ---- */
 h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;font-weight:700;}
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
-</style></head><body>
+</style><style>:root{--mf-accent:hsl(163 90% 68%);--mf-glow:hsl(163 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head><body>
 <div class="mf-contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
     <g fill="none" stroke="#f2e6cf" stroke-width="1">
@@ -129,7 +131,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
 </div>
 <div class="mf-grain"></div>
 <a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
-<a href="index.html" class="mf-corner mf-return">← Atlas</a>
+<a href="index.html" class="mf-corner mf-return">Atlas</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
 <div id="bar"></div>
@@ -277,4 +279,5 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
+<script src="assets/mf.js" defer></script>
 </body></html>

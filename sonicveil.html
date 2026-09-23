@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>Sonic Veil — composer, since 2016</title>
@@ -101,7 +101,9 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
 @media(max-width:680px){.gap{height:92px}.split{grid-template-columns:1fr}.trow{grid-template-columns:70px 1fr;gap:10px}.trow .s{grid-column:1/-1;text-align:left}
   .mf-corner{font-size:8px;letter-spacing:.1em}.mf-tl{top:2.2vh}.mf-return{bottom:2.2vh}.mf-year{bottom:2.2vh}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
-</style></head><body>
+</style><style>:root{--mf-accent:hsl(216 90% 68%);--mf-glow:hsl(216 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head><body>
 
 <div class="mf-contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
@@ -116,7 +118,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
 </div>
 <div class="mf-grain"></div>
 <a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
-<a href="index.html" class="mf-corner mf-return">← Atlas</a>
+<a href="index.html" class="mf-corner mf-return">Atlas</a>
 <div class="mf-corner mf-year">MMXXVI</div>
 
 <div id="bar"></div>
@@ -131,6 +133,14 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
   <h1>Sonic <em>Veil</em></h1>
   <p class="tagline">Ambient, experimental, electronic — genre-bending explorations, ten years running.</p>
   <div class="meta"><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud</a> · Spotify · Apple Music · 150+ platforms</div>
+<div class="mf-launch-wrap">
+  <a class="mf-launch" href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">
+    <span class="lb-eyebrow">// now streaming · soundcloud</span>
+    <span class="lb-title">Listen to Sonic Veil →</span>
+    <span class="lb-sub">86 tracks · ambient · experimental · electronic</span>
+  </a>
+  <div class="mf-launch-cap"><span>releases land here first</span><span>also on Spotify · Apple Music · 150+ platforms</span></div>
+</div>
 </header>
 
 <div class="gap"><i></i></div>
@@ -278,4 +288,5 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 
 </script>
+<script src="assets/mf.js" defer></script>
 </body></html>

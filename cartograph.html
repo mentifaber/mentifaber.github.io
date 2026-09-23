@@ -148,6 +148,8 @@ footer.mf-foot a:hover { color: var(--rust); }
   .dsc-hint-bar { display: none; }
 }
 </style>
+<style>:root{--mf-accent:hsl(228 90% 68%);--mf-glow:hsl(228 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
 </head>
 <body>
 <div class="contours">
@@ -171,7 +173,7 @@ footer.mf-foot a:hover { color: var(--rust); }
   <h1 class="name">Cartograph<span>.</span></h1>
   <p class="tagline">A live 3D atlas of everything — 312+ objects across 10 data arrays, from the solar system to deep-universe structure, each with instrument-cited stats from JWST, Gaia, and EHT.</p>
   <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>live — v2 · Deep Space Command</span>
+  <span class="status-pill"><span class="sw"></span>live · Deep Space Command</span>
 </div>
 
 <div class="stage-wrap">
@@ -247,14 +249,14 @@ footer.mf-foot a:hover { color: var(--rust); }
     </div>
   </div>
   <div class="stage-cap"><span>312+ objects across 10 data arrays · instrument-cited stats</span><span>JWST · Gaia DR3 · EHT · Chandra</span></div>
-  <div style="text-align:center;margin-top:1.4rem;">
-    <a href="https://mentifaber.github.io/Cartograph/space_map.html" target="_blank" rel="noopener"
-       style="display:inline-flex;align-items:center;gap:.55rem;font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--indigo);border:1px solid var(--indigo-dim);padding:.6rem 1.3rem;text-decoration:none;transition:.25s;"
-       onmouseover="this.style.color='var(--rust)';this.style.borderColor='var(--rust)'"
-       onmouseout="this.style.color='var(--indigo)';this.style.borderColor='var(--indigo-dim)'">
-      ◈ Open Deep Space Command — live WebGL · 312+ objects →
-    </a>
-  </div>
+<div class="mf-launch-wrap">
+  <a class="mf-launch" href="https://mentifaber.github.io/Cartograph/space_map.html" target="_blank" rel="noopener">
+    <span class="lb-eyebrow">// sys.online · deep space command v4</span>
+    <span class="lb-title">Open Deep Space Command →</span>
+    <span class="lb-sub">Three.js · UnrealBloom · runs entirely in your browser</span>
+  </a>
+  <div class="mf-launch-cap"><span>drag to orbit · tap any object for its data</span><span>312+ objects · 10 views</span></div>
+</div>
 </div>
 
 <section class="frag-wrap">
@@ -266,7 +268,7 @@ footer.mf-foot a:hover { color: var(--rust); }
   <div class="frag">
     <span class="tag">what it is</span>
     <p>A 3D cartograph of <b>everything, at every scale</b>. 109 real stars to 50,000 light-years, plotted from true RA/Dec/distance. 50 solar system bodies — every planet, every major dwarf planet, and 3I/ATLAS, the 2025 interstellar visitor. 27 confirmed exoplanets carrying JWST atmospheric data. 15+ black holes running stellar-mass to ultramassive, 20+ nebulae, 20+ clusters, 14 pulsars and neutron stars, 20+ galaxies, and deep-universe structure out to the edge of the observable cosmos.</p>
-    <p>Every object carries <b>8 instrument-cited data fields</b> sourced from Hubble, JWST, Gaia DR3, EHT, Chandra, NICER, and LIGO. <b>Sibling project to Orbit Watch</b> — where Orbit Watch tracks a single satellite in real time, Cartograph is the wide view: everything else that's out there.</p>
+    <p>Every object carries <b>8 instrument-cited data fields</b> sourced from Hubble, JWST, Gaia DR3, EHT, Chandra, NICER, and LIGO. <b>Sibling project to Orbit Watch</b> — where Orbit Watch is being built to follow a single satellite in real time, Cartograph is the wide view: everything else that's out there.</p>
   </div>
 
   <div class="frag">
@@ -276,7 +278,7 @@ footer.mf-foot a:hover { color: var(--rust); }
 
   <div class="frag">
     <span class="tag">status</span>
-    <p>Live at <em>mentifaber.github.io/Cartograph</em>. All modes interactive — drag to orbit, pinch or scroll to zoom, tap any object for its data panel. Data sourced from <em>Gaia DR3 · Hubble/HST · JWST · Chandra · NICER · EHT · LIGO/Virgo · VLT ESPRESSO</em>. Next: SGP4 propagation for a live-satellite layer, shared with Orbit Watch.</p>
+    <p>Live at <em>mentifaber.github.io/Cartograph</em>. All modes interactive — drag to orbit, pinch or scroll to zoom, tap any object for its data panel. Data sourced from <em>Gaia DR3 · Hubble/HST · JWST · Chandra · NICER · EHT · LIGO/Virgo · VLT ESPRESSO</em>. Next: SGP4 propagation for a live-satellite layer, shared with Orbit Watch. The groundwork already runs next door — <a href="vigil.html" style="color:inherit">Vigil</a> propagates live satellites across its world globe.</p>
     <div class="stack-row">
       <span>Three.js r134 / WebGL</span><span>Gaia DR3 parallax coords</span><span>JWST · Hubble · EHT</span><span>Chandra · NICER · LIGO</span>
     </div>
@@ -288,5 +290,6 @@ footer.mf-foot a:hover { color: var(--rust); }
   <a href="index.html">Return to Mentifaber</a>
 </footer>
 
+<script src="assets/mf.js" defer></script>
 </body>
 </html>

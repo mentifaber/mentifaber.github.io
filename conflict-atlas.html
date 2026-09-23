@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="mf-tint">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -84,6 +84,8 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
   .mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 </style>
+<style>:root{--mf-accent:hsl(46 90% 68%);--mf-glow:hsl(46 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
 </head>
 <body>
 <div class="mf-grain"></div>
@@ -250,5 +252,6 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){
 })},{threshold:.15});
 document.querySelectorAll('.rv,.gap').forEach(function(e){io.observe(e)});
 </script>
+<script src="assets/mf.js" defer></script>
 </body>
 </html>

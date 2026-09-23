@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="mf-tint">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -84,6 +84,8 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
   .mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 </style>
+<style>:root{--mf-accent:hsl(236 90% 68%);--mf-glow:hsl(236 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
 </head>
 <body>
 <div class="mf-grain"></div>
@@ -113,10 +115,10 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
   <h2>One idea, executed <em>once</em></h2>
   <p class="lede">Unrelated to each other, related in shape: a single idea, built, not extended.</p>
   <div class="grid">
-    <div class="card"><h4>Arm a Garden</h4><p>A 6×6 garden that fights back, with a design document written before the code — for a sketch, either discipline or overkill.</p></div>
+    <div class="card"><h4><a class="mf-xref" href="watchyourgrass.html">Arm a Garden</a></h4><p>A 6×6 garden that fights back, with a design document written before the code — for a sketch, either discipline or overkill.</p></div>
     <div class="card"><h4>Bubble Editor</h4><p>The largest by file size and the least serious in intent. Half a megabyte of editor for a thing that did not need one.</p></div>
     <div class="card"><h4>Haunted Explorer · Deceasedcraft</h4><p>Two passes at atmosphere over mechanics. Neither became a game. Both were the point at the time.</p></div>
-    <div class="card"><h4>Space Map · Moon Compatibility</h4><p>Orbital and lunar toys, built well before the orbital mechanics got done properly elsewhere. <b>The interest preceded the rigour.</b></p></div>
+    <div class="card"><h4>Space Map · Moon Compatibility</h4><p>Orbital and lunar toys, built well before the orbital mechanics got done properly in <a class="mf-xref" href="cartograph.html">Cartograph</a>. <b>The interest preceded the rigour.</b></p></div>
     <div class="card"><h4>Monstrosity Blueprint</h4><p>A generator. Ran once, produced its output, done.</p></div>
     <div class="card"><h4>Shopping Route · Creative Challenge</h4><p>A route optimiser and a prompt engine. Both solved their afternoon and stopped.</p></div>
   </div>
@@ -145,5 +147,6 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){
 })},{threshold:.15});
 document.querySelectorAll('.rv,.gap').forEach(function(e){io.observe(e)});
 </script>
+<script src="assets/mf.js" defer></script>
 </body>
 </html>
