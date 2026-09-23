@@ -34,6 +34,8 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 
 .contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
 .contours svg { width: 100%; height: 100%; }
+.contours, .contours svg { overflow: hidden; }
+html { overflow-x: clip; }
 .grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -160,7 +162,47 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
   margin: 0; background: var(--paper-hi); border: 1px solid var(--contour); border-radius: 50%; padding: 5px; }
 .plate-glyph svg { width: 100%; height: 100%; stroke: var(--indigo); fill: none; stroke-width: 1.1; }
 .plate:hover .plate-glyph svg { stroke: var(--rust); }
-.plate h3 { font-family: 'Newsreader', serif; font-style: italic; font-weight: 500; font-size: 1.5rem; color: var(--ink); }
+.plate h3 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.55rem; letter-spacing: -.01em;
+  color: var(--hue, var(--ink)); text-shadow: 0 0 18px var(--hue-glow, transparent), 0 0 42px var(--hue-glow, transparent);
+  transition: text-shadow .35s ease; }
+.plate:hover h3 { text-shadow: 0 0 12px var(--hue), 0 0 34px var(--hue-glow), 0 0 70px var(--hue-glow); }
+.plate::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--hue, var(--indigo)), transparent);
+  box-shadow: 0 0 14px var(--hue-glow, transparent); opacity: .75; transition: opacity .3s; }
+.plate:hover::before { opacity: 1; }
+.plate:not(.disabled):hover { border-color: var(--hue); box-shadow: 0 14px 30px -14px var(--hue-glow), 0 0 32px -8px var(--hue-glow); }
+.plate .plate-glyph svg { stroke: var(--hue, var(--indigo)); filter: drop-shadow(0 0 4px var(--hue-glow, transparent)); }
+.plate:hover .plate-glyph svg { stroke: var(--hue, var(--rust)); }
+@media (prefers-reduced-motion: no-preference) {
+  .plate { opacity: 0; transform: translateY(18px); }
+  .plate.shown { opacity: 1; transform: none; transition: opacity .6s ease, transform .6s ease, box-shadow .3s, border-color .3s; }
+  .plate.shown:not(.disabled):hover { transform: translateY(-4px); }
+}
+
+/* living background: slow drifting aurora behind the atlas */
+.aurora { position: fixed; inset: -20%; z-index: 0; pointer-events: none; filter: blur(90px); opacity: .5; }
+.aurora span { position: absolute; width: 38vmax; height: 38vmax; border-radius: 50%; mix-blend-mode: screen; }
+.aurora span:nth-child(1) { background: radial-gradient(circle, rgba(200,169,110,.35), transparent 65%); top: 10%; left: 5%; }
+.aurora span:nth-child(2) { background: radial-gradient(circle, rgba(217,64,48,.28), transparent 65%); top: 45%; left: 55%; }
+.aurora span:nth-child(3) { background: radial-gradient(circle, rgba(70,160,220,.2), transparent 65%); top: 60%; left: 10%; }
+.aurora span:nth-child(4) { background: radial-gradient(circle, rgba(170,110,230,.2), transparent 65%); top: 5%; left: 60%; }
+@media (prefers-reduced-motion: no-preference) {
+  .aurora span { animation: drift 38s ease-in-out infinite alternate; }
+  .aurora span:nth-child(2) { animation-duration: 46s; animation-delay: -12s; }
+  .aurora span:nth-child(3) { animation-duration: 52s; animation-delay: -24s; }
+  .aurora span:nth-child(4) { animation-duration: 42s; animation-delay: -6s; }
+}
+@keyframes drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(8vw,-6vh) scale(1.15); } 100% { transform: translate(-6vw,8vh) scale(.92); } }
+
+/* shimmering wordmark */
+.shimmer { background: linear-gradient(100deg, var(--indigo) 20%, #fff2cf 40%, var(--rust-hi) 55%, var(--indigo) 75%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  text-shadow: none !important; filter: drop-shadow(0 0 22px rgba(200,169,110,.45)); padding-right: .08em; }
+@media (prefers-reduced-motion: no-preference) { .shimmer { animation: shimmer 7s linear infinite; } }
+@keyframes shimmer { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+.hero-stats { margin-top: 2rem; display: flex; gap: 1.6rem; justify-content: center; flex-wrap: wrap;
+  font-family: 'IBM Plex Mono', monospace; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); }
+.hero-stats b { color: var(--indigo); font-weight: 500; text-shadow: 0 0 12px rgba(200,169,110,.6); }
 .plate p { font-family: 'Newsreader', serif; font-size: .92rem; color: var(--ink-soft); margin-top: .5rem; line-height: 1.5; }
 .plate-status { display: flex; align-items: center; gap: .6rem; margin-top: 1.3rem; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
 .plate-status .sw { width: 13px; height: 4px; border-radius: 2px; }
@@ -203,6 +245,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
     </g>
   </svg>
 </div>
+<div class="aurora"><span></span><span></span><span></span><span></span></div>
 <div class="grain"></div>
 
 <div id="dprogress"></div>
@@ -216,8 +259,9 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
 
     <section class="dsection" id="d-hero">
       <p class="d-eyebrow" data-reveal>mens · mentis — faber · fabri</p>
-      <h1 class="d-hero-name" data-reveal>Menti<i>faber</i></h1>
-      <p class="d-hero-sub" data-reveal>Every system charted like a site — surveyed, marked, and returned to. Scroll to descend from orbit into the archive.</p>
+      <h1 class="d-hero-name" data-reveal>Menti<i class="shimmer">faber</i></h1>
+      <p class="d-hero-sub" data-reveal>Builder of minds and the systems that hold them — agents that persist, trackers that watch the sky, tools that live in one file. Scroll to descend into the archive.</p>
+      <p class="hero-stats" data-reveal><span><b id="hsTotal">—</b> systems</span><span><b id="hsLive">—</b> live</span><span>newest · <b id="hsNew">—</b></span></p>
       <p class="d-scrollcue" data-reveal>↓ begin the descent</p>
     </section>
 
@@ -267,7 +311,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
 <div class="atlas" id="atlas-main">
   <aside class="legend">
     <p class="legend-mark">Atlas of Systems / ed. 2026</p>
-    <h1>Menti<i>faber</i></h1>
+    <h1>Menti<i class="shimmer">faber</i></h1>
     <p class="sub">Every system charted like a site — surveyed, marked, and returned to.</p>
 
     <div class="legend-key">
@@ -365,6 +409,10 @@ const el = document.getElementById('plates');
 SYSTEMS.forEach(([href,name,desc,status,glyph,wide,latest],i)=>{
   const a=document.createElement(href==='#' ? 'div' : 'a');
   a.className='plate'+(wide?' wide':'')+(latest?' latest':'')+(href==='#'?' disabled':'');
+  // golden-angle hue steps: every app gets its own color, neighbors never look alike
+  const hue = Math.round((i * 137.508 + 38) % 360);
+  a.style.setProperty('--hue', `hsl(${hue} 90% 68%)`);
+  a.style.setProperty('--hue-glow', `hsl(${hue} 95% 60% / .45)`);
   if(href!=='#') a.href=href;
   const shotName = href==='#' ? null : href.replace('.html','');
   const glyphHtml = `<div class="plate-glyph"><svg viewBox="0 0 38 38">${GLYPHS[glyph]}</svg></div>`;
@@ -382,6 +430,13 @@ SYSTEMS.forEach(([href,name,desc,status,glyph,wide,latest],i)=>{
 document.getElementById('plateCount').textContent = `PL. I — PL. ${ROMAN[SYSTEMS.length-1]}`;
 const liveCount = SYSTEMS.filter(s=>s[3]==='live').length;
 document.getElementById('legendFoot').firstChild.textContent = `${SYSTEMS.length} sites surveyed — ${liveCount} live`;
+document.getElementById('hsTotal').textContent = SYSTEMS.length;
+document.getElementById('hsLive').textContent = liveCount;
+document.getElementById('hsNew').textContent = (SYSTEMS.find(s=>s[6]) || SYSTEMS[0])[1];
+const plateObs = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('shown'); plateObs.unobserve(e.target); } });
+}, { rootMargin: '0px 0px -8% 0px' }) : null;
+document.querySelectorAll('.plate').forEach(p => plateObs ? plateObs.observe(p) : p.classList.add('shown'));
 document.getElementById('dSystemsCount').textContent = `${SYSTEMS.length} charted`;
 document.getElementById('dTelemetryCopy').textContent = `${SYSTEMS.length} tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.`;
 </script>
