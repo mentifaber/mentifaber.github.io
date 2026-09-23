@@ -109,24 +109,27 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 }
 
 .atlas { position: relative; z-index: 2; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.atlas::before, .atlas::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; filter: blur(80px); }
+.atlas::before { top: -6rem; left: 8%; width: 420px; height: 420px; background: radial-gradient(circle, rgba(200,169,110,.14), transparent 70%); }
+.atlas::after { top: 30vh; right: 4%; width: 460px; height: 460px; background: radial-gradient(circle, rgba(176,42,26,.12), transparent 70%); }
 
 .legend {
   border-right: 1px solid var(--contour); padding: 3.2rem 2rem; position: sticky; top: 0;
   align-self: start; height: 100vh; display: flex; flex-direction: column;
 }
 .legend-mark { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 2.6rem; }
-.legend h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); }
-.legend h1 i { font-style: italic; font-weight: 300; color: var(--rust); }
+.legend h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); text-shadow: 0 0 34px rgba(200,169,110,.22); }
+.legend h1 i { font-style: italic; font-weight: 300; color: var(--rust); text-shadow: 0 0 30px rgba(217,64,48,.5); }
 .legend .sub { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); font-size: 1.02rem; margin-top: 1.1rem; line-height: 1.5; }
 .legend-key { margin-top: 3rem; font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-soft); border-top: 1px solid var(--contour); padding-top: 1.6rem; }
-.legend-key .row { display: flex; align-items: center; gap: .6rem; padding: .45rem 0; text-transform: uppercase; letter-spacing: .04em; }
-.legend-key .sw { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.sw.live { background: var(--indigo); }
-.sw.build { background: var(--rust-hi); }
-.sw.stalled { background: var(--ink-faint); }
-.sw.music { background: #7a6a9e; }
-.sw.concept { background: var(--rust-hi); opacity: .55; }
-.sw.private { background: #e0609a; }
+.legend-key .row { display: flex; align-items: center; gap: .7rem; padding: .45rem 0; text-transform: uppercase; letter-spacing: .04em; }
+.legend-key .sw { width: 14px; height: 4px; border-radius: 2px; flex-shrink: 0; box-shadow: 0 0 8px 1px var(--glow-color, transparent); }
+.sw.live { background: var(--indigo); --glow-color: rgba(200,169,110,.85); }
+.sw.build { background: var(--rust-hi); --glow-color: rgba(217,64,48,.85); }
+.sw.stalled { background: var(--ink-faint); --glow-color: rgba(122,110,98,.5); }
+.sw.music { background: #9d86d6; --glow-color: rgba(157,134,214,.8); }
+.sw.concept { background: var(--rust-hi); opacity: .55; --glow-color: rgba(217,64,48,.5); }
+.sw.private { background: #f279ae; --glow-color: rgba(242,121,174,.85); }
 .legend-foot { margin-top: auto; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; line-height: 1.8; }
 .legend-links { display: flex; gap: 1.1rem; margin-top: 1rem; flex-wrap: wrap; }
 .legend-links a { color: var(--ink-soft); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--contour); padding-bottom: 2px; transition: .25s; }
@@ -142,7 +145,7 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
   background: var(--paper-hi); border: 1px solid var(--contour); padding: 1.6rem 1.5rem 1.4rem;
   position: relative; text-decoration: none; color: inherit; transition: .3s; box-shadow: 0 1px 0 var(--paper-shadow);
 }
-.plate:hover { transform: translateY(-3px); box-shadow: 0 10px 22px -12px rgba(242,230,207,.35); border-color: var(--indigo-dim); }
+.plate:hover { transform: translateY(-3px); box-shadow: 0 10px 22px -12px rgba(242,230,207,.35), 0 0 26px -6px rgba(200,169,110,.45); border-color: var(--indigo-dim); }
 .plate-top { display: flex; justify-content: space-between; align-items: flex-start; font-family: 'IBM Plex Mono', monospace; font-size: .62rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; }
 .plate { padding: 0 0 1.4rem; overflow: hidden; }
 .plate-top, .plate h3, .plate p, .plate-status { padding-left: 1.5rem; padding-right: 1.5rem; }
@@ -159,8 +162,8 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: hidden;
 .plate:hover .plate-glyph svg { stroke: var(--rust); }
 .plate h3 { font-family: 'Newsreader', serif; font-style: italic; font-weight: 500; font-size: 1.5rem; color: var(--ink); }
 .plate p { font-family: 'Newsreader', serif; font-size: .92rem; color: var(--ink-soft); margin-top: .5rem; line-height: 1.5; }
-.plate-status { display: flex; align-items: center; gap: .5rem; margin-top: 1.3rem; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
-.plate-status .sw { width: 7px; height: 7px; border-radius: 50%; }
+.plate-status { display: flex; align-items: center; gap: .6rem; margin-top: 1.3rem; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+.plate-status .sw { width: 13px; height: 4px; border-radius: 2px; }
 .plate.wide { grid-column: span 2; }
 /* newest plate — the one thing on the page that should catch the eye first */
 .plate.latest { border-color: var(--rust); box-shadow: 0 0 0 1px rgba(176,42,26,.22), 0 10px 30px -16px rgba(176,42,26,.55); }
@@ -223,7 +226,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
         <div style="text-align:left">
           <p class="d-eyebrow" data-reveal>altitude falling</p>
           <h2 class="d-title" data-reveal>Through the <i style="color:var(--indigo)">telemetry</i></h2>
-          <p class="d-copy" data-reveal>Sixteen tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.</p>
+          <p class="d-copy" data-reveal id="dTelemetryCopy">Tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.</p>
         </div>
         <div class="d-telemetry" data-reveal>
           OBJECT&nbsp;&nbsp;<b>MF-07 · Cartograph</b><br>
@@ -244,7 +247,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
         </div>
         <div class="d-telemetry" data-reveal>
           PRACTICE&nbsp;&nbsp;<b>minds + systems</b><br>
-          SYSTEMS&nbsp;&nbsp;<b>16 charted</b><br>
+          SYSTEMS&nbsp;&nbsp;<b id="dSystemsCount">— charted</b><br>
           STATUS&nbsp;&nbsp;<b>active, ongoing</b><br>
           FOCUS&nbsp;&nbsp;<b>autonomous agents</b><br>
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>orbital data</b><br>
@@ -273,6 +276,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
       <div class="row"><span class="sw stalled"></span> Stalled / dormant</div>
       <div class="row"><span class="sw music"></span> Composition</div>
       <div class="row"><span class="sw concept"></span> Concept / unbuilt</div>
+      <div class="row"><span class="sw private"></span> Private — invite only</div>
     </div>
 
     <div class="legend-foot" id="legendFoot">
@@ -321,10 +325,12 @@ const GLYPHS = {
   butterfly: '<path d="M19 11 V29"/><path d="M19 14 C11 6 4 12 8 20 C11 27 17 25 19 19"/><path d="M19 14 C27 6 34 12 30 20 C27 27 21 25 19 19"/><circle cx="19" cy="11" r="1.4" fill="var(--rust)" stroke="none"/>',
   ballast: '<path d="M6 10 H32 L26.5 30 H11.5 Z"/><path d="M12.6 21 H25.4 L23.9 30 H14.1 Z" fill="var(--rust)" stroke="none" opacity=".85"/><path d="M2 16 H36" opacity=".45"/>',
   wrench: '<path d="M25 8 a7 7 0 0 0 -9.6 9.6 L7 26 l5 5 l8.4 -8.4 A7 7 0 0 0 30 13 l-5 5 l-3 -3 z"/>',
+  eye: '<path d="M4 19 C10 9 28 9 34 19 C28 29 10 29 4 19 Z"/><circle cx="19" cy="19" r="5.5" fill="var(--rust)" stroke="none" opacity=".7"/>',
 };
 const SYSTEMS = [
   ["arsenal.html","Mechanic's Arsenal","A 2008 Volvo XC70, taken apart in the browser. 126 real parts, X-rayed and exploded, cataloged against the factory manual.","live","wrench",true,true],
   ["ballast.html","Ballast","The weight carried low in the hull, so rough water cannot turn the vessel over — measured in money. Ninety days projected forward, and one honest number for today.","live","ballast",true],
+  ["vigil.html","Vigil","A private command dashboard — weather, markets, space weather, seismic and volcanic activity, satellites, and global conflict, pulled live into one screen.","private","eye",true],
   ["#","Orbit Watch","Live satellite pass tracker — TLE-driven ground track, rendered in the browser.","build","orbit",true],
   ["cartograph.html","Cartograph","A 3D atlas of the solar system, nearby stars, the galaxy, and the exotic — live in the browser.","live","globe"],
   ["weaver.html","Weaver","Persistent entity. Local. Continues.","live","diamond"],
@@ -376,6 +382,8 @@ SYSTEMS.forEach(([href,name,desc,status,glyph,wide,latest],i)=>{
 document.getElementById('plateCount').textContent = `PL. I — PL. ${ROMAN[SYSTEMS.length-1]}`;
 const liveCount = SYSTEMS.filter(s=>s[3]==='live').length;
 document.getElementById('legendFoot').firstChild.textContent = `${SYSTEMS.length} sites surveyed — ${liveCount} live`;
+document.getElementById('dSystemsCount').textContent = `${SYSTEMS.length} charted`;
+document.getElementById('dTelemetryCopy').textContent = `${SYSTEMS.length} tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.`;
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
