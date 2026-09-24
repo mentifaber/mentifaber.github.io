@@ -365,6 +365,19 @@
     letter-spacing: 0.15em;
     opacity: 0.5;
   }
+
+  /* Date picker */
+  .picker{width:100%;display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end;margin:0 0 34px;padding:18px;border:1px solid rgba(201,168,76,.18);border-radius:14px;background:rgba(19,13,42,.45)}
+  .picker label{display:flex;flex-direction:column;gap:6px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--silver-dim)}
+  .picker label.a span{color:var(--gold)} .picker label.b span{color:var(--silver)}
+  .picker input{font:inherit;font-family:'Cormorant Garamond',serif;font-size:17px;letter-spacing:0;text-transform:none;color:var(--cream);background:var(--void);border:1px solid rgba(201,168,76,.28);border-radius:8px;padding:9px 10px;min-height:44px;width:100%;color-scheme:dark}
+  .picker input:focus{outline:none;border-color:var(--gold)}
+  .picker .row{display:flex;gap:8px}
+  .picker .row input[type=text]{flex:1 1 40%}
+  .picker button{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--gold-dim);background:transparent;color:var(--gold);cursor:pointer}
+  .picker button:hover{background:rgba(201,168,76,.1)}
+  .picker .hint{grid-column:1/-1;font-size:13px;color:var(--silver-dim);font-style:italic}
+  @media(max-width:640px){.picker{grid-template-columns:1fr}.picker .row{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -373,16 +386,22 @@
   <header>
     <div class="eyebrow">Lunar Compatibility Analysis</div>
     <h1>Moon Phase Reading</h1>
-    <div class="dates-subtitle">December 13, 2005 &nbsp;·&nbsp; January 13, 2001</div>
+    <div class="dates-subtitle" id="subtitle"></div>
   </header>
 
+  <form class="picker" id="picker" autocomplete="off">
+    <label class="a"><span>First moon</span>
+      <div class="row"><input type="date" id="dA" required><input type="text" id="nA" placeholder="Name (optional)" maxlength="24"></div></label>
+    <label class="b"><span>Second moon</span>
+      <div class="row"><input type="date" id="dB" required><input type="text" id="nB" placeholder="Name (optional)" maxlength="24"></div></label>
+    <div style="display:flex;gap:8px"><button type="button" id="swap" title="Swap">⇄</button><button type="button" id="share">Copy link</button></div>
+    <div class="hint">Pick any two dates — birthdays, anniversaries, first meetings. The reading updates as you type. Moon computed for noon UTC.</div>
+  </form>
+
   <div class="compat-badge">
-    <div class="compat-score">96%</div>
+    <div class="compat-score" id="score"></div>
     <div class="compat-label">Lunar Harmony</div>
-    <div class="compat-desc">
-      Both moons are <strong>Waxing Gibbous</strong>, separated by only <strong>0.97 days</strong> in lunar age —
-      an exceptionally rare and auspicious alignment of two growing lights.
-    </div>
+    <div class="compat-desc" id="compatDesc"></div>
   </div>
 
   <div class="moon-section">
@@ -392,318 +411,187 @@
       <canvas id="moon2" class="moon-canvas" width="300" height="300"></canvas>
     </div>
     <div class="moon-labels">
-      <div class="moon-label gold"><span class="dot"></span>Dec 13, 2005 — 94.6%</div>
-      <div class="moon-label silver"><span class="dot"></span>Jan 13, 2001 — 78.4%</div>
+      <div class="moon-label gold"><span class="dot"></span><span id="lblA"></span></div>
+      <div class="moon-label silver"><span class="dot"></span><span id="lblB"></span></div>
     </div>
-    <div class="phase-delta">Δ Phase: 0.97 lunar days apart &nbsp;·&nbsp; Δ Illumination: 16.2%</div>
+    <div class="phase-delta" id="delta"></div>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-date">December 13, 2005</div>
-      <div class="stat-row"><span class="stat-key">Phase</span><span class="stat-val">Waxing Gibbous</span></div>
-      <div class="stat-row"><span class="stat-key">Moon Age</span><span class="stat-val">11.37 days</span></div>
-      <div class="stat-row"><span class="stat-key">Illumination</span><span class="stat-val">94.6%</span></div>
-      <div class="stat-row"><span class="stat-key">New Moon Prior</span><span class="stat-val">Dec 1, 2005</span></div>
-      <div class="illumination-bar"><div class="illumination-fill" style="width:94.6%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-date">January 13, 2001</div>
-      <div class="stat-row"><span class="stat-key">Phase</span><span class="stat-val">Waxing Gibbous</span></div>
-      <div class="stat-row"><span class="stat-key">Moon Age</span><span class="stat-val">10.40 days</span></div>
-      <div class="stat-row"><span class="stat-key">Illumination</span><span class="stat-val">78.4%</span></div>
-      <div class="stat-row"><span class="stat-key">New Moon Prior</span><span class="stat-val">Jan 2, 2001</span></div>
-      <div class="illumination-bar"><div class="illumination-fill" style="width:78.4%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-date">Phase Position (0–29.5 days)</div>
-      <div class="stat-row"><span class="stat-key">Cycle Day</span><span class="stat-val">11.37 / 29.53</span></div>
-      <div class="stat-row"><span class="stat-key">% Through Cycle</span><span class="stat-val">38.5%</span></div>
-      <div class="stat-row"><span class="stat-key">Days to Full</span><span class="stat-val">~3.6 days</span></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-date">Phase Position (0–29.5 days)</div>
-      <div class="stat-row"><span class="stat-key">Cycle Day</span><span class="stat-val">10.40 / 29.53</span></div>
-      <div class="stat-row"><span class="stat-key">% Through Cycle</span><span class="stat-val">35.2%</span></div>
-      <div class="stat-row"><span class="stat-key">Days to Full</span><span class="stat-val">~4.6 days</span></div>
-    </div>
-  </div>
+  <div class="stats-grid" id="stats"></div>
 
   <div class="cycle-section">
     <div class="section-header">Lunar Cycle Position — Both Dates Plotted</div>
     <div class="cycle-wrap">
       <canvas id="cycleChart"></canvas>
       <div class="cycle-legend">
-        <div class="legend-item">
-          <div class="legend-line" style="background:var(--gold)"></div>
-          Dec 13, 2005
-        </div>
-        <div class="legend-item">
-          <div class="legend-line" style="background:var(--silver)"></div>
-          Jan 13, 2001
-        </div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--gold)"></div><span id="legA"></span></div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--silver)"></div><span id="legB"></span></div>
       </div>
     </div>
   </div>
 
   <div class="interp">
     <div class="interp-title">Reading</div>
-    <p>
-      Two souls born under the <strong>Waxing Gibbous</strong> share a moon of refinement and anticipation —
-      not the raw spark of a new moon, not yet the peak of the full. This is the moon of those who
-      <strong>build toward something</strong>, who feel most alive in the approach.
-      Separated by less than one lunar day, these two moons are essentially
-      <strong>twins in light</strong>. The alignment suggests a natural resonance:
-      similar thresholds of patience, similar hunger for culmination,
-      and a shared instinct to <strong>perfect rather than simply begin</strong>.
-    </p>
+    <p id="reading"></p>
   </div>
 
-  <footer>Lunar data sourced from NASA RP 1349 · Phase calculations via synodic cycle</footer>
+  <footer>Phase from mean synodic month (29.530589 d) anchored to the 6 Jan 2000 new moon · accurate to within about a day · for fun, not fate</footer>
 </div>
 
 <script>
-// ─── Draw a Waxing Gibbous moon on a canvas ───────────────────────────
-// illumination: 0.0–1.0
-// color: CSS color string for the lit surface
-// bgColor: CSS color for the canvas background (transparent default)
-function drawMoon(canvasId, illumination, litColor, shadowColor) {
-  const canvas = document.getElementById(canvasId);
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const cx = W / 2, cy = H / 2;
-  const R = Math.min(W, H) / 2 - 10;
+const SYN = 29.530588853, EPOCH = Date.UTC(2000, 0, 6, 18, 14) / 864e5;
+const PHASES = [
+  ['New Moon', 'beginnings kept in the dark, intention before evidence'],
+  ['Waxing Crescent', 'the first brave sliver of light, hope that commits'],
+  ['First Quarter', 'decision and friction, the moon that pushes through'],
+  ['Waxing Gibbous', 'refinement and anticipation, the ones who build toward something'],
+  ['Full Moon', 'culmination and exposure, feelings worn on the outside'],
+  ['Waning Gibbous', 'gratitude and teaching, light given back'],
+  ['Last Quarter', 'release and reckoning, knowing what to let go'],
+  ['Waning Crescent', 'rest and quiet wisdom, the moon that listens']
+];
+const $ = id => document.getElementById(id);
+const esc = t => t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+function parse(v) { const [y, m, d] = v.split('-').map(Number); return (y && m && d) ? Date.UTC(y, m - 1, d, 12) : null; }
+function moon(t) {
+  const age = (((t / 864e5 - EPOCH) % SYN) + SYN) % SYN;
+  const illum = (1 - Math.cos(2 * Math.PI * age / SYN)) / 2;
+  const idx = Math.floor(((age / SYN) * 8 + 0.5)) % 8;
+  return { age, illum, waxing: age < SYN / 2, phase: PHASES[idx][0], idx, newMoon: t - age * 864e5, toFull: ((SYN / 2 - age) % SYN + SYN) % SYN };
+}
+const fmt = (t, long) => new Date(t).toLocaleDateString('en-US', { timeZone: 'UTC', month: long ? 'long' : 'short', day: 'numeric', year: 'numeric' });
+
+// Draws any phase: lit side on the right while waxing, on the left while waning
+function drawMoon(canvasId, m, litColor, shadowColor) {
+  const canvas = $(canvasId), ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 10;
   ctx.clearRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 1.35);
+  glow.addColorStop(0, litColor + '22'); glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, R * 1.35, 0, Math.PI * 2); ctx.fill();
 
-  // Outer glow
-  const glowGrad = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 1.35);
-  glowGrad.addColorStop(0, litColor + '22');
-  glowGrad.addColorStop(1, 'transparent');
-  ctx.fillStyle = glowGrad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, R * 1.35, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Compute terminator x offset for waxing gibbous
-  // illumination goes from 0.5 (first quarter) to 1.0 (full)
-  // The lit portion is on the right side; the terminator curves left
-  // x_terminator = R * cos(angle) where angle = acos(1 - 2*illum) for waxing
-  // For gibbous waxing: illum > 0.5, shadow is a thin crescent on left
-  const angle = Math.acos(Math.max(-1, Math.min(1, 1 - 2 * illumination)));
-  // angle close to 0 = nearly full (illum near 1)
-  // angle near PI/2 = first quarter (illum = 0.5)
-  const terminatorX = R * Math.cos(angle); // positive = terminator is to the right of center
-
-  // Draw full disc (lit)
-  const litGrad = ctx.createRadialGradient(cx + R * 0.2, cy - R * 0.1, 0, cx, cy, R);
-  litGrad.addColorStop(0, litColor + 'ff');
-  litGrad.addColorStop(0.7, litColor + 'cc');
-  litGrad.addColorStop(1, litColor + '88');
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.fillStyle = litGrad;
-  ctx.fill();
-
-  // Surface texture (subtle craters suggestion)
-  ctx.globalAlpha = 0.08;
-  const craters = [
-    {x: -0.3, y: -0.1, r: 0.12},
-    {x: 0.15, y: 0.3, r: 0.09},
-    {x: -0.1, y: 0.2, r: 0.07},
-    {x: 0.3, y: -0.3, r: 0.06},
-    {x: -0.25, y: 0.35, r: 0.05},
-  ];
-  craters.forEach(c => {
-    ctx.beginPath();
-    ctx.arc(cx + c.x * R, cy + c.y * R, c.r * R, 0, Math.PI * 2);
-    ctx.fillStyle = '#000';
-    ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-
-  // Clip the shadow onto the left side (waxing gibbous: small shadow on left)
-  // The shadow is bounded by: left half of circle + an ellipse for the terminator
-  // Shadow region: x < cx - terminatorX (for waxing gibbous with illum > 0.5)
-  // We draw an ellipse from top of disc to bottom, width = R - terminatorX
-  if (illumination < 0.999) {
-    ctx.save();
-    ctx.beginPath();
-    // Shadow cap: ellipse going from top arc to bottom arc on the left
-    const shadowW = R - terminatorX; // how wide the shadow is (at equator)
-
-    // Clip to the full disc
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.clip();
-
-    ctx.beginPath();
-    // Draw the shadow crescent: left arc of circle + terminator ellipse
-    // The terminator is at x = cx + terminatorX (inside disc, shifted right for waxing gibbous near full)
-    // For waxing gibbous (illum > 0.5): terminatorX is small positive → shadow is narrow on left
-    const tx = cx - terminatorX; // terminator center x
-
-    // Draw ellipse (terminator curve)
-    ctx.ellipse(tx, cy, Math.abs(shadowW), R, 0, -Math.PI / 2, Math.PI / 2, false);
-    // Arc back around the left of the circle
-    ctx.arc(cx, cy, R, Math.PI / 2, -Math.PI / 2, false);
-    ctx.closePath();
-
-    const shadowGrad = ctx.createLinearGradient(cx - R, cy, tx + Math.abs(shadowW), cy);
-    shadowGrad.addColorStop(0, shadowColor + 'f0');
-    shadowGrad.addColorStop(0.7, shadowColor + 'cc');
-    shadowGrad.addColorStop(1, shadowColor + '40');
-    ctx.fillStyle = shadowGrad;
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Rim
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.strokeStyle = litColor + '30';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = shadowColor + 'f0'; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  const lit = ctx.createRadialGradient(cx + R * 0.2, cy - R * 0.1, 0, cx, cy, R);
+  lit.addColorStop(0, litColor + 'ff'); lit.addColorStop(0.7, litColor + 'cc'); lit.addColorStop(1, litColor + '88');
+  const side = m.waxing ? 1 : -1, rx = R * Math.abs(1 - 2 * m.illum);
+  // lit half-disc
+  ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, Math.PI / 2, side < 0); ctx.closePath();
+  ctx.fillStyle = lit; ctx.fill();
+  // terminator ellipse: adds light past half, removes it before half
+  ctx.beginPath(); ctx.ellipse(cx, cy, Math.max(rx, 0.01), R, 0, 0, Math.PI * 2);
+  ctx.fillStyle = m.illum > 0.5 ? lit : shadowColor + 'f0'; ctx.fill();
+  ctx.globalAlpha = 0.08; ctx.fillStyle = '#000';
+  [[-0.3,-0.1,0.12],[0.15,0.3,0.09],[-0.1,0.2,0.07],[0.3,-0.3,0.06],[-0.25,0.35,0.05]].forEach(([x,y,r]) => { ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, r * R, 0, Math.PI * 2); ctx.fill(); });
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.strokeStyle = litColor + '30'; ctx.lineWidth = 1.5; ctx.stroke();
 }
 
-// Dec 13 2005: illumination 94.6%, waxing gibbous
-drawMoon('moon1', 0.946, '#c9a84c', '#04030a');
-
-// Jan 13 2001: illumination 78.4%, waxing gibbous
-drawMoon('moon2', 0.784, '#8fa8c8', '#04030a');
-
-// ─── Lunar cycle chart ────────────────────────────────────────────────
-(function() {
-  const canvas = document.getElementById('cycleChart');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const W = rect.width - 48; // minus padding
-  const H = 140;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const padL = 36, padR = 20, padT = 16, padB = 28;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-  const steps = 200;
-
-  // Draw illumination curve (full synodic cycle)
-  function illumAtDay(d) {
-    // simple cos model: 0 at new, 1 at full (day 14.77)
-    return (1 - Math.cos(2 * Math.PI * d / 29.53)) / 2;
-  }
-
-  // Background grid
-  ctx.strokeStyle = 'rgba(201,168,76,0.07)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + (plotH / 4) * i;
-    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
-  }
-  // Phase labels on x-axis
-  const phases = [{d: 0, label: 'New'}, {d: 7.38, label: '1Q'}, {d: 14.77, label: 'Full'}, {d: 22.15, label: '3Q'}, {d: 29.53, label: 'New'}];
-  ctx.fillStyle = 'rgba(107,116,144,0.7)';
-  ctx.font = '9px Cinzel, serif';
-  ctx.textAlign = 'center';
-  phases.forEach(p => {
-    const x = padL + (p.d / 29.53) * plotW;
-    ctx.fillText(p.label, x, H - 8);
-    ctx.strokeStyle = 'rgba(201,168,76,0.05)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
-    ctx.setLineDash([]);
+function drawCycle(a, b, gap) {
+  const canvas = $('cycleChart'), dpr = window.devicePixelRatio || 1;
+  const W = Math.max(200, canvas.parentElement.getBoundingClientRect().width - 48), H = 140;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const padL = 36, padR = 20, padT = 22, padB = 28, plotW = W - padL - padR, plotH = H - padT - padB;
+  const X = d => padL + (d / SYN) * plotW, ill = d => (1 - Math.cos(2 * Math.PI * d / SYN)) / 2, Y = v => padT + plotH - v * plotH;
+  ctx.strokeStyle = 'rgba(201,168,76,0.07)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const y = padT + plotH / 4 * i; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke(); }
+  ctx.font = '10px Cinzel, serif'; ctx.fillStyle = 'rgba(107,116,144,0.8)'; ctx.textAlign = 'center';
+  [[0,'New'],[SYN/4,'1Q'],[SYN/2,'Full'],[3*SYN/4,'3Q'],[SYN,'New']].forEach(([d, l]) => {
+    ctx.fillText(l, X(d), H - 8); ctx.strokeStyle = 'rgba(201,168,76,0.05)'; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(X(d), padT); ctx.lineTo(X(d), padT + plotH); ctx.stroke(); ctx.setLineDash([]);
   });
-
-  // Y-axis labels
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(107,116,144,0.7)';
-  ['0%','50%','100%'].forEach((l, i) => {
-    const y = padT + plotH - (i * plotH / 2);
-    ctx.fillText(l, padL - 5, y + 3);
+  ctx.textAlign = 'right'; ['0%','50%','100%'].forEach((l, i) => ctx.fillText(l, padL - 5, padT + plotH - i * plotH / 2 + 3));
+  ctx.beginPath(); for (let i = 0; i <= 200; i++) { const d = i / 200 * SYN; i ? ctx.lineTo(X(d), Y(ill(d))) : ctx.moveTo(X(d), Y(ill(d))); }
+  const cg = ctx.createLinearGradient(padL, 0, padL + plotW, 0);
+  cg.addColorStop(0, 'rgba(107,116,144,0.3)'); cg.addColorStop(0.5, 'rgba(200,207,224,0.5)'); cg.addColorStop(1, 'rgba(107,116,144,0.3)');
+  ctx.strokeStyle = cg; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.lineTo(padL + plotW, padT + plotH); ctx.lineTo(padL, padT + plotH); ctx.closePath();
+  const fg = ctx.createLinearGradient(0, padT, 0, padT + plotH); fg.addColorStop(0, 'rgba(200,207,224,0.08)'); fg.addColorStop(1, 'rgba(200,207,224,0)');
+  ctx.fillStyle = fg; ctx.fill();
+  [[a.age, '#c9a84c'], [b.age, '#8fa8c8']].forEach(([d, c]) => {
+    const x = X(d), y = Y(ill(d));
+    ctx.strokeStyle = c + '88'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x, padT + plotH); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 14); g.addColorStop(0, c + '60'); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); ctx.strokeStyle = '#04030a'; ctx.lineWidth = 1.5; ctx.stroke();
   });
-
-  // Draw curve
-  ctx.beginPath();
-  for (let i = 0; i <= steps; i++) {
-    const d = (i / steps) * 29.53;
-    const ill = illumAtDay(d);
-    const x = padL + (d / 29.53) * plotW;
-    const y = padT + plotH - ill * plotH;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  // bracket over the shorter arc between the two (skip if it wraps the cycle edge)
+  const lo = Math.min(a.age, b.age), hi = Math.max(a.age, b.age);
+  if (hi - lo <= SYN / 2) {
+    const x1 = X(lo), x2 = X(hi), by = padT - 8;
+    ctx.strokeStyle = 'rgba(201,168,76,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, by + 4); ctx.lineTo(x1, by); ctx.lineTo(x2, by); ctx.lineTo(x2, by + 4); ctx.stroke();
+    ctx.fillStyle = 'rgba(201,168,76,0.8)'; ctx.textAlign = 'center'; ctx.fillText(gap.toFixed(2) + 'd', (x1 + x2) / 2, by - 3);
   }
-  const curveGrad = ctx.createLinearGradient(padL, 0, padL + plotW, 0);
-  curveGrad.addColorStop(0, 'rgba(107,116,144,0.3)');
-  curveGrad.addColorStop(0.5, 'rgba(200,207,224,0.5)');
-  curveGrad.addColorStop(1, 'rgba(107,116,144,0.3)');
-  ctx.strokeStyle = curveGrad;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+}
 
-  // Fill under curve
-  ctx.lineTo(padL + plotW, padT + plotH);
-  ctx.lineTo(padL, padT + plotH);
-  ctx.closePath();
-  const fillGrad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-  fillGrad.addColorStop(0, 'rgba(200,207,224,0.08)');
-  fillGrad.addColorStop(1, 'rgba(200,207,224,0)');
-  ctx.fillStyle = fillGrad;
-  ctx.fill();
+function card(title, rows, fill) {
+  return '<div class="stat-card"><div class="stat-date">' + title + '</div>' +
+    rows.map(([k, v]) => '<div class="stat-row"><span class="stat-key">' + k + '</span><span class="stat-val">' + v + '</span></div>').join('') +
+    (fill != null ? '<div class="illumination-bar"><div class="illumination-fill" style="width:' + fill + '%"></div></div>' : '') + '</div>';
+}
 
-  // Plot the two dates as vertical lines + dots
-  const dates = [
-    {day: 11.37, color: '#c9a84c', label: 'Dec 13, 2005'},
-    {day: 10.40, color: '#8fa8c8', label: 'Jan 13, 2001'},
-  ];
+function reading(a, b, gap, A, B) {
+  const pa = PHASES[a.idx], pb = PHASES[b.idx];
+  if (a.idx === b.idx) {
+    return 'Both moons are <strong>' + pa[0] + '</strong> — ' + pa[1] + '. ' +
+      (gap < 1.5 ? 'Separated by less than ' + (gap < 1 ? 'one lunar day' : 'two lunar days') + ', these two are essentially <strong>twins in light</strong>: similar thresholds, similar rhythms, an instinct to move in step.'
+                 : 'Same phase, different moments in it — a shared temperament with room for each to lead.');
+  }
+  const opp = gap > SYN * 0.42;
+  const s = '<strong>' + esc(A) + '</strong> carries the <strong>' + pa[0] + '</strong> (' + pa[1] + '); <strong>' + esc(B) + '</strong> carries the <strong>' + pb[0] + '</strong> (' + pb[1] + '). ';
+  if (opp) return s + 'Nearly opposite in the cycle, one is full when the other is dark — <strong>a polarity pairing</strong>. Where one is loud the other is quiet; the pull between them is the point.';
+  if (gap < SYN / 8) return s + 'Neighbours in the sky, a day or three apart — <strong>close enough to finish each other\'s phase</strong>.';
+  if (a.waxing === b.waxing) return s + 'Both on the ' + (a.waxing ? 'rising' : 'falling') + ' half of the cycle, they share a direction — <strong>' + (a.waxing ? 'building' : 'distilling') + ' together</strong> — at different speeds.';
+  return s + 'One growing, one releasing: <strong>a complementary pair</strong>, each holding what the other is about to need.';
+}
 
-  dates.forEach(d => {
-    const ill = illumAtDay(d.day);
-    const x = padL + (d.day / 29.53) * plotW;
-    const y = padT + plotH - ill * plotH;
+function update(push) {
+  const ta = parse($('dA').value), tb = parse($('dB').value);
+  if (ta == null || tb == null) return;
+  const a = moon(ta), b = moon(tb);
+  const A = $('nA').value.trim() || fmt(ta), B = $('nB').value.trim() || fmt(tb);
+  let gap = Math.abs(a.age - b.age); gap = Math.min(gap, SYN - gap);
+  const score = Math.round(100 * (1 + Math.cos(2 * Math.PI * gap / SYN)) / 2);
+  const pct = v => (v * 100).toFixed(1) + '%';
+  $('subtitle').innerHTML = esc(fmt(ta, 1)) + ' &nbsp;·&nbsp; ' + esc(fmt(tb, 1));
+  $('score').textContent = score + '%';
+  $('compatDesc').innerHTML = a.idx === b.idx
+    ? 'Both moons are <strong>' + a.phase + '</strong>, separated by only <strong>' + gap.toFixed(2) + ' days</strong> in lunar age.'
+    : '<strong>' + a.phase + '</strong> meets <strong>' + b.phase + '</strong>, <strong>' + gap.toFixed(2) + ' days</strong> apart in the ' + SYN.toFixed(2) + '-day cycle.';
+  drawMoon('moon1', a, '#c9a84c', '#04030a');
+  drawMoon('moon2', b, '#8fa8c8', '#04030a');
+  $('lblA').textContent = A + ' — ' + pct(a.illum); $('lblB').textContent = B + ' — ' + pct(b.illum);
+  $('legA').textContent = A; $('legB').textContent = B;
+  $('delta').innerHTML = 'Δ Phase: ' + gap.toFixed(2) + ' lunar days apart &nbsp;·&nbsp; Δ Illumination: ' + (Math.abs(a.illum - b.illum) * 100).toFixed(1) + '%';
+  const info = (m, t, n) => card(esc(n), [['Phase', m.phase], ['Moon Age', m.age.toFixed(2) + ' days'], ['Illumination', pct(m.illum)], ['New Moon Prior', fmt(m.newMoon)]], (m.illum * 100).toFixed(1));
+  const pos = m => card('Phase Position (0–29.5 days)', [['Cycle Day', m.age.toFixed(2) + ' / 29.53'], ['% Through Cycle', (m.age / SYN * 100).toFixed(1) + '%'], ['Days to Full', m.toFull < 0.5 || m.toFull > SYN - 0.5 ? 'Full now' : '~' + m.toFull.toFixed(1) + ' days']]);
+  $('stats').innerHTML = info(a, ta, A) + info(b, tb, B) + pos(a) + pos(b);
+  $('reading').innerHTML = reading(a, b, gap, A, B);
+  drawCycle(a, b, gap);
+  if (push) {
+    const q = new URLSearchParams({ a: $('dA').value, b: $('dB').value });
+    if ($('nA').value.trim()) q.set('na', $('nA').value.trim());
+    if ($('nB').value.trim()) q.set('nb', $('nB').value.trim());
+    history.replaceState(null, '', '?' + q);
+  }
+}
 
-    // Vertical line
-    ctx.strokeStyle = d.color + '88';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(x, padT + plotH); ctx.lineTo(x, y); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Glow
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, 14);
-    glow.addColorStop(0, d.color + '60');
-    glow.addColorStop(1, 'transparent');
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
-
-    // Dot
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = d.color;
-    ctx.fill();
-    ctx.strokeStyle = '#04030a';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  });
-
-  // Bracket showing how close they are
-  const x1 = padL + (10.40 / 29.53) * plotW;
-  const x2 = padL + (11.37 / 29.53) * plotW;
-  const bracketY = padT + 8;
-  ctx.strokeStyle = 'rgba(201,168,76,0.5)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(x1, bracketY + 4); ctx.lineTo(x1, bracketY);
-  ctx.lineTo(x2, bracketY);
-  ctx.lineTo(x2, bracketY + 4);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(201,168,76,0.7)';
-  ctx.font = '8px Cinzel, serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('0.97d', (x1 + x2) / 2, bracketY - 2);
-})();
+const Q = new URLSearchParams(location.search), ok = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+$('dA').value = ok(Q.get('a')) ? Q.get('a') : '2005-12-13';
+$('dB').value = ok(Q.get('b')) ? Q.get('b') : '2001-01-13';
+$('nA').value = (Q.get('na') || '').slice(0, 24); $('nB').value = (Q.get('nb') || '').slice(0, 24);
+['dA', 'dB', 'nA', 'nB'].forEach(id => $(id).addEventListener('input', () => update(true)));
+$('picker').addEventListener('submit', e => { e.preventDefault(); update(true); });
+$('swap').onclick = () => { [$('dA').value, $('dB').value] = [$('dB').value, $('dA').value]; [$('nA').value, $('nB').value] = [$('nB').value, $('nA').value]; update(true); };
+$('share').onclick = () => { update(true); (navigator.clipboard ? navigator.clipboard.writeText(location.href) : Promise.reject()).then(() => { $('share').textContent = 'Copied'; setTimeout(() => $('share').textContent = 'Copy link', 1400); }, () => prompt('Copy this link', location.href)); };
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => update(false), 120); });
+update(false);
 </script>
 </body>
 </html>
