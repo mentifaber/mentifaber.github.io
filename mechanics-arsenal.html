@@ -142,6 +142,32 @@ input[type=text]::placeholder{color:#4d6378}
 .prow .pn{font:600 15px var(--body)}
 .prow .ps{font:400 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex:none}
 .dot{display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--mag);box-shadow:0 0 6px var(--mag)}
+#mbar{display:flex;align-items:center;gap:10px;padding:8px 12px 0;flex:none}
+#mbar .ml{font:400 10px var(--mono);letter-spacing:.14em;color:var(--mag);text-transform:uppercase}
+#mbar button{flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,43,214,.08);border:1px solid rgba(255,43,214,.45);color:#ffe1f8;padding:7px 10px;cursor:pointer;font:700 12px var(--display);letter-spacing:.06em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);min-height:36px;text-align:left}
+#mbar button span:last-child{font:400 11px var(--mono);color:var(--mag)}
+#picker{position:fixed;inset:0;z-index:50;background:rgba(3,4,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 18px;overflow-y:auto}
+#picker h2{margin:0;font:900 20px var(--display);letter-spacing:.1em;text-transform:uppercase;color:#fff;text-shadow:0 0 12px rgba(0,240,255,.5)}
+#picker .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+#picker .ptag{font:400 10px var(--mono);letter-spacing:.18em;color:var(--mag)}
+#pkCats{margin-bottom:16px}
+#pkGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;max-width:1100px}
+.mcard{display:flex;flex-direction:column;gap:6px;text-align:left;background:linear-gradient(135deg,rgba(0,240,255,.08),rgba(255,43,214,.06));border:1px solid var(--line-strong);padding:16px;cursor:pointer;color:var(--text);clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));min-height:170px}
+.mcard[aria-pressed="true"]{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan),0 0 24px rgba(0,240,255,.25)}
+.mcard .mcat{font:400 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mag)}
+.mcard b{font:800 18px/1.15 var(--display);letter-spacing:.04em;text-transform:uppercase;color:#fff}
+.mcard .msub{font:500 14px var(--body);color:var(--muted)}
+.mcard .mbad{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.mcard .mbad i{font:400 11px var(--mono);font-style:normal;color:var(--yel);border:1px solid rgba(247,233,74,.35);padding:2px 7px}
+.mcard .mgo{font:700 12px var(--display);letter-spacing:.12em;color:var(--cyan);text-transform:uppercase;margin-top:6px}
+.jogpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jogpad .chip{font:800 15px var(--display);min-height:48px;text-align:center}
+.tcpread{font:400 13px/1.6 var(--mono);color:#9ff8ff;background:#050811;border:1px solid var(--line);padding:10px 12px;letter-spacing:.06em}
+.tcpread b{color:var(--yel);font-weight:400}
+.tcpread .w{color:var(--mag)}
+.prog{font:400 12px/1.5 var(--mono);background:#050811;border:1px solid var(--line);padding:8px 0;max-height:240px;overflow:auto;white-space:pre}
+.prog .pl{padding:1px 10px;color:#b9d4df}
+.prog .pl.on{background:var(--cyan);color:var(--accent-ink)}
 /* ---------- landscape phones: panel on the right, full height */
 @media (orientation:landscape) and (max-height:600px){
   #app{grid-template-columns:minmax(0,1fr) min(44vw,360px);grid-template-rows:minmax(0,1fr)}
@@ -185,6 +211,7 @@ input[type=text]::placeholder{color:#4d6378}
     <div class="hudframe" aria-hidden="true"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
     <div class="brand"><div class="tag">// SYS.ONLINE &middot; NODE XC70</div><h1>Mechanic's <span>Arsenal</span></h1><p>2008 Volvo XC70 3.2 AWD &middot; B6324S I6</p></div>
     <div class="hudbtns">
+      <button class="ibtn" id="btnMachine" aria-pressed="false" title="Choose a machine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="lb">Machine</span></button>
       <button class="ibtn" id="btnPanel" aria-pressed="true" title="Show or hide the control panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16"/><path d="M14 4v16"/></svg><span class="lb">Panel</span></button>
       <button class="ibtn" id="btnXray" aria-pressed="false" title="X-ray the body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4v16"/></svg><span class="lb">X-ray</span></button>
       <button class="ibtn" id="btnLights" aria-pressed="false" title="Headlights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8c5-3 9-3 9 4s-4 7-9 4z"/><path d="M16 7l5-1M16 12h5M16 17l5 1"/></svg><span class="lb">Lights</span></button>
@@ -198,9 +225,11 @@ input[type=text]::placeholder{color:#4d6378}
     <button class="ibtn" id="exitPhoto" hidden>Show HUD</button>
   </div>
   <aside id="sheet">
+    <div id="mbar"><span class="ml">Machine</span><button type="button" id="mSwitch"><span id="mName">Volvo XC70 3.2 AWD</span><span>Switch &#8644;</span></button></div>
     <nav id="tabs" role="tablist" aria-label="Arsenal controls"></nav>
     <div id="panes"></div>
   </aside>
+  <div id="picker" hidden role="dialog" aria-modal="true" aria-label="Choose a machine"><div class="ph"><div><div class="ptag">// ARSENAL INDEX</div><h2>Select machine</h2></div><button class="ibtn" id="pkClose" type="button">Close</button></div><div id="pkCats"></div><div id="pkGrid"></div></div>
 </div>
 
 <script>/**
@@ -2071,8 +2100,8 @@ function syncTail(){
   amberMat.emissiveIntensity=S.head?.4:.02;
   car.sprites.forEach(function(o){if(o.k==='tail')o.s.material.opacity=S.brake?.9:(S.head?.35:0);});
 }
-function setReflect(on){reflectOn=on;mirrorRoot.visible=on;floorMat.opacity=on?ENVS[envName].op:.94;}
-function setShadows(on){S.shadows=on;shadowPlane.visible=on;blob.visible=on;}
+function setReflect(on){reflectOn=on;mirrorRoot.visible=on&&MACH==='xc70';if(typeof robotMirrorRoot!=='undefined'&&robotMirrorRoot)robotMirrorRoot.visible=on&&MACH==='lrmate';floorMat.opacity=on?ENVS[envName].op:.94;}
+function setShadows(on){S.shadows=on;shadowPlane.visible=on;blob.visible=on&&MACH==='xc70';}
 
 var fogMat=new THREE.MeshPhysicalMaterial({color:lin('#c9d3de'),metalness:.5,roughness:.12,clearcoat:1,clearcoatRoughness:.03,emissive:lin('#cfe2ff'),emissiveIntensity:0});
 
@@ -2262,7 +2291,10 @@ var VIEWS=[
 var tween=null;
 function flyPose(p,t){tween={t0:performance.now(),d:1100,p0:camera.position.clone(),t0v:controls.target.clone(),p1:p,t1:t};}
 function goView(i){
-  var v=VIEWS[i],t=new THREE.Vector3().fromArray(v.t),p=new THREE.Vector3().fromArray(v.p);
+  var v=VIEWS[i],t,p;
+  if(v.tcp){t=tcpWorld();p=t.clone().add(new THREE.Vector3(.45,.25,.55));tween={t0:performance.now(),d:1100,p0:camera.position.clone(),t0v:controls.target.clone(),p1:p,t1:t};return;}
+  t=new THREE.Vector3().fromArray(v.t);p=new THREE.Vector3().fromArray(v.p);
+  if(MACH==='lrmate'&&RB.mount==='ceiling'){t.y+=.45;p.y+=.45;}
   if(!v.fixed&&camera.aspect<1.1)p.sub(t).multiplyScalar(1.4).add(t);
   tween={t0:performance.now(),d:1100,p0:camera.position.clone(),t0v:controls.target.clone(),p1:p,t1:t};
 }
@@ -2309,9 +2341,11 @@ var ICON={
   cabin:'<path d="M6 20v-6a4 4 0 0 1 4-4h0V5h4v5a4 4 0 0 1 4 4v6"/><path d="M4 20h16"/>',
   scene:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
   view:'<rect x="3" y="7" width="18" height="13"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l2-3h4l2 3"/>',
-  specs:'<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'
+  specs:'<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+  jog:'<circle cx="6" cy="18" r="3"/><path d="M8 16l5-7 5 3"/><circle cx="13" cy="9" r="2"/><path d="M18 12l2-5"/>',
+  cell:'<rect x="3" y="13" width="18" height="8"/><path d="M8 13V8l4-4 3 3"/>'
 };
-var TABS=[['parts','Scan'],['arsenal','Arsenal'],['paint','Paint'],['cabin','Cabin'],['scene','Scene'],['view','Camera'],['specs','Data']];
+var TABS=[['parts','Scan'],['arsenal','Arsenal'],['jog','Motion'],['cell','Cell'],['paint','Paint'],['cabin','Cabin'],['scene','Scene'],['view','Camera'],['specs','Data']];
 var tabsEl=$('#tabs'),panesEl=$('#panes'),panes={};
 function openTab(id){TABS.forEach(function(x){$('#tab-'+x[0]).setAttribute('aria-selected',String(x[0]===id));panes[x[0]].hidden=x[0]!==id;});panesEl.scrollTop=0;}
 TABS.forEach(function(t,i){
@@ -2451,11 +2485,12 @@ function setGhost(v){
   XR.opacity=v>.3?.9:0;XR.visible=v>.3;
   GH.forEach(function(m){m.transparent=t;m.opacity=1-v*.93;m.depthWrite=!t;m.needsUpdate=true;});
 }
-var LIST=car.parts.filter(function(p){return p.meta;}),byId={};
+var MACH='xc70',CUR={main:car,mirror:mirrorCar};
+var LIST=CUR.main.parts.filter(function(p){return p.meta;}),byId={};
 LIST.forEach(function(p){byId[p.meta.id]=p;});
 var sysNames=['All'];LIST.forEach(function(p){if(sysNames.indexOf(p.meta.sys)<0)sysNames.push(p.meta.sys);});
 var PS={sel:null,iso:false,sys:'All',q:'',match:null,box:null};
-var INTERNAL={'Climate control':1,'Safety':1,'Doors & closures':1,'Audio':1,'Engine':1,'Intake & exhaust':1,'Fuel':1,'Driveline':1,'Suspension':1,'Steering':1,'Brakes':1,'Cooling & electrical':1,'Interior':1};
+var INTERNAL={'Drives':1,'Cabling':1,'Climate control':1,'Safety':1,'Doors & closures':1,'Audio':1,'Engine':1,'Intake & exhaust':1,'Fuel':1,'Driveline':1,'Suspension':1,'Steering':1,'Brakes':1,'Cooling & electrical':1,'Interior':1};
 function scorePart(p,toks){
   var m=p.meta,n=m.name.toLowerCase(),tg=(m.tags||'').toLowerCase(),d=m.desc.toLowerCase(),sy=m.sys.toLowerCase(),sc=0;
   for(var i=0;i<toks.length;i++){var t=toks[i],h=0;
@@ -2466,7 +2501,7 @@ function scorePart(p,toks){
 function applyVis(){
   LIST.forEach(function(p){
     var m=p.meta,v=(PS.sys==='All'||m.sys===PS.sys)&&(!PS.match||PS.match[m.id])&&(!PS.iso||!PS.sel||m.id===PS.sel);
-    p.o.visible=v;mirrorCar.parts[p.i].o.visible=v;
+    v=v&&!p.o.userData.off;p.o.visible=v;var mp=CUR.mirror.parts[p.i];if(mp)mp.o.visible=v;
   });
 }
 function partsBox(list){
@@ -2501,13 +2536,28 @@ function svcRows(id){
     'taillights':[['Brake / tail','LED','S6'],['Rear turn','12496','S6'],['Plate lamp','6418','S6'],['Lens',TAILS[FIT.tail].n,'']],
     'plate-rear':[['Plate lamp','6418','S6']]
   };
+  var RM={
+    'r-batt':[['Replace','Every 1 year (built-in) / 1.5 years (external box)','R6'],['If flat','Encoder data lost; re-master the robot','R6']],
+    'r-j1-drive':[['Grease','4 yrs / 15,360 h (2 yrs / 7,680 h heavy use)','R6'],['Motion',RVAR[RB.v].J[0][0]+'° at '+RVAR[RB.v].J[0][1]+'°/s','']],
+    'r-j2-drive':[['Grease','4 yrs / 15,360 h (2 yrs / 7,680 h heavy use)','R6'],['Motion',RVAR[RB.v].J[1][0]+'° at '+RVAR[RB.v].J[1][1]+'°/s','']],
+    'r-j3-drive':[['Grease','4 yrs / 15,360 h (2 yrs / 7,680 h heavy use)','R6'],['Motion',RVAR[RB.v].J[2][0]+'° at '+RVAR[RB.v].J[2][1]+'°/s','']],
+    'r-stop-j3':[['Stopper','A290-7142-X427','R6'],['Pin','A6-PS-8X20S','R6']],
+    'r-stop-j1':[['Rule','Do not modify the stoppers','R6']],
+    'r-flange':[['Payload',RVAR[RB.v].pay+' kg','R1'],['Wrist moments',RVAR[RB.v].mom,'']],
+    'r-wrist':[['Wrist moments',RVAR[RB.v].mom,''],['Repeatability',RVAR[RB.v].rep,'']],
+    'r-eoat':[['Fitted',TOOLS[RB.tool].n,''],['TCP offset',Math.round(TOOLS[RB.tool].L*1000+80)+' mm from wrist bend axis','']],
+    'r-controller':[['Supply','200–230 VAC','R2'],['Average draw','0.5 kW','R2']],
+    'r-cable-base':[['Check','Daily: connectors and cable jackets','R6']],
+    'r-base':[['Mass',RVAR[RB.v].mass+' kg arm','R1'],['Mounting','Floor, inverted, angle','R4']]
+  };
+  if(RM[id])return RM[id];
   if(/^wheel-/.test(id))return W;
   if(/^brake-/.test(id))return [['Caliper',CALS[FIT.cal].n,''],['Rotor',ROTORS[FIT.rotor].n,''],['Wheel bolts','140 Nm (103 lb-ft)','S1']];
   return M[id]||null;
 }
 function renderCard(){
   card.textContent='';
-  if(!PS.sel){card.append(el('p',{class:'note',text:'Tap any part on the car, or pick one below, to see what it is and where it lives.'}));return;}
+  if(!PS.sel){card.append(el('p',{class:'note',text:'Tap any part on the model, or pick one below, to see what it is and where it lives.'}));return;}
   var p=byId[PS.sel],m=p.meta;
   var rel=LIST.filter(function(x){return x.meta.sys===m.sys&&x!==p;}).slice(0,8);
   var isoB=el('button',{class:'chip',type:'button','aria-pressed':String(PS.iso),text:'Isolate'});
@@ -2519,9 +2569,11 @@ function renderCard(){
   var fromModel=m.src==='model';
   var sv=svcRows(m.id),svT=null;
   if(sv){svT=el('table',{class:'svc'});sv.forEach(function(r){var v=el('td',{},el('b',{text:r[1]}));if(r[2])v.append(el('span',{class:'src',text:'  '+r[2]}));svT.append(el('tr',{},el('td',{text:r[0]}),v));});}
-  card.append(el('div',{class:'pill',text:m.sys}),el('h3',{text:m.name}),el('p',{class:'desc',text:m.desc}),svT,el('p',{class:'note',text:fromModel?'Geometry from your supplied XC70 model.':'Placeholder shape, placed to show layout.'}),el('div',{class:'chips'},flyB,isoB,clr),
+  card.append(el('div',{class:'pill',text:m.sys}),el('h3',{text:m.name}),el('p',{class:'desc',text:m.desc}),svT,el('p',{class:'note',text:fromModel?'Geometry from your supplied XC70 model.':m.src==='robot'?'Procedural model built to published dimensions, not FANUC CAD.':'Placeholder shape, placed to show layout.'}),el('div',{class:'chips'},flyB,isoB,clr),
     rel.length?el('div',{class:'lbl rel',text:'Also in '+m.sys}):null,rel.length?relW:null);
 }
+var sysWrap=null;
+function buildSysChips(){sysNames=['All'];LIST.forEach(function(p){if(sysNames.indexOf(p.meta.sys)<0)sysNames.push(p.meta.sys);});PS.sys='All';if(!sysWrap)return;sysWrap.textContent='';sysWrap.append(chipGroup(sysNames,0,function(i){PS.sys=sysNames[i];renderList();applyVis();}));}
 function renderList(){
   var toks=PS.q.toLowerCase().split(/\s+/).filter(Boolean),rows=[];
   LIST.forEach(function(p){
@@ -2553,10 +2605,11 @@ function renderList(){
   });
   countEl=el('span',{class:'val',text:''});
   var head=el('div',{class:'grp'},el('label',{for:'partSearch'},el('span',{text:'Find a part'}),countEl),search);
-  var sysChips=chipGroup(sysNames,0,function(i){PS.sys=sysNames[i];renderList();applyVis();});
+  sysWrap=el('div');buildSysChips();
   var view=chipGroup(['Assembled','X-ray','Lift body','Full explode'],0,function(i){
     var pr=[[0,0],[0,.88],[.55,0],[1,0]][i];
     syncSlider('sExplode',pr[0]);syncSlider('sGhost',pr[1]);
+    if(MACH==='lrmate'){var cy=RB.mount==='ceiling'?.5:0;if(i>=2)flyPose(new THREE.Vector3(2.8,2.0+cy,2.8),new THREE.Vector3(0,.9+cy,0));else goView(0);return;}
     if(i===3)flyPose(new THREE.Vector3(10.5,6.5,10.5),new THREE.Vector3(0,1.3,0));
     else if(i===2)flyPose(new THREE.Vector3(8,4,8),new THREE.Vector3(0,1.0,0));
     else goView(0);
@@ -2567,7 +2620,7 @@ function renderList(){
   var sGh=sliderRow('sGhost','X-ray body',0,1,.01,0,function(v){return Math.round(v*100)+'%';},function(v){setGhost(v);});
   syncSlider=function(id,v){var i=$('#'+id);i.value=v;i.dispatchEvent(new Event('input'));};
   pane.append(head,card,el('div',{class:'grp'},el('div',{class:'lbl',text:'Manual view'}),view),sEx,sGh,
-    el('div',{class:'grp'},el('div',{class:'lbl',text:'System'}),sysChips),
+    el('div',{class:'grp'},el('div',{class:'lbl',text:'System'}),sysWrap),
     el('div',{class:'grp'},el('div',{class:'lbl',text:'Parts list'}),listEl),
     el('p',{class:'note',text:'Descriptions are general reference. They are not Volvo part numbers, torque values or procedures. Use the factory service manual for those.'}));
   renderCard();renderList();
@@ -2584,6 +2637,491 @@ function renderList(){
     for(var i=0;i<hits.length;i++){var o=hits[i].object;while(o&&!o.userData.pid)o=o.parent;if(o){selectPart(o.userData.pid,false,true);return;}}
   });
 })();
+
+
+/* ================================================= FANUC LR Mate 200iD series */
+var RVAR=[
+ {id:'200iD',n:'LR Mate 200iD',ax:6,pay:7,reach:717,rep:'±0.01 mm',mass:25,a2:.330,d4:.335,
+  J:[[340,450],[245,380],[420,520],[380,550],[250,545],[720,1000]],mom:'J4 16.6 · J5 16.6 · J6 9.4 N·m',src:'R1 R2 R6'},
+ {id:'7H',n:'LR Mate 200iD/7H',ax:5,pay:7,reach:717,rep:'±0.01 mm',mass:24,a2:.330,d4:.335,
+  J:[[340,450],[245,380],[420,520],null,[250,545],[720,1500]],mom:'J4 16.6 · J5 4.0 N·m',src:'R3 R6',
+  note:'5-axis: no forearm roll. On this model J4 is the wrist bend and J5 the flange roll. J2 and J3 figures assumed equal to the standard arm; confirm in B-83494EN.'},
+ {id:'7L',n:'LR Mate 200iD/7L',ax:6,pay:7,reach:911,rep:'±0.03 mm',mass:27,a2:.440,d4:.420,
+  J:[[340,370],[245,310],[430,410],[380,550],[250,545],[720,1000]],mom:'J4 16.6 · J5 16.6 · J6 9.4 N·m',src:'R4 R6'},
+ {id:'4S',n:'LR Mate 200iD/4S',ax:6,pay:4,reach:550,rep:'±0.02 mm',mass:20,a2:.260,d4:.240,
+  J:[[340,460],[230,460],[397,520],[380,560],[240,560],[720,900]],mom:'see manual',src:'R5',note:'Short arm. Link lengths here are derived from the published reach and are approximate.'}
+];
+var RCOL=[{n:'FANUC yellow',c:'#f2c200'},{n:'Food-grade white',c:'#eceae4'},{n:'Stealth black',c:'#17181b'},{n:'Neon cyan (show)',c:'#00c2d2'}];
+var TOOLS=[{n:'Bare flange',L:0},{n:'Parallel gripper',L:.115},{n:'Vacuum cup',L:.092},{n:'Deburring spindle',L:.165},{n:'Vision + gripper',L:.115}];
+var RB={v:1,mount:'floor',col:0,tool:1,grip:0,gripT:0,q:[0,0,0,0,-90,0],ctrl:true,table:true,tcp:true,tape:true,run:false,ovr:60,step:10,warn:''};
+
+var rPaint=ghostMat(new THREE.MeshPhysicalMaterial({color:lin('#f2c200'),roughness:.36,metalness:.05,clearcoat:.7,clearcoatRoughness:.18}));
+var rCover=ghostMat(new THREE.MeshStandardMaterial({color:lin('#1a1b1e'),roughness:.5,metalness:.35}));
+var rCast=ghostMat(new THREE.MeshStandardMaterial({color:lin('#33363b'),roughness:.6,metalness:.4}));
+var rMotor=new THREE.MeshStandardMaterial({color:lin('#101113'),roughness:.32,metalness:.6});
+var rRed=new THREE.MeshStandardMaterial({color:lin('#9aa1a8'),roughness:.3,metalness:1});
+var rPed=new THREE.MeshStandardMaterial({color:lin('#2b3440'),roughness:.55,metalness:.5});
+var rPad=new THREE.MeshStandardMaterial({color:lin('#e0681a'),roughness:.6});
+var rWork=new THREE.MeshStandardMaterial({color:lin('#2f6fd6'),roughness:.3,metalness:.8});
+var rCup=new THREE.MeshStandardMaterial({color:lin('#1d4f7a'),roughness:.6});
+var rTable=new THREE.MeshStandardMaterial({color:lin('#8c9399'),roughness:.35,metalness:.85});
+var rCtl=new THREE.MeshStandardMaterial({color:lin('#2a2c30'),roughness:.55,metalness:.3});
+var rEstop=new THREE.MeshStandardMaterial({color:lin('#c8141c'),roughness:.35});
+var rLed=new THREE.MeshBasicMaterial({color:0x39ff14});
+var pendantTex=new THREE.CanvasTexture(document.createElement('canvas'));pendantTex.encoding=THREE.sRGBEncoding;
+var rScreen=new THREE.MeshBasicMaterial({map:pendantTex});
+var tapeTex=(function(){var c=document.createElement('canvas');c.width=256;c.height=32;var x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,256,32);x.fillStyle='#f2c200';for(var i=-32;i<256;i+=32){x.beginPath();x.moveTo(i,32);x.lineTo(i+16,0);x.lineTo(i+32,0);x.lineTo(i+16,32);x.fill();}var t=new THREE.CanvasTexture(c);t.wrapS=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;})();
+
+function makeRobot(isMirror,V){
+  var R={root:new THREE.Group(),parts:[],J:[],jb:[],jd:[],isMirror:isMirror,V:V};
+  var cell=new THREE.Group();R.cell=cell;
+  function reg(o,meta,dir){var p={o:o,meta:meta,base:o.position.clone(),dir:new THREE.Vector3(dir[0],dir[1],dir[2]),i:R.parts.length};R.parts.push(p);if(meta){meta.src='robot';o.userData.pid=meta.id;}return p;}
+  function M(geo,mat,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.castShadow=!isMirror;if(isMirror)m.renderOrder=-2;return m;}
+  function CYL(r,h,mat,x,y,z,ax,r2,seg){var m=M(new THREE.CylinderGeometry(r2===undefined?r:r2,r,h,seg||40),mat,x,y,z);if(ax==='z')m.rotation.x=Math.PI/2;else if(ax==='x')m.rotation.z=-Math.PI/2;return m;}
+  function RBOX(w,h,d,r,mat,x,y,z){
+    r=Math.min(r,w/2-.001,h/2-.001,d/2-.001);var s=new THREE.Shape(),hw=w/2-r,hh=h/2-r;
+    s.moveTo(-hw,-h/2);s.lineTo(hw,-h/2);s.absarc(hw,-hh,r,-Math.PI/2,0,false);s.lineTo(w/2,hh);s.absarc(hw,hh,r,0,Math.PI/2,false);s.lineTo(-hw,h/2);s.absarc(-hw,hh,r,Math.PI/2,Math.PI,false);s.lineTo(-w/2,-hh);s.absarc(-hw,-hh,r,Math.PI,Math.PI*1.5,false);
+    var g=new THREE.ExtrudeGeometry(s,{depth:d-2*r,bevelEnabled:true,bevelThickness:r,bevelSize:r*.98,bevelSegments:4,curveSegments:8});g.translate(0,0,-(d-2*r)/2);
+    return M(g,mat,x,y,z);
+  }
+  function LINK(r0,r1,L,depth,mat,z){
+    var s=new THREE.Shape(),a=Math.asin((r0-r1)/L);
+    s.moveTo(r0*Math.cos(a),r0*Math.sin(a));s.lineTo(r1*Math.cos(a),L+r1*Math.sin(a));
+    s.absarc(0,L,r1,a,Math.PI-a,false);s.lineTo(-r0*Math.cos(a),r0*Math.sin(a));s.absarc(0,0,r0,Math.PI-a,2*Math.PI+a,false);
+    var bv=.008,g=new THREE.ExtrudeGeometry(s,{depth:depth-2*bv,bevelEnabled:true,bevelThickness:bv,bevelSize:bv,bevelSegments:4,curveSegments:24});g.translate(0,0,-(depth-2*bv)/2);
+    return M(g,mat,0,0,z);
+  }
+  function LATHEX(pts,mat,x){var g=new THREE.LatheGeometry(pts.map(function(p){return new THREE.Vector2(p[0],p[1]);}),40);var m=M(g,mat,x||0,0,0);m.rotation.z=-Math.PI/2;return m;}
+  function TUBE(pts,r,mat){var v=pts.map(function(q){return new THREE.Vector3(q[0],q[1],q[2]);});return M(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(v),Math.max(16,pts.length*14),r,8,false),mat);}
+  function part(parent,meta,dir,items,pos){var g=new THREE.Group();if(pos)g.position.set(pos[0],pos[1],pos[2]);if(!isMirror||!meta.cellOnly)items.forEach(function(i){g.add(i);});parent.add(g);reg(g,meta,dir);return g;}
+  function joint(parent,pos,dir){var g=new THREE.Group();g.position.set(pos[0],pos[1],pos[2]);parent.add(g);R.J.push(g);R.jb.push(g.position.clone());R.jd.push(new THREE.Vector3(dir[0],dir[1],dir[2]));return g;}
+  var a2=V.a2,d4=V.d4,five=V.ax===5,S={cellOnly:1};
+  function C(o){for(var k in S)o[k]=S[k];return o;}
+
+  /* ---- base (fixed) */
+  var base=new THREE.Group();R.root.add(base);R.base=base;
+  part(base,{id:'r-base',name:'Base and J1 housing',sys:'Base & J1',desc:'Cast base with the J1 housing and the rear connector panel. Four bolts hold it to the pedestal, floor, wall or ceiling plate.',tags:'base casting mount mounting plate bolt footprint j1 housing'},[0,-.12,0],[
+    RBOX(.235,.02,.19,.006,rCast,-.02,.01,0),
+    CYL(.088,.15,rPaint,0,.095,0,null,.083),
+    CYL(.094,.012,rPaint,0,.026,0),
+    RBOX(.08,.11,.15,.02,rPaint,-.115,.075,0),
+    CYL(.017,.03,rMotor,-.16,.085,.035,'x'),CYL(.017,.03,rMotor,-.16,.085,-.035,'x'),
+    CYL(.02,.006,rRed,-.172,.085,.035,'x'),CYL(.02,.006,rRed,-.172,.085,-.035,'x')
+  ].concat([[.08,.075],[.08,-.075],[-.12,.075],[-.12,-.075]].map(function(p){return CYL(.008,.012,rRed,p[0],.024,p[1],null,.008,12);})));
+  part(base,{id:'r-batt',name:'Encoder backup batteries',sys:'Drives',desc:'Batteries that keep the absolute encoders\' position data while the controller is off. If they go flat with the power off, the robot loses its mastering.',tags:'battery batteries backup encoder absolute mastering pulse coder'},[-.2,0,0],
+    [RBOX(.05,.035,.1,.005,rCover,-.1,.06,0)].concat([-.03,-.01,.01,.03].map(function(z){return CYL(.007,.045,rEstop,-.1,.06,z,'x',.007,12);})));
+  part(base,{id:'r-j1-drive',name:'J1 servo motor and reducer',sys:'Drives',desc:'AC servo motor with brake and absolute encoder driving the J1 swivel through a precision reduction gear inside the base.',tags:'j1 motor servo reducer gear brake encoder swivel rotation'},[0,-.1,-.15],
+    [CYL(.038,.09,rMotor,-.01,.07,0),CYL(.04,.012,rRed,-.01,.12,0),CYL(.066,.028,rRed,0,.15,0)]);
+  part(base,{id:'r-stop-j1',name:'Mechanical stoppers',sys:'Base & J1',desc:'Hard stops that limit J1 and J3 travel if software limits fail. The manual says not to modify them; replace them after a collision with one.',tags:'stopper stop hard stop mechanical limit collision'},[.12,0,.12],
+    [RBOX(.022,.02,.022,.004,rCover,.07,.176,.066)]);
+
+  /* ---- J1 */
+  var j1=joint(base,[0,.17,0],[0,.12,0]);
+  part(j1,{id:'r-j1-casting',name:'J1 swivel casting',sys:'Arm',desc:'Rotating casting on top of the base that carries the J2 axis. The upper arm pivots on its right side.',tags:'j1 swivel casting turret shoulder rotating'},[0,.05,0],[
+    CYL(.088,.04,rPaint,0,.02,0),
+    RBOX(.17,.14,.15,.022,rPaint,.005,.085,0),
+    CYL(.075,.15,rPaint,.05,.16,0,'z'),
+    RBOX(.06,.08,.12,.012,rPaint,-.075,.07,0)]);
+  part(j1,{id:'r-j2-drive',name:'J2 servo motor and reducer',sys:'Drives',desc:'Motor with brake on the left of the swivel casting, driving the upper arm through a reduction gear on the J2 axis.',tags:'j2 motor servo reducer gear brake shoulder'},[0,0,-.18],[
+    CYL(.046,.07,rMotor,.05,.16,-.11,'z'),CYL(.05,.012,rRed,.05,.16,-.076,'z'),CYL(.03,.004,rCast,.05,.16,-.147,'z'),CYL(.062,.03,rRed,.05,.16,.06,'z')]);
+  part(j1,{id:'r-cable-base',name:'Mechanical unit cable (lower)',sys:'Cabling',desc:'Power and encoder lines running from the base connectors up through J1 to the upper arm. Look for cracked jackets and loose connectors on the daily check.',tags:'cable harness wiring power encoder pulse coder connector j1'},[-.15,.05,0],[
+    TUBE([[-.1,-.1,0],[-.08,-.02,.02],[-.04,.06,.04],[.02,.12,.07],[.05,.16,.09]],.009,wireBlk),TUBE([[-.1,-.1,.02],[-.07,0,.035],[-.03,.07,.055],[.03,.13,.08]],.005,hoseBlue)]);
+
+  /* ---- J2 (upper arm) */
+  var j2=joint(j1,[.05,.16,0],[0,.1,.14]);
+  part(j2,{id:'r-arm-j2',name:'J2 upper arm',sys:'Arm',desc:'Cast aluminium upper arm between the J2 and J3 axes ('+Math.round(a2*1000)+' mm on this variant).',tags:'upper arm j2 arm link casting'},[0,0,.12],[
+    LINK(.074,.064,a2,.066,rPaint,.113),CYL(.058,.012,rPaint,0,0,.152,'z'),CYL(.05,.004,rCover,0,0,.158,'z'),
+    CYL(.05,.012,rPaint,0,a2,.152,'z'),RBOX(.05,a2*.55,.004,.01,rCover,0,a2*.5,.148)]);
+  part(j2,{id:'r-cable-arm',name:'Arm cable and air lines',sys:'Cabling',desc:'Internal harness and two air lines running up the upper arm to the J3 casting, where the end-effector air and signal connectors sit.',tags:'cable harness air line hose pneumatic arm internal'},[0,0,.2],[
+    TUBE([[0,.02,.1],[.012,a2*.3,.1],[.012,a2*.7,.1],[0,a2-.02,.1]],.009,wireBlk),
+    TUBE([[.02,.02,.09],[.03,a2*.5,.09],[.02,a2-.02,.09]],.004,hoseBlue),TUBE([[-.02,.02,.09],[-.03,a2*.5,.09],[-.02,a2-.02,.09]],.004,hoseBlue)]);
+
+  /* ---- J3 (forearm casting) */
+  var j3=joint(j2,[0,a2,0],[0,.14,0]);
+  part(j3,{id:'r-j3-casting',name:'J3 casting',sys:'Arm',desc:'Casting at the elbow that carries the forearm. The end-effector signal connector and air outlets are on its top.',tags:'j3 casting elbow forearm housing ee connector air outlet'},[-.05,.08,0],[
+    CYL(.064,.13,rPaint,0,0,.012,'z'),RBOX(.2,.13,.125,.028,rPaint,-.04,.03,.006),
+    RBOX(.05,.012,.06,.003,rCover,-.07,.1,.006),CYL(.011,.02,rMotor,-.085,.112,.02),CYL(.006,.016,hoseBlue,-.055,.112,-.01),CYL(.006,.016,hoseBlue,-.055,.112,.012)]);
+  part(j3,{id:'r-j3-drive',name:five?'J3 servo motor':'J3 and J4 servo motors',sys:'Drives',desc:five?'Motor with brake at the back of the J3 casting driving the elbow.':'Motors at the back of the J3 casting: J3 drives the elbow, J4 rolls the forearm.',tags:'j3 j4 motor servo reducer brake elbow'},[-.16,0,0],
+    [CYL(.036,.05,rMotor,-.15,.035,-.02,'x'),CYL(.038,.008,rRed,-.123,.035,-.02,'x'),CYL(.052,.028,rRed,0,0,-.02,'z')].concat(five?[]:[CYL(.028,.045,rMotor,-.148,.04,.042,'x')]));
+  part(j3,{id:'r-stop-j3',name:'J3 stopper',sys:'Base & J1',desc:'Hard stop on the J3 casting. Listed in the mechanical manual as A290-7142-X427 with a spring pin.',tags:'j3 stopper stop hard mechanical limit'},[0,.1,.1],[RBOX(.018,.02,.018,.004,rCover,.02,.07,.07)]);
+
+  /* ---- J4 (forearm roll) */
+  var j4=joint(j3,[.07,.035,0],[.12,0,0]);
+  var fl=d4-.07;
+  part(j4,{id:'r-forearm',name:five?'J3 forearm':'J4 forearm',sys:'Arm',desc:five?'Fixed forearm tube with the wrist fork at its end. The /7H has no forearm roll.':'Forearm tube that rolls on J4 and carries the wrist fork.',tags:'forearm arm j4 tube wrist fork'},[.06,0,0],[
+    LATHEX([[0,0],[.05,0],[.05,.02],[.046,.05],[.04,fl*.7],[.037,fl-.06],[0,fl-.06]],rPaint,0),
+    RBOX(.1,.07,.016,.008,rPaint,fl-.02,0,.036),RBOX(.1,.07,.016,.008,rPaint,fl-.02,0,-.036),
+    CYL(.036,.004,rCover,fl,0,.045,'z'),CYL(.036,.004,rCover,fl,0,-.045,'z')]);
+  part(j4,{id:'r-wrist-drive',name:'Wrist motors',sys:'Drives',desc:'Small servo motors inside the forearm that drive the wrist through gears and belts.',tags:'wrist motor j5 j6 servo gear belt'},[0,.1,0],
+    [CYL(.024,.05,rMotor,.07,.012,0,'x'),CYL(.02,.045,rMotor,.13,-.012,0,'x'),TUBE([[.16,0,0],[fl*.6,.008,0],[fl-.02,0,0]],.005,wireBlk)]);
+
+  /* ---- J5 (wrist bend) */
+  var j5=joint(j4,[fl,0,0],[.1,0,0]);
+  part(j5,{id:'r-wrist',name:five?'J4 wrist':'J5 wrist',sys:'Wrist',desc:'Wrist body that bends between the fork plates. Watch the allowable wrist moment when you pick a tool: '+V.mom+'.',tags:'wrist bend j5 j4 body'},[.05,0,0],[
+    CYL(.034,.056,rPaint,0,0,0,'z'),LATHEX([[0,0],[.034,0],[.032,.04],[.029,.062],[0,.062]],rPaint,0)]);
+
+  /* ---- J6 (flange roll) */
+  var j6=joint(j5,[.07,0,0],[.08,0,0]);
+  part(j6,{id:'r-flange',name:five?'J5 tool flange':'J6 tool flange',sys:'Wrist',desc:'Tool mounting flange at '+80+' mm from the wrist bend axis. Check the flange drawing in the mechanical manual for bolt size and dowel position.',tags:'flange tool mount iso wrist j6 j5 end effector interface'},[.06,0,0],
+    [CYL(.026,.01,rRed,.005,0,0,'x')].concat([0,1,2,3].map(function(k){var a=k*Math.PI/2+Math.PI/4;return CYL(.0028,.002,rMotor,.0105,Math.cos(a)*.0158,Math.sin(a)*.0158,'x',.0028,10);})).concat([CYL(.0025,.004,rRed,.012,.0158,0,'x',.0025,8)]));
+  var tool=new THREE.Group();tool.position.x=.01;j6.add(tool);R.tool=tool;
+  var tcp=new THREE.Group();tool.add(tcp);R.tcpO=tcp;
+  R.toolPart=part(tool,{id:'r-eoat',name:'End effector',sys:'Tooling',desc:'Tool on the flange. Pick one in the Cell tab; the tool centre point (TCP) moves with it.',tags:'end effector eoat tool gripper vacuum cup spindle camera vision'},[.12,0,0],[]);
+  if(!isMirror){var tri=new THREE.AxesHelper(.07);tri.material.depthTest=false;tri.renderOrder=40;tcp.add(tri);R.tri=tri;}
+
+  /* ---- cell: pedestal / ceiling frame, table, controller, pendant */
+  R.ped=part(cell,C({id:'r-pedestal',name:'Pedestal',sys:'Cell',desc:'Steel riser that lifts the base to working height. Bolt it to the floor; the robot pushes hard on it when it stops suddenly.',tags:'pedestal riser stand mount base plate'}),[0,-.2,0],[
+    RBOX(.3,.46,.3,.02,rPed,0,.25,0),RBOX(.34,.02,.34,.004,rPed,0,.49,0),RBOX(.5,.02,.5,.004,rPed,0,.01,0)]);
+  var frameItems=[];[[.45,.42],[.45,-.42],[-.45,.42],[-.45,-.42]].forEach(function(p){frameItems.push(RBOX(.06,1.9,.06,.008,rPed,p[0],.95,p[1]));});
+  frameItems.push(RBOX(1.0,.06,.06,.008,rPed,0,1.87,.42),RBOX(1.0,.06,.06,.008,rPed,0,1.87,-.42),RBOX(.06,.06,.9,.008,rPed,0,1.87,0),RBOX(.34,.02,.34,.004,rPed,0,1.9-.03,0));
+  R.frame=part(cell,C({id:'r-frame',name:'Ceiling frame',sys:'Cell',desc:'Overhead frame for an inverted (ceiling) mount. The base bolts under the top plate and the arm works downward.',tags:'ceiling frame overhead inverted upside down mount gantry'}),[0,.3,0],frameItems);
+  R.table=part(cell,C({id:'r-table',name:'Work table and fixtures',sys:'Cell',desc:'Table with two locating nests. The demo program moves a part between them.',tags:'table fixture nest work part pick place'}),[.2,-.1,0],[
+    RBOX(.5,.03,.9,.004,rTable,0,-.015,0),RBOX(.14,.012,.14,.003,rPad,-.02,.006,-.22),RBOX(.14,.012,.14,.003,rPad,-.02,.006,.22)]
+    .concat([[.21,.41],[.21,-.41],[-.21,.41],[-.21,-.41]].map(function(p){return RBOX(.04,1,.04,.004,rTable,p[0],-.53,p[1]);})));
+  R.work=M(new THREE.BoxGeometry(.04,.04,.04),rWork,-.02,.032,-.22);if(!isMirror)R.table.add(R.work);
+  var ctl=[RBOX(.47,.4,.4,.012,rCtl,0,.2,0),RBOX(.44,.32,.006,.004,rCover,0,.2,.201)];
+  for(var i=0;i<7;i++)ctl.push(RBOX(.006,.12,.004,.002,rMotor,-.14+i*.02,.18,.204));
+  ctl.push(CYL(.03,.02,rPad,.15,.29,.206,'z'),RBOX(.012,.05,.012,.003,rEstop,.15,.29,.22),CYL(.006,.004,rLed,.15,.13,.204,'z'),CYL(.006,.004,rEstop,.17,.13,.204,'z'));
+  R.ctl=part(cell,C({id:'r-controller',name:'Controller cabinet',sys:'Controller',desc:'R-30iB Mate family controller with the servo amplifiers, main board, power supply and safety circuits. It needs 200–230 VAC single-phase supply; average draw is about 0.5 kW.',tags:'controller cabinet r-30ib mate amplifier servo amp power supply breaker'}),[-.2,.2,.2],ctl,[-.95,0,.75]);
+  R.ctl.rotation.y=Math.PI/4;
+  var pend=RBOX(.21,.3,.05,.02,rCtl,0,0,0),scr=M(new THREE.PlaneGeometry(.16,.12),rScreen,0,.04,.0265),es=CYL(.016,.02,rEstop,.065,.12,.03,'z'),en=RBOX(.03,.07,.02,.005,rPad,-.105,-.02,-.02);
+  R.pend=part(cell,C({id:'r-pendant',name:'Teach pendant',sys:'Controller',desc:'iPendant for jogging, teaching points and editing TP programs. Hold a deadman switch on the back and turn the TP on to jog.',tags:'teach pendant ipendant tp deadman enable jog estop screen'}),[.1,.25,.1],[pend,scr,es,en],[-.62,.34,.98]);
+  R.pend.rotation.set(-.35,Math.PI/5,0);
+  var rc=part(cell,C({id:'r-rcable',name:'Robot connection cable',sys:'Cabling',desc:'Power and signal cable between the controller and the connectors on the back of the robot base.',tags:'robot connection cable rp1 rm1 power signal controller'}),[0,.1,0],[]);R.rcable=rc.o||rc;
+  if(!isMirror){
+    var tg=new THREE.Group();[[0,-.9,1.8,0],[0,.9,1.8,0],[-.9,0,1.8,Math.PI/2],[.9,0,1.8,Math.PI/2]].forEach(function(q){
+      var t=tapeTex.clone();t.needsUpdate=true;t.repeat.set(14,1);var m=new THREE.Mesh(new THREE.PlaneGeometry(q[2],.07),new THREE.MeshBasicMaterial({map:t,depthWrite:false}));
+      m.rotation.x=-Math.PI/2;m.rotation.z=q[3];m.position.set(q[0]+.1,.006,q[1]);m.renderOrder=9;tg.add(m);});
+    cell.add(tg);R.tapeG=tg;
+  }
+  R.root.add(cell);
+  buildTool(R,RB.tool);
+  return R;
+}
+function buildTool(R,ti){
+  var g=R.toolPart;while(g.children.length)g.remove(g.children[0]);
+  R.fingers=[];var mir=R.isMirror,L=TOOLS[ti].L;
+  function M(geo,mat,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=!mir;if(mir)m.renderOrder=-2;g.add(m);return m;}
+  function CX(r,h,mat,x,r2){var m=M(new THREE.CylinderGeometry(r2===undefined?r:r2,r,h,32),mat,x,0,0);m.rotation.z=-Math.PI/2;return m;}
+  if(ti===1||ti===4){
+    CX(.03,.012,aluDk,.006);M(new THREE.BoxGeometry(.05,.05,.075),alu,.037,0,0);M(new THREE.BoxGeometry(.012,.02,.09),steel,.066,0,0);
+    [1,-1].forEach(function(s){var f=M(new THREE.BoxGeometry(.05,.016,.012),steel,.095,0,s*.026);f.userData.side=s;R.fingers.push(f);
+      var tip=new THREE.Mesh(new THREE.BoxGeometry(.014,.018,.006),rPad);tip.position.set(.018,0,-s*.008);f.add(tip);});
+    if(ti===4){M(new THREE.BoxGeometry(.045,.03,.03),rCtl,.03,.045,0);var lens=CX(.009,.012,rMotor,.058);lens.position.y=.045;M(new THREE.TorusGeometry(.011,.002,8,24),rLed,.066,.045,0).rotation.y=Math.PI/2;}
+  }else if(ti===2){
+    CX(.03,.012,aluDk,.006);CX(.008,.05,steel,.037);M(new THREE.BoxGeometry(.012,.02,.12),alu,.066,0,0);
+    [-.045,0,.045].forEach(function(z){var c=new THREE.Mesh(new THREE.CylinderGeometry(.016,.007,.02,24),rCup);c.rotation.z=-Math.PI/2;c.position.set(.082,0,z);c.castShadow=!mir;g.add(c);});
+  }else if(ti===3){
+    CX(.03,.012,aluDk,.006);CX(.028,.1,rMotor,.062,.024);CX(.012,.02,steel,.122);CX(.003,.03,rRed,.147);var b=M(new THREE.SphereGeometry(.006,12,8),rRed,.163,0,0);
+    R.burr=b;
+  }
+  R.tcpO.position.x=L;
+}
+
+/* ---- analytic IK (base frame; tool along +/-Y of the base) */
+function robotIK(p,down,V,L){
+  var d=down?-1:1,wc=new THREE.Vector3(p.x,p.y-d*(.08+L),p.z);
+  var q1=Math.atan2(-wc.z,wc.x),r=Math.hypot(wc.x,wc.z)-.05,h=wc.y-.33;
+  var a2=V.a2,Lf=Math.hypot(V.d4,.035),be=Math.atan2(.035,V.d4),D=Math.hypot(r,h);
+  if(D>a2+Lf-1e-4||D<Math.abs(a2-Lf)+1e-4)return null;
+  var al=Math.atan2(h,r),c=(a2*a2+D*D-Lf*Lf)/(2*a2*D),ps=al+Math.acos(clamp(c,-1,1));
+  var ex=a2*Math.cos(ps),ey=a2*Math.sin(ps),th3=Math.atan2(h-ey,r-ex)-be;
+  var D2R=180/Math.PI,q2=90-ps*D2R,q3=th3*D2R,q5=(down?-90:90)-q3;
+  return [q1*D2R,q2,q3,0,q5,0];
+}
+function rLimits(){var V=RVAR[RB.v],L=[];for(var i=0;i<6;i++){var j=V.J[i];L.push(j?[-j[0]/2,j[0]/2]:[0,0]);}return L;}
+function rCheck(q){var L=rLimits();for(var i=0;i<6;i++){if(q[i]<L[i][0]-.01||q[i]>L[i][1]+.01)return 'J'+uiJ(i)+' limit';}return '';}
+function uiJ(i){return RVAR[RB.v].ax===5&&i>3?i:i+1;}
+
+var robot=null,robotM=null,robotMirrorRoot=new THREE.Group();robotMirrorRoot.scale.y=-1;scene.add(robotMirrorRoot);
+function buildRobots(){
+  if(robot){scene.remove(robot.root);robotMirrorRoot.remove(robotM.root);[robot,robotM].forEach(function(R){R.root.traverse(function(o){if(o.geometry)o.geometry.dispose();});});}
+  var V=RVAR[RB.v];
+  robot=makeRobot(false,V);robotM=makeRobot(true,V);
+  scene.add(robot.root);robotMirrorRoot.add(robotM.root);
+  robotM.root.traverse(function(o){o.renderOrder=-2;});
+  applyMount();applyRobotLook();
+  var on=MACH==='lrmate';robot.root.visible=on;robotMirrorRoot.visible=on&&reflectOn;
+}
+function applyMount(){
+  [robot,robotM].forEach(function(R){
+    var ceil=RB.mount==='ceiling';
+    R.base.position.set(0,ceil?1.84:.5,0);R.base.rotation.set(ceil?Math.PI:0,0,0);
+    R.ped.visible=!ceil;R.frame.visible=ceil;R.ped.userData.off=ceil;R.frame.userData.off=!ceil;
+    var ty=ceil?.86:.42;R.table.position.set(.5,ty,0);R.table.visible=RB.table;R.table.userData.off=!RB.table;
+    R.table.children.forEach(function(k){if(k.geometry&&k.geometry.parameters&&k.geometry.parameters.height===1){}});
+    R.ctl.visible=RB.ctl;R.pend.visible=RB.ctl;R.ctl.userData.off=R.pend.userData.off=!RB.ctl;
+    if(R.tapeG)R.tapeG.visible=RB.tape;
+    /* robot connection cable */
+    var rc=R.parts.filter(function(p){return p.meta&&p.meta.id==='r-rcable';})[0].o;rc.userData.off=!RB.ctl;
+    while(rc.children.length){var k=rc.children[0];rc.remove(k);if(k.geometry)k.geometry.dispose();}
+    if(RB.ctl&&!R.isMirror){
+      var pts=ceil?[[-.95,.3,.75],[-.8,.03,.6],[-.5,.03,.45],[-.45,.4,.42],[-.45,1.5,.42],[-.3,1.8,.2],[-.16,1.78,0]]:[[-.95,.3,.75],[-.8,.03,.6],[-.4,.03,.3],[-.2,.03,.1],[-.2,.3,.02],[-.17,.58,.0]];
+      var v=pts.map(function(q){return new THREE.Vector3(q[0],q[1],q[2]);});
+      var m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(v),80,.012,8,false),rCtl);m.castShadow=true;rc.add(m);
+      var v2=[[-.95,.34,.75],[-.85,.1,.9],[-.7,.05,1.05],[-.62,.2,1.0]].map(function(q){return new THREE.Vector3(q[0],q[1],q[2]);});
+      var m2=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(v2),40,.006,6,false),wireBlk);rc.add(m2);
+    }
+  });
+  resetWork();
+  if(MACH==='lrmate')applyVis();
+}
+function applyRobotLook(){
+  rPaint.color.copy(lin(RCOL[RB.col].c));
+  [robot,robotM].forEach(function(R){buildTool(R,RB.tool);if(R.tri)R.tri.visible=RB.tcp;});
+}
+function resetWork(){[robot].forEach(function(R){if(!R)return;R.table.attach(R.work);R.work.position.set(-.02,.032,-.22);R.work.rotation.set(0,0,0);R.work.visible=RB.tool===1||RB.tool===2||RB.tool===4;});PR.flip=false;}
+
+/* ---- apply joints + explode each frame */
+function robotPose(R,q,ex){
+  var D=Math.PI/180,J=R.J;
+  J[0].rotation.set(0,q[0]*D,0);
+  J[1].rotation.set(0,0,-q[1]*D);
+  J[2].rotation.set(0,0,(q[1]+q[2])*D);
+  J[3].rotation.set(RVAR[RB.v].ax===5?0:q[3]*D,0,0);
+  J[4].rotation.set(0,0,q[4]*D);
+  J[5].rotation.set(q[5]*D,0,0);
+  for(var i=0;i<J.length;i++)J[i].position.copy(R.jb[i]).addScaledVector(R.jd[i],ex);
+  R.fingers.forEach(function(f){f.position.z=f.userData.side*(.031+.015*(1-RB.grip));});
+}
+function tcpWorld(){robot.root.updateMatrixWorld(true);return robot.tcpO.getWorldPosition(new THREE.Vector3());}
+function worldToBase(w){robot.base.updateMatrixWorld(true);return robot.base.worldToLocal(w.clone());}
+function toolDown(){return RB.mount!=='ceiling';}
+function moveToWorld(w){
+  var p=worldToBase(w),q=robotIK(p,toolDown(),RVAR[RB.v],TOOLS[RB.tool].L);
+  if(!q){RB.warn='OUT OF REACH';return false;}
+  var lim=rCheck(q);if(lim){RB.warn=lim.toUpperCase();return false;}
+  q[5]=RB.q[5];RB.q=q;RB.warn='';return true;
+}
+
+/* ---- demo program (TP style) */
+var PR={i:0,t:0,dur:0,q0:null,q1:null,p0:null,p1:null,flip:false,lines:[]};
+function progPts(){
+  var ty=RB.mount==='ceiling'?.86:.42,x=.48,zA=PR.flip?.22:-.22,zB=-zA,y=ty+.032,up=.13;
+  return {P2:[x,y+up,zA],P3:[x,y,zA],P4:[x,y+up,zB],P5:[x,y,zB]};
+}
+var PROG=[
+ {t:'J',p:'HOME',s:100,txt:'J P[1:HOME] 100% FINE'},
+ {t:'J',p:'P2',s:100,txt:'J P[2:ABOVE PICK] 100% CNT50'},
+ {t:'L',p:'P3',v:.35,txt:'L P[3:PICK] 350mm/sec FINE'},
+ {t:'DO',g:1,txt:'RO[1:GRIP]=ON'},
+ {t:'W',w:.25,txt:'WAIT .25(sec)'},
+ {t:'L',p:'P2',v:.6,txt:'L P[2:ABOVE PICK] 600mm/sec CNT50'},
+ {t:'J',p:'P4',s:100,txt:'J P[4:ABOVE PLACE] 100% CNT50'},
+ {t:'L',p:'P5',v:.35,txt:'L P[5:PLACE] 350mm/sec FINE'},
+ {t:'DO',g:0,txt:'RO[1:GRIP]=OFF'},
+ {t:'W',w:.2,txt:'WAIT .20(sec)'},
+ {t:'L',p:'P4',v:.6,txt:'L P[4:ABOVE PLACE] 600mm/sec CNT50'},
+ {t:'J',p:'HOME',s:100,txt:'J P[1:HOME] 100% FINE'}
+];
+var HOMEQ=[0,0,0,0,-90,0];
+function stepStart(){
+  var s=PROG[PR.i],P=progPts();PR.t=0;
+  if(s.t==='J'){
+    var q1;if(s.p==='HOME')q1=HOMEQ.slice();else{var w=new THREE.Vector3().fromArray(P[s.p]);q1=robotIK(worldToBase(w),toolDown(),RVAR[RB.v],TOOLS[RB.tool].L);}
+    if(!q1||rCheck(q1)){RB.warn=q1?rCheck(q1).toUpperCase():'OUT OF REACH';stopProg();return;}
+    if(RB.mount==='ceiling'&&s.p==='HOME')q1[4]=90;
+    PR.q0=RB.q.slice();PR.q1=q1;var V=RVAR[RB.v],T=0;
+    for(var k=0;k<6;k++){var sp=V.J[k]?V.J[k][1]:1000;T=Math.max(T,Math.abs(q1[k]-PR.q0[k])/(sp*.35));}
+    PR.dur=Math.max(.25,T);
+  }else if(s.t==='L'){PR.p0=tcpWorld();PR.p1=new THREE.Vector3().fromArray(P[s.p]);PR.dur=Math.max(.15,PR.p0.distanceTo(PR.p1)/s.v);}
+  else if(s.t==='DO'){PR.dur=.18;RB.gripT=s.g;}
+  else PR.dur=s.w;
+  renderProg();
+}
+function stopProg(){RB.run=false;var b=$('#tRun');if(b)b.setAttribute('aria-pressed','false');renderProg();}
+function progTick(dt){
+  var s=PROG[PR.i];PR.t+=dt*RB.ovr/100;var k=clamp(PR.t/PR.dur,0,1),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+  if(s.t==='J'){for(var j=0;j<6;j++)RB.q[j]=PR.q0[j]+(PR.q1[j]-PR.q0[j])*e;}
+  else if(s.t==='L'){if(!moveToWorld(PR.p0.clone().lerp(PR.p1,e))){stopProg();return;}}
+  if(k>=1){
+    if(s.t==='DO'){
+      var w=robot.work;if(s.g===1&&w.visible){robot.tool.attach(w);}
+      if(s.g===0&&w.parent===robot.tool){robot.table.attach(w);var P=progPts(),z=P.P5[2];w.position.set(-.02,.032,z);w.rotation.set(0,0,0);}
+    }
+    PR.i=(PR.i+1)%PROG.length;if(PR.i===0)PR.flip=!PR.flip;
+    stepStart();
+  }
+}
+function renderProg(){
+  var el2=$('#progList');if(el2){el2.textContent='';PROG.forEach(function(s,i){var d=el('div',{class:'pl'+(RB.run&&i===PR.i?' on':''),text:(i+1<10?' ':'')+(i+1)+': '+s.txt});el2.append(d);});}
+  drawPendant();
+}
+function drawPendant(){
+  var c=pendantTex.image;if(!c.getContext)return;c.width=320;c.height=240;var x=c.getContext('2d');
+  x.fillStyle='#0b1322';x.fillRect(0,0,320,240);x.fillStyle='#f2c200';x.fillRect(0,0,320,22);
+  x.fillStyle='#111';x.font='bold 13px monospace';x.fillText((RB.run?'RUNNING ':'PAUSED ')+'DEMO_PICK  '+RB.ovr+'%',8,16);
+  x.font='12px monospace';
+  var st=Math.max(0,Math.min(PROG.length-12,PR.i-5));
+  for(var i=st;i<Math.min(PROG.length,st+12);i++){var y=40+(i-st)*16;if(RB.run&&i===PR.i){x.fillStyle='#00f0ff';x.fillRect(0,y-12,320,16);x.fillStyle='#001417';}else x.fillStyle='#cfe4ee';x.fillText((i+1)+': '+PROG[i].txt,6,y);}
+  pendantTex.needsUpdate=true;
+}
+function robotUpdate(dt){
+  if(!robot)return;
+  if(RB.run)progTick(dt);
+  RB.grip+=(RB.gripT-RB.grip)*Math.min(1,dt*10);
+  robotPose(robot,RB.q,EX.cur);robotPose(robotM,RB.q,EX.cur);
+  robotM.fingers.forEach(function(f,i){f.position.z=robot.fingers[i]?robot.fingers[i].position.z:f.position.z;});
+  if(robot.burr&&RB.tool===3&&RB.run)robot.burr.rotation.x+=dt*40;
+}
+
+/* ================================================= machine registry + switching */
+var MACHINES=[
+  {id:'xc70',cat:'Vehicles',name:'Volvo XC70 3.2 AWD',year:'2008',sub:'B6324S inline-six · Geartronic · Haldex AWD',badges:['235 hp','126 parts','3D scan model'],brand:['Mechanic\'s ','Arsenal'],p:'2008 Volvo XC70 3.2 AWD · B6324S I6',tag:'NODE XC70'},
+  {id:'lrmate',cat:'Industrial robots',name:'FANUC LR Mate 200iD series',year:'2013+',sub:'200iD · /7H · /7L · /4S · R-30iB Mate',badges:['7 kg','717–911 mm','±0.01 mm'],brand:['Mechanic\'s ','Arsenal'],p:'',tag:'NODE LRM200'}
+];
+var CATS=['All','Vehicles','Industrial robots'];
+var MTABS={xc70:['parts','arsenal','paint','cabin','scene','view','specs'],lrmate:['parts','jog','cell','scene','view','specs']};
+var VIEWS_CAR=VIEWS,VIEWS_ROBOT=[
+  {n:'Cell ¾',p:[2.3,1.45,2.1],t:[.15,.75,0]},
+  {n:'Side',p:[0,1.0,3.0],t:[.15,.75,0]},
+  {n:'Front',p:[3.1,1.0,0],t:[.15,.75,0]},
+  {n:'Top',p:[.15,3.8,.15],t:[.15,.6,0]},
+  {n:'Wrist',tcp:1},
+  {n:'Controller',p:[-.1,1.0,2.0],t:[-.9,.3,.75]}
+];
+function robotSysNames(){return ['All'];}
+function setMachine(id,quiet){
+  if(id===MACH&&!quiet){closePicker();return;}
+  MACH=id;var isCar=id==='xc70',m=MACHINES.filter(function(x){return x.id===id;})[0];
+  car.root.visible=isCar;mirrorRoot.visible=isCar&&reflectOn;
+  glowPlane.visible=isCar;blob.visible=isCar&&S.shadows;
+  robot.root.visible=!isCar;robotMirrorRoot.visible=!isCar&&reflectOn;
+  RB.run=false;
+  CUR=isCar?{main:car,mirror:mirrorCar}:{main:robot,mirror:robotM};
+  VIEWS=isCar?VIEWS_CAR:VIEWS_ROBOT;
+  PS.sel=null;PS.iso=false;PS.q='';if(PS.box){scene.remove(PS.box);PS.box=null;}
+  var ps=$('#partSearch');if(ps)ps.value='';
+  syncSlider('sExplode',0);syncSlider('sGhost',0);EX.cur=0;
+  refreshCatalogue();buildSysChips();
+  TABS.forEach(function(t){$('#tab-'+t[0]).hidden=MTABS[id].indexOf(t[0])<0;});
+  openTab('parts');
+  $('#specCar').hidden=!isCar;$('#specRobot').hidden=isCar;
+  $('#camCar').hidden=!isCar;$('#camRobot').hidden=isCar;
+  $('#btnLights').hidden=!isCar;
+  $('#mName').textContent=isCar?m.name:RVAR[RB.v].n;
+  $('.brand .tag').innerHTML='// SYS.ONLINE &middot; '+m.tag;
+  $('.brand p').textContent=isCar?m.p:RVAR[RB.v].n+' · '+RVAR[RB.v].ax+'-axis · R-30iB Mate';
+  $('#partSearch').placeholder=isCar?'Search parts: spark plug, strut, muffler':'Search parts: battery, J2 motor, flange, pendant';
+  goView(0);closePicker();
+  if(!quiet)toast((isCar?'Vehicle':'Robot')+' loaded · '+LIST.length+' parts indexed');
+}
+function openPicker(){renderPicker();$('#picker').hidden=false;}
+function closePicker(){$('#picker').hidden=true;}
+var pickCat='All';
+function renderPicker(){
+  var cats=$('#pkCats'),grid=$('#pkGrid');cats.textContent='';grid.textContent='';
+  cats.append(chipGroup(CATS,CATS.indexOf(pickCat),function(i){pickCat=CATS[i];renderPicker();}));
+  MACHINES.forEach(function(m){
+    if(pickCat!=='All'&&m.cat!==pickCat)return;
+    var b=el('button',{class:'mcard',type:'button','aria-pressed':String(m.id===MACH)},
+      el('span',{class:'mcat',text:m.cat+' · '+m.year}),el('b',{text:m.name}),el('span',{class:'msub',text:m.sub}),
+      el('span',{class:'mbad'},m.badges.map(function(x){return el('i',{text:x});})[0],m.badges.map(function(x){return el('i',{text:x});})[1],m.badges.map(function(x){return el('i',{text:x});})[2]),
+      el('span',{class:'mgo',text:m.id===MACH?'Loaded':'Load ▸'}));
+    b.addEventListener('click',function(){setMachine(m.id);buzz();});grid.append(b);
+  });
+}
+
+/* ---- robot panes */
+var jogSliders=[];
+function syncJogUI(){
+  var V=RVAR[RB.v],L=rLimits();
+  jogSliders.forEach(function(s,i){
+    s.row.hidden=!V.J[i];
+    if(!V.J[i])return;
+    s.inp.min=L[i][0];s.inp.max=L[i][1];s.inp.value=RB.q[i];s.lab.textContent='J'+uiJ(i);
+    s.val.textContent=(RB.q[i]>=0?'+':'')+RB.q[i].toFixed(1)+'°';
+  });
+}
+function setQ(q){RB.run=false;var t=$('#tRun');if(t)t.setAttribute('aria-pressed','false');RB.q=q.slice();RB.warn=rCheck(RB.q).toUpperCase();syncJogUI();renderProg();}
+function homeQ(){var q=HOMEQ.slice();if(RB.mount==='ceiling')q[4]=90;return q;}
+(function(){
+  var P=panes.jog,J=el('div',{class:'grp'});
+  for(var i=0;i<6;i++)(function(i){
+    var lab=el('span',{text:'J'+(i+1)}),val=el('span',{class:'val',text:'0°'});
+    var inp=el('input',{type:'range',min:-170,max:170,step:.5,value:0,'aria-label':'Joint '+(i+1)});
+    inp.addEventListener('input',function(){RB.run=false;$('#tRun').setAttribute('aria-pressed','false');RB.q[i]=parseFloat(inp.value);val.textContent=(RB.q[i]>=0?'+':'')+RB.q[i].toFixed(1)+'°';RB.warn='';});
+    var row=el('div',{class:'grp'},el('label',{},lab,val),inp);jogSliders.push({row:row,inp:inp,lab:lab,val:val});J.append(row);
+  })(i);
+  var presets=chipGroup(['Home','Tool down','Reach','Stow','Wrist service'],-1,function(i){
+    var ceil=RB.mount==='ceiling',f=ceil?-1:1;
+    var Q=[homeQ(),[0,20,-20,0,f*-90,0],[0,55,-5,0,-40*f,0],[0,-30,-60,0,f*-90,0],[30,10,10,0,0,0]][i];
+    if(i===1){var w=new THREE.Vector3(.45,(ceil?.86:.42)+.2,0);setQ(RB.q);if(!moveToWorld(w))toast(RB.warn);syncJogUI();return;}
+    setQ(Q);
+  });
+  var cart=el('div',{class:'jogpad'});
+  [['X+',[1,0,0]],['Y+',[0,1,0]],['Z+',[0,0,1]],['X−',[-1,0,0]],['Y−',[0,-1,0]],['Z−',[0,0,-1]]].forEach(function(d){
+    var b=el('button',{class:'chip',type:'button',text:d[0]});
+    b.addEventListener('click',function(){
+      var w=tcpWorld(),s=RB.step/1000;w.x+=d[1][0]*s;w.z-=d[1][1]*s;w.y+=d[1][2]*s;
+      RB.run=false;$('#tRun').setAttribute('aria-pressed','false');
+      if(!moveToWorld(w))toast(RB.warn);syncJogUI();buzz();
+    });cart.append(b);});
+  var steps=chipGroup(['1 mm','10 mm','50 mm'],1,function(i){RB.step=[1,10,50][i];});
+  var tcpRead=el('div',{class:'tcpread',id:'tcpRead'});
+  var run=toggleRow('Run demo program',false,function(on){
+    if(on){if(RB.tool===0||RB.tool===3){toast('Fit a gripper or vacuum cup first');$('#tRun').setAttribute('aria-pressed','false');return;}
+      resetWork();RB.gripT=0;PR.i=0;RB.run=true;stepStart();}else stopProg();},'tRun');
+  var ovr=sliderRow('sOvr','Override',5,100,5,RB.ovr,function(v){return v+'%';},function(v){RB.ovr=v;drawPendant();});
+  P.append(secH('World frame'),tcpRead,
+    secH('Joint jog'),J,grp('Positions',presets),
+    secH('Cartesian jog'),grp('Step',steps),cart,
+    el('p',{class:'note',text:'Cartesian jog moves the tool centre point in the FANUC world frame (X forward, Y left, Z up) and keeps the tool pointing at the table. Joint angles use the FANUC J2/J3 convention: J3 is measured from horizontal, so moving J2 alone keeps the forearm level.'}),
+    secH('Program'),run,ovr,el('div',{class:'prog',id:'progList'}),
+    el('p',{class:'note',text:'A simulated pick-and-place TP program. Moves are eased and scaled for the viewer, not timed like the real controller.'}));
+})();
+(function(){
+  var P=panes.cell,vinfo=el('p',{class:'note'});
+  function syncV(){var V=RVAR[RB.v];vinfo.textContent=V.n+': '+V.ax+' axes, '+V.pay+' kg payload, '+V.reach+' mm reach, '+V.rep+' repeatability, '+V.mass+' kg.'+(V.note?' '+V.note:'');}
+  var vars=chipGroup(RVAR.map(function(v){return [v.n.replace('LR Mate ',''),v.ax+'-axis · '+v.pay+' kg · '+v.reach+' mm'];}),RB.v,function(i){
+    RB.v=i;RB.run=false;$('#tRun').setAttribute('aria-pressed','false');RB.q=homeQ();buildRobots();CUR={main:robot,mirror:robotM};refreshCatalogue();buildSysChips();syncV();syncJogUI();renderRobotSpecs();
+    $('#mName').textContent=RVAR[i].n;$('.brand p').textContent=RVAR[i].n+' · '+RVAR[i].ax+'-axis · R-30iB Mate';toast(RVAR[i].n+' loaded');buzz();},'chips fit');
+  var mount=chipGroup(['Floor · pedestal','Ceiling · inverted'],0,function(i){RB.mount=i?'ceiling':'floor';RB.run=false;$('#tRun').setAttribute('aria-pressed','false');RB.q=homeQ();applyMount();syncJogUI();goView(0);});
+  var tools=chipGroup(TOOLS.map(function(t){return [t.n,t.L?'TCP '+Math.round(t.L*1000)+' mm':'TCP at flange'];}),RB.tool,function(i){RB.tool=i;RB.run=false;$('#tRun').setAttribute('aria-pressed','false');applyRobotLook();resetWork();syncJogUI();},'chips fit');
+  syncV();
+  P.append(secH('Series'),grp('Variant',vars),vinfo,grp('Mounting',mount),
+    secH('Tooling'),grp('End effector',tools),
+    toggleRow('Gripper closed',false,function(on){RB.gripT=on?1:0;},'tGrip'),
+    toggleRow('Show TCP frame',true,function(on){RB.tcp=on;if(robot.tri)robot.tri.visible=on;}),
+    secH('Finish & cell'),grp('Arm colour',chipGroup(RCOL.map(function(c){return c.n;}),0,function(i){RB.col=i;applyRobotLook();})),
+    toggleRow('Controller and pendant',true,function(on){RB.ctl=on;applyMount();}),
+    toggleRow('Work table',true,function(on){RB.table=on;applyMount();}),
+    toggleRow('Floor hazard tape',true,function(on){RB.tape=on;applyMount();}),
+    el('p',{class:'note',text:'Arm shapes are built procedurally to the published reach, J2 height (330 mm) and J3 offset (35 mm). They are not FANUC CAD models. Tools are generic, not specific products.'}));
+})();
+var robotSpecEl=el('div',{id:'specRobot',hidden:''});
+var RSRC={
+  R1:['FANUC America: LR Mate 200iD','https://www.fanucamerica.com/products/robots/series/lr-mate/lr-mate-200id'],
+  R2:['FANUC LR Mate 200iD data sheet','https://www.fanucamerica.com/docs/default-source/robotics-files/lr-mate/lr-mate-200id-data-sheet.pdf'],
+  R3:['FANUC America: LR Mate 200iD/7H','https://www.fanucamerica.com/products/robot/lr-mate-200id-7h'],
+  R4:['Robots.com: LR Mate 200iD/7L','https://www.robots.com/industrial-robots/fanuc-lr-mate-200id-7l'],
+  R5:['Robots.com: LR Mate 200iD/4S','https://www.robots.com/industrial-robots/fanuc-lr-mate-200id-4s'],
+  R6:['LR Mate 200iD mechanical unit operator\'s manual (hosted by Haas)','https://www.haascnc.com/content/dam/haascnc/en/service/reference/fanuc-manuals/Fanuc%20Robot%20LR%20Mate%20200iD%20Operators%20Manual.pdf']
+};
+function renderRobotSpecs(){
+  var V=RVAR[RB.v];robotSpecEl.textContent='';
+  function tbl(rows){var t=el('table',{class:'specs'});rows.forEach(function(r){var td=el('td',{text:r[1]});if(r[2])td.append(el('small',{text:'src '+r[2]}));t.append(el('tr',{},el('th',{text:r[0]}),td));});return t;}
+  var big=el('div',{class:'big'},el('div',{},el('b',{text:String(V.pay)}),el('small',{text:'kg payload'})),el('div',{},el('b',{text:String(V.reach)}),el('small',{text:'mm reach'})),el('div',{},el('b',{text:V.ax+'ax'}),el('small',{text:V.mass+' kg arm'})));
+  var jr=[];for(var i=0;i<6;i++){if(!V.J[i])continue;jr.push(['J'+uiJ(i),V.J[i][0]+'° range · '+V.J[i][1]+'°/s',V.src]);}
+  var src=el('div',{class:'plist'});Object.keys(RSRC).forEach(function(k){src.append(el('p',{class:'note'},el('span',{class:'dot'}),document.createTextNode(k+' '),el('a',{href:RSRC[k][1],target:'_blank',rel:'noopener',text:RSRC[k][0]})));});
+  robotSpecEl.append(big,secH(V.n),
+    tbl([['Axes',String(V.ax),V.src],['Payload',V.pay+' kg',V.src],['Reach',V.reach+' mm',V.src],['Repeatability',V.rep,V.src],['Mechanical mass',V.mass+' kg',V.src],['Wrist moments',V.mom,V.src],['Mounting','Floor, inverted, angle','R1 R4'],['Protection','IP67 standard, IP69K option','R1 R2'],['Average power','0.5 kW','R2'],['Controller','R-30iB Mate / R-30iB Plus family','R1 R3']]),
+    secH('Motion range and speed'),tbl(jr),
+    el('p',{class:'note',text:'Ranges are the published total travel. The + and − split is in the mechanical unit manual; the sliders here centre each range on zero.'}),
+    secH('Geometry used'),tbl([['J2 axis height','330 mm','R6'],['J1 to J2 offset','50 mm (derived)'],['Upper arm (J2–J3)',Math.round(V.a2*1000)+' mm (derived)'],['J3 offset','35 mm','R6'],['Forearm (J3–wrist)',Math.round(V.d4*1000)+' mm (derived)'],['Wrist to flange','80 mm (derived)']]),
+    secH('Maintenance'),tbl([['Encoder batteries','Every 1 year (built-in) or 1.5 years (external battery box)','R6'],['Grease replenishment','See §7.3 of the manual: 4 years / 15,360 h, or 2 years / 7,680 h depending on use','R6'],['Grease gun label','2.5 mm of plunger travel pushes out about 1 ml','R6'],['Daily checks','Oil seepage, connectors, cable jackets, stoppers','R6'],['Mastering','Needed again if encoder data is lost (flat batteries with power off)','R6']]),
+    secH('Sources'),src,
+    el('p',{class:'note',text:'Specs came from FANUC and dealer pages and a public copy of the mechanical unit manual; some pages disagreed, and FANUC\'s own figures were used where they did. Confirm against B-83494EN (mechanical unit) and B-83525EN (maintenance) before you service the arm.'}));
+}
+(function(){
+  var carSpec=el('div',{id:'specCar'});while(panes.specs.firstChild)carSpec.append(panes.specs.firstChild);
+  panes.specs.append(carSpec,robotSpecEl);renderRobotSpecs();
+  var camCar=panes.view.firstChild;camCar.id='camCar';
+  var camRobot=grp('Camera',chipGroup(VIEWS_ROBOT.map(function(v){return v.n;}),-1,goView));camRobot.id='camRobot';camRobot.hidden=true;
+  panes.view.insertBefore(camRobot,camCar.nextSibling);
+})();
+
+buildRobots();syncJogUI();renderProg();
 
 /* ------------------------------------------------ model loader */
 var MK={fog:fogMat,paint:paint,plastic:plasticS,trim:trimS,chrome:chromeS,glass:glass,rubber:rubberS,steel:underMat,emblem:blueMat,headlens:headLens,bulb:bulbMat,tail:tailMat,reverse:reverseMat,amber:amberMat,plate:plateMat,tire:plainTire,rim:rimMat,rimInner:rimInnerMat};
@@ -2617,7 +3155,7 @@ var MP=[
 ];
 var KILL={'seat-front':1,'seat-rear':1,'cargo':1,'dash':1,'steering-wheel':1,'mirrors':1,'rails':1,'grille':1,'bumper-front':1,'headlights':1,'taillights':1,'bumper-rear':1,'plate':1,'shell':1,'struts-front':1,'springs-rear':1,'arms-front':1,'links-rear':1,'subframe-front':1,'sway-front':1,'rear-diff':1};
 function refreshCatalogue(){
-  LIST=car.parts.filter(function(p){return p.meta;});byId={};LIST.forEach(function(p){byId[p.meta.id]=p;});
+  LIST=CUR.main.parts.filter(function(p){return p.meta;});byId={};LIST.forEach(function(p){byId[p.meta.id]=p;});
   renderList();applyVis();renderCard();
 }
 function mountModel(j,buf){
@@ -2674,7 +3212,7 @@ function mountModel(j,buf){
     syncFog();
   })();
   applyFitment();
-  refreshCatalogue();
+  refreshCatalogue();if(MACH==='xc70')buildSysChips();
   $('#loading').hidden=true;
   toast('Arsenal online · '+LIST.length+' parts indexed');
 }
@@ -2684,6 +3222,8 @@ Promise.resolve(JSON.parse(document.getElementById('modelJson').textContent)).th
 
 /* ---------------------------------------------------- HUD + photo mode */
 $('#btnSpin').addEventListener('click',function(){var on=$('#btnSpin').getAttribute('aria-pressed')!=='true';S.auto=on;controls.autoRotate=on;$('#btnSpin').setAttribute('aria-pressed',String(on));var t=$('#tAuto');if(t)t.setAttribute('aria-pressed',String(on));});
+$('#btnMachine').addEventListener('click',openPicker);$('#mSwitch').addEventListener('click',openPicker);$('#pkClose').addEventListener('click',closePicker);
+$('#picker').addEventListener('click',function(e){if(e.target.id==='picker')closePicker();});
 $('#btnPanel').addEventListener('click',function(){var on=app.classList.toggle('nopanel');$('#btnPanel').setAttribute('aria-pressed',String(!on));setTimeout(resize,30);});
 $('#btnXray').addEventListener('click',function(){var on=S.ghost<.3;syncSlider('sGhost',on?.88:0);$('#btnXray').setAttribute('aria-pressed',String(on));});
 $('#btnLights').addEventListener('click',function(){setHead(!S.head);syncHeadUI();});
@@ -2693,9 +3233,10 @@ document.addEventListener('keydown',function(e){
   if(k==='/'){e.preventDefault();if(app.classList.contains('nopanel'))$('#btnPanel').click();openTab('parts');$('#partSearch').focus();}
   else if(k==='x')$('#btnXray').click();
   else if(k==='e'){var v=EX.tgt>.5?0:1;syncSlider('sExplode',v);}
-  else if(k==='l')$('#btnLights').click();
+  else if(k==='l'&&MACH==='xc70')$('#btnLights').click();
+  else if(k==='m')openPicker();
   else if(k==='p')$('#btnPanel').click();
-  else if(k==='escape')clearSel();
+  else if(k==='escape'){if(!$('#picker').hidden)closePicker();else clearSel();}
 });
 $('#btnPhoto').addEventListener('click',function(){app.classList.add('photo');$('#exitPhoto').hidden=false;setTimeout(resize,30);});
 $('#exitPhoto').addEventListener('click',function(){app.classList.remove('photo');$('#exitPhoto').hidden=true;setTimeout(resize,30);});
@@ -2714,6 +3255,7 @@ resize();
 setEnv('cyber');
 setFinish('metal');setPaint(PAINTS[0].c);
 setBulb(1);setCaliper(0);setRotor(0);setTail(0);applyFitment();
+setMachine('xc70',true);
 
 var last=performance.now(),first=true,fpsN=0,telT=performance.now(),telEl=$('#telemetry');
 function frame(now){
@@ -2725,6 +3267,7 @@ function frame(now){
   }
   EX.cur+=(EX.tgt-EX.cur)*Math.min(1,dt*5);if(Math.abs(EX.tgt-EX.cur)<.0005)EX.cur=EX.tgt;
   [car,mirrorCar].forEach(function(c){c.parts.forEach(function(p){p.o.position.set(p.base.x+p.dir.x*EX.cur,p.base.y+p.dir.y*EX.cur,p.base.z+p.dir.z*EX.cur);});});
+  if(MACH==='lrmate')robotUpdate(dt);
   if(PS.box)PS.box.update();
   var st=S.steer*Math.PI/180;
   [car,mirrorCar].forEach(function(c){
@@ -2740,6 +3283,11 @@ function frame(now){
     var off=camera.position.clone().sub(controls.target),r=off.length(),az=(Math.atan2(off.x,off.z)*180/Math.PI+360)%360,elv=Math.asin(clamp(off.y/r,-1,1))*180/Math.PI;
     var pad=function(n,l){n=String(Math.round(n));while(n.length<l)n='0'+n;return n;};
     var sel=PS.sel&&byId[PS.sel]?byId[PS.sel].meta.name:'none';
+    if(MACH==='lrmate'&&robot){var w=tcpWorld(),b0=robot.base.getWorldPosition(new THREE.Vector3()),d=w.sub(b0),X=d.x*1000,Y=-d.z*1000,Z=d.y*1000;
+      var tr=$('#tcpRead');if(tr)tr.innerHTML='X <b>'+X.toFixed(1)+'</b> &nbsp;Y <b>'+Y.toFixed(1)+'</b> &nbsp;Z <b>'+Z.toFixed(1)+'</b> mm<br>'+RB.q.map(function(v,i){return RVAR[RB.v].J[i]?'J'+uiJ(i)+' <b>'+v.toFixed(1)+'</b>':'';}).filter(Boolean).join(' ')+(RB.warn?'<br><span class="w">&#9888; '+RB.warn+'</span>':'');
+      telEl.innerHTML='TCP X <b>'+X.toFixed(0)+'</b> Y <b>'+Y.toFixed(0)+'</b> Z <b>'+Z.toFixed(0)+'</b> MM<br>OVR <b>'+RB.ovr+'%</b> '+(RB.run?'<b>RUN</b> L'+(PR.i+1):'IDLE')+' FPS <b>'+fps+'</b><br><div class="sel">TGT &#9656; '+(PS.sel&&byId[PS.sel]?byId[PS.sel].meta.name:'none')+'</div>';
+      if(jogSliders.length&&document.activeElement&&document.activeElement.type!=='range')syncJogUI();
+    }else
     telEl.innerHTML='CAM AZ <b>'+pad(az,3)+'&deg;</b> EL <b>'+pad(elv,2)+'&deg;</b> R <b>'+r.toFixed(1)+'M</b><br>EXP <b>'+pad(EX.cur*100,3)+'%</b> XRAY <b>'+pad(S.ghost*100,3)+'%</b> FPS <b>'+fps+'</b><br><div class="sel">TGT &#9656; '+sel.replace(/[<&]/g,'')+'</div>';
   }
   if(first){first=false;$('#ldText').textContent='Streaming XC70 geometry';}

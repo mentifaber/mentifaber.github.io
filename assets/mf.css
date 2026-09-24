@@ -1,7 +1,7 @@
 /* Shared Mentifaber enhancement layer — loaded last on every project page.
    Each page sets --mf-accent / --mf-glow (its homepage card color) inline. */
 html { --mf-accent: #c8a96e; --mf-glow: rgba(200,169,110,.45); }
-html { overflow-x: clip; }
+body { overflow-x: clip !important; }
 
 .mf-aurora { position: fixed; inset: -15%; z-index: -1; pointer-events: none; filter: blur(90px); opacity: .38; }
 .mf-aurora i { position: absolute; width: 42vmax; height: 42vmax; border-radius: 50%; }
