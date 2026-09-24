@@ -88,3 +88,8 @@ a.mf-xref:hover { color: var(--mf-accent); text-shadow: 0 0 14px var(--mf-glow);
 .mf-rel-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--c);
   text-shadow: 0 0 16px var(--g); padding: .9rem 1rem .25rem; }
 .mf-rel-line { font-family: 'Newsreader', serif; font-size: .92rem; line-height: 1.45; color: #c4b09a; padding: 0 1rem 1.1rem; }
+
+/* phones: keep corner nav legible and tappable */
+@media (max-width:600px){
+  .corner{font-size:10.5px!important;letter-spacing:.14em!important;padding:8px 0}
+}

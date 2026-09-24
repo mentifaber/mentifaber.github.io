@@ -59,9 +59,11 @@ function resize(){
   DW=Math.max(DW,640); DH=Math.max(DH,360);
   PW=Math.floor(DW/4); PH=DH;
   const wrap=document.getElementById('wrap');
-  wrap.style.width=DW+'px'; wrap.style.height=DH+'px';
+  // phones: keep the 640px drawing surface, scale it down visually to fit
+  const fit=Math.min(1,mw/DW), VW=Math.floor(DW*fit), VH=Math.floor(DH*fit);
+  wrap.style.width=VW+'px'; wrap.style.height=VH+'px';
   [C,OV].forEach(cv=>{
-    cv.style.width=DW+'px'; cv.style.height=DH+'px';
+    cv.style.width=VW+'px'; cv.style.height=VH+'px';
     cv.style.position='absolute'; cv.style.top='0'; cv.style.left='0';
     cv.width=Math.round(DW*dpr); cv.height=Math.round(DH*dpr);
   });
