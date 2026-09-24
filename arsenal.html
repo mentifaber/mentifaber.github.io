@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Mechanic's Arsenal — an interactive 3D 2008 Volvo XC70, built from scratch to scan, X-ray, and explode 126 real parts."/>
+<meta name="description" content="Mechanic's Arsenal — interactive 3D machines you can take apart in the browser: a 2008 Volvo XC70 with 126 cataloged parts, and a jog-able FANUC LR Mate 200iD robot arm in its work cell."/>
 <meta property="og:title" content="Mechanic's Arsenal"/>
-<meta property="og:description" content="A car you can actually take apart in the browser."/>
+<meta property="og:description" content="A car and an industrial robot you can take apart, X-ray and drive in the browser."/>
 <meta name="theme-color" content="#000000"/>
 <title>Mechanic's Arsenal</title>
 <meta property="og:image" content="https://mentifaber.github.io/assets/previews/arsenal.png"/>
@@ -117,61 +117,63 @@ footer.mf-foot a:hover { color: var(--rust); }
 <a href="index.html" class="corner corner-tl">← Atlas</a>
 
 <div class="container">
-  <p class="label">2008 Volvo XC70 3.2 AWD — B6324S I6</p>
+  <p class="label">Volvo XC70 3.2 AWD · FANUC LR Mate 200iD</p>
   <h1 class="name">Mechanic's <span>Arsenal</span></h1>
-  <p class="tagline">A car you can actually take apart. 126 real parts, modeled and cataloged from scratch, X-rayed and exploded in the browser.</p>
+  <p class="tagline">Machines you can actually take apart. A 2008 Volvo with 126 cataloged parts, and a FANUC robot arm you can jog joint by joint — X-rayed, exploded and cited to the manual, in the browser.</p>
   <div class="divider"></div>
   <span class="status-pill"><span class="sw"></span>live — open it below</span>
 </div>
 
 <div class="launch-wrap">
   <a class="launch-btn" href="mechanics-arsenal.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// sys.online · node xc70</span>
+    <span class="lb-eyebrow">// sys.online · 2 machines loaded</span>
     <span class="lb-title">Open Mechanic's Arsenal →</span>
-    <span class="lb-sub">Three.js · zero dependencies · runs entirely in your browser</span>
+    <span class="lb-sub">Volvo XC70 · FANUC LR Mate 200iD · runs entirely in your browser</span>
   </a>
-  <div class="launch-cap"><span>drag to orbit · tap a part to scan it</span><span>126 / 126 parts</span></div>
+  <div class="launch-cap"><span>drag to orbit · tap a part to scan it · switch machines top right</span><span>126 + 23 parts</span></div>
 </div>
 
 <section class="frag-wrap">
   <div class="frag-head">
     <p class="frag-label">why this exists</p>
-    <h2 class="frag-title">A garage tool, <em>built</em> not bought</h2>
+    <h2 class="frag-title">A shop manual you can <em>walk around</em></h2>
   </div>
 
   <div class="frag">
     <span class="tag">the problem</span>
-    <p>Working on a specific car means constantly cross-referencing a workshop manual's text against a mental model of where everything actually sits — which mount, which coupling, which sensor is under which panel. That translation is where mistakes happen. <b>Mechanic's Arsenal</b> replaces the mental model with an actual one: a real 3D layout of a 2008 Volvo XC70 you can rotate, X-ray, and pull apart part by part.</p>
+    <p>Working on a machine means constantly cross-referencing a manual's text against a mental model of where everything actually sits — which mount, which coupling, which cable runs through which joint. That translation is where mistakes happen. <b>Mechanic's Arsenal</b> replaces the mental model with a real one you can rotate, X-ray and pull apart part by part. It started with a 2008 Volvo XC70 in the driveway and now runs a second machine from the shop floor: a FANUC LR Mate 200iD industrial robot, the same controller family as <a class="mf-xref" href="shop.html">the lathes in The Shop</a>.</p>
   </div>
 
   <div class="frag">
     <span class="tag">what it does</span>
     <ul>
-      <li><b>Scan</b> — search or click any of 126 cataloged parts across engine, driveline, brakes, suspension, cooling, climate, audio, safety, and body systems; each one carries a real description and where it physically lives.</li>
-      <li><b>X-ray &amp; explode</b> — fade the body to see through it, or blow every part apart along its own axis to see how the assembly actually stacks.</li>
-      <li><b>Arsenal</b> — the tool catalog for the job: what you'd reach for to actually get a given part off the car.</li>
-      <li><b>Paint &amp; cabin</b> — swap exterior color and interior trim to match the real car being worked on.</li>
-      <li><b>Scene &amp; camera</b> — six lighting environments (neon district, studio, sunset, overcast, night city, garage) and full camera control, because a part looks different in shop light than in a photo.</li>
-      <li><b>Data</b> — reference specs pulled from the factory workshop manual: torque values, tire and wheel-bolt specs, ignition data, and more, each one citing its source.</li>
+      <li><b>Machine picker</b> — an index of everything in the arsenal, filtered by vehicles or industrial robots. Switch machines and every tab rebuilds around the new one.</li>
+      <li><b>Scan</b> — search or tap any cataloged part: 126 on the XC70 across engine, driveline, brakes, suspension, cooling, climate, audio, safety and body; 23 on the robot across base and J1, drives, arm, cabling, wrist, tooling, cell and controller. Each one says what it is and where it lives.</li>
+      <li><b>X-ray &amp; explode</b> — fade the shell to see through it, or blow every part apart along its own axis to see how the assembly actually stacks.</li>
+      <li><b>Motion</b> <span style="opacity:.7">(robot)</span> — jog all six joints individually, nudge the tool point along X, Y and Z, snap to Home, Tool down, Reach, Stow and Wrist service poses, fit a gripper or vacuum cup, and run a teach-pendant-style pick-and-place program at any speed override — with a live tool-point readout and an honest OUT OF REACH when you ask for the impossible.</li>
+      <li><b>Cell</b> <span style="opacity:.7">(robot)</span> — switch between the 200iD, the 5-axis /7H, the long-reach /7L and the compact /4S, and mount the arm on a floor pedestal or inverted from the ceiling.</li>
+      <li><b>Arsenal, paint &amp; cabin</b> <span style="opacity:.7">(car)</span> — the tool you'd reach for to get each part off, plus exterior colour and interior trim to match the real car.</li>
+      <li><b>Scene &amp; camera</b> — six lighting environments from neon district to garage, and saved camera views down to a wrist close-up on the robot.</li>
+      <li><b>Data</b> — reference specs with sources: torque, tire and ignition data from the XC70 workshop manual; payload, reach, repeatability and per-joint range and speed for every LR Mate variant, cited to FANUC's own data sheets and operator's manual.</li>
     </ul>
   </div>
 
   <div class="frag">
     <span class="tag">built on</span>
-    <p>Three.js, hand-modeled geometry for the mechanical layout, and a from-scratch HUD — no car-configurator template, no off-the-shelf 3D asset pack. The whole thing runs client-side: one HTML file, no server, no build step.</p>
+    <p>Three.js, a scanned body for the car, a procedural arm built to FANUC's published link dimensions, and a from-scratch HUD — no configurator template, no off-the-shelf asset pack. An inverse-kinematics solver turns every Cartesian move into joint angles and checks them against each variant's real joint limits, so the tool-point readout is solved, not animated. The whole thing runs client-side: one HTML file, no server, no build step.</p>
     <div class="stack-row">
-      <span>Three.js</span><span>WebGL</span><span>Vanilla JS</span><span>Zero dependencies</span>
+      <span>Three.js</span><span>WebGL</span><span>Inverse kinematics</span><span>Vanilla JS</span><span>Zero dependencies</span>
     </div>
   </div>
 
   <div class="frag">
     <span class="tag">honest scope</span>
-    <p>Body, cabin, lamp, and chassis geometry are modeled from the real XC70. Mechanical parts are placeholder shapes placed at their correct real-world location to show layout and relationships, not exact OEM geometry — and every spec on the Data tab is reference only. <em>Confirm torque values and procedures against the factory manual for your specific VIN before turning a wrench.</em></p>
+    <p>The XC70's body, cabin, lamps and chassis are modeled from the real car; its mechanical parts are placeholder shapes placed at their correct real-world location. The robot is a procedural model built to published dimensions, not FANUC CAD, and its motion is eased and scaled for the viewer rather than timed like the real R-30iB Mate controller. Every spec on the Data tab is reference only. <em>Confirm torque values, joint limits and procedures against the factory manual for your specific VIN or serial before turning a wrench — or a teach pendant.</em></p>
   </div>
 </section>
 
 <footer class="mf-foot">
-  <p>Built for the garage, not the showroom.</p>
+  <p>Built for the garage and the shop floor, not the showroom.</p>
   <a href="index.html">Return to Mentifaber</a>
 </footer>
 <script src="assets/mf.js" defer></script>
