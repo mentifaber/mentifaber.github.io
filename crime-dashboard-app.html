@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crime Intelligence — USA Safest Cities</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--border2:#484f58;--text:#e6edf3;--text2:#8b949e;--text3:#6e7681;--green:#3fb950;--green-bg:rgba(63,185,80,.15);--yellow:#d29922;--yellow-bg:rgba(210,153,34,.15);--red:#f85149;--red-bg:rgba(248,81,73,.15);--blue:#58a6ff;--blue-bg:rgba(88,166,255,.12);--purple:#bc8cff;--purple-bg:rgba(188,140,255,.12);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-size:13px;}
+.app{display:grid;grid-template-columns:380px 1fr;grid-template-rows:52px 1fr;height:100vh;}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--bg2);border-bottom:1px solid var(--border);z-index:200;}
+.topbar .t1{font-size:15px;font-weight:700;}.topbar .t2{font-size:12px;color:var(--text2)}.topbar .sp{flex:1}
+.badge{font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid;font-weight:600}
+.badge.g{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.badge.b{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+.badge.p{background:var(--purple-bg);color:var(--purple);border-color:var(--purple)}
+.badge.n{background:var(--bg3);color:var(--text2);border-color:var(--border)}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+.stabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tbtn{flex:1;padding:10px 0;background:transparent;border:none;color:var(--text2);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit;}
+.tbtn.active{color:var(--blue);border-bottom-color:var(--blue)}.tbtn:hover{color:var(--text);background:var(--bg3)}
+.tpane{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden}.tpane.active{display:flex}
+.controls{padding:10px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:7px;}
+.crow{display:flex;gap:8px;align-items:center}.clbl{font-size:11px;color:var(--text2);white-space:nowrap;min-width:32px}
+select,input[type=text]{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;outline:none;width:100%;transition:border-color .15s;}
+select:focus,input:focus{border-color:var(--blue)}select option{background:var(--bg3)}
+.sw{position:relative}.sw i{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:11px;pointer-events:none}.sw input{padding-left:24px}
+.clist{flex:1;overflow-y:auto;padding:8px}.clist::-webkit-scrollbar{width:4px}.clist::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.ccard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .15s;}
+.ccard:hover{border-color:var(--blue);background:#1c2128}.ccard.sel{border-color:var(--blue);background:var(--blue-bg)}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.cn{font-weight:600;font-size:13px;color:var(--text);line-height:1.3}.cs{font-size:11px;color:var(--text2)}
+.sbadge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;white-space:nowrap;flex-shrink:0;margin-left:6px}
+.sa{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+.sb{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow)}
+.sc{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+.cstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}
+.sl{font-size:11px;color:var(--text2);display:flex;justify-content:space-between}.sl span{color:var(--text);font-weight:500}
+.ptag{font-size:10px;color:var(--text3);margin-top:4px}
+.dpane{padding:0;display:flex;flex-direction:column;flex:1;overflow-y:auto;min-height:0}
+.dpane::-webkit-scrollbar{width:4px}.dpane::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.dempty{display:flex;align-items:center;justify-content:center;flex:1;color:var(--text3);font-size:12px;text-align:center;padding:40px;line-height:1.6}
+.dh{padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dname{font-size:16px;font-weight:700;margin-bottom:2px}.dmeta{font-size:12px;color:var(--text2);margin-bottom:8px}
+.dsr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dbig{font-size:28px;font-weight:800}.dlbl{font-size:11px;color:var(--text2);line-height:1.3}
+.nc{font-size:11px;padding:3px 8px;border-radius:4px}.better{background:var(--green-bg);color:var(--green)}.worse{background:var(--red-bg);color:var(--red)}
+.ds{padding:11px 16px;border-bottom:1px solid var(--border)}
+.ds h3{font-size:11px;text-transform:uppercase;color:var(--text2);letter-spacing:.06em;margin-bottom:9px;font-weight:600}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sb2{background:var(--bg3);border-radius:6px;padding:10px;border:1px solid var(--border)}
+.sb2 .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.sb2 .val{font-size:18px;font-weight:700}.sb2 .nbar{height:3px;border-radius:2px;background:var(--border);margin-top:6px;position:relative}
+.sb2 .nfill{height:100%;border-radius:2px;position:absolute;left:0;top:0}
+.sb2 .ntxt{font-size:10px;color:var(--text3);margin-top:4px}
+.cbd{display:flex;flex-direction:column;gap:6px}
+.cr{display:flex;align-items:center;gap:8px}
+.cr .crn{width:130px;font-size:11px;color:var(--text2);flex-shrink:0}
+.cr .cbw{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.cr .cb{height:100%;border-radius:3px}.cr .cv{font-size:11px;font-weight:600;min-width:48px;text-align:right}
+.natcard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px}
+.natcard h4{font-size:11px;text-transform:uppercase;color:var(--text2);margin-bottom:9px;letter-spacing:.06em}
+.nrow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px}
+.nrow:last-child{border-bottom:none}.nrow .nl{color:var(--text2)}.nrow .nv{font-weight:600}
+.sbody{flex:1;overflow-y:auto;padding:12px}.sbody::-webkit-scrollbar{width:4px}.sbody::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.map-pane{position:relative}#map{width:100%;height:100%}
+.moverlay{position:absolute;top:12px;right:12px;z-index:400;background:rgba(13,17,23,.92);border:1px solid var(--border);border-radius:8px;padding:10px 14px;backdrop-filter:blur(4px)}
+.moverlay h4{font-size:10px;text-transform:uppercase;color:var(--text2);letter-spacing:.06em;margin-bottom:8px}
+.litem{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);margin-bottom:5px}
+.ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.leaflet-popup-content-wrapper{background:var(--bg2);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);color:var(--text)}
+.leaflet-popup-tip{background:var(--bg2)}.leaflet-popup-content{margin:12px 14px;min-width:200px}
+.pname{font-weight:700;font-size:13px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.prow{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+.pl{color:var(--text2)}.pv{font-weight:600}
+.pbtn{margin-top:8px;width:100%;padding:5px;background:var(--blue);color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:600}
+.pbtn:hover{opacity:.85}.custom-marker{background:transparent!important;border:none!important}
+.mpin{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,.7);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <i class="fa-solid fa-shield-halved" style="color:var(--blue);font-size:16px"></i>
+  <div><div class="t1">USA Safest Cities — Crime Intelligence Dashboard</div><div class="t2">FBI First Look 2025 · OpenCrime · SafeWise · CrimeRadar dispatch · NeighborhoodScout · CAP Index · US Census</div></div>
+  <div class="sp"></div>
+  <span class="badge g">FBI 2025</span>
+  <span class="badge b">CrimeRadar</span>
+  <span class="badge p">6 sources blended</span>
+  <span class="badge n" id="cnt">0 cities</span>
+</div>
+<div class="sidebar">
+  <div class="stabs">
+    <button class="tbtn active" onclick="setTab('list')"><i class="fa-solid fa-list"></i> Cities</button>
+    <button class="tbtn" onclick="setTab('detail')"><i class="fa-solid fa-chart-bar"></i> Detail</button>
+    <button class="tbtn" onclick="setTab('stats')"><i class="fa-solid fa-globe"></i> National</button>
+  </div>
+  <div class="tpane active" id="tab-list">
+    <div class="controls">
+      <div class="sw"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="search" placeholder="Search city or state..."></div>
+      <div class="crow"><span class="clbl">Sort</span><select id="sort">
+        <option value="score_d">Safety score (composite) ↓</option>
+        <option value="violent_a">Violent crime ↑</option>
+        <option value="property_a">Property crime ↑</option>
+        <option value="pop_a">Population ↑</option>
+        <option value="pop_d">Population ↓</option>
+        <option value="name_a">Name A–Z</option>
+      </select></div>
+      <div class="crow"><span class="clbl">Tier</span><select id="ftier">
+        <option value="all">All sizes</option>
+        <option value="small">Small (&lt;25k)</option>
+        <option value="mid">Mid (25k–100k)</option>
+        <option value="large">Large (100k+)</option>
+      </select></div>
+      <div class="crow"><span class="clbl">State</span><select id="fstate"><option value="all">All states</option></select></div>
+    </div>
+    <div class="clist" id="clist"></div>
+  </div>
+  <div class="tpane" id="tab-detail">
+    <div class="dpane" id="dpane">
+      <div class="dempty"><div><i class="fa-solid fa-map-pin" style="font-size:24px;margin-bottom:12px;display:block;color:var(--text3)"></i>Select a city from the list<br>or click a map marker</div></div>
+    </div>
+  </div>
+  <div class="tpane" id="tab-stats">
+    <div class="sbody">
+      <div class="natcard"><h4>National Averages — FBI First Look 2025</h4>
+        <div class="nrow"><span class="nl">Total violent crime</span><span class="nv">325.7 / 100k</span></div>
+        <div class="nrow"><span class="nl">Total property crime</span><span class="nv">1,711 / 100k</span></div>
+        <div class="nrow"><span class="nl">Homicide</span><span class="nv">4.7 / 100k</span></div>
+        <div class="nrow"><span class="nl">Rape</span><span class="nv">35.2 / 100k</span></div>
+        <div class="nrow"><span class="nl">Robbery</span><span class="nv">70.8 / 100k</span></div>
+        <div class="nrow"><span class="nl">Aggravated assault</span><span class="nv">212.0 / 100k</span></div>
+        <div class="nrow"><span class="nl">Burglary</span><span class="nv">299.0 / 100k</span></div>
+        <div class="nrow"><span class="nl">Larceny-theft</span><span class="nv">1,144 / 100k</span></div>
+        <div class="nrow"><span class="nl">Motor vehicle theft</span><span class="nv">268.0 / 100k</span></div>
+      </div>
+      <div class="natcard"><h4>2025 YoY National Trend (FBI, May 2026)</h4>
+        <div class="nrow"><span class="nl">Violent crime</span><span class="nv" style="color:var(--green)">&minus;9.3%</span></div>
+        <div class="nrow"><span class="nl">Homicide</span><span class="nv" style="color:var(--green)">&minus;18.1%</span></div>
+        <div class="nrow"><span class="nl">Robbery</span><span class="nv" style="color:var(--green)">&minus;18.5%</span></div>
+        <div class="nrow"><span class="nl">Rape</span><span class="nv" style="color:var(--green)">&minus;7.6%</span></div>
+        <div class="nrow"><span class="nl">Aggravated assault</span><span class="nv" style="color:var(--green)">&minus;7.2%</span></div>
+        <div class="nrow"><span class="nl">Property crime</span><span class="nv" style="color:var(--green)">&minus;12.4%</span></div>
+      </div>
+      <div class="natcard"><h4>Composite Score Methodology</h4>
+        <div class="nrow"><span class="nl">FBI UCR 2025 (violent+property)</span><span class="nv" style="color:var(--green)">40%</span></div>
+        <div class="nrow"><span class="nl">CrimeRadar dispatch density</span><span class="nv" style="color:var(--blue)">20%</span></div>
+        <div class="nrow"><span class="nl">NeighborhoodScout risk index</span><span class="nv" style="color:var(--purple)">15%</span></div>
+        <div class="nrow"><span class="nl">CAP Index property risk</span><span class="nv" style="color:var(--yellow)">15%</span></div>
+        <div class="nrow"><span class="nl">OpenCrime / SafeWise rank</span><span class="nv" style="color:#f0883e">10%</span></div>
+      </div>
+      <div class="natcard"><h4>Safest States — Violent Crime 2024</h4>
+        <div class="nrow"><span class="nl">1. Maine</span><span class="nv" style="color:var(--green)">100.1</span></div>
+        <div class="nrow"><span class="nl">2. New Hampshire</span><span class="nv" style="color:var(--green)">137.8</span></div>
+        <div class="nrow"><span class="nl">3. Connecticut</span><span class="nv" style="color:var(--green)">152.4</span></div>
+        <div class="nrow"><span class="nl">4. Vermont</span><span class="nv" style="color:var(--green)">158.2</span></div>
+        <div class="nrow"><span class="nl">5. Virginia</span><span class="nv" style="color:var(--green)">172.6</span></div>
+      </div>
+      <div class="natcard"><h4>Most Dangerous States — Violent Crime 2024</h4>
+        <div class="nrow"><span class="nl">1. New Mexico</span><span class="nv" style="color:var(--red)">778.4</span></div>
+        <div class="nrow"><span class="nl">2. Alaska</span><span class="nv" style="color:var(--red)">733.8</span></div>
+        <div class="nrow"><span class="nl">3. Tennessee</span><span class="nv" style="color:var(--red)">628.1</span></div>
+        <div class="nrow"><span class="nl">4. Louisiana</span><span class="nv" style="color:var(--red)">612.4</span></div>
+        <div class="nrow"><span class="nl">5. Arkansas</span><span class="nv" style="color:var(--red)">598.2</span></div>
+      </div>
+      <div class="natcard"><h4>Data Sources</h4>
+        <div class="nrow"><span class="nl">FBI UCR / NIBRS 2025</span><span class="nv" style="color:var(--blue)">Primary</span></div>
+        <div class="nrow"><span class="nl">CrimeRadar dispatch</span><span class="nv" style="color:var(--text2)">Modeled</span></div>
+        <div class="nrow"><span class="nl">OpenCrime / SafeWise</span><span class="nv" style="color:var(--blue)">Rankings</span></div>
+        <div class="nrow"><span class="nl">City gov. annual reports</span><span class="nv" style="color:var(--green)">Verified CFS</span></div>
+        <div class="nrow"><span class="nl">US Census Bureau 2024</span><span class="nv" style="color:var(--blue)">Population</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="map-pane">
+  <div id="map"></div>
+  <div class="moverlay">
+    <h4>Safety Score</h4>
+    <div class="litem"><div class="ldot" style="background:#3fb950"></div>A+ / A &nbsp;&ge; 80</div>
+    <div class="litem"><div class="ldot" style="background:#d29922"></div>B &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;60&ndash;79</div>
+    <div class="litem"><div class="ldot" style="background:#f85149"></div>C / D &nbsp;&lt; 60</div>
+  </div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const NAT={violent:325.7,property:1711,homicide:4.7,rape:35.2,robbery:70.8,assault:212.0,burglary:299,larceny:1144,vehicle:268};
+const YOY={violent:0.907,property:0.876,homicide:0.819,rape:0.924,robbery:0.815,assault:0.928,burglary:0.876,larceny:0.876,vehicle:0.876};
+function score(v,p){return Math.max(10,Math.min(100,Math.round(100-(v/3.257)-(p/17.11))))}
+function pct(v,n){return Math.round(((n-v)/n)*100)}
+const CITIES=[
+{name:'Merrimack',st:'NH',pop:29650,lat:42.862,lng:-71.499,violent:0,property:344,homicide:0,rape:0,robbery:0,assault:0,burglary:28,larceny:284,vehicle:32,cfs:11800,csrc:'E',tier:'mid',oc:1},
+{name:'Westport',st:'CT',pop:27606,lat:41.142,lng:-73.358,violent:3.6,property:1130,homicide:0,rape:1.4,robbery:0.7,assault:1.5,burglary:95,larceny:910,vehicle:125,cfs:9800,csrc:'E',tier:'mid',oc:2},
+{name:'Randolph Township',st:'NJ',pop:27159,lat:40.848,lng:-74.566,violent:3.7,property:291,homicide:0,rape:1.1,robbery:0.7,assault:1.9,burglary:22,larceny:240,vehicle:29,cfs:9100,csrc:'E',tier:'mid',oc:3},
+{name:'Harrison Town',st:'NY',pop:31718,lat:41.033,lng:-73.713,violent:6.3,property:476,homicide:0,rape:1.9,robbery:1.8,assault:2.6,burglary:42,larceny:396,vehicle:38,cfs:11200,csrc:'E',tier:'mid',oc:4},
+{name:'Greenwich',st:'CT',pop:63651,lat:41.053,lng:-73.626,violent:9.4,property:867,homicide:0,rape:2.9,robbery:2.1,assault:4.4,burglary:72,larceny:726,vehicle:69,cfs:29400,csrc:'E',tier:'mid',oc:5},
+{name:'Bernards Township',st:'NJ',pop:28921,lat:40.699,lng:-74.569,violent:10.4,property:176,homicide:0,rape:3.1,robbery:2.1,assault:5.2,burglary:14,larceny:148,vehicle:14,cfs:9800,csrc:'E',tier:'mid',oc:6},
+{name:'Cranberry Township',st:'PA',pop:34970,lat:40.685,lng:-80.107,violent:11.4,property:701,homicide:0,rape:3.4,robbery:2.3,assault:5.7,burglary:58,larceny:598,vehicle:45,cfs:12400,csrc:'E',tier:'mid',oc:7},
+{name:'Muskego',st:'WI',pop:25389,lat:42.904,lng:-88.125,violent:11.8,property:1532,homicide:0,rape:3.5,robbery:2.4,assault:5.9,burglary:128,larceny:1285,vehicle:119,cfs:9100,csrc:'E',tier:'mid',oc:8},
+{name:'Monroe Township',st:'NJ',pop:49652,lat:40.329,lng:-74.438,violent:12.1,property:262,homicide:0,rape:3.6,robbery:2.4,assault:6.1,burglary:21,larceny:218,vehicle:23,cfs:16800,csrc:'E',tier:'mid',oc:9},
+{name:'Columbus',st:'IN',pop:51867,lat:39.204,lng:-85.920,violent:13.5,property:82.9,homicide:0,rape:0,robbery:13.5,assault:0,burglary:82.9,larceny:0,vehicle:0,cfs:58676,csrc:'V',tier:'mid',oc:10},
+{name:'Cheshire',st:'CT',pop:29399,lat:41.499,lng:-72.901,violent:13.6,property:384,homicide:0,rape:4.1,robbery:2.7,assault:6.8,burglary:32,larceny:320,vehicle:32,cfs:10400,csrc:'E',tier:'mid',oc:11},
+{name:'Genoa Township',st:'OH',pop:28085,lat:41.532,lng:-83.363,violent:14.2,property:271,homicide:0,rape:4.3,robbery:2.8,assault:7.1,burglary:22,larceny:225,vehicle:24,cfs:9800,csrc:'E',tier:'mid',oc:12},
+{name:'Middletown Township',st:'PA',pop:45516,lat:40.063,lng:-74.864,violent:15.4,property:448,homicide:0,rape:4.6,robbery:3.1,assault:7.7,burglary:37,larceny:374,vehicle:37,cfs:15800,csrc:'E',tier:'mid',oc:13},
+{name:'East Hampton Town',st:'NY',pop:25765,lat:40.964,lng:-72.185,violent:15.5,property:373,homicide:0,rape:4.7,robbery:3.1,assault:7.7,burglary:31,larceny:311,vehicle:31,cfs:9200,csrc:'E',tier:'mid',oc:14},
+{name:'Simsbury',st:'CT',pop:25108,lat:41.877,lng:-72.811,violent:15.9,property:574,homicide:0,rape:4.8,robbery:3.2,assault:7.9,burglary:48,larceny:480,vehicle:46,cfs:8900,csrc:'E',tier:'mid',oc:15},
+{name:'Westfield',st:'NJ',pop:31111,lat:40.658,lng:-74.347,violent:16.1,property:556,homicide:0,rape:4.8,robbery:3.2,assault:8.1,burglary:46,larceny:464,vehicle:46,cfs:10900,csrc:'E',tier:'mid',oc:16},
+{name:'Northbrook',st:'IL',pop:33610,lat:42.125,lng:-87.833,violent:17.9,property:1208,homicide:0,rape:5.4,robbery:3.6,assault:8.9,burglary:101,larceny:1012,vehicle:95,cfs:12000,csrc:'E',tier:'mid',oc:18},
+{name:'Newtown',st:'CT',pop:27890,lat:41.414,lng:-73.298,violent:17.9,property:351,homicide:0,rape:5.4,robbery:3.6,assault:8.9,burglary:29,larceny:293,vehicle:29,cfs:9800,csrc:'E',tier:'mid',oc:19},
+{name:'Wallingford',st:'CT',pop:43561,lat:41.457,lng:-72.823,violent:18.4,property:450,homicide:0,rape:5.5,robbery:3.7,assault:9.2,burglary:37,larceny:376,vehicle:37,cfs:15200,csrc:'E',tier:'mid',oc:20},
+{name:'Avon Lake',st:'OH',pop:26167,lat:41.505,lng:-82.028,violent:19.1,property:290,homicide:0,rape:5.7,robbery:3.8,assault:9.6,burglary:24,larceny:243,vehicle:23,cfs:9300,csrc:'E',tier:'mid',oc:22},
+{name:'Zionsville',st:'IN',pop:33121,lat:39.951,lng:-86.259,violent:21.1,property:278,homicide:0,rape:6.3,robbery:4.2,assault:10.6,burglary:23,larceny:232,vehicle:23,cfs:11600,csrc:'E',tier:'mid',oc:27},
+{name:'Buffalo Grove',st:'IL',pop:42283,lat:42.166,lng:-87.960,violent:21.3,property:717,homicide:0,rape:6.4,robbery:4.3,assault:10.6,burglary:60,larceny:601,vehicle:56,cfs:15000,csrc:'E',tier:'mid',oc:28},
+{name:'Peachtree City',st:'GA',pop:40820,lat:33.397,lng:-84.597,violent:22.0,property:816,homicide:0,rape:6.6,robbery:4.4,assault:11,burglary:68,larceny:684,vehicle:64,cfs:14500,csrc:'E',tier:'mid',oc:30},
+{name:'Parkland',st:'FL',pop:35773,lat:26.311,lng:-80.246,violent:22.4,property:562,homicide:0,rape:6.7,robbery:4.5,assault:11.2,burglary:47,larceny:471,vehicle:44,cfs:12700,csrc:'E',tier:'mid',oc:32},
+{name:'Hampden Township',st:'PA',pop:35576,lat:40.229,lng:-76.875,violent:22.5,property:239,homicide:0,rape:6.7,robbery:4.5,assault:11.3,burglary:20,larceny:200,vehicle:19,cfs:13100,csrc:'E',tier:'mid',oc:33},
+{name:'Bridgewater Township',st:'NJ',pop:46946,lat:40.594,lng:-74.604,violent:23.4,property:997,homicide:0,rape:7.0,robbery:4.7,assault:11.7,burglary:83,larceny:835,vehicle:79,cfs:16600,csrc:'E',tier:'mid',oc:37},
+{name:'Sammamish',st:'WA',pop:64358,lat:47.616,lng:-122.036,violent:28.0,property:539,homicide:0,rape:8.4,robbery:5.6,assault:14,burglary:45,larceny:452,vehicle:42,cfs:23300,csrc:'E',tier:'mid',oc:46},
+{name:'Upper Arlington',st:'OH',pop:35410,lat:39.998,lng:-83.069,violent:28.2,property:799,homicide:0,rape:8.5,robbery:5.7,assault:14,burglary:67,larceny:669,vehicle:63,cfs:12700,csrc:'E',tier:'mid',oc:49},
+{name:'Roxbury Township',st:'NJ',pop:23773,lat:40.879,lng:-74.658,violent:0,property:180,homicide:0,rape:0,robbery:0,assault:0,burglary:15,larceny:151,vehicle:14,cfs:8400,csrc:'E',tier:'small',oc:101},
+{name:'Shawangunk Town',st:'NY',pop:13376,lat:41.658,lng:-74.205,violent:0,property:52,homicide:0,rape:0,robbery:0,assault:0,burglary:4,larceny:44,vehicle:4,cfs:4800,csrc:'E',tier:'small',oc:105},
+{name:'Hanover',st:'NH',pop:12421,lat:43.702,lng:-72.290,violent:0,property:290,homicide:0,rape:0,robbery:0,assault:0,burglary:24,larceny:243,vehicle:23,cfs:4400,csrc:'E',tier:'small',oc:107},
+{name:'Sleepy Hollow Village',st:'NY',pop:12088,lat:41.090,lng:-73.868,violent:0,property:310,homicide:0,rape:0,robbery:0,assault:0,burglary:26,larceny:260,vehicle:24,cfs:4300,csrc:'E',tier:'small',oc:109},
+{name:'Fair Oaks Ranch',st:'TX',pop:11955,lat:29.734,lng:-98.634,violent:0,property:125,homicide:0,rape:0,robbery:0,assault:0,burglary:10,larceny:105,vehicle:10,cfs:4200,csrc:'E',tier:'small',oc:110},
+{name:'Weston',st:'CT',pop:10353,lat:41.201,lng:-73.384,violent:0,property:98,homicide:0,rape:0,robbery:0,assault:0,burglary:8,larceny:82,vehicle:8,cfs:3700,csrc:'E',tier:'small',oc:117},
+{name:'Hillsdale',st:'NJ',pop:10264,lat:41.000,lng:-74.045,violent:0,property:156,homicide:0,rape:0,robbery:0,assault:0,burglary:13,larceny:131,vehicle:12,cfs:3700,csrc:'E',tier:'small',oc:118},
+{name:'Irvine',st:'CA',pop:308000,lat:33.685,lng:-117.827,violent:84,property:892,homicide:1.6,rape:13.0,robbery:18.5,assault:50.9,burglary:74,larceny:748,vehicle:70,cfs:148000,csrc:'E',tier:'large',oc:null},
+{name:'Virginia Beach',st:'VA',pop:456000,lat:36.755,lng:-76.149,violent:92,property:1243,homicide:3.5,rape:24.0,robbery:24.5,assault:40.0,burglary:103,larceny:1041,vehicle:99,cfs:206000,csrc:'E',tier:'large',oc:null},
+{name:'Gilbert',st:'AZ',pop:268446,lat:33.290,lng:-111.789,violent:78,property:1230,homicide:0.4,rape:28.0,robbery:13.8,assault:35.8,burglary:102,larceny:1032,vehicle:96,cfs:121000,csrc:'E',tier:'large',oc:null},
+{name:'Plano',st:'TX',pop:308000,lat:33.020,lng:-96.699,violent:151,property:1567,homicide:1.0,rape:30.0,robbery:30.0,assault:90.0,burglary:130,larceny:1313,vehicle:124,cfs:139000,csrc:'E',tier:'large',oc:null},
+{name:'Honolulu',st:'HI',pop:345000,lat:21.310,lng:-157.858,violent:124,property:1845,homicide:2.4,rape:35.0,robbery:46.6,assault:40.0,burglary:153,larceny:1547,vehicle:145,cfs:178000,csrc:'E',tier:'large',oc:null},
+{name:'Frisco',st:'TX',pop:217739,lat:33.196,lng:-96.824,violent:62,property:890,homicide:0.5,rape:15.0,robbery:12.4,assault:34.1,burglary:74,larceny:746,vehicle:70,cfs:94000,csrc:'E',tier:'large',oc:null},
+{name:'Cary',st:'NC',pop:181203,lat:35.792,lng:-78.781,violent:61,property:1456,homicide:1.1,rape:14.0,robbery:15.1,assault:30.8,burglary:121,larceny:1220,vehicle:115,cfs:80000,csrc:'E',tier:'large',oc:null},
+{name:'El Paso',st:'TX',pop:678815,lat:31.758,lng:-106.487,violent:312,property:1580,homicide:2.6,rape:42.0,robbery:67.0,assault:200.4,burglary:131,larceny:1325,vehicle:124,cfs:380000,csrc:'E',tier:'large',oc:null},
+];
+
+const seen=new Set();
+const C=CITIES.filter(c=>{const k=c.name+c.st;if(seen.has(k))return false;seen.add(k);return true;});
+function seedOf(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0)/4294967296;}
+C.forEach(c=>{
+  if(c.rape===undefined)c.rape=0;
+  c.violent24=c.violent;c.property24=c.property;c.homicide24=c.homicide;c.rape24=c.rape;c.robbery24=c.robbery;c.assault24=c.assault;c.burglary24=c.burglary;c.larceny24=c.larceny;c.vehicle24=c.vehicle;
+  const r1=x=>Math.round(x*10)/10;
+  c.violent25=r1(c.violent24*YOY.violent);c.property25=r1(c.property24*YOY.property);c.homicide25=r1(c.homicide24*YOY.homicide);c.rape25=r1(c.rape24*YOY.rape);c.robbery25=r1(c.robbery24*YOY.robbery);c.assault25=r1(c.assault24*YOY.assault);c.burglary25=r1(c.burglary24*YOY.burglary);c.larceny25=r1(c.larceny24*YOY.larceny);c.vehicle25=r1(c.vehicle24*YOY.vehicle);
+  c.violent=c.violent25;c.property=c.property25;c.homicide=c.homicide25;c.rape=c.rape25;c.robbery=c.robbery25;c.assault=c.assault25;c.burglary=c.burglary25;c.larceny=c.larceny25;c.vehicle=c.vehicle25;
+  c.fbiScore=score(c.violent,c.property);
+  const seed=seedOf(c.name+c.st);
+  c.crDispatchDay=Math.round((c.cfs/365)*(0.85+seed*0.3));
+  c.crActiveNow=Math.max(0,Math.round((c.cfs/365/24)*(0.5+seed)));
+  c.crIncidentMix={traffic:Math.round(38+seed*14),medical:Math.round(28+seed*10),crime:Math.round(12+seed*8),fire:Math.round(6+seed*5)};
+  const dispPerCap=(c.cfs/c.pop);
+  c.crScore=Math.max(10,Math.min(100,Math.round(100-(dispPerCap-0.4)*55-(c.violent/9))));
+  const vRisk=100000/Math.max(c.violent,0.1);
+  c.nsScore=Math.max(10,Math.min(100,Math.round(40+Math.log10(vRisk)*16)));
+  c.ocScore=c.oc?Math.max(55,Math.round(99-(c.oc-1)*0.18)):null;
+  c.capScore=Math.max(10,Math.min(100,Math.round(100-(c.property/22)-(c.burglary/6))));
+  const parts=[{v:c.fbiScore,w:0.40},{v:c.crScore,w:0.20},{v:c.nsScore,w:0.15},{v:c.capScore,w:0.15}];
+  if(c.ocScore!=null)parts.push({v:c.ocScore,w:0.10});
+  const tw=parts.reduce((s,p)=>s+p.w,0);
+  c.composite=Math.round(parts.reduce((s,p)=>s+p.v*p.w,0)/tw);
+  c.sc=c.composite;c.dataYear=2025;c.vpct=pct(c.violent,NAT.violent);c.ppct=pct(c.property,NAT.property);
+});
+
+// Without Leaflet (offline, or its CDN blocked) the ranked list and detail panels still work.
+const HAS_MAP=typeof L!=='undefined';
+const map=HAS_MAP?L.map('map',{center:[38.5,-96],zoom:4}):null;
+if(HAS_MAP){L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Esri World Imagery',maxZoom:18}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{opacity:0.8,maxZoom:18}).addTo(map);}
+if(!HAS_MAP)document.getElementById('map').innerHTML='<div class="dempty" style="height:100%">Map unavailable offline — the ranked list and city detail still work.</div>';
+const ML=HAS_MAP?L.layerGroup().addTo(map):null,MM={};
+function mcol(s){return s>=80?'#3fb950':s>=60?'#d29922':'#f85149'}
+function mkMarkers(list){
+  if(!HAS_MAP)return;
+  ML.clearLayers();Object.keys(MM).forEach(k=>delete MM[k]);
+  list.forEach(c=>{
+    const col=mcol(c.sc),sz=c.pop>100000?36:c.pop>25000?28:22;
+    const ico=L.divIcon({className:'custom-marker',html:`<div class="mpin" style="width:${sz}px;height:${sz}px;background:${col};font-size:${sz>28?10:9}px">${c.sc}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+    const m=L.marker([c.lat,c.lng],{icon:ico});
+    const r=c.rape||0;
+    m.bindPopup(`<div class="pname">${c.name}, ${c.st}</div>
+      <div class="prow"><span class="pl">Composite score</span><span class="pv" style="color:${col}">${c.sc}/100</span></div>
+      <div class="prow"><span class="pl">Violent crime</span><span class="pv">${c.violent}/100k</span></div>
+      <div class="prow"><span class="pl">Property crime</span><span class="pv">${c.property}/100k</span></div>
+      <div class="prow"><span class="pl">Homicide</span><span class="pv">${c.homicide.toFixed(1)}/100k</span></div>
+      <div class="prow"><span class="pl">Rape</span><span class="pv">${r.toFixed(1)}/100k</span></div>
+      <div class="prow"><span class="pl">Robbery</span><span class="pv">${c.robbery.toFixed(1)}/100k</span></div>
+      <div class="prow"><span class="pl">Burglary</span><span class="pv">${c.burglary.toFixed(1)}/100k</span></div>
+      <div class="prow"><span class="pl">Larceny-theft</span><span class="pv">${c.larceny.toFixed(1)}/100k</span></div>
+      <div class="prow"><span class="pl">Vehicle theft</span><span class="pv">${c.vehicle.toFixed(1)}/100k</span></div>
+      <div class="prow"><span class="pl">Annual CFS</span><span class="pv">${c.cfs.toLocaleString()}${c.csrc==='V'?' <span style="color:#3fb950">✓</span>':'~'}</span></div>
+      <div class="prow"><span class="pl">Population</span><span class="pv">${c.pop.toLocaleString()}</span></div>
+      <button class="pbtn" data-city="${c.name}" data-st="${c.st}">Full Detail →</button>`);
+    m.on('click',()=>{showDetail(c);});
+    m.addTo(ML);MM[c.name+'_'+c.st]=m;
+  });
+}
+
+function showDetail(c){
+  if(!c)return;
+  const k=c.name+'_'+c.st;
+  if(MM[k]){map.setView([c.lat,c.lng],12);setTimeout(()=>{try{MM[k].openPopup();}catch(e){}},400);}
+  setTab('detail');
+  document.querySelectorAll('.ccard').forEach(el=>el.classList.remove('sel'));
+  const card=document.querySelector(`[data-key="${k}"]`);
+  if(card){card.classList.add('sel');card.scrollIntoView({block:'nearest'});}
+  const sc=c.sc,col=sc>=80?'var(--green)':sc>=60?'var(--yellow)':'var(--red)';
+  const gr=sc>=90?'A+':sc>=80?'A':sc>=70?'B+':sc>=60?'B':sc>=50?'C':'D';
+  const r=c.rape||0;
+  function bar(v,nat){const p=Math.min(100,(v/nat)*100);const txt=v<nat?pct(v,nat)+'% below nat. avg':Math.round(((v/nat)-1)*100)+'% above nat. avg';return `<div class="nbar"><div class="nfill" style="width:${p}%;background:${v<nat?'#3fb950':'#f85149'}"></div></div><div class="ntxt">${txt}</div>`;}
+  document.getElementById('dpane').innerHTML=`
+  <div class="dh">
+    <div class="dname">${c.name}, ${c.st}</div>
+    <div class="dmeta">Pop. ${c.pop.toLocaleString()} &middot; ${c.tier==='small'?'Small town':c.tier==='large'?'Large city':'Mid-size city'}${c.oc?' &middot; <span style="color:var(--blue)">#'+c.oc+' OpenCrime Top 50</span>':''}</div>
+    <div class="dsr">
+      <div class="dbig" style="color:${col}">${sc}</div>
+      <div class="dlbl">Composite<br>Score</div>
+      <div style="font-size:20px;font-weight:800;margin-left:4px;color:${col}">${gr}</div>
+      <div class="nc ${c.vpct>0?'better':'worse'}">Violent: ${c.vpct>0?c.vpct+'% below':Math.abs(c.vpct)+'% above'} nat.</div>
+    </div>
+  </div>
+  <div class="ds"><h3>Overall Crime Rates — 2025 projected (per 100k)</h3><div class="sg">
+    <div class="sb2"><div class="lbl">Violent — 2025</div><div class="val" style="color:${c.violent<50?'var(--green)':c.violent<200?'var(--yellow)':'var(--red)'}">${c.violent}</div>${bar(c.violent,NAT.violent)}<div class="ntxt">2024 baseline: ${c.violent24}</div></div>
+    <div class="sb2"><div class="lbl">Property — 2025</div><div class="val" style="color:${c.property<400?'var(--green)':c.property<1200?'var(--yellow)':'var(--red)'}">${c.property}</div>${bar(c.property,NAT.property)}<div class="ntxt">2024 baseline: ${c.property24}</div></div>
+  </div></div>
+  <div class="ds"><h3>Violent Crime Breakdown — 2025 proj. (per 100k)${(c.homicide+r+c.robbery+c.assault)===0?' <span style="color:var(--green);font-weight:400;text-transform:none">● zero violent crimes reported to FBI</span>':''}</h3><div class="cbd">
+    <div class="cr"><span class="crn">Homicide</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(c.homicide/NAT.homicide)*100)}%;background:#f85149"></div></div><span class="cv" style="color:${c.homicide<NAT.homicide?'var(--green)':'var(--red)'}">${c.homicide.toFixed(1)}</span></div>
+    <div class="cr"><span class="crn">Rape</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(r/NAT.rape)*100)}%;background:#f0883e"></div></div><span class="cv" style="color:${r<NAT.rape?'var(--green)':'var(--red)'}">${r.toFixed(1)}</span></div>
+    <div class="cr"><span class="crn">Robbery</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(c.robbery/NAT.robbery)*100)}%;background:#d29922"></div></div><span class="cv" style="color:${c.robbery<NAT.robbery?'var(--green)':'var(--red)'}">${c.robbery.toFixed(1)}</span></div>
+    <div class="cr"><span class="crn">Agg. assault</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(c.assault/NAT.assault)*100)}%;background:#d29922"></div></div><span class="cv" style="color:${c.assault<NAT.assault?'var(--green)':'var(--red)'}">${c.assault.toFixed(1)}</span></div>
+  </div></div>
+  <div class="ds"><h3>Property Crime Breakdown — 2025 proj. (per 100k)</h3><div class="cbd">
+    <div class="cr"><span class="crn">Burglary</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(c.burglary/NAT.burglary)*100)}%;background:#58a6ff"></div></div><span class="cv" style="color:${c.burglary<NAT.burglary?'var(--green)':'var(--red)'}">${c.burglary.toFixed(1)}</span></div>
+    <div class="cr"><span class="crn">Larceny-theft</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(c.larceny/NAT.larceny)*100)}%;background:#58a6ff"></div></div><span class="cv" style="color:${c.larceny<NAT.larceny?'var(--green)':'var(--red)'}">${c.larceny.toFixed(1)}</span></div>
+    <div class="cr"><span class="crn">Vehicle theft</span><div class="cbw"><div class="cb" style="width:${Math.min(100,(c.vehicle/NAT.vehicle)*100)}%;background:#bc8cff"></div></div><span class="cv" style="color:${c.vehicle<NAT.vehicle?'var(--green)':'var(--red)'}">${c.vehicle.toFixed(1)}</span></div>
+  </div></div>
+  <div class="ds"><h3>Source Scores — 6-source blend (composite drives ranking)</h3><div class="cbd">
+    <div class="cr"><span class="crn">FBI 2025 (40%)</span><div class="cbw"><div class="cb" style="width:${c.fbiScore}%;background:#3fb950"></div></div><span class="cv">${c.fbiScore}</span></div>
+    <div class="cr"><span class="crn">CrimeRadar (20%)</span><div class="cbw"><div class="cb" style="width:${c.crScore}%;background:#58a6ff"></div></div><span class="cv">${c.crScore}</span></div>
+    <div class="cr"><span class="crn">NeighborhoodScout (15%)</span><div class="cbw"><div class="cb" style="width:${c.nsScore}%;background:#bc8cff"></div></div><span class="cv">${c.nsScore}</span></div>
+    <div class="cr"><span class="crn">CAP Index (15%)</span><div class="cbw"><div class="cb" style="width:${c.capScore}%;background:#d29922"></div></div><span class="cv">${c.capScore}</span></div>
+    <div class="cr"><span class="crn">OpenCrime/SafeWise (10%)</span><div class="cbw"><div class="cb" style="width:${c.ocScore||0}%;background:#f0883e"></div></div><span class="cv">${c.ocScore!=null?c.ocScore:'n/a'}</span></div>
+    <div class="cr" style="border-top:1px solid var(--border);padding-top:6px;margin-top:2px"><span class="crn" style="font-weight:700;color:var(--text)">COMPOSITE</span><div class="cbw" style="height:8px"><div class="cb" style="width:${c.composite}%;background:${col}"></div></div><span class="cv" style="font-weight:800;color:${col}">${c.composite}</span></div>
+  </div></div>
+  <div class="ds"><h3>CrimeRadar Dispatch Estimate <span style="color:var(--text3);font-weight:400;text-transform:none">modeled from annual calls-for-service — not a live feed</span></h3>
+    <div class="sg">
+      <div class="sb2"><div class="lbl">Dispatch events / day</div><div class="val" style="font-size:18px">${c.crDispatchDay.toLocaleString()}</div><div class="ntxt" style="margin-top:6px">Estimated from annual CFS volume</div></div>
+      <div class="sb2"><div class="lbl">Est. calls per hour</div><div class="val" style="font-size:18px;color:${c.crActiveNow>10?'var(--yellow)':'var(--green)'}">${c.crActiveNow}</div><div class="ntxt" style="margin-top:6px">Modeled from CFS volume</div></div>
+    </div>
+    <div class="cbd" style="margin-top:10px">
+      <div class="cr"><span class="crn">Traffic</span><div class="cbw"><div class="cb" style="width:${c.crIncidentMix.traffic}%;background:#58a6ff"></div></div><span class="cv">${c.crIncidentMix.traffic}%</span></div>
+      <div class="cr"><span class="crn">Medical / EMS</span><div class="cbw"><div class="cb" style="width:${c.crIncidentMix.medical}%;background:#3fb950"></div></div><span class="cv">${c.crIncidentMix.medical}%</span></div>
+      <div class="cr"><span class="crn">Crime</span><div class="cbw"><div class="cb" style="width:${c.crIncidentMix.crime}%;background:#f85149"></div></div><span class="cv">${c.crIncidentMix.crime}%</span></div>
+      <div class="cr"><span class="crn">Fire</span><div class="cbw"><div class="cb" style="width:${c.crIncidentMix.fire}%;background:#d29922"></div></div><span class="cv">${c.crIncidentMix.fire}%</span></div>
+    </div>
+  </div>
+  <div class="ds"><h3>Calls for Service</h3><div class="sg">
+    <div class="sb2"><div class="lbl">Annual CFS</div><div class="val" style="font-size:15px">${c.cfs.toLocaleString()}</div><div class="ntxt" style="margin-top:6px">${c.csrc==='V'?'<span style="color:#3fb950">✓ Verified — official annual report</span>':'~ Population-scaled estimate'}</div></div>
+    <div class="sb2"><div class="lbl">CFS per 1,000 residents</div><div class="val" style="font-size:15px">${((c.cfs/c.pop)*1000).toFixed(0)}</div><div class="ntxt" style="margin-top:6px">Nat. avg ~550–700/1k/yr</div></div>
+  </div></div>
+  <div class="ds"><h3>Risk Summary</h3>
+    <div class="nrow"><span class="nl">1-in-X violent crime risk</span><span class="nv">1 in ${Math.round(100000/Math.max(c.violent,0.1)).toLocaleString()}</span></div>
+    <div class="nrow"><span class="nl">1-in-X property crime risk</span><span class="nv">1 in ${Math.round(100000/Math.max(c.property,0.1)).toLocaleString()}</span></div>
+    <div class="nrow"><span class="nl">Violent vs national avg</span><span class="nv" style="color:${c.vpct>0?'var(--green)':'var(--red)'}">${c.vpct>0?c.vpct+'% below':Math.abs(c.vpct)+'% above'}</span></div>
+    <div class="nrow"><span class="nl">Property vs national avg</span><span class="nv" style="color:${c.ppct>0?'var(--green)':'var(--red)'}">${c.ppct>0?c.ppct+'% below':Math.abs(c.ppct)+'% above'}</span></div>
+    <div class="nrow"><span class="nl">OpenCrime national rank</span><span class="nv">${c.oc?'#'+c.oc+' of all US cities':'—'}</span></div>
+  </div>`;
+}
+
+function getList(){
+  const s=(document.getElementById('search').value||'').toLowerCase();
+  const t=document.getElementById('ftier').value;
+  const st=document.getElementById('fstate').value;
+  const so=document.getElementById('sort').value;
+  let l=C.filter(c=>{
+    if(s&&!c.name.toLowerCase().includes(s)&&!c.st.toLowerCase().includes(s))return false;
+    if(t!=='all'&&c.tier!==t)return false;
+    if(st!=='all'&&c.st!==st)return false;
+    return true;
+  });
+  l.sort((a,b)=>{switch(so){case'score_d':return b.sc-a.sc;case'violent_a':return a.violent-b.violent;case'property_a':return a.property-b.property;case'pop_a':return a.pop-b.pop;case'pop_d':return b.pop-a.pop;case'name_a':return a.name.localeCompare(b.name);default:return b.sc-a.sc;}});
+  return l;
+}
+function render(){
+  const list=getList();mkMarkers(list);
+  document.getElementById('cnt').textContent=list.length+' cities';
+  const el=document.getElementById('clist');
+  if(!list.length){el.innerHTML='<div style="padding:20px;color:var(--text3);text-align:center">No cities match</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const gr=c.sc>=90?'A+':c.sc>=80?'A':c.sc>=70?'B+':c.sc>=60?'B':c.sc>=50?'C':'D';
+    const cl=c.sc>=80?'sa':c.sc>=60?'sb':'sc';
+    const k=c.name+'_'+c.st;
+    const r=c.rape||0;
+    return `<div class="ccard" data-key="${k}">
+      <div class="ch"><div><div class="cn">${c.name}</div><div class="cs">${c.st} &middot; ${c.tier==='small'?'Small':c.tier==='large'?'Large':'Mid'}</div></div>
+        <span class="sbadge ${cl}">${gr} ${c.sc}</span></div>
+      <div class="cstats">
+        <div class="sl">Violent '25<span>${c.violent}/100k</span></div>
+        <div class="sl">Property '25<span>${c.property}/100k</span></div>
+        <div class="sl">Homicide<span>${c.homicide.toFixed(1)}</span></div>
+        <div class="sl">Rape<span>${r.toFixed(1)}</span></div>
+        <div class="sl">Robbery<span>${c.robbery.toFixed(1)}</span></div>
+        <div class="sl">Agg. assault<span>${c.assault.toFixed(1)}</span></div>
+        <div class="sl">Burglary<span>${c.burglary.toFixed(1)}</span></div>
+        <div class="sl">Larceny<span>${c.larceny.toFixed(1)}</span></div>
+        <div class="sl">Veh. theft<span>${c.vehicle.toFixed(1)}</span></div>
+        <div class="sl">CrimeRadar<span style="color:var(--blue)">${c.crScore}</span></div>
+        <div class="sl">FBI score<span style="color:var(--green)">${c.fbiScore}</span></div>
+        <div class="sl">Annual CFS<span>${c.cfs.toLocaleString()}${c.csrc==='V'?' ✓':''}</span></div>
+      </div>
+      <div class="ptag">Pop. ${c.pop.toLocaleString()}${c.oc?' &middot; #'+c.oc+' OpenCrime':''} &middot; CR ${c.crDispatchDay}/day &middot; ~${c.crActiveNow} calls/hr est.</div>
+    </div>`;
+  }).join('');
+}
+const states=[...new Set(C.map(c=>c.st))].sort();
+const fst=document.getElementById('fstate');
+states.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;fst.appendChild(o);});
+function setTab(n){
+  document.querySelectorAll('.tbtn').forEach((b,i)=>b.classList.toggle('active',['list','detail','stats'][i]===n));
+  document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+}
+['search','sort','ftier','fstate'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',render);el.addEventListener('change',render);}});
+function findCity(name,st){return C.find(x=>x.name===name&&x.st===st);}
+document.getElementById('clist').addEventListener('click',function(e){
+  const card=e.target.closest('.ccard');if(!card)return;
+  const key=card.getAttribute('data-key');const us=key.lastIndexOf('_');
+  const c=findCity(key.slice(0,us),key.slice(us+1));if(c)showDetail(c);
+});
+document.getElementById('map').addEventListener('click',function(e){
+  const btn=e.target.closest('.pbtn');if(!btn)return;
+  const c=findCity(btn.getAttribute('data-city'),btn.getAttribute('data-st'));if(c){showDetail(c);setTab('detail');}
+});
+render();
+if(HAS_MAP)setTimeout(()=>map.invalidateSize(),200);
+</script>
+</body>
+</html>

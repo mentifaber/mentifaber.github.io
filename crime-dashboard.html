@@ -6,8 +6,8 @@
 <meta property="og:image" content="https://mentifaber.github.io/assets/previews/crime-dashboard.png"/>
 <meta property="og:url" content="https://mentifaber.github.io/crime-dashboard.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta property="og:description" content="Forty-three US cities, four crime categories, FBI 2025 data — ranked by rate per 100,000 residents, not raw counts. One HTML file you can email to anyone."/>
-<meta name="description" content="Forty-three US cities, four crime categories, FBI 2025 data — ranked by rate per 100,000 residents, not raw counts. One HTML file you can email to anyone."/>
+<meta property="og:description" content="Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000 residents, not raw counts. One HTML file you can email to anyone."/>
+<meta name="description" content="Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000 residents, not raw counts. One HTML file you can email to anyone."/>
 <meta property="og:title" content="Crime Intelligence"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -142,8 +142,16 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
     <span><i style="background:var(--steel)"></i>circle area = population</span>
   </div>
   <h1>Crime <em>Intelligence</em></h1>
-  <p class="tag">Forty-three cities, four crime categories, FBI 2025 data — in one HTML file you can email to somebody.</p>
+  <p class="tag">Forty-three cities, four crime categories, FBI figures projected to 2025 — in one HTML file you can email to somebody.</p>
   <div class="meta">Leaflet.js · single file · no build · no server</div>
+<div class="mf-launch-wrap">
+  <a class="mf-launch" href="crime-dashboard-app.html" target="_blank" rel="noopener">
+    <span class="lb-eyebrow">// dashboard · 43 cities · leaflet</span>
+    <span class="lb-title">Open Crime Intelligence →</span>
+    <span class="lb-sub">Satellite map · composite safety score · city detail · national averages</span>
+  </a>
+  <div class="mf-launch-cap"><span>search · sort · filter by size or state</span><span>5 weighted sources</span></div>
+</div>
 </header>
 
 <div class="gap"><i></i></div>
@@ -165,7 +173,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
   <div class="grid">
     <div class="card"><h4>Delivery</h4><p>A <b>single .html</b>. Double-click it. Works from a USB stick, an email attachment, or a folder on a desktop.</p></div>
     <div class="card"><h4>Mapping</h4><p>Leaflet from a CDN with tiles fetched live — the one thing that needs a connection, and it degrades to the ranked tables without it.</p></div>
-    <div class="card"><h4>Data</h4><p>FBI reporting, <b>baked into the file</b> as a JSON literal. No fetch, no CORS, no API key to expire.</p></div>
+    <div class="card"><h4>Data</h4><p>FBI city figures, <b>baked into the file</b> as a JSON literal and projected to 2025 with the FBI's national year-over-year trend. No fetch, no CORS, no API key to expire.</p></div><div class="card"><h4>The score</h4><p>A composite: FBI rates 40%, dispatch density 20%, NeighborhoodScout 15%, CAP Index 15%, OpenCrime/SafeWise 10%. Dispatch figures are <b>modeled from call volume</b>, and labelled that way.</p></div>
     <div class="card"><h4>Interaction</h4><p>A sortable, filterable sidebar with colour-coded safety markers on the map. All state in memory — nothing to persist, nothing to configure.</p></div>
   </div>
 </section>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network Simulation — V-PROJECT</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; color: #ccc; font-family: monospace; padding: 16px; min-height: 100vh; }
+  h1 { font-size: 11px; color: #440000; letter-spacing: 2px; margin-bottom: 12px; }
+  canvas { display: block; width: 100%; max-width: 680px; border-radius: 4px; background: #000; border: 1px solid #1a0000; }
+  .meta { display: flex; justify-content: space-between; max-width: 680px; padding: 5px 2px 0; font-size: 10px; color: #333; }
+  .controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; max-width: 680px; }
+  button {
+    font-family: monospace; font-size: 11px; background: #0a0a0a;
+    padding: 5px 14px; border-radius: 3px; cursor: pointer; transition: background 0.15s;
+  }
+  button:hover { background: #1a0000; }
+  #btn-run  { color: #cc0000; border: 1px solid #cc0000; }
+  #btn-stim { color: #ff6600; border: 1px solid #ff6600; }
+  #btn-glitch { color: #ff0066; border: 1px solid #ff0066; }
+  #stats { font-size: 10px; color: #333; align-self: center; margin-left: auto; }
+</style>
+</head>
+<body>
+<h1>// NEURAL NETWORK SIMULATION — HUMAN BRAIN vs INCONSISTENT AI — V-PROJECT</h1>
+<canvas id="sim"></canvas>
+<div class="meta">
+  <span>● HUMAN NEURAL NET — biological</span>
+  <span>INCONSISTENT AI — artificial ●</span>
+</div>
+<div class="controls">
+  <button id="btn-run"   onclick="toggleRun()">PAUSE</button>
+  <button id="btn-stim"  onclick="triggerStimulus()">INJECT STIMULUS</button>
+  <button id="btn-glitch" onclick="triggerGlitch()">GLITCH AI</button>
+  <span id="stats"></span>
+</div>
+
+<script>
+const C = document.getElementById('sim');
+const ctx = C.getContext('2d');
+const W = 680, H = 340, MID = W/2;
+C.width = W; C.height = H;
+C.style.height = H + 'px';
+
+let running = true;
+let frame = 0;
+let glitchTimer = 0;
+
+const rng = (a,b) => a + Math.random()*(b-a);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const lerp = (a,b,t) => a+(b-a)*t;
+
+// ── HUMAN BRAIN NETWORK ──────────────────────────────────────────────────────
+const REGIONS = [
+  {name:'PREFRONTAL', cx:120, cy:90,  r:52, col:'#cc2200', nodes:[]},
+  {name:'MOTOR',      cx:205, cy:68,  r:36, col:'#aa3300', nodes:[]},
+  {name:'SENSORY',    cx:270, cy:80,  r:34, col:'#883300', nodes:[]},
+  {name:'LIMBIC',     cx:160, cy:185, r:44, col:'#992200', nodes:[]},
+  {name:'CEREBELLUM', cx:265, cy:200, r:40, col:'#772200', nodes:[]},
+  {name:'STEM',       cx:195, cy:270, r:28, col:'#661100', nodes:[]},
+];
+
+const HN = [];
+REGIONS.forEach((reg) => {
+  const count = Math.floor(reg.r * 0.55);
+  for(let i=0;i<count;i++){
+    const angle = rng(0, Math.PI*2);
+    const dist  = rng(0, reg.r*0.75);
+    const node  = {
+      x: reg.cx + Math.cos(angle)*dist,
+      y: reg.cy + Math.sin(angle)*dist,
+      region: REGIONS.indexOf(reg),
+      base: reg.col,
+      act: 0, phase: rng(0, Math.PI*2),
+      freq: rng(0.015, 0.04),
+      connections: [],
+    };
+    reg.nodes.push(HN.length);
+    HN.push(node);
+  }
+});
+
+HN.forEach((n,i) => {
+  HN.forEach((m,j) => {
+    if(i===j) return;
+    const dx=n.x-m.x, dy=n.y-m.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    const sameReg = n.region===m.region;
+    const prob = sameReg ? 0.35 : (d<60 ? 0.1 : 0.02);
+    if(Math.random()<prob) n.connections.push({to:j, w:rng(0.3,1.0), d});
+  });
+});
+
+const HSig = [];
+function fireHuman(ni){
+  const n = HN[ni];
+  n.connections.forEach(c => {
+    HSig.push({from:ni, to:c.to, t:0, speed:rng(0.025,0.045), w:c.w, corrupt:false});
+  });
+  n.act = 1.0;
+}
+
+// ── AI NETWORK ───────────────────────────────────────────────────────────────
+const AI_LAYERS = [4,7,9,9,7,4];
+const AN = [];
+const AI_LX = [];
+const PANEL_LEFT = MID+10, PANEL_W = MID-14;
+const layerGap = PANEL_W / (AI_LAYERS.length+1);
+
+AI_LAYERS.forEach((count,li) => {
+  const x = PANEL_LEFT + layerGap*(li+1);
+  AI_LX.push(x);
+  const nodeH = H / (count+1);
+  for(let ni=0;ni<count;ni++){
+    AN.push({
+      x, y: nodeH*(ni+1),
+      layer:li, idx:ni, count,
+      act:0, dead: Math.random()<0.08,
+      noiseSeed: rng(0,1000),
+      connections:[],
+      glitchAct:0,
+    });
+  }
+});
+
+AN.forEach((n,i) => {
+  if(n.layer >= AI_LAYERS.length-1) return;
+  AN.forEach((m,j) => {
+    if(m.layer !== n.layer+1) return;
+    n.connections.push({to:j, w:rng(0.2,1.0), dropout:false});
+  });
+});
+
+const ASig = [];
+function fireAI(ni, glitch){
+  const n = AN[ni];
+  if(n.dead && !glitch) return;
+  n.connections.forEach(c => {
+    if(c.dropout) return;
+    const flicker = glitch || Math.random()<0.15;
+    ASig.push({from:ni, to:c.to, t:0,
+      speed: flicker ? rng(0.08,0.15) : rng(0.03,0.06),
+      w:c.w, corrupt:flicker});
+  });
+  n.act = glitch ? rng(1.5,2.5) : 1.0;
+}
+
+let humanFireTimer = 0, aiFireTimer = 0;
+
+function triggerStimulus(){
+  AN.filter(n=>n.layer===0).forEach(n=>fireAI(AN.indexOf(n),false));
+  REGIONS[0].nodes.slice(0,3).forEach(i=>fireHuman(i));
+}
+function triggerGlitch(){
+  glitchTimer = 120;
+  AN.forEach(n=>{ if(Math.random()<0.4){ n.dead=Math.random()<0.15; } });
+  AN.forEach((n,i)=>{
+    n.connections.forEach(c=>{ c.dropout=Math.random()<0.3; });
+    if(Math.random()<0.25) fireAI(i,true);
+  });
+}
+function toggleRun(){
+  running=!running;
+  document.getElementById('btn-run').textContent=running?'PAUSE':'RESUME';
+}
+
+function hexAlpha(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function drawHuman(){
+  REGIONS.forEach(reg => {
+    ctx.beginPath();
+    ctx.arc(reg.cx, reg.cy, reg.r, 0, Math.PI*2);
+    ctx.strokeStyle = hexAlpha(reg.col, 0.18);
+    ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle = hexAlpha(reg.col, 0.04); ctx.fill();
+    ctx.fillStyle = hexAlpha(reg.col, 0.35);
+    ctx.font = '8px monospace';
+    ctx.fillText(reg.name, reg.cx - reg.name.length*2.4, reg.cy - reg.r + 10);
+  });
+  HN.forEach((n) => {
+    n.connections.forEach(c => {
+      const m=HN[c.to];
+      ctx.beginPath(); ctx.moveTo(n.x,n.y); ctx.lineTo(m.x,m.y);
+      ctx.strokeStyle=hexAlpha(n.base, 0.04+n.act*0.08);
+      ctx.lineWidth=0.5; ctx.stroke();
+    });
+  });
+  HSig.forEach(s => {
+    const a=HN[s.from],b=HN[s.to];
+    const px=lerp(a.x,b.x,s.t),py=lerp(a.y,b.y,s.t);
+    ctx.beginPath(); ctx.arc(px,py,2.5,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,${80+s.w*80},0,${0.7*s.w*(1-s.t*0.5)})`; ctx.fill();
+  });
+  HN.forEach((n) => {
+    const pulse = 0.3+0.7*(Math.sin(frame*n.freq+n.phase)*0.5+0.5);
+    const glow  = clamp(n.act+pulse*0.3,0,1);
+    const r = 2.5+glow*1.5;
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${180+glow*75},${30+glow*40},0,${0.5+glow*0.5})`; ctx.fill();
+  });
+}
+
+function drawAI(){
+  const glitching = glitchTimer>0;
+  ctx.strokeStyle='#1a1a1a'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(MID,0); ctx.lineTo(MID,H); ctx.stroke();
+
+  AN.forEach((n) => {
+    n.connections.forEach(c => {
+      const m=AN[c.to];
+      if(c.dropout){ ctx.setLineDash([2,4]); ctx.strokeStyle='rgba(80,0,0,0.3)'; }
+      else { ctx.setLineDash([]); ctx.strokeStyle=`rgba(150,20,20,${0.06+n.act*0.1})`; }
+      ctx.lineWidth=0.5;
+      ctx.beginPath(); ctx.moveTo(n.x,n.y); ctx.lineTo(m.x,m.y); ctx.stroke();
+    });
+  });
+  ctx.setLineDash([]);
+
+  ASig.forEach(s => {
+    const a=AN[s.from],b=AN[s.to];
+    const px=lerp(a.x,b.x,s.t),py=lerp(a.y,b.y,s.t);
+    ctx.beginPath(); ctx.arc(px,py,s.corrupt?3.5:2,0,Math.PI*2);
+    ctx.fillStyle=s.corrupt
+      ?`rgba(255,0,${80+Math.sin(frame*0.3)*80},0.9)`
+      :`rgba(220,40,0,${0.8*(1-s.t*0.4)})`; ctx.fill();
+    if(s.corrupt){
+      ctx.beginPath(); ctx.arc(px+rng(-2,2),py+rng(-2,2),1,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,0,100,0.4)'; ctx.fill();
+    }
+  });
+
+  AN.forEach((n) => {
+    if(n.dead){
+      ctx.beginPath(); ctx.arc(n.x,n.y,3,0,Math.PI*2);
+      ctx.fillStyle='rgba(30,30,30,0.8)'; ctx.fill();
+      ctx.strokeStyle='rgba(60,0,0,0.5)'; ctx.lineWidth=0.5; ctx.stroke();
+      return;
+    }
+    const noise = glitching
+      ? Math.sin(frame*0.7+n.noiseSeed)*0.5+0.5
+      : Math.sin(frame*0.03+n.noiseSeed)*0.15;
+    const act = clamp(n.act+noise+n.glitchAct,0,3);
+    const r   = 2+act*2;
+    const g   = glitching ? Math.sin(frame*0.5+AN.indexOf(n))*40 : 0;
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${180+act*30},${g},${glitching?act*20:0},${0.4+act*0.4})`; ctx.fill();
+    if(act>0.8){
+      ctx.beginPath(); ctx.arc(n.x,n.y,r+2,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(255,0,0,${act*0.3})`; ctx.lineWidth=0.5; ctx.stroke();
+    }
+  });
+
+  AI_LX.forEach((x,li) => {
+    const labels=['INPUT','H1','H2','H3','H4','OUTPUT'];
+    ctx.fillStyle='rgba(100,0,0,0.6)';
+    ctx.font='7px monospace'; ctx.textAlign='center';
+    ctx.fillText(labels[li]||`L${li}`,x,H-6);
+  });
+  ctx.textAlign='left';
+
+  if(glitching){
+    const sl=(frame*3)%H;
+    ctx.fillStyle=`rgba(255,0,0,${0.04*Math.random()})`;
+    ctx.fillRect(MID+2,sl,PANEL_W,2);
+  }
+}
+
+function drawLabels(){
+  ctx.font='9px monospace';
+  ctx.fillStyle='#330000';
+  ctx.fillText('HUMAN BRAIN NEURAL NETWORK',8,12);
+  ctx.fillStyle='rgba(180,0,0,0.4)';
+  ctx.fillText('INCONSISTENT ARTIFICIAL NEURAL NETWORK',MID+8,12);
+
+  const deadCount = AN.filter(n=>n.dead).length;
+  const dropCount = AN.reduce((a,n)=>a+n.connections.filter(c=>c.dropout).length,0);
+  const instability = Math.min(((deadCount/AN.length)+(dropCount/200))*100,100);
+  ctx.fillStyle='rgba(80,20,0,0.6)'; ctx.font='8px monospace';
+  ctx.fillText(`COHERENCE: ${(100-instability*0.3).toFixed(0)}%`,8,H-8);
+  ctx.fillStyle=glitchTimer>0?'#ff003c':'#880000';
+  ctx.textAlign='right';
+  ctx.fillText(`INSTABILITY: ${instability.toFixed(0)}%  DEAD:${deadCount}  DROPOUT:${dropCount}`,W-6,H-8);
+  ctx.textAlign='left';
+}
+
+function update(){
+  if(!running){ requestAnimationFrame(update); return; }
+  frame++;
+
+  HN.forEach(n=>{ n.act*=0.92; });
+  AN.forEach(n=>{ n.act*=0.88; n.glitchAct*=0.85; });
+  if(glitchTimer>0) glitchTimer--;
+
+  for(let i=HSig.length-1;i>=0;i--){
+    HSig[i].t+=HSig[i].speed;
+    if(HSig[i].t>=1){
+      HN[HSig[i].to].act=clamp(HN[HSig[i].to].act+HSig[i].w*0.8,0,1);
+      fireHuman(HSig[i].to); HSig.splice(i,1);
+    }
+  }
+  for(let i=ASig.length-1;i>=0;i--){
+    ASig[i].t+=ASig[i].speed;
+    if(ASig[i].t>=1){
+      const tn=AN[ASig[i].to];
+      if(!tn.dead){
+        if(ASig[i].corrupt){ tn.glitchAct=rng(-1.5,2.0); }
+        else { tn.act=clamp(tn.act+ASig[i].w*0.7,0,2); }
+        if(tn.act>0.4&&tn.layer<AI_LAYERS.length-1) fireAI(ASig[i].to,ASig[i].corrupt);
+      }
+      ASig.splice(i,1);
+    }
+  }
+
+  humanFireTimer++;
+  if(humanFireTimer>45){
+    humanFireTimer=0;
+    const ri=Math.floor(Math.random()*REGIONS.length);
+    const nodes=REGIONS[ri].nodes;
+    const ni=nodes[Math.floor(Math.random()*nodes.length)];
+    if(ni!==undefined) fireHuman(ni);
+  }
+
+  aiFireTimer++;
+  const aiInterval=glitchTimer>0?12:55;
+  if(aiFireTimer>aiInterval){
+    aiFireTimer=0;
+    if(glitchTimer>0){
+      for(let k=0;k<Math.floor(rng(1,5));k++){
+        fireAI(Math.floor(Math.random()*AN.length),true);
+      }
+    } else {
+      const l0=AN.filter(n=>n.layer===0&&!n.dead);
+      if(l0.length>0){ const n=l0[Math.floor(Math.random()*l0.length)]; fireAI(AN.indexOf(n),false); }
+    }
+  }
+
+  if(Math.random()<0.01){
+    const ri=Math.floor(Math.random()*AN.length);
+    if(!AN[ri].dead) AN[ri].glitchAct=rng(0.5,1.5);
+  }
+
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.fillRect(0,0,W,H);
+  drawHuman();
+  drawAI();
+  drawLabels();
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+</body>
+</html>

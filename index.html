@@ -420,6 +420,10 @@ const GLYPHS = {
   butterfly: '<path d="M19 11 V29"/><path d="M19 14 C11 6 4 12 8 20 C11 27 17 25 19 19"/><path d="M19 14 C27 6 34 12 30 20 C27 27 21 25 19 19"/><circle cx="19" cy="11" r="1.4" fill="var(--rust)" stroke="none"/>',
   ballast: '<path d="M6 10 H32 L26.5 30 H11.5 Z"/><path d="M12.6 21 H25.4 L23.9 30 H14.1 Z" fill="var(--rust)" stroke="none" opacity=".85"/><path d="M2 16 H36" opacity=".45"/>',
   wrench: '<path d="M25 8 a7 7 0 0 0 -9.6 9.6 L7 26 l5 5 l8.4 -8.4 A7 7 0 0 0 30 13 l-5 5 l-3 -3 z"/>',
+  moon: '<circle cx="19" cy="19" r="12"/><path d="M23 8.6 a12 12 0 1 0 0 20.8 a10 10 0 0 1 0 -20.8z" fill="var(--rust)" stroke="none" opacity=".5"/>',
+  server: '<rect x="8" y="7" width="22" height="7" rx="1"/><rect x="8" y="16" width="22" height="7" rx="1"/><rect x="8" y="25" width="22" height="7" rx="1"/><circle cx="12" cy="10.5" r="1.2" fill="var(--rust)" stroke="none"/><circle cx="12" cy="19.5" r="1.2" fill="var(--rust)" stroke="none"/>',
+  bubble: '<circle cx="15" cy="15" r="8"/><path d="M21 21 L31 31"/><path d="M13 12 l2 -1.5 v8" />',
+  sleep: '<path d="M27 9 a11 11 0 1 0 4 15 a9 9 0 0 1 -4 -15z"/><path d="M7 8 h6 l-6 6 h6"/>',
   eye: '<path d="M4 19 C10 9 28 9 34 19 C28 29 10 29 4 19 Z"/><circle cx="19" cy="19" r="5.5" fill="var(--rust)" stroke="none" opacity=".7"/>',
 };
 const SYSTEMS = [
@@ -439,7 +443,7 @@ const SYSTEMS = [
   ["worm-eater.html","Worm Eater","An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.","live","scan"],
   ["cryptovault.html","CryptoVault","Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file — the browser's own crypto engine, no server, no dependencies, nothing simulated.","stalled","lock"],
   ["phone-mcp.html","Phone MCP","A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.","live","phone"],
-  ["crime-dashboard.html","Crime Intelligence","Forty-three US cities, four crime categories, FBI 2025 data — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.","live","city"],
+  ["crime-dashboard.html","Crime Intelligence","Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.","live","city"],
   ["sonicveil.html","Sonic Veil","Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.","music","note"],
   ["duely.html","Duely","Overdue invoices, collected on contingency — you pay nothing unless your client does. A business concept, kept on record.","concept","invoice"],
   ["flutterbloom.html","Flutterbloom","A tap-and-tend garden grown as a gift for one person — butterflies, helpers, a fairy that works while she's away, and a meadow that visibly blooms.","private","butterfly"],
@@ -449,12 +453,17 @@ const SYSTEMS = [
   ["shop.html","The Shop","CNC, G-code and steel — the machines that don't accept an approximately right answer.","live","key"],
   ["frames.html","Frames","Twenty-eight photographs kept as a series. The only thing in the atlas that doesn't do anything — on purpose.","live","globe"],
   ["sketches.html","Sketches","Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.","live","leaf"],
+  ["moon-compatibility.html", "Moon Compatibility", "Two birth dates placed on the synodic cycle, both moons drawn and overlaid — 0.97 lunar days apart, read as a compatibility score.", "live", "moon"],
+  ["monstrosity.html", "The Monstrosity", "A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.", "build", "server"],
+  ["bubble-editor.html", "Bubble Editor", "Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.", "live", "bubble"],
+  ["sleep-compression.html", "Sleep Compression", "A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included.", "live", "sleep"],
 ];
 const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt", private:"private — invite only" };
 // One numeral per surveyed site — this list must never be shorter than SYSTEMS,
 // or the extra plates render as "PL. undefined".
 const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII",
-  "XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX"];
+  "XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX",
+  "XXXI","XXXII","XXXIII","XXXIV","XXXV","XXXVI","XXXVII","XXXVIII","XXXIX","XL"];
 
 // Per-project metadata. added = first appearance on this site (git history);
 // ver = only where the project's own page states a version.
@@ -486,6 +495,10 @@ const META = {
   'shop.html':           {cat:'Craft',       added:'2026-09-14'},
   'frames.html':         {cat:'Craft',       added:'2026-09-14'},
   'sketches.html':       {cat:'Play',        added:'2026-09-14'},
+  'moon-compatibility.html': {cat:'Play',    added:'2026-09-24', hue:255},
+  'monstrosity.html':    {cat:'Tools',       added:'2026-09-24', hue:28},
+  'bubble-editor.html':  {cat:'Craft',       added:'2026-09-24', hue:350},
+  'sleep-compression.html': {cat:'Tools',    added:'2026-09-24', hue:205},
 };
 const STATUS_ORDER = ['live','build','private','music','concept','stalled'];
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

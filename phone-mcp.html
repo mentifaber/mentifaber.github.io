@@ -176,6 +176,20 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
   <p class="aside">It pairs with <b><a class="mf-xref" href="pi.html">Pi</a></b> from the other direction: Pi is a model living <em>on</em> the phone reaching outward; this is a model living outside reaching <em>in</em>.</p>
 </section>
 
+<div class="gap"><i></i></div>
+
+<section class="wide rv">
+  <div class="eyebrow">Server v1.0</div>
+  <h2>The laptop <em>left the chain</em></h2>
+  <p class="lede">The current server runs in Termux on the phone itself, talking to its own ADB over wireless debugging. Tunnel, server and device are now one object in your pocket.</p>
+  <div class="grid">
+    <div class="card"><h4>No SDK</h4><p>MCP is implemented by hand — <b>JSON-RPC 2.0</b> over both transports: legacy HTTP+SSE and the single-endpoint Streamable HTTP. The official Python SDK was out: its <code>cryptography</code> dependency ships a broken native wheel on Termux's Python 3.14.</p></div>
+    <div class="card"><h4>15 tools</h4><p>Screenshot, tap, swipe, type, key events, launch and list apps, foreground app, SMS send and list, battery, GPS, clipboard read and write, notifications.</p></div>
+    <div class="card"><h4>The SMS quirk</h4><p><code>termux-sms-send</code> often hands the message off and then hangs. A timeout is reported as <b>likely sent</b>, never as failed — so the model doesn't retry and double-text someone.</p></div>
+    <div class="card warn"><h4>Auth is a formality</h4><p>Some MCP clients refuse any server without OAuth discovery metadata, so there is a spec-shaped OAuth layer that <b>approves everyone</b>. It says so in its own header comment: the tunnel URL is the only real secret.</p></div>
+  </div>
+</section>
+
 <footer>
   <div class="eyebrow">cloudflared · adb · mcp</div>
   <p>The console above runs a scripted version of the real command set. Every command shown is one that actually ran on the device.</p>

@@ -176,7 +176,7 @@ footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-wi
   <div class="grid">
     <div class="card"><h4>launch.py</h4><p>Entry point. Optional Cloudflare Quick Tunnel when you actually do want it reachable.</p></div>
     <div class="card"><h4>server.py</h4><p>FastAPI + WebSocket bridge to the VARA modem on TCP, with a demo mode when no modem is present.</p></div>
-    <div class="card"><h4>rig_control.py</h4><p>Hamlib <code>rigctld</code> wrapper — frequency, mode, PTT.</p></div>
+    <div class="card"><h4>rig_control.py</h4><p>Hamlib <code>rigctld</code> wrapper — frequency, mode, PTT over CAT, DTR, RTS or VOX; launches <code>rigctld</code> itself, polls every two seconds, and marks the rig lost after five straight failures. <a class="mf-xref" href="assets/src/rig_control.py" target="_blank" rel="noopener">Read the source →</a></p></div>
     <div class="card"><h4>rig_list.json</h4><p>283 radios, parsed once so the UI never shells out to enumerate.</p></div>
     <div class="card"><h4>index.html</h4><p>The whole operator UI. Amber, deliberately — the first pass was too gloomy to read at 3am.</p></div>
     <div class="card"><h4>fonts/</h4><p>Five TTFs. The difference between "offline" and offline.</p></div>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Neural Simulation v2 — V-PROJECT</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;font-family:monospace;padding:10px;user-select:none;color:#ccc}
+h1{font-size:9px;color:#1a0000;letter-spacing:2px;margin-bottom:8px}
+#c{display:block;background:#000;border:1px solid #1a0000;width:100%;max-width:680px;height:auto;aspect-ratio:680/360}
+.ctrl{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+button{font-family:monospace;font-size:11px;background:#080808;padding:4px 10px;border-radius:3px;cursor:pointer;border:1px solid #333}
+button:hover{background:#180000}
+#bp{color:#00cc44;border-color:#00cc44}
+#bs{color:#ff6600;border-color:#ff6600}
+#bm{color:#cc00cc;border-color:#cc00cc}
+#br{color:#444}
+#inf{font-size:9px;color:#222;margin-left:auto}
+</style>
+</head>
+<body>
+<h1>// NEURAL NETWORK SIMULATION v2 — V-PROJECT — LOADED ON PAUSE</h1>
+<canvas id="c" width="680" height="360"></canvas>
+<div class="ctrl">
+  <button id="bp" onclick="togglePlay()">▶ PLAY</button>
+  <button id="bs" onclick="injectStimulus()">INJECT STIMULUS</button>
+  <button id="bm" onclick="startMerge()">MERGE ×4</button>
+  <button id="br" onclick="resetSim()">RESET</button>
+  <span id="inf"></span>
+</div>
+<script>
+const C=document.getElementById('c'),ctx=C.getContext('2d');
+const W=680,H=360,PW=170,POOL=200;
+let run=false,frame=0,mergeP=0,merging=false,firstDraw=false,lastT=0,fps=0;
+const rng=(a,b)=>a+Math.random()*(b-a);
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+function mkPool(){
+  const p={fr:new Uint8Array(POOL),to:new Uint8Array(POOL),
+    t:new Float32Array(POOL),sp:new Float32Array(POOL),
+    w:new Float32Array(POOL),alive:new Uint8Array(POOL),
+    cor:new Uint8Array(POOL),cnt:0};
+  p.add=(f,t,s,w,c)=>{
+    if(p.cnt>=POOL-10)return;
+    for(let i=0;i<POOL;i++)if(!p.alive[i]){
+      p.fr[i]=f;p.to[i]=t;p.t[i]=0;p.sp[i]=s;
+      p.w[i]=w;p.alive[i]=1;p.cor[i]=c?1:0;p.cnt++;return;
+    }
+  };
+  p.kill=i=>{p.alive[i]=0;p.cnt--;};
+  return p;
+}
+
+const BASE_REGS=[
+  {cx:50,cy:78,r:40,name:'PREFRONTAL'},{cx:120,cy:52,r:26,name:'MOTOR'},
+  {cx:150,cy:90,r:23,name:'SENSORY'},{cx:58,cy:188,r:34,name:'LIMBIC'},
+  {cx:132,cy:206,r:30,name:'CEREBELLUM'},{cx:90,cy:292,r:22,name:'STEM'}
+];
+
+function mkBrain(psilo){
+  const nodes=[],regs=BASE_REGS.map(r=>({...r,nodes:[]}));
+  regs.forEach((reg,ri)=>{
+    const cnt=Math.ceil(reg.r*(psilo?0.62:0.50));
+    for(let i=0;i<cnt;i++){
+      const a=rng(0,Math.PI*2),d=rng(0,reg.r*0.78);
+      nodes.push({lx:reg.cx+Math.cos(a)*d,ly:reg.cy+Math.sin(a)*d,
+        act:0,dead:0,phase:rng(0,Math.PI*2),
+        freq:psilo?rng(0.03,0.08):rng(0.012,0.038),
+        reg:ri,conns:[],mx:0,my:0});
+      reg.nodes.push(nodes.length-1);
+    }
+  });
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const ni=nodes[i],nj=nodes[j];
+      const dx=ni.lx-nj.lx,dy=ni.ly-nj.ly,d=Math.sqrt(dx*dx+dy*dy);
+      const same=ni.reg===nj.reg;
+      const p=same?(psilo?0.48:0.28):(d<50?(psilo?0.20:0.04):(d<100?(psilo?0.09:0.008):(psilo?0.04:0.002)));
+      if(Math.random()<p){
+        const w=rng(0.3,1.0);
+        ni.conns.push({to:j,w});nj.conns.push({to:i,w});
+      }
+    }
+  }
+  return{nodes,regs,pool:mkPool(),type:psilo?1:0,px:psilo?PW:0,ft:0,fi:psilo?18:42,wt:psilo?180:1e9};
+}
+
+const AI_L=[3,5,7,5,3];
+function mkAI(bad){
+  const nodes=[],LN=[];
+  const lg=PW/(AI_L.length+1);
+  AI_L.forEach((cnt,li)=>{
+    LN.push([]);
+    const lx=lg*(li+1),lyg=H/(cnt+1);
+    for(let ni=0;ni<cnt;ni++){
+      nodes.push({lx,ly:lyg*(ni+1),act:0,dead:bad&&Math.random()<0.10?1:0,
+        layer:li,phase:rng(0,Math.PI*2),freq:0.02,conns:[],mx:0,my:0});
+      LN[li].push(nodes.length-1);
+    }
+  });
+  for(let li=0;li<AI_L.length-1;li++)
+    LN[li].forEach(ni=>LN[li+1].forEach(mi=>
+      nodes[ni].conns.push({to:mi,w:rng(0.3,1.0),drop:bad&&Math.random()<0.15})));
+  return{nodes,LN,pool:mkPool(),type:bad?2:3,px:bad?PW*2:PW*3,ft:0,fi:52};
+}
+
+let nets;
+function initNets(){
+  nets=[mkBrain(false),mkBrain(true),mkAI(true),mkAI(false)];
+  nets[0].nodes.forEach(n=>{n.mx=n.lx*2;      n.my=n.ly*0.5;    });
+  nets[1].nodes.forEach(n=>{n.mx=n.lx*2+8;    n.my=180+n.ly*0.5;});
+  nets[2].nodes.forEach(n=>{n.mx=340+n.lx*2;  n.my=n.ly*0.5;    });
+  nets[3].nodes.forEach(n=>{n.mx=348+n.lx*2;  n.my=180+n.ly*0.5;});
+  nets.forEach(net=>net.nodes.forEach(n=>{n.act=rng(0.1,0.4);}));
+}
+initNets();
+
+function fire(net,ni,glitch){
+  const n=net.nodes[ni];
+  if(n.dead&&!glitch)return;
+  if(net.pool.cnt>POOL-15)return;
+  n.conns.forEach(c=>{
+    if(c.drop)return;
+    const fl=glitch||(net.type===2&&Math.random()<0.12);
+    const sp=net.type===1?rng(0.04,0.09):net.type===3?0.055:fl?rng(0.09,0.15):rng(0.025,0.055);
+    net.pool.add(ni,c.to,sp,c.w,fl);
+  });
+  n.act=Math.min(n.act+(glitch?1.6:1.0),2.5);
+}
+
+function updateNet(net){
+  const{nodes,pool}=net;
+  const dec=net.type===3?0.80:net.type===1?0.87:0.91;
+  for(let i=0;i<nodes.length;i++)nodes[i].act*=dec;
+  for(let i=0;i<POOL;i++){
+    if(!pool.alive[i])continue;
+    pool.t[i]+=pool.sp[i];
+    if(pool.t[i]>=1.0){
+      const tn=nodes[pool.to[i]];
+      if(!tn.dead){
+        if(pool.cor[i])tn.act=Math.min(tn.act+rng(-0.4,1.8),2.5);
+        else{
+          tn.act=Math.min(tn.act+pool.w[i]*0.72,2.0);
+          const prop=net.type<=1||(tn.act>0.35&&tn.layer<AI_L.length-1);
+          if(prop)fire(net,pool.to[i],pool.cor[i]===1);
+        }
+      }
+      pool.kill(i);
+    }
+  }
+  net.ft++;
+  if(net.ft>=net.fi){
+    net.ft=0;
+    if(net.type<=1){
+      const ri=Math.floor(Math.random()*net.regs.length);
+      const rn=net.regs[ri].nodes;
+      if(rn.length)fire(net,rn[Math.floor(Math.random()*rn.length)],false);
+    }else net.LN[0].forEach(ni=>{if(!net.nodes[ni].dead)fire(net,ni,false);});
+  }
+  if(net.type===1){net.wt--;if(net.wt<=0){net.wt=140+Math.floor(rng(0,200));net.regs.forEach(reg=>reg.nodes.forEach(ni=>fire(net,ni,false)));}}
+  if(net.type===2&&Math.random()<0.007){const ri=Math.floor(Math.random()*nodes.length);if(!nodes[ri].dead)nodes[ri].act=Math.min(nodes[ri].act+rng(0.5,1.5),2.5);}
+}
+
+function nCol(type,act,phase,idx){
+  const a=Math.min(act,2.5);
+  if(type===0)return`rgba(${180+a*30|0},${15+a*25|0},0,${Math.min(0.4+a*0.3,1)})`;
+  if(type===1){const h=(frame*1.2+phase*25+idx*8)%360;return`hsl(${h|0},88%,${25+a*18|0}%)`;}
+  if(type===2)return`rgba(${160+a*40|0},0,${15+a*25|0},${Math.min(0.35+a*0.3,1)})`;
+  return`rgba(0,${140+a*55|0},${20+a*30|0},${Math.min(0.4+a*0.4,1)})`;
+}
+function cCol(type,al){
+  if(type===0)return`rgba(175,35,0,${al})`;
+  if(type===1)return`rgba(110,0,175,${Math.min(al*1.8,.22)})`;
+  if(type===2)return`rgba(175,0,0,${al})`;
+  return`rgba(0,160,45,${al})`;
+}
+function sCol(type,w,t){
+  const f=(0.85*(1-t*0.35)).toFixed(2);
+  if(type===0)return`rgba(255,${50+w*90|0},0,${f})`;
+  if(type===1)return`rgba(${160+w*95|0},0,${175+w*80|0},${f})`;
+  if(type===2)return`rgba(255,25,0,${f})`;
+  return`rgba(0,${185+w*70|0},${55+w*55|0},${f})`;
+}
+
+let _px=0,_py=0;
+function nPos(net,ni,mp){
+  const n=net.nodes[ni];
+  if(mp<=0){_px=n.lx+net.px;_py=n.ly;}
+  else if(mp>=1){_px=n.mx;_py=n.my;}
+  else{_px=lerp(n.lx+net.px,n.mx,mp);_py=lerp(n.ly,n.my,mp);}
+}
+
+function drawNet(net,mp){
+  const{nodes,pool,type}=net;
+  const isP=type===1;
+  ctx.lineWidth=0.5;
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i];
+    nPos(net,i,mp);const ax=_px,ay=_py;
+    for(let j=0;j<n.conns.length;j++){
+      const c=n.conns[j];
+      if(c.drop)continue;
+      const al=0.03+n.act*0.05;
+      nPos(net,c.to,mp);
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(_px,_py);
+      ctx.strokeStyle=cCol(type,al);ctx.stroke();
+    }
+  }
+  for(let i=0;i<POOL;i++){
+    if(!pool.alive[i])continue;
+    nPos(net,pool.fr[i],mp);const ax=_px,ay=_py;
+    nPos(net,pool.to[i],mp);const bx=_px,by=_py;
+    const t=pool.t[i];
+    const sx=lerp(ax,bx,t),sy=lerp(ay,by,t);
+    ctx.beginPath();
+    if(pool.cor[i]){
+      ctx.arc(sx+rng(-1.5,1.5),sy+rng(-1.5,1.5),3.5,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,0,${70+Math.sin(frame*.5)*70|0},.88)`;
+    }else{
+      ctx.arc(sx,sy,isP?3:2,0,Math.PI*2);
+      ctx.fillStyle=sCol(type,pool.w[i],t);
+    }
+    ctx.fill();
+  }
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i];
+    nPos(net,i,mp);const nx=_px,ny=_py;
+    if(n.dead){
+      ctx.beginPath();ctx.arc(nx,ny,3,0,Math.PI*2);
+      ctx.fillStyle='#0d0d0d';ctx.fill();
+      ctx.strokeStyle='rgba(70,0,0,.5)';ctx.lineWidth=.5;ctx.stroke();
+      continue;
+    }
+    const pulse=Math.sin(frame*n.freq+n.phase)*(isP?.5:.25)+.25;
+    const act=Math.min(n.act+pulse*.3,2.5);
+    const r=2+act*1.4;
+    ctx.beginPath();ctx.arc(nx,ny,r,0,Math.PI*2);
+    ctx.fillStyle=nCol(type,act,n.phase,i);ctx.fill();
+    if(act>.7){
+      ctx.beginPath();ctx.arc(nx,ny,r+1.5,0,Math.PI*2);
+      ctx.strokeStyle=nCol(type,act*.2,n.phase,i);ctx.lineWidth=.5;ctx.stroke();
+    }
+  }
+}
+
+const LNAMES=['HUMAN BRAIN','PSILOCYBIN BRAIN','INCONSISTENT AI','CONSISTENT AI'];
+function drawLabels(mp){
+  ctx.font='8px monospace';ctx.textAlign='left';
+  const sp=Math.max(1-mp*3.5,0);
+  if(sp>0.02){
+    for(let i=0;i<4;i++){
+      if(i>0){ctx.strokeStyle=`rgba(22,0,0,${sp*.8})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(i*PW,0);ctx.lineTo(i*PW,H);ctx.stroke();}
+      ctx.fillStyle=`rgba(90,10,0,${sp*.55})`;ctx.fillText(LNAMES[i],i*PW+5,11);
+    }
+  }
+  if(mp>0.45){
+    const al=Math.min((mp-0.45)*1.8,1);
+    const pos=[{x:5,y:11,c:'80,0,0'},{x:5,y:H/2+11,c:'70,0,130'},{x:W/2+5,y:11,c:'80,0,0'},{x:W/2+5,y:H/2+11,c:'0,70,0'}];
+    pos.forEach((p,i)=>{ctx.fillStyle=`rgba(${p.c},${Math.min(al*.4,.55)})`;ctx.fillText(LNAMES[i],p.x,p.y);});
+    ctx.strokeStyle=`rgba(20,0,0,${Math.min(al*.25,.3)})`;ctx.lineWidth=.5;ctx.setLineDash([4,5]);
+    ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function render(staticMode){
+  if(staticMode){ctx.clearRect(0,0,W,H);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);}
+  else{ctx.fillStyle='rgba(0,0,0,.20)';ctx.fillRect(0,0,W,H);}
+  const mp=mergeP;
+  nets.forEach(net=>drawNet(net,mp));
+  drawLabels(mp);
+}
+
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!run&&firstDraw&&!merging)return;
+  if(ts&&lastT>0&&ts>lastT)fps=Math.round(1000/(ts-lastT));
+  if(ts)lastT=ts;
+  if(run){frame++;nets.forEach(updateNet);}
+  if(merging){if(!run)frame++;mergeP=Math.min(mergeP+0.008,1);if(mergeP>=1)merging=false;}
+  render(false);
+  firstDraw=true;
+  if(frame%45===0){
+    const dead=nets[2].nodes.filter(n=>n.dead).length;
+    const drop=nets[2].nodes.reduce((a,n)=>a+n.conns.filter(c=>c.drop).length,0);
+    const wt=nets[1].wt<1e8?`PSILO_WAVE:${nets[1].wt}f`:'';
+    document.getElementById('inf').textContent=`FPS:${fps} | AI_DEAD:${dead} DROPOUT:${drop} | ${wt}`;
+  }
+}
+
+render(true);
+firstDraw=false;
+render(true);
+firstDraw=true;
+requestAnimationFrame(loop);
+
+function togglePlay(){run=!run;document.getElementById('bp').textContent=run?'⏸ PAUSE':'▶ PLAY';}
+function injectStimulus(){
+  nets.forEach((net,i)=>{
+    if(i<=1)net.regs.forEach(r=>{if(Math.random()<.55&&r.nodes.length)fire(net,r.nodes[0],false);});
+    else net.LN[0].forEach(ni=>{if(!net.nodes[ni].dead)fire(net,ni,false);});
+  });
+}
+function startMerge(){merging=true;document.getElementById('bm').textContent='MERGING...';}
+function resetSim(){
+  run=false;mergeP=0;merging=false;frame=0;firstDraw=false;lastT=0;
+  document.getElementById('bp').textContent='▶ PLAY';
+  document.getElementById('bm').textContent='MERGE ×4';
+  initNets();render(true);render(true);firstDraw=true;
+}
+</script>
+</body>
+</html>
