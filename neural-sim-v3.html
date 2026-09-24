@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Neural Simulation v3 — V-PROJECT</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;width:100%;height:100%;overflow:hidden}
+body{font-family:monospace;display:flex;flex-direction:column;align-items:center;padding:8px}
+#wrap{position:relative;flex-shrink:0}
+#c{display:block;background:#000;cursor:crosshair}
+#overlay{position:absolute;top:0;left:0;pointer-events:none;font-family:monospace;font-size:11px;color:rgba(100,0,0,.6)}
+.ctrl{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;width:100%;max-width:1920px}
+button{font-family:monospace;font-size:11px;background:#080808;padding:5px 12px;border-radius:3px;cursor:pointer}
+button:hover{background:#180000}
+#bp{color:#00cc44;border:1px solid #00cc44}
+#bs{color:#ff6600;border:1px solid #ff6600}
+#bm{color:#cc00cc;border:1px solid #cc00cc}
+#bx{color:#0088ff;border:1px solid #0044aa;display:none}
+#br{color:#444;border:1px solid #333}
+#bfs{color:#888;border:1px solid #555}
+#inf{font-size:9px;color:#222;margin-left:auto;text-align:right}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas><canvas id="overlay"></canvas></div>
+<div class="ctrl">
+  <button id="bp" onclick="togglePlay()">▶ PLAY</button>
+  <button id="bs" onclick="injectStimulus()">STIMULUS</button>
+  <button id="bm" onclick="startMerge()">MERGE ×4</button>
+  <button id="bx" onclick="splitNets()">SPLIT</button>
+  <button id="br" onclick="resetSim()">RESET</button>
+  <button id="bfs" onclick="toggleFS()">⛶ FULLSCREEN</button>
+  <span id="inf"></span>
+</div>
+<script>
+// ── GLOBALS ───────────────────────────────────────────────────────────────────
+const C=document.getElementById('c');
+const OV=document.getElementById('overlay');
+const ctx=C.getContext('2d');
+const oct=OV.getContext('2d');
+let DW=1280,DH=720,PW=320,PH=720;
+const POOL=300;
+let run=false,frame=0,lastT=0,fps=0;
+let mergeP=0,merging=false,splitting=false,merged=false;
+let firstDraw=false;
+
+const rng=(a,b)=>a+Math.random()*(b-a);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ── RESPONSIVE SIZING ─────────────────────────────────────────────────────────
+function resize(){
+  const dpr=window.devicePixelRatio||1;
+  const mw=window.innerWidth-16, mh=window.innerHeight-60;
+  DW=Math.min(mw,1920); DH=Math.floor(DW*9/16);
+  if(DH>mh){DH=mh;DW=Math.floor(DH*16/9);}
+  DW=Math.max(DW,640); DH=Math.max(DH,360);
+  PW=Math.floor(DW/4); PH=DH;
+  const wrap=document.getElementById('wrap');
+  wrap.style.width=DW+'px'; wrap.style.height=DH+'px';
+  [C,OV].forEach(cv=>{
+    cv.style.width=DW+'px'; cv.style.height=DH+'px';
+    cv.style.position='absolute'; cv.style.top='0'; cv.style.left='0';
+    cv.width=Math.round(DW*dpr); cv.height=Math.round(DH*dpr);
+  });
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  oct.setTransform(dpr,0,0,dpr,0,0);
+}
+
+// ── SIGNAL POOL ───────────────────────────────────────────────────────────────
+function mkPool(sz){
+  sz=sz||POOL;
+  const p={
+    fr:new Uint16Array(sz),to:new Uint16Array(sz),
+    t:new Float32Array(sz),sp:new Float32Array(sz),
+    w:new Float32Array(sz),alive:new Uint8Array(sz),
+    cor:new Uint8Array(sz),inh:new Uint8Array(sz),
+    net:new Uint8Array(sz),// for cross-network signals
+    cnt:0,sz
+  };
+  p.add=(f,t,s,w,c,inh,net)=>{
+    if(p.cnt>=sz-10)return false;
+    for(let i=0;i<sz;i++)if(!p.alive[i]){
+      p.fr[i]=f;p.to[i]=t;p.t[i]=0;p.sp[i]=s;p.w[i]=w;
+      p.alive[i]=1;p.cor[i]=c?1:0;p.inh[i]=inh?1:0;
+      p.net[i]=net||0;p.cnt++;return true;
+    }
+    return false;
+  };
+  p.kill=i=>{p.alive[i]=0;p.cnt--;};
+  return p;
+}
+
+// ── BRAIN REGION DEFINITIONS (normalized 0-1) ─────────────────────────────────
+const BRAIN_RDEFS=[
+  {fx:.30,fy:.22,fr:.115,name:'PREFRONTAL CORTEX',dmn:true},
+  {fx:.72,fy:.14,fr:.075,name:'MOTOR CORTEX',dmn:false},
+  {fx:.88,fy:.26,fr:.065,name:'SENSORY CORTEX',dmn:false},
+  {fx:.35,fy:.52,fr:.100,name:'LIMBIC / AMYGDALA',dmn:false},
+  {fx:.78,fy:.58,fr:.088,name:'CEREBELLUM',dmn:false},
+  {fx:.52,fy:.82,fr:.063,name:'BRAINSTEM',dmn:false},
+  {fx:.55,fy:.36,fr:.058,name:'THALAMUS',dmn:false},// gating hub
+  {fx:.22,fy:.44,fr:.050,name:'POST. CINGULATE',dmn:true},// DMN hub
+];
+
+// ── BUILD BRAIN NETWORK ───────────────────────────────────────────────────────
+function mkBrain(psilo){
+  const nodes=[],regs=BRAIN_RDEFS.map(r=>({...r,nodes:[],cx:r.fx*PW,cy:r.fy*PH,r:r.fr*Math.min(PW,PH)}));
+
+  regs.forEach((reg,ri)=>{
+    const cnt=Math.ceil(reg.r*(psilo?0.65:0.52)*1.4);
+    for(let i=0;i<cnt;i++){
+      const a=rng(0,Math.PI*2),d=rng(0,reg.r*.80);
+      const isInh=Math.random()<(psilo?.15:.20); // 20% inhibitory (GABA)
+      nodes.push({
+        lx:reg.cx+Math.cos(a)*d, ly:reg.cy+Math.sin(a)*d,
+        act:0,dead:0,refract:0,
+        phase:rng(0,Math.PI*2),
+        freq:psilo?rng(.025,.075):rng(.010,.035),
+        inh:isInh?1:0, // excitatory=0, inhibitory=1
+        reg:ri,dmn:reg.dmn?1:0,
+        conns:[],mx:0,my:0,ltp:1.0, // long-term potentiation multiplier
+      });
+      reg.nodes.push(nodes.length-1);
+    }
+  });
+
+  // Build connections with distance-based probability
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const ni=nodes[i],nj=nodes[j];
+      const dx=ni.lx-nj.lx,dy=ni.ly-nj.ly,d=Math.sqrt(dx*dx+dy*dy);
+      const pxDist=d; // already in px
+      const same=ni.reg===nj.reg;
+      const thresh=same?reg_thresh(psilo,true,pxDist):reg_thresh(psilo,false,pxDist);
+      if(Math.random()<thresh){
+        const w=rng(.25,1.0);
+        ni.conns.push({to:j,w,inh:ni.inh});
+        nj.conns.push({to:i,w,inh:nj.inh});
+      }
+    }
+  }
+
+  // Theta oscillator (4-8Hz) per network
+  const net={
+    nodes,regs,pool:mkPool(),type:psilo?1:0,px:psilo?PW:0,
+    ft:0,fi:psilo?15:38,wt:psilo?160:1e9,
+    theta:rng(0,Math.PI*2),// oscillation phase
+    alpha:rng(0,Math.PI*2),
+    thalamicGate:1.0, // 1=normal, ~0=flooded (psilo effect)
+  };
+  return net;
+}
+
+function reg_thresh(psilo,same,d){
+  const near=PW*.16,mid=PW*.32;
+  if(same) return psilo?.50:.30;
+  if(d<near) return psilo?.22:.05;
+  if(d<mid)  return psilo?.10:.010;
+  return psilo?.05:.003;
+}
+
+// ── BUILD AI NETWORK ──────────────────────────────────────────────────────────
+const AI_L=[4,6,8,8,6,4];
+function mkAI(bad){
+  const nodes=[],LN=[];
+  const lg=PW/(AI_L.length+1);
+  AI_L.forEach((cnt,li)=>{
+    LN.push([]);
+    const lx=lg*(li+1),lyg=PH/(cnt+1);
+    for(let ni=0;ni<cnt;ni++){
+      const isDead=bad&&Math.random()<.10;
+      nodes.push({
+        lx,ly:lyg*(ni+1),act:0,
+        dead:isDead?1:0,refract:0,
+        layer:li,phase:rng(0,Math.PI*2),freq:.02,
+        inh:0,// AI has no inhibitory distinction
+        conns:[],mx:0,my:0,
+        gradScale:bad?Math.pow(.72,li):1.0, // gradient vanishing per layer
+        collapsed:0,// weight collapse flag
+      });
+      LN[li].push(nodes.length-1);
+    }
+  });
+
+  for(let li=0;li<AI_L.length-1;li++){
+    LN[li].forEach(ni=>{
+      LN[li+1].forEach(mi=>{
+        const w=rng(.25,1.0);
+        const dropped=bad&&Math.random()<.14;
+        const collapsed=bad&&!dropped&&Math.random()<.08;// near-zero weight
+        nodes[ni].conns.push({
+          to:mi,
+          w:collapsed?.03:w,
+          drop:dropped,
+          res:false,// residual flag
+        });
+      });
+    });
+  }
+
+  // Residual/skip connections for good AI (every 2 layers)
+  if(!bad){
+    for(let li=0;li<AI_L.length-2;li++){
+      LN[li].forEach(ni=>{
+        const skipLayer=LN[li+2];
+        if(skipLayer&&skipLayer.length>0){
+          const target=skipLayer[Math.floor(Math.random()*skipLayer.length)];
+          nodes[ni].conns.push({to:target,w:.4,drop:false,res:true});
+        }
+      });
+    }
+  }
+
+  return{nodes,LN,pool:mkPool(),type:bad?2:3,px:bad?PW*2:PW*3,ft:0,fi:55};
+}
+
+// ── CROSS-NETWORK POOL & CONNECTIONS ─────────────────────────────────────────
+let crossPool=mkPool(150);
+let crossConns=[];
+
+function buildCrossConns(){
+  crossConns=[];
+  if(!nets) return;
+  const[brain,psilo,aiB,aiG]=nets;
+  // Brain → Good AI (biological inspiration to structured learning)
+  brain.nodes.forEach((bn,bi)=>{
+    if(!bn.inh&&Math.random()<.04){
+      const ti=Math.floor(Math.random()*aiG.nodes.length);
+      if(!aiG.nodes[ti].dead) crossConns.push({sn:0,si:bi,tn:3,ti,w:.3,type:'bio-ai'});
+    }
+  });
+  // Good AI → Brain (artificial feedback to biological)
+  aiG.nodes.forEach((an,ai)=>{
+    if(an.layer===AI_L.length-1&&Math.random()<.08){
+      const bi=Math.floor(Math.random()*brain.nodes.length);
+      crossConns.push({sn:3,si:ai,tn:0,ti:bi,w:.25,type:'ai-bio'});
+    }
+  });
+  // Psilo → Bad AI (entropy feeding inconsistency)
+  psilo.nodes.forEach((pn,pi)=>{
+    if(Math.random()<.025){
+      const ti=Math.floor(Math.random()*aiB.nodes.length);
+      crossConns.push({sn:1,si:pi,tn:2,ti,w:.35,type:'psilo-ai'});
+    }
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+let nets=null;
+function initNets(){
+  crossPool=mkPool(150); crossConns=[];
+  nets=[mkBrain(false),mkBrain(true),mkAI(true),mkAI(false)];
+  // Merge targets — quadrant layout
+  const qW=DW/2, qH=DH/2;
+  nets[0].nodes.forEach(n=>{n.mx=n.lx*(qW/PW);        n.my=n.ly*(qH/PH);      });
+  nets[1].nodes.forEach(n=>{n.mx=n.lx*(qW/PW)+6;      n.my=qH+n.ly*(qH/PH);  });
+  nets[2].nodes.forEach(n=>{n.mx=qW+n.lx*(qW/PW);     n.my=n.ly*(qH/PH);     });
+  nets[3].nodes.forEach(n=>{n.mx=qW+n.lx*(qW/PW)+6;   n.my=qH+n.ly*(qH/PH); });
+  // Pre-warm
+  nets.forEach(net=>net.nodes.forEach(n=>{n.act=rng(.08,.35);}));
+  buildCrossConns();
+}
+
+// ── FIRE ──────────────────────────────────────────────────────────────────────
+function fire(net,ni,glitch){
+  const n=net.nodes[ni];
+  if((n.dead||n.refract>0)&&!glitch)return;
+  if(net.pool.cnt>POOL-20)return;
+  const isInh=n.inh===1;
+  n.conns.forEach(c=>{
+    if(c.drop)return;
+    const fl=glitch||(net.type===2&&Math.random()<.13);
+    let sp;
+    if(net.type===1) sp=rng(.035,.085); // psilo: fast
+    else if(net.type===3) sp=.060;       // consistent: uniform
+    else if(fl) sp=rng(.09,.16);
+    else sp=rng(.022,.055);
+    // Gradient vanishing for bad AI
+    const wEff=c.w*(net.type===2?n.gradScale:1.0);
+    net.pool.add(ni,c.to,sp,Math.max(wEff,.02),fl,isInh||c.inh);
+  });
+  if(!glitch){
+    n.act=Math.min(n.act+1.0,2.5);
+    n.refract=isInh?3:2; // inhibitory neurons have longer refractory
+    if(net.type===2&&Math.random()<.04) n.dead=1; // occasional ReLU death under load
+  } else {
+    n.act=Math.min(n.act+1.8,3.0);
+    n.refract=1;
+  }
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────────────────
+function updateNet(net){
+  const{nodes,pool}=net;
+
+  // Oscillators (brain only)
+  if(net.type<=1){
+    net.theta+=2*Math.PI*6/60; // 6Hz theta
+    net.alpha+=2*Math.PI*10/60; // 10Hz alpha
+  }
+
+  // Decay & refractory
+  const dec=net.type===3?.78:net.type===1?.86:.90;
+  for(let i=0;i<nodes.length;i++){
+    nodes[i].act*=dec;
+    if(nodes[i].refract>0)nodes[i].refract--;
+  }
+
+  // Layer normalization for good AI (keeps activations stable)
+  if(net.type===3){
+    net.LN.forEach(layerNodeIdxs=>{
+      if(!layerNodeIdxs||!layerNodeIdxs.length)return;
+      const acts=layerNodeIdxs.map(i=>nodes[i].act);
+      const mean=acts.reduce((s,v)=>s+v,0)/acts.length;
+      layerNodeIdxs.forEach(i=>{nodes[i].act=clamp(nodes[i].act*.7+mean*.3,.0,2.0);});
+    });
+  }
+
+  // Process signals
+  for(let i=0;i<POOL;i++){
+    if(!pool.alive[i])continue;
+    pool.t[i]+=pool.sp[i];
+    if(pool.t[i]>=1.0){
+      const tn=nodes[pool.to[i]];
+      if(!tn.dead&&tn.refract===0){
+        if(pool.cor[i]){
+          tn.act=clamp(tn.act+rng(-.5,2.0),0,3.0);
+        } else if(pool.inh[i]){
+          // Inhibitory: suppress activation (GABA effect)
+          tn.act=Math.max(tn.act-pool.w[i]*.55,0);
+        } else {
+          tn.act=Math.min(tn.act+pool.w[i]*.75,2.5);
+          const prop=net.type<=1||(tn.act>.32&&tn.layer<AI_L.length-1);
+          if(prop)fire(net,pool.to[i],pool.cor[i]===1);
+        }
+      }
+      pool.kill(i);
+    }
+  }
+
+  // Auto-fire with oscillatory modulation
+  net.ft++;
+  const oscMod=net.type<=1?(0.6+.4*Math.sin(net.theta)):1.0;
+  const thalGate=net.type===1?net.thalamicGate:1.0;
+  if(net.ft>=Math.floor(net.fi/oscMod)){
+    net.ft=0;
+    if(net.type<=1){
+      const ri=Math.floor(Math.random()*net.regs.length);
+      const rn=net.regs[ri].nodes;
+      if(rn.length){
+        const ni=rn[Math.floor(Math.random()*rn.length)];
+        if(Math.random()<thalGate) fire(net,ni,false);
+      }
+    } else {
+      net.LN[0].forEach(ni=>{if(!net.nodes[ni].dead)fire(net,ni,false);});
+    }
+  }
+
+  // Psilocybin specific
+  if(net.type===1){
+    // Thalamic gating degradation (serotonin suppresses thalamic filtering)
+    net.thalamicGate=.3+.7*Math.abs(Math.sin(frame*.008));
+    // Wave event
+    net.wt--;
+    if(net.wt<=0){
+      net.wt=120+Math.floor(rng(0,180));
+      // Massive cross-regional activation (DMN disruption + thalamic flood)
+      net.regs.forEach(reg=>reg.nodes.forEach(ni=>fire(net,ni,false)));
+    }
+    // Entropy: random spontaneous firing
+    if(Math.random()<.015){
+      const ri=Math.floor(Math.random()*nodes.length);
+      if(!nodes[ri].dead&&nodes[ri].refract===0) nodes[ri].act=Math.min(nodes[ri].act+rng(.3,1.2),2.5);
+    }
+  }
+
+  // Bad AI: hallucinations + occasional mode collapse
+  if(net.type===2){
+    if(Math.random()<.007){
+      const ri=Math.floor(Math.random()*nodes.length);
+      if(!nodes[ri].dead)nodes[ri].act=Math.min(nodes[ri].act+rng(.5,1.8),3.0);
+    }
+    // Mode collapse: every ~400 frames suppress all but one output neuron
+    if(frame%400===0&&net.LN){
+      const outLayer=net.LN[net.LN.length-1];
+      const winner=outLayer[Math.floor(Math.random()*outLayer.length)];
+      outLayer.forEach(ni=>{if(ni!==winner)nodes[ni].act*=.05;});
+    }
+  }
+}
+
+// Cross-network signal update
+function updateCross(){
+  if(!merged&&mergeP<.7)return;
+  // Autonomous cross-network firing
+  if(Math.random()<.02&&crossConns.length>0){
+    const cc=crossConns[Math.floor(Math.random()*crossConns.length)];
+    const sNode=nets[cc.sn].nodes[cc.si];
+    if(sNode&&sNode.act>.4&&!sNode.dead){
+      crossPool.add(cc.si|(cc.sn<<8), cc.ti|(cc.tn<<8), .04, cc.w, false, false, 255);
+    }
+  }
+  // Advance cross signals
+  for(let i=0;i<150;i++){
+    if(!crossPool.alive[i])continue;
+    crossPool.t[i]+=crossPool.sp[i];
+    if(crossPool.t[i]>=1.0){
+      const tn=crossPool.to[i]&0xFF, tnet=(crossPool.to[i]>>8)&0xFF; // hmm need rethink
+      crossPool.kill(i);
+    }
+  }
+}
+
+// ── COLOR FUNCTIONS ───────────────────────────────────────────────────────────
+function nCol(type,act,phase,idx,inh){
+  const a=Math.min(act,2.5);
+  if(type===0){
+    if(inh) return`rgba(0,${80+a*80|0},${180+a*50|0},${Math.min(.35+a*.25,1)})`;// inhibitory: blue
+    return`rgba(${185+a*28|0},${12+a*22|0},0,${Math.min(.4+a*.28,1)})`;
+  }
+  if(type===1){const h=(frame*1.1+phase*28+idx*7)%360;return`hsl(${h|0},90%,${22+a*20|0}%)`;}
+  if(type===2)return`rgba(${155+a*45|0},${a*8|0},${10+a*22|0},${Math.min(.3+a*.3,1)})`;
+  return`rgba(${a*15|0},${135+a*58|0},${18+a*28|0},${Math.min(.38+a*.38,1)})`;
+}
+function cCol(type,al){
+  if(type===0)return`rgba(170,32,0,${al})`;
+  if(type===1)return`rgba(105,0,170,${Math.min(al*1.9,.20)})`;
+  if(type===2)return`rgba(170,0,0,${al})`;
+  return`rgba(0,155,40,${al})`;
+}
+function sCol(type,w,t,inh){
+  const f=(0.88*(1-t*.32)).toFixed(2);
+  if(inh) return`rgba(0,120,220,${f})`; // inhibitory signals: blue
+  if(type===0)return`rgba(255,${45+w*95|0},0,${f})`;
+  if(type===1)return`rgba(${155+w*100|0},0,${170+w*85|0},${f})`;
+  if(type===2)return`rgba(255,20,0,${f})`;
+  return`rgba(0,${180+w*75|0},${50+w*60|0},${f})`;
+}
+
+// ── POSITION HELPER ───────────────────────────────────────────────────────────
+let _px=0,_py=0;
+function nPos(net,ni,mp){
+  const n=net.nodes[ni];
+  if(mp<=0){_px=n.lx+net.px;_py=n.ly;}
+  else if(mp>=1){_px=n.mx;_py=n.my;}
+  else{
+    // Ease in/out for smooth merge
+    const e=mp<.5?2*mp*mp:(1-Math.pow(-2*mp+2,2)/2);
+    _px=lerp(n.lx+net.px,n.mx,e);
+    _py=lerp(n.ly,n.my,e);
+  }
+}
+
+// ── DRAW NETWORK ─────────────────────────────────────────────────────────────
+function drawNet(net,mp){
+  const{nodes,pool,type}=net;
+  const isP=type===1,isG=type===3;
+  ctx.lineWidth=.6;
+
+  // Connections
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i];
+    nPos(net,i,mp);const ax=_px,ay=_py;
+    for(let j=0;j<n.conns.length;j++){
+      const c=n.conns[j];
+      if(c.drop)continue;
+      const al=c.res?.06:(0.025+n.act*.045);
+      nPos(net,c.to,mp);
+      if(c.res){// residual: dashed
+        ctx.setLineDash([3,5]);
+        ctx.strokeStyle=`rgba(0,180,80,${al})`;
+      } else {
+        ctx.setLineDash([]);
+        ctx.strokeStyle=cCol(type,al);
+      }
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(_px,_py);ctx.stroke();
+    }
+  }
+  ctx.setLineDash([]);
+
+  // Signals
+  for(let i=0;i<POOL;i++){
+    if(!pool.alive[i])continue;
+    nPos(net,pool.fr[i],mp);const ax=_px,ay=_py;
+    nPos(net,pool.to[i],mp);const bx=_px,by=_py;
+    const t=pool.t[i];
+    const sx=lerp(ax,bx,t),sy=lerp(ay,by,t);
+    ctx.beginPath();
+    if(pool.cor[i]){
+      ctx.arc(sx+rng(-2,2),sy+rng(-2,2),4,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,0,${65+Math.sin(frame*.5)*65|0},.90)`;
+    } else {
+      const r=pool.inh[i]?1.8:(isP?3.2:2.2);
+      ctx.arc(sx,sy,r,0,Math.PI*2);
+      ctx.fillStyle=sCol(type,pool.w[i],t,pool.inh[i]);
+    }
+    ctx.fill();
+  }
+
+  // Nodes
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i];
+    nPos(net,i,mp);const nx=_px,ny=_py;
+    if(n.dead){
+      ctx.beginPath();ctx.arc(nx,ny,3.5,0,Math.PI*2);
+      ctx.fillStyle='#0c0c0c';ctx.fill();
+      ctx.strokeStyle='rgba(60,0,0,.45)';ctx.lineWidth=.5;ctx.stroke();
+      // X mark for dead ReLU
+      if(type===2){
+        ctx.strokeStyle='rgba(80,0,0,.3)';ctx.lineWidth=.5;
+        ctx.beginPath();ctx.moveTo(nx-3,ny-3);ctx.lineTo(nx+3,ny+3);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(nx+3,ny-3);ctx.lineTo(nx-3,ny+3);ctx.stroke();
+      }
+      continue;
+    }
+    const pulse=Math.sin(frame*n.freq+n.phase)*(isP?.55:n.inh?.15:.22)+.22;
+    const act=Math.min(n.act+pulse*.28,2.5);
+    const r=(n.inh?2.0:2.5)+act*1.5;
+    ctx.beginPath();
+    if(n.inh){ctx.arc(nx,ny,r,0,Math.PI*2);}// inhibitory: circle
+    else{// excitatory: circle with glow
+      ctx.arc(nx,ny,r,0,Math.PI*2);
+    }
+    ctx.fillStyle=nCol(type,act,n.phase,i,n.inh);ctx.fill();
+    if(act>.65&&!n.inh){
+      ctx.beginPath();ctx.arc(nx,ny,r+2.5,0,Math.PI*2);
+      ctx.strokeStyle=nCol(type,act*.18,n.phase,i,0);ctx.lineWidth=.5;ctx.stroke();
+    }
+    // Thalamic gate indicator (psilo)
+    if(type===1&&n.reg===6&&act>1.0){
+      ctx.beginPath();ctx.arc(nx,ny,r+5,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(255,100,255,${(act-1)*.3})`;ctx.lineWidth=.8;ctx.stroke();
+    }
+  }
+}
+
+// ── CROSS-NETWORK DRAW (merged state) ────────────────────────────────────────
+function drawCrossConns(mp){
+  if(mp<.5)return;
+  const al=Math.min((mp-.5)*2,.35);
+  crossConns.forEach(cc=>{
+    const sn=nets[cc.sn],tn=nets[cc.tn];
+    if(!sn||!tn)return;
+    const sNode=sn.nodes[cc.si],tNode=tn.nodes[cc.ti];
+    if(!sNode||!tNode)return;
+    nPos(sn,cc.si,mp);const sx=_px,sy=_py;
+    nPos(tn,cc.ti,mp);const tx=_px,ty=_py;
+    ctx.setLineDash([2,6]);
+    const colors={'bio-ai':'rgba(80,200,80','ai-bio':'rgba(80,180,255','psilo-ai':'rgba(200,0,200'};
+    ctx.strokeStyle=`${colors[cc.type]},${al})`;
+    ctx.lineWidth=.6;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(tx,ty);ctx.stroke();
+    // Signal dots
+    if(sNode.act>.4&&Math.random()<.05){
+      const t=Math.random();
+      const px=lerp(sx,tx,t),py=lerp(sy,ty,t);
+      ctx.beginPath();ctx.arc(px,py,2,0,Math.PI*2);
+      ctx.fillStyle=`${colors[cc.type]},.7)`;ctx.fill();
+    }
+  });
+  ctx.setLineDash([]);
+}
+
+// ── LABELS (overlay canvas) ───────────────────────────────────────────────────
+const LNAMES=['HUMAN BRAIN','PSILOCYBIN BRAIN','INCONSISTENT AI','CONSISTENT AI'];
+const LSUBS=['biological · E/I balance · oscillatory','5-HT2A agonism · elevated entropy · DMN disruption','dead ReLU · gradient vanishing · hallucination','residual net · layer norm · synchronized'];
+const LCOLS=['rgba(100,20,0','rgba(80,0,140','rgba(100,0,0','rgba(0,90,20'];
+
+function drawLabels(mp){
+  oct.clearRect(0,0,DW,DH);
+  const sp=Math.max(1-mp*3.2,0);
+  oct.font=`${Math.max(9,DW/120)|0}px monospace`;
+  oct.textAlign='left';
+
+  if(sp>.02){
+    for(let i=0;i<4;i++){
+      if(i>0){
+        oct.strokeStyle=`rgba(22,0,0,${sp*.7})`;oct.lineWidth=.5;
+        oct.beginPath();oct.moveTo(i*PW,0);oct.lineTo(i*PW,PH);oct.stroke();
+      }
+      const fs=Math.max(8,DW/140)|0;
+      oct.font=`bold ${fs}px monospace`;
+      oct.fillStyle=`${LCOLS[i]},${sp*.6})`;
+      oct.fillText(LNAMES[i],i*PW+6,14);
+      oct.font=`${Math.max(7,DW/165)|0}px monospace`;
+      oct.fillStyle=`${LCOLS[i]},${sp*.3})`;
+      oct.fillText(LSUBS[i],i*PW+6,26);
+    }
+  }
+
+  if(mp>.4){
+    const al=Math.min((mp-.4)*1.7,1);
+    // Quadrant labels
+    const qf=Math.max(8,DW/140)|0;
+    oct.font=`bold ${qf}px monospace`;
+    const qpos=[{x:8,y:14,c:LCOLS[0],n:LNAMES[0]},{x:8,y:DH/2+14,c:LCOLS[1],n:LNAMES[1]},{x:DW/2+8,y:14,c:LCOLS[2],n:LNAMES[2]},{x:DW/2+8,y:DH/2+14,c:LCOLS[3],n:LNAMES[3]}];
+    qpos.forEach(q=>{oct.fillStyle=`${q.c},${al*.5})`;oct.fillText(q.n,q.x,q.y);});
+    // Quadrant dividers
+    oct.strokeStyle=`rgba(25,0,0,${al*.25})`;oct.lineWidth=.5;oct.setLineDash([5,5]);
+    oct.beginPath();oct.moveTo(DW/2,0);oct.lineTo(DW/2,DH);oct.stroke();
+    oct.beginPath();oct.moveTo(0,DH/2);oct.lineTo(DW,DH/2);oct.stroke();
+    oct.setLineDash([]);
+    // Cross-conn legend
+    if(al>.5){
+      oct.font=`${Math.max(7,DW/180)|0}px monospace`;
+      oct.fillStyle=`rgba(0,200,80,${al*.4})`;oct.fillText('─ ─ bio→ai feedback',DW/2-100,DH/2-8);
+      oct.fillStyle=`rgba(200,0,200,${al*.4})`;oct.fillText('─ ─ entropy channel',DW/2-100,DH/2-20);
+    }
+  }
+
+  // Thalamic gate meter (psilo)
+  if(nets&&nets[1]&&sp>.1){
+    const gv=1-nets[1].thalamicGate;
+    oct.fillStyle=`rgba(200,0,200,${sp*.5})`;
+    oct.font=`${Math.max(7,DW/180)|0}px monospace`;
+    oct.fillText(`THALAMIC GATE: ${(gv*100).toFixed(0)}% open`,PW+6,PH-8);
+  }
+}
+
+// ── RENDER LOOP ───────────────────────────────────────────────────────────────
+function render(staticMode){
+  if(staticMode){ctx.clearRect(0,0,DW,DH);ctx.fillStyle='#000';ctx.fillRect(0,0,DW,DH);}
+  else{ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(0,0,DW,DH);}
+  const mp=mergeP;
+  if(nets) nets.forEach(net=>drawNet(net,mp));
+  drawCrossConns(mp);
+  drawLabels(mp);
+}
+
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!run&&firstDraw&&!merging&&!splitting)return;
+  if(ts&&lastT>0&&ts>lastT)fps=Math.round(1000/(ts-lastT));
+  if(ts)lastT=ts;
+  if(run){frame++;if(nets)nets.forEach(updateNet);updateCross();}
+  if(merging){if(!run)frame++;mergeP=Math.min(mergeP+.007,1);if(mergeP>=1){merging=false;merged=true;document.getElementById('bm').style.display='none';document.getElementById('bx').style.display='inline-block';}}
+  if(splitting){if(!run)frame++;mergeP=Math.max(mergeP-.010,0);if(mergeP<=0){splitting=false;merged=false;document.getElementById('bm').style.display='inline-block';document.getElementById('bx').style.display='none';document.getElementById('bm').textContent='MERGE ×4';}}
+  render(false);firstDraw=true;
+  if(frame%50===0&&nets){
+    const dead=nets[2].nodes.filter(n=>n.dead).length;
+    const drop=nets[2].nodes.reduce((a,n)=>a+n.conns.filter(c=>c.drop).length,0);
+    const wt=nets[1]&&nets[1].wt<1e8?`WV:${nets[1].wt}f`:'';
+    document.getElementById('inf').textContent=`${DW}×${DH} | FPS:${fps} | dead:${dead} drop:${drop} | ${wt}`;
+  }
+}
+
+// ── CONTROLS ─────────────────────────────────────────────────────────────────
+function togglePlay(){run=!run;document.getElementById('bp').textContent=run?'⏸ PAUSE':'▶ PLAY';}
+function injectStimulus(){
+  if(!nets)return;
+  nets.forEach((net,i)=>{
+    if(i<=1)net.regs.forEach(r=>{if(Math.random()<.6&&r.nodes.length)fire(net,r.nodes[Math.floor(Math.random()*r.nodes.length)],false);});
+    else net.LN[0].forEach(ni=>{if(!net.nodes[ni].dead)fire(net,ni,false);});
+  });
+}
+function startMerge(){merging=true;splitting=false;document.getElementById('bm').textContent='MERGING...';}
+function splitNets(){splitting=true;merging=false;}
+function resetSim(){
+  run=false;mergeP=0;merging=false;splitting=false;merged=false;frame=0;firstDraw=false;lastT=0;
+  document.getElementById('bp').textContent='▶ PLAY';
+  document.getElementById('bm').textContent='MERGE ×4';
+  document.getElementById('bm').style.display='inline-block';
+  document.getElementById('bx').style.display='none';
+  initNets();render(true);render(true);firstDraw=true;
+}
+function toggleFS(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+}
+
+// ── STARTUP ───────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{resize();if(nets)initNets();render(true);render(true);});
+document.addEventListener('fullscreenchange',()=>{resize();if(nets)initNets();render(true);render(true);});
+resize();
+initNets();
+render(true);firstDraw=false;render(true);firstDraw=true;
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

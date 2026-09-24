@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleep Compression Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#111; --panel:#1a1a1a; --panel2:#202020; --line:#2e2e2e; --text:#d4c9a8; --muted:#8a7a5a; --gold:#c9a84c; --gold2:#a89060;
+  --good:#4caf50; --warn:#ff9800; --mid:#e0c040; --bad:#f44336; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; line-height: 1.55; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 36px 20px 80px; }
+header { text-align: center; margin-bottom: 30px; }
+h1 { color: var(--gold); font-weight: 600; font-size: clamp(34px, 6vw, 52px); letter-spacing: .03em; }
+.motto { font-style: italic; color: var(--gold2); margin-top: 4px; }
+h2 { color: var(--gold); font-weight: 600; font-size: 26px; margin-bottom: 14px; }
+.mono, label, th, .pill, button, input { font-family: 'IBM Plex Mono', monospace; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; text-align: center; }
+.stat b { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 24px; color: var(--gold); font-weight: 500; }
+.stat span { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+input { width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 9px 10px; font-size: 14px; }
+input:focus { outline: 1px solid var(--gold); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+button { margin-top: 14px; background: var(--gold); color: #111; border: 0; border-radius: 4px; padding: 10px 16px; font-size: 13px; cursor: pointer; font-weight: 500; }
+button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+button:hover { filter: brightness(1.08); }
+.result { margin-top: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: var(--panel2); border-left: 3px solid var(--gold); padding: 12px 14px; border-radius: 0 4px 4px 0; min-height: 48px; }
+.result b { color: var(--gold); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th { background: #2a2a2a; color: var(--gold); border: 1px solid var(--line); padding: 7px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+td { border: 1px solid #262626; padding: 6px 8px; text-align: center; }
+tr:nth-child(even) td { background: #1c1c1c; }
+.pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; color: #111; font-weight: 500; }
+.se-ex { background: var(--good); } .se-ok { background: var(--mid); } .se-mg { background: var(--warn); } .se-bad { background: var(--bad); color: #fff; }
+.spark { display: flex; align-items: flex-end; gap: 4px; height: 90px; margin-top: 12px; padding: 8px; background: var(--panel2); border-radius: 4px; position: relative; }
+.spark i { flex: 1; min-width: 6px; border-radius: 2px 2px 0 0; }
+.spark .line85 { position: absolute; left: 8px; right: 8px; border-top: 1px dashed var(--gold2); }
+.spark .line85::after { content: '85%'; position: absolute; right: 0; top: -16px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--gold2); }
+ul { margin-left: 20px; } li { margin-bottom: 4px; }
+.phase { display: grid; grid-template-columns: 130px 1fr 1fr; gap: 0; font-size: 16px; }
+.phase div { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.phase .h { color: var(--gold); font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.phase .cur { background: rgba(201,168,76,.12); }
+.note { color: var(--muted); font-style: italic; font-size: 16px; margin-top: 10px; }
+section { margin-top: 34px; }
+.foot { text-align: center; margin-top: 50px; color: var(--muted); font-style: italic; }
+.foot a { color: var(--gold); }
+@media (max-width: 600px) { .phase { grid-template-columns: 1fr; } .phase .h { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sleep Compression Tracker</h1>
+    <div class="motto">Consolidate. Expand. Rest.</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="sPhase">baseline</b><span>phase</span></div>
+    <div class="stat"><b id="sNights">0</b><span>nights logged</span></div>
+    <div class="stat"><b id="sTST">—</b><span>avg TST (min)</span></div>
+    <div class="stat"><b id="sSE">—</b><span>avg SE% (last 7)</span></div>
+    <div class="stat"><b id="sStreak">0 / 5</b><span>days ≥85% in a row</span></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Log a night</h2>
+      <label for="d">Date</label><input type="date" id="d">
+      <div class="row2">
+        <div><label for="bed">Bed time</label><input type="time" id="bed" value="23:30"></div>
+        <div><label for="rise">Final rise time</label><input type="time" id="rise" value="06:30"></div>
+      </div>
+      <div class="row2">
+        <div><label for="onset">Minutes to fall asleep</label><input type="number" id="onset" min="0" value="20"></div>
+        <div><label for="waso">Minutes awake overnight</label><input type="number" id="waso" min="0" value="30"></div>
+      </div>
+      <label for="feel">Feel rating (1–10)</label><input type="number" id="feel" min="1" max="10" value="6">
+      <button id="save">Save night</button>
+      <div class="result" id="nightOut">TIB, TST and SE% appear here as you type.</div>
+    </div>
+
+    <div class="card">
+      <h2>Set your window</h2>
+      <label for="avg">Average total sleep time (min)</label><input type="number" id="avg" min="0" placeholder="from your log, or type it">
+      <label for="wake">Fixed wake time</label><input type="time" id="wake" value="07:00">
+      <button id="calc">Calculate window</button>
+      <div class="result" id="winOut">TIB = average TST + 30 min, never below 330 min (5.5 h). Count back from your wake time to get tonight's bedtime.</div>
+      <p class="note">Expand by 15 min only after 5 straight nights at SE% ≥ 85%. If a full week sits below 80%, pull the window back 15 min.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Log</h2>
+    <div class="spark" id="spark"><div class="line85" id="line85"></div></div>
+    <div style="overflow-x:auto;margin-top:14px">
+      <table><thead><tr><th>Date</th><th>Bed</th><th>Rise</th><th>TIB</th><th>TST</th><th>SE%</th><th>Feel</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+    </div>
+    <button class="ghost" id="clear">Clear all nights</button>
+    <p class="note">Stored only in this browser (localStorage). Nothing is sent anywhere.</p>
+  </section>
+
+  <section class="card">
+    <h2>Phase guide</h2>
+    <div class="phase" id="phases">
+      <div class="h">Phase</div><div class="h">What you're doing</div><div class="h">When to move on</div>
+      <div data-p="baseline"><b>Baseline</b></div><div data-p="baseline">Track sleep as-is for 7–14 days</div><div data-p="baseline">Once you have an average TST</div>
+      <div data-p="compression"><b>Compression</b></div><div data-p="compression">TIB = avg TST + 30 min, fixed wake time</div><div data-p="compression">SE% ≥ 85% for 5 consecutive days</div>
+      <div data-p="expansion"><b>Expansion</b></div><div data-p="expansion">Add 15 min TIB at a time</div><div data-p="expansion">SE% stays ≥ 85% after each step</div>
+      <div data-p="stable"><b>Stable</b></div><div data-p="stable">You've found your natural sleep need</div><div data-p="stable">Maintain — let bedtime flex ~30 min</div>
+    </div>
+  </section>
+
+  <div class="grid" style="margin-top:16px">
+    <div class="card">
+      <h2>Quick rules</h2>
+      <ul>
+        <li>Never go below 5.5 hours in bed.</li>
+        <li>Wake time is fixed — no sleeping in.</li>
+        <li>Only get into bed when sleepy, not just when it's "time".</li>
+        <li>No naps during compression.</li>
+        <li>Bed is for sleep only.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Red flags</h2>
+      <ul>
+        <li><b>Can't fall asleep at the new bedtime</b> — wait until sleepy, still rise on time.</li>
+        <li><b>Waking very early</b> — usually temporary; it improves.</li>
+        <li><b>Severe daytime impairment</b> — TIB is too low; don't go below 5.5 h.</li>
+        <li><b>SE% stuck below 85% for weeks</b> — something else may be going on (anxiety, sleep apnea). Get a professional evaluation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="foot">SE% = TST ÷ TIB × 100 · TST = TIB − onset − time awake · Not medical advice.<br>
+    Prefer Obsidian? <a href="assets/downloads/Sleep_Compression_Vault.zip" download>Download the original vault</a> — templates, guide and theme.</p>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'sleep-compression-log-v1';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } };
+const store = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
+let nights = load();
+const mins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fmt = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+function tib(bed, rise) { let d = mins(rise) - mins(bed); if (d <= 0) d += 1440; return d; }
+function seClass(se) { return se >= 90 ? 'se-ex' : se >= 85 ? 'se-ok' : se >= 80 ? 'se-mg' : 'se-bad'; }
+function seText(se) { return se >= 90 ? 'Excellent — expand if on a 5-day streak' : se >= 85 ? 'Good — hold, it is working' : se >= 80 ? 'Marginal — hold, do not expand yet' : 'Poor — consider slight compression'; }
+function current() {
+  const T = tib($('bed').value, $('rise').value), tst = Math.max(0, T - (+$('onset').value || 0) - (+$('waso').value || 0));
+  return { T, tst, se: T ? tst / T * 100 : 0 };
+}
+function preview() {
+  const c = current();
+  $('nightOut').innerHTML = `TIB <b>${c.T}</b> min · TST <b>${c.tst}</b> min · SE% <b>${c.se.toFixed(1)}</b> <span class="pill ${seClass(c.se)}">${seText(c.se)}</span>`;
+}
+['bed', 'rise', 'onset', 'waso'].forEach(id => $(id).addEventListener('input', preview));
+$('d').valueAsDate = new Date();
+$('save').addEventListener('click', () => {
+  const c = current(), date = $('d').value || new Date().toISOString().slice(0, 10);
+  nights = nights.filter(n => n.date !== date);
+  nights.push({ date, bed: $('bed').value, rise: $('rise').value, tib: c.T, tst: c.tst, se: +c.se.toFixed(1), feel: +$('feel').value || null });
+  nights.sort((a, b) => a.date.localeCompare(b.date)); store(nights); draw();
+});
+$('clear').addEventListener('click', () => { if (confirm('Delete every logged night from this browser?')) { nights = []; store(nights); draw(); } });
+$('calc').addEventListener('click', () => {
+  const avg = +$('avg').value;
+  if (!avg) { $('winOut').textContent = 'Enter an average TST first — or log a week of nights and it fills in.'; return; }
+  const T = Math.max(avg + 30, 330), bedtime = fmt(mins($('wake').value) - T);
+  $('winOut').innerHTML = `Time in bed <b>${T}</b> min (${(T / 60).toFixed(2)} h)${avg + 30 < 330 ? ' — held at the 5.5 h floor' : ''}<br>Bedtime <b>${bedtime}</b> → wake <b>${$('wake').value}</b>`;
+});
+function streak() { let s = 0; for (let i = nights.length - 1; i >= 0 && nights[i].se >= 85; i--) s++; return s; }
+function draw() {
+  const n = nights.length, avgTST = n ? Math.round(nights.reduce((a, x) => a + x.tst, 0) / n) : null;
+  const last7 = nights.slice(-7), avgSE = last7.length ? last7.reduce((a, x) => a + x.se, 0) / last7.length : null, st = streak();
+  const phase = n < 7 ? 'baseline' : st >= 5 ? 'expansion' : 'compression';
+  $('sNights').textContent = n; $('sTST').textContent = avgTST ?? '—'; $('sSE').textContent = avgSE ? avgSE.toFixed(1) : '—';
+  $('sStreak').textContent = Math.min(st, 5) + ' / 5'; $('sPhase').textContent = phase;
+  if (avgTST && !$('avg').value) $('avg').value = avgTST;
+  document.querySelectorAll('#phases [data-p]').forEach(el => el.classList.toggle('cur', el.dataset.p === phase));
+  $('rows').innerHTML = nights.slice().reverse().map(x => `<tr><td>${x.date}</td><td>${x.bed}</td><td>${x.rise}</td><td>${x.tib}</td><td>${x.tst}</td><td><span class="pill ${seClass(x.se)}">${x.se}</span></td><td>${x.feel ?? ''}</td><td><button class="ghost" style="margin:0;padding:2px 8px" data-del="${x.date}">✕</button></td></tr>`).join('') || '<tr><td colspan="8">No nights logged yet.</td></tr>';
+  const sp = $('spark'); sp.querySelectorAll('i').forEach(i => i.remove());
+  nights.slice(-30).forEach(x => { const i = document.createElement('i'); i.style.height = Math.max(4, x.se * .74) + 'px';
+    i.style.background = `var(--${x.se >= 90 ? 'good' : x.se >= 85 ? 'mid' : x.se >= 80 ? 'warn' : 'bad'})`; i.title = `${x.date}: ${x.se}%`; sp.appendChild(i); });
+  $('line85').style.bottom = (8 + 85 * .74) + 'px';
+}
+$('rows').addEventListener('click', e => { const d = e.target.dataset.del; if (!d) return; nights = nights.filter(n => n.date !== d); store(nights); draw(); });
+preview(); draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bubble Editor — ballooning for inspection</title>
+<style>
+  :root {
+    --bg: #f4f4f2;
+    --panel: #ffffff;
+    --ink: #1a1a1a;
+    --accent: #b3261e;
+    --accent-soft: #f6d9d7;
+    --border: #ddd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  #toolbar h1 {
+    font-size: 14px;
+    margin: 0 12px 0 0;
+    font-weight: 600;
+    color: #444;
+  }
+  button {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #fafafa;
+    cursor: pointer;
+  }
+  button:hover { background: #eee; }
+  .loadbtn { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: #fafafa; cursor: pointer; }
+  .loadbtn:hover { background: #eee; }
+  button.primary {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  button.primary:hover { opacity: 0.85; }
+  #hint {
+    font-size: 11px;
+    color: #777;
+    margin-left: auto;
+  }
+  #stage-wrap {
+    position: relative;
+    width: 100%;
+    overflow: auto;
+    padding: 20px;
+  }
+  #stage {
+    position: relative;
+    display: inline-block;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  }
+  #stage img {
+    display: block;
+    width: 1360px;
+    max-width: none;
+    height: auto;
+    user-select: none;
+    pointer-events: none;
+  }
+  .bubble {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    margin-left: -14px;
+    margin-top: -14px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: rgba(255,255,255,0.9);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: box-shadow 0.1s ease;
+  }
+  .bubble:hover {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .bubble.dragging {
+    cursor: grabbing;
+    z-index: 100;
+    box-shadow: 0 0 0 4px var(--accent-soft), 0 4px 10px rgba(0,0,0,0.3);
+  }
+  .bubble.selected {
+    background: var(--accent);
+    color: #fff;
+  }
+  .bubble.hidden-item {
+    display: none;
+  }
+  #side {
+    position: fixed;
+    right: 0;
+    top: 45px;
+    bottom: 0;
+    width: 230px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 12px;
+    overflow-y: auto;
+    font-size: 12px;
+    display: none;
+  }
+  #side.open { display: block; }
+  #side h2 {
+    font-size: 12px;
+    margin: 0 0 8px 0;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .list-item:hover { background: #f0f0f0; }
+  .list-item.active { background: var(--accent-soft); }
+  .list-item button.del {
+    border: none;
+    background: none;
+    color: #999;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .list-item button.del:hover { color: var(--accent); }
+  #addrow {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  #addrow input {
+    width: 60px;
+    font-size: 12px;
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>Bubble Markup — Draggable Callouts</h1>
+  <button id="toggleList">List / Edit panel</button>
+  <button id="addBubbleBtn">+ Add bubble</button>
+  <button id="resetBtn">Reset positions</button>
+  <label class="loadbtn">Load your drawing<input type="file" id="loadImg" accept="image/*" hidden></label>
+  <button id="exportBtn" class="primary">Export PNG</button>
+  <span id="hint">Drag any red circle to reposition it. Click a circle to select it (Delete key removes it).</span>
+</div>
+
+<div id="stage-wrap">
+  <div id="stage">
+    <img id="drawing" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNzAwIiBoZWlnaHQ9IjExMDAiIHZpZXdCb3g9IjAgMCAxNzAwIDExMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMjAiIHk9IjIwIiB3aWR0aD0iMTY2MCIgaGVpZ2h0PSIxMDYwIiBmaWxsPSJub25lIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMyIvPjxnIHN0cm9rZT0iIzFkM2Y4ZiIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIyLjQiPjxwb2x5Z29uIHBvaW50cz0iMzAwLDM5MC4wIDUwMCwzOTAuMCA1MDAsMzUwLjAgOTAwLDM1MC4wIDkwMCwzNzAuMCAxMTAwLDM3MC4wIDExMDAsNDAwLjAgMTMwMCw0MDAuMCAxMzAwLDUwMC4wIDExMDAsNTAwLjAgMTEwMCw1MzAuMCA5MDAsNTMwLjAgOTAwLDU1MC4wIDUwMCw1NTAuMCA1MDAsNTEwLjAgMzAwLDUxMC4wIiBmaWxsPSIjZWVmM2ZiIi8+PGxpbmUgeDE9IjUwMCIgeTE9IjM1MC4wIiB4Mj0iNTAwIiB5Mj0iNTUwLjAiLz48bGluZSB4MT0iOTAwIiB5MT0iMzcwLjAiIHgyPSI5MDAiIHkyPSI1MzAuMCIvPjxsaW5lIHgxPSIxMTAwIiB5MT0iNDAwLjAiIHgyPSIxMTAwIiB5Mj0iNTAwLjAiLz48L2c+PGxpbmUgeDE9IjI2MCIgeTE9IjQ1MCIgeDI9IjEzNDAiIHkyPSI0NTAiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjQiIHN0cm9rZS1kYXNoYXJyYXk9IjI4IDggNiA4Ii8+PGxpbmUgeDE9IjExMTAiIHkxPSI0MDAiIHgyPSIxMTEwIiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExMTAiIHkxPSI0OTQiIHgyPSIxMTEwIiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExMjQiIHkxPSI0MDAiIHgyPSIxMTI0IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExMjQiIHkxPSI0OTQiIHgyPSIxMTI0IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExMzgiIHkxPSI0MDAiIHgyPSIxMTM4IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExMzgiIHkxPSI0OTQiIHgyPSIxMTM4IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExNTIiIHkxPSI0MDAiIHgyPSIxMTUyIiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExNTIiIHkxPSI0OTQiIHgyPSIxMTUyIiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExNjYiIHkxPSI0MDAiIHgyPSIxMTY2IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExNjYiIHkxPSI0OTQiIHgyPSIxMTY2IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExODAiIHkxPSI0MDAiIHgyPSIxMTgwIiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExODAiIHkxPSI0OTQiIHgyPSIxMTgwIiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExOTQiIHkxPSI0MDAiIHgyPSIxMTk0IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjExOTQiIHkxPSI0OTQiIHgyPSIxMTk0IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyMDgiIHkxPSI0MDAiIHgyPSIxMjA4IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyMDgiIHkxPSI0OTQiIHgyPSIxMjA4IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyMjIiIHkxPSI0MDAiIHgyPSIxMjIyIiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyMjIiIHkxPSI0OTQiIHgyPSIxMjIyIiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyMzYiIHkxPSI0MDAiIHgyPSIxMjM2IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyMzYiIHkxPSI0OTQiIHgyPSIxMjM2IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyNTAiIHkxPSI0MDAiIHgyPSIxMjUwIiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyNTAiIHkxPSI0OTQiIHgyPSIxMjUwIiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyNjQiIHkxPSI0MDAiIHgyPSIxMjY0IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyNjQiIHkxPSI0OTQiIHgyPSIxMjY0IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyNzgiIHkxPSI0MDAiIHgyPSIxMjc4IiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyNzgiIHkxPSI0OTQiIHgyPSIxMjc4IiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyOTIiIHkxPSI0MDAiIHgyPSIxMjkyIiB5Mj0iNDA2IiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjEyOTIiIHkxPSI0OTQiIHgyPSIxMjkyIiB5Mj0iNTAwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4yIi8+PGxpbmUgeDE9IjQwMCIgeTE9IjMzNiIgeDI9IjQwMC4wIiB5Mj0iMzkwLjAiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48dGV4dCB4PSI0MDAiIHk9IjMzMCIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+w5gxNSBoNzwvdGV4dD48bGluZSB4MT0iNzAwIiB5MT0iMjk2IiB4Mj0iNzAwLjAiIHkyPSIzNTAuMCIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuMyIvPjx0ZXh0IHg9IjcwMCIgeT0iMjkwIiBmb250LXNpemU9IjI0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj7DmDI1IMKxMC4wNTwvdGV4dD48bGluZSB4MT0iMTAwMCIgeTE9IjMxMSIgeDI9IjEwMDAuMCIgeTI9IjM3MC4wIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4zIi8+PHRleHQgeD0iMTAwMCIgeT0iMzA1IiBmb250LXNpemU9IjI0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj7DmDIwIMKxMC4wMjwvdGV4dD48bGluZSB4MT0iMTIwMCIgeTE9IjM1MSIgeDI9IjEyMDAuMCIgeTI9IjQwMC4wIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4zIi8+PHRleHQgeD0iMTIwMCIgeT0iMzQ1IiBmb250LXNpemU9IjI0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj5NMTLDlzEuNzUg4oCTIDZnPC90ZXh0PjxnIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjQiPjxsaW5lIHgxPSIzMDAiIHkxPSI2MDgiIHgyPSIzMDAiIHkyPSI2MzIiLz48bGluZSB4MT0iNTAwIiB5MT0iNjA4IiB4Mj0iNTAwIiB5Mj0iNjMyIi8+PGxpbmUgeDE9IjMwMCIgeTE9IjYyMCIgeDI9IjUwMCIgeTI9IjYyMCIvPjwvZz48cGF0aCBkPSJNMzAwIDYyMCBsMTQgLTUgdjEweiBNNTAwIDYyMCBsLTE0IC01IHYxMHoiIGZpbGw9IiMxZDNmOGYiLz48dGV4dCB4PSI0MDAuMCIgeT0iNjEwIiBmb250LXNpemU9IjI0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj4yNTwvdGV4dD48ZyBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS40Ij48bGluZSB4MT0iNTAwIiB5MT0iNjA4IiB4Mj0iNTAwIiB5Mj0iNjMyIi8+PGxpbmUgeDE9IjkwMCIgeTE9IjYwOCIgeDI9IjkwMCIgeTI9IjYzMiIvPjxsaW5lIHgxPSI1MDAiIHkxPSI2MjAiIHgyPSI5MDAiIHkyPSI2MjAiLz48L2c+PHBhdGggZD0iTTUwMCA2MjAgbDE0IC01IHYxMHogTTkwMCA2MjAgbC0xNCAtNSB2MTB6IiBmaWxsPSIjMWQzZjhmIi8+PHRleHQgeD0iNzAwLjAiIHk9IjYxMCIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+NTA8L3RleHQ+PGcgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuNCI+PGxpbmUgeDE9IjkwMCIgeTE9IjYwOCIgeDI9IjkwMCIgeTI9IjYzMiIvPjxsaW5lIHgxPSIxMTAwIiB5MT0iNjA4IiB4Mj0iMTEwMCIgeTI9IjYzMiIvPjxsaW5lIHgxPSI5MDAiIHkxPSI2MjAiIHgyPSIxMTAwIiB5Mj0iNjIwIi8+PC9nPjxwYXRoIGQ9Ik05MDAgNjIwIGwxNCAtNSB2MTB6IE0xMTAwIDYyMCBsLTE0IC01IHYxMHoiIGZpbGw9IiMxZDNmOGYiLz48dGV4dCB4PSIxMDAwLjAiIHk9IjYxMCIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+MjU8L3RleHQ+PGcgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuNCI+PGxpbmUgeDE9IjExMDAiIHkxPSI2MDgiIHgyPSIxMTAwIiB5Mj0iNjMyIi8+PGxpbmUgeDE9IjEzMDAiIHkxPSI2MDgiIHgyPSIxMzAwIiB5Mj0iNjMyIi8+PGxpbmUgeDE9IjExMDAiIHkxPSI2MjAiIHgyPSIxMzAwIiB5Mj0iNjIwIi8+PC9nPjxwYXRoIGQ9Ik0xMTAwIDYyMCBsMTQgLTUgdjEweiBNMTMwMCA2MjAgbC0xNCAtNSB2MTB6IiBmaWxsPSIjMWQzZjhmIi8+PHRleHQgeD0iMTIwMC4wIiB5PSI2MTAiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJub3JtYWwiPjI1PC90ZXh0PjxnIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjQiPjxsaW5lIHgxPSIzMDAiIHkxPSI2NzgiIHgyPSIzMDAiIHkyPSI3MDIiLz48bGluZSB4MT0iMTMwMCIgeTE9IjY3OCIgeDI9IjEzMDAiIHkyPSI3MDIiLz48bGluZSB4MT0iMzAwIiB5MT0iNjkwIiB4Mj0iMTMwMCIgeTI9IjY5MCIvPjwvZz48cGF0aCBkPSJNMzAwIDY5MCBsMTQgLTUgdjEweiBNMTMwMCA2OTAgbC0xNCAtNSB2MTB6IiBmaWxsPSIjMWQzZjhmIi8+PHRleHQgeD0iODAwLjAiIHk9IjY4MCIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+MTI1IMKxMC4xPC90ZXh0PjxyZWN0IHg9IjU2MCIgeT0iMTk1IiB3aWR0aD0iMzIiIGhlaWdodD0iMzYiIGZpbGw9IiNmZmYiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48dGV4dCB4PSI1NzYuMCIgeT0iMjIxIiBmb250LXNpemU9IjIyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj7ijJY8L3RleHQ+PHJlY3QgeD0iNTkyIiB5PSIxOTUiIHdpZHRoPSI4OCIgaGVpZ2h0PSIzNiIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuNiIvPjx0ZXh0IHg9IjYzNi4wIiB5PSIyMjEiIGZvbnQtc2l6ZT0iMjIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJub3JtYWwiPsOYMC4wMjwvdGV4dD48cmVjdCB4PSI2ODAiIHk9IjE5NSIgd2lkdGg9IjMyIiBoZWlnaHQ9IjM2IiBmaWxsPSIjZmZmIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS42Ii8+PHRleHQgeD0iNjk2LjAiIHk9IjIyMSIgZm9udC1zaXplPSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+QTwvdGV4dD48bGluZSB4MT0iNjQwIiB5MT0iMjMxIiB4Mj0iNjQwIiB5Mj0iMzUwIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS4zIi8+PHJlY3QgeD0iOTYwIiB5PSIyMTUiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzNiIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuNiIvPjx0ZXh0IHg9Ijk3Ni4wIiB5PSIyNDEiIGZvbnQtc2l6ZT0iMjIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJub3JtYWwiPuKGlzwvdGV4dD48cmVjdCB4PSI5OTIiIHk9IjIxNSIgd2lkdGg9Ijc0IiBoZWlnaHQ9IjM2IiBmaWxsPSIjZmZmIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMS42Ii8+PHRleHQgeD0iMTAyOS4wIiB5PSIyNDEiIGZvbnQtc2l6ZT0iMjIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJub3JtYWwiPjAuMDE8L3RleHQ+PHJlY3QgeD0iMTA2NiIgeT0iMjE1IiB3aWR0aD0iMzIiIGhlaWdodD0iMzYiIGZpbGw9IiNmZmYiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48dGV4dCB4PSIxMDgyLjAiIHk9IjI0MSIgZm9udC1zaXplPSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+QTwvdGV4dD48bGluZSB4MT0iMTAwMCIgeTE9IjI1MSIgeDI9IjEwMDAiIHkyPSIzNzAiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48cGF0aCBkPSJNNzYwIDM1MCBsLTE0IC0yNCBoLTE2IE03NjAgMzUwIGwyMCAtNDQiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjYiIGZpbGw9Im5vbmUiLz48dGV4dCB4PSI4MTAiIHk9IjMwMiIgZm9udC1zaXplPSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+UmEgMC44PC90ZXh0PjxwYXRoIGQ9Ik0zOTAgNTEwIGwtMTIgMjAgaDI0eiIgZmlsbD0iIzFkM2Y4ZiIvPjxyZWN0IHg9IjM3NiIgeT0iNTMwIiB3aWR0aD0iMjgiIGhlaWdodD0iMzAiIGZpbGw9IiNmZmYiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIxLjYiLz48dGV4dCB4PSIzOTAiIHk9IjU1MyIgZm9udC1zaXplPSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkE8L3RleHQ+PGxpbmUgeDE9IjMwMCIgeTE9IjM5MCIgeDI9IjIzMCIgeTI9IjMwMCIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuMyIvPjx0ZXh0IHg9IjIzMCIgeT0iMjkyIiBmb250LXNpemU9IjIyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj5DMC41IMOXIDQ1wrA8L3RleHQ+PGNpcmNsZSBjeD0iNDYwIiBjeT0iOTAwIiByPSIxMDAiIGZpbGw9IiNlZWYzZmIiIHN0cm9rZT0iIzFkM2Y4ZiIgc3Ryb2tlLXdpZHRoPSIyLjQiLz48Y2lyY2xlIGN4PSI0NjAiIGN5PSI5MDAiIHI9IjMyIiBmaWxsPSIjZmZmIiBzdHJva2U9IiMxZDNmOGYiIHN0cm9rZS13aWR0aD0iMi40Ii8+PGxpbmUgeDE9IjMzMCIgeTE9IjkwMCIgeDI9IjU5MCIgeTI9IjkwMCIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWRhc2hhcnJheT0iMjAgNiA0IDYiLz48bGluZSB4MT0iNDYwIiB5MT0iNzcwIiB4Mj0iNDYwIiB5Mj0iMTAzMCIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWRhc2hhcnJheT0iMjAgNiA0IDYiLz48dGV4dCB4PSI0NjAiIHk9Ijc1MCIgZm9udC1zaXplPSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9ImJvbGQiPlNFQ1RJT04gQuKAk0I8L3RleHQ+PGxpbmUgeDE9IjQ4MiIgeTE9Ijg3OCIgeDI9IjYxMCIgeTI9IjgxMCIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjEuMyIvPjx0ZXh0IHg9IjY1MCIgeT0iODA0IiBmb250LXNpemU9IjIyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj7DmDggVEhSVTwvdGV4dD48dGV4dCB4PSI2MCIgeT0iODAiIGZvbnQtc2l6ZT0iMjIiIHRleHQtYW5jaG9yPSJzdGFydCIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9ImJvbGQiPk5PVEVTOjwvdGV4dD48dGV4dCB4PSI2MCIgeT0iMTEyIiBmb250LXNpemU9IjIwIiB0ZXh0LWFuY2hvcj0ic3RhcnQiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJub3JtYWwiPjEuIEFMTCBESU1FTlNJT05TIElOIE1JTExJTUVUUkVTPC90ZXh0Pjx0ZXh0IHg9IjYwIiB5PSIxNDIiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJzdGFydCIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+Mi4gQlJFQUsgQUxMIFNIQVJQIEVER0VTIDAuMiBNQVg8L3RleHQ+PHRleHQgeD0iNjAiIHk9IjE3MiIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9InN0YXJ0IiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0ibm9ybWFsIj4zLiBNQVRFUklBTDogNjA2MS1UNiBBTFVNSU5JVU08L3RleHQ+PHJlY3QgeD0iMTEwMCIgeT0iODgwIiB3aWR0aD0iNTYwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMWQzZjhmIiBzdHJva2Utd2lkdGg9IjIiLz48bGluZSB4MT0iMTEwMCIgeTE9IjkzMCIgeDI9IjE2NjAiIHkyPSI5MzAiIHN0cm9rZT0iIzFkM2Y4ZiIvPjxsaW5lIHgxPSIxMTAwIiB5MT0iMTAwMCIgeDI9IjE2NjAiIHkyPSIxMDAwIiBzdHJva2U9IiMxZDNmOGYiLz48bGluZSB4MT0iMTM4MCIgeTE9IjkzMCIgeDI9IjEzODAiIHkyPSIxMDYwIiBzdHJva2U9IiMxZDNmOGYiLz48dGV4dCB4PSIxMzgwIiB5PSI5MTUiIGZvbnQtc2l6ZT0iMjIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJib2xkIj5ERU1PIERSQVdJTkcg4oCUIE5PVCBBIFJFQUwgUEFSVDwvdGV4dD48dGV4dCB4PSIxMjQwIiB5PSI5NzUiIGZvbnQtc2l6ZT0iMjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJib2xkIj5TVEVQUEVEIFNIQUZUPC90ZXh0Pjx0ZXh0IHg9IjE1MjAiIHk9Ijk3NSIgZm9udC1zaXplPSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzFkM2Y4ZiIgZm9udC13ZWlnaHQ9Im5vcm1hbCI+U0NBTEUgMjoxPC90ZXh0Pjx0ZXh0IHg9IjEyNDAiIHk9IjEwNDAiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZDNmOGYiIGZvbnQtd2VpZ2h0PSJub3JtYWwiPk1FTlRJRkFCRVIgwrcgQlVCQkxFIEVESVRPUjwvdGV4dD48dGV4dCB4PSIxNTIwIiB5PSIxMDQwIiBmb250LXNpemU9IjIyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMWQzZjhmIiBmb250LXdlaWdodD0iYm9sZCI+UkVWIEE8L3RleHQ+PC9zdmc+" />
+  </div>
+</div>
+
+<div id="side">
+  <h2 id="bubCount">Bubbles</h2>
+  <div id="list"></div>
+  <div id="addrow">
+    <input id="newLabel" placeholder="label e.g. 32" />
+    <button id="addFromRow">Add</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_BUBBLES = [{"id": "b0", "label": "1", "x": 19.29, "y": 29.27}, {"id": "b1", "label": "2", "x": 35.71, "y": 25.64}, {"id": "b2", "label": "3", "x": 53.35, "y": 27.0}, {"id": "b3", "label": "4", "x": 63.47, "y": 30.64}, {"id": "b4", "label": "5", "x": 26.0, "y": 54.91}, {"id": "b5", "label": "6", "x": 43.65, "y": 54.91}, {"id": "b6", "label": "7", "x": 61.29, "y": 54.91}, {"id": "b7", "label": "8", "x": 73.06, "y": 54.91}, {"id": "b8", "label": "9", "x": 51.18, "y": 61.27}, {"id": "b9", "label": "10", "x": 31.18, "y": 19.36}, {"id": "b10", "label": "11", "x": 54.71, "y": 21.18}, {"id": "b11", "label": "12", "x": 52.2, "y": 26.73}, {"id": "b12", "label": "13", "x": 8.82, "y": 25.82}, {"id": "b13", "label": "14", "x": 41.76, "y": 72.36}];
+
+let bubbles = JSON.parse(JSON.stringify(DEFAULT_BUBBLES));
+let selectedId = null;
+let dragState = null;
+
+const stage = document.getElementById('stage');
+const img = document.getElementById('drawing');
+const listEl = document.getElementById('list');
+const sidePanel = document.getElementById('side');
+
+function render() {
+  // remove old bubble elements
+  stage.querySelectorAll('.bubble').forEach(el => el.remove());
+  bubbles.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'bubble' + (b.id === selectedId ? ' selected' : '');
+    el.style.left = b.x + '%';
+    el.style.top = b.y + '%';
+    el.textContent = b.label;
+    el.dataset.id = b.id;
+    el.addEventListener('pointerdown', onPointerDown);
+    stage.appendChild(el);
+  });
+  renderList();
+}
+
+function renderList() {
+  document.getElementById('bubCount').textContent = 'Bubbles (' + bubbles.length + ')';
+  listEl.innerHTML = '';
+  bubbles.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'list-item' + (b.id === selectedId ? ' active' : '');
+    row.innerHTML = `<span>${b.label}</span>`;
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '✕';
+    del.title = 'Remove';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      bubbles = bubbles.filter(x => x.id !== b.id);
+      if (selectedId === b.id) selectedId = null;
+      render();
+    });
+    row.appendChild(del);
+    row.addEventListener('click', () => {
+      selectedId = b.id;
+      render();
+    });
+    listEl.appendChild(row);
+  });
+}
+
+function onPointerDown(e) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  const id = el.dataset.id;
+  selectedId = id;
+  el.classList.add('dragging');
+  el.setPointerCapture(e.pointerId);
+
+  const stageRect = stage.getBoundingClientRect();
+
+  function onMove(ev) {
+    let x = ((ev.clientX - stageRect.left) / stageRect.width) * 100;
+    let y = ((ev.clientY - stageRect.top) / stageRect.height) * 100;
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+    const b = bubbles.find(x => x.id === id);
+    b.x = x; b.y = y;
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+  }
+  function onUp(ev) {
+    el.classList.remove('dragging');
+    el.releasePointerCapture(ev.pointerId);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    renderList();
+  }
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+}
+
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && document.activeElement.tagName !== 'INPUT') {
+    bubbles = bubbles.filter(b => b.id !== selectedId);
+    selectedId = null;
+    render();
+  }
+});
+
+document.getElementById('toggleList').addEventListener('click', () => {
+  sidePanel.classList.toggle('open');
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  bubbles = JSON.parse(JSON.stringify(DEFAULT_BUBBLES));
+  selectedId = null;
+  render();
+});
+
+let addCounter = 1;
+document.getElementById('addBubbleBtn').addEventListener('click', () => {
+  const id = 'new' + (Date.now());
+  bubbles.push({ id, label: String(bubbles.length + 1), x: 50, y: 50 });
+  selectedId = id;
+  render();
+});
+
+document.getElementById('addFromRow').addEventListener('click', () => {
+  const inp = document.getElementById('newLabel');
+  const label = inp.value.trim();
+  if (!label) return;
+  const id = 'new' + (Date.now());
+  bubbles.push({ id, label, x: 50, y: 50 });
+  selectedId = id;
+  inp.value = '';
+  render();
+});
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  // Render everything onto a canvas at native image resolution and trigger download
+  const canvas = document.createElement('canvas');
+  const naturalW = img.naturalWidth;
+  const naturalH = img.naturalHeight;
+  canvas.width = naturalW;
+  canvas.height = naturalH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, naturalW, naturalH);
+
+  const scale = naturalW / 1000; // relative bubble sizing
+  bubbles.forEach(b => {
+    const cx = (b.x / 100) * naturalW;
+    const cy = (b.y / 100) * naturalH;
+    const r = 15 * scale;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fill();
+    ctx.lineWidth = 2.2 * scale;
+    ctx.strokeStyle = '#b3261e';
+    ctx.stroke();
+    ctx.fillStyle = '#b3261e';
+    ctx.font = '700 ' + (11 * scale) + 'px -apple-system, Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, cx, cy + (1 * scale));
+  });
+
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ballooned_drawing.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+});
+
+document.getElementById('loadImg').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { img.src = r.result; bubbles = []; selectedId = null; render(); };
+  r.readAsDataURL(f);
+});
+
+render();
+</script>
+</body>
+</html>

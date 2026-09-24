@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Moon Compatibility — two birth dates placed on the 29.53-day synodic cycle, both moons drawn and overlaid, and the gap between them read as a score."/>
+<meta property="og:title" content="Moon Compatibility"/>
+<meta property="og:description" content="Two birth dates, two moons, overlaid and read."/>
+<meta name="theme-color" content="#000000"/>
+<title>Moon Compatibility</title>
+<meta property="og:image" content="https://mentifaber.github.io/assets/previews/moon-compatibility.png"/>
+<meta property="og:url" content="https://mentifaber.github.io/moon-compatibility.html"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
+  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
+  --indigo: #c8a96e; --indigo-dim: #8a7050;
+  --rust: #b02a1a; --rust-hi: #d94030;
+  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
+  --accent: hsl(255 70% 62%);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
+.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
+.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
+  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
+.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
+.name span { color: var(--accent); }
+.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
+  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
+.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent); }
+.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
+  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
+.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
+  border: 1px solid hsla(255,70%,62%,.35); background: linear-gradient(180deg, hsla(255,70%,62%,.08), hsla(255,70%,62%,.02));
+  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
+.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, hsla(255,70%,62%,.16), transparent 70%);
+  opacity: 0; transition: opacity .3s ease; }
+.launch-btn:hover { border-color: var(--accent); }
+.launch-btn:hover::before { opacity: 1; }
+.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--accent); position: relative; }
+.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
+  color: var(--ink); margin-top: .6rem; position: relative; }
+.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
+  margin-top: .6rem; letter-spacing: .06em; position: relative; }
+.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
+  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
+
+.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
+.frag-head { text-align: center; margin-bottom: 5rem; }
+.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
+.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
+  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
+.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
+.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
+.frag:last-child { border-bottom: 1px solid var(--contour); }
+.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
+.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
+.frag p + p { margin-top: .9rem; }
+.frag p b { color: var(--ink); font-weight: 600; }
+.frag p em { color: var(--rust); font-style: italic; }
+.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
+.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
+.frag li b { color: var(--ink); font-weight: 600; }
+
+.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
+  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
+
+footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
+footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
+footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
+footer.mf-foot a:hover { color: var(--rust); }
+
+.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
+.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
+.corner-tl:hover { color: var(--rust); }
+@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
+</style>
+<style>:root{--mf-accent:hsl(255 90% 68%);--mf-glow:hsl(255 95% 60% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head>
+<body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#f2e6cf" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
+    </g>
+  </svg>
+</div>
+<div class="grain"></div>
+<a href="index.html" class="corner corner-tl">← Atlas</a>
+
+<div class="container">
+  <p class="label">lunar reading · two moons</p>
+  <h1 class="name">Moon <span>Compatibility</span></h1>
+  <p class="tagline">Two birth dates, two moons. Both waxing gibbous, 0.97 lunar days apart — drawn, overlaid, plotted on the synodic cycle, and read.</p>
+  <div class="divider"></div>
+  <span class="status-pill"><span class="sw"></span>live — open it below</span>
+</div>
+
+<div class="mf-launch-wrap">
+  <a class="mf-launch" href="moon-compatibility-app.html" target="_blank" rel="noopener">
+    <span class="lb-eyebrow">// lunar reading · synodic cycle</span>
+    <span class="lb-title">Open the reading →</span>
+    <span class="lb-sub">Canvas-drawn moons · cycle chart · one HTML file</span>
+  </a>
+  <div class="mf-launch-cap"><span>96% lunar harmony</span><span>Δ 0.97 lunar days</span></div>
+</div>
+
+<section class="frag-wrap">
+  <div class="frag-head">
+    <p class="frag-label">why this exists</p>
+    <h2 class="frag-title">Two moons, <em>overlaid</em></h2>
+  </div>
+
+  <div class="frag">
+    <span class="tag">the idea</span>
+    <p>A compatibility reading built from the one thing two birthdays share with the sky: the phase of the moon. Each date's lunar age is placed on the 29.53-day synodic month, both moons are drawn and laid over each other, and the distance between them becomes the score.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">what it does</span>
+    <ul><li><b>Overlaid phases</b> — each moon drawn on its own canvas from its illumination fraction, terminator curve and all, then stacked so the difference is visible at a glance.</li><li><b>Per-date readout</b> — phase name, moon age in days, illumination, and the new moon that came before.</li><li><b>Cycle chart</b> — the full illumination curve from new to full to new, both dates plotted on it, with a bracket measuring the 0.97-day gap.</li><li><b>The reading</b> — what two waxing-gibbous moons have in common, written out.</li></ul>
+  </div>
+
+  <div class="frag">
+    <span class="tag">built on</span>
+    <p>Vanilla JS and the canvas API — no charting library, no astrology API. Lunar ages come from the synodic cycle, with the footer citing NASA RP 1349.</p>
+    <div class="stack-row"><span>Canvas 2D</span><span>Vanilla JS</span><span>Synodic month</span><span>One file</span></div>
+  </div>
+
+  <div class="frag">
+    <span class="tag">honest scope</span>
+    <p>The astronomy is real — phase ages on the synodic cycle, illumination from the moon's age. The compatibility is poetry, and it says so by being beautiful rather than by pretending to be a test. <em>The two dates are fixed: it was made for one particular pair.</em></p>
+  </div>
+</section>
+
+<footer class="mf-foot">
+  <p>Two growing lights, less than a day apart.</p>
+  <a href="index.html">Return to Mentifaber</a>
+</footer>
+<script src="assets/mf.js" defer></script>
+</body>
+</html>
