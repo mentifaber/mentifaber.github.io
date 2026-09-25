@@ -65,20 +65,6 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
   border: 1px solid var(--contour); padding: .6rem 1rem; text-decoration: none;
   opacity: 0; pointer-events: none; transition: opacity .5s ease, border-color .25s, color .25s; }
 #dskip.show { opacity: 1; pointer-events: auto; }
-#dcontact { position: fixed; top: 1.6rem; left: 1.6rem; z-index: 8; font-family: 'IBM Plex Mono', monospace; font-size: .66rem;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--indigo); background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
-  border: 1px solid rgba(200,169,110,.45); padding: .6rem 1rem; text-decoration: none; transition: color .25s, border-color .25s, box-shadow .25s; }
-#dcontact:hover { color: #fff2cf; border-color: var(--indigo); box-shadow: 0 0 22px -6px rgba(200,169,110,.6); }
-@media (max-width: 600px) { #dcontact { top: 1rem; left: 1rem; font-size: .6rem; padding: .55rem .85rem; } }
-.contact-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.2rem 2rem; margin-bottom: 2.4rem;
-  padding: 1.6rem 1.8rem; border: 1px solid var(--contour); background: linear-gradient(120deg, rgba(200,169,110,.09), transparent 65%); }
-.contact-band h3 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem, 3.4vw, 2rem); color: var(--ink); }
-.contact-band h3 i { color: var(--indigo); font-style: italic; }
-.contact-band .cb-mail { display: block; margin-top: .4rem; font-family: 'IBM Plex Mono', monospace; font-size: .8rem; color: var(--ink-soft); text-decoration: none; }
-.contact-band .cb-mail:hover { color: var(--indigo); }
-.contact-band .cb-go { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; text-decoration: none;
-  color: #0b0906; background: var(--indigo); padding: .95rem 1.4rem; min-height: 44px; display: inline-flex; align-items: center; transition: box-shadow .25s, background .25s; }
-.contact-band .cb-go:hover { background: #d9bd86; box-shadow: 0 0 26px -6px rgba(200,169,110,.7); }
 #dskip:hover { color: var(--rust-hi); border-color: var(--rust-hi); }
 #dskip::after { content: ' ↓'; }
 @media (max-width: 600px) { #dskip { top: auto; bottom: 1.4rem; right: 1.4rem; font-size: .6rem; padding: .55rem .85rem; } }
@@ -161,6 +147,32 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
 .field-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 1.5rem; }
 .field-head span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; }
 
+.plate-contact { grid-column: 1 / -1; position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.4rem 2.4rem;
+  padding: 2.4rem clamp(1.6rem, 4vw, 3.2rem); text-decoration: none; color: inherit; isolation: isolate;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(200,169,110,.16), transparent 55%), radial-gradient(90% 120% at 100% 100%, rgba(217,64,48,.14), transparent 60%), var(--paper-hi);
+  opacity: 0; transform: translateY(24px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
+.plate-contact.shown { opacity: 1; transform: none; }
+@property --pc-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.plate-contact::before { content: ''; position: absolute; inset: 0; z-index: -1; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--pc-a), #c8a96e, #fff2cf, #d94030, #8a6dff, #45d0c8, #c8a96e);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.plate-contact::after { content: ''; position: absolute; inset: -12px; z-index: -2; pointer-events: none; filter: blur(34px); opacity: .55;
+  background: conic-gradient(from var(--pc-a), rgba(200,169,110,.5), rgba(217,64,48,.4), rgba(138,109,255,.35), rgba(69,208,200,.35), rgba(200,169,110,.5)); }
+@media (prefers-reduced-motion: no-preference) { .plate-contact::before, .plate-contact::after { animation: pc-spin 9s linear infinite; } }
+@keyframes pc-spin { to { --pc-a: 360deg; } }
+.plate-contact:hover { box-shadow: 0 24px 60px -24px rgba(200,169,110,.6); }
+.plate-contact:hover::after { opacity: .85; }
+.pc-glyph { width: clamp(64px, 9vw, 96px); height: clamp(64px, 9vw, 96px); filter: drop-shadow(0 0 14px rgba(200,169,110,.6)); }
+.pc-glyph svg { width: 100%; height: 100%; fill: none; stroke: var(--indigo); stroke-width: 1.2; }
+.pc-kicker { font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .24em; text-transform: uppercase; color: var(--indigo-dim); }
+.pc-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; margin: .5rem 0 .7rem; letter-spacing: -.02em; }
+.pc-line { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); max-width: 52ch; line-height: 1.5; }
+.pc-mail { display: inline-block; margin-top: .9rem; font-family: 'IBM Plex Mono', monospace; font-size: .85rem; color: var(--ink); letter-spacing: .02em; }
+.pc-go { font-family: 'IBM Plex Mono', monospace; font-size: .74rem; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap;
+  color: #0b0906; background: linear-gradient(100deg, #c8a96e, #fff2cf 50%, #c8a96e); background-size: 200% 100%; padding: 1.05rem 1.5rem;
+  box-shadow: 0 0 30px -8px rgba(200,169,110,.8); transition: background-position .6s ease, transform .25s; }
+.plate-contact:hover .pc-go { background-position: 100% 0; transform: translateX(4px); }
+@media (max-width: 760px) { .plate-contact { grid-template-columns: 1fr; padding: 2rem 1.5rem; } .pc-go { justify-self: start; } }
 .plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.6rem; }
 .plate {
   background: var(--paper-hi); border: 1px solid var(--contour); padding: 1.6rem 1.5rem 1.4rem;
@@ -296,7 +308,6 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
 <div class="grain"></div>
 
 <div id="dprogress"></div>
-<a href="contact.html" id="dcontact">Contact</a>
 <a href="#atlas-main" id="dskip">Skip intro</a>
 
 <div id="descent-wrap">
@@ -413,10 +424,6 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
   </main>
 
   <footer class="mf">
-    <div class="contact-band">
-      <div><h3>Contact <i>Mentifaber</i></h3><a class="cb-mail" href="mailto:anders@mentifaber.com">anders@mentifaber.com</a></div>
-      <a class="cb-go" href="contact.html">Send a message →</a>
-    </div>
     <p>Recognized through the work, not the introduction.</p>
   </footer>
 </div>
@@ -593,6 +600,15 @@ function renderPlates(){
     if (!firstRender || !plateObs) a.classList.add('shown'); else plateObs.observe(a);
     el.appendChild(a);
   });
+  const c = document.createElement('a');
+  c.className = 'plate-contact'; c.href = 'contact.html';
+  c.innerHTML = `<div class="pc-glyph"><svg viewBox="0 0 38 38"><rect x="5" y="9" width="28" height="20" rx="2"/><path d="M5 11 L19 21 L33 11"/><circle cx="31" cy="9" r="3" fill="var(--rust-hi)" stroke="none"/></svg></div>
+    <div><div class="pc-kicker">last plate · open channel</div><div class="pc-title">Contact <i class="shimmer">Mentifaber</i></div>
+    <p class="pc-line">A question about a system, a build to talk through, a commission, or just hello. It reaches a person, not a queue.</p>
+    <span class="pc-mail">anders@mentifaber.com</span></div>
+    <span class="pc-go">Send a message →</span>`;
+  if (!firstRender || !plateObs) c.classList.add('shown'); else plateObs.observe(c);
+  el.appendChild(c);
   document.getElementById('plateCount').textContent = state.cat==='All'
     ? `PL. I — PL. ${ROMAN[SYSTEMS.length-1]}` : `${list.length} of ${SYSTEMS.length} plates`;
   tools.querySelectorAll('.pt-chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.cat===state.cat)));
