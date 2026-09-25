@@ -93,3 +93,8 @@ a.mf-xref:hover { color: var(--mf-accent); text-shadow: 0 0 14px var(--mf-glow);
 @media (max-width:600px){
   .corner{font-size:10.5px!important;letter-spacing:.14em!important;padding:8px 0}
 }
+
+/* contact line appended to project footers by mf.js */
+.mf-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin-top: 18px; }
+footer.mf-foot .mf-contact a { color: var(--mf-accent); }
+footer.mf-foot .mf-contact a[href^="mailto"] { text-transform: none; letter-spacing: .06em; }
