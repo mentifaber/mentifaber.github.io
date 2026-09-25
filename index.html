@@ -65,6 +65,20 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
   border: 1px solid var(--contour); padding: .6rem 1rem; text-decoration: none;
   opacity: 0; pointer-events: none; transition: opacity .5s ease, border-color .25s, color .25s; }
 #dskip.show { opacity: 1; pointer-events: auto; }
+#dcontact { position: fixed; top: 1.6rem; left: 1.6rem; z-index: 8; font-family: 'IBM Plex Mono', monospace; font-size: .66rem;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--indigo); background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  border: 1px solid rgba(200,169,110,.45); padding: .6rem 1rem; text-decoration: none; transition: color .25s, border-color .25s, box-shadow .25s; }
+#dcontact:hover { color: #fff2cf; border-color: var(--indigo); box-shadow: 0 0 22px -6px rgba(200,169,110,.6); }
+@media (max-width: 600px) { #dcontact { top: 1rem; left: 1rem; font-size: .6rem; padding: .55rem .85rem; } }
+.contact-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.2rem 2rem; margin-bottom: 2.4rem;
+  padding: 1.6rem 1.8rem; border: 1px solid var(--contour); background: linear-gradient(120deg, rgba(200,169,110,.09), transparent 65%); }
+.contact-band h3 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem, 3.4vw, 2rem); color: var(--ink); }
+.contact-band h3 i { color: var(--indigo); font-style: italic; }
+.contact-band .cb-mail { display: block; margin-top: .4rem; font-family: 'IBM Plex Mono', monospace; font-size: .8rem; color: var(--ink-soft); text-decoration: none; }
+.contact-band .cb-mail:hover { color: var(--indigo); }
+.contact-band .cb-go { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; text-decoration: none;
+  color: #0b0906; background: var(--indigo); padding: .95rem 1.4rem; min-height: 44px; display: inline-flex; align-items: center; transition: box-shadow .25s, background .25s; }
+.contact-band .cb-go:hover { background: #d9bd86; box-shadow: 0 0 26px -6px rgba(200,169,110,.7); }
 #dskip:hover { color: var(--rust-hi); border-color: var(--rust-hi); }
 #dskip::after { content: ' ↓'; }
 @media (max-width: 600px) { #dskip { top: auto; bottom: 1.4rem; right: 1.4rem; font-size: .6rem; padding: .55rem .85rem; } }
@@ -282,6 +296,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
 <div class="grain"></div>
 
 <div id="dprogress"></div>
+<a href="contact.html" id="dcontact">Contact</a>
 <a href="#atlas-main" id="dskip">Skip intro</a>
 
 <div id="descent-wrap">
@@ -338,7 +353,7 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
         <div style="text-align:left">
           <p class="d-eyebrow" data-reveal>the person behind the plates</p>
           <h2 class="d-title" data-reveal>Machinist. <i style="color:var(--indigo)">Composer.</i> <i style="color:var(--rust-hi)">Builder.</i></h2>
-          <p class="d-copy" data-reveal>Turning programs for <a class="d-link" href="shop.html">HAAS and Hwacheon lathes</a> on FANUC controls, where a wrong offset is a scrapped part. Ambient and experimental music as <a class="d-link" href="sonicveil.html">Sonic Veil</a> since 2016. Local AI that <a class="d-link" href="pi.html">lives on a phone</a>, <a class="d-link" href="novarac.html">radios that work</a> when the internet doesn't, and a <a class="d-link" href="frames.html">camera</a> for the things that don't need to do anything.</p>
+          <p class="d-copy" data-reveal>Turning programs for <a class="d-link" href="shop.html">HAAS and Hwacheon lathes</a> on FANUC controls, where a wrong offset is a scrapped part. Ambient and experimental music as <a class="d-link" href="sonicveil.html">Sonic Veil</a> since 2016. Local AI that <a class="d-link" href="pi.html">lives on a phone</a>, <a class="d-link" href="novarac.html">radios that work</a> when the internet doesn't, and a <a class="d-link" href="frames.html">camera</a> for the things that don't need to do anything. Want to talk shop? <a class="d-link" href="contact.html">Get in touch</a>.</p>
         </div>
         <div class="d-telemetry" data-reveal>
           SHOP&nbsp;&nbsp;<b>haas st25 · hwacheon</b><br>
@@ -346,7 +361,8 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
           MUSIC&nbsp;&nbsp;<b>sonic veil · 86 tracks</b><br>
           SINCE&nbsp;&nbsp;<b>2016</b><br>
           RADIO&nbsp;&nbsp;<b>hf vara · lora mesh</b><br>
-          RULE&nbsp;&nbsp;<b>measure it, don't assume it</b>
+          RULE&nbsp;&nbsp;<b>measure it, don't assume it</b><br>
+          CONTACT&nbsp;&nbsp;<b>anders@mentifaber.com</b>
         </div>
       </div>
     </section>
@@ -397,6 +413,10 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
   </main>
 
   <footer class="mf">
+    <div class="contact-band">
+      <div><h3>Contact <i>Mentifaber</i></h3><a class="cb-mail" href="mailto:anders@mentifaber.com">anders@mentifaber.com</a></div>
+      <a class="cb-go" href="contact.html">Send a message →</a>
+    </div>
     <p>Recognized through the work, not the introduction.</p>
   </footer>
 </div>
