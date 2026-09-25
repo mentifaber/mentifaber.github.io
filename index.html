@@ -140,6 +140,7 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
 .legend-links { display: flex; gap: 1.1rem; margin-top: 1rem; flex-wrap: wrap; }
 .legend-links a { color: var(--ink-soft); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--contour); padding-bottom: 2px; transition: .25s; }
 .legend-links a:hover { color: var(--rust); border-color: var(--rust); }
+.legend-links a[href^="mailto"] { text-transform: none; letter-spacing: .02em; }
 
 .field { padding: 3.4rem clamp(1.6rem, 3.5vw, 3.4rem) 6rem; }
 .field-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .6rem; padding-bottom: 1.4rem; margin-bottom: 2.6rem; border-bottom: 1px solid var(--contour); }
@@ -376,6 +377,8 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
     <div class="legend-foot" id="legendFoot">
       24 sites surveyed
       <div class="legend-links">
+        <a href="contact.html">Contact</a>
+        <a href="mailto:anders@mentifaber.com">anders@mentifaber.com</a>
         <a href="https://github.com/mentifaber" target="_blank" rel="noopener">GitHub</a>
         <a href="https://x.com/mentifaber" target="_blank" rel="noopener">X</a>
         <a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram</a>

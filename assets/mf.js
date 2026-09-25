@@ -72,4 +72,11 @@ const MF_REL = {"pi": ["weaver", "phone-mcp", "muse"], "phone-mcp": ["pi", "weav
     }).join('') + '</div>';
     foot.parentNode.insertBefore(wrap, foot);
   }
+  // contact line in every project footer
+  if (foot && page !== 'contact' && foot.classList.contains('mf-foot')) {
+    const c = document.createElement('div');
+    c.className = 'mf-contact';
+    c.innerHTML = '<a href="contact.html">Contact Mentifaber</a><a href="mailto:anders@mentifaber.com">anders@mentifaber.com</a>';
+    foot.appendChild(c);
+  }
 })();

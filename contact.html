@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" class="mf-tint">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Contact Mentifaber — send a quick note or write to anders@mentifaber.com."/>
+<meta property="og:title" content="Contact Mentifaber"/>
+<meta property="og:description" content="A quick reach-out, or a proper email. Either way it lands with a person."/>
+<meta property="og:image" content="https://mentifaber.com/assets/previews/home.png"/>
+<meta property="og:url" content="https://mentifaber.com/contact.html"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="theme-color" content="#000000"/>
+<title>Contact Mentifaber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #000; --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
+  --indigo: #c8a96e; --indigo-dim: #8a7050; --rust: #b02a1a;
+  --line: rgba(242,230,207,.14); --field: rgba(242,230,207,.04);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; }
+a { color: inherit; }
+.corner { position: fixed; top: 3vh; left: 4vw; z-index: 20; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--indigo-dim); text-decoration: none; }
+.corner:hover { color: var(--indigo); }
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 16vh 24px 6vh; position: relative; z-index: 2; }
+.label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--indigo-dim); }
+h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2.6rem, 9vw, 5rem); line-height: .95; letter-spacing: -.02em; margin: .8rem 0 1.2rem; }
+h1 em { font-style: normal; color: var(--indigo); }
+.lede { font-size: clamp(1.1rem, 2.6vw, 1.3rem); line-height: 1.55; color: var(--ink-soft); max-width: 44ch; }
+
+/* address card */
+.addr { margin: 2.6rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 20px 22px;
+  border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(135deg, rgba(200,169,110,.08), transparent 60%); }
+.addr .mail { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: clamp(1.15rem, 4.4vw, 1.6rem); text-decoration: none;
+  color: var(--ink); text-shadow: 0 0 22px var(--mf-glow); word-break: break-all; flex: 1 1 260px; }
+.addr .mail:hover { color: var(--indigo); }
+.btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; cursor: pointer;
+  min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--indigo-dim); background: transparent; color: var(--indigo);
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; transition: background .2s, color .2s, box-shadow .2s; }
+.btn:hover { background: rgba(200,169,110,.12); box-shadow: 0 0 22px -8px var(--mf-glow); }
+.btn.solid { background: var(--indigo); color: #0b0906; border-color: var(--indigo); font-weight: 500; }
+.btn.solid:hover { background: #d9bd86; color: #0b0906; }
+
+/* form */
+form { margin-top: 3.2rem; display: grid; gap: 18px; }
+.sect { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--indigo-dim);
+  display: flex; align-items: center; gap: 12px; }
+.sect::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+label { display: grid; gap: 7px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-faint); }
+input, textarea { font: inherit; font-family: 'Newsreader', serif; font-size: 1.08rem; letter-spacing: 0; text-transform: none; color: var(--ink);
+  background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; width: 100%; min-height: 46px; }
+textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
+input:focus, textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(200,169,110,.15); }
+input::placeholder, textarea::placeholder { color: #5d544b; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; min-height: 40px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; transition: all .2s; }
+.chip:hover { border-color: var(--indigo-dim); color: var(--ink); }
+.chip[aria-pressed="true"] { border-color: var(--indigo); color: #0b0906; background: var(--indigo); }
+.count { justify-self: end; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-faint); margin-top: -10px; }
+.hp { position: absolute; left: -9999px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.note { font-size: .98rem; color: var(--ink-faint); font-style: italic; line-height: 1.5; }
+.status { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; color: var(--indigo); min-height: 1.2em; }
+
+.elsewhere { margin-top: 4rem; }
+.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.links a { display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; transition: border-color .2s, transform .2s; }
+.links a:hover { border-color: var(--indigo-dim); transform: translateY(-2px); }
+.links b { display: block; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; }
+.links span { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: .06em; }
+
+footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
+footer.mf-foot p { font-style: italic; color: var(--ink-faint); font-size: .95rem; }
+footer.mf-foot a { display: inline-block; margin-top: 14px; color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .24em; text-transform: uppercase; }
+
+@media (max-width: 600px) {
+  .wrap { padding-top: 12vh; }
+  .row { grid-template-columns: 1fr; }
+  .addr .btns, .actions .btn { width: 100%; }
+  .addr .btns .btn { flex: 1; }
+}
+</style>
+<style>:root{--mf-accent:#c8a96e;--mf-glow:rgba(200,169,110,.45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head>
+<body>
+<a href="index.html" class="corner">← Atlas</a>
+
+<main class="wrap">
+  <p class="label">contact · reach out</p>
+  <h1>Contact <em>Mentifaber</em></h1>
+  <p class="lede">A question about one of the systems, a build you want to talk through, a commission, or just a hello. It reaches a person, not a queue.</p>
+
+  <div class="addr">
+    <a class="mail" id="mail" href="mailto:anders@mentifaber.com">anders@mentifaber.com</a>
+    <div class="btns">
+      <button class="btn" type="button" id="copy">Copy address</button>
+      <a class="btn solid" href="mailto:anders@mentifaber.com">Open email</a>
+    </div>
+  </div>
+
+  <form id="f" novalidate>
+    <div class="sect">Quick reach-out</div>
+    <div class="row">
+      <label>Your name<input id="name" autocomplete="name" maxlength="80" placeholder="Who's writing"></label>
+      <label>Your email<input id="from" type="email" autocomplete="email" maxlength="120" placeholder="So I can write back"></label>
+    </div>
+    <div>
+      <label style="margin-bottom:9px">What's it about</label>
+      <div class="chips" id="chips">
+        <button type="button" class="chip" aria-pressed="true">Just saying hi</button>
+        <button type="button" class="chip" aria-pressed="false">A project on the site</button>
+        <button type="button" class="chip" aria-pressed="false">Work / commission</button>
+        <button type="button" class="chip" aria-pressed="false">Music</button>
+        <button type="button" class="chip" aria-pressed="false">Bug report</button>
+      </div>
+    </div>
+    <label>Message<textarea id="msg" maxlength="2000" placeholder="A couple of lines is plenty."></textarea></label>
+    <div class="count" id="count">0 / 2000</div>
+    <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="actions">
+      <button class="btn solid" type="submit">Send message</button>
+      <span class="status" id="status" role="status"></span>
+    </div>
+    <p class="note">Sending opens your own email app with everything filled in — nothing is stored on this site, and no third party sees it. If nothing opens, copy the address above.</p>
+  </form>
+
+  <section class="elsewhere">
+    <div class="sect">Elsewhere</div>
+    <div class="links">
+      <a href="https://github.com/mentifaber" target="_blank" rel="noopener"><b>GitHub</b><span>@mentifaber</span></a>
+      <a href="https://x.com/mentifaber" target="_blank" rel="noopener"><b>X</b><span>@mentifaber</span></a>
+      <a href="https://instagram.com/mentifaber" target="_blank" rel="noopener"><b>Instagram</b><span>@mentifaber</span></a>
+      <a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener"><b>SoundCloud</b><span>Sonic Veil</span></a>
+    </div>
+  </section>
+</main>
+
+<footer class="mf-foot">
+  <p>Every system here started as somebody asking "could this work?" Ask away.</p>
+  <a href="index.html">Return to Mentifaber</a>
+</footer>
+
+<script>
+(() => {
+  const TO = 'anders@mentifaber.com', $ = id => document.getElementById(id);
+  const status = t => { $('status').textContent = t; };
+  let topic = 'Just saying hi';
+  $('chips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+    topic = b.textContent;
+  });
+  $('msg').addEventListener('input', () => { $('count').textContent = $('msg').value.length + ' / 2000'; });
+  $('copy').addEventListener('click', () => {
+    const done = () => { $('copy').textContent = 'Copied ✓'; setTimeout(() => $('copy').textContent = 'Copy address', 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(TO).then(done, () => prompt('Copy the address:', TO));
+    else prompt('Copy the address:', TO);
+  });
+  $('f').addEventListener('submit', e => {
+    e.preventDefault();
+    if ($('hp').value) return;                       // bots fill hidden fields
+    const name = $('name').value.trim(), from = $('from').value.trim(), msg = $('msg').value.trim();
+    if (!msg) { status('Add a message first.'); $('msg').focus(); return; }
+    if (from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from)) { status('That email looks off — check it or leave it blank.'); $('from').focus(); return; }
+    const subject = `[mentifaber.com] ${topic}${name ? ' — ' + name : ''}`;
+    const body = `${msg}\n\n—\n${name || 'Sent from mentifaber.com'}${from ? '\nReply to: ' + from : ''}`;
+    location.href = `mailto:${TO}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    status('Opening your email app…');
+  });
+})();
+</script>
+<script src="assets/mf.js" defer></script>
+</body>
+</html>
