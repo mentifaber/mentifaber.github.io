@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#000000"/>
+<meta name="description" content="Mentifaber quick weather — current conditions, the next hours and the week, in one glance."/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Weather"/>
+<title>Weather · Mentifaber</title>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root { --bg: #000; --panel: #0c0a06; --ink: #f2e6cf; --soft: #c4b09a; --faint: #7a6e62; --gold: #c8a96e; --gold-hi: #e8cd9a; --line: rgba(200,169,110,.18); --rain: #7ec8e3; }
+html, body { background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; min-height: 100%; }
+body { padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); max-width: 520px; margin: 0 auto;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(200,169,110,.16), transparent 60%), var(--bg); }
+.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.place { font-size: 15px; font-weight: 600; color: var(--gold-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upd { font-size: 11px; color: var(--faint); }
+.btns { display: flex; gap: 6px; flex-shrink: 0; }
+.btns button { min-width: 40px; min-height: 40px; background: transparent; border: 1px solid var(--line); color: var(--soft); font-size: 16px; border-radius: 10px; cursor: pointer; }
+.hero { display: flex; align-items: center; gap: 14px; margin: 18px 0 6px; }
+.ico { font-size: 64px; line-height: 1; filter: drop-shadow(0 0 18px rgba(232,205,154,.35)); }
+.temp { font-size: 76px; font-weight: 700; letter-spacing: -.04em; line-height: .9; }
+.temp small { font-size: 22px; color: var(--faint); font-weight: 500; letter-spacing: 0; vertical-align: top; }
+.cond { font-size: 18px; color: var(--ink); }
+.hilo { font-size: 14px; color: var(--soft); margin-top: 3px; }
+.summary { margin: 12px 0 10px; font-size: 15px; line-height: 1.45; color: var(--soft); }
+.now { display: inline-block; font-size: 13px; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); color: var(--faint); }
+.now.wet { color: #bfe6f5; border-color: rgba(126,200,227,.5); background: rgba(126,200,227,.1); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 9px 8px; text-align: center; }
+.stat span { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.stat b { display: block; font-size: 15px; margin-top: 3px; }
+h2 { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin: 18px 0 8px; }
+.hours { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+.hours::-webkit-scrollbar { display: none; }
+.h { flex: 0 0 54px; text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 2px; }
+.h .t { font-size: 11px; color: var(--faint); }
+.h .i { font-size: 20px; margin: 3px 0; }
+.h .d { font-size: 15px; font-weight: 600; }
+.h .p { font-size: 11px; color: var(--rain); min-height: 1.2em; }
+.days { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.day { display: grid; grid-template-columns: 58px 30px 44px 1fr 34px; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); font-size: 15px; }
+.day:first-child { border-top: 0; }
+.day .n { color: var(--gold); font-weight: 600; font-size: 14px; }
+.day .p { font-size: 12px; color: var(--rain); }
+.day .lo { color: var(--faint); text-align: right; }
+.bar { position: relative; height: 5px; border-radius: 3px; background: rgba(242,230,207,.08); }
+.bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, #7ec8e3, var(--gold), #d94030); }
+.msg { margin-top: 30vh; text-align: center; color: var(--soft); font-size: 15px; line-height: 1.5; }
+.search { display: none; gap: 8px; margin-top: 14px; }
+.search.show { display: flex; }
+.search input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; font-size: 16px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
+.search button { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--gold); background: var(--gold); color: #0b0906; font-weight: 600; }
+footer { margin-top: 22px; text-align: center; font-size: 11px; color: var(--faint); }
+footer a { color: var(--gold); text-decoration: none; }
+@media (max-width: 360px) { .stats { grid-template-columns: repeat(2, 1fr); } .temp { font-size: 64px; } }
+</style>
+</head>
+<body>
+<header>
+  <div style="min-width:0"><div class="place" id="place">Weather</div><div class="upd mono" id="upd">locating…</div></div>
+  <div class="btns"><button id="unit" title="Switch units">°F</button><button id="find" title="Change place">⌕</button><button id="loc" title="Use my location">⌖</button></div>
+</header>
+<div class="search" id="search"><input id="q" placeholder="City name" autocomplete="off"/><button id="go">Go</button></div>
+<main id="app"><p class="msg" id="msg">Finding you…</p></main>
+<footer>Open-Meteo data · <a href="../vigil.html">full board in Vigil</a> · <a href="../index.html">Mentifaber</a></footer>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+  const WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",
+    56:"Freezing drizzle",57:"Freezing drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",67:"Freezing rain",71:"Light snow",73:"Snow",
+    75:"Heavy snow",77:"Snow grains",80:"Showers",81:"Showers",82:"Violent showers",85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm, hail",99:"Severe thunderstorm"};
+  const ICON = (c, day) => c === 0 ? (day ? "☀️" : "🌙") : c === 1 ? (day ? "🌤️" : "🌙") : c === 2 ? (day ? "⛅" : "☁️") : c === 3 ? "☁️" : c <= 48 ? "🌫️"
+    : c <= 57 ? "🌦️" : c <= 67 ? "🌧️" : c <= 77 ? "🌨️" : c <= 82 ? "🌦️" : c <= 86 ? "🌨️" : "⛈️";
+  let unit = store.get("wx-unit", "F"), place = null, data = null;
+  const T = c => Math.round(unit === "F" ? c * 9 / 5 + 32 : c);
+  const WS = k => Math.round(unit === "F" ? k * 0.621371 : k) + (unit === "F" ? " mph" : " km/h");
+  const hr = t => new Date(t).toLocaleTimeString([], { hour: "numeric" }).replace(" ", "").toLowerCase();
+
+  // ?lat=&lon=&name= pins a fixed place — handy for a second home-screen icon
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("lat") && qs.get("lon") && isFinite(+qs.get("lat")) && isFinite(+qs.get("lon")))
+    place = { lat: +qs.get("lat"), lon: +qs.get("lon"), name: (qs.get("name") || "").slice(0, 60) || null, pinned: true };
+
+  function msg(t, showSearch) { $("app").innerHTML = '<p class="msg">' + t + '</p>'; if (showSearch) $("search").classList.add("show"); }
+
+  function locate(force) {
+    const saved = store.get("wx-place", null);
+    if (!force && place) return load();
+    if (!force && saved) { place = saved; load(); }          // instant from last known spot…
+    if (!navigator.geolocation) { if (!saved) msg("Location isn't available here — search for a city.", true); return; }
+    navigator.geolocation.getCurrentPosition(p => {       // …then refine with a fresh fix
+      const moved = !place || Math.abs(place.lat - p.coords.latitude) > 0.05 || Math.abs(place.lon - p.coords.longitude) > 0.05;
+      place = { lat: p.coords.latitude, lon: p.coords.longitude, name: moved ? null : place.name };
+      store.set("wx-place", place);
+      if (moved || force || !data) load();
+    }, () => { if (!saved) msg("Location permission is off. Allow it, or search for a city.", true); },
+    { timeout: 9000, maximumAge: 600000 });
+  }
+
+  async function nameFor(lat, lon) {
+    try {
+      const r = await fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat + "&longitude=" + lon + "&localityLanguage=en").then(r => r.json());
+      return r.city || r.locality || r.principalSubdivision || null;
+    } catch (e) { return null; }
+  }
+
+  async function load() {
+    $("upd").textContent = "updating…";
+    try {
+      const url = "https://api.open-meteo.com/v1/forecast?latitude=" + place.lat.toFixed(4) + "&longitude=" + place.lon.toFixed(4) +
+        "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,precipitation,wind_speed_10m,wind_gusts_10m,uv_index,is_day" +
+        "&minutely_15=precipitation&forecast_minutely_15=8" +
+        "&hourly=temperature_2m,precipitation_probability,weather_code,is_day&forecast_hours=24" +
+        "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=7&timezone=auto";
+      const [r, nm] = await Promise.all([fetch(url), place.name ? Promise.resolve(place.name) : nameFor(place.lat, place.lon)]);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      data = await r.json();
+      if (nm) { place.name = nm; if (!place.pinned) store.set("wx-place", place); }
+      render();
+    } catch (e) {
+      if (data) { $("upd").textContent = "offline · showing last update"; return; }
+      msg("Couldn't reach the weather service. Pull down or tap ⌖ to retry.");
+    }
+  }
+
+  function render() {
+    const c = data.current, d = data.daily, h = data.hourly;
+    $("place").textContent = place.name || (place.lat.toFixed(2) + ", " + place.lon.toFixed(2));
+    $("upd").textContent = "updated " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    $("unit").textContent = "°" + (unit === "F" ? "C" : "F");
+    document.title = T(c.temperature_2m) + "° · " + (place.name || "Weather");
+
+    // next 2 hours from the 15-minute series
+    const m = data.minutely_15 && data.minutely_15.precipitation || [];
+    let now = "No rain in the next 2 hours", wet = false;
+    const kind = c.temperature_2m <= 0.5 || (c.weather_code >= 71 && c.weather_code <= 86 && c.weather_code < 80) ? "Snow" : "Rain";
+    if ((c.precipitation || 0) > 0 || m[0] > 0.05) { const s = m.findIndex(v => v <= 0.02); now = s < 0 ? kind + " for the next 2 hours+" : kind + " easing in ~" + (s * 15 || 15) + " min"; wet = true; }
+    else { const s = m.findIndex(v => v > 0.05); if (s >= 0) { now = kind + " starting in ~" + (s * 15 || 15) + " min"; wet = true; } }
+
+    // one-line outlook for the next 12 hours
+    let wetAt = -1;
+    for (let i = 0; i < Math.min(12, h.time.length); i++) if ((h.precipitation_probability[i] || 0) >= 50) { wetAt = i; break; }
+    const outlook = wetAt < 0 ? "Dry for the next 12 hours." : wetAt === 0 ? "Wet through the next few hours." : "Rain likely from about " + hr(h.time[wetAt]) + ".";
+
+    const gMax = Math.max(...d.temperature_2m_max), gMin = Math.min(...d.temperature_2m_min), span = Math.max(1, gMax - gMin);
+    $("search").classList.remove("show");
+    $("app").innerHTML =
+      '<div class="hero"><div class="ico">' + ICON(c.weather_code, c.is_day) + '</div><div>' +
+        '<div class="temp">' + T(c.temperature_2m) + '<small>°' + unit + '</small></div>' +
+        '<div class="cond">' + (WMO[c.weather_code] || "") + '</div>' +
+        '<div class="hilo">H ' + T(d.temperature_2m_max[0]) + '° · L ' + T(d.temperature_2m_min[0]) + '° · feels ' + T(c.apparent_temperature) + '°</div></div></div>' +
+      '<p class="summary">' + outlook + '</p>' +
+      '<span class="now' + (wet ? ' wet' : '') + '">' + now + '</span>' +
+      '<div class="stats">' +
+        '<div class="stat"><span>Rain</span><b>' + (d.precipitation_probability_max[0] ?? 0) + '%</b></div>' +
+        '<div class="stat"><span>Wind</span><b>' + WS(c.wind_speed_10m) + '</b></div>' +
+        '<div class="stat"><span>Humid</span><b>' + c.relative_humidity_2m + '%</b></div>' +
+        '<div class="stat"><span>UV</span><b>' + (c.uv_index == null ? "—" : Math.round(c.uv_index)) + '</b></div>' +
+      '</div>' +
+      '<h2>Next hours</h2><div class="hours">' + h.time.slice(0, 24).map((t, i) =>
+        '<div class="h"><div class="t">' + (i === 0 ? "now" : hr(t)) + '</div><div class="i">' + ICON(h.weather_code[i], h.is_day ? h.is_day[i] : 1) + '</div>' +
+        '<div class="d">' + T(h.temperature_2m[i]) + '°</div><div class="p">' + (h.precipitation_probability[i] >= 20 ? h.precipitation_probability[i] + '%' : '') + '</div></div>').join("") + '</div>' +
+      '<h2>This week</h2><div class="days">' + d.time.map((t, i) => {
+        const date = new Date(t + "T12:00:00"), lo = d.temperature_2m_min[i], hi = d.temperature_2m_max[i];
+        return '<div class="day"><span class="n">' + (i === 0 ? "Today" : date.toLocaleDateString([], { weekday: "short" })) + '</span>' +
+          '<span>' + ICON(d.weather_code[i], 1) + '</span><span class="p">' + (d.precipitation_probability_max[i] >= 20 ? d.precipitation_probability_max[i] + '%' : '') + '</span>' +
+          '<span style="display:flex;align-items:center;gap:8px"><span class="lo" style="width:30px">' + T(lo) + '°</span><span class="bar" style="flex:1"><i style="left:' +
+          ((lo - gMin) / span * 100).toFixed(0) + '%;right:' + ((gMax - hi) / span * 100).toFixed(0) + '%"></i></span></span><b>' + T(hi) + '°</b></div>';
+      }).join("") + '</div>';
+  }
+
+  async function search() {
+    const q = $("q").value.trim(); if (!q) return;
+    try {
+      const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(q.split(",")[0])).then(r => r.json());
+      const p = r.results && r.results[0];
+      if (!p) { $("upd").textContent = "no match for “" + q + "”"; return; }
+      place = { lat: p.latitude, lon: p.longitude, name: [p.name, p.admin1].filter(Boolean).join(", ") };
+      store.set("wx-place", place); load();
+    } catch (e) { $("upd").textContent = "search unavailable"; }
+  }
+
+  $("unit").onclick = () => { unit = unit === "F" ? "C" : "F"; store.set("wx-unit", unit); if (data) render(); };
+  $("find").onclick = () => { $("search").classList.toggle("show"); $("q").focus(); };
+  $("loc").onclick = () => { place = null; locate(true); };
+  $("go").onclick = search;
+  $("q").addEventListener("keydown", e => { if (e.key === "Enter") search(); });
+  // refresh when brought back to the foreground, if the data is older than 10 min
+  let last = Date.now();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && place && Date.now() - last > 600000) { last = Date.now(); load(); } });
+  locate(false);
+})();
+</script>
+</body>
+</html>

@@ -324,6 +324,58 @@ body { font-size: 14px; }
 .diag-ok { color: var(--gold); } .diag-bad { color: var(--ember-hi); } .diag-wait { color: var(--ink-faint); }
 .diag-note { font-size: 9.5px; color: var(--ink-faint); line-height: 1.7; margin-top: .9rem; padding-top: .8rem; border-top: 1px solid var(--line-soft); }
 
+
+/* ── weather upgrades ── */
+.wx-places { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .8rem; }
+.wx-places:empty { display: none; }
+.wx-chip { display: inline-flex; align-items: stretch; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; cursor: pointer; }
+button.wx-chip, .wx-chip button { padding: .45rem .6rem; min-height: 32px; background: transparent; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.wx-chip button[data-act="del"] { padding: .45rem .5rem; color: var(--ink-faint); border-left: 1px solid var(--line-soft); }
+.wx-chip.on { border-color: var(--gold); color: var(--gold-hi); background: rgba(200,169,110,.08); }
+.wx-chip.add { border-style: dashed; color: var(--gold-dim); }
+.wx-chip:hover { border-color: var(--gold-dim); color: var(--ink); }
+.wx-toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.wx-units { display: flex; border: 1px solid var(--line); }
+.wx-units button { padding: .4rem .6rem; min-height: 32px; background: transparent; border: 0; color: var(--ink-faint); font-family: var(--mono); font-size: 11px; cursor: pointer; }
+.wx-units button.on { background: var(--gold); color: #0b0906; }
+.wx-summary { margin: .7rem 0 .2rem; font-family: 'Newsreader', Georgia, serif; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.wx-now { display: inline-block; margin-top: .45rem; font-size: 10.5px; letter-spacing: .04em; padding: .3rem .55rem; border: 1px solid var(--line-soft); }
+.wx-now.wet { color: #9ad6ef; border-color: rgba(126,200,227,.45); background: rgba(126,200,227,.08); }
+.wx-now.dry { color: var(--ink-faint); }
+.wx-grid { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: .75rem 1rem !important; }
+.wx-grid b i { font-style: normal; font-weight: 400; color: var(--ink-faint); font-size: 10px; }
+.wx-arrow { display: inline-block; margin-right: .2rem; color: var(--gold); }
+.wx-trend { color: var(--gold); }
+.wx-chart-wrap { overflow-x: auto; scrollbar-width: thin; padding-bottom: .3rem; }
+.wx-chart { display: block; font-family: var(--mono); }
+.wx-chart .wc-night { fill: rgba(80,100,160,.09); }
+.wx-chart .wc-pop { fill: #7ec8e3; }
+.wx-chart .wc-line { fill: none; stroke: var(--gold-hi); stroke-width: 2; filter: drop-shadow(0 0 4px rgba(200,169,110,.7)); }
+.wx-chart .wc-dot { fill: var(--gold-hi); }
+.wx-chart .wc-deg { fill: var(--ink); font-size: 10.5px; font-weight: 600; text-anchor: middle; }
+.wx-chart .wc-hr { fill: var(--ink-faint); font-size: 9px; text-anchor: middle; }
+.wx-chart .wc-ico { font-size: 11px; text-anchor: middle; }
+.wx-chart .wc-pct { fill: #9ad6ef; font-size: 8.5px; text-anchor: middle; }
+.wx-chart .wc-sun { fill: var(--gold-dim); font-size: 8.5px; }
+.wx-chart .wc-day { fill: var(--gold); font-size: 9px; letter-spacing: .1em; }
+.wx-chart .wc-mid { stroke: var(--line); stroke-dasharray: 2 3; }
+.hr-feel { font-size: 8px; color: var(--ink-faint); }
+.hr-wind { font-size: 9px; color: var(--ink-soft); }
+.hr-wind small { font-size: 7px; color: var(--ink-faint); margin-left: 1px; }
+button.fc-cell { font: inherit; color: inherit; cursor: pointer; }
+.fc-cell.sel { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 16px -4px rgba(200,169,110,.6); }
+.fc-conf { font-size: 8px; margin-top: .15rem; }
+.fc-conf.hi { color: #8fcf8a; } .fc-conf.mid { color: var(--warn); } .fc-conf.lo { color: var(--ember-hi); }
+.wx-day { margin-top: 1rem; border-top: 1px solid var(--line-soft); padding-top: .9rem; }
+.wx-day:empty { display: none; }
+.wx-day-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-family: var(--disp); font-size: 15px; color: var(--gold-hi); margin-bottom: .6rem; }
+.wx-day-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .7rem 1rem !important; margin-bottom: .9rem; }
+.wx-models { margin-bottom: .9rem; }
+.wx-models .subrow { margin-top: .2rem; }
+.wx-phone { display: inline-block; margin-top: .8rem; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-dim); text-decoration: none; border-bottom: 1px solid var(--line); }
+.wx-phone:hover { color: var(--gold); }
+.wx-day-note { font-size: 10px; color: var(--ink-faint); }
+@media (max-width: 600px) { .wx-grid { grid-template-columns: repeat(2, 1fr); } }
 /* ── forecast ── */
 .fc-label { font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: .6rem; }
 .hourly-strip, .forecast-strip { display: flex; gap: .3rem; overflow-x: auto; padding-bottom: .5rem; scrollbar-width: thin; }
@@ -545,21 +597,29 @@ body { font-size: 14px; }
           <input type="text" id="citySearch" placeholder="check another city…" />
           <button id="citySearchBtn">Go</button>
         </div>
-        <div class="readout" id="wxTemp">—<small>°F</small></div>
-        <div class="ph-meta" id="wxPlace">Locating…</div>
-        <div class="subrow" id="wxSub"></div>
+        <div class="wx-places" id="wxPlaces"></div>
+        <div class="wx-toprow"><div class="readout" id="wxTemp">—<small>°F</small></div>
+          <div class="wx-units" id="wxUnits" role="group" aria-label="Units"><button data-u="F">°F</button><button data-u="C">°C</button></div></div>
+        <div class="ph-meta" id="wxPlace" style="text-align:left">Locating…</div>
+        <p class="wx-summary" id="wxSummary"></p>
+        <div id="wxNow"></div>
+        <div class="subrow wx-grid" id="wxSub"></div>
         <div class="ph-meta" id="wxAir" style="margin-top:.7rem;"></div>
         <div class="moonrow" id="moonRow"></div>
+        <a class="wx-phone" href="wx/" target="_blank" rel="noopener">Quick phone view ↗</a>
       </div>
     </div>
 
     <div class="hud-panel span2">
       <div class="ph"><span class="ph-title"><span class="status-dot pending" id="dot-forecast"></span>Forecast</span><span class="ph-meta" id="wxFcMeta">—</span></div>
       <div class="pb">
-        <div class="fc-label">Next 24 hours</div>
+        <div class="fc-label">Next 48 hours · temperature &amp; chance of rain</div>
+        <div class="wx-chart-wrap" id="wxChart"></div>
+        <div class="fc-label" style="margin-top:1rem;">Hour by hour</div>
         <div class="hourly-strip" id="wxHourly"></div>
-        <div class="fc-label" style="margin-top:1.1rem;">Long range</div>
+        <div class="fc-label" style="margin-top:1.1rem;">Long range · tap a day · ± is how far the forecast models disagree</div>
         <div class="forecast-strip" id="wxForecast"></div>
+        <div class="wx-day" id="wxDay"></div>
       </div>
     </div>
 
@@ -906,6 +966,7 @@ body { font-size: 14px; }
      goes down shows up here as a real reason instead of an empty panel. */
   const FEEDS = [
     { id: "weather",  label: "Weather",        host: "api.open-meteo.com" },
+    { id: "wxmodels", label: "Model spread",   host: "api.open-meteo.com" },
     { id: "airq",     label: "Air quality",    host: "air-quality-api.open-meteo.com" },
     { id: "geo",      label: "Geocoding",      host: "geocoding-api.open-meteo.com" },
     { id: "revgeo",   label: "Reverse geo",    host: "api.bigdatacloud.net" },
@@ -1087,6 +1148,27 @@ body { font-size: 14px; }
     80:"Light showers",81:"Showers",82:"Violent showers",85:"Snow showers",86:"Heavy snow showers",
     95:"Thunderstorm",96:"Thunderstorm w/ hail",99:"Severe thunderstorm"};
 
+  // ── units & saved places (per-browser preferences) ──
+  const wxStore = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  let wxUnit = wxStore.get("vigil-wx-unit", "F");
+  let wxPlaces = wxStore.get("vigil-wx-places", []);
+  let myLoc = null;                       // where the device actually is, when geolocation allows it
+  let lastWx = null, lastModels = null, wxDaySel = 0;
+  const T = c => c == null ? "—" : Math.round(wxUnit === "F" ? c * 9 / 5 + 32 : c);
+  const TU = () => "°" + wxUnit;
+  const SPD = k => k == null ? "—" : Math.round(wxUnit === "F" ? k * 0.621371 : k);
+  const SU = () => wxUnit === "F" ? "mph" : "km/h";
+  const DT = c => c == null ? 0 : (wxUnit === "F" ? c * 9 / 5 : c);   // temperature *difference*
+  const COMPASS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  const compass = d => d == null ? "" : COMPASS[Math.round(((d % 360) + 360) % 360 / 22.5) % 16];
+  const hm = t => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const hr = t => new Date(t).toLocaleTimeString([], { hour: "numeric" }).replace(" ", "").toLowerCase();
+  const at = (o, k, i) => o && o[k] ? o[k][i] : null;
+  const precipKind = code => code >= 71 && code <= 86 && code !== 80 && code !== 81 && code !== 82 ? "snow" : code >= 95 ? "storms" : "rain";
+
   async function loadWeather(lat, lon, placeName) {
     // Position is known from the arguments alone, so pin it before any network
     // call: a weather outage used to leave the globe with no "you" marker and
@@ -1096,38 +1178,37 @@ body { font-size: 14px; }
     rebuildMarkers();
     RADAR.lat = lat; RADAR.lon = lon;
     drawRadar();
-    // independent feed — must not be blocked by the forecast request failing
+    // independent feeds — must not be blocked by the forecast request failing
     loadAirQuality(lat, lon);
+    loadModelSpread(lat, lon);
     try {
       const [wx, place] = await Promise.all([
-        fetchJSON("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+        // the rich request first; if Open-Meteo ever rejects a field, fall back to
+        // the original minimal one rather than losing the whole panel
+        fetchFirst(["https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+          "&current=temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,precipitation," +
+          "wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,cloud_cover,visibility,uv_index,is_day" +
+          "&minutely_15=precipitation&forecast_minutely_15=8" +
+          "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code," +
+          "wind_speed_10m,wind_gusts_10m,uv_index,is_day,pressure_msl" +
+          "&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min," +
+          "precipitation_probability_max,precipitation_sum,precipitation_hours,wind_speed_10m_max,wind_gusts_10m_max," +
+          "wind_direction_10m_dominant,uv_index_max,sunrise,sunset,daylight_duration" +
+          // hourly: 3h of history (for the pressure trend) plus a week ahead, which
+          // is what the chart and the tap-a-day detail can use
+          "&forecast_days=16&past_hours=3&forecast_hours=168&timezone=auto",
+          "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
           "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m" +
           "&hourly=temperature_2m,precipitation_probability,weather_code" +
           "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,sunrise,sunset" +
-          // cap the hourly series: 16 days of hourly data is ~384 points per
-          // variable and only the next 48h are ever displayed
-          "&forecast_days=16&forecast_hours=48&timezone=auto", null, "weather"),
+          "&forecast_days=16&forecast_hours=48&timezone=auto"], null, "weather"),
         placeName ? Promise.resolve(placeName) : reverseGeocode(lat, lon),
       ]);
       homePos.name = place || null;
       currentPlace.name = place || null;
       rebuildMarkers();
-      const c = wx.current;
-      document.getElementById("wxTemp").innerHTML = cToF(c.temperature_2m) + "<small>°F / " + Math.round(c.temperature_2m) + "°C</small>";
-      document.getElementById("wxPlace").textContent = (place || (lat.toFixed(2) + ", " + lon.toFixed(2))) + " — " + (WMO[c.weather_code] || "Unknown");
-      document.getElementById("wxSub").innerHTML =
-        '<div>Feels like<b>' + cToF(c.apparent_temperature) + '°F</b></div>' +
-        '<div>Humidity<b>' + c.relative_humidity_2m + '%</b></div>' +
-        '<div>Wind<b>' + Math.round(c.wind_speed_10m * 0.621371) + ' mph</b></div>';
-      const sunrise = wx.daily && wx.daily.sunrise ? new Date(wx.daily.sunrise[0]) : null;
-      const sunset = wx.daily && wx.daily.sunset ? new Date(wx.daily.sunset[0]) : null;
-      const mp = moonPhase(new Date()); const ml = moonLabel(mp);
-      document.getElementById("moonRow").innerHTML =
-        '<span class="moon-emoji">' + ml.emoji + '</span><div style="font-size:10px;color:var(--ink-faint)">' + ml.name +
-        (sunrise ? '<br>Sunrise ' + sunrise.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) + ' · Sunset ' + sunset.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : '') +
-        '</div>';
-      renderHourly(wx.hourly);
-      renderForecast(wx.daily);
+      lastWx = wx; wxDaySel = 0;
+      renderWeather();
       document.getElementById("localMeta").textContent = "live";
       markOnline("local");
       markOnline("forecast");
@@ -1144,6 +1225,127 @@ body { font-size: 14px; }
     }
   }
 
+  // Everything below renders from the last response, so switching °F/°C or
+  // picking a day never refetches.
+  function renderWeather() {
+    const wx = lastWx; if (!wx) return;
+    const c = wx.current, place = currentPlace && currentPlace.name;
+    document.getElementById("wxTemp").innerHTML = T(c.temperature_2m) + "<small>" + TU() + "</small>";
+    document.getElementById("wxPlace").textContent = (place || (currentPlace.lat.toFixed(2) + ", " + currentPlace.lon.toFixed(2))) + " — " + (WMO[c.weather_code] || "Unknown");
+    document.getElementById("wxSummary").innerHTML = wxSummary(wx);
+    document.getElementById("wxNow").innerHTML = wxNowcast(wx);
+
+    // pressure trend against three hours ago (the hourly series starts there)
+    const h = wx.hourly;
+    const p0 = h && h.pressure_msl ? h.pressure_msl[0] : null, dp = p0 != null && c.pressure_msl != null ? c.pressure_msl - p0 : null;
+    const trend = dp == null ? "" : dp > 1 ? " ↑" : dp < -1 ? " ↓" : " →";
+    const pres = c.pressure_msl == null ? "—" : wxUnit === "F" ? (c.pressure_msl * 0.02953).toFixed(2) + " inHg" : Math.round(c.pressure_msl) + " hPa";
+    const vis = c.visibility == null ? "—" : wxUnit === "F" ? (c.visibility / 1609.34 >= 10 ? "10+ mi" : (c.visibility / 1609.34).toFixed(1) + " mi") : (c.visibility / 1000 >= 16 ? "16+ km" : (c.visibility / 1000).toFixed(1) + " km");
+    const uv = c.uv_index == null ? null : Math.round(c.uv_index * 10) / 10;
+    const uvBand = uv == null ? "" : uv < 3 ? "low" : uv < 6 ? "moderate" : uv < 8 ? "high" : uv < 11 ? "very high" : "extreme";
+    document.getElementById("wxSub").innerHTML =
+      '<div>Feels like<b>' + T(c.apparent_temperature) + TU() + '</b></div>' +
+      '<div>Humidity<b>' + c.relative_humidity_2m + '%</b></div>' +
+      '<div>Dew point<b>' + T(c.dew_point_2m) + TU() + '</b></div>' +
+      '<div>Wind<b><span class="wx-arrow" style="transform:rotate(' + ((c.wind_direction_10m || 0) + 180) + 'deg)">↑</span>' +
+        SPD(c.wind_speed_10m) + ' ' + SU() + ' ' + compass(c.wind_direction_10m) + '</b></div>' +
+      '<div>Gusts<b>' + SPD(c.wind_gusts_10m) + ' ' + SU() + '</b></div>' +
+      '<div>Pressure<b>' + pres + '<span class="wx-trend" title="3-hour trend">' + trend + '</span></b></div>' +
+      '<div>UV index<b>' + (uv == null ? "—" : uv + ' <i>' + uvBand + '</i>') + '</b></div>' +
+      '<div>Visibility<b>' + vis + '</b></div>' +
+      '<div>Cloud cover<b>' + (c.cloud_cover == null ? "—" : c.cloud_cover + '%') + '</b></div>';
+
+    const d = wx.daily;
+    const mp = moonPhase(new Date()); const ml = moonLabel(mp);
+    document.getElementById("moonRow").innerHTML =
+      '<span class="moon-emoji">' + ml.emoji + '</span><div style="font-size:10px;color:var(--ink-faint)">' + ml.name +
+      (d && d.sunrise ? '<br>Sunrise ' + hm(d.sunrise[0]) + ' · Sunset ' + hm(d.sunset[0]) +
+        (d.daylight_duration ? ' · ' + Math.floor(d.daylight_duration[0] / 3600) + 'h ' + Math.round(d.daylight_duration[0] % 3600 / 60) + 'm of daylight' : '') : '') +
+      '</div>';
+    document.querySelectorAll("#wxUnits button").forEach(b => b.classList.toggle("on", b.dataset.u === wxUnit));
+    renderPlaces();
+    renderChart();
+    renderHourly(wx.hourly);
+    renderForecast(wx.daily);
+    renderDay();
+  }
+
+  // One plain sentence for the next twelve hours.
+  function wxSummary(wx) {
+    const c = wx.current, h = wx.hourly, f = c.temperature_2m * 9 / 5 + 32;
+    const feel = f < 20 ? "Bitterly cold" : f < 33 ? "Freezing" : f < 48 ? "Cold" : f < 60 ? "Cool" : f < 72 ? "Mild" : f < 82 ? "Warm" : f < 92 ? "Hot" : "Very hot";
+    const sky = (WMO[c.weather_code] || "").toLowerCase();
+    const parts = [feel + (sky ? " and " + sky : "") + " now"];
+    if (h && h.time) {
+      const s = hourIndexNow(h), e = Math.min(h.time.length, s + 12);
+      let wet = -1;
+      for (let i = s; i < e; i++) if ((at(h, "precipitation_probability", i) || 0) >= 50 || (at(h, "precipitation", i) || 0) >= 0.3) { wet = i; break; }
+      if (wet === s) parts.push(precipKind(h.weather_code[wet]) + " likely through the next few hours");
+      else if (wet > 0) parts.push(precipKind(h.weather_code[wet]) + " likely from about " + hr(h.time[wet]));
+      else parts.push("dry for the next 12 hours");
+      const gust = Math.max(0, ...(h.wind_gusts_10m || []).slice(s, e).filter(v => v != null));
+      if (gust >= 48) parts.push("gusts up to " + SPD(gust) + " " + SU());
+      const uvMax = wx.daily && wx.daily.uv_index_max ? wx.daily.uv_index_max[0] : 0;
+      if (uvMax >= 8 && c.is_day) parts.push("very high UV at midday");
+      const hi = wx.daily.temperature_2m_max[0], lo = wx.daily.temperature_2m_min[0];
+      parts.push("high " + T(hi) + "°, low " + T(lo) + "°");
+    }
+    const txt = parts.join("; ");
+    return txt.charAt(0).toUpperCase() + txt.slice(1) + ".";
+  }
+
+  // Next two hours from the 15-minute series — the "grab a jacket" line.
+  function wxNowcast(wx) {
+    const m = wx.minutely_15;
+    if (!m || !m.precipitation || !m.precipitation.length) return "";
+    const p = m.precipitation, kind = (wx.current.temperature_2m <= 0.5 || precipKind(wx.current.weather_code) === "snow") ? "Snow" : "Rain";
+    const wetNow = (wx.current.precipitation || 0) > 0 || p[0] > 0.05;
+    let msg;
+    if (wetNow) {
+      const stop = p.findIndex(v => v <= 0.02);
+      msg = stop < 0 ? kind + " continuing for at least the next 2 hours" : kind + " easing in about " + (stop * 15 || 15) + " min";
+    } else {
+      const start = p.findIndex(v => v > 0.05);
+      if (start < 0) return '<span class="wx-now dry">No precipitation expected in the next 2 hours</span>';
+      msg = kind + " starting in about " + (start * 15 || 15) + " min";
+    }
+    return '<span class="wx-now wet">' + msg + '</span>';
+  }
+
+  function hourIndexNow(h) {
+    const now = Date.now();
+    const i = h.time.findIndex(t => new Date(t).getTime() > now - 3600000);
+    return i < 0 ? 0 : i;
+  }
+
+  // ── saved places ──
+  function renderPlaces() {
+    const el = document.getElementById("wxPlaces"); if (!el) return;
+    const cur = currentPlace;
+    const same = p => cur && Math.abs(p.lat - cur.lat) < 0.01 && Math.abs(p.lon - cur.lon) < 0.01;
+    const saved = wxPlaces.some(same);
+    el.innerHTML =
+      (myLoc ? '<button class="wx-chip' + (same(myLoc) ? ' on' : '') + '" data-act="me">⌖ My location</button>' : '') +
+      wxPlaces.map((p, i) => '<span class="wx-chip' + (same(p) ? ' on' : '') + '" data-i="' + i + '"><button data-act="go">' + esc(p.name.split(",")[0]) +
+        '</button><button data-act="del" title="Remove">×</button></span>').join("") +
+      (cur && !saved && !(myLoc && same(myLoc)) ? '<button class="wx-chip add" data-act="save">☆ Save ' + esc((cur.name || "this place").split(",")[0]) + '</button>' : '');
+  }
+  document.getElementById("wxPlaces").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const act = b.dataset.act, chip = b.closest("[data-i]"), i = chip ? +chip.dataset.i : -1;
+    if (act === "me" && myLoc) loadWeather(myLoc.lat, myLoc.lon, myLoc.name);
+    else if (act === "go" && i >= 0) { const p = wxPlaces[i]; loadWeather(p.lat, p.lon, p.name); }
+    else if (act === "del" && i >= 0) { wxPlaces.splice(i, 1); wxStore.set("vigil-wx-places", wxPlaces); renderPlaces(); }
+    else if (act === "save" && currentPlace) {
+      wxPlaces.push({ lat: currentPlace.lat, lon: currentPlace.lon, name: currentPlace.name || currentPlace.lat.toFixed(2) + ", " + currentPlace.lon.toFixed(2) });
+      wxPlaces = wxPlaces.slice(-8); wxStore.set("vigil-wx-places", wxPlaces); renderPlaces();
+    }
+  });
+  document.getElementById("wxUnits").addEventListener("click", e => {
+    const b = e.target.closest("button[data-u]"); if (!b || b.dataset.u === wxUnit) return;
+    wxUnit = b.dataset.u; wxStore.set("vigil-wx-unit", wxUnit); renderWeather();
+  });
+
   // Re-poll whatever place is on screen, so a searched city keeps updating
   // instead of freezing at the moment you looked it up.
   let currentPlace = null;
@@ -1156,26 +1358,62 @@ body { font-size: 14px; }
     61:"🌦",63:"🌧",65:"🌧",66:"🌧",67:"🌧",71:"🌨",73:"🌨",75:"❄",77:"🌨",80:"🌦",81:"🌧",82:"⛈",
     85:"🌨",86:"❄",95:"⛈",96:"⛈",99:"⛈"};
 
+  // Hourly chart: temperature line over rain-chance bars, with night shaded.
+  // Drawn at a fixed px-per-hour so it scrolls on a phone instead of squashing.
+  function chartSVG(h, s, n) {
+    const PX = 30, W = n * PX, H = 150, top = 22, bot = 118;
+    const temps = [], xs = [];
+    for (let i = 0; i < n; i++) { temps.push(h.temperature_2m[s + i]); xs.push(i * PX + PX / 2); }
+    const lo = Math.min(...temps), hi = Math.max(...temps), span = Math.max(1, hi - lo);
+    const y = t => bot - 12 - ((t - lo) / span) * (bot - top - 24);
+    let night = "", bars = "", labels = "", ticks = "";
+    for (let i = 0; i < n; i++) {
+      const k = s + i, x = i * PX;
+      if (h.is_day && h.is_day[k] === 0) night += '<rect x="' + x + '" y="0" width="' + PX + '" height="' + bot + '" class="wc-night"/>';
+      const pop = at(h, "precipitation_probability", k) || 0;
+      if (pop > 0) bars += '<rect x="' + (x + 7) + '" y="' + (bot - pop * 0.5) + '" width="' + (PX - 14) + '" height="' + (pop * 0.5) + '" class="wc-pop" style="opacity:' + (0.25 + pop / 140).toFixed(2) + '"/>';
+      if (i > 0 && h.is_day && h.is_day[k] !== h.is_day[k - 1])
+        ticks += '<text x="' + x + '" y="' + (top - 6) + '" class="wc-sun">' + (h.is_day[k] ? "☀ " : "☾ ") + hr(h.time[k]) + '</text>';
+      if (i % 3 === 0) {
+        labels += '<text x="' + xs[i] + '" y="' + (y(temps[i]) - 8) + '" class="wc-deg">' + T(temps[i]) + '°</text>' +
+          '<text x="' + xs[i] + '" y="' + (bot + 14) + '" class="wc-hr">' + (i === 0 && s === hourIndexNow(h) ? "now" : hr(h.time[k])) + '</text>' +
+          '<text x="' + xs[i] + '" y="' + (bot + 27) + '" class="wc-ico">' + (WMO_ICON[h.weather_code[k]] || "") + '</text>';
+        if (pop >= 20) labels += '<text x="' + xs[i] + '" y="' + (bot - pop * 0.5 - 3) + '" class="wc-pct">' + pop + '%</text>';
+      }
+      if (new Date(h.time[k]).getHours() === 0 && i > 0)
+        labels += '<line x1="' + x + '" x2="' + x + '" y1="0" y2="' + (bot + 30) + '" class="wc-mid"/><text x="' + (x + 4) + '" y="10" class="wc-day">' +
+          new Date(h.time[k]).toLocaleDateString([], { weekday: "short" }).toUpperCase() + '</text>';
+    }
+    const line = xs.map((x, i) => (i ? "L" : "M") + x.toFixed(1) + "," + y(temps[i]).toFixed(1)).join("");
+    const area = line + "L" + xs[n - 1] + "," + bot + "L" + xs[0] + "," + bot + "Z";
+    return '<svg class="wx-chart" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
+      '<defs><linearGradient id="wcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8cd9a" stop-opacity=".35"/><stop offset="1" stop-color="#e8cd9a" stop-opacity="0"/></linearGradient></defs>' +
+      night + bars + '<path d="' + area + '" fill="url(#wcg)"/><path d="' + line + '" class="wc-line"/>' +
+      xs.map((x, i) => i % 3 === 0 ? '<circle cx="' + x + '" cy="' + y(temps[i]).toFixed(1) + '" r="2.4" class="wc-dot"/>' : '').join("") +
+      ticks + labels + '</svg>';
+  }
+  function renderChart() {
+    const el = document.getElementById("wxChart"), h = lastWx && lastWx.hourly;
+    if (!el || !h || !h.time) return;
+    const s = hourIndexNow(h), n = Math.min(48, h.time.length - s);
+    el.innerHTML = chartSVG(h, s, n);
+  }
+
   function renderHourly(h) {
     const el = document.getElementById("wxHourly");
     if (!el || !h || !h.time) { if (el) el.innerHTML = ""; return; }
-    // The series starts at midnight local, so skip to the current hour.
-    const now = Date.now();
-    let start = h.time.findIndex(t => new Date(t).getTime() >= now - 3600000);
-    if (start < 0) start = 0;
+    // The series starts before now (pressure history), so skip to the current hour.
+    const start = hourIndexNow(h);
     const slice = h.time.slice(start, start + 24);
-    const temps = slice.map((_, i) => h.temperature_2m[start + i]);
-    const lo = Math.min(...temps), hi = Math.max(...temps), span = Math.max(1, hi - lo);
     el.innerHTML = slice.map((t, i) => {
       const idx = start + i;
-      const temp = h.temperature_2m[idx];
       const pop = h.precipitation_probability ? h.precipitation_probability[idx] : null;
-      const d = new Date(t);
       return '<div class="hr-cell">' +
-        '<div class="hr-t">' + d.toLocaleTimeString([], { hour: "numeric" }).replace(" ", "") + '</div>' +
+        '<div class="hr-t">' + (i === 0 ? "NOW" : hr(t)) + '</div>' +
         '<div class="hr-ico">' + (WMO_ICON[h.weather_code[idx]] || "·") + '</div>' +
-        '<div class="hr-bar"><span style="height:' + Math.round(((temp - lo) / span) * 100) + '%"></span></div>' +
-        '<div class="hr-deg">' + cToF(temp) + '°</div>' +
+        '<div class="hr-deg">' + T(h.temperature_2m[idx]) + '°</div>' +
+        (h.apparent_temperature ? '<div class="hr-feel">feels ' + T(h.apparent_temperature[idx]) + '°</div>' : '') +
+        (h.wind_speed_10m ? '<div class="hr-wind">' + SPD(h.wind_speed_10m[idx]) + '<small>' + SU() + '</small></div>' : '') +
         (pop != null && pop >= 20 ? '<div class="hr-pop">' + pop + '%</div>' : '<div class="hr-pop"></div>') +
         '</div>';
     }).join("");
@@ -1192,19 +1430,92 @@ body { font-size: 14px; }
       const pop = d.precipitation_probability_max ? d.precipitation_probability_max[i] : null;
       // bar spans this day's low→high within the whole range, so the run reads at a glance
       const top = ((gMax - hi) / gSpan) * 100, bot = ((lo - gMin) / gSpan) * 100;
-      return '<div class="fc-cell' + (i === 0 ? ' today' : '') + '">' +
+      const sp = modelSpread(i);
+      return '<button type="button" class="fc-cell' + (i === 0 ? ' today' : '') + (i === wxDaySel ? ' sel' : '') + '" data-day="' + i + '">' +
         '<div class="fc-day">' + (i === 0 ? "TODAY" : date.toLocaleDateString([], { weekday: "short" }).toUpperCase()) + '</div>' +
         '<div class="fc-date">' + date.toLocaleDateString([], { month: "numeric", day: "numeric" }) + '</div>' +
         '<div class="fc-ico">' + (WMO_ICON[d.weather_code[i]] || "·") + '</div>' +
-        '<div class="fc-hi">' + cToF(hi) + '°</div>' +
+        '<div class="fc-hi">' + T(hi) + '°</div>' +
         '<div class="fc-track"><span style="top:' + top.toFixed(1) + '%;bottom:' + bot.toFixed(1) + '%"></span></div>' +
-        '<div class="fc-lo">' + cToF(lo) + '°</div>' +
+        '<div class="fc-lo">' + T(lo) + '°</div>' +
         '<div class="fc-pop">' + (pop != null && pop > 0 ? pop + '%' : '·') + '</div>' +
-        '</div>';
+        (sp == null ? '' : '<div class="fc-conf ' + (sp.cls) + '" title="Spread between forecast models">±' + Math.round(DT(sp.v) / 2) + '°</div>') +
+        '</button>';
     }).join("");
-    const days = d.time.length;
     const fmeta = document.getElementById("wxFcMeta");
-    if (fmeta) fmeta.textContent = days + "-day outlook · " + cToF(gMin) + "° to " + cToF(gMax) + "°F";
+    if (fmeta) fmeta.textContent = d.time.length + "-day outlook · " + T(gMin) + "° to " + T(gMax) + TU() + " · tap a day";
+  }
+  document.getElementById("wxForecast").addEventListener("click", e => {
+    const b = e.target.closest(".fc-cell"); if (!b) return;
+    wxDaySel = +b.dataset.day;
+    document.querySelectorAll("#wxForecast .fc-cell").forEach(c => c.classList.toggle("sel", c === b));
+    renderDay();
+  });
+
+  // Tap-a-day detail: the numbers behind the cell, plus its hours when they're in range.
+  function renderDay() {
+    const el = document.getElementById("wxDay"), wx = lastWx;
+    if (!el || !wx || !wx.daily) return;
+    const d = wx.daily, i = wxDaySel, date = new Date(d.time[i] + "T12:00:00");
+    const dl = d.daylight_duration ? Math.floor(d.daylight_duration[i] / 3600) + "h " + Math.round(d.daylight_duration[i] % 3600 / 60) + "m" : "—";
+    const stat = (k, v) => '<div>' + k + '<b>' + v + '</b></div>';
+    const h = wx.hourly;
+    let hours = "";
+    if (h && h.time) {
+      const s = h.time.findIndex(t => t.slice(0, 10) === d.time[i]);
+      if (s >= 0) {
+        const from = i === 0 ? Math.max(s, hourIndexNow(h)) : s;
+        let e = from; while (e < h.time.length && h.time[e].slice(0, 10) === d.time[i]) e++;
+        if (e - from >= 3) hours = '<div class="wx-chart-wrap">' + chartSVG(h, from, e - from) + '</div>';
+      }
+      if (!hours) hours = '<p class="wx-day-note">Hour-by-hour detail covers the next 7 days; this far out, the daily numbers above are what the models give.</p>';
+    }
+    const models = lastModels && i < 7 ? modelRows(i) : "";
+    el.innerHTML =
+      '<div class="wx-day-head"><span>' + (i === 0 ? "Today" : date.toLocaleDateString([], { weekday: "long" })) + ' · ' +
+        date.toLocaleDateString([], { month: "long", day: "numeric" }) + '</span><span>' + (WMO_ICON[d.weather_code[i]] || "") + ' ' + (WMO[d.weather_code[i]] || "") + '</span></div>' +
+      '<div class="subrow wx-day-grid">' +
+        stat("High / low", T(d.temperature_2m_max[i]) + "° / " + T(d.temperature_2m_min[i]) + "°") +
+        (d.apparent_temperature_max ? stat("Feels like", T(d.apparent_temperature_max[i]) + "° / " + T(d.apparent_temperature_min[i]) + "°") : "") +
+        stat("Rain chance", (at(d, "precipitation_probability_max", i) ?? "—") + "%") +
+        (d.precipitation_sum ? stat("Precipitation", wxUnit === "F" ? (d.precipitation_sum[i] / 25.4).toFixed(2) + " in" : d.precipitation_sum[i].toFixed(1) + " mm") : "") +
+        (d.precipitation_hours ? stat("Wet hours", d.precipitation_hours[i] ?? "—") : "") +
+        stat("Wind / gusts", SPD(at(d, "wind_speed_10m_max", i)) + " / " + SPD(at(d, "wind_gusts_10m_max", i)) + " " + SU() + " " + compass(at(d, "wind_direction_10m_dominant", i))) +
+        (d.uv_index_max ? stat("UV max", d.uv_index_max[i] == null ? "—" : Math.round(d.uv_index_max[i] * 10) / 10) : "") +
+        (d.sunrise ? stat("Sun", hm(d.sunrise[i]) + " – " + hm(d.sunset[i])) : "") +
+        (d.daylight_duration ? stat("Daylight", dl) : "") +
+      '</div>' + models + hours;
+  }
+
+  // ── model spread: three independent models; wide disagreement = low confidence ──
+  const WX_MODELS = [["gfs_seamless", "GFS (US)"], ["ecmwf_ifs025", "ECMWF (EU)"], ["icon_seamless", "ICON (DE)"]];
+  async function loadModelSpread(lat, lon) {
+    lastModels = null;
+    try {
+      lastModels = await fetchJSON("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+        "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&models=" + WX_MODELS.map(m => m[0]).join(",") +
+        "&forecast_days=7&timezone=auto", null, "wxmodels", undefined, 2);
+      if (lastWx) { renderForecast(lastWx.daily); renderDay(); }
+    } catch (e) { /* optional layer — the forecast stands without it */ }
+  }
+  function modelSpread(i) {
+    const m = lastModels && lastModels.daily; if (!m || i >= 7) return null;
+    const v = WX_MODELS.map(([k]) => m["temperature_2m_max_" + k] && m["temperature_2m_max_" + k][i]).filter(x => x != null);
+    if (v.length < 2) return null;
+    const s = Math.max(...v) - Math.min(...v);
+    return { v: s, cls: s < 2 ? "hi" : s < 4.5 ? "mid" : "lo" };
+  }
+  function modelRows(i) {
+    const m = lastModels.daily, sp = modelSpread(i);
+    const rows = WX_MODELS.map(([k, name]) => {
+      const hi = m["temperature_2m_max_" + k], lo = m["temperature_2m_min_" + k], pr = m["precipitation_sum_" + k];
+      if (!hi || hi[i] == null) return "";
+      return '<div>' + name + '<b>' + T(hi[i]) + '° / ' + T(lo[i]) + '°' +
+        (pr && pr[i] != null ? ' · ' + (wxUnit === "F" ? (pr[i] / 25.4).toFixed(2) + ' in' : pr[i].toFixed(1) + ' mm') : '') + '</b></div>';
+    }).join("");
+    if (!rows) return "";
+    const verdict = !sp ? "" : sp.cls === "hi" ? "Models agree — high confidence" : sp.cls === "mid" ? "Some disagreement between models" : "Models disagree — treat this day loosely";
+    return '<div class="wx-models"><div class="fc-label">Forecast models · ' + verdict + '</div><div class="subrow">' + rows + '</div></div>';
   }
   async function reverseGeocode(lat, lon) {
     try {
@@ -1267,7 +1578,7 @@ body { font-size: 14px; }
   function initWeather() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
+        (pos) => { myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude, name: null }; loadWeather(myLoc.lat, myLoc.lon); },
         () => { feedState.revgeo.status = "skip"; renderDiagnostics(); loadWeather(40.7128, -74.006, "New York, NY (default)"); },
         { timeout: 8000 }
       );
