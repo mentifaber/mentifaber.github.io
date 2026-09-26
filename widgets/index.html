@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#000000"/>
+<meta name="description" content="Home-screen widgets for Android (KWGT): weather, space weather, earthquakes, the ISS, launches and markets — the Vigil board, one glance at a time."/>
+<meta property="og:title" content="Mentifaber Widgets"/>
+<meta property="og:image" content="https://mentifaber.com/widgets/vigil-mini.jpg"/>
+<meta property="og:url" content="https://mentifaber.com/widgets/"/>
+<title>Widgets · Mentifaber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Newsreader:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#f2e6cf;--soft:#c4b09a;--faint:#7a6e62;--gold:#c8a96e;--line:rgba(242,230,207,.12)}
+html,body{background:#000;color:var(--ink);font-family:'Newsreader',Georgia,serif;min-height:100%}
+body{background:radial-gradient(120% 50% at 50% -10%,rgba(200,169,110,.14),transparent 60%),#000}
+.corner{position:fixed;top:3vh;left:4vw;z-index:5;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8a7050;text-decoration:none;padding:8px 0}
+.wrap{max-width:1080px;margin:0 auto;padding:14vh 16px 8vh}
+.label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8a7050}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(2.6rem,8vw,4.6rem);line-height:.95;margin:.7rem 0 1rem}
+h1 em{font-style:normal;color:var(--gold)}
+.lede{font-size:1.15rem;line-height:1.55;color:var(--soft);max-width:56ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-top:3rem}
+.w{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#0c0a06;display:flex;flex-direction:column}
+.w img{display:block;width:100%;height:auto;background:#2b3a4a}
+.w .b{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.w h3{font-family:'Bricolage Grotesque',sans-serif;font-size:1.3rem;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.w h3 span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.1em}
+.w p{color:var(--soft);line-height:1.5;font-size:1rem;flex:1}
+.dl{align-self:flex-start;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;color:#0b0906;background:var(--gold);padding:12px 16px;border-radius:10px;min-height:44px;display:inline-flex;align-items:center}
+.dl:hover{background:#d9bd86}
+.how{margin-top:4rem;border-top:1px solid var(--line);padding-top:2rem;max-width:760px}
+.how h2{font-family:'Bricolage Grotesque',sans-serif;font-size:1.6rem;margin-bottom:1rem}
+.how ol{padding-left:1.3rem;display:grid;gap:.7rem;color:var(--soft);line-height:1.5;font-size:1.05rem}
+.how b{color:var(--ink)}
+.how code{font-family:'IBM Plex Mono',monospace;font-size:.85em;color:var(--gold)}
+.note{margin-top:1.4rem;color:var(--faint);font-style:italic;line-height:1.5}
+footer{text-align:center;padding:6vh 16px 10vh;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase}
+footer a{color:#8a7050;text-decoration:none;margin:0 10px}
+</style>
+</head>
+<body>
+<a class="corner" href="../index.html">← Atlas</a>
+<main class="wrap">
+  <p class="label">android · kwgt · free</p>
+  <h1>Mentifaber <em>Widgets</em></h1>
+  <p class="lede">Vigil, one glance at a time. Each widget pulls the same public feeds the full board uses — Open-Meteo, NOAA SWPC, USGS, The Space Devs, CoinGecko — straight to your home screen. No account, no tracking; your location never leaves the phone except to ask for the forecast.</p>
+  <div class="grid">
+    <article class="w"><img src="weather-wide.jpg" alt="Weather · Wide widget preview" loading="lazy"/><div class="b"><h3>Weather · Wide<span>4×1</span></h3><p>Temperature, conditions, high/low, rain chance, feels-like and wind for where you are. One row — fits a 4×1 slot.</p><a class="dl" href="../wx/mentifaber-weather-wide.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="weather.jpg" alt="Weather · Tall widget preview" loading="lazy"/><div class="b"><h3>Weather · Tall<span>4×2</span></h3><p>The same weather, stacked, for a 4×2 slot.</p><a class="dl" href="../wx/mentifaber-weather.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="vigil-mini.jpg" alt="Vigil Mini widget preview" loading="lazy"/><div class="b"><h3>Vigil Mini<span>4×2</span></h3><p>The board in one card: local weather, space weather, the latest quake and the next launch.</p><a class="dl" href="vigil-mini.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="space-weather.jpg" alt="Space Weather widget preview" loading="lazy"/><div class="b"><h3>Space Weather<span>4×1</span></h3><p>Kp index coloured by severity, storm level, solar wind speed and Bz, and an aurora outlook.</p><a class="dl" href="vigil-space-weather.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="quakes.jpg" alt="Earthquakes widget preview" loading="lazy"/><div class="b"><h3>Earthquakes<span>4×1</span></h3><p>The latest M4.5+ earthquake anywhere and how many there have been in the last 24 hours.</p><a class="dl" href="vigil-quakes.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="iss.jpg" alt="ISS widget preview" loading="lazy"/><div class="b"><h3>ISS<span>4×1</span></h3><p>Where the space station is right now — position, altitude, speed, and whether it's in sunlight.</p><a class="dl" href="vigil-iss.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="next-launch.jpg" alt="Next Launch widget preview" loading="lazy"/><div class="b"><h3>Next Launch<span>4×1</span></h3><p>The next orbital launch worldwide: status, mission, local time and pad.</p><a class="dl" href="vigil-next-launch.kwgt" download>Download .kwgt</a></div></article>
+    <article class="w"><img src="markets.jpg" alt="Markets widget preview" loading="lazy"/><div class="b"><h3>Markets<span>4×1</span></h3><p>Bitcoin and Ethereum in USD with 24-hour change, green up and red down.</p><a class="dl" href="vigil-markets.kwgt" download>Download .kwgt</a></div></article>
+  </div>
+  <section class="how">
+    <h2>Install</h2>
+    <ol>
+      <li>Install <b>KWGT</b> from the Play Store.</li>
+      <li>Download a widget above. Open the file and choose <b>KWGT</b> — or move it into the <code>Kustom/widgets</code> folder.</li>
+      <li>Long-press the home screen → <b>Widgets</b> → add a <b>KWGT</b> widget at the size shown on the card.</li>
+      <li>Tap the empty widget and pick the preset from the <b>Exported</b> tab. Allow location if asked, then tap save.</li>
+      <li>Optional: select <b>Root → Touch → + → Open link</b> and enter <code>https://mentifaber.com/vigil.html</code> (or <code>/wx/</code> for weather) so a tap opens the full view.</li>
+      <li>In KWGT settings set the update interval to 15–30 minutes, and set KWGT's battery use to <b>Unrestricted</b> so it keeps refreshing.</li>
+    </ol>
+    <p class="note">If a card is cut off or leaves a gap, resize the widget one cell, or open the editor and adjust the Card's width. Launch data is rate-limited by its provider, so that widget refreshes at most a few times an hour.</p>
+  </section>
+</main>
+<footer><a href="../vigil.html">Vigil</a><a href="../wx/">Quick weather</a><a href="../contact.html">Contact</a></footer>
+</body>
+</html>
