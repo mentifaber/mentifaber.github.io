@@ -144,140 +144,72 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   </div>
 </section>
 
-<div id="live-content">
-  <div class="portal-bar">
-    <div class="portal-brand"><span class="sw"></span>Weaver<span class="portal-endpoint" id="tm-endpoint"></span></div>
-    <div class="portal-actions">
-      <span class="portal-session" id="tm-session">00:00:00</span>
-      <button class="portal-btn" id="wv-fullscreen">⤢ <span class="btn-label">Fullscreen</span></button>
-      <a class="portal-btn" href="weaver.html">Showcase</a>
-      <button class="portal-btn" id="wv-lock">Seal</button>
-    </div>
-  </div>
-  <div class="portal-stage" id="portal-stage">
-    <iframe class="portal-frame" id="wv-portal" title="Weaver — live" loading="lazy" allowfullscreen></iframe>
-    <p class="portal-fallback">Nothing loading? Tunnel may be offline — <a id="wv-portal-link" href="#" target="_blank" rel="noopener">open directly ↗</a></p>
-  </div>
-</div>
-
+<script type="application/octet-stream" id="mf-blob">
+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
+</script>
+<script src="assets/seal.js"></script>
 <script>
-(function () {
-  "use strict";
-  const AUTH_KEY = "weaver-live-auth";
-  const USERNAME = "Weaver";
-  const PASSWORD = "IsAlive!";
-
-  // Cloudflare quick-tunnel URL to wherever Weaver is actually running. Quick tunnels are
-  // ephemeral — this rotates to a brand-new random URL every time cloudflared restarts, so
-  // this constant needs updating (or swapping for a named tunnel) whenever that happens.
-  const WEAVER_ENDPOINT = "https://prior-extras-lodging-making.trycloudflare.com/";
-
-  const lockSection = document.getElementById("lock-section");
-  const content = document.getElementById("live-content");
-  const userInput = document.getElementById("wv-user");
-  const passInput = document.getElementById("wv-pass");
-  const submitBtn = document.getElementById("wv-submit");
-  const errorEl = document.getElementById("wv-error");
-  const lockCard = document.querySelector(".lock-card");
-  const lockBtn = document.getElementById("wv-lock");
-  const sessionEl = document.getElementById("tm-session");
-  const portalFrame = document.getElementById("wv-portal");
-  const portalLink = document.getElementById("wv-portal-link");
-  const endpointEl = document.getElementById("tm-endpoint");
-  const fullscreenBtn = document.getElementById("wv-fullscreen");
-
-  let sessionStart = null, sessionTimer = null;
-
-  function pad(n) { return String(n).padStart(2, "0"); }
-
-  function startSessionClock() {
-    sessionStart = Date.now();
-    clearInterval(sessionTimer);
-    sessionTimer = setInterval(() => {
-      const s = Math.floor((Date.now() - sessionStart) / 1000);
-      sessionEl.textContent = pad(Math.floor(s / 3600)) + ":" + pad(Math.floor(s / 60) % 60) + ":" + pad(s % 60);
-    }, 1000);
-  }
-
-  function connectPortal() {
-    portalLink.href = WEAVER_ENDPOINT;
-    try { endpointEl.textContent = " · " + new URL(WEAVER_ENDPOINT).host; } catch (e) { endpointEl.textContent = " · " + WEAVER_ENDPOINT; }
-    if (!portalFrame.getAttribute("src")) portalFrame.setAttribute("src", WEAVER_ENDPOINT);
-  }
-
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  function updateFullscreenLabel() {
-    fullscreenBtn.innerHTML = isFullscreen()
-      ? '⤡ <span class="btn-label">Exit fullscreen</span>'
-      : '⤢ <span class="btn-label">Fullscreen</span>';
-  }
-
-  function toggleFullscreen() {
-    // Fullscreen the whole app shell (bar + stage), not just the iframe's container —
-    // the Fullscreen API only shows the fullscreened element and its descendants, so
-    // fullscreening just the stage would strand the toolbar (and its own exit button)
-    // outside the screen with no way back short of pressing Escape.
-    if (!isFullscreen()) {
-      const req = content.requestFullscreen || content.webkitRequestFullscreen;
-      if (req) req.call(content);
-    } else {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) exit.call(document);
-    }
-  }
-
-  function unlock() {
-    lockSection.style.display = "none";
-    content.classList.add("show");
-    startSessionClock();
-    connectPortal();
-  }
-
-  function lock() {
-    try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
-    if (isFullscreen()) toggleFullscreen();
-    clearInterval(sessionTimer);
-    content.classList.remove("show");
-    lockSection.style.display = "";
-    userInput.value = ""; passInput.value = ""; errorEl.textContent = "";
-    portalFrame.removeAttribute("src");
-  }
-
-  function attempt() {
-    if (userInput.value.trim() === USERNAME && passInput.value === PASSWORD) {
-      try { localStorage.setItem(AUTH_KEY, "granted"); } catch (e) {}
-      errorEl.textContent = "";
-      unlock();
-    } else {
-      errorEl.textContent = "That's not quite right — try again.";
-      lockCard.classList.remove("lock-shake");
-      void lockCard.offsetWidth;
-      lockCard.classList.add("lock-shake");
-    }
-  }
-
-  submitBtn.addEventListener("click", attempt);
-  passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") attempt(); });
-  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") passInput.focus(); });
-  lockBtn.addEventListener("click", lock);
-
-  if (content.requestFullscreen || content.webkitRequestFullscreen) {
-    fullscreenBtn.addEventListener("click", toggleFullscreen);
-    document.addEventListener("fullscreenchange", updateFullscreenLabel);
-    document.addEventListener("webkitfullscreenchange", updateFullscreenLabel);
-  } else {
-    fullscreenBtn.disabled = true;
-    fullscreenBtn.style.opacity = ".4";
-    fullscreenBtn.style.cursor = "default";
-  }
-
-  try {
-    if (localStorage.getItem(AUTH_KEY) === "granted") unlock();
-  } catch (e) {}
-})();
+MFSeal({
+  storeKey: "weaver-key",
+  user: document.getElementById("wv-user"), pass: document.getElementById("wv-pass"),
+  btn: document.getElementById("wv-submit"), err: document.getElementById("wv-error"),
+  card: document.querySelector(".lock-card"), shake: "lock-shake",
+  busyText: "Checking…", denyText: "That's not quite right — try again."
+});
+try { localStorage.removeItem("weaver-live-auth"); } catch (e) {}
 </script>
 <script src="assets/mf.js" defer></script>
 </body>
