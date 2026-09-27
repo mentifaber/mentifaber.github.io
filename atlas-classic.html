@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Mentifaber — builder of minds and the systems that hold them. Autonomous agents, live orbital and world trackers, local-first tools and music, charted as one atlas."/>
+<meta property="og:title" content="Mentifaber"/>
+<meta property="og:description" content="Builder of minds and the systems that hold them — an atlas of agents, trackers, tools and music."/>
+<meta name="theme-color" content="#000000"/>
+<title>Mentifaber</title>
+<meta property="og:image" content="https://mentifaber.com/assets/previews/home.png"/>
+<meta property="og:url" content="https://mentifaber.com/"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #000000;
+  --paper-hi: #120f0a;
+  --paper-shadow: rgba(200,169,110,.18);
+  --ink: #f2e6cf;
+  --ink-soft: #c4b09a;
+  --ink-faint: #7a6e62;
+  --indigo: #c8a96e;
+  --indigo-dim: #8a7050;
+  --rust: #b02a1a;
+  --rust-hi: #d94030;
+  --contour: rgba(242,230,207,.14);
+  --contour-soft: rgba(242,230,207,.07);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
+
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
+.contours, .contours svg { overflow: hidden; }
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Descent — scroll-driven arrival sequence ──
+   #descent-wrap is 500vh tall (five phases, ~100vh of scroll each); #descent-pin sticks
+   for that whole span, so the canvas never leaves the viewport mid-sequence and un-sticks
+   cleanly once the atlas grid arrives. */
+#descent-wrap { position: relative; z-index: 2; height: 500vh; }
+#descent-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+#descent-pin canvas { display: block; width: 100%; height: 100%; }
+#glfail { position: absolute; inset: 0; z-index: 1; display: none; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rust-hi); text-align: center; padding: 2rem; background: rgba(0,0,0,.4); }
+#fogveil { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 60%, transparent 0%, rgba(12,9,6,.4) 55%, rgba(0,0,0,.92) 100%); }
+#dprogress { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(to right, var(--rust-hi), var(--indigo));
+  z-index: 6; width: 0%; opacity: 0; transition: opacity .4s ease; }
+#dprogress.on { opacity: 1; }
+
+#dskip { position: fixed; top: 1.6rem; right: 1.6rem; z-index: 7;
+  font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-soft); background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
+  border: 1px solid var(--contour); padding: .6rem 1rem; text-decoration: none;
+  opacity: 0; pointer-events: none; transition: opacity .5s ease, border-color .25s, color .25s; }
+#dskip.show { opacity: 1; pointer-events: auto; }
+#dskip:hover { color: var(--rust-hi); border-color: var(--rust-hi); }
+#dskip::after { content: ' ↓'; }
+@media (max-width: 600px) { #dskip { top: auto; bottom: 1.4rem; right: 1.4rem; font-size: .6rem; padding: .55rem .85rem; } }
+
+.dsection { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 6vh 6vw;
+  pointer-events: none; opacity: 0; transition: opacity .18s ease-out; }
+.dsection.active { transition-duration: .35s; }
+.dsection.active { pointer-events: auto; opacity: 1; }
+
+/* fallback: no WebGL/GSAP — stack the three phases in normal document flow instead of
+   overlapping absolutely-positioned layers, so nothing reads as garbled text on top of text */
+#descent-wrap.static-fallback { height: auto; }
+#descent-wrap.static-fallback #descent-pin { position: relative; height: auto; overflow: visible; }
+#descent-wrap.static-fallback #fogveil, #descent-wrap.static-fallback canvas { display: none; }
+#descent-wrap.static-fallback .dsection { position: relative; inset: auto; min-height: 70vh; opacity: 1; pointer-events: auto; }
+
+.d-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; letter-spacing: .42em; text-transform: uppercase;
+  color: var(--indigo-dim); opacity: 0; transform: translateY(14px); transition: opacity .8s ease, transform .8s ease; }
+.d-eyebrow.in { opacity: 1; transform: translateY(0); }
+.d-hero-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(3.2rem,11vw,8.5rem);
+  letter-spacing: -.02em; line-height: .9; margin-top: 1.4rem; color: var(--ink);
+  text-shadow: 0 0 60px rgba(200,169,110,.18);
+  opacity: 0; transform: translateY(20px); transition: opacity 1s ease .1s, transform 1s ease .1s; }
+.d-hero-name.in { opacity: 1; transform: translateY(0); }
+.d-hero-name i { font-style: italic; color: var(--indigo); text-shadow: 0 0 46px rgba(200,169,110,.55); }
+.d-hero-sub { margin-top: 1.6rem; font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft);
+  font-size: clamp(1rem,1.8vw,1.25rem); max-width: 44ch; opacity: 0; transition: opacity 1s ease .3s; }
+.d-hero-sub.in { opacity: 1; }
+.d-scrollcue { margin-top: 4rem; font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em;
+  color: var(--ink-faint); text-transform: uppercase; opacity: 0; }
+.d-scrollcue.in { opacity: 1; animation: dbob 2.4s ease-in-out infinite; }
+@keyframes dbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+
+.d-telemetry { font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-faint); letter-spacing: .08em;
+  text-transform: uppercase; line-height: 2.1; text-align: left; border-left: 1px solid var(--contour); padding-left: 1.4rem; }
+.d-telemetry b { color: var(--indigo); font-weight: 400; }
+.d-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-style: italic; font-size: clamp(1.8rem,4vw,3rem);
+  color: var(--ink); margin-bottom: 2rem; }
+.d-link { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(200,169,110,.45); transition: color .25s, border-color .25s, text-shadow .25s; }
+.d-link:hover { color: var(--indigo); border-color: var(--indigo); text-shadow: 0 0 14px rgba(200,169,110,.5); }
+.d-row { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; max-width: 900px; margin: 0 auto; }
+.d-copy { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); max-width: 40ch; }
+@media (max-width: 760px) { .d-row { grid-template-columns: 1fr; text-align: left; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .d-eyebrow, .d-hero-name, .d-hero-sub, .d-scrollcue { opacity: 1 !important; transform: none !important; animation: none !important; }
+}
+
+.atlas { position: relative; z-index: 2; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.atlas::before, .atlas::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; filter: blur(80px); }
+.atlas::before { top: -6rem; left: 8%; width: 420px; height: 420px; background: radial-gradient(circle, rgba(200,169,110,.14), transparent 70%); }
+.atlas::after { top: 30vh; right: 4%; width: 460px; height: 460px; background: radial-gradient(circle, rgba(176,42,26,.12), transparent 70%); }
+
+.legend {
+  border-right: 1px solid var(--contour); padding: 3.2rem 2rem; position: sticky; top: 0;
+  align-self: start; height: 100vh; display: flex; flex-direction: column;
+}
+.legend-mark { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 2.6rem; }
+.legend h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); text-shadow: 0 0 34px rgba(200,169,110,.22); }
+.legend h1 i { font-style: italic; font-weight: 300; color: var(--rust); text-shadow: 0 0 30px rgba(217,64,48,.5); }
+.legend .sub { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); font-size: 1.02rem; margin-top: 1.1rem; line-height: 1.5; }
+.legend-key { margin-top: 3rem; font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-soft); border-top: 1px solid var(--contour); padding-top: 1.6rem; }
+.legend-key .row { display: flex; align-items: center; gap: .7rem; padding: .45rem 0; text-transform: uppercase; letter-spacing: .04em; }
+.legend-key .sw { width: 14px; height: 4px; border-radius: 2px; flex-shrink: 0; box-shadow: 0 0 8px 1px var(--glow-color, transparent); }
+.sw.live { background: var(--indigo); --glow-color: rgba(200,169,110,.85); }
+.sw.build { background: var(--rust-hi); --glow-color: rgba(217,64,48,.85); }
+.sw.stalled { background: var(--ink-faint); --glow-color: rgba(122,110,98,.5); }
+.sw.music { background: #9d86d6; --glow-color: rgba(157,134,214,.8); }
+.sw.concept { background: var(--rust-hi); opacity: .55; --glow-color: rgba(217,64,48,.5); }
+.sw.private { background: #f279ae; --glow-color: rgba(242,121,174,.85); }
+.legend-foot { margin-top: auto; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; line-height: 1.8; }
+.legend-links { display: flex; gap: 1.1rem; margin-top: 1rem; flex-wrap: wrap; }
+.legend-links a { color: var(--ink-soft); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--contour); padding-bottom: 2px; transition: .25s; }
+.legend-links a:hover { color: var(--rust); border-color: var(--rust); }
+.legend-links a[href^="mailto"] { text-transform: none; letter-spacing: .02em; }
+
+.field { padding: 3.4rem clamp(1.6rem, 3.5vw, 3.4rem) 6rem; }
+.field-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .6rem; padding-bottom: 1.4rem; margin-bottom: 2.6rem; border-bottom: 1px solid var(--contour); }
+.field-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 1.5rem; }
+.field-head span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; }
+
+.plate-contact { grid-column: 1 / -1; position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.4rem 2.4rem;
+  padding: 2.4rem clamp(1.6rem, 4vw, 3.2rem); text-decoration: none; color: inherit; isolation: isolate;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(200,169,110,.16), transparent 55%), radial-gradient(90% 120% at 100% 100%, rgba(217,64,48,.14), transparent 60%), var(--paper-hi);
+  opacity: 0; transform: translateY(24px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
+.plate-contact.shown { opacity: 1; transform: none; }
+@property --pc-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.plate-contact::before { content: ''; position: absolute; inset: 0; z-index: -1; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--pc-a), #c8a96e, #fff2cf, #d94030, #8a6dff, #45d0c8, #c8a96e);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.plate-contact::after { content: ''; position: absolute; inset: -12px; z-index: -2; pointer-events: none; filter: blur(34px); opacity: .55;
+  background: conic-gradient(from var(--pc-a), rgba(200,169,110,.5), rgba(217,64,48,.4), rgba(138,109,255,.35), rgba(69,208,200,.35), rgba(200,169,110,.5)); }
+@media (prefers-reduced-motion: no-preference) { .plate-contact::before, .plate-contact::after { animation: pc-spin 9s linear infinite; } }
+@keyframes pc-spin { to { --pc-a: 360deg; } }
+.plate-contact:hover { box-shadow: 0 24px 60px -24px rgba(200,169,110,.6); }
+.plate-contact:hover::after { opacity: .85; }
+.pc-glyph { width: clamp(64px, 9vw, 96px); height: clamp(64px, 9vw, 96px); filter: drop-shadow(0 0 14px rgba(200,169,110,.6)); }
+.pc-glyph svg { width: 100%; height: 100%; fill: none; stroke: var(--indigo); stroke-width: 1.2; }
+.pc-kicker { font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .24em; text-transform: uppercase; color: var(--indigo-dim); }
+.pc-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; margin: .5rem 0 .7rem; letter-spacing: -.02em; }
+.pc-line { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); max-width: 52ch; line-height: 1.5; }
+.pc-mail { display: inline-block; margin-top: .9rem; font-family: 'IBM Plex Mono', monospace; font-size: .85rem; color: var(--ink); letter-spacing: .02em; }
+.pc-go { font-family: 'IBM Plex Mono', monospace; font-size: .74rem; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap;
+  color: #0b0906; background: linear-gradient(100deg, #c8a96e, #fff2cf 50%, #c8a96e); background-size: 200% 100%; padding: 1.05rem 1.5rem;
+  box-shadow: 0 0 30px -8px rgba(200,169,110,.8); transition: background-position .6s ease, transform .25s; }
+.plate-contact:hover .pc-go { background-position: 100% 0; transform: translateX(4px); }
+@media (max-width: 760px) { .plate-contact { grid-template-columns: 1fr; padding: 2rem 1.5rem; } .pc-go { justify-self: start; } }
+.plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.6rem; }
+.plate {
+  background: var(--paper-hi); border: 1px solid var(--contour); padding: 1.6rem 1.5rem 1.4rem;
+  position: relative; text-decoration: none; color: inherit; transition: .3s; box-shadow: 0 1px 0 var(--paper-shadow);
+}
+.plate:hover { transform: translateY(-3px); box-shadow: 0 10px 22px -12px rgba(242,230,207,.35), 0 0 26px -6px rgba(200,169,110,.45); border-color: var(--indigo-dim); }
+.plate-top { display: flex; justify-content: space-between; align-items: flex-start; font-family: 'IBM Plex Mono', monospace; font-size: .62rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; }
+.plate { padding: 0 0 1.4rem; overflow: hidden; }
+.plate-top, .plate h3, .plate p, .plate-status { padding-left: 1.5rem; padding-right: 1.5rem; }
+.plate-top { padding-top: 1.2rem; }
+.plate-shot-wrap { position: relative; margin: .9rem 0 1.1rem; }
+.plate-shot { width: 100%; aspect-ratio: 16/10; object-fit: cover; object-position: top; display: block;
+  border-bottom: 1px solid var(--contour); background: var(--paper); filter: saturate(.85);
+  transition: filter .3s ease; }
+.plate:hover .plate-shot { filter: saturate(1) contrast(1.03); }
+.plate-glyph { width: 38px; height: 38px; margin: 1.2rem 0 1rem; }
+.plate-shot-wrap .plate-glyph { position: absolute; bottom: -14px; right: 12px; width: 28px; height: 28px;
+  margin: 0; background: var(--paper-hi); border: 1px solid var(--contour); border-radius: 50%; padding: 5px; }
+.plate-glyph svg { width: 100%; height: 100%; stroke: var(--indigo); fill: none; stroke-width: 1.1; }
+.plate:hover .plate-glyph svg { stroke: var(--rust); }
+.plate h3 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.55rem; letter-spacing: -.01em;
+  color: var(--hue, var(--ink)); text-shadow: 0 0 18px var(--hue-glow, transparent), 0 0 42px var(--hue-glow, transparent);
+  transition: text-shadow .35s ease; }
+.plate:hover h3 { text-shadow: 0 0 12px var(--hue), 0 0 34px var(--hue-glow), 0 0 70px var(--hue-glow); }
+.plate::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--hue, var(--indigo)), transparent);
+  box-shadow: 0 0 14px var(--hue-glow, transparent); opacity: .75; transition: opacity .3s; }
+.plate:hover::before { opacity: 1; }
+.plate:not(.disabled):hover { border-color: var(--hue); box-shadow: 0 14px 30px -14px var(--hue-glow), 0 0 32px -8px var(--hue-glow); }
+.plate .plate-glyph svg { stroke: var(--hue, var(--indigo)); filter: drop-shadow(0 0 4px var(--hue-glow, transparent)); }
+.plate:hover .plate-glyph svg { stroke: var(--hue, var(--rust)); }
+@media (prefers-reduced-motion: no-preference) {
+  .plate { opacity: 0; transform: translateY(18px); }
+  .plate.shown { opacity: 1; transform: none; transition: opacity .6s ease, transform .6s ease, box-shadow .3s, border-color .3s; }
+  .plate.shown:not(.disabled):hover { transform: translateY(-4px); }
+}
+
+/* living background: slow drifting aurora behind the atlas */
+.aurora { position: fixed; inset: -20%; z-index: 0; pointer-events: none; filter: blur(90px); opacity: .5; }
+.aurora span { position: absolute; width: 38vmax; height: 38vmax; border-radius: 50%; mix-blend-mode: screen; }
+.aurora span:nth-child(1) { background: radial-gradient(circle, rgba(200,169,110,.35), transparent 65%); top: 10%; left: 5%; }
+.aurora span:nth-child(2) { background: radial-gradient(circle, rgba(217,64,48,.28), transparent 65%); top: 45%; left: 55%; }
+.aurora span:nth-child(3) { background: radial-gradient(circle, rgba(70,160,220,.2), transparent 65%); top: 60%; left: 10%; }
+.aurora span:nth-child(4) { background: radial-gradient(circle, rgba(170,110,230,.2), transparent 65%); top: 5%; left: 60%; }
+@media (prefers-reduced-motion: no-preference) {
+  .aurora span { animation: drift 38s ease-in-out infinite alternate; }
+  .aurora span:nth-child(2) { animation-duration: 46s; animation-delay: -12s; }
+  .aurora span:nth-child(3) { animation-duration: 52s; animation-delay: -24s; }
+  .aurora span:nth-child(4) { animation-duration: 42s; animation-delay: -6s; }
+}
+@keyframes drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(8vw,-6vh) scale(1.15); } 100% { transform: translate(-6vw,8vh) scale(.92); } }
+
+/* shimmering wordmark */
+.shimmer { background: linear-gradient(100deg, var(--indigo) 20%, #fff2cf 40%, var(--rust-hi) 55%, var(--indigo) 75%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  text-shadow: none !important; filter: drop-shadow(0 0 22px rgba(200,169,110,.45)); padding-right: .08em; }
+@media (prefers-reduced-motion: no-preference) { .shimmer { animation: shimmer 7s linear infinite; } }
+@keyframes shimmer { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+.hero-stats { margin-top: 2rem; display: flex; gap: 1.6rem; justify-content: center; flex-wrap: wrap;
+  font-family: 'IBM Plex Mono', monospace; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); }
+.hero-stats b { color: var(--indigo); font-weight: 500; text-shadow: 0 0 12px rgba(200,169,110,.6); }
+.plate p { font-family: 'Newsreader', serif; font-size: .92rem; color: var(--ink-soft); margin-top: .5rem; line-height: 1.5; }
+.plate-status { display: flex; align-items: center; gap: .6rem; margin-top: 1.3rem; font-family: 'IBM Plex Mono', monospace; font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+.plate-status .sw { width: 13px; height: 4px; border-radius: 2px; }
+.plate.wide { grid-column: span 2; }
+/* newest plate — the one thing on the page that should catch the eye first */
+.plate.latest { border-color: var(--rust); box-shadow: 0 0 0 1px rgba(176,42,26,.22), 0 10px 30px -16px rgba(176,42,26,.55); }
+.plate.latest:hover { border-color: var(--rust-hi); box-shadow: 0 0 0 1px rgba(217,64,48,.35), 0 14px 34px -14px rgba(176,42,26,.65); }
+.plate.latest .plate-glyph svg { stroke: var(--rust-hi); }
+.plate-new { display: inline-flex; align-items: center; gap: .32rem; font-size: .58rem; letter-spacing: .14em;
+  color: var(--rust-hi); border: 1px solid var(--rust); border-radius: 2px; padding: .16rem .42rem; }
+.plate-new::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--rust-hi); }
+@media (prefers-reduced-motion: no-preference) { .plate-new::before { animation: newpulse 2.4s ease-in-out infinite; } }
+@keyframes newpulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.plate.disabled { cursor: default; }
+.plate.disabled:hover { transform: none; box-shadow: 0 1px 0 var(--paper-shadow); border-color: var(--contour); }
+.plate.disabled:hover .plate-glyph svg { stroke: var(--indigo); }
+
+/* filter + sort bar */
+.plate-tools { display: flex; justify-content: space-between; align-items: center; gap: 1rem 1.4rem; flex-wrap: wrap; margin: -1.2rem 0 2rem; }
+.pt-chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+.pt-chip { font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  color: var(--ink-soft); background: transparent; border: 1px solid var(--contour); padding: .5rem .8rem; transition: .2s; }
+.pt-chip i { font-style: normal; color: var(--ink-faint); margin-left: .45rem; }
+.pt-chip:hover { color: var(--ink); border-color: var(--indigo-dim); }
+.pt-chip[aria-pressed="true"] { color: #000; background: var(--indigo); border-color: var(--indigo); box-shadow: 0 0 18px -4px rgba(200,169,110,.7); }
+.pt-chip[aria-pressed="true"] i { color: rgba(0,0,0,.55); }
+.pt-sort { display: flex; align-items: center; gap: .6rem; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+.pt-sort select { font: inherit; color: var(--ink); background: var(--paper-hi); border: 1px solid var(--contour); padding: .5rem 2rem .5rem .75rem; cursor: pointer;
+  appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--indigo) 50%), linear-gradient(135deg, var(--indigo) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+.pt-sort select:focus-visible, .pt-chip:focus-visible { outline: 1px solid var(--indigo); outline-offset: 2px; }
+.plate-group { grid-column: 1 / -1; display: flex; align-items: baseline; gap: .8rem; margin-top: 1rem; padding-bottom: .6rem;
+  border-bottom: 1px solid var(--contour); font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 1.15rem; color: var(--ink); }
+.plate-group:first-child { margin-top: 0; }
+.plate-group i { font-style: normal; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; color: var(--ink-faint); }
+
+/* cards themed in their page's own colour */
+.plate { background: linear-gradient(165deg, hsl(var(--h, 40) 55% 13% / .55), var(--paper-hi) 58%); border-color: hsl(var(--h, 40) 45% 45% / .22); }
+.plate-shot { filter: saturate(.9); }
+.plate-meta { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin-top: 1rem; padding: 0 1.5rem;
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint); }
+.plate-meta .pm-cat { color: var(--hue); }
+.plate-meta .pm-ver { color: var(--ink-soft); border: 1px solid hsl(var(--h, 40) 60% 60% / .4); padding: 0 .35rem; }
+.plate-meta + .plate-status { margin-top: .7rem; }
+@media (max-width: 600px) { .plate-tools { margin-top: -1rem; } .pt-sort { width: 100%; } .pt-sort select { flex: 1; } }
+footer.mf { max-width: 1400px; margin: 0 auto; padding: 3rem clamp(1.6rem, 3.5vw, 3.4rem) 5rem; grid-column: 1 / -1; }
+footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; }
+
+@media (max-width: 900px) {
+  .atlas { grid-template-columns: 1fr; }
+  .legend { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--contour); }
+  .plate.wide { grid-column: span 1; }
+}
+@font-face{font-family:'Mentifaber Display';font-display:swap;src:url('assets/fonts/MentifaberDisplay-Regular.woff2') format('woff2'),url('assets/fonts/MentifaberDisplay-Regular.ttf') format('truetype')}
+h1,h2,h3,.d-hero-name,.d-title,.plate h3,.pc-title,.field-head h2,.legend h1,.legend h2{font-family:'Mentifaber Display','Bricolage Grotesque',Georgia,serif!important;font-weight:400!important}
+.d-hero-name i,.d-title i,h1 i,h2 i,.pc-title i{font-style:normal!important}
+</style>
+</head>
+<body>
+
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#f2e6cf" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
+    </g>
+  </svg>
+</div>
+<div class="aurora"><span></span><span></span><span></span><span></span></div>
+<div class="grain"></div>
+
+<div id="dprogress"></div>
+<a href="#atlas-main" id="dskip">Skip intro</a>
+
+<div id="descent-wrap">
+  <div id="descent-pin">
+    <canvas id="dgl"></canvas>
+    <div id="glfail">3D scene unavailable here — the archive below still works.</div>
+    <div id="fogveil"></div>
+
+    <section class="dsection" id="d-hero">
+      <p class="d-eyebrow" data-reveal>mens · mentis — faber · fabri</p>
+      <h1 class="d-hero-name" data-reveal>Menti<i class="shimmer">faber</i></h1>
+      <p class="d-hero-sub" data-reveal>Builder of minds and the systems that hold them — agents that persist, trackers that watch the sky, tools that live in one file. Scroll to descend into the archive.</p>
+      <p class="hero-stats" data-reveal><span><b id="hsTotal">—</b> systems</span><span><b id="hsLive">—</b> live</span><span>newest · <b id="hsNew">—</b></span></p>
+      <p class="d-scrollcue" data-reveal>↓ begin the descent</p>
+    </section>
+
+    <section class="dsection" id="d-telemetry">
+      <div class="d-row">
+        <div style="text-align:left">
+          <p class="d-eyebrow" data-reveal>altitude falling</p>
+          <h2 class="d-title" data-reveal>Through the <i style="color:var(--indigo)">telemetry</i></h2>
+          <p class="d-copy" data-reveal id="dTelemetryCopy">Tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.</p>
+        </div>
+        <div class="d-telemetry" data-reveal>
+          OBJECT&nbsp;&nbsp;<b>MF-07 · Cartograph</b><br>
+          CLASS&nbsp;&nbsp;<b>active / live</b><br>
+          ALT&nbsp;&nbsp;<b id="dAlt">412 km</b><br>
+          VEL&nbsp;&nbsp;<b id="dVel">7.66 km/s</b><br>
+          BEARING&nbsp;&nbsp;<b id="dBear">041°</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="dsection" id="d-who">
+      <div class="d-row">
+        <div style="text-align:left">
+          <p class="d-eyebrow" data-reveal>who's building this</p>
+          <h2 class="d-title" data-reveal>Builder of <i style="color:var(--indigo)">minds</i>, and the <i style="color:var(--rust-hi)">systems</i> that hold them</h2>
+          <p class="d-copy" data-reveal>Mentifaber isn't a studio name over a portfolio — <i>mens · mentis</i>, mind, and <i>faber · fabri</i>, maker. Every system charted here, agents that persist, trackers that watch orbit, archives that hold years of work, comes from the same practice: build the mind, then build what holds it together.</p>
+        </div>
+        <div class="d-telemetry" data-reveal>
+          PRACTICE&nbsp;&nbsp;<b>minds + systems</b><br>
+          SYSTEMS&nbsp;&nbsp;<b id="dSystemsCount">— charted</b><br>
+          STATUS&nbsp;&nbsp;<b>active, ongoing</b><br>
+          FOCUS&nbsp;&nbsp;<b>autonomous agents</b><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>orbital data</b><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>local-first tools</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="dsection" id="d-about">
+      <div class="d-row">
+        <div style="text-align:left">
+          <p class="d-eyebrow" data-reveal>the person behind the plates</p>
+          <h2 class="d-title" data-reveal>Machinist. <i style="color:var(--indigo)">Composer.</i> <i style="color:var(--rust-hi)">Builder.</i></h2>
+          <p class="d-copy" data-reveal>Turning programs for <a class="d-link" href="shop.html">HAAS and Hwacheon lathes</a> on FANUC controls, where a wrong offset is a scrapped part. Ambient and experimental music as <a class="d-link" href="sonicveil.html">Sonic Veil</a> since 2016. Local AI that <a class="d-link" href="pi.html">lives on a phone</a>, <a class="d-link" href="novarac.html">radios that work</a> when the internet doesn't, and a <a class="d-link" href="frames.html">camera</a> for the things that don't need to do anything. Want to talk shop? <a class="d-link" href="contact.html">Get in touch</a>.</p>
+        </div>
+        <div class="d-telemetry" data-reveal>
+          SHOP&nbsp;&nbsp;<b>haas st25 · hwacheon</b><br>
+          CONTROL&nbsp;&nbsp;<b>fanuc 0i-F</b><br>
+          MUSIC&nbsp;&nbsp;<b>sonic veil · 86 tracks</b><br>
+          SINCE&nbsp;&nbsp;<b>2016</b><br>
+          RADIO&nbsp;&nbsp;<b>hf vara · lora mesh</b><br>
+          RULE&nbsp;&nbsp;<b>measure it, don't assume it</b><br>
+          CONTACT&nbsp;&nbsp;<b>anders@mentifaber.com</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="dsection" id="d-atmosphere">
+      <p class="d-eyebrow" data-reveal>atmosphere</p>
+      <h2 class="d-title" data-reveal>The fog is <i style="color:var(--rust-hi)">ember</i>, not water</h2>
+      <p class="d-copy" data-reveal style="margin:0 auto">Re-entry heat, not depth. The archive is close now.</p>
+    </section>
+  </div>
+</div>
+
+<div class="atlas" id="atlas-main">
+  <aside class="legend">
+    <p class="legend-mark">Atlas of Systems / ed. 2026</p>
+    <h1>Menti<i class="shimmer">faber</i></h1>
+    <p class="sub">Every system charted like a site — surveyed, marked, and returned to.</p>
+
+    <div class="legend-key">
+      <div class="row"><span class="sw live"></span> Live &amp; running</div>
+      <div class="row"><span class="sw build"></span> Under construction</div>
+      <div class="row"><span class="sw stalled"></span> Stalled / dormant</div>
+      <div class="row"><span class="sw music"></span> Composition</div>
+      <div class="row"><span class="sw concept"></span> Concept / unbuilt</div>
+      <div class="row"><span class="sw private"></span> Private — invite only</div>
+    </div>
+
+    <div class="legend-foot" id="legendFoot">
+      24 sites surveyed
+      <div class="legend-links">
+        <a href="contact.html">Contact</a>
+        <a href="mailto:anders@mentifaber.com">anders@mentifaber.com</a>
+        <a href="https://github.com/mentifaber" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://x.com/mentifaber" target="_blank" rel="noopener">X</a>
+        <a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="field">
+    <div class="field-head">
+      <h2>Survey plates</h2>
+      <span id="plateCount">PL. I — PL. XIV</span>
+    </div>
+    <div class="plate-tools" id="plateTools"></div>
+    <div class="plates" id="plates"></div>
+  </main>
+
+  <footer class="mf">
+    <p>Recognized through the work, not the introduction.</p>
+  </footer>
+</div>
+
+<script>
+// [href, name, desc, status(live|build|stalled|music), glyph, wide?]
+const GLYPHS = {
+  orbit: '<circle cx="19" cy="19" r="13"/><ellipse cx="19" cy="19" rx="13" ry="5"/><circle cx="19" cy="19" r="1.6" fill="var(--rust)" stroke="none"/>',
+  diamond: '<path d="M7 19 L19 7 L31 19 L19 31 Z"/><path d="M7 19 H31 M19 7 V31"/>',
+  wave: '<path d="M6 29 L14 13 L22 22 L32 9"/>',
+  grid: '<rect x="8" y="8" width="22" height="22"/><path d="M8 19 H30 M19 8 V30"/>',
+  lock: '<rect x="10" y="17" width="18" height="13" rx="1"/><path d="M13 17 V12 a6 6 0 0 1 12 0 V17"/>',
+  mic: '<rect x="14" y="6" width="10" height="16" rx="5"/><path d="M9 18 a10 10 0 0 0 20 0 M19 28 v5 M13 33 h12"/>',
+  mesh: '<circle cx="9" cy="9" r="2.4"/><circle cx="29" cy="9" r="2.4"/><circle cx="19" cy="29" r="2.4"/><circle cx="19" cy="16" r="2.4"/><path d="M9 9 L19 16 L29 9 M19 16 L19 29"/>',
+  wall: '<path d="M7 9 h24 M7 15 h24 M7 21 h24 M7 27 h24"/><circle cx="19" cy="18" r="4" fill="var(--rust)" stroke="none" opacity=".6"/>',
+  leaf: '<path d="M19 32 C19 32 9 24 9 14 C9 8 14 6 19 10 C24 6 29 8 29 14 C29 24 19 32 19 32 Z" /><path d="M19 32 V12"/>',
+  scan: '<rect x="8" y="8" width="22" height="22" rx="2"/><path d="M8 15 h22 M14 8 v22"/><circle cx="24" cy="24" r="3"/>',
+  key: '<circle cx="13" cy="19" r="6"/><path d="M19 19 H32 M26 19 V25 M30 19 V23"/>',
+  phone: '<rect x="12" y="6" width="14" height="26" rx="2"/><path d="M17 28 h4"/>',
+  city: '<path d="M7 32 V16 h6 V32 M16 32 V10 h7 V32 M26 32 V20 h6 V32"/>',
+  note: '<circle cx="12" cy="27" r="4"/><circle cx="26" cy="24" r="4"/><path d="M16 27 V9 L30 6 V24"/>',
+  globe: '<circle cx="19" cy="19" r="13"/><path d="M6 19 H32 M19 6 C13 12 13 26 19 32 C25 26 25 12 19 6 Z"/>',
+  invoice: '<rect x="10" y="6" width="18" height="26" rx="1"/><path d="M14 13 h10 M14 18 h10 M14 23 h6"/><circle cx="24" cy="27" r="4" fill="var(--rust)" stroke="none" opacity=".55"/>',
+  butterfly: '<path d="M19 11 V29"/><path d="M19 14 C11 6 4 12 8 20 C11 27 17 25 19 19"/><path d="M19 14 C27 6 34 12 30 20 C27 27 21 25 19 19"/><circle cx="19" cy="11" r="1.4" fill="var(--rust)" stroke="none"/>',
+  ballast: '<path d="M6 10 H32 L26.5 30 H11.5 Z"/><path d="M12.6 21 H25.4 L23.9 30 H14.1 Z" fill="var(--rust)" stroke="none" opacity=".85"/><path d="M2 16 H36" opacity=".45"/>',
+  wrench: '<path d="M25 8 a7 7 0 0 0 -9.6 9.6 L7 26 l5 5 l8.4 -8.4 A7 7 0 0 0 30 13 l-5 5 l-3 -3 z"/>',
+  moon: '<circle cx="19" cy="19" r="12"/><path d="M23 8.6 a12 12 0 1 0 0 20.8 a10 10 0 0 1 0 -20.8z" fill="var(--rust)" stroke="none" opacity=".5"/>',
+  server: '<rect x="8" y="7" width="22" height="7" rx="1"/><rect x="8" y="16" width="22" height="7" rx="1"/><rect x="8" y="25" width="22" height="7" rx="1"/><circle cx="12" cy="10.5" r="1.2" fill="var(--rust)" stroke="none"/><circle cx="12" cy="19.5" r="1.2" fill="var(--rust)" stroke="none"/>',
+  bubble: '<circle cx="15" cy="15" r="8"/><path d="M21 21 L31 31"/><path d="M13 12 l2 -1.5 v8" />',
+  sleep: '<path d="M27 9 a11 11 0 1 0 4 15 a9 9 0 0 1 -4 -15z"/><path d="M7 8 h6 l-6 6 h6"/>',
+  eye: '<path d="M4 19 C10 9 28 9 34 19 C28 29 10 29 4 19 Z"/><circle cx="19" cy="19" r="5.5" fill="var(--rust)" stroke="none" opacity=".7"/>',
+};
+const SYSTEMS = [
+  ["arsenal.html","Mechanic's Arsenal","Machines you can take apart in the browser — a 2008 Volvo XC70 with 126 cataloged parts, and a FANUC LR Mate robot arm you can jog, solve and run, every spec cited to the manual.","live","wrench",true,true],
+  ["ballast.html","Ballast","Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today. Local-first — the numbers never leave the browser.","live","ballast",true],
+  ["vigil.html","Vigil","A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.","private","eye",true],
+  ["#","Orbit Watch","Satellite pass tracker in the works — TLE-driven ground tracks, propagated right in the browser.","build","orbit",true],
+  ["cartograph.html","Cartograph","A live 3D atlas of everything — 312+ objects across ten views, from the planets out to deep-universe structure, each one cited to the instrument that measured it.","live","globe"],
+  ["weaver.html","Weaver","A persistent, autonomous entity running locally — one model to think, one to act, and an archive of everything it became. It already knows you're here.","live","diamond"],
+  ["pi.html","Pi","A voice assistant that runs on the phone itself, not in an app store. Camera, GPS, contacts and 22 device tools never leave it; only chat text goes out. When the voice drops, it degrades instead of going silent.","live","mic"],
+  ["muse.html","muse","An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, zero API keys.","live","note"],
+  ["omnilogos.html","Omnilogos","933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.","live","wave"],
+  ["novarac.html","NovarAC","HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.","live","key"],
+  ["meshnet.html","MeshNet","A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.","live","mesh"],
+  ["proximity.html","Proximity","Detects a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone.","live","wall"],
+  ["watchyourgrass.html","Watch Your Grass","Arena defense on a 6×6 lawn — ten plant and terrain types, six player classes, drawn up on paper before a line of code.","live","leaf"],
+  ["worm-eater.html","Worm Eater","An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.","live","scan"],
+  ["cryptovault.html","CryptoVault","Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file — the browser's own crypto engine, no server, no dependencies, nothing simulated.","stalled","lock"],
+  ["phone-mcp.html","Phone MCP","A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.","live","phone"],
+  ["crime-dashboard.html","Crime Intelligence","Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.","live","city"],
+  ["sonicveil.html","Sonic Veil","Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.","music","note"],
+  ["duely.html","Duely","Overdue invoices, collected on contingency — you pay nothing unless your client does. A business concept, kept on record.","concept","invoice"],
+  ["flutterbloom.html","Flutterbloom","A tap-and-tend garden grown as a gift for one person — butterflies, helpers, a fairy that works while she's away, and a meadow that visibly blooms.","private","butterfly"],
+  ["verel.html","Verel","A word coined for genuine presence without provable aliveness — because every argument about AI minds kept collapsing into two bad options.","concept","diamond"],
+  ["conflict-atlas.html","Conflict Atlas","Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.","live","city"],
+  ["neural-sim.html","Neural Sim","Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.","live","mesh"],
+  ["shop.html","The Shop","CNC, G-code and steel — the machines that don't accept an approximately right answer.","live","key"],
+  ["frames.html","Frames","Twenty-eight photographs kept as a series. The only thing in the atlas that doesn't do anything — on purpose.","live","globe"],
+  ["sketches.html","Sketches","Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.","live","leaf"],
+  ["moon-compatibility.html", "Moon Compatibility", "Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score.", "live", "moon"],
+  ["monstrosity.html", "The Monstrosity", "A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.", "build", "server"],
+  ["bubble-editor.html", "Bubble Editor", "Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.", "live", "bubble"],
+  ["sleep-compression.html", "Sleep Compression", "A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included.", "live", "sleep"],
+];
+const STATUS_LABEL = { live:"live", build:"surveying — under construction", stalled:"dormant", music:"composition", concept:"concept — unbuilt", private:"private — invite only" };
+// One numeral per surveyed site — this list must never be shorter than SYSTEMS,
+// or the extra plates render as "PL. undefined".
+const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII",
+  "XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX",
+  "XXXI","XXXII","XXXIII","XXXIV","XXXV","XXXVI","XXXVII","XXXVIII","XXXIX","XL"];
+
+// Per-project metadata. added = first appearance on this site (git history);
+// ver = only where the project's own page states a version.
+const CATS = ['AI & Minds','Sky & World','Signals','Tools','Play','Craft'];
+const META = {
+  'arsenal.html':        {cat:'Tools',       added:'2026-09-23', hue:183},
+  'ballast.html':        {cat:'Tools',       added:'2026-09-15', hue:116},
+  'vigil.html':          {cat:'Sky & World', added:'2026-09-09', hue:6},
+  '#':                   {cat:'Sky & World', added:null},
+  'cartograph.html':     {cat:'Sky & World', added:'2026-08-31', ver:4},
+  'weaver.html':         {cat:'AI & Minds',  added:'2026-04-20', ver:3},
+  'pi.html':             {cat:'AI & Minds',  added:'2026-08-20'},
+  'muse.html':           {cat:'AI & Minds',  added:'2026-08-20'},
+  'omnilogos.html':      {cat:'Tools',       added:'2026-08-20'},
+  'novarac.html':        {cat:'Signals',     added:'2026-08-20'},
+  'meshnet.html':        {cat:'Signals',     added:'2026-08-20'},
+  'proximity.html':      {cat:'Signals',     added:'2026-08-20'},
+  'watchyourgrass.html': {cat:'Play',        added:'2026-08-20'},
+  'worm-eater.html':     {cat:'Tools',       added:'2026-08-20', ver:7},
+  'cryptovault.html':    {cat:'Tools',       added:'2026-08-20'},
+  'phone-mcp.html':      {cat:'AI & Minds',  added:'2026-08-20'},
+  'crime-dashboard.html':{cat:'Sky & World', added:'2026-08-20'},
+  'sonicveil.html':      {cat:'Craft',       added:'2026-08-20'},
+  'duely.html':          {cat:'Tools',       added:'2026-08-31'},
+  'flutterbloom.html':   {cat:'Play',        added:'2026-09-03'},
+  'verel.html':          {cat:'AI & Minds',  added:'2026-09-14'},
+  'conflict-atlas.html': {cat:'Sky & World', added:'2026-09-14'},
+  'neural-sim.html':     {cat:'AI & Minds',  added:'2026-09-14', ver:3},
+  'shop.html':           {cat:'Craft',       added:'2026-09-14'},
+  'frames.html':         {cat:'Craft',       added:'2026-09-14'},
+  'sketches.html':       {cat:'Play',        added:'2026-09-14'},
+  'moon-compatibility.html': {cat:'Play',    added:'2026-09-24', hue:255},
+  'monstrosity.html':    {cat:'Tools',       added:'2026-09-24', hue:28},
+  'bubble-editor.html':  {cat:'Craft',       added:'2026-09-24', hue:350},
+  'sleep-compression.html': {cat:'Tools',    added:'2026-09-24', hue:205},
+};
+const STATUS_ORDER = ['live','build','private','music','concept','stalled'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate = d => d ? `${MONTHS[+d.slice(5,7)-1]} ${+d.slice(8)}, ${d.slice(0,4)}` : 'in progress';
+
+// Each card takes its page's own accent: golden-angle hue steps by default,
+// or the page's hand-picked colour where it has one.
+const ITEMS = SYSTEMS.map(([href,name,desc,status,glyph,wide,latest],i) => {
+  const m = META[href] || {cat:'Tools'};
+  return {href,name,desc,status,glyph,wide,latest,i, cat:m.cat, added:m.added, ver:m.ver||null,
+          hue: m.hue ?? Math.round((i * 137.508 + 38) % 360)};
+});
+
+function plateEl(it){
+  const {href,name,desc,status,glyph,wide,latest,i,hue} = it;
+  const a=document.createElement(href==='#' ? 'div' : 'a');
+  a.className='plate'+(wide?' wide':'')+(latest?' latest':'')+(href==='#'?' disabled':'');
+  a.style.setProperty('--h', hue);
+  a.style.setProperty('--hue', `hsl(${hue} 90% 68%)`);
+  a.style.setProperty('--hue-glow', `hsl(${hue} 95% 60% / .45)`);
+  if(href!=='#') a.href=href;
+  const shotName = href==='#' ? null : href.replace('.html','');
+  const glyphHtml = `<div class="plate-glyph"><svg viewBox="0 0 38 38">${GLYPHS[glyph]}</svg></div>`;
+  const media = shotName
+    ? `<div class="plate-shot-wrap"><img class="plate-shot" src="assets/previews/${shotName}.png" alt="${name} preview" loading="lazy">${glyphHtml}</div>`
+    : glyphHtml;
+  a.innerHTML=`
+    <div class="plate-top"><span>PL. ${ROMAN[i]}</span>${latest?'<span class="plate-new">newest</span>':''}</div>
+    ${media}
+    <h3>${name}</h3>
+    <p>${desc}</p>
+    <div class="plate-meta"><span class="pm-cat">${it.cat}</span><span>${it.added ? 'added '+fmtDate(it.added) : 'in progress'}</span>${it.ver?`<span class="pm-ver">v${it.ver}</span>`:''}</div>
+    <div class="plate-status"><span class="sw ${status}"></span>${STATUS_LABEL[status]}</div>`;
+  return a;
+}
+
+// undated (unbuilt) plates sort last in both directions
+const byDate = (x,y) => x>y ? 1 : x<y ? -1 : 0;
+const SORTS = {
+  featured: {label:'Featured',          fn:(a,b)=>a.i-b.i},
+  newest:   {label:'Newest first',      fn:(a,b)=>byDate(b.added||'0',a.added||'0')||a.i-b.i},
+  oldest:   {label:'Oldest first',      fn:(a,b)=>byDate(a.added||'9',b.added||'9')||a.i-b.i},
+  version:  {label:'Version (highest)', fn:(a,b)=>(b.ver||0)-(a.ver||0)||a.i-b.i},
+  status:   {label:'Status',            fn:(a,b)=>STATUS_ORDER.indexOf(a.status)-STATUS_ORDER.indexOf(b.status)||a.i-b.i},
+  az:       {label:'Name A–Z',          fn:(a,b)=>a.name.localeCompare(b.name)},
+  category: {label:'Grouped by type',   fn:(a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||a.i-b.i},
+};
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } },
+                set(k,v){ try { localStorage.setItem(k,v); } catch(e) {} } };
+const state = { cat: store.get('mf-cat') || 'All', sort: store.get('mf-sort') || 'featured' };
+if (state.cat !== 'All' && !CATS.includes(state.cat)) state.cat = 'All';
+if (!SORTS[state.sort]) state.sort = 'featured';
+
+const el = document.getElementById('plates');
+const tools = document.getElementById('plateTools');
+let firstRender = true;
+function renderPlates(){
+  const list = ITEMS.filter(it => state.cat==='All' || it.cat===state.cat).sort(SORTS[state.sort].fn);
+  el.textContent = '';
+  let lastCat = null;
+  list.forEach(it => {
+    if (state.sort==='category' && it.cat!==lastCat) {
+      lastCat = it.cat;
+      const h = document.createElement('div'); h.className='plate-group';
+      h.innerHTML = `<span>${it.cat}</span><i>${list.filter(x=>x.cat===it.cat).length}</i>`;
+      el.appendChild(h);
+    }
+    const a = plateEl(it);
+    if (!firstRender || !plateObs) a.classList.add('shown'); else plateObs.observe(a);
+    el.appendChild(a);
+  });
+  const c = document.createElement('a');
+  c.className = 'plate-contact'; c.href = 'contact.html';
+  c.innerHTML = `<div class="pc-glyph"><svg viewBox="0 0 38 38"><rect x="5" y="9" width="28" height="20" rx="2"/><path d="M5 11 L19 21 L33 11"/><circle cx="31" cy="9" r="3" fill="var(--rust-hi)" stroke="none"/></svg></div>
+    <div><div class="pc-kicker">last plate · open channel</div><div class="pc-title">Contact <i class="shimmer">Mentifaber</i></div>
+    <p class="pc-line">A question about a system, a build to talk through, a commission, or just hello. It reaches a person, not a queue.</p>
+    <span class="pc-mail">anders@mentifaber.com</span></div>
+    <span class="pc-go">Send a message →</span>`;
+  if (!firstRender || !plateObs) c.classList.add('shown'); else plateObs.observe(c);
+  el.appendChild(c);
+  document.getElementById('plateCount').textContent = state.cat==='All'
+    ? `PL. I — PL. ${ROMAN[SYSTEMS.length-1]}` : `${list.length} of ${SYSTEMS.length} plates`;
+  tools.querySelectorAll('.pt-chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.cat===state.cat)));
+  firstRender = false;
+}
+const plateObs = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('shown'); plateObs.unobserve(e.target); } });
+}, { rootMargin: '0px 0px -8% 0px' }) : null;
+
+tools.innerHTML = `<div class="pt-chips" role="group" aria-label="Filter by type">${
+  ['All',...CATS].map(c => `<button type="button" class="pt-chip" data-cat="${c}">${c}<i>${c==='All'?ITEMS.length:ITEMS.filter(x=>x.cat===c).length}</i></button>`).join('')
+}</div><label class="pt-sort"><span>Sort</span><select id="plateSort">${
+  Object.entries(SORTS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')
+}</select></label>`;
+tools.addEventListener('click', e => {
+  const c = e.target.closest('.pt-chip'); if (!c) return;
+  state.cat = c.dataset.cat; store.set('mf-cat', state.cat); renderPlates();
+});
+const sortSel = document.getElementById('plateSort');
+sortSel.value = state.sort;
+sortSel.addEventListener('change', () => { state.sort = sortSel.value; store.set('mf-sort', state.sort); renderPlates(); });
+renderPlates();
+const liveCount = SYSTEMS.filter(s=>s[3]==='live').length;
+document.getElementById('legendFoot').firstChild.textContent = `${SYSTEMS.length} sites surveyed — ${liveCount} live`;
+document.getElementById('hsTotal').textContent = SYSTEMS.length;
+document.getElementById('hsLive').textContent = liveCount;
+document.getElementById('hsNew').textContent = (SYSTEMS.find(s=>s[6]) || SYSTEMS[0])[1];
+document.getElementById('dSystemsCount').textContent = `${SYSTEMS.length} charted`;
+document.getElementById('dTelemetryCopy').textContent = `${SYSTEMS.length} tracked systems. The nearest one drifts past as you fall — a stand-in for the same orbital objects Cartograph follows.`;
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+/* ── Descent scene ── one big try/catch: if any CDN script is blocked or WebGL is
+   unsupported, the fallback below shows every hero/telemetry section fully visible
+   and static instead of leaving them stuck at opacity:0. */
+function showDescentFallback(){
+  document.getElementById('descent-wrap').classList.add('static-fallback');
+  document.querySelectorAll('#descent-wrap [data-reveal]').forEach(el => el.classList.add('in'));
+  document.querySelectorAll('#descent-wrap .dsection').forEach(el => el.classList.add('active'));
+  const skip = document.getElementById('dskip');
+  if (skip) skip.remove(); // everything's already visible in normal flow, nothing to skip
+}
+
+// "Skip intro" button: visible only while scrolled inside the descent sequence
+(function initSkipButton(){
+  const skip = document.getElementById('dskip');
+  const wrap = document.getElementById('descent-wrap');
+  if (!skip || !wrap) return;
+  function update(){
+    const r = wrap.getBoundingClientRect();
+    const inside = r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.5;
+    skip.classList.toggle('show', inside);
+  }
+  update();
+  addEventListener('scroll', update, { passive: true });
+  addEventListener('resize', update);
+})();
+
+try {
+  if (typeof THREE === 'undefined' || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+    throw new Error('descent dependency failed to load');
+  }
+  gsap.registerPlugin(ScrollTrigger);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const canvas = document.getElementById('dgl');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.85;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 4000);
+  camera.position.set(0, 0, 900);
+
+  function makeGlowTexture(hex){
+    const SIZE = 256, R = SIZE/2;
+    const c = document.createElement('canvas'); c.width = c.height = SIZE;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(R,R,0,R,R,R);
+    const STOPS = 24;
+    for (let i=0;i<=STOPS;i++){
+      const t = i/STOPS;
+      const alpha = Math.pow(1-t, 2.6);
+      g.addColorStop(t, `rgba(${hex},${alpha.toFixed(4)})`);
+    }
+    ctx.fillStyle = g; ctx.fillRect(0,0,SIZE,SIZE);
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    return tex;
+  }
+  const glowTex = makeGlowTexture('242,230,207');
+  const glowTexGold = makeGlowTexture('200,169,110');
+
+  // Every star/point layer below stays at least MIN_Z (world units) away from the
+  // camera's closest approach (camera.position.z bottoms out around -280 — see the
+  // scroll handler further down). Without this buffer, additive glow sprites blow up
+  // into giant soft-edged blobs as their distance to the camera approaches zero —
+  // that was the "sloppy" artifact. Keeping everything comfortably far avoids it
+  // without needing to clamp point sizes in a shader.
+  const MIN_Z = 700;
+
+  function buildStarLayer(count, spread, zDepth, size, tex, opacity){
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count*3);
+    for (let i=0;i<count;i++){
+      const r = spread[0] + Math.random()*(spread[1]-spread[0]);
+      const theta = Math.random()*Math.PI*2;
+      const phi = Math.acos((Math.random()*2)-1);
+      pos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
+      pos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+      pos[i*3+2] = -MIN_Z - Math.random()*zDepth;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    const mat = new THREE.PointsMaterial({
+      map: tex, size, sizeAttenuation: true, transparent: true, opacity,
+      depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    return new THREE.Points(geo, mat);
+  }
+  const starsFar  = buildStarLayer(3000, [300,1900], 3200, 2.6, glowTex, .38);
+  const starsMid  = buildStarLayer(900,  [200,1300], 2600, 4.2, glowTex, .5);
+  const starsGold = buildStarLayer(70,   [150,1100], 2400, 4.8, glowTexGold, .38);
+  scene.add(starsFar, starsMid, starsGold);
+
+  // galaxy dust band — a flattened, spiral-biased disk of faint points well behind
+  // everything else, the kind of soft haze a wide starfield photo actually has
+  const bandGeo = new THREE.BufferGeometry();
+  const BAND_COUNT = 3200;
+  const bandPos = new Float32Array(BAND_COUNT*3);
+  const BAND_Z = -(MIN_Z + 2200);
+  for (let i=0;i<BAND_COUNT;i++){
+    const arm = Math.floor(Math.random()*2) * Math.PI;
+    const t = Math.pow(Math.random(), 0.7); // bias toward the core, thins at the rim
+    const r = 150 + t*1700;
+    const spiral = arm + t*3.2 + (Math.random()-0.5)*0.6;
+    bandPos[i*3]   = Math.cos(spiral)*r;
+    bandPos[i*3+1] = (Math.random()-0.5)*110*(1-t*0.6);
+    bandPos[i*3+2] = BAND_Z + Math.sin(spiral)*r*0.35;
+  }
+  bandGeo.setAttribute('position', new THREE.BufferAttribute(bandPos,3));
+  const bandMat = new THREE.PointsMaterial({
+    map: glowTex, size: 4.5, sizeAttenuation: true, transparent: true, opacity: .14,
+    depthWrite: false, blending: THREE.AdditiveBlending, color: 0x6e5a46
+  });
+  const galaxyBand = new THREE.Points(bandGeo, bandMat);
+  galaxyBand.rotation.x = 0.5;
+  galaxyBand.rotation.z = 0.3;
+  scene.add(galaxyBand);
+
+  function makeNebula(hex, x, y, z, scale, opacity){
+    const mat = new THREE.SpriteMaterial({ map: makeGlowTexture(hex), transparent:true, opacity, depthWrite:false, blending: THREE.AdditiveBlending });
+    const s = new THREE.Sprite(mat);
+    s.position.set(x,y,z); s.scale.set(scale,scale,1);
+    return s;
+  }
+  scene.add(makeNebula('176,42,26', 260, 120, -(MIN_Z+1100), 1600, .07));
+  scene.add(makeNebula('200,169,110', -320, -80, -(MIN_Z+1700), 1900, .05));
+  scene.add(makeNebula('110,90,140', 500, -260, -(MIN_Z+1400), 1300, .045));
+  scene.add(makeNebula('90,120,140', -600, 300, -(MIN_Z+2100), 2100, .04));
+
+  // A small constellation standing in for "systems, networked together" — a handful of
+  // named hero stars with independent twinkle, connected to their nearest neighbors
+  // (not a random zigzag chain, which reads as a scribble rather than a network).
+  const heroCount = 8;
+  const heroStars = [];
+  const heroPositions = [];
+  for (let i=0;i<heroCount;i++){
+    const x = (Math.random()-0.5)*1000, y = (Math.random()-0.5)*560, z = -(MIN_Z+300) - Math.random()*900;
+    heroPositions.push(new THREE.Vector3(x,y,z));
+    const mat = new THREE.SpriteMaterial({ map: glowTexGold, transparent:true, opacity:.7, depthWrite:false, blending: THREE.AdditiveBlending });
+    const s = new THREE.Sprite(mat);
+    s.position.set(x,y,z);
+    const sc = 8 + Math.random()*5;
+    s.scale.set(sc,sc,1);
+    s.userData.phase = Math.random()*Math.PI*2;
+    s.userData.speed = 0.6 + Math.random()*0.8;
+    s.userData.baseScale = sc;
+    scene.add(s);
+    heroStars.push(s);
+  }
+  // connect each star to its 2 nearest neighbors, deduping edges — a clean small graph
+  const seenEdges = new Set();
+  const linePts = [];
+  heroPositions.forEach((p, i) => {
+    const distances = heroPositions
+      .map((q, j) => ({ j, d: i === j ? Infinity : p.distanceTo(q) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 2);
+    distances.forEach(({ j }) => {
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+      if (seenEdges.has(key)) return;
+      seenEdges.add(key);
+      linePts.push(p, heroPositions[j]);
+    });
+  });
+  const constellationGeo = new THREE.BufferGeometry().setFromPoints(linePts);
+  const constellationMat = new THREE.LineBasicMaterial({ color: 0x8a7050, transparent: true, opacity: .18 });
+  const constellation = new THREE.LineSegments(constellationGeo, constellationMat);
+  scene.add(constellation);
+
+  const trackedGeo = new THREE.SphereGeometry(6, 32, 32);
+  const trackedMat = new THREE.MeshStandardMaterial({ color: 0xd94030, emissive: 0xd94030, emissiveIntensity: .6, roughness:.4, metalness:.2 });
+  const tracked = new THREE.Mesh(trackedGeo, trackedMat);
+  tracked.position.set(120, -40, -400);
+  scene.add(tracked);
+  const trackedGlow = new THREE.PointLight(0xd94030, 1.6, 500);
+  trackedGlow.position.copy(tracked.position);
+  scene.add(trackedGlow);
+  const trackedHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeGlowTexture('217,64,48'), transparent:true, opacity:.2, depthWrite:false, blending: THREE.AdditiveBlending }));
+  trackedHalo.scale.set(42,42,1);
+  tracked.add(trackedHalo);
+  const keyLight = new THREE.DirectionalLight(0xc8a96e, .5);
+  keyLight.position.set(-1,1,1);
+  scene.add(keyLight);
+  scene.add(new THREE.AmbientLight(0x2a2018, .6));
+
+  const groundGeo = new THREE.PlaneGeometry(4000, 4000, 40, 40);
+  const groundMat = new THREE.MeshBasicMaterial({ color: 0x8a7050, wireframe: true, transparent: true, opacity: 0 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2.3;
+  ground.position.set(0, -220, -950);
+  scene.add(ground);
+
+  function resize(){
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize);
+
+  const fogveil = document.getElementById('fogveil');
+  const dAlt = document.getElementById('dAlt');
+  const dVel = document.getElementById('dVel');
+  const dBear = document.getElementById('dBear');
+  const dprogress = document.getElementById('dprogress');
+  const phases = [
+    document.getElementById('d-hero'),
+    document.getElementById('d-telemetry'),
+    document.getElementById('d-who'),
+    document.getElementById('d-about'),
+    document.getElementById('d-atmosphere'),
+  ];
+
+  function render(){ renderer.render(scene, camera); }
+  render();
+
+  // show the hero immediately — don't wait on ScrollTrigger's first onUpdate to avoid a blank flash
+  phases[0].classList.add('active');
+  phases[0].querySelectorAll('[data-reveal]').forEach(r => r.classList.add('in'));
+
+  ScrollTrigger.create({
+    trigger: '#descent-wrap',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 0.35,
+    onUpdate(self){
+      const p = self.progress;
+      dprogress.classList.add('on');
+      dprogress.style.width = (p*100).toFixed(1) + '%';
+      if (p >= 0.995) dprogress.classList.remove('on');
+
+      const fall = 1 - Math.pow(1-p, 2);
+      camera.position.z = 900 - fall*1180;
+      camera.position.y = -fall*40;
+      camera.lookAt(0, -fall*10, camera.position.z - 400);
+
+      starsFar.rotation.y = p*0.35;
+      starsMid.rotation.y = p*0.55;
+      starsGold.rotation.y = p*0.7;
+      galaxyBand.rotation.y = p*0.18;
+      // closes distance from 1300 -> 700 units ahead of the camera as you fall (reads as
+      // "approaching"), but never nearer than MIN_Z — that's what was blowing its glow
+      // sprite up into a giant soft-edged blob before
+      tracked.position.z = camera.position.z - (1300 - p*600);
+      tracked.rotation.y += 0.002;
+
+      // stays mostly clear (starfield visible) through hero/telemetry/who, and only
+      // warms into ember as you actually reach the atmosphere phase in the last quarter —
+      // previously this ramped up across the WHOLE scroll and its tight ellipse read as a
+      // hard-edged ring; now it's a wide, soft wash that only shows up when it means something
+      const warm = p < 0.7 ? 0 : Math.pow((p-0.7)/0.3, 1.3);
+      const warmColor = `${Math.round(60+warm*118)},${Math.round(28+warm*44)},${Math.round(18+warm*10)}`;
+      fogveil.style.background =
+        `radial-gradient(ellipse 130% 110% at 50% 55%,
+          transparent 0%, transparent 38%,
+          rgba(${warmColor},${(0.05+warm*0.45).toFixed(3)}) 72%,
+          rgba(10,7,5,${(0.5+warm*0.3).toFixed(3)}) 100%)`;
+
+      keyLight.intensity = .3 + Math.max(0, Math.sin((p-0.15)*Math.PI/0.7)) * .6;
+      groundMat.opacity = Math.max(0, (p-0.8)/0.2) * .35;
+
+      dAlt.textContent = Math.round(412 - p*412) + ' km';
+      dVel.textContent = (7.66 - p*3.1).toFixed(2) + ' km/s';
+      dBear.textContent = String(Math.round(41 + p*260) % 360).padStart(3,'0') + '°';
+
+      // five phases share the pinned viewport — crossfade whichever fifth we're in
+      const phaseIdx = Math.min(phases.length-1, Math.floor(p*phases.length));
+      phases.forEach((el,i)=>{
+        const active = i === phaseIdx;
+        if (active && !el.classList.contains('active')){
+          el.classList.add('active');
+          el.querySelectorAll('[data-reveal]').forEach(r => r.classList.add('in'));
+        } else if (!active && el.classList.contains('active') && Math.abs(i-phaseIdx) > 0){
+          el.classList.remove('active');
+        }
+      });
+
+      render();
+    }
+  });
+
+  let clock = 0;
+  (function loop(){
+    if (!reduceMotion){
+      clock += 0.016;
+      starsFar.rotation.x += 0.00004;
+      starsMid.rotation.x += 0.00007;
+      heroStars.forEach(s => {
+        const tw = 0.75 + Math.sin(clock*s.userData.speed + s.userData.phase) * 0.25;
+        s.material.opacity = tw * 0.7;
+        const sc = s.userData.baseScale * (0.9 + tw*0.15);
+        s.scale.set(sc, sc, 1);
+      });
+      render();
+    }
+    requestAnimationFrame(loop);
+  })();
+} catch (err) {
+  console.error('Descent scene disabled:', err);
+  showDescentFallback();
+}
+</script>
+</body>
+</html>
