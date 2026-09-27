@@ -105,7 +105,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 </style><style>:root{--mf-accent:hsl(216 90% 68%);--mf-glow:hsl(216 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
-</head><body>
+</head><body data-mf-terrain=".62">
 
 <div class="mf-contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
@@ -293,5 +293,6 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 
 </script>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body></html>

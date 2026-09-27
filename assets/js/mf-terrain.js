@@ -18,8 +18,7 @@
   var FRAG = [
     "precision highp float;",
     "uniform vec2 uRes;uniform float uTime;uniform float uScroll;uniform vec2 uMouse;uniform float uFront;uniform vec3 uPing;",
-    "const vec3 GOLD=vec3(0.79,0.63,0.29);",
-    "const vec3 EMBER=vec3(0.72,0.22,0.12);",
+    "uniform vec3 GOLD;uniform vec3 EMBER;",
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);",
     " return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);}",
@@ -100,6 +99,7 @@
     var s = canvas.style;
     s.position = "fixed"; s.inset = "0"; s.width = "100%"; s.height = "100%";
     s.zIndex = "-1"; s.pointerEvents = "none"; s.background = "#000";
+    s.opacity = document.body.getAttribute("data-mf-terrain") || "1";
     document.body.insertBefore(canvas, document.body.firstChild);
 
     var gl = canvas.getContext("webgl", { antialias: false, alpha: false, powerPreference: "high-performance" });
@@ -123,6 +123,16 @@
     var loc = gl.getAttribLocation(prog, "p");
     gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
+    // Tint: gold and ember by default; a page with --mf-accent gets a landscape in its own hue.
+    var gold = [0.79, 0.63, 0.29], ember = [0.72, 0.22, 0.12];
+    var accent = getComputedStyle(document.documentElement).getPropertyValue("--mf-accent").trim();
+    if (accent) {
+      var probe = document.createElement("i"); probe.style.color = accent; document.body.appendChild(probe);
+      var m = getComputedStyle(probe).color.match(/[\d.]+/g); probe.remove();
+      if (m) { var a = [m[0] / 255, m[1] / 255, m[2] / 255]; gold = [a[0] * .9, a[1] * .9, a[2] * .9]; ember = [a[0] * .55 + .12, a[1] * .4, a[2] * .5]; }
+    }
+    gl.uniform3fv(gl.getUniformLocation(prog, "GOLD"), gold);
+    gl.uniform3fv(gl.getUniformLocation(prog, "EMBER"), ember);
     var U = {
       res: gl.getUniformLocation(prog, "uRes"), time: gl.getUniformLocation(prog, "uTime"),
       scroll: gl.getUniformLocation(prog, "uScroll"), mouse: gl.getUniformLocation(prog, "uMouse"),
