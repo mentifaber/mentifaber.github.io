@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Roku God Mode — a self-hosted web remote for Roku TVs: auto-discovery, d-pad, volume, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud."/>
+<meta property="og:title" content="Roku God Mode"/>
+<meta property="og:description" content="The whole remote, in a browser, with no account and no cloud."/>
+<meta name="theme-color" content="#000000"/>
+<title>Roku God Mode</title>
+<meta property="og:image" content="https://mentifaber.com/assets/previews/roku.png"/>
+<meta property="og:url" content="https://mentifaber.com/roku.html"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
+  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
+  --indigo: #c8a96e; --indigo-dim: #8a7050;
+  --rust: #b02a1a; --rust-hi: #d94030;
+  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
+  --accent: hsl(28 70% 62%);
+}
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
+.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
+.contours svg { width: 100%; height: 100%; }
+.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
+.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
+  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
+.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
+.name span { color: var(--accent); }
+.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
+  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
+.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent); }
+.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
+  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
+.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
+  border: 1px solid hsla(28,70%,62%,.35); background: linear-gradient(180deg, hsla(28,70%,62%,.08), hsla(28,70%,62%,.02));
+  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
+.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, hsla(28,70%,62%,.16), transparent 70%);
+  opacity: 0; transition: opacity .3s ease; }
+.launch-btn:hover { border-color: var(--accent); }
+.launch-btn:hover::before { opacity: 1; }
+.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--accent); position: relative; }
+.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
+  color: var(--ink); margin-top: .6rem; position: relative; }
+.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
+  margin-top: .6rem; letter-spacing: .06em; position: relative; }
+.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
+  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
+
+.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
+.frag-head { text-align: center; margin-bottom: 5rem; }
+.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
+.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
+  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
+.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
+.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
+.frag:last-child { border-bottom: 1px solid var(--contour); }
+.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
+.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
+.frag p + p { margin-top: .9rem; }
+.frag p b { color: var(--ink); font-weight: 600; }
+.frag p em { color: var(--rust); font-style: italic; }
+.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
+.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
+.frag li b { color: var(--ink); font-weight: 600; }
+
+.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
+  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
+
+footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
+footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
+footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
+footer.mf-foot a:hover { color: var(--rust); }
+
+.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
+.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
+.corner-tl:hover { color: var(--rust); }
+@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
+</style>
+<style>:root{--mf-accent:hsl(252 90% 72%);--mf-glow:hsl(252 95% 64% / .45)}</style>
+<link rel="stylesheet" href="assets/mf.css">
+</head>
+<body>
+<div class="contours">
+  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g fill="none" stroke="#f2e6cf" stroke-width="1">
+      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
+      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
+      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
+      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
+      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
+      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
+      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
+    </g>
+  </svg>
+</div>
+<div class="grain"></div>
+<a href="index.html" class="corner corner-tl">← Atlas</a>
+
+<div class="container">
+  <p class="label">local network · remote control</p>
+  <h1 class="name">Roku <span>God Mode</span></h1>
+  <p class="tagline">The whole remote in a browser — every button, every input, every channel, and a real keyboard for search boxes — talking straight to the TV. No Roku account, no cloud, no app store.</p>
+  <div class="divider"></div>
+  <span class="status-pill"><span class="sw"></span>running — self-hosted, source below</span>
+</div>
+
+<div class="mf-launch-wrap">
+  <a class="mf-launch" href="https://github.com/mentifaber/Concept/tree/claude/roku-tv-control-app-9q7xw9" target="_blank" rel="noopener">
+    <span class="lb-eyebrow">// node · express · ssdp · roku ecp :8060</span>
+    <span class="lb-title">Get the source →</span>
+    <span class="lb-sub">npm install · npm start · opens on localhost:4260</span>
+  </a>
+  <div class="mf-launch-cap"><span>two dependencies</span><span>LAN only by design</span></div>
+</div>
+
+<section class="frag-wrap">
+  <div class="frag-head">
+    <p class="frag-label">why this exists</p>
+    <h2 class="frag-title">The TV already <em>listens</em></h2>
+  </div>
+
+  <div class="frag">
+    <span class="tag">the idea</span>
+    <p>Every Roku runs a small web server on port 8060 — the External Control Protocol — that accepts button presses from anything on the same network, no pairing and no PIN. The official app wraps it in an account and a store listing. <b>Roku God Mode</b> just talks to it directly.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">what it does</span>
+    <ul><li><b>Finds the TV</b> — SSDP discovery over UDP, or add one by IP; several TVs saved, the last one remembered.</li><li><b>Every button</b> — d-pad and OK, Back / Home / Replay / Info, play, rewind and fast-forward, volume and mute, press-and-hold.</li><li><b>Inputs</b> — Antenna, HDMI 1–4 and AV, one tap each.</li><li><b>Channels</b> — the installed apps as an icon grid, pulled from the TV; tap to launch.</li><li><b>A real keyboard</b> — type into whatever field has focus on the TV. Search boxes and sign-in forms stop being a d-pad ordeal.</li><li><b>Desktop shortcuts</b> — arrows, Enter, Backspace, Escape.</li></ul>
+    <div class="stack-row"><span>Node</span><span>Express</span><span>SSDP</span><span>Roku ECP</span><span>Vanilla JS</span></div>
+  </div>
+
+  <div class="frag">
+    <span class="tag">why a server</span>
+    <p>A browser can't open the raw UDP socket SSDP discovery needs, and a TV doesn't send the headers a web page would need to talk to it cross-origin. So a tiny Node server sits on the same network and relays: the page talks to the server, the server talks to the TV, and nothing leaves the house. It checks every device address is a plain IPv4 address before it will reach for it.</p>
+  </div>
+
+  <div class="frag">
+    <span class="tag">honest scope</span>
+    <p>Power <em>off</em> works everywhere. Power <em>on</em> only works on Roku TVs with Fast TV Start enabled — a streaming stick that's fully off has no way to wake itself over the network. The server has no login: it is meant for a home network, and anyone on that network could use it, the same as they could the TV's own protocol. <em>Tested against a stand-in Roku that answers the same protocol; the real proof is the living-room TV.</em></p>
+  </div>
+</section>
+
+<footer class="mf-foot">
+  <p>The remote was always a web page. It just never had one.</p>
+  <a href="index.html">Return to Mentifaber</a>
+</footer>
+<script src="assets/mf.js" defer></script>
+</body>
+</html>
