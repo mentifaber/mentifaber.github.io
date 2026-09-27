@@ -1,0 +1,24 @@
+{
+  "name": "Bubble Editor",
+  "short_name": "Bubble",
+  "description": "Ballooning an engineering drawing for inspection \u2014 drag, number, export.",
+  "start_url": "/bubble-editor-app.html",
+  "scope": "/bubble-editor-app.html",
+  "display": "standalone",
+  "background_color": "#f3f5f9",
+  "theme_color": "#f3f5f9",
+  "icons": [
+    {
+      "src": "../icons/bubble-editor.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/bubble-editor-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

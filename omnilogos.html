@@ -2,6 +2,8 @@
 <html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Omnilogos — 933,573 verses, thirty translations, one graph</title>
+<link rel="icon" href="assets/icons/omnilogos.png">
+<link rel="apple-touch-icon" href="assets/icons/omnilogos.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/omnilogos.png"/>
 <meta property="og:url" content="https://mentifaber.com/omnilogos.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -113,20 +115,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
 </style><style>:root{--mf-accent:hsl(58 90% 68%);--mf-glow:hsl(58 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
-</head><body>
-<div class="contours">
-  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-    <g fill="none" stroke="#f2e6cf" stroke-width="1">
-      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
-      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
-      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
-      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
-      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
-      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
-      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
-    </g>
-  </svg>
-</div>
+</head><body data-mf-terrain=".62">
 <div class="mf-grain"></div>
 <div class="mf-vignette"></div>
 <div class="mf-glow" id="mfGlow"></div>
@@ -139,12 +128,15 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 <header class="hero">
   <div id="count">0</div>
   <div class="clabel">verses ingested</div>
+  <span class="mf-logo" style="--h:58" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z"/><path d="M12 6.5v13"/></svg></span>
   <h1>Omnilogos</h1>
   <p class="tag">Thirty public-domain translations pulled, normalised, tagged, correlated and exported into a single navigable graph.</p>
   <div class="meta">SQLite · Python · Obsidian · fully local</div>
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/omnilogos.webp"><img src="assets/previews/omnilogos.png" alt="Omnilogos — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
 
 <section class="wide rv">
   <div class="eyebrow">The corpus</div>
@@ -327,5 +319,6 @@ document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
   (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
 })();
 </script>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body></html>

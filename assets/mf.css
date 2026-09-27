@@ -112,3 +112,14 @@ footer.mf-foot .mf-contact a[href^="mailto"] { text-transform: none; letter-spac
 h1, h2, h3, .name, .section-title, .frag-title, .lb-title, .mf-rel-name, .wizard-title {
   font-family: 'Mentifaber Display', 'Bricolage Grotesque', Georgia, serif !important; font-weight: 400 !important; }
 h1 em, h1 i, h2 em, h2 i, h3 em, h3 i, .name span { font-style: normal !important; }
+
+/* project logo above the title, and the in-app preview under the hero */
+.mf-logo { --h: 40; display: grid; place-items: center; width: 76px; height: 76px; margin: 0 auto 20px; border-radius: 22px;
+  color: hsl(var(--h) 92% 76%); background: linear-gradient(150deg, hsl(var(--h) 55% 26%), hsl(var(--h) 55% 9%));
+  box-shadow: inset 0 0 0 1px hsl(var(--h) 80% 60% / .4), inset 0 1px 0 hsl(var(--h) 90% 80% / .25), 0 14px 40px hsl(var(--h) 90% 45% / .3); }
+.mf-logo svg { width: 56%; height: 56%; filter: drop-shadow(0 0 8px hsl(var(--h) 100% 60% / .6)); }
+.mf-shot { max-width: 980px; margin: 64px auto 0; padding: 0 16px; text-align: center; position: relative; z-index: 2; }
+.mf-shot img { width: 100%; height: auto; display: block; border-radius: 18px; border: 1px solid rgba(242,230,207,.14);
+  box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 70px -24px var(--mf-glow, rgba(201,162,74,.5)); }
+.mf-shot figcaption { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: rgba(242,230,207,.55); margin-top: 14px; }
+@media (max-width: 600px) { .mf-logo { width: 62px; height: 62px; border-radius: 18px; margin-bottom: 16px; } .mf-shot { margin-top: 44px; padding: 0 12px; } .mf-shot img { border-radius: 12px; } }

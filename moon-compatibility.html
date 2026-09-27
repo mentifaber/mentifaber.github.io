@@ -8,6 +8,8 @@
 <meta property="og:description" content="Any two dates, two moons, overlaid and read."/>
 <meta name="theme-color" content="#000000"/>
 <title>Moon Compatibility</title>
+<link rel="icon" href="assets/icons/moon-compatibility.png">
+<link rel="apple-touch-icon" href="assets/icons/moon-compatibility.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/moon-compatibility.png"/>
 <meta property="og:url" content="https://mentifaber.com/moon-compatibility.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -99,25 +101,13 @@ footer.mf-foot a:hover { color: var(--rust); }
 <style>:root{--mf-accent:hsl(255 90% 68%);--mf-glow:hsl(255 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
 </head>
-<body>
-<div class="contours">
-  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-    <g fill="none" stroke="#f2e6cf" stroke-width="1">
-      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
-      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
-      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
-      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
-      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
-      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
-      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
-    </g>
-  </svg>
-</div>
+<body data-mf-terrain=".62">
 <div class="grain"></div>
 <a href="index.html" class="corner corner-tl">← Atlas</a>
 
 <div class="container">
   <p class="label">lunar reading · two moons</p>
+  <span class="mf-logo" style="--h:255" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4a6.5 6.5 0 1 0 5 11.2A7 7 0 0 1 10 4z"/><circle cx="17" cy="8" r="3.5"/></svg></span>
   <h1 class="name">Moon <span>Compatibility</span></h1>
   <p class="tagline">Any two dates, two moons — drawn, overlaid, plotted on the synodic cycle, and read. Pick the dates, name them, share the link.</p>
   <div class="divider"></div>
@@ -132,6 +122,8 @@ footer.mf-foot a:hover { color: var(--rust); }
   </a>
   <div class="mf-launch-cap"><span>Any two dates</span><span>Shareable link</span></div>
 </div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/moon-compatibility.webp"><img src="assets/previews/moon-compatibility.png" alt="Moon Compatibility — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
 
 <section class="frag-wrap">
   <div class="frag-head">
@@ -165,6 +157,7 @@ footer.mf-foot a:hover { color: var(--rust); }
   <p>Two growing lights, less than a day apart.</p>
   <a href="index.html">Return to Mentifaber</a>
 </footer>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body>
 </html>

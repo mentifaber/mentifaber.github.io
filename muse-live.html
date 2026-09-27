@@ -9,6 +9,12 @@
 <meta name="theme-color" content="#000000"/>
 <meta name="robots" content="noindex, nofollow"/>
 <title>muse — Live Access</title>
+<link rel="icon" href="assets/icons/muse.png">
+<link rel="apple-touch-icon" href="assets/icons/muse.png">
+<link rel="manifest" href="assets/manifests/muse.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="muse">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -144,140 +150,73 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   </div>
 </section>
 
-<div id="live-content">
-  <div class="portal-bar">
-    <div class="portal-brand"><span class="sw"></span>muse<span class="portal-endpoint" id="tm-endpoint"></span></div>
-    <div class="portal-actions">
-      <span class="portal-session" id="tm-session">00:00:00</span>
-      <button class="portal-btn" id="ms-fullscreen">⤢ <span class="btn-label">Fullscreen</span></button>
-      <a class="portal-btn" href="muse.html">Showcase</a>
-      <button class="portal-btn" id="ms-lock">Seal</button>
-    </div>
-  </div>
-  <div class="portal-stage" id="portal-stage">
-    <iframe class="portal-frame" id="ms-portal" title="muse — live" loading="lazy" allowfullscreen></iframe>
-    <p class="portal-fallback">Nothing loading? Tunnel may be offline — <a id="ms-portal-link" href="#" target="_blank" rel="noopener">open directly ↗</a></p>
-  </div>
-</div>
-
+<script type="application/octet-stream" id="mf-blob">
+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
+</script>
+<script src="assets/seal.js"></script>
 <script>
-(function () {
-  "use strict";
-  const AUTH_KEY = "muse-live-auth";
-  const USERNAME = "muse";
-  const PASSWORD = "amusing!";
-
-  // Cloudflare quick-tunnel URL to wherever muse is actually running. Quick tunnels are
-  // ephemeral — this rotates to a brand-new random URL every time cloudflared restarts, so
-  // this constant needs updating (or swapping for a named tunnel) whenever that happens.
-  const MUSE_ENDPOINT = "https://plumbing-evaluations-tests-wall.trycloudflare.com/";
-
-  const lockSection = document.getElementById("lock-section");
-  const content = document.getElementById("live-content");
-  const userInput = document.getElementById("ms-user");
-  const passInput = document.getElementById("ms-pass");
-  const submitBtn = document.getElementById("ms-submit");
-  const errorEl = document.getElementById("ms-error");
-  const lockCard = document.querySelector(".lock-card");
-  const lockBtn = document.getElementById("ms-lock");
-  const sessionEl = document.getElementById("tm-session");
-  const portalFrame = document.getElementById("ms-portal");
-  const portalLink = document.getElementById("ms-portal-link");
-  const endpointEl = document.getElementById("tm-endpoint");
-  const fullscreenBtn = document.getElementById("ms-fullscreen");
-
-  let sessionStart = null, sessionTimer = null;
-
-  function pad(n) { return String(n).padStart(2, "0"); }
-
-  function startSessionClock() {
-    sessionStart = Date.now();
-    clearInterval(sessionTimer);
-    sessionTimer = setInterval(() => {
-      const s = Math.floor((Date.now() - sessionStart) / 1000);
-      sessionEl.textContent = pad(Math.floor(s / 3600)) + ":" + pad(Math.floor(s / 60) % 60) + ":" + pad(s % 60);
-    }, 1000);
-  }
-
-  function connectPortal() {
-    portalLink.href = MUSE_ENDPOINT;
-    try { endpointEl.textContent = " · " + new URL(MUSE_ENDPOINT).host; } catch (e) { endpointEl.textContent = " · " + MUSE_ENDPOINT; }
-    if (!portalFrame.getAttribute("src")) portalFrame.setAttribute("src", MUSE_ENDPOINT);
-  }
-
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  function updateFullscreenLabel() {
-    fullscreenBtn.innerHTML = isFullscreen()
-      ? '⤡ <span class="btn-label">Exit fullscreen</span>'
-      : '⤢ <span class="btn-label">Fullscreen</span>';
-  }
-
-  function toggleFullscreen() {
-    // Fullscreen the whole app shell (bar + stage), not just the iframe's container —
-    // the Fullscreen API only shows the fullscreened element and its descendants, so
-    // fullscreening just the stage would strand the toolbar (and its own exit button)
-    // outside the screen with no way back short of pressing Escape.
-    if (!isFullscreen()) {
-      const req = content.requestFullscreen || content.webkitRequestFullscreen;
-      if (req) req.call(content);
-    } else {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) exit.call(document);
-    }
-  }
-
-  function unlock() {
-    lockSection.style.display = "none";
-    content.classList.add("show");
-    startSessionClock();
-    connectPortal();
-  }
-
-  function lock() {
-    try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
-    if (isFullscreen()) toggleFullscreen();
-    clearInterval(sessionTimer);
-    content.classList.remove("show");
-    lockSection.style.display = "";
-    userInput.value = ""; passInput.value = ""; errorEl.textContent = "";
-    portalFrame.removeAttribute("src");
-  }
-
-  function attempt() {
-    if (userInput.value.trim() === USERNAME && passInput.value === PASSWORD) {
-      try { localStorage.setItem(AUTH_KEY, "granted"); } catch (e) {}
-      errorEl.textContent = "";
-      unlock();
-    } else {
-      errorEl.textContent = "That's not quite right — try again.";
-      lockCard.classList.remove("lock-shake");
-      void lockCard.offsetWidth;
-      lockCard.classList.add("lock-shake");
-    }
-  }
-
-  submitBtn.addEventListener("click", attempt);
-  passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") attempt(); });
-  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") passInput.focus(); });
-  lockBtn.addEventListener("click", lock);
-
-  if (content.requestFullscreen || content.webkitRequestFullscreen) {
-    fullscreenBtn.addEventListener("click", toggleFullscreen);
-    document.addEventListener("fullscreenchange", updateFullscreenLabel);
-    document.addEventListener("webkitfullscreenchange", updateFullscreenLabel);
-  } else {
-    fullscreenBtn.disabled = true;
-    fullscreenBtn.style.opacity = ".4";
-    fullscreenBtn.style.cursor = "default";
-  }
-
-  try {
-    if (localStorage.getItem(AUTH_KEY) === "granted") unlock();
-  } catch (e) {}
-})();
+MFSeal({
+  storeKey: "muse-key",
+  user: document.getElementById("ms-user"), pass: document.getElementById("ms-pass"),
+  btn: document.getElementById("ms-submit"), err: document.getElementById("ms-error"),
+  card: document.querySelector(".lock-card"), shake: "lock-shake",
+  busyText: "Checking…", denyText: "That's not quite right — try again."
+});
+try { localStorage.removeItem("muse-live-auth"); } catch (e) {}
 </script>
 <script src="assets/mf.js" defer></script>
 </body>

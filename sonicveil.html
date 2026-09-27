@@ -3,6 +3,8 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>Sonic Veil — composer, since 2016</title>
+<link rel="icon" href="assets/icons/sonicveil.png">
+<link rel="apple-touch-icon" href="assets/icons/sonicveil.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/sonicveil.png"/>
 <meta property="og:url" content="https://mentifaber.com/sonicveil.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -103,7 +105,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
 </style><style>:root{--mf-accent:hsl(216 90% 68%);--mf-glow:hsl(216 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
-</head><body>
+</head><body data-mf-terrain=".62">
 
 <div class="mf-contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
@@ -130,6 +132,7 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
     <div class="readout" id="readout">stopped · composer since 2016<br>86 tracks · 1,181 followers</div>
   </div>
   <p class="label">mens · mentis — faber · fabri</p>
+  <span class="mf-logo" style="--h:216" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></svg></span>
   <h1>Sonic <em>Veil</em></h1>
   <p class="tagline">Ambient, experimental, electronic — genre-bending explorations, ten years running.</p>
   <div class="meta"><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud</a> · Spotify · Apple Music · 150+ platforms</div>
@@ -144,6 +147,8 @@ footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-widt
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/sonicveil.webp"><img src="assets/previews/sonicveil.png" alt="Sonic Veil — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
 
 <section class="col rv">
   <div class="eyebrow">In their own words</div>
@@ -288,5 +293,6 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 
 </script>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body></html>

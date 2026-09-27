@@ -3,6 +3,8 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>Crime Intelligence — 43 cities in a single HTML file</title>
+<link rel="icon" href="assets/icons/crime-dashboard.png">
+<link rel="apple-touch-icon" href="assets/icons/crime-dashboard.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/crime-dashboard.png"/>
 <meta property="og:url" content="https://mentifaber.com/crime-dashboard.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -110,7 +112,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
 </style><style>:root{--mf-accent:hsl(78 90% 68%);--mf-glow:hsl(78 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
-</head><body>
+</head><body data-mf-terrain=".62">
 <div class="mf-contours">
   <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
     <g fill="none" stroke="#f2e6cf" stroke-width="1">
@@ -141,6 +143,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
     <span><i style="background:var(--alert)"></i>top quartile</span>
     <span><i style="background:var(--steel)"></i>circle area = population</span>
   </div>
+  <span class="mf-logo" style="--h:78" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.8-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.7-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span>
   <h1>Crime <em>Intelligence</em></h1>
   <p class="tag">Forty-three cities, four crime categories, FBI figures projected to 2025 — in one HTML file you can email to somebody.</p>
   <div class="meta">Leaflet.js · single file · no build · no server</div>
@@ -155,6 +158,8 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;f
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/crime-dashboard.webp"><img src="assets/previews/crime-dashboard.png" alt="Crime Intelligence — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
 
 <section class="col rv">
   <div class="eyebrow">Ranked</div>
@@ -328,5 +333,6 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
 </script>
 
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body></html>

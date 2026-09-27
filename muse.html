@@ -2,6 +2,8 @@
 <html lang="en" class="mf-tint"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>muse — an AI that makes music nobody asked for</title>
+<link rel="icon" href="assets/icons/muse.png">
+<link rel="apple-touch-icon" href="assets/icons/muse.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/muse.png"/>
 <meta property="og:url" content="https://mentifaber.com/muse.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -106,20 +108,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 .eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
 </style><style>:root{--mf-accent:hsl(281 90% 68%);--mf-glow:hsl(281 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
-</head><body>
-<div class="contours">
-  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-    <g fill="none" stroke="#f2e6cf" stroke-width="1">
-      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
-      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
-      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
-      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
-      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
-      <circle cx="120" cy="150" r="3" fill="#b02a1a" stroke="none"/>
-      <circle cx="880" cy="860" r="3" fill="#c8a96e" stroke="none"/>
-    </g>
-  </svg>
-</div>
+</head><body data-mf-terrain=".62">
 <div class="mf-grain"></div>
 <div class="mf-vignette"></div>
 <div class="mf-glow" id="mfGlow"></div>
@@ -131,6 +120,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 
 <header class="hero">
   <canvas id="wave" width="1240" height="300" aria-hidden="true"></canvas>
+  <span class="mf-logo" style="--h:281" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M9 9.5l10-2"/></svg></span>
   <h1>m<em>u</em>se</h1>
   <p class="tag">An AI that writes, plays and sings its own music <b>on its own schedule</b>. You're the critic, not the director.</p>
   <div class="meta">Termux · Android · 73–80 MB RSS · zero API keys required</div>
@@ -145,6 +135,8 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/muse.webp"><img src="assets/previews/muse.png" alt="muse — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
 
 <section class="col rv">
   <div class="eyebrow">Psyche</div>
@@ -332,5 +324,6 @@ document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
   (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
 })();
 </script>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body></html>

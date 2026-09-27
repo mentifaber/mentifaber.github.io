@@ -67,7 +67,7 @@ const MF_REL = {"roku": ["meshnet", "phone-mcp", "novarac"], "doccrawler": ["pi"
     wrap.className = 'mf-related';
     wrap.innerHTML = '<div class="mf-rel-head">Related systems</div><div class="mf-rel-grid">' + rel.map(k => {
       const [name, hue, line] = MF_SYS[k];
-      return `<a class="mf-rel" href="${k}.html" style="--h:${hue}"><span class="mf-rel-shot" style="background-image:url(assets/previews/${k}.png)"></span>` +
+      return `<a class="mf-rel" href="${k}.html" style="--h:${hue}"><span class="mf-rel-shot" style="background-image:url(assets/previews/${k}.png);background-image:image-set(url(assets/previews/${k}.webp) type('image/webp'),url(assets/previews/${k}.png) type('image/png'))"></span>` +
              `<span class="mf-rel-name">${name}</span><span class="mf-rel-line">${line}</span></a>`;
     }).join('') + '</div>';
     foot.parentNode.insertBefore(wrap, foot);

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Off the map — Mentifaber</title>
+<link rel="icon" href="/assets/favicon.png">
+<meta name="theme-color" content="#000000">
+<style>
+@font-face{font-family:"Mentifaber Display";src:url(/assets/fonts/MentifaberDisplay-Regular.woff2) format("woff2");font-display:swap}
+:root{--gold:#C9A24A;--bone:#E6DCC8;--muted:#A89A80;--ember:#C24A2C}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100svh;background:radial-gradient(ellipse at 50% 0%,#2a1d08,#0a0806 55%,#000);color:var(--bone);font-family:Georgia,serif;
+  display:flex;align-items:center;justify-content:center;padding:48px 20px;text-align:center}
+main{max-width:720px;width:100%}
+.meta{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:"Mentifaber Display",Georgia,serif;font-weight:400;color:var(--gold);font-size:clamp(46px,11vw,96px);letter-spacing:.03em;margin:14px 0 6px;line-height:1}
+.rule{height:1px;width:min(420px,80%);margin:18px auto 22px;background:linear-gradient(90deg,transparent,var(--ember),var(--gold),transparent)}
+p{font-style:italic;font-size:clamp(18px,4.4vw,22px);line-height:1.5;color:var(--bone);opacity:.9}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:36px 0 30px;text-align:left}
+.grid a{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid rgba(201,162,74,.22);text-decoration:none;color:var(--gold);
+  font-family:"Mentifaber Display",Georgia,serif;font-size:15px;letter-spacing:.02em;min-width:0;transition:border-color .25s,background .25s}
+.grid a:hover{border-color:var(--gold);background:rgba(201,162,74,.06)}
+.mf-ico{--h:40;display:inline-grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;color:hsl(var(--h) 92% 76%);
+  background:linear-gradient(150deg,hsl(var(--h) 55% 24%),hsl(var(--h) 55% 9%));box-shadow:inset 0 0 0 1px hsl(var(--h) 80% 60% / .38)}
+.mf-ico svg{width:58%;height:58%}
+.grid a i{font-style:normal;min-width:0;overflow-wrap:anywhere}
+.home{display:inline-block;padding:14px 26px;background:var(--gold);color:#000;text-decoration:none;font-family:"Mentifaber Display",Georgia,serif;letter-spacing:.1em;font-size:15px}
+</style>
+</head>
+<body>
+<main>
+  <div class="meta">404 · uncharted ground</div>
+  <h1>OFF THE MAP</h1>
+  <div class="rule"></div>
+  <p>Nothing has been built here yet. Maybe it moved, maybe it was never logged. These are all real, though:</p>
+  <div class="grid" id="grid"></div>
+  <a class="home" href="/">Return to Mentifaber</a>
+</main>
+<script src="/assets/icons.js"></script>
+<script>
+(function () {
+  var S = { arsenal: "Mechanic's Arsenal", ballast: "Ballast", cartograph: "Cartograph", "moon-compatibility": "Moon Compatibility", cryptovault: "CryptoVault",
+    "neural-sim": "Neural Sim", novarac: "NovaRAC", "worm-eater": "Worm Eater", "bubble-editor": "Bubble Editor", "sleep-compression": "Sleep Compression",
+    roku: "Roku God Mode", "conflict-atlas": "Conflict Atlas", meshnet: "MeshNet", pi: "Pi", doccrawler: "DocCrawler", omnilogos: "Omnilogos" };
+  var keys = Object.keys(S).sort(function () { return Math.random() - .5; }).slice(0, 6), g = document.getElementById("grid");
+  keys.forEach(function (k) { var a = document.createElement("a"); a.href = "/" + k + ".html"; a.innerHTML = (window.mfIcon ? mfIcon(k) : "") + "<i></i>"; a.querySelector("i").textContent = S[k]; g.appendChild(a); });
+})();
+</script>
+</body>
+</html>

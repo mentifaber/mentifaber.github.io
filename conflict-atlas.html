@@ -8,6 +8,8 @@
 <meta property="og:description" content="Twenty-eight active conflicts, tiered by scale rather than by coverage. June 2026."/>
 <meta name="theme-color" content="#0B0908"/>
 <title>Conflict Atlas — 28 active conflicts, tiered</title>
+<link rel="icon" href="assets/icons/conflict-atlas.png">
+<link rel="apple-touch-icon" href="assets/icons/conflict-atlas.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/conflict-atlas.png"/>
 <meta property="og:url" content="https://mentifaber.com/conflict-atlas.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -87,7 +89,7 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
 <style>:root{--mf-accent:hsl(46 90% 68%);--mf-glow:hsl(46 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
 </head>
-<body>
+<body data-mf-terrain=".62">
 <div class="mf-grain"></div>
 <a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
 <a href="index.html" class="mf-corner mf-return">← Atlas</a>
@@ -96,12 +98,15 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
 
 <header class="hero">
   <div class="eyebrow">twenty-eight · active · june MMXXVI</div>
+  <span class="mf-logo" style="--h:46" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.3 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.3-3.5-8.5s1-6 3.5-8.5z"/></svg></span>
   <h1>Conflict <em>Atlas</em></h1>
   <p class="tag">Twenty-eight active conflicts, tiered by <b>what they cost</b> rather than by how much attention they get.</p>
   <div class="meta">7 major · 11 significant · 10 active</div>
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/conflict-atlas.webp"><img src="assets/previews/conflict-atlas.png" alt="Conflict Atlas — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
 
 <section class="col rv">
   <div class="eyebrow">The premise</div>
@@ -252,6 +257,7 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){
 })},{threshold:.15});
 document.querySelectorAll('.rv,.gap').forEach(function(e){io.observe(e)});
 </script>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body>
 </html>

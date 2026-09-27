@@ -1,0 +1,24 @@
+{
+  "name": "Sleep Compression",
+  "short_name": "Sleep",
+  "description": "A sleep-restriction protocol turned tracker, with the Obsidian vault included.",
+  "start_url": "/sleep-compression-app.html",
+  "scope": "/sleep-compression-app.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "../icons/sleep-compression.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/sleep-compression-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

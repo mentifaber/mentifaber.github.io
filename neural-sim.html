@@ -8,6 +8,8 @@
 <meta property="og:description" content="Simulations of emotional state, a consciousness protocol, and what the runs do not demonstrate."/>
 <meta name="theme-color" content="#04100F"/>
 <title>Neural Sim — watching a network decide what it is</title>
+<link rel="icon" href="assets/icons/neural-sim.png">
+<link rel="apple-touch-icon" href="assets/icons/neural-sim.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/neural-sim.png"/>
 <meta property="og:url" content="https://mentifaber.com/neural-sim.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -87,7 +89,7 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
 <style>:root{--mf-accent:hsl(183 90% 68%);--mf-glow:hsl(183 95% 60% / .45)}</style>
 <link rel="stylesheet" href="assets/mf.css">
 </head>
-<body>
+<body data-mf-terrain=".62">
 <div class="mf-grain"></div>
 <a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
 <a href="index.html" class="mf-corner mf-return">← Atlas</a>
@@ -96,6 +98,7 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
 
 <header class="hero">
   <div class="eyebrow">observe · perturb · record</div>
+  <span class="mf-logo" style="--h:183" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 9V4.5M12 4.5 10 3M12 4.5 14 3M9.4 13.5 5 16.5M5 16.5l-.5 2.4M5 16.5l-2.3-.3M14.6 13.5l4.4 3M19 16.5l.5 2.4M19 16.5l2.3-.3"/></svg></span>
   <h1>Neural <em>Sim</em></h1>
   <p class="tag">Watching a network <b>decide what it is</b> — and being careful about what that sentence can mean.</p>
   <div class="meta">three versions · emotional model · captured states</div>
@@ -110,6 +113,8 @@ footer p{color:var(--dim);font-size:14.5px;max-width:53ch;margin:14px auto 0}
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/neural-sim.webp"><img src="assets/previews/neural-sim.png" alt="Neural Sim — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
 
 <section class="col rv">
   <div class="eyebrow">Three passes</div>
@@ -167,6 +172,7 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){
 })},{threshold:.15});
 document.querySelectorAll('.rv,.gap').forEach(function(e){io.observe(e)});
 </script>
+<script src="assets/js/mf-terrain.js" defer></script>
 <script src="assets/mf.js" defer></script>
 </body>
 </html>

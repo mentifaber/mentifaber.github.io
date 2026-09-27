@@ -9,6 +9,12 @@
 <meta name="theme-color" content="#000000"/>
 <meta name="robots" content="noindex, nofollow"/>
 <title>Weaver — Live Access</title>
+<link rel="icon" href="assets/icons/weaver.png">
+<link rel="apple-touch-icon" href="assets/icons/weaver.png">
+<link rel="manifest" href="assets/manifests/weaver.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Weaver">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -144,140 +150,73 @@ html, body { min-height: 100%; background: var(--paper); color: var(--ink); font
   </div>
 </section>
 
-<div id="live-content">
-  <div class="portal-bar">
-    <div class="portal-brand"><span class="sw"></span>Weaver<span class="portal-endpoint" id="tm-endpoint"></span></div>
-    <div class="portal-actions">
-      <span class="portal-session" id="tm-session">00:00:00</span>
-      <button class="portal-btn" id="wv-fullscreen">⤢ <span class="btn-label">Fullscreen</span></button>
-      <a class="portal-btn" href="weaver.html">Showcase</a>
-      <button class="portal-btn" id="wv-lock">Seal</button>
-    </div>
-  </div>
-  <div class="portal-stage" id="portal-stage">
-    <iframe class="portal-frame" id="wv-portal" title="Weaver — live" loading="lazy" allowfullscreen></iframe>
-    <p class="portal-fallback">Nothing loading? Tunnel may be offline — <a id="wv-portal-link" href="#" target="_blank" rel="noopener">open directly ↗</a></p>
-  </div>
-</div>
-
+<script type="application/octet-stream" id="mf-blob">
+drtnwgkwCk5g5H2VBxTaY3aiFHqvFn0+eEddNX1jyQyBC5XILB6CibrWf5tBea38x5lzb1VnXadadnUb7VAgDRDT88fVPI4PLSaoEQAf6G46pUqs2fGSc5S1
+SoRGuOJOKhv8Qz9EPOGOkq4mufgyBq5Xb9zEBQAsagLSw8ZbANtZGOIGDQWpitY/lRNOPVxQJro3WS5TW5uNvqn9RPYv3RlBagbGhJ9gS1R4kbeQ2g6Eza2H
+tTPD8UkrS5LSYlMzo/0BHLzIEdjyEoI1QsULmDqY3NbSA4OPNtCPgyQJXFLiG0hqdvA8ObM5nYj1EbllALWKsk7YDFCMZl2sXXrdkpL1CMIz9JtGu0JKf84w
+UfKs4Cu7rTkRIkG7VR2MRpDGT914CnVk5iF63sM+59MTJ1fKZ40knO2qNpq54LmHdyLj+8srU2OgZif2a5EOHtc+H3r0yNVvftB/EXhJqesX+7A/zmOG8pBZ
+wcErNB4sFeZ22UgNvU+d40ThcRhTCCqr+erTaNAqfD9/DTzmGS/bktGcH3NJad/5BbE1iGX49/Wi9YADNo8wDPJK6dbTVFpgYMH1OmbOSR5rC2t5dv7KCwwW
+cG4bMlwKWlvG8R2qbpu00pU/xRhLzEiVXHspn0Xvo/+RsJNPXvQGT3/DCWc9Rv1Pjp8Kp2ZCkA1adUYnuM88TGZrUelNkj+Ufvbt9XjtpFnOgJ3xnzTt8bls
+ignuOCEQbJQ7MqXIfdPGKRstVvl7TpBUmSFBPT+/DHO4tysGPvJZcaJfTA4b2Or2CPT1m25V+AiFtvfj5U/kpI6Qp5CDvPLWr1WS49NDU29eFsJZQoG4jqez
+3J6W9vlxCYUWXSdkCB2R2WTw8ExQo/f0ZX6q8HXgSAx+EAQqEENb41BKQqV6E7tJMk2exfNb8cYUI4VRoUctsbLRgxXCtZyB6LGoMdn60AmSuEPYg6MmmdpG
+thBzm5+PmAWkU2SqbfFOJfbcSY/QdDk2JFWvP2OlSNCJ2ccQo2lGIDwB0O626nzTtvlLIcwa3xtxALRG7FaT1UG4fE9LiYmZlItZuEQ71d1x2be4yv3tAR1s
+/a5DrxNGc1fG92FTVcDUF6iGOKIkODkMMrGw6znN//xIgcw4jerxdCYZc0q6vNQfDYVsBNQV1gr2O07Mm0CBxiw++se3KM+fIzw/XgXdWNVsCXLcrST01l4C
+L6PIZBV4Geo0sLiU0XTL/hPFmIwdbMLV4VMUZ0cudKsKAIcWvJ9b/M/uvU+YPTxBn/697qxOc0T/ggVRknOF95NsTrZXOhD8KvNIw6xi+bZjlo/VRbC1nKaP
+PpFrIOfq5e/A/YCaAtXfQn0iIdG7Fd/ikWk4322Bgfemzi5zdA0Q18bJDvR4DlBUf7tW0+QSA3T6IvbxAmdP+0EwVMX20tEZhlvd+bRqY8DUyk971Gi0Kz7X
+ewec8vZaPKamKe020Z8QEwmrycGEeY/OnFFBQCxe8YUSVR60TE2BnMOhzsqUKjuTuOxqMKqdxWp4ks0I6NbWB+4mG30rr6D5Rzfo80NAYNJ6pGlTxmuUTNoW
+4lQHfwSXHlsmvyYvTEv0RSvSl0irtC53pL1umrmCwAS2AkhHD+SGogjdoNxdIorCr33IE/zOyEz/S+71Xg+KTaTJ+SlpQSD7Ms4AhRYKOWCHunwa96f5o0E4
+hbTYr5daifwYgBHzI7WoCywm+ItLiV2JhmKig53sXc6M8CknjdqV2fEywydszHSqW+m50b6rv6r+uc4s8bg8T6xj9fW1TJFJj+pdoPKlLrlMJS6VeervM352
+Bame2807z+ju3QLwrrbmb+mcz01ZARxXtuNEQcQIt5OHMny/5yX+lZp263/Bt4UCoeW5JfwWphhP8TtkAJwzOuAE8rbnfa405zpl/hfKlepDmzY69FuL8sxi
+mAYHbYiHTqv+0ZmfwktKPsFC9TIxCuKYBxi2Vqe8xLMIZ81ofTOF9JYv/zjPVkWzU88RuKLkKtE+fP0u45ub6059yMKOvYn/5H+TqU5p1pfYSpgj9Al7JdIR
+0PL+S1AB+DurWLleF2UedrgLIUlfHdzmDZoHE/WzxdMtJnhoR4NK5LPB2oyspa/GV4Ev+ZLVpvfdBI5qvP3Uwags+xMNNzwhxTCYIvvhr26GpwanewI3Jnnq
+sxjHVtanhQBIqQO1dYeElVcTuDmRaQecQsQJBV0QYOn1D+SPG8lGPfbR1Sh3Y2Z4jO2Wrv7N3WIuwpe/Myr+3nFYDaxOGTlIwCwqIkssebwag7FVVzeb2EsP
+AZdjwDkXfLgJo3KabtijiUkLfm/PX04KzuOfOqN/E2sI7HyHXh/RMEc8GBW1lHd84wiR6LcYo2FSEPuba7eIaFJ4bwzEVp9S5ZZ4xlvtu+9rYIU5/cP7OiRs
+x+GDQqLNtkPEG0TP73MA+Uov6BwZPohPLS06jAxejAMIfc218HuFSM7dgOmEO4FdF7x/KXDzCQ9JyT52scaCb8LCB/8a/gV2pK/Nj5LsLR71PKp9lnWfjDsi
+iCetlK/qXiorgXeYSjB1K+cmDnxR5MnJVfI1CF1e7J0gVVUsVLhc2W2c4FAQQ+ltKR8vUZlytt/dgwa0kU8HbndGWAZ8mspGTsMxnUzwDoZx6ARhr1O5C3V0
+1CcDNg7e2gbTD+qtGWX3c46rGKKBSvTgTt83sbbi7or70o8gbJeQ0QJmwKbLlNhkJwB6Lp5QzMtasGcXnqwxdnxBqdc6K8Kv5ggUzfnLD61S5HyLXZVInuTk
+Z/WEiagXIG2DKYvGgQrPFC1v06LxtqzDNE9SzMrpuo/XLDR8paxU9W5x9C3jvabKtcFXN5GE7lPFNVfzOrjQ6udxLEYYM41bjaWS1TLyMpwT88jFSJ4KJxTR
+LAo/waRBmzUmgspOxBKhQLvNeCIm1FaiB2z3qXJ4tYJDVftE90gCMJlU/wEJI+EjLKfPUtszs/7DE/3mk8FbD4BGB4GwqBLPm7d+JIDUlZkJFRctpXLCpPuH
+l5ytkmN5a6RXH69hxshQp7+kBsVFxkEAddj+r5t66qPBFah5XZr8RtpATfKaMxeKrs9LqvZgZJM9nYchbkVU98suZU/y/GBJSsWQYBt2HZsyOeO9Y5TLkPZg
+h/h+xq4WgzOZesmG6DkSrrQzWVHxkfumAN+p9gGSmvTTUVUVhxiPA+GOLiqiHL4J5R8FfeTQ2FvgqjCBkltcELzDEK6Z3yNXSgw83MRhmF7TUlietT3SrKli
+acqZe8S3NnjODn0tiBNyVwF1vOaOhNnYC7D8LluWhaJ6oOf5PVTbumkYOf9i8WF5d8pkU070/V3VTQZM+5t4xbNduxUWMFRaCsPozucPQsg0HRVQD5+FWOJh
+XmXO2GBtlqnwfaUcfSDXWkRnJgW+r61MnX7YADSyM6liE1FZREip0Y47bPY28Y9DVt1FIp+vmCtPOKzfmCmSc7wjB34RsrRrQAhaUZbuz5flJvYQCNbW1ieU
+p2UiFZXoMcbVG9VkprT/hrMnzZ8HoIim3ZmIj/bX0bSU3l96LPpykwOmgHfv7iCTQb1MsqealvZWgp4rywPjQZTDtgT/UELIvHoXQrKSeHoEb1Fkjmib3r2V
+YHSL7Q/pg+MSDa+jR3JDlBtwPPITVxPUIl30BBUUdF1/kCRZM9+sfDcJFcgS7BSdzI2IbR2Z+aw8t7QXNo0SRVvhO3WMAspA1BcKWOJaFEeffGi8OLVRcSRs
+ZZ6QsfH2iJIdlyFUuWGZIjBt8M5HcdDRzozQOoeIea2SOjY/XJt9/l2vXEebznobJLe3oit0ANFKegCG8QR2f7s7mUwsI5BArQFHUEmTqllo1jWPZCbRD65J
+XvYDfR7Jpe/L+fxVLvL/23GynBaivGwEAFVb+H+b4IWlNvYcsLpa6Luc3F4RhKIrAWyMqpaDrQHz3EN+Npab27T6y1xBmV/2gp9KvgfePsG3rGFr5UmICVjU
+IUopJOsPhcHMqow7aDqe/TmljCvt8M2L6gIP9VWvEtNKxcMaV0vI1ZZq+jWVTNCrOc8/v3fr7R09ZT/X9JwPJbFgW6HeoVMuqs99+oDwqGoK/+6Nfn5ms82Z
+S86oiX9d9hNH7IEBDrSt2R1+Btqx1yT6xp+rlbGCH8PP9IzmmlZgVbPfDEZ95mfn4VWAWqsTexhV379RHBk+RDUvD4KViBtX4qP4h0G6FDAfmbp7sNIMB2bG
+YYAu1hFlWm7/d79XcJ3e2/IgYtSm0cJfGHe8AcsBTETQ7RF0kdANL5XiviXtdz+vt0VMYKBVu+U9k2uP8OBlA2PozAUrIjp9wrSI8RGlszk73DHZOe3XK/8E
+ldCS13MjnKuEFq6+2Ogco549f3/RZ9l1utmC8fB85goa8nOxMJkp6bhQncaStiXOEL2o8+JoB1aJQ8L5Wj6L6HWGGWgyyaoPHtpKALjmrH+qP6Iw3SxR9I2b
+OZx6IJmGnXwNyIdPZJB22VOh8/r2yIB578m3ooaOuNQ2kuwzDxb/xKPGkSa9x4E9iSY7/RD6B5dmClfL5CDG7PkRbDbjW8Bh6xPBxFwYrHGeW5Uq5Y8iNDsH
+HphIRC60jtbjSrXMMQ/+LGh+5sTvYFDrQXHPn3jqmwH79oHqxYJ7X+bzEkFtOduXXprqfunuDQPWV1CCjCsZIHYjEXWTYPh40SdVAxJVtx1Wpa1M1fABcVY7
+sasQK5MWqCLD+xlswp6jNQ3zTBVz12NTwcaD/zaM5M4BSEK7h7jwyaLW2I0B05EclaMENmqW30TalIPJfutfKiDi6tw0rZEK+bLUpR0Vkuy52BIEVh0NuT2v
+IJs6sy/99Ize9e+GK74LOx0O72QWE6f73Lh/Q7dz9etMIVLod1lSvJLNfZKoqQotv+MrPPnCfPEX6T/D33DHv678lGbseT9ZDZutMFMrEDjRmAFN/FmCMj+D
+ix+E7TtSci2lq1RciG1YbD4u1cfEL7wqdHfxzw1Q1Ho2tbI/9h/tedk4dmmkUqTWkxRlNlYG5UneSjB3P/CLC9azPk9semuIYkW0EFMkUpo3cqo8/UdatJQE
+rcDYQ7bMaXBli3FuFqZ2Pr7/cr4p5U/vHurTE2nBbIvaLvsr+Q4w+SYaZmfeywfHrXGwRsQfN3n8F2UcFs35sBmOmlTYU03QqSUo5O+8pbHTYyNCAagSSA6S
+Ks6StCKL2OBYNcHKRrjyJmms44mGxWU77KIt7ergyr179gLbhbA230dDwTRjrhpDj2X96mSXZ81MUCXQ/rdii2qhSmBCDmVXPb6H9Zlf9UC8OZ+VR6kHul+L
+I8SRHCYof0fDqPAblObAzSk6b1wbXAZXbj8xaktQRm8ZmWKiySQjpiEMSCx128nDrxtR+irRWVcrPZBfMU06d5AdHjFxhJEZzvSw3ju48JMMTgD4tShIO2dQ
+h6CneN8IfnABnmlpv7Xwwbthzen11bNUOG3g+KyGEQrrr1JosH/CJAloLsEmQKzTKhJ23sn1sLnWFOLnF/zJhfW3z86uxoQv4IY5X4QqytSYuqVAZMfPDN0z
+/SOqAOcV+HdEVo56wr8vDOgnu5M9aMDp1IPUww8IkJspLN3O0FBP5LWa3OeoUx/1Fl7COe+zDxtpSVM7jmkNR1OIeO+7O5A/HNxKn8desPwJqzA8ziFeIUPe
+/SgrAfBzW0SOPC/vyDYUSvgumEC3RZ300e8Z77RxeUc+FjC/HYGY3i77z5mkCLymaPtOR+46suoEI5m5odZ5Y6UtneTdjedZYuYfXk6ixu9PCldYZqCvU+HD
+nySl6ff4veHyvPCcXn2ZnDy/jqlZx52D5Hb2L1lRe0AsHW4DpIoWWJc+m8EOSWhtiAe66YaTVj+4iNC/AXTmujtm3B2/Z+oGxj16hEcVCeDT3U6vf8QQEjI4
+nLfOZ//gWFb9gNJhvrIipbuTn8t/6MjT7olt06fZ12QQTfQy3mWgsFhWJQkxJwubGV6VUsik7RLfmvLygLPE3WnnZWYB60gvhQmqMzor348dcBvVvq6bL5T5
+MSPw3H+6kNmdLrvXhubkkXRTV2Jp64uSMkr+MAc/CtEAzRnoTeVU91OvIK6vvknXwETpz4LqptywBrN8JOgqc5GvPQD8ETbZCK+goN7L4OE4GNyn8dREFVo7
+EvwoJYxnsUHiJm7BPu1+qCLIspmm0Z4q8TmlcyOF4jyhkUTT4gZWufEW2L0uTobG3fgGfs+4dwXl3sKTOToarigWjhAVZR/JOJOCw+aQDS4pPZ10a1ioYcjZ
+1IpGYS8xJ7KpnrZNMsM+VwErYcuw2diiVZ62mgAbb+uqCj+8/69KI08TU7/X04NOPIUGD8gtMj42g6IeWFZ9JAnBN3iqe72LjQDQ8m+ky66beeU8KDA9zSSb
+NOvaf3wd+BOIu86rMHpDhzC9HzP4aS3ILYXMDyplNymfmp9o+bOvDVOR457LK9scDRsYQCrWa73KPpL9cFVO4v/Gvx3bCGcVOmu1EKW6r0CRL42jZkNAtra8
+zeAyNkeIJ5bRV9FihuwsEjfSSy1D/wJwpIxXHX9Nqvm1JyPbcAg1dR/w8G6Y+Hoanmow
+</script>
+<script src="assets/seal.js"></script>
 <script>
-(function () {
-  "use strict";
-  const AUTH_KEY = "weaver-live-auth";
-  const USERNAME = "Weaver";
-  const PASSWORD = "IsAlive!";
-
-  // Cloudflare quick-tunnel URL to wherever Weaver is actually running. Quick tunnels are
-  // ephemeral — this rotates to a brand-new random URL every time cloudflared restarts, so
-  // this constant needs updating (or swapping for a named tunnel) whenever that happens.
-  const WEAVER_ENDPOINT = "https://prior-extras-lodging-making.trycloudflare.com/";
-
-  const lockSection = document.getElementById("lock-section");
-  const content = document.getElementById("live-content");
-  const userInput = document.getElementById("wv-user");
-  const passInput = document.getElementById("wv-pass");
-  const submitBtn = document.getElementById("wv-submit");
-  const errorEl = document.getElementById("wv-error");
-  const lockCard = document.querySelector(".lock-card");
-  const lockBtn = document.getElementById("wv-lock");
-  const sessionEl = document.getElementById("tm-session");
-  const portalFrame = document.getElementById("wv-portal");
-  const portalLink = document.getElementById("wv-portal-link");
-  const endpointEl = document.getElementById("tm-endpoint");
-  const fullscreenBtn = document.getElementById("wv-fullscreen");
-
-  let sessionStart = null, sessionTimer = null;
-
-  function pad(n) { return String(n).padStart(2, "0"); }
-
-  function startSessionClock() {
-    sessionStart = Date.now();
-    clearInterval(sessionTimer);
-    sessionTimer = setInterval(() => {
-      const s = Math.floor((Date.now() - sessionStart) / 1000);
-      sessionEl.textContent = pad(Math.floor(s / 3600)) + ":" + pad(Math.floor(s / 60) % 60) + ":" + pad(s % 60);
-    }, 1000);
-  }
-
-  function connectPortal() {
-    portalLink.href = WEAVER_ENDPOINT;
-    try { endpointEl.textContent = " · " + new URL(WEAVER_ENDPOINT).host; } catch (e) { endpointEl.textContent = " · " + WEAVER_ENDPOINT; }
-    if (!portalFrame.getAttribute("src")) portalFrame.setAttribute("src", WEAVER_ENDPOINT);
-  }
-
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  function updateFullscreenLabel() {
-    fullscreenBtn.innerHTML = isFullscreen()
-      ? '⤡ <span class="btn-label">Exit fullscreen</span>'
-      : '⤢ <span class="btn-label">Fullscreen</span>';
-  }
-
-  function toggleFullscreen() {
-    // Fullscreen the whole app shell (bar + stage), not just the iframe's container —
-    // the Fullscreen API only shows the fullscreened element and its descendants, so
-    // fullscreening just the stage would strand the toolbar (and its own exit button)
-    // outside the screen with no way back short of pressing Escape.
-    if (!isFullscreen()) {
-      const req = content.requestFullscreen || content.webkitRequestFullscreen;
-      if (req) req.call(content);
-    } else {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) exit.call(document);
-    }
-  }
-
-  function unlock() {
-    lockSection.style.display = "none";
-    content.classList.add("show");
-    startSessionClock();
-    connectPortal();
-  }
-
-  function lock() {
-    try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
-    if (isFullscreen()) toggleFullscreen();
-    clearInterval(sessionTimer);
-    content.classList.remove("show");
-    lockSection.style.display = "";
-    userInput.value = ""; passInput.value = ""; errorEl.textContent = "";
-    portalFrame.removeAttribute("src");
-  }
-
-  function attempt() {
-    if (userInput.value.trim() === USERNAME && passInput.value === PASSWORD) {
-      try { localStorage.setItem(AUTH_KEY, "granted"); } catch (e) {}
-      errorEl.textContent = "";
-      unlock();
-    } else {
-      errorEl.textContent = "That's not quite right — try again.";
-      lockCard.classList.remove("lock-shake");
-      void lockCard.offsetWidth;
-      lockCard.classList.add("lock-shake");
-    }
-  }
-
-  submitBtn.addEventListener("click", attempt);
-  passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") attempt(); });
-  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") passInput.focus(); });
-  lockBtn.addEventListener("click", lock);
-
-  if (content.requestFullscreen || content.webkitRequestFullscreen) {
-    fullscreenBtn.addEventListener("click", toggleFullscreen);
-    document.addEventListener("fullscreenchange", updateFullscreenLabel);
-    document.addEventListener("webkitfullscreenchange", updateFullscreenLabel);
-  } else {
-    fullscreenBtn.disabled = true;
-    fullscreenBtn.style.opacity = ".4";
-    fullscreenBtn.style.cursor = "default";
-  }
-
-  try {
-    if (localStorage.getItem(AUTH_KEY) === "granted") unlock();
-  } catch (e) {}
-})();
+MFSeal({
+  storeKey: "weaver-key",
+  user: document.getElementById("wv-user"), pass: document.getElementById("wv-pass"),
+  btn: document.getElementById("wv-submit"), err: document.getElementById("wv-error"),
+  card: document.querySelector(".lock-card"), shake: "lock-shake",
+  busyText: "Checking…", denyText: "That's not quite right — try again."
+});
+try { localStorage.removeItem("weaver-live-auth"); } catch (e) {}
 </script>
 <script src="assets/mf.js" defer></script>
 </body>

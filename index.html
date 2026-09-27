@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/favicon.png">
+<link rel="manifest" href="assets/manifests/mentifaber.webmanifest">
 <link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,6 +94,9 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
   text-decoration:none;pointer-events:auto;white-space:nowrap;will-change:transform,opacity;background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .pin b{font-family:Syncopate,sans-serif;font-weight:400;font-size:9px;letter-spacing:.2em;color:var(--muted)}
 .pin span{font-family:"Mentifaber Display",Georgia,serif;font-size:21px;color:var(--gold);letter-spacing:.03em}
+.pin span{display:flex;align-items:center;gap:9px}.pin span i{font-style:normal}
+.pin .mf-ico.pin-ico{width:24px;height:24px;border-radius:7px}
+.pin.flip span{flex-direction:row-reverse}
 .pin.flip{border-left:0;border-right:1px solid var(--gold);padding:6px 12px 8px 10px;text-align:right;background:linear-gradient(270deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .pin.st-build{border-color:var(--ember)}.pin.st-build span{color:#E08A6A}
 .pin.st-private span,.pin.st-concept span,.pin.st-stalled span{color:var(--muted)}
@@ -170,6 +174,9 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
 .more{height:0;overflow:hidden;transition:height .32s ease}
 .row.open .more{height:auto}
 .more .inner{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:16px;padding:2px 4px 22px}
+.more .shot{grid-column:2 / span 2;display:block;max-width:560px;margin:2px 0 4px;border:1px solid rgba(201,162,74,.22);overflow:hidden}
+.more .shot img{display:block;width:100%;height:auto;aspect-ratio:16/10;background:#0d0b08;transition:transform .6s ease}
+.more .shot:hover img{transform:scale(1.02)}
 .more p{grid-column:2;margin:0;font-size:18.5px;line-height:1.58;max-width:700px}
 .more .go{grid-column:3;align-self:end}
 .row.open .rowbtn .sm{opacity:0}
@@ -195,6 +202,7 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
   .row.open .rowbtn .sm{display:none}
   .more .inner{grid-template-columns:40px minmax(0,1fr);gap:12px}
   .more .go{grid-column:2;justify-self:start}
+  .more .shot{grid-column:2}
   .cadence{display:none}
 }
 @media (max-width:560px){
@@ -398,6 +406,11 @@ document.getElementById("k-of").textContent = "of " + ROMAN[N-1].toLowerCase();
 var list = document.getElementById("list"), chipsEl = document.getElementById("chips");
 var view = "time", filter = "all", openSet = {};
 function entryLink(s){ return s.href && s.href !== "#" ? SITE + s.href : null; }
+function shotHTML(s, now){
+  if (!s.href || s.href === "#") return "";
+  var k = s.href.replace(/\.html.*$/, ""), src = SITE + "assets/previews/" + k + ".webp";
+  return '<a class="shot" href="' + SITE + s.href + '" tabindex="-1" aria-hidden="true"><img alt="" width="1280" height="800" ' + (now ? 'src="' : 'data-src="') + src + '"></a>';
+}
 function rowHTML(s){
   var id = "r" + s.idx, link = entryLink(s);
   var go = link ? '<a class="btn go" href="' + link + '">' + (s.status==="private" ? "Private entry" : "Read entry") + '</a>'
@@ -407,7 +420,7 @@ function rowHTML(s){
     '<span class="num">' + s.num.toLowerCase() + '</span><span class="nm">' + (window.mfIcon ? mfIcon(s.href) : "") + '<span class="nmt"></span></span><span class="sm"></span>' +
     '<span class="st"><i style="background:' + SCOL[s.status] + '"></i>' + STATUS[s.status] + '</span>' +
     '<span class="dt">' + (s.added ? fmt(s.added).replace(/, \d{4}$/,"") : "ongoing") + '</span></button>' +
-    '<div class="more" id="' + id + '"><div><div class="inner"><p></p>' + go + '</div></div></div></li>';
+    '<div class="more" id="' + id + '"><div><div class="inner">' + shotHTML(s, openSet[id]) + '<p></p>' + go + '</div></div></div></li>';
 }
 function fill(ul, arr){
   ul.innerHTML = arr.map(rowHTML).join("");
@@ -468,7 +481,8 @@ document.querySelector(".seg").addEventListener("click", function(e){ var b = e.
   render(true); });
 list.addEventListener("click", function(e){ var b = e.target.closest(".rowbtn"); if (!b) return;
   var li = b.parentNode, id = li.getAttribute("data-id"), on = !li.classList.contains("open");
-  var m = li.querySelector(".more");
+  var m = li.querySelector(".more"), im = li.querySelector("img[data-src]");
+  if (on && im) { im.src = im.getAttribute("data-src"); im.removeAttribute("data-src"); }
   if (!reduce) {
     var from = m.getBoundingClientRect().height;
     li.classList.toggle("open", on);
@@ -511,8 +525,8 @@ PINS.forEach(function (p, i) {
   var s = p.sys, a = document.createElement("a"), link = entryLink(s);
   a.className = "pin st-" + s.status;
   if (link) a.href = link; else a.setAttribute("aria-disabled","true");
-  a.innerHTML = "<b>entry " + ROMAN[i].toLowerCase() + "</b><span></span>";
-  a.querySelector("span").textContent = s.name;
+  a.innerHTML = "<b>entry " + ROMAN[i].toLowerCase() + "</b><span>" + (window.mfIcon ? mfIcon(s.href, "pin-ico") : "") + "<i></i></span>";
+  a.querySelector("span i").textContent = s.name;
   a.setAttribute("aria-label", "Entry " + ROMAN[i] + ": " + s.name + " (" + STATUS[s.status] + ")");
   a.tabIndex = -1; a.style.opacity = "0"; a.style.visibility = "hidden";
   pinLayer.appendChild(a); p.el = a;
