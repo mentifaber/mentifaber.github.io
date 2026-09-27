@@ -98,3 +98,12 @@ a.mf-xref:hover { color: var(--mf-accent); text-shadow: 0 0 14px var(--mf-glow);
 .mf-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin-top: 18px; }
 footer.mf-foot .mf-contact a { color: var(--mf-accent); }
 footer.mf-foot .mf-contact a[href^="mailto"] { text-transform: none; letter-spacing: .06em; }
+
+/* ── Mentifaber Display: the site's own face for headings and names ──
+   Roman proportions, machined construction (assets/fonts/build.py).
+   Glyphs it lacks (& @ # …) fall through to the page's original font. */
+@font-face { font-family: 'Mentifaber Display'; font-display: swap;
+  src: url('fonts/MentifaberDisplay-Regular.woff2') format('woff2'), url('fonts/MentifaberDisplay-Regular.ttf') format('truetype'); }
+h1, h2, h3, .name, .section-title, .frag-title, .lb-title, .mf-rel-name, .wizard-title {
+  font-family: 'Mentifaber Display', 'Bricolage Grotesque', Georgia, serif !important; font-weight: 400 !important; }
+h1 em, h1 i, h2 em, h2 i, h3 em, h3 i, .name span { font-style: normal !important; }
