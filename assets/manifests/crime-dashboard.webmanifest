@@ -1,0 +1,24 @@
+{
+  "name": "Crime Intelligence",
+  "short_name": "Crime",
+  "description": "Forty-three US cities, four crime categories, FBI data projected to 2025 \u2014 ranked by rate per 100,000, not raw counts, in\u2026",
+  "start_url": "/crime-dashboard-app.html",
+  "scope": "/crime-dashboard-app.html",
+  "display": "standalone",
+  "background_color": "#0b0f16",
+  "theme_color": "#0b0f16",
+  "icons": [
+    {
+      "src": "../icons/crime-dashboard.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/crime-dashboard-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

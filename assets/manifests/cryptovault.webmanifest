@@ -1,0 +1,24 @@
+{
+  "name": "CryptoVault",
+  "short_name": "CryptoVault",
+  "description": "Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file \u2014 the browser's own crypto engine, no server, no\u2026",
+  "start_url": "/cryptovault-app.html",
+  "scope": "/cryptovault-app.html",
+  "display": "standalone",
+  "background_color": "#050b0d",
+  "theme_color": "#050b0d",
+  "icons": [
+    {
+      "src": "../icons/cryptovault.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/cryptovault-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

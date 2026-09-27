@@ -1,0 +1,24 @@
+{
+  "name": "Weaver",
+  "short_name": "Weaver",
+  "description": "A persistent, autonomous entity running locally \u2014 one model to think, one to act, and an archive of everything\u2026",
+  "start_url": "/weaver-live.html",
+  "scope": "/weaver-live.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "icons": [
+    {
+      "src": "../icons/weaver.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/weaver-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
