@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/favicon.png">
+<link rel="manifest" href="assets/manifests/mentifaber.webmanifest">
 <link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,6 +94,9 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
   text-decoration:none;pointer-events:auto;white-space:nowrap;will-change:transform,opacity;background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .pin b{font-family:Syncopate,sans-serif;font-weight:400;font-size:9px;letter-spacing:.2em;color:var(--muted)}
 .pin span{font-family:"Mentifaber Display",Georgia,serif;font-size:21px;color:var(--gold);letter-spacing:.03em}
+.pin span{display:flex;align-items:center;gap:9px}.pin span i{font-style:normal}
+.pin .mf-ico.pin-ico{width:24px;height:24px;border-radius:7px}
+.pin.flip span{flex-direction:row-reverse}
 .pin.flip{border-left:0;border-right:1px solid var(--gold);padding:6px 12px 8px 10px;text-align:right;background:linear-gradient(270deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .pin.st-build{border-color:var(--ember)}.pin.st-build span{color:#E08A6A}
 .pin.st-private span,.pin.st-concept span,.pin.st-stalled span{color:var(--muted)}
@@ -511,8 +515,8 @@ PINS.forEach(function (p, i) {
   var s = p.sys, a = document.createElement("a"), link = entryLink(s);
   a.className = "pin st-" + s.status;
   if (link) a.href = link; else a.setAttribute("aria-disabled","true");
-  a.innerHTML = "<b>entry " + ROMAN[i].toLowerCase() + "</b><span></span>";
-  a.querySelector("span").textContent = s.name;
+  a.innerHTML = "<b>entry " + ROMAN[i].toLowerCase() + "</b><span>" + (window.mfIcon ? mfIcon(s.href, "pin-ico") : "") + "<i></i></span>";
+  a.querySelector("span i").textContent = s.name;
   a.setAttribute("aria-label", "Entry " + ROMAN[i] + ": " + s.name + " (" + STATUS[s.status] + ")");
   a.tabIndex = -1; a.style.opacity = "0"; a.style.visibility = "hidden";
   pinLayer.appendChild(a); p.el = a;
