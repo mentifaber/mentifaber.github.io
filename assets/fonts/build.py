@@ -471,11 +471,16 @@ def _e():
     bar = box(cx - rx, XH / 2 - 10, cx + rx, XH / 2 - 10 + tl).intersection(ellipse(cx, XH / 2, rx, XH / 2 + OV))
     return U([g, bar])
 
-@glyph("f.l", 4, -36)
+@glyph("f.l", 6, -24)
 def _f():
-    hook = ring(Tl + 110, ASC - 150, 110 + Tl, 150 + OV / 2, Tl * 0.9, tl).intersection(box(Tl / 2, ASC - 150, 900, 900))
-    beak = box(Tl + 110 + Tl - 44, ASC - 110, Tl + 110 + Tl + 8, ASC + OV / 2)
-    return U([box(0, 0, Tl, ASC - 150), hook, beak, box(-24, XH - tl, 240, XH), lserif_b(0, Tl)])
+    # the stem sweeps up and over into a thin arm (Roman stress: thick vertical,
+    # thin horizontal) and ends in a machined beak like the capital arms
+    x = Tl / 2
+    hook = sweep([((x, XH - 20), (x, ASC - 90), (x + 30, ASC - tl / 2), (x + 150, ASC - tl / 2)),
+                  ((x + 150, ASC - tl / 2), (x + 200, ASC - tl / 2), (x + 235, ASC - tl / 2 - 6), (x + 260, ASC - 30))],
+                 Tl / 2, tl / 2)
+    beak = box(x + 222, ASC - 118, x + 274, ASC - 10)
+    return U([box(0, 0, Tl, XH), hook, beak, box(-34, XH - tl, 250, XH), lserif_b(0, Tl)])
 
 @glyph("g.l", 30, 30)
 def _g():
@@ -542,11 +547,11 @@ def _q():
     return U([box(W - Tl, DSC, W, XH), lserif_b(W - Tl, W, DSC),
               lring(W - 270, rx=240).difference(box(W - Tl / 2, -100, 2000, 900))])
 
-@glyph("r.l", 30, 10)
+@glyph("r.l", 30, 4)
 def _r():
-    cx, cy, rx, ry = Tl + 150, XH - 170, 150 + Tl, 170
-    flag = ring(cx, cy, rx, ry + OV / 2, Tl * 0.85, tl).intersection(box(Tl / 2, cy + 20, cx + 30, 900))
-    beak = box(cx - 10, XH - 120, cx + 44, XH + OV / 2)
+    x = Tl / 2
+    flag = sweep([((x, XH - 150), (x + 40, XH - 40), (x + 110, XH - tl / 2), (x + 190, XH - tl / 2))], Tl * 0.42, tl / 2)
+    beak = box(x + 160, XH - 108, x + 212, XH - 4)
     return U([lstem(0, 0, XH, top="l", bot="lr"), flag, beak])
 
 @glyph("s.l", 30, 30)
@@ -561,10 +566,12 @@ def _s():
     g = sweep([tuple(P(p) for p in sg) for sg in segs], Tl * 0.92 / 2, tl / 2)
     return g.difference(box(300 * kx, 440 * k, 600, 590 * k)).difference(box(-100, 130 * k, 110 * kx, 300 * k))
 
-@glyph("t.l", 20, 10)
+@glyph("t.l", 14, 10)
 def _t():
-    return U([box(40, 0, 40 + Tl, XH + 130), box(0, XH - tl, 280, XH),
-              box(40, 0, 300, tl), box(300 - 46, 0, 300, 96)])
+    x0 = 50
+    top = Polygon([(x0, XH + 40), (x0 + Tl, XH + 150), (x0 + Tl, XH), (x0, XH)])   # angled cut at the top
+    return U([box(x0, 0, x0 + Tl, XH), top, box(0, XH - tl, 290, XH),
+              box(x0, 0, 300, tl), box(300 - 50, 0, 300, 100)])
 
 @glyph("u.l", 30, 30)
 def _u():
