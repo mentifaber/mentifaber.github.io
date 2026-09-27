@@ -347,7 +347,8 @@ def dot(x=0, y=0):
     return box(x, y, x + T, y + T)
 
 def comma_shape(y=0):
-    tail, _, _, _ = diag(8, T - 36, 42, y - 170, y + 40)
+    # the dot tapers straight down-left into the tail, like a cut wedge
+    tail = Polygon([(T * 0.30, y + 10), (T, y + 10), (T * 0.46, y - 190), (T * 0.06, y - 190)])
     return U([dot(0, y), tail])
 
 @glyph("period", 50, 50)
@@ -488,7 +489,7 @@ def _g():
     bowl_ = lring(225, cy=XH / 2 + 30, rx=225, ry=XH / 2 - 10).difference(box(W - Tl / 2, -300, 900, 900))
     stem_ = box(W - Tl, -60, W, XH)
     ear = box(W - Tl, XH - SH, W + SE, XH)
-    hook = ring(W / 2 + 10, -60, W / 2 - 10 + 5, 170, Tl * 0.9, tl).intersection(box(W * 0.18, -900, 900, -60))
+    hook = ring(W / 2, -60, W / 2, 170, Tl, tl).intersection(box(W * 0.16, -900, 900, -60))
     return U([bowl_, stem_, ear, hook])
 
 @glyph("h.l", 30, 30)
@@ -600,8 +601,9 @@ def _x():
 
 @glyph("y.l", 10, 10)
 def _y():
-    k_, _, kt, _ = diag(270, 40, Tl, 0, XH)
     n_, nb, nt, _ = diag(110, 480, tl, DSC, XH)
+    k_, _, kt, _ = diag(232, 40, Tl, 0, XH)
+    k_ = k_.intersection(halfplane((110 + 40, DSC), (480 + 40, XH), (0, XH)))
     return U([k_, n_, lserif_t(*kt), lserif_t(*nt), box(nb[0] - 40, DSC, nb[1] + 10, DSC + SH)])
 
 @glyph("z.l", 26, 26)
