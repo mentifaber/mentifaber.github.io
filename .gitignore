@@ -1,2 +1,2 @@
-# Vigil plaintext source — never commit (see tools/vigil-seal.mjs)
-.vigil-src/
+# Plaintext of sealed pages — never commit (see tools/seal.mjs)
+.private/
