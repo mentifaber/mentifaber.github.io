@@ -1,0 +1,2 @@
+# Plaintext of sealed pages — never commit (see tools/seal.mjs)
+.private/
