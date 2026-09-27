@@ -3,6 +3,8 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
 <title>MeshNet — LoRa mesh with no tower in the middle</title>
+<link rel="icon" href="assets/icons/meshnet.png">
+<link rel="apple-touch-icon" href="assets/icons/meshnet.png">
 <meta property="og:image" content="https://mentifaber.com/assets/previews/meshnet.png"/>
 <meta property="og:url" content="https://mentifaber.com/meshnet.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
@@ -103,6 +105,7 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif;}
 <header class="hero">
   <canvas id="mesh" width="1200" height="890"></canvas>
   <div class="hint" id="hint">tap a node to send a packet · tap it again to kill it</div>
+  <span class="mf-logo" style="--h:333" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="7" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="13" r="2.2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="18.5" r="2"/><path d="M6.6 8.4l3.8 3.2M17.4 7.3l-3.8 4.2M10.5 14.6l-3 3M13.7 14.5l2.9 2.7M7 6.9l10-.8"/></svg></span>
   <h1>Mesh<b>Net</b></h1>
   <p class="tag">A browser interface for a Meshtastic network — <b>LoRa radios that route around whatever's missing</b>.</p>
   <div class="meta">Python · Flask · Meshtastic · MQTT</div>
@@ -113,6 +116,8 @@ h1,h2{font-family:'Bricolage Grotesque',sans-serif;}
 </header>
 
 <div class="gap"><i></i></div>
+
+<figure class="mf-shot"><img src="assets/previews/meshnet.png" alt="MeshNet — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"><figcaption>on desktop and phone</figcaption></figure>
 
 <section class="col rv">
   <div class="eyebrow">Routing</div>
