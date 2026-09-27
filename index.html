@@ -152,6 +152,15 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
 .rowbtn{width:100%;display:grid;grid-template-columns:54px minmax(0,1.1fr) minmax(0,2fr) 190px 80px;align-items:center;gap:16px;min-height:60px;padding:10px 4px;
   background:none;border:0;color:inherit;text-align:left;cursor:pointer;font:inherit}
 .rowbtn:hover{background:rgba(201,162,74,.06)}
+.mf-ico{--h:40;display:inline-grid;place-items:center;flex:none;width:36px;height:36px;border-radius:10px;color:hsl(var(--h) 92% 76%);
+  background:linear-gradient(150deg,hsl(var(--h) 55% 24%),hsl(var(--h) 55% 9%));
+  box-shadow:inset 0 0 0 1px hsl(var(--h) 80% 60% / .38),inset 0 1px 0 hsl(var(--h) 90% 80% / .25),0 6px 18px hsl(var(--h) 90% 40% / .18);transition:transform .25s}
+.mf-ico svg{width:58%;height:58%;filter:drop-shadow(0 0 4px hsl(var(--h) 100% 60% / .55))}
+.rowbtn .nm{display:flex;align-items:center;gap:14px}
+.rowbtn:hover .mf-ico{transform:translateY(-1px) scale(1.06)}
+.card .card-head{display:flex;align-items:center;gap:14px}
+.card .mf-ico.big{width:48px;height:48px;border-radius:13px}
+
 .rowbtn .num{font-family:Syncopate,sans-serif;font-size:9px;letter-spacing:.16em;color:var(--muted)}
 .rowbtn .nm{font-family:"Mentifaber Display",Georgia,serif;font-size:20px;color:var(--gold);letter-spacing:.03em}
 .rowbtn .sm{font-size:17px;color:var(--bone);opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -310,7 +319,7 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
 <div class="pins" id="pins"></div>
 <aside class="card" id="card" aria-live="polite">
 <div class="top meta"><span id="c-pl">entry i</span><span id="c-cat">tools</span></div>
-<h3 class="disp" id="c-name">—</h3>
+<div class="card-head"><span id="c-ico"></span><h3 class="disp" id="c-name">—</h3></div>
 <p id="c-desc"></p>
 <div class="foot"><small class="meta" id="c-status">running</small><span id="c-act"></span></div>
 </aside>
@@ -318,6 +327,7 @@ h2{color:var(--gold);font-size:clamp(32px,4.4vw,58px);line-height:1.06;margin:12
 <a class="btn flyskip" id="flyskip" href="#log">Skip to the log</a>
 <button class="motion" type="button" id="motion"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path id="mico" d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"></path></svg><span class="t">Pause motion</span></button>
 
+<script src="assets/icons.js"></script>
 <script>
 (function () {
 "use strict";
@@ -394,7 +404,7 @@ function rowHTML(s){
                 : '<span class="go" style="font-style:italic;color:var(--muted)">Not yet open</span>';
   return '<li class="row' + (openSet[id] ? " open" : "") + '" data-id="' + id + '">' +
     '<button class="rowbtn" type="button" aria-expanded="' + (openSet[id] ? "true" : "false") + '" aria-controls="' + id + '">' +
-    '<span class="num">' + s.num.toLowerCase() + '</span><span class="nm"></span><span class="sm"></span>' +
+    '<span class="num">' + s.num.toLowerCase() + '</span><span class="nm">' + (window.mfIcon ? mfIcon(s.href) : "") + '<span class="nmt"></span></span><span class="sm"></span>' +
     '<span class="st"><i style="background:' + SCOL[s.status] + '"></i>' + STATUS[s.status] + '</span>' +
     '<span class="dt">' + (s.added ? fmt(s.added).replace(/, \d{4}$/,"") : "ongoing") + '</span></button>' +
     '<div class="more" id="' + id + '"><div><div class="inner"><p></p>' + go + '</div></div></div></li>';
@@ -402,7 +412,7 @@ function rowHTML(s){
 function fill(ul, arr){
   ul.innerHTML = arr.map(rowHTML).join("");
   Array.prototype.forEach.call(ul.children, function(li, k){
-    var s = arr[k]; li.querySelector(".nm").textContent = s.name; li.querySelector(".sm").textContent = short(s.desc);
+    var s = arr[k]; li.querySelector(".nmt").textContent = s.name; li.querySelector(".sm").textContent = short(s.desc);
     li.querySelector(".more p").textContent = s.desc;
   });
 }
@@ -514,6 +524,7 @@ function showCard(i) {
   document.getElementById("c-pl").textContent = "entry " + ROMAN[i].toLowerCase();
   document.getElementById("c-cat").textContent = s.cat.toLowerCase();
   document.getElementById("c-name").textContent = s.name;
+  document.getElementById("c-ico").innerHTML = window.mfIcon ? mfIcon(s.href, "big") : "";
   document.getElementById("c-desc").textContent = s.desc;
   document.getElementById("c-status").textContent = STATUS[s.status] + (s.added ? " · since " + fmt(s.added).toLowerCase() : "");
   var act = document.getElementById("c-act"); act.innerHTML = "";

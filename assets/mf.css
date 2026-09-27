@@ -87,6 +87,11 @@ a.mf-xref:hover { color: var(--mf-accent); text-shadow: 0 0 14px var(--mf-glow);
 .mf-rel:hover .mf-rel-shot { filter: saturate(1.05) brightness(1); }
 .mf-rel-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--c);
   text-shadow: 0 0 16px var(--g); padding: .9rem 1rem .25rem; }
+.mf-rel-name { display: flex; align-items: center; gap: .7rem; }
+.mf-ico { --h: 40; display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; color: hsl(var(--h) 92% 76%);
+  background: linear-gradient(150deg, hsl(var(--h) 55% 24%), hsl(var(--h) 55% 9%));
+  box-shadow: inset 0 0 0 1px hsl(var(--h) 80% 60% / .38), inset 0 1px 0 hsl(var(--h) 90% 80% / .25), 0 6px 18px hsl(var(--h) 90% 40% / .18); }
+.mf-ico svg { width: 58%; height: 58%; filter: drop-shadow(0 0 4px hsl(var(--h) 100% 60% / .55)); }
 .mf-rel-line { font-family: 'Newsreader', serif; font-size: .92rem; line-height: 1.45; color: #c4b09a; padding: 0 1rem 1.1rem; }
 
 /* phones: keep corner nav legible and tappable */
