@@ -1,0 +1,166 @@
+{
+ "arsenal": {
+  "name": "Mechanic's Arsenal",
+  "version": "1.4",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Fix the intro, add categories and sorting, update Mechanic's Arsenal",
+   "Add Mechanic's Arsenal project page"
+  ],
+  "page": "mechanics-arsenal.html"
+ },
+ "ballast": {
+  "name": "Ballast",
+  "version": "1.3",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Split Ballast and Vigil into bio/landing pages with launch links"
+  ],
+  "page": "ballast-app.html"
+ },
+ "bubble-editor": {
+  "name": "Bubble Editor",
+  "version": "1.3",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "bubble-editor-app.html"
+ },
+ "crime-dashboard": {
+  "name": "Crime Intelligence",
+  "version": "1.4",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "crime-dashboard-app.html"
+ },
+ "cryptovault": {
+  "name": "CryptoVault",
+  "version": "1.3",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "cryptovault-app.html"
+ },
+ "monstrosity": {
+  "name": "The Monstrosity",
+  "version": "1.4",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "monstrosity-log.html"
+ },
+ "moon-compatibility": {
+  "name": "Moon Compatibility",
+  "version": "1.4",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Compare any two dates",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "moon-compatibility-app.html"
+ },
+ "neural-sim": {
+  "name": "Neural Sim",
+  "version": "1.4",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "neural-sim-v3.html"
+ },
+ "sleep-compression": {
+  "name": "Sleep Compression",
+  "version": "1.3",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Publish four new projects and the real apps behind three others"
+  ],
+  "page": "sleep-compression-app.html"
+ },
+ "vigil": {
+  "name": "Vigil",
+  "version": "1.7",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Fix the Space Weather, Vigil Mini and Next Launch widgets",
+   "Revamp Flutterbloom and seal it like Vigil"
+  ],
+  "page": "vigil-app.html"
+ },
+ "muse": {
+  "name": "Muse",
+  "version": "1.5",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Seal Muse and Weaver behind real logins",
+   "Give every project page its own glowing identity and connect them"
+  ],
+  "page": "muse-live.html"
+ },
+ "weaver": {
+  "name": "Weaver",
+  "version": "1.7",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "App icons and home-screen install for every live app; fresh Roku preview",
+   "Seal Muse and Weaver behind real logins",
+   "Give every project page its own glowing identity and connect them"
+  ],
+  "page": "weaver-live.html"
+ },
+ "flutterbloom": {
+  "name": "Flutterbloom",
+  "version": "1.12",
+  "date": "2026-09-28",
+  "notes": [
+   "Pinch to zoom, drag to look around, brighter nights",
+   "Seasonal events and a garden photo album",
+   "Serve previews as WebP (11.5 MB → 1.1 MB)",
+   "Give every project page its app icon, logo and in-app preview"
+  ],
+  "page": "flutterbloom.html"
+ },
+ "wx": {
+  "name": "Quick Weather",
+  "version": "1.6",
+  "date": "2026-09-28",
+  "notes": [
+   "Apps now show their version and what's new after an update",
+   "Mentifaber Display 0.2: lowercase + site-wide headings",
+   "Add Vigil KWGT widgets and /widgets download page",
+   "Add wide one-row KWGT weather widget"
+  ],
+  "page": "wx/index.html"
+ }
+}
