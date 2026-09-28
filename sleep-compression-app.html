@@ -200,5 +200,6 @@ function draw() {
 $('rows').addEventListener('click', e => { const d = e.target.dataset.del; if (!d) return; nights = nights.filter(n => n.date !== d); store(nights); draw(); });
 preview(); draw();
 </script>
+<script src="assets/js/mf-version.js" data-app="sleep-compression" data-pos="bl" defer></script>
 </body>
 </html>
