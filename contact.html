@@ -6,8 +6,8 @@
 <meta name="description" content="Contact Mentifaber — send a quick note or write to anders@mentifaber.com."/>
 <meta property="og:title" content="Contact Mentifaber"/>
 <meta property="og:description" content="A quick reach-out, or a proper email. Either way it lands with a person."/>
-<meta property="og:image" content="https://mentifaber.com/assets/previews/home.png"/>
-<meta property="og:url" content="https://mentifaber.com/contact.html"/>
+<meta property="og:image" content="https://mentifaber.github.io/assets/previews/home.png"/>
+<meta property="og:url" content="https://mentifaber.github.io/contact.html"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="theme-color" content="#000000"/>
 <title>Contact Mentifaber</title>
@@ -172,8 +172,8 @@ footer.mf-foot a { display: inline-block; margin-top: 14px; color: var(--indigo-
     const name = $('name').value.trim(), from = $('from').value.trim(), msg = $('msg').value.trim();
     if (!msg) { status('Add a message first.'); $('msg').focus(); return; }
     if (from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from)) { status('That email looks off — check it or leave it blank.'); $('from').focus(); return; }
-    const subject = `[mentifaber.com] ${topic}${name ? ' — ' + name : ''}`;
-    const body = `${msg}\n\n—\n${name || 'Sent from mentifaber.com'}${from ? '\nReply to: ' + from : ''}`;
+    const subject = `[mentifaber] ${topic}${name ? ' — ' + name : ''}`;
+    const body = `${msg}\n\n—\n${name || 'Sent from mentifaber.github.io'}${from ? '\nReply to: ' + from : ''}`;
     location.href = `mailto:${TO}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     status('Opening your email app…');
   });
