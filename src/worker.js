@@ -2,7 +2,8 @@
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
 //   - cloud saves (GET/PUT/DELETE /api/save/<app>) for signed-in apps
-// Sessions, rate limits and saves live in one SQLite-backed Durable Object.
+//   - a cloud photo album (/api/photos/<app>[/<t>]) for Flutterbloom
+// Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
 import { DurableObject } from "cloudflare:workers";
 
 // Login proofs: the browser sends PBKDF2-SHA256(user\0pass, SHA-256("mentifaber-login:<app>"),
@@ -18,6 +19,7 @@ const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-l
 const SAVES = new Set(["flutterbloom"]);
 const SESSION_DAYS = 180;
 const MAX_SAVE = 512 * 1024;
+const MAX_PHOTO = 1.5 * 1024 * 1024, MAX_PHOTOS = 60;
 const LOGIN_LIMIT = 10, LOGIN_WINDOW = 15 * 60 * 1000;
 
 export class Store extends DurableObject {
@@ -47,6 +49,33 @@ export class Store extends DurableObject {
     return rec.savedAt;
   }
   async dropSave(app) { await this.ctx.storage.delete("save:" + app); }
+
+  // Photo album: the index lists {t, size} newest first; deleted photo times are
+  // remembered so another device drops its copy instead of uploading it again.
+  async album(app) {
+    return (await this.ctx.storage.get("album:" + app)) || { photos: [], deleted: [] };
+  }
+  async getPhoto(app, t) { return (await this.ctx.storage.get("photo:" + app + ":" + t)) || null; }
+  async putPhoto(app, t, bytes) {
+    const a = await this.album(app);
+    if (a.deleted.includes(t)) return a;
+    if (!a.photos.some((p) => p.t === t)) {
+      await this.ctx.storage.put("photo:" + app + ":" + t, bytes);
+      a.photos.push({ t, size: bytes.byteLength });
+      a.photos.sort((x, y) => y.t - x.t);
+      for (const old of a.photos.splice(MAX_PHOTOS)) await this.ctx.storage.delete("photo:" + app + ":" + old.t);
+      await this.ctx.storage.put("album:" + app, a);
+    }
+    return a;
+  }
+  async dropPhoto(app, t) {
+    const a = await this.album(app);
+    a.photos = a.photos.filter((p) => p.t !== t);
+    if (!a.deleted.includes(t)) a.deleted = [t, ...a.deleted].slice(0, 500);
+    await this.ctx.storage.delete("photo:" + app + ":" + t);
+    await this.ctx.storage.put("album:" + app, a);
+    return a;
+  }
 }
 
 const store = (env) => env.STORE.get(env.STORE.idFromName("main"));
@@ -115,6 +144,30 @@ async function cloudSave(req, env, app) {
   return json({ error: "method" }, 405);
 }
 
+async function photos(req, env, app, t) {
+  if (!SAVES.has(app)) return json({ error: "not found" }, 404);
+  if (!(await session(req, env, app))) return json({ error: "signed out" }, 401);
+  const s = store(env);
+  if (!t) return req.method === "GET" ? json(await s.album(app)) : json({ error: "method" }, 405);
+  if (!/^\d{1,15}$/.test(t)) return json({ error: "bad photo" }, 400);
+  const id = Number(t);
+  if (req.method === "GET") {
+    const bytes = await s.getPhoto(app, id);
+    return bytes
+      ? new Response(bytes, { headers: { "content-type": "image/jpeg", "cache-control": "private, max-age=31536000, immutable" } })
+      : json({ error: "not found" }, 404);
+  }
+  if (req.method === "PUT") {
+    const bytes = await req.arrayBuffer();
+    if (!bytes.byteLength || bytes.byteLength > MAX_PHOTO) return json({ error: "too big" }, 413);
+    const head = new Uint8Array(bytes, 0, 3);
+    if (head[0] !== 0xff || head[1] !== 0xd8 || head[2] !== 0xff) return json({ error: "jpeg only" }, 415);
+    return json(await s.putPhoto(app, id, bytes));
+  }
+  if (req.method === "DELETE") return json(await s.dropPhoto(app, id));
+  return json({ error: "method" }, 405);
+}
+
 // A sealed page without a session is sent with its ciphertext removed, so the
 // lock screen shows but there is nothing to attack offline.
 async function sealedPage(req, env, app) {
@@ -134,10 +187,11 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path.startsWith("/api/")) {
-      const [, , route, app] = path.split("/");
+      const [, , route, app, sub] = path.split("/");
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "save" && app) return cloudSave(req, env, app);
+      if (route === "photos" && app) return photos(req, env, app, sub);
       return json({ error: "not found" }, 404);
     }
     const app = PAGES[path.replace(/\.html$/, "").replace(/\/$/, "")];
