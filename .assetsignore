@@ -8,3 +8,5 @@ node_modules
 tools
 scripts
 CNAME
+package.json
+package-lock.json
