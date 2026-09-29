@@ -3,6 +3,8 @@
 //     only sent to a browser holding a session from POST /api/login
 //   - cloud saves (GET/PUT/DELETE /api/save/<app>) for signed-in apps
 //   - a cloud photo album (/api/photos/<app>[/<t>]) for Flutterbloom
+//   - notes for Flutterbloom (/api/notes/flutterbloom): read with her session,
+//     written from garden-notes.html with the Vigil (owner) session
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
 import { DurableObject } from "cloudflare:workers";
 
@@ -49,6 +51,8 @@ export class Store extends DurableObject {
     return rec.savedAt;
   }
   async dropSave(app) { await this.ctx.storage.delete("save:" + app); }
+  async getNotes(app) { return (await this.ctx.storage.get("notes:" + app)) || []; }
+  async putNotes(app, notes) { await this.ctx.storage.put("notes:" + app, notes); }
 
   // Photo album: the index lists {t, size} newest first; deleted photo times are
   // remembered so another device drops its copy instead of uploading it again.
@@ -168,6 +172,42 @@ async function photos(req, env, app, t) {
   return json({ error: "method" }, 405);
 }
 
+// Notes are short messages that appear in the garden: on a date ("MM-DD",
+// once a year) or, with no date, one at random now and then.
+const MAX_NOTES = 200;
+async function notes(req, env, app) {
+  if (app !== "flutterbloom") return json({ error: "not found" }, 404);
+  const owner = await session(req, env, "vigil");
+  const s = store(env);
+  if (req.method === "GET") {
+    if (!owner && !(await session(req, env, app))) return json({ error: "signed out" }, 401);
+    return json({ notes: await s.getNotes(app), owner: !!owner });
+  }
+  if (req.method === "PUT") {
+    if (!owner) return json({ error: "owner only" }, 401);
+    let body;
+    try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
+    const list = Array.isArray(body && body.notes) ? body.notes : null;
+    if (!list || list.length > MAX_NOTES) return json({ error: "bad notes" }, 400);
+    const clean = [];
+    for (const n of list) {
+      const text = String((n && n.text) || "").trim().slice(0, 2000);
+      if (!text) continue;
+      const on = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(n.on || "") ? n.on : "";
+      clean.push({
+        id: /^[a-z0-9]{6,24}$/.test(n.id || "") ? n.id : hex(crypto.getRandomValues(new Uint8Array(8))),
+        on, text,
+        title: String(n.title || "").trim().slice(0, 80),
+        emoji: String(n.emoji || "💌").slice(0, 8),
+        from: String(n.from || "").trim().slice(0, 40),
+      });
+    }
+    await s.putNotes(app, clean);
+    return json({ notes: clean });
+  }
+  return json({ error: "method" }, 405);
+}
+
 // A sealed page without a session is sent with its ciphertext removed, so the
 // lock screen shows but there is nothing to attack offline.
 async function sealedPage(req, env, app) {
@@ -192,6 +232,7 @@ export default {
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "save" && app) return cloudSave(req, env, app);
       if (route === "photos" && app) return photos(req, env, app, sub);
+      if (route === "notes" && app) return notes(req, env, app);
       return json({ error: "not found" }, 404);
     }
     const app = PAGES[path.replace(/\.html$/, "").replace(/\/$/, "")];

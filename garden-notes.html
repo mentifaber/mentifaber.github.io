@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Garden Notes</title>
+<link rel="icon" href="assets/icons/flutterbloom.png">
+<style>
+:root{--bg:#fbf4f8;--card:#fff;--line:#f0dce8;--ink:#3b2440;--dim:#8a7390;--pink:#ff7aa8;--lav:#b98bff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1422;--card:#261c2f;--line:#3a2c46;--ink:#f6e9f7;--dim:#b7a2c2}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 80px}
+.wrap{max-width:640px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}
+p.lead{color:var(--dim);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+label{display:block;font-size:12px;font-weight:700;color:var(--dim);margin:0 0 4px;text-transform:uppercase;letter-spacing:.06em}
+input,textarea,select{width:100%;font:inherit;color:inherit;background:transparent;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+textarea{min-height:96px;resize:vertical}
+.row{display:grid;grid-template-columns:72px 1fr 140px;gap:10px;margin-bottom:10px}
+@media (max-width:520px){.row{grid-template-columns:64px 1fr}.row .when{grid-column:1/-1}}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 16px;cursor:pointer}
+.primary{background:linear-gradient(135deg,var(--pink),var(--lav));color:#fff}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.del{background:transparent;color:#d0507a;padding:6px 8px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:12px;background:var(--bg);padding:10px 0}
+.msg{color:var(--dim);font-size:13px}
+.err{color:#d0507a;font-size:13px;min-height:1.4em}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.hint{font-size:12.5px;color:var(--dim);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💌 Garden Notes</h1>
+  <p class="lead">Little messages that turn up in Adrianna's Flutterbloom garden. Give a note a date and it appears that day every year (birthdays, anniversaries). Leave the date empty and it turns up on a random day, tucked into the garden.</p>
+
+  <section class="card" id="login">
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <div><label for="u">Username</label><input id="u" autocomplete="username"></div>
+      <div><label for="p">Password</label><input id="p" type="password" autocomplete="current-password"></div>
+    </div>
+    <button class="primary" id="go">Sign in</button>
+    <p class="hint">Uses your Vigil login.</p>
+    <p class="err" id="lerr"></p>
+  </section>
+
+  <section id="editor" hidden>
+    <div id="list"></div>
+    <div class="bar">
+      <button class="ghost" id="add">+ Add a note</button>
+      <button class="primary" id="save">Save notes</button>
+      <span class="msg" id="msg"></span>
+    </div>
+  </section>
+</div>
+
+<template id="tpl">
+  <div class="card note">
+    <div class="head"><b class="num"></b><button class="del" type="button">Remove</button></div>
+    <div class="row">
+      <div><label>Emoji</label><input class="emoji" maxlength="8" value="💌"></div>
+      <div><label>Title</label><input class="title" maxlength="80" placeholder="A note from Anders"></div>
+      <div class="when"><label>Date (optional)</label><input class="on" type="date"></div>
+    </div>
+    <label>Message</label>
+    <textarea class="text" maxlength="2000" placeholder="Write something for her…"></textarea>
+  </div>
+</template>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const API = "/api/notes/flutterbloom";
+  let notes = [];
+
+  const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  async function proof(app, secret) {
+    const salt = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mentifaber-login:" + app));
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveBits"]);
+    return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 600000, hash: "SHA-256" }, key, 256));
+  }
+
+  // "MM-DD" <-> a date input (any year; the note repeats every year).
+  const toInput = (on) => (on ? new Date().getFullYear() + "-" + on : "");
+  const fromInput = (v) => (v ? v.slice(5) : "");
+
+  function render() {
+    const list = $("list"); list.innerHTML = "";
+    if (!notes.length) notes.push({ emoji: "💌", title: "", text: "", on: "" });
+    notes.forEach((n, i) => {
+      const el = $("tpl").content.firstElementChild.cloneNode(true);
+      el.querySelector(".num").textContent = "Note " + (i + 1) + (n.on ? " · every " + new Date("2000-" + n.on + "T12:00").toLocaleDateString([], { month: "long", day: "numeric" }) : " · random day");
+      el.querySelector(".emoji").value = n.emoji || "💌";
+      el.querySelector(".title").value = n.title || "";
+      el.querySelector(".on").value = toInput(n.on);
+      el.querySelector(".text").value = n.text || "";
+      el.querySelector(".del").addEventListener("click", () => { collect(); notes.splice(i, 1); render(); });
+      list.appendChild(el);
+    });
+  }
+  function collect() {
+    const els = [...document.querySelectorAll(".note")];
+    notes = els.map((el, i) => ({
+      id: notes[i] && notes[i].id,
+      emoji: el.querySelector(".emoji").value.trim() || "💌",
+      title: el.querySelector(".title").value.trim(),
+      on: fromInput(el.querySelector(".on").value),
+      text: el.querySelector(".text").value.trim(),
+    }));
+  }
+  async function load() {
+    const r = await fetch(API, { credentials: "same-origin", cache: "no-store" });
+    if (!r.ok) return false;
+    const j = await r.json();
+    if (!j.owner) return false;
+    notes = j.notes || [];
+    $("login").hidden = true; $("editor").hidden = false; render();
+    return true;
+  }
+
+  $("go").addEventListener("click", async () => {
+    const u = $("u").value.trim(), p = $("p").value;
+    if (!u || !p) { $("lerr").textContent = "Both fields, please."; return; }
+    $("go").disabled = true; $("go").textContent = "Checking…"; $("lerr").textContent = "";
+    try {
+      const r = await fetch("/api/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ app: "vigil", proof: await proof("vigil", u + "\u0000" + p) }) });
+      if (r.status === 401) throw new Error("That's not right. Try again.");
+      if (r.status === 429) throw new Error("Too many tries. Wait a few minutes.");
+      if (!r.ok || !(await load())) throw new Error("Couldn't open the notes. Try again.");
+    } catch (e) { $("lerr").textContent = e.message; }
+    $("go").disabled = false; $("go").textContent = "Sign in";
+  });
+  $("p").addEventListener("keydown", (e) => { if (e.key === "Enter") $("go").click(); });
+  $("add").addEventListener("click", () => { collect(); notes.push({ emoji: "💌", title: "", text: "", on: "" }); render(); window.scrollTo(0, document.body.scrollHeight); });
+  $("save").addEventListener("click", async () => {
+    collect();
+    $("msg").textContent = "Saving…";
+    const r = await fetch(API, { method: "PUT", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ notes }) });
+    if (!r.ok) { $("msg").textContent = r.status === 401 ? "Signed out. Reload and sign in again." : "Couldn't save. Try again."; return; }
+    notes = (await r.json()).notes; render();
+    $("msg").textContent = "Saved ✓ " + notes.length + " note" + (notes.length === 1 ? "" : "s");
+  });
+
+  load().catch(() => {});
+})();
+</script>
+</body>
+</html>
