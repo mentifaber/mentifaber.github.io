@@ -1,10 +1,24 @@
-// Cloudflare Workers static-assets deploy of this site (serves the repo root).
+// Cloudflare Worker for mentifaber.org: the repo root is served as static
+// assets, and src/worker.js handles /api/* and the sealed pages first.
 {
   "name": "mentifaber-1",
+  "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
   "assets": {
     "directory": ".",
+    "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
-  }
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": [
+      "/api/*",
+      "/vigil-app", "/vigil-app.html",
+      "/flutterbloom", "/flutterbloom.html",
+      "/muse-live", "/muse-live.html",
+      "/weaver-live", "/weaver-live.html"
+    ]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "STORE", "class_name": "Store" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }]
 }

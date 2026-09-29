@@ -10,3 +10,5 @@ scripts
 CNAME
 package.json
 package-lock.json
+src
+.wrangler
