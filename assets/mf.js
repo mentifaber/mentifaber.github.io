@@ -81,7 +81,7 @@ const MF_REL = {"roku": ["meshnet", "phone-mcp", "novarac"], "doccrawler": ["pi"
   if (foot && page !== 'contact' && foot.classList.contains('mf-foot')) {
     const c = document.createElement('div');
     c.className = 'mf-contact';
-    c.innerHTML = '<a href="contact.html">Contact Mentifaber</a><a href="mailto:anders@mentifaber.com">anders@mentifaber.com</a>';
+    c.innerHTML = '<a href="contact.html">Contact Mentifaber</a><a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>';
     foot.appendChild(c);
   }
 })();
