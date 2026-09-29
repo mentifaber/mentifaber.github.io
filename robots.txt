@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /tools/
 
-Sitemap: https://mentifaber.github.io/sitemap.xml
+Sitemap: https://mentifaber.org/sitemap.xml
