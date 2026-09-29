@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /garden-notes
 Allow: /
 Disallow: /tools/
 
