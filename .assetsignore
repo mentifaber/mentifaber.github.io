@@ -1,0 +1,10 @@
+.git
+.github
+.private
+.gitignore
+.assetsignore
+wrangler.jsonc
+node_modules
+tools
+scripts
+CNAME
