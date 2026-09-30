@@ -23,6 +23,7 @@ const TARGETS = {
   flutterbloom: { out: "flutterbloom.html", src: ".private/flutterbloom-game.html" },
   muse: { out: "muse-live.html", src: ".private/muse-live.html" },
   weaver: { out: "weaver-live.html", src: ".private/weaver-live.html" },
+  graveyard: { out: "graveyard.html", src: ".private/graveyard-game.html" },
 };
 const ITER = 600000;
 const BLOB_RE = /(<script type="application\/octet-stream" id="mf-blob">)([^<]*)(<\/script>)/;
