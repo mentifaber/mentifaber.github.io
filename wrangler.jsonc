@@ -16,7 +16,8 @@
       "/muse-live", "/muse-live.html",
       "/weaver-live", "/weaver-live.html",
       "/graveyard", "/graveyard.html",
-      "/rootcause", "/rootcause.html"
+      "/rootcause", "/rootcause.html",
+      "/sideways", "/sideways.html"
     ]
   },
   "durable_objects": {

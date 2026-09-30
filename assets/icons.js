@@ -21,6 +21,7 @@
  "crime-dashboard": "<path d=\"M12 3l7.5 3v5.5c0 4.8-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.7-7.5-9.5V6z\"/><path d=\"M9 12l2.2 2.2L15.5 10\"/>",
  "sonicveil": "<path d=\"M4 15v-2a8 8 0 0 1 16 0v2\"/><rect x=\"3.5\" y=\"14\" width=\"4\" height=\"6.5\" rx=\"1.6\"/><rect x=\"16.5\" y=\"14\" width=\"4\" height=\"6.5\" rx=\"1.6\"/>",
  "duely": "<path d=\"M18.5 12.5V7L15 3.5H6v17h6\"/><path d=\"M9 9h5M9 12.5h3\"/><circle cx=\"17\" cy=\"17.5\" r=\"3.5\"/><path d=\"M17 16v1.7l1.1.9\"/>",
+ "sideways": "<rect x=\"5\" y=\"8\" width=\"14\" height=\"8\" rx=\"2\" transform=\"rotate(-20 12 12)\"/><path d=\"M3 19c3-1 5-1 8 0M2 15c2-.6 3-.6 5 0\"/>",
  "rootcause": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6\"/><path d=\"M15 15l5.5 5.5\"/><path d=\"M7.5 10.5h1.5l1-2 1.5 4 1-2h1.5\"/>",
  "graveyard": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><ellipse cx=\"12\" cy=\"12\" rx=\"9.5\" ry=\"4\" transform=\"rotate(-25 12 12)\"/><rect x=\"18.6\" y=\"6.6\" width=\"2.8\" height=\"2.8\" rx=\".4\"/>",
  "flutterbloom": "<path d=\"M12 7.5v11\"/><path d=\"M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4\"/><path d=\"M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9\"/><path d=\"M11.2 6 9.8 3.8M12.8 6l1.4-2.2\"/>",
@@ -38,7 +39,7 @@
  "roku": "<rect x=\"3\" y=\"4.5\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8.5 20h7M12 16.5V20M10.5 8.3v4.4l3.8-2.2z\"/>",
  "_": "<circle cx=\"12\" cy=\"12\" r=\"7\"/><path d=\"M12 8v8M8 12h8\"/>"
 };
-  var HUES = {"arsenal": 183, "ballast": 116, "vigil": 6, "cartograph": 228, "weaver": 6, "pi": 143, "muse": 281, "omnilogos": 58, "novarac": 196, "meshnet": 333, "proximity": 111, "watchyourgrass": 248, "worm-eater": 26, "cryptovault": 163, "phone-mcp": 301, "crime-dashboard": 78, "sonicveil": 216, "duely": 353, "flutterbloom": 330, "graveyard": 190, "rootcause": 0, "verel": 268, "conflict-atlas": 46, "neural-sim": 183, "shop": 321, "frames": 98, "sketches": 236, "moon-compatibility": 255, "monstrosity": 28, "bubble-editor": 350, "roku": 252, "doccrawler": 52, "sleep-compression": 205, "orbit": 200};
+  var HUES = {"arsenal": 183, "ballast": 116, "vigil": 6, "cartograph": 228, "weaver": 6, "pi": 143, "muse": 281, "omnilogos": 58, "novarac": 196, "meshnet": 333, "proximity": 111, "watchyourgrass": 248, "worm-eater": 26, "cryptovault": 163, "phone-mcp": 301, "crime-dashboard": 78, "sonicveil": 216, "duely": 353, "flutterbloom": 330, "graveyard": 190, "rootcause": 0, "sideways": 28, "verel": 268, "conflict-atlas": 46, "neural-sim": 183, "shop": 321, "frames": 98, "sketches": 236, "moon-compatibility": 255, "monstrosity": 28, "bubble-editor": 350, "roku": 252, "doccrawler": 52, "sleep-compression": 205, "orbit": 200};
   function key(k) { k = String(k || "").replace(/^.*\//, "").replace(/\.html.*$/, ""); return k === "#" || !k ? "orbit" : k; }
   window.MF_ICONS = ICONS;
   window.mfIcon = function (k, cls) {
