@@ -5,6 +5,8 @@
 //   - a cloud photo album (/api/photos/<app>[/<t>]) for Flutterbloom
 //   - notes for Flutterbloom (/api/notes/flutterbloom): read with her session,
 //     written from garden-notes.html with the Vigil (owner) session
+//   - a daily Flutterbloom reminder: Web Push subscriptions (/api/push/*) and an
+//     hourly cron that sends a payloadless push at her chosen local hour
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
 import { DurableObject } from "cloudflare:workers";
 
@@ -51,6 +53,19 @@ export class Store extends DurableObject {
     return rec.savedAt;
   }
   async dropSave(app) { await this.ctx.storage.delete("save:" + app); }
+  // Web Push: the VAPID key pair is made on first use and kept here.
+  async vapid() {
+    let v = await this.ctx.storage.get("vapid");
+    if (!v) {
+      const k = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+      v = { priv: await crypto.subtle.exportKey("jwk", k.privateKey), pub: b64url(await crypto.subtle.exportKey("raw", k.publicKey)) };
+      await this.ctx.storage.put("vapid", v);
+    }
+    return v;
+  }
+  async putSub(id, rec) { await this.ctx.storage.put("push:" + id, rec); }
+  async dropSub(id) { await this.ctx.storage.delete("push:" + id); }
+  async subs() { return [...(await this.ctx.storage.list({ prefix: "push:" })).entries()].map(([k, v]) => ({ id: k.slice(5), ...v })); }
   async getNotes(app) { return (await this.ctx.storage.get("notes:" + app)) || []; }
   async putNotes(app, notes) { await this.ctx.storage.put("notes:" + app, notes); }
 
@@ -208,6 +223,62 @@ async function notes(req, env, app) {
   return json({ error: "method" }, 405);
 }
 
+// Web Push (RFC 8030/8292) without a payload: the service worker picks the
+// words, so nothing needs encrypting; the request only carries a VAPID JWT.
+const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const b64urlStr = (str) => b64url(new TextEncoder().encode(str));
+async function vapidAuth(endpoint, v) {
+  const aud = new URL(endpoint).origin;
+  const head = b64urlStr(JSON.stringify({ typ: "JWT", alg: "ES256" }));
+  const body = b64urlStr(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: "mailto:anders@mentifaber.org" }));
+  const key = await crypto.subtle.importKey("jwk", v.priv, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(head + "." + body));
+  return "vapid t=" + head + "." + body + "." + b64url(sig) + ", k=" + v.pub;
+}
+async function sendPush(sub, v) {
+  const res = await fetch(sub.endpoint, { method: "POST", headers: { TTL: "43200", Urgency: "normal", Authorization: await vapidAuth(sub.endpoint, v), "Content-Length": "0" } });
+  return res.status;
+}
+const PUSH_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(push\.apple\.com|fcm\.googleapis\.com|googleapis\.com|mozilla\.com|push\.services\.mozilla\.com|notify\.windows\.com)\//;
+async function push(req, env, action) {
+  const s = store(env);
+  if (action === "key" && req.method === "GET") return json({ key: (await s.vapid()).pub });
+  if (!(await session(req, env, "flutterbloom"))) return json({ error: "signed out" }, 401);
+  let body;
+  try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
+  if (action === "subscribe" && req.method === "POST") {
+    const sub = body && body.sub;
+    if (!sub || typeof sub.endpoint !== "string" || !(PUSH_HOSTS.test(sub.endpoint) || env.PUSH_TEST_HOST && sub.endpoint.startsWith(env.PUSH_TEST_HOST))) return json({ error: "bad subscription" }, 400);
+    const num = (x, d) => (Number.isFinite(+x) && x !== null && x !== "" ? +x : d);
+    const hour = Math.max(0, Math.min(23, Math.round(num(body.hour, 19)))), tz = Math.max(-840, Math.min(840, Math.round(num(body.tz, 0))));
+    const id = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sub.endpoint))).slice(0, 32);
+    await s.putSub(id, { endpoint: sub.endpoint, hour, tz, last: "" });
+    return json({ ok: true });
+  }
+  if (action === "unsubscribe" && req.method === "POST") {
+    if (typeof (body && body.endpoint) !== "string") return json({ error: "bad request" }, 400);
+    await s.dropSub(hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body.endpoint))).slice(0, 32));
+    return json({ ok: true });
+  }
+  return json({ error: "not found" }, 404);
+}
+// Hourly: for each subscription whose local time is its chosen hour, send one
+// reminder a day, and skip it if she has already opened the garden today.
+async function dailyReminders(env) {
+  const s = store(env), v = await s.vapid(), now = Date.now();
+  const save = await s.getSave("flutterbloom");
+  for (const sub of await s.subs()) {
+    const local = new Date(now - sub.tz * 60e3), day = local.toISOString().slice(0, 10);
+    if (local.getUTCHours() !== sub.hour || sub.last === day) continue;
+    const seen = save && save.data && save.data.lastSeen && new Date(save.data.lastSeen - sub.tz * 60e3).toISOString().slice(0, 10) === day;
+    if (!seen) {
+      const status = await sendPush(sub, v).catch(() => 0);
+      if (status === 404 || status === 410) { await s.dropSub(sub.id); continue; }
+    }
+    await s.putSub(sub.id, { endpoint: sub.endpoint, hour: sub.hour, tz: sub.tz, last: day });
+  }
+}
+
 // A sealed page without a session is sent with its ciphertext removed, so the
 // lock screen shows but there is nothing to attack offline.
 async function sealedPage(req, env, app) {
@@ -233,10 +304,14 @@ export default {
       if (route === "save" && app) return cloudSave(req, env, app);
       if (route === "photos" && app) return photos(req, env, app, sub);
       if (route === "notes" && app) return notes(req, env, app);
+      if (route === "push" && app) return push(req, env, app);
       return json({ error: "not found" }, 404);
     }
     const app = PAGES[path.replace(/\.html$/, "").replace(/\/$/, "")];
     if (app && (req.method === "GET" || req.method === "HEAD")) return sealedPage(req, env, app);
     return env.ASSETS.fetch(req);
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(dailyReminders(env));
   },
 };
