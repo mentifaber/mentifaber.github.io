@@ -2,15 +2,29 @@
   "name": "Flutterbloom",
   "short_name": "Flutterbloom",
   "description": "A private garden grown as a gift.",
-  "start_url": "/flutterbloom.html",
-  "scope": "/flutterbloom.html",
-  "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
+  "start_url": "/flutterbloom",
+  "scope": "/flutterbloom",
+  "display": "standalone",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
   "orientation": "portrait",
   "background_color": "#1c1330",
   "theme_color": "#1c1330",
   "icons": [
-    { "src": "flutterbloom-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "flutterbloom-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    {
+      "src": "flutterbloom-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "flutterbloom-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "/flutterbloom"
 }
