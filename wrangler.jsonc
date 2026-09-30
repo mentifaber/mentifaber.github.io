@@ -14,7 +14,8 @@
       "/vigil-app", "/vigil-app.html",
       "/flutterbloom", "/flutterbloom.html",
       "/muse-live", "/muse-live.html",
-      "/weaver-live", "/weaver-live.html"
+      "/weaver-live", "/weaver-live.html",
+      "/graveyard", "/graveyard.html"
     ]
   },
   "durable_objects": {
