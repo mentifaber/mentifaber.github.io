@@ -1,0 +1,25 @@
+{
+  "name": "Sideways",
+  "short_name": "Sideways",
+  "description": "Drift, and the music follows.",
+  "start_url": "/sideways",
+  "scope": "/sideways",
+  "display": "standalone",
+  "background_color": "#2a1633",
+  "theme_color": "#2a1633",
+  "icons": [
+    {
+      "src": "../icons/sideways.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/sideways-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "any"
+}
