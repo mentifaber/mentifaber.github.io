@@ -7,7 +7,8 @@
 //     written from garden-notes.html with the Vigil (owner) session
 //   - List-It (/api/list/listit, /api/listimg/listit/<id>): one shared shopping
 //     list for two people, each with their own login (per-user verifiers);
-//     moods (/api/mood/listit) notify the other person by Web Push
+//     signals (/api/mood/listit: feelings, needs, replies, urgent, baby kicks)
+//     notify the other person by Web Push. The page is now /pilotfish.
 //   - a daily Flutterbloom reminder: Web Push subscriptions (/api/push/*) and an
 //     hourly cron that sends a payloadless push at her chosen local hour
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
@@ -323,7 +324,10 @@ async function listImg(req, env, app, id) {
 // Moods: either person picks how they feel (+ a note); the other person's
 // subscribed devices get a payloadless push and the service worker fetches
 // the latest mood to show it.
-const MOODS = new Set(["happy", "sad", "hungry", "angry", "tired", "loving", "anxious", "sick", "bored", "hug", "stressed", "excited", "lonely", "silly"]);
+const FEELS = new Set(["happy", "sad", "hungry", "angry", "tired", "loving", "anxious", "sick", "bored", "hug", "stressed", "excited", "lonely", "silly", "nauseous", "achy", "emotional", "cozy"]);
+const NEEDS = new Set(["water", "snack", "meal", "cold", "tea", "craving", "vitamins", "rub", "cuddle", "quiet", "nap", "bath", "chores", "callme", "comehome", "pickup", "temp", "company"]);
+const REPLIES = new Set(["omw", "gotit", "soon", "love", "callsoon", "done"]);
+const KINDS = new Set(["talk", "urgent", "reply", "kick"]);
 async function mood(req, env, app) {
   if (!LISTS.has(app)) return json({ error: "not found" }, 404);
   const me = await sessionRec(req, env, app);
@@ -333,15 +337,19 @@ async function mood(req, env, app) {
   if (req.method === "POST") {
     let body;
     try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
-    const moods = (Array.isArray(body && body.moods) ? body.moods : []).filter((m) => MOODS.has(m)).slice(0, 6);
-    const note = String((body && body.note) || "").trim().slice(0, 1000);
-    if (!moods.length && !note) return json({ error: "empty" }, 400);
-    const list = await s.addMood(app, { moods, note, by: me.user, at: Date.now() });
+    const kind = KINDS.has(body && body.kind) ? body.kind : "talk";
+    const pickSet = (arr, set) => (Array.isArray(arr) ? arr : []).filter((m) => set.has(m)).slice(0, 8);
+    const feel = pickSet(body.feel || body.moods, FEELS), need = pickSet(body.need, NEEDS);
+    const reply = REPLIES.has(body.reply) ? body.reply : "", re = Number.isFinite(body.re) ? body.re : 0;
+    const note = String(body.note || "").trim().slice(0, 1000);
+    if (kind === "talk" && !feel.length && !need.length && !note) return json({ error: "empty" }, 400);
+    if (kind === "reply" && !reply && !note) return json({ error: "empty" }, 400);
+    const list = await s.addMood(app, { kind, feel, need, reply, re, note, by: me.user, at: Date.now() });
     const v = await s.vapid();
     let sent = 0;
     for (const sub of await s.lsubs()) {
       if (sub.user === me.user) continue;
-      const st = await sendPush(sub, v).catch(() => 0);
+      const st = await sendPush(sub, v, kind === "urgent" ? "high" : "normal").catch(() => 0);
       if (st === 404 || st === 410) await s.dropLSub(sub.id); else if (st >= 200 && st < 300) sent++;
     }
     return json({ moods: list, sent });
@@ -378,8 +386,8 @@ async function vapidAuth(endpoint, v) {
   const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(head + "." + body));
   return "vapid t=" + head + "." + body + "." + b64url(sig) + ", k=" + v.pub;
 }
-async function sendPush(sub, v) {
-  const res = await fetch(sub.endpoint, { method: "POST", headers: { TTL: "43200", Urgency: "normal", Authorization: await vapidAuth(sub.endpoint, v), "Content-Length": "0" } });
+async function sendPush(sub, v, urgency) {
+  const res = await fetch(sub.endpoint, { method: "POST", headers: { TTL: "43200", Urgency: urgency || "normal", Authorization: await vapidAuth(sub.endpoint, v), "Content-Length": "0" } });
   return res.status;
 }
 const PUSH_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(push\.apple\.com|fcm\.googleapis\.com|googleapis\.com|mozilla\.com|push\.services\.mozilla\.com|notify\.windows\.com)\//;
