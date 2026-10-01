@@ -6,7 +6,8 @@
 //   - notes for Flutterbloom (/api/notes/flutterbloom): read with her session,
 //     written from garden-notes.html with the Vigil (owner) session
 //   - List-It (/api/list/listit, /api/listimg/listit/<id>): one shared shopping
-//     list for two people, each with their own login (per-user verifiers)
+//     list for two people, each with their own login (per-user verifiers);
+//     moods (/api/mood/listit) notify the other person by Web Push
 //   - a daily Flutterbloom reminder: Web Push subscriptions (/api/push/*) and an
 //     hourly cron that sends a payloadless push at her chosen local hour
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
@@ -103,6 +104,15 @@ export class Store extends DurableObject {
     await this.ctx.storage.put("limgs:" + app, idx);
     await this.ctx.storage.delete("limg:" + app + ":" + id);
   }
+  async getMoods(app) { return (await this.ctx.storage.get("moods:" + app)) || []; }
+  async addMood(app, m) {
+    const list = [m, ...(await this.getMoods(app))].slice(0, 60);
+    await this.ctx.storage.put("moods:" + app, list);
+    return list;
+  }
+  async putLSub(id, rec) { await this.ctx.storage.put("lpush:" + id, rec); }
+  async dropLSub(id) { await this.ctx.storage.delete("lpush:" + id); }
+  async lsubs() { return [...(await this.ctx.storage.list({ prefix: "lpush:" })).entries()].map(([k, v]) => ({ id: k.slice(6), ...v })); }
   async getNotes(app) { return (await this.ctx.storage.get("notes:" + app)) || []; }
   async putNotes(app, notes) { await this.ctx.storage.put("notes:" + app, notes); }
 
@@ -310,6 +320,52 @@ async function listImg(req, env, app, id) {
   return json({ error: "method" }, 405);
 }
 
+// Moods: either person picks how they feel (+ a note); the other person's
+// subscribed devices get a payloadless push and the service worker fetches
+// the latest mood to show it.
+const MOODS = new Set(["happy", "sad", "hungry", "angry", "tired", "loving", "anxious", "sick", "bored", "hug", "stressed", "excited", "lonely", "silly"]);
+async function mood(req, env, app) {
+  if (!LISTS.has(app)) return json({ error: "not found" }, 404);
+  const me = await sessionRec(req, env, app);
+  if (!me) return json({ error: "signed out" }, 401);
+  const s = store(env);
+  if (req.method === "GET") return json({ moods: await s.getMoods(app), me: me.user });
+  if (req.method === "POST") {
+    let body;
+    try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
+    const moods = (Array.isArray(body && body.moods) ? body.moods : []).filter((m) => MOODS.has(m)).slice(0, 6);
+    const note = String((body && body.note) || "").trim().slice(0, 1000);
+    if (!moods.length && !note) return json({ error: "empty" }, 400);
+    const list = await s.addMood(app, { moods, note, by: me.user, at: Date.now() });
+    const v = await s.vapid();
+    let sent = 0;
+    for (const sub of await s.lsubs()) {
+      if (sub.user === me.user) continue;
+      const st = await sendPush(sub, v).catch(() => 0);
+      if (st === 404 || st === 410) await s.dropLSub(sub.id); else if (st >= 200 && st < 300) sent++;
+    }
+    return json({ moods: list, sent });
+  }
+  return json({ error: "method" }, 405);
+}
+async function listPush(req, env, app, action) {
+  if (!LISTS.has(app)) return json({ error: "not found" }, 404);
+  const me = await sessionRec(req, env, app);
+  if (!me) return json({ error: "signed out" }, 401);
+  let body;
+  try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
+  const endpoint = body && (body.sub ? body.sub.endpoint : body.endpoint);
+  if (typeof endpoint !== "string") return json({ error: "bad request" }, 400);
+  const id = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint))).slice(0, 32);
+  if (action === "subscribe" && req.method === "POST") {
+    if (!(PUSH_HOSTS.test(endpoint) || env.PUSH_TEST_HOST && endpoint.startsWith(env.PUSH_TEST_HOST))) return json({ error: "bad subscription" }, 400);
+    await store(env).putLSub(id, { endpoint, user: me.user });
+    return json({ ok: true });
+  }
+  if (action === "unsubscribe" && req.method === "POST") { await store(env).dropLSub(id); return json({ ok: true }); }
+  return json({ error: "not found" }, 404);
+}
+
 // Web Push (RFC 8030/8292) without a payload: the service worker picks the
 // words, so nothing needs encrypting; the request only carries a VAPID JWT.
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -394,6 +450,8 @@ export default {
       if (route === "push" && app) return push(req, env, app);
       if (route === "list" && app) return list(req, env, app);
       if (route === "listimg" && app) return listImg(req, env, app, sub);
+      if (route === "mood" && app) return mood(req, env, app);
+      if (route === "lpush" && app) return listPush(req, env, app, sub);
       return json({ error: "not found" }, 404);
     }
     const app = PAGES[path.replace(/\.html$/, "").replace(/\/$/, "")];
