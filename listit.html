@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="List-It">
 <title>List-It</title>
+<link rel="manifest" href="/assets/listit.webmanifest">
+<link rel="apple-touch-icon" href="/assets/listit-icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff6f61'/%3E%3Cpath d='M20 33l8 8 16-18' stroke='white' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
@@ -110,6 +112,19 @@ button{background:none;border:0;cursor:pointer}
 .seg{display:flex;background:var(--card);border-radius:14px;padding:4px;border:2px solid var(--line);margin-bottom:12px}
 .seg button{flex:1;padding:8px;border-radius:10px;font-weight:800;font-size:14px;color:var(--dim)}
 .seg button.on{background:var(--coral);color:#fff}
+.mood{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.mood button{background:var(--card);border:2.5px solid var(--line);border-radius:18px;padding:12px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:13.5px}
+.mood button i{font-style:normal;font-size:34px;line-height:1}
+.mood button.on{border-color:var(--coral);background:rgba(255,111,97,.1);transform:scale(1.03)}
+.feel{background:linear-gradient(135deg,rgba(255,154,139,.18),rgba(154,92,214,.12));border:2px solid rgba(255,111,97,.25);border-radius:20px;padding:14px 16px;margin-bottom:14px}
+.feel .who{font-size:13px;font-weight:900;color:var(--dim)}
+.feel .em{font-size:22px;font-weight:900;margin:4px 0 2px;line-height:1.35}
+.feel .txt{font-size:15px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+.feel .ago{font-size:12px;color:var(--dim);font-weight:700;margin-top:6px}
+.bell{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:var(--card);border:2px solid var(--line);font-weight:800;font-size:14.5px;width:100%;text-align:left;margin-top:14px}
+.hist{font-size:14px;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--line)}
+.hist:last-child{border-bottom:0}
+textarea.inp{min-height:96px;resize:vertical;line-height:1.45}
 </style>
 </head>
 <body>
@@ -137,6 +152,7 @@ button{background:none;border:0;cursor:pointer}
   <button data-t="list" class="on"><i>📝</i>List</button>
   <button data-t="plan"><i>📅</i>Plan</button>
   <button data-t="stores"><i>🏬</i>Stores</button>
+  <button data-t="mood"><i>💗</i>Mood</button>
 </nav>
 <div class="sheet hidden" id="sheet"><div class="in" id="sheet-in"></div></div>
 <div class="toast" id="toast"></div>
@@ -223,7 +239,7 @@ $("go").onclick = async () => {
     if (r.status === 401) throw new Error("That's not right. Try again.");
     if (r.status === 429) throw new Error("Too many tries. Wait a few minutes.");
     if (!r.ok || !(await pull())) throw new Error("Couldn't sign in. Try again.");
-    showApp();
+    showApp(); boot();
   } catch (e) { $("lerr").textContent = e.message; }
   $("go").disabled = false; $("go").textContent = "Sign in";
 };
@@ -254,6 +270,77 @@ function itemHTML(i, withStore) {
 }
 function toast(s) { const t = $("toast"); t.textContent = s; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 1800); }
 
+/* ── moods ── */
+const MOODS = [["happy", "😊", "Happy"], ["sad", "😢", "Sad"], ["hungry", "😋", "Hungry"], ["angry", "😠", "Angry"], ["tired", "😴", "Tired"], ["loving", "🥰", "Loving"], ["anxious", "😰", "Anxious"], ["sick", "🤒", "Sick"], ["bored", "🥱", "Bored"], ["hug", "🤗", "Need a hug"], ["stressed", "😤", "Stressed"], ["excited", "🥳", "Excited"], ["lonely", "🥺", "Lonely"], ["silly", "🤪", "Silly"]];
+const MOOD = Object.fromEntries(MOODS.map(([k, e, l]) => [k, e + " " + l]));
+let moods = [], pick = new Set(), draft = "";
+const other = () => (me === "anders" ? "adrianna" : "anders");
+async function pullMoods() {
+  const r = await fetch("/api/mood/listit", { credentials: "same-origin", cache: "no-store" });
+  if (!r.ok) return; const j = await r.json(); const changed = JSON.stringify(j.moods) !== JSON.stringify(moods); moods = j.moods || [];
+  if (changed && $("sheet").classList.contains("hidden")) render();
+}
+function ago(t) { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : new Date(t).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); }
+function feelCard(m) {
+  return '<div class="feel"><div class="who">' + esc(NAMES[m.by]) + " is feeling</div>" + (m.moods.length ? '<div class="em">' + m.moods.map((k) => esc(MOOD[k])).join(" · ") + "</div>" : "") +
+    (m.note ? '<div class="txt">' + esc(m.note) + "</div>" : "") + '<div class="ago">' + ago(m.at) + "</div></div>";
+}
+function pageMood() {
+  const theirs = moods.find((m) => m.by === other()), mine = moods.find((m) => m.by === me);
+  let h = "";
+  if (theirs) h += feelCard(theirs);
+  h += '<div class="sec"><span>How are you feeling?</span></div><div class="mood">' + MOODS.map(([k, e, l]) => '<button data-mood="' + k + '" class="' + (pick.has(k) ? "on" : "") + '"><i>' + e + "</i>" + l + "</button>").join("") + "</div>" +
+    '<div class="sec"><span>Anything to add?</span></div><textarea class="inp" id="m-note" placeholder="Write ' + esc(NAMES[other()]) + ' a note…">' + esc(draft) + "</textarea>" +
+    '<button class="btn" id="m-send" style="margin-top:14px">Send to ' + esc(NAMES[other()]) + " 💌</button>" +
+    '<button class="bell" id="m-bell">' + bellLabel() + "</button>";
+  if (mine) h += '<div class="sec"><span>You last said</span></div>' + feelCard(mine);
+  const hist = moods.slice(0, 12);
+  if (hist.length > 1) h += '<div class="sec"><span>Recently</span></div><div class="group">' + hist.map((m) => '<div class="hist"><b>' + esc(NAMES[m.by]) + "</b> · " + (m.moods.map((k) => esc(MOOD[k])).join(", ") || "a note") + (m.note ? '<div class="note">' + esc(m.note) + "</div>" : "") + '<div class="note" style="font-size:12px">' + ago(m.at) + "</div></div>").join("") + "</div>";
+  return h;
+}
+
+/* ── notifications (Web Push via listit-sw.js) ── */
+let swReg = null, pushOn = false;
+const pushOK = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+function bellLabel() {
+  if (!pushOK()) return /iPhone|iPad/.test(navigator.userAgent) ? "🔔 To get notifications: Share → Add to Home Screen, then open List-It from there" : "🔕 Notifications aren't supported in this browser";
+  if (Notification.permission === "denied") return "🔕 Notifications are blocked in your settings";
+  return pushOn ? "🔔 Notifying this phone when " + NAMES[other()] + " sends a mood · tap to turn off" : "🔔 Notify me when " + NAMES[other()] + " sends a mood";
+}
+async function initPush() {
+  if (!pushOK()) return;
+  try { swReg = await navigator.serviceWorker.register("/listit-sw.js", { scope: "/listit" }); const sub = await swReg.pushManager.getSubscription(); pushOn = !!sub; if (sub) fetch("/api/lpush/listit/subscribe", { method: "POST", credentials: "same-origin", body: JSON.stringify({ sub }) }); } catch (e) {}
+  navigator.serviceWorker.addEventListener("message", () => { tab = "mood"; pullMoods(); render(); });
+}
+const b64 = (s) => { const p = "=".repeat((4 - (s.length % 4)) % 4), raw = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(raw, (c) => c.charCodeAt(0)); };
+async function toggleBell() {
+  if (!pushOK() || !swReg) return;
+  try {
+    const cur = await swReg.pushManager.getSubscription();
+    if (cur) { await fetch("/api/lpush/listit/unsubscribe", { method: "POST", credentials: "same-origin", body: JSON.stringify({ endpoint: cur.endpoint }) }); await cur.unsubscribe(); pushOn = false; toast("Notifications off"); }
+    else {
+      if ((await Notification.requestPermission()) !== "granted") { render(); return; }
+      const { key } = await (await fetch("/api/push/key")).json();
+      const sub = await swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+      const r = await fetch("/api/lpush/listit/subscribe", { method: "POST", credentials: "same-origin", body: JSON.stringify({ sub }) });
+      if (!r.ok) throw new Error(); pushOn = true; toast("You'll get a notification 🔔");
+    }
+  } catch (e) { toast("Couldn't change notifications"); }
+  render();
+}
+async function sendMood() {
+  draft = $("m-note").value;
+  if (!pick.size && !draft.trim()) { toast("Pick a feeling or write a note"); return; }
+  $("m-send").disabled = true; $("m-send").textContent = "Sending…";
+  try {
+    const r = await fetch("/api/mood/listit", { method: "POST", credentials: "same-origin", body: JSON.stringify({ moods: [...pick], note: draft }) });
+    if (!r.ok) throw new Error();
+    const j = await r.json(); moods = j.moods; pick.clear(); draft = "";
+    toast(j.sent ? "Sent to " + NAMES[other()] + " 💌" : "Saved 💌 (" + NAMES[other()] + " hasn't turned on notifications yet)");
+  } catch (e) { toast("Couldn't send. Try again?"); }
+  render();
+}
+
 /* ── pages ── */
 function render() {
   if (!me) return;
@@ -263,6 +350,8 @@ function render() {
   if (tab === "list") pg.innerHTML = pageList();
   if (tab === "plan") pg.innerHTML = pagePlan();
   if (tab === "stores") pg.innerHTML = pageStores();
+  if (tab === "mood") pg.innerHTML = pageMood();
+  $("fab").classList.toggle("hidden", tab === "mood");
 }
 function stripHTML() {
   return '<div class="strip">' + doc.stores.map((s) => { const n = openItems(s.id).length; return '<button class="sbtn" data-store="' + s.id + '"><span style="position:relative">' + logoHTML(s).replace('class="logo"', 'class="logo"') + (n ? '<span class="n">' + n + "</span>" : "") + "</span>" + esc(s.name) + "</button>"; }).join("") +
@@ -273,7 +362,8 @@ function pageList() {
   const order = [...doc.stores.map((s) => s.id), null];
   order.forEach((sid) => { const its = open.filter((i) => (i.store || null) === sid); if (its.length) groups.push([sid, its]); });
   const done = doc.items.filter((i) => i.done).length;
-  let h = stripHTML();
+  const theirs = moods.find((m) => m.by === other() && Date.now() - m.at < 864e5);
+  let h = (theirs ? '<div data-gomood="1">' + feelCard(theirs) + "</div>" : "") + stripHTML();
   if (!doc.items.length) h += '<div class="empty"><div class="e">🛒</div>Nothing on the list yet.<br>Tap a store above, or the <b>+</b> button, to add something.</div>';
   groups.forEach(([sid, its]) => {
     const st = storeOf(sid);
@@ -426,8 +516,12 @@ function addStoreSheet() {
 
 /* ── clicks ── */
 $("page").addEventListener("click", (e) => {
-  const t = e.target.closest("[data-chk],[data-open],[data-store],[data-addstore],[data-toggledone],[data-cleardone],[data-planwho]"); if (!t) return;
+  if (e.target.closest("#m-send")) return sendMood();
+  if (e.target.closest("#m-bell")) return toggleBell();
+  const t = e.target.closest("[data-chk],[data-open],[data-store],[data-addstore],[data-toggledone],[data-cleardone],[data-planwho],[data-mood],[data-gomood]"); if (!t) return;
   const d = t.dataset;
+  if (d.mood) { draft = $("m-note").value; pick.has(d.mood) ? pick.delete(d.mood) : pick.add(d.mood); t.classList.toggle("on"); return; }
+  if (d.gomood) { tab = "mood"; render(); window.scrollTo(0, 0); return; }
   if (d.chk) { const id = d.chk; change((x) => { const i = x.items.find((y) => y.id === id); if (i) { i.done = !i.done; i.doneBy = me; } }); return; }
   if (d.open) { const i = doc.items.find((y) => y.id === d.open); if (i) itemSheet(i); return; }
   if (d.store) return storeSheet(d.store);
@@ -444,7 +538,12 @@ $("sheet-in").addEventListener("click", (e) => {
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; render(); window.scrollTo(0, 0); }));
 $("fab").onclick = () => itemSheet(null);
 
-pull().then((ok) => (ok ? showApp() : showLogin())).catch(showLogin);
+$("page").addEventListener("input", (e) => { if (e.target.id === "m-note") draft = e.target.value; });
+setInterval(() => { if (me && !document.hidden && $("sheet").classList.contains("hidden") && !(document.activeElement && document.activeElement.id === "m-note")) pullMoods().catch(() => {}); }, 15000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && me) pullMoods().catch(() => {}); });
+if (location.hash === "#mood") tab = "mood";
+const boot = () => { pullMoods().catch(() => {}); initPush(); };
+pull().then((ok) => (ok ? (showApp(), boot()) : showLogin())).catch(showLogin);
 })();
 </script>
 </body>
