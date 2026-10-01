@@ -154,6 +154,15 @@ textarea.inp{min-height:96px;resize:vertical;line-height:1.45}
 .name:last-child{border-bottom:0}
 .name .h{margin-left:auto;font-size:15px;padding:6px 10px;border-radius:999px;border:2px solid var(--line)}
 .name .h.on{border-color:var(--reef);color:var(--reef)}
+.aisles{display:flex;gap:8px;overflow-x:auto;padding:12px 0 10px;scrollbar-width:none}
+.aisles::-webkit-scrollbar{display:none}
+.aisles .chip{flex:none;padding:8px 12px;font-size:13.5px}
+.window{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:9px;max-height:46svh;overflow-y:auto;padding:2px 2px 8px}
+.tile{position:relative;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;font-weight:800;font-size:12.5px;line-height:1.2;text-align:center;min-height:92px}
+.tile i{font-style:normal;font-size:30px;line-height:1}
+.tile.on{border-color:var(--coral);background:rgba(14,148,171,.10)}
+.tile .cnt{position:absolute;top:5px;right:6px;background:var(--coral);color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;padding:0 6px}
+.tile .minus{position:absolute;top:5px;left:6px;width:24px;height:24px;border-radius:50%;background:var(--bg);border:2px solid var(--line);font-style:normal;font-weight:900;display:grid;place-items:center;font-size:15px;line-height:1}
 </style>
 </head>
 <body>
@@ -594,19 +603,147 @@ function shrink(file) {
   });
 }
 
-function storeSheet(sid) {
+/* ── shopping windows: a catalog for every kind of store ── */
+// "emoji name|emoji name" per aisle. Restaurants get their own menus.
+const A = {
+  produce: "🍌 Bananas|🍎 Apples|🍓 Strawberries|🫐 Blueberries|🍇 Grapes|🍋 Lemons|🍋‍🟩 Limes|🥑 Avocados|🍅 Tomatoes|🥬 Lettuce|🥒 Cucumbers|🥕 Carrots|🧅 Onions|🧄 Garlic|🥔 Potatoes|🥦 Broccoli|🫑 Bell peppers|🍉 Watermelon|🍍 Pineapple|🥭 Mango|🍊 Oranges|🍑 Peaches|🌽 Corn|🍄 Mushrooms|🥗 Salad kit",
+  dairy: "🥛 Milk|🥚 Eggs|🧈 Butter|🧀 Shredded cheese|🧀 Cheese slices|🧀 String cheese|🍦 Yogurt|🥛 Creamer|🧀 Cream cheese|🥛 Sour cream|🥛 Oat milk|🍮 Pudding cups",
+  bakery: "🍞 Bread|🥯 Bagels|🥐 Croissants|🫓 Tortillas|🍔 Burger buns|🌭 Hot dog buns|🧁 Muffins|🍪 Cookies|🍩 Donuts|🎂 Cake",
+  meat: "🍗 Chicken breast|🍗 Rotisserie chicken|🥩 Ground beef|🥓 Bacon|🌭 Hot dogs|🥩 Steak|🐟 Salmon|🍤 Shrimp|🦃 Deli turkey|🍖 Ham|🌭 Sausage|🍖 Pork chops",
+  pantry: "🍝 Pasta|🍅 Pasta sauce|🍚 Rice|🥫 Soup|🥜 Peanut butter|🍓 Jelly|🥣 Cereal|🥣 Oatmeal|🍯 Honey|🫒 Olive oil|🧂 Salt|🌮 Taco shells|🌶️ Taco seasoning|🫘 Beans|🥫 Canned tomatoes|🍫 Chocolate chips|🌾 Flour|🍬 Sugar|🧂 Spices|🥫 Broth|🍜 Ramen|🧇 Pancake mix|🍁 Syrup|🥫 Mac & cheese",
+  snacks: "🥨 Pretzels|🍿 Popcorn|🥔 Chips|🧀 Goldfish|🍫 Chocolate|🍬 Candy|🥜 Trail mix|🍘 Crackers|🍬 Fruit snacks|🥜 Granola bars|🥒 Pickles|🫒 Olives|🍪 Oreos|🧀 Cheese puffs|🥜 Nuts|🍎 Applesauce",
+  drinks: "💧 Water bottles|🧃 Juice|🥤 Soda|🫧 Sparkling water|☕ Coffee|🫖 Tea bags|🥤 Gatorade|🍋 Lemonade|🧊 Ice|🥥 Coconut water|🫚 Ginger ale",
+  frozen: "🍕 Frozen pizza|🍨 Ice cream|🍟 Fries|🥦 Frozen veggies|🧇 Waffles|🍗 Chicken nuggets|🫐 Frozen fruit|🍡 Popsicles|🍧 Sorbet|🌯 Burritos|🥟 Dumplings|🍲 Frozen meals",
+  house: "🧻 Toilet paper|🧻 Paper towels|🍽️ Dish soap|🫧 Dishwasher pods|🧺 Laundry detergent|🌸 Dryer sheets|🗑️ Trash bags|🧽 Sponges|🧴 Hand soap|🧼 Cleaning spray|🧹 Clorox wipes|🔋 Batteries|💡 Light bulbs|🛍️ Ziploc bags|📦 Foil|🍱 Plastic wrap|🕯️ Candles|🌿 Air freshener",
+  mom: "💊 Prenatal vitamins|🫚 Ginger chews|🍭 Preggie pops|🧴 Belly butter|🧴 Stretch-mark oil|💧 Electrolytes|🛏️ Pregnancy pillow|🧦 Compression socks|👙 Maternity bra|🩲 Postpartum pads|🍪 Lactation cookies|🫖 Raspberry leaf tea",
+  baby: "👶 Diapers|🧻 Wipes|🍼 Bottles|🍼 Formula|🧸 Pacifiers|🛏️ Crib sheets|🧦 Baby socks|🧴 Baby wash|🧴 Diaper cream|🧷 Burp cloths|👕 Onesies|🧣 Swaddles|🧸 Teether|🌡️ Baby thermometer|🎒 Diaper bag",
+  care: "🧴 Shampoo|🧴 Conditioner|🧼 Body wash|🧴 Lotion|🪒 Razors|🪥 Toothpaste|🪥 Toothbrush|🦷 Floss|🧴 Deodorant|🌞 Sunscreen|🩹 Band-aids|💊 Tylenol|🤧 Tissues|🌸 Pads / tampons|🧴 Face wash|💋 Chapstick|💅 Nail clippers|🧻 Cotton pads",
+  health: "💊 Prescription pickup|💊 Tylenol|🍯 Cough drops|🌡️ Thermometer|🩹 Band-aids|💧 Electrolytes|🤢 Tums|🫚 Nausea relief|🧴 Hand sanitizer|😷 Masks|👁️ Eye drops|💊 Vitamins|🤧 Allergy meds|🧊 Ice pack|🛌 Sleep aid (ask doctor)",
+  skin: "🧴 Cleanser|💧 Moisturizer|🌞 SPF|✨ Serum|👁️ Eye cream|🧖 Face masks|💋 Lip balm|🧴 Toner|🫧 Exfoliator|🩹 Pimple patches",
+  makeup: "💄 Lipstick|💋 Lip gloss|👁️ Mascara|✏️ Eyeliner|🎨 Eyeshadow|🌸 Blush|🪞 Foundation|🫧 Concealer|✨ Highlighter|🌫️ Setting spray|🧽 Makeup sponges|🖌️ Brushes|🧴 Makeup remover|💅 Nail polish",
+  hair: "🧴 Shampoo|🧴 Conditioner|💆 Hair mask|🌀 Hair ties|🎀 Claw clips|🔥 Heat protectant|🫧 Dry shampoo|🪮 Brush|💧 Hair oil",
+  scent: "🌸 Perfume|🌸 Body mist|🕯️ Candle|🧼 Body wash|🛁 Bath bombs|🧴 Hand cream|🧴 Body lotion|🌿 Wallflower refill",
+  decor: "🕯️ Candles|🖼️ Frames|🪴 Plant|🌸 Faux flowers|🛋️ Throw pillow|🧶 Throw blanket|🪞 Mirror|🏺 Vase|🪔 Lamp|🧺 Baskets|🗓️ Wall art",
+  kitchen: "🍳 Pan|🔪 Knives|🥣 Bowls|🍽️ Plates|☕ Mugs|🥤 Cups|🫙 Food containers|🍴 Utensils|🧽 Dish rack|🫖 Kettle|🧁 Baking sheet|🧤 Oven mitts",
+  bed: "🛏️ Sheets|🛌 Pillows|🛁 Towels|🚿 Shower curtain|🧺 Hamper|🧼 Bath mat|🛋️ Blanket|🧸 Duvet",
+  tools: "🔦 Flashlight|🔋 Batteries|💡 Light bulbs|🔌 Extension cord|🔧 Tool kit|🔩 Screws|🎨 Paint|🧤 Work gloves|🪣 Bucket|🌱 Potting soil|🌻 Seeds|🔒 Lock|🧯 Fire extinguisher|🪜 Step stool|🩹 Duct tape",
+  nursery: "🛏️ Crib|🧸 Mobile|🪑 Glider chair|🗄️ Dresser|💡 Night light|🧺 Toy bin|🌙 Blackout curtains|📷 Baby monitor|🛁 Baby tub|🚼 Changing pad|🌊 Sound machine|🦈 Shark plushie",
+  pet: "🦴 Dog food|🐟 Cat food|🦴 Treats|🦴 Chews|🧻 Poop bags|🪣 Cat litter|🛁 Pet shampoo|🪮 Pet brush|💊 Flea meds|🧸 Toys|🛏️ Pet bed|🦮 Leash|🥣 Bowls|🐠 Fish food",
+  crafts: "🧶 Yarn|🖌️ Paint|🎨 Canvas|✂️ Scissors|🧵 Thread|📿 Beads|🖍️ Markers|📒 Sketchbook|🔫 Hot glue|🎀 Ribbon|🌸 Faux flowers|🖼️ Frames|🎉 Party supplies|🎁 Gift wrap|💌 Cards|🕯️ Candle kit|🎈 Balloons|🍼 Baby shower decor",
+  her: "👗 Maternity dress|👖 Maternity jeans|🩱 Maternity leggings|👕 Comfy tees|🧥 Cardigan|👚 Nursing bra|🧦 Cozy socks|🩴 Slippers|👙 Swimsuit|🛌 Pajamas|🧥 Hoodie|👟 Comfy shoes",
+  him: "👕 T-shirts|👖 Jeans|🩳 Shorts|🧦 Socks|👟 Shoes|🧥 Jacket|🩲 Underwear",
+  babyclothes: "👶 Onesies|🧦 Baby socks|🧢 Baby hat|🛌 Sleepers|🍼 Bibs|🧤 Mittens|👗 Going-home outfit",
+  tech: "🔌 Charger|🔋 Power bank|🎧 Earbuds|📱 Phone case|🪢 USB-C cable|🖱️ Mouse|📺 HDMI cable|🔋 Batteries|💡 Smart bulb|📷 Baby monitor|⌚ Watch band|🖨️ Printer ink",
+};
+const MENUS = {
+  "Starbucks": "☕ Latte|🧊 Iced coffee|🍓 Pink Drink|🍵 Matcha latte|🥤 Caramel Frappuccino|☕ Chai latte|🍫 Hot chocolate|🥐 Croissant|🍳 Egg bites|🍭 Cake pop|🥯 Bagel|🍌 Banana bread",
+  "Dunkin'": "🧊 Iced coffee|☕ Latte|🍩 Glazed donut|🍩 Boston Kreme|🍩 Munchkins|🥯 Bagel|🌯 Wake-Up Wrap|🥤 Coolatta|🍳 Breakfast sandwich|🥔 Hash browns",
+  "Chick-fil-A": "🥪 Chicken sandwich|🌶️ Spicy deluxe|🍗 Nuggets (8)|🍗 Nuggets (12)|🍗 Strips|🍟 Waffle fries|🥗 Cobb salad|🍋 Lemonade|🍦 Frosted lemonade|🍪 Cookie|🥤 Sweet tea|🥫 Extra sauce|🍳 Chicken biscuit|🥣 Mac & cheese",
+  "McDonald's": "🍔 Big Mac|🍔 Quarter Pounder|🍗 McNuggets|🍟 Fries|🐟 Filet-O-Fish|🥪 McChicken|🍳 Egg McMuffin|🥞 Hotcakes|🥔 Hash brown|🍦 McFlurry|🥤 Coke|🍎 Apple pie",
+  "Chipotle": "🌯 Burrito|🥗 Burrito bowl|🌮 Tacos|🧀 Quesadilla|🥑 Chips & guac|🧀 Chips & queso|🥗 Salad|🍚 Extra rice|🥑 Side of guac|🥤 Drink",
+  "Taco Bell": "🌮 Crunchwrap Supreme|🌮 Chalupa|🌮 Doritos Locos Taco|🌯 Burrito Supreme|🧀 Quesadilla|🍟 Nacho Fries|🫓 Mexican Pizza|🥤 Baja Blast|🍩 Cinnabon Delights",
+  "Wendy's": "🍔 Dave's Single|🥓 Baconator|🌶️ Spicy chicken sandwich|🍗 Nuggets|🍟 Fries|🥔 Baked potato|🍦 Frosty|🌶️ Chili",
+  "Panera": "🥣 Broccoli cheddar soup|🍞 Bread bowl|🥪 Turkey sandwich|🧀 Grilled cheese|🥗 Caesar salad|🍝 Mac & cheese|🍋 Charged lemonade|🥐 Pastry|🥯 Bagel",
+  "Olive Garden": "🍝 Fettuccine Alfredo|🥗 Salad|🥖 Breadsticks|🍲 Zuppa Toscana|🍗 Chicken parm|🧀 Lasagna|🍝 Tour of Italy|🍰 Tiramisu",
+  "Panda Express": "🍊 Orange chicken|🥦 Broccoli beef|🍤 Honey walnut shrimp|🍜 Chow mein|🍚 Fried rice|🥟 Cream cheese rangoons|🍗 Teriyaki chicken|🌶️ Kung pao chicken|🥢 Beijing beef",
+  "Raising Cane's": "🍗 Box Combo|🍗 3 Finger Combo|🍗 Caniac Combo|🥪 Sandwich combo|🥫 Extra Cane's sauce|🍞 Texas toast|🥬 Coleslaw|🍋 Lemonade|🥤 Sweet tea",
+  "Domino's": "🍕 Pepperoni pizza|🍕 Cheese pizza|🍕 Hawaiian|🍕 Pacific veggie|🍗 Wings|🥖 Bread twists|🧄 Garlic bread|🍫 Lava cakes|🥤 Soda",
+  "Pizza Hut": "🍕 Pan pizza|🍕 Stuffed crust|🍕 Pepperoni lovers|🍗 Wings|🥖 Breadsticks|🍪 Big cookie|🍝 Pasta",
+  "Subway": "🥪 Italian BMT|🥪 Turkey|🥪 Meatball marinara|🥪 Chicken teriyaki|🥪 Tuna|🥗 Salad|🍪 Cookies|🥔 Chips",
+  "Sonic": "🍔 Burger|🌭 Footlong coney|🧀 Tots|🧅 Onion rings|🍒 Cherry limeade|🍦 Blast|🍧 Slush|🧊 Sonic ice|🌯 Breakfast burrito",
+  "Crumbl": "🍪 Milk chocolate chip|🍪 This week's flavors|🍪 Pink sugar|📦 4-pack|📦 6-pack|📦 Party box|🥛 Milk",
+  "Wingstop": "🍋 Lemon pepper wings|🧄 Garlic parm wings|🍗 Boneless wings|🍗 Original hot|🍟 Seasoned fries|🌽 Corn|🥕 Veggie sticks|🥣 Ranch",
+  "Texas Roadhouse": "🥩 Sirloin|🍖 Ribs|🍗 Chicken critters|🍞 Rolls & cinnamon butter|🥔 Loaded potato|🥗 House salad|🧅 Cactus blossom|🍤 Grilled shrimp",
+  "Cheesecake Factory": "🍰 Cheesecake|🥑 Avocado egg rolls|🍝 Pasta|🍔 Burger|🥗 Salad|🍞 Brown bread|🍗 Chicken madeira|🍤 Shrimp scampi",
+  "Dutch Bros": "☕ Golden Eagle|🧊 Rebel|🥛 Freeze|🍫 Mocha|🍵 Chai|🍓 Smoothie|🫖 Tea|🥤 Lemonade",
+  _food: "🍔 Burger|🍕 Pizza|🌮 Tacos|🍗 Chicken|🍟 Fries|🥗 Salad|🍝 Pasta|🍜 Noodles|🍣 Sushi|🥟 Dumplings|🍰 Dessert|🥤 Drink",
+};
+// Which aisles each kind of store gets.
+const KINDS = {
+  grocery: ["🥬 Produce:produce", "🥛 Dairy & eggs:dairy", "🍞 Bakery:bakery", "🍗 Meat & seafood:meat", "🥫 Pantry:pantry", "🍿 Snacks:snacks", "🥤 Drinks:drinks", "🧊 Frozen:frozen", "🤰 Mom:mom", "👶 Baby:baby", "🧴 Personal care:care", "🧻 Household:house"],
+  super: ["🥬 Produce:produce", "🥛 Dairy & eggs:dairy", "🍞 Bakery:bakery", "🍗 Meat:meat", "🥫 Pantry:pantry", "🍿 Snacks:snacks", "🥤 Drinks:drinks", "🧊 Frozen:frozen", "🤰 Mom:mom", "👶 Baby:baby", "🧸 Nursery:nursery", "🧴 Personal care:care", "💊 Health:health", "🧻 Household:house", "🍳 Kitchen:kitchen", "🕯️ Decor:decor", "👗 Clothes:her", "🔌 Tech:tech", "🐶 Pets:pet"],
+  pharmacy: ["💊 Health:health", "🤰 Mom:mom", "👶 Baby:baby", "🧴 Personal care:care", "💄 Makeup:makeup", "🍿 Snacks:snacks", "🥤 Drinks:drinks"],
+  beauty: ["🧴 Skincare:skin", "💄 Makeup:makeup", "💇 Hair:hair", "🌸 Body & scent:scent"],
+  home: ["🕯️ Decor:decor", "🍳 Kitchen:kitchen", "🛏️ Bed & bath:bed", "🧸 Nursery:nursery", "🔧 Tools & garden:tools", "🧻 Household:house"],
+  pets: ["🐶 Pets:pet"],
+  crafts: ["🎨 Crafts:crafts", "🕯️ Decor:decor"],
+  clothing: ["👗 For her:her", "👶 Baby clothes:babyclothes", "👕 For him:him", "🕯️ Home:decor"],
+  tech: ["🔌 Tech:tech"],
+  general: ["🧻 Household:house", "🤰 Mom:mom", "👶 Baby:baby", "🧸 Nursery:nursery", "🧴 Personal care:care", "🕯️ Decor:decor", "🎨 Crafts:crafts", "👗 Clothes:her", "🔌 Tech:tech"],
+};
+const KIND_OF = { "Walmart": "super", "Target": "super", "Costco": "super", "Sam's Club": "super", "Amazon": "super", "CVS": "pharmacy", "Walgreens": "pharmacy", "Sephora": "beauty", "Ulta": "beauty", "Bath & Body Works": "beauty",
+  "Home Depot": "home", "Lowe's": "home", "IKEA": "home", "HomeGoods": "home", "Bed Bath": "home", "PetSmart": "pets", "Chewy": "pets", "Hobby Lobby": "crafts", "Michaels": "crafts",
+  "Old Navy": "clothing", "TJ Maxx": "clothing", "Kohl's": "clothing", "Shein": "clothing", "Best Buy": "tech", "Etsy": "general", "Dollar Tree": "general", "Five Below": "general", "Temu": "general" };
+const STORE_TYPES = [["grocery", "🥬 Grocery"], ["super", "🛒 Superstore"], ["pharmacy", "💊 Pharmacy"], ["beauty", "💄 Beauty"], ["home", "🏠 Home"], ["clothing", "👗 Clothes"], ["pets", "🐶 Pets"], ["crafts", "🎨 Crafts"], ["tech", "🔌 Tech"], ["general", "📦 A bit of everything"], ["food", "🍔 Restaurant"]];
+const tiles = (str) => str.split("|").map((t) => { const i = t.indexOf(" "); return [t.slice(0, i), t.slice(i + 1)]; });
+function catalogFor(st) {
+  if (st.kind === "food") return [["🍽️ Menu", tiles(MENUS[st.name] || MENUS._food)]];
+  const k = st.cat || KIND_OF[st.name] || (PRESETS[0][1].some((p) => p[0] === st.name) ? "grocery" : "general");
+  return (KINDS[k] || KINDS.general).map((a) => { const [label, key] = a.split(":"); return [label, tiles(A[key])]; });
+}
+let shopAisle = null, shopQ = "";
+const onListAt = (sid, name) => doc.items.find((i) => !i.done && i.store === sid && i.name.toLowerCase() === name.toLowerCase());
+const qtyOf = (i) => (i ? Math.max(1, parseInt(i.qty, 10) || 1) : 0);
+function addFromWindow(sid, name, delta) {
+  change((d) => {
+    const it = d.items.find((i) => !i.done && i.store === sid && i.name.toLowerCase() === name.toLowerCase());
+    if (delta > 0) {
+      const u = (d.usual = d.usual || {}), us = (u[sid] = u[sid] || {}); us[name] = (us[name] || 0) + 1;
+      if (it) it.qty = String(qtyOf(it) + 1);
+      else d.items.push({ id: uid(), name, qty: "", note: "", store: sid, date: "", time: "", how: "", who: "", img: "", by: me, at: Date.now() });
+    } else if (it) {
+      if (qtyOf(it) > 1) it.qty = String(qtyOf(it) - 1); else d.items = d.items.filter((x) => x !== it);
+    }
+  });
+}
+function aislesFor(st) {
+  const cats = catalogFor(st), all = cats.flatMap((c) => c[1]);
+  const usual = Object.entries(((doc.usual || {})[st.id]) || {}).sort((a, b) => b[1] - a[1]).slice(0, 16)
+    .map(([n]) => [(all.find((t) => t[1].toLowerCase() === n.toLowerCase()) || ["⭐"])[0], n]);
+  return (usual.length ? [["⭐ Usuals", usual]] : []).concat(cats);
+}
+function windowGrid(st) {
+  const aisles = aislesFor(st), q = shopQ.trim().toLowerCase();
+  let list;
+  if (q) {
+    const seen = new Set(); list = [];
+    aisles.forEach(([, ts]) => ts.forEach((t) => { if (t[1].toLowerCase().includes(q) && !seen.has(t[1])) { seen.add(t[1]); list.push(t); } }));
+    if (!list.some((t) => t[1].toLowerCase() === q)) list.unshift(["➕", shopQ.trim(), true]);
+  } else list = (aisles.find((a) => a[0] === shopAisle) || aisles[0] || [, []])[1];
+  return list.map(([e, n, custom]) => {
+    const c = qtyOf(onListAt(st.id, n));
+    return '<button class="tile' + (c ? " on" : "") + '" data-add="' + esc(n) + '"><i>' + e + "</i><span>" + (custom ? "Add “" + esc(n) + "”" : esc(n)) + "</span>" +
+      (c ? '<b class="cnt">' + c + '</b><em class="minus" data-minus="' + esc(n) + '">−</em>' : "") + "</button>";
+  }).join("") || '<p class="small">Nothing here yet.</p>';
+}
+function storeSheet(sid, keep) {
   const st = storeOf(sid); if (!st) return;
-  const its = doc.items.filter((i) => i.store === sid && !i.done), food = st.kind === "food";
+  const its = doc.items.filter((i) => i.store === sid && !i.done), food = st.kind === "food", aisles = aislesFor(st);
+  if (!keep) { shopQ = ""; shopAisle = aisles[0] && aisles[0][0]; }
+  const scroller = $("sheet-in"), y = keep ? scroller.scrollTop : 0;
   sheet('<h2>' + logoHTML(st) + esc(st.name) + "</h2>" +
-    '<div class="row"><input class="inp" id="q-name" placeholder="' + (food ? "Add a menu item…" : "Quick add…") + '"><button class="btn" id="q-add" style="flex:none;width:auto;padding:0 20px">Add</button></div>' +
+    '<input class="inp" id="w-q" placeholder="' + (food ? "Search the menu, or type anything…" : "Search " + esc(st.name) + ", or type anything…") + '" value="' + esc(shopQ) + '">' +
+    '<div class="aisles" id="w-aisles">' + aisles.map(([a]) => '<button class="chip' + (a === shopAisle && !shopQ ? " on" : "") + '" data-aisle="' + esc(a) + '">' + esc(a) + "</button>").join("") + "</div>" +
+    '<div class="window" id="w-grid">' + windowGrid(st) + "</div>" +
     '<div class="sec"><span>' + (food ? "Our order" : "On the list") + " (" + its.length + ')</span><button id="q-more">+ with details</button></div>' +
-    (its.length ? '<div class="group">' + its.map((i) => itemHTML(i)).join("") + "</div>" : '<div class="empty" style="padding:20px">Nothing yet.</div>') +
+    (its.length ? '<div class="group">' + its.map((i) => itemHTML(i)).join("") + "</div>" : '<div class="empty" style="padding:16px">Tap anything above to add it.</div>') +
     (its.length ? '<div class="sec"><span>Plan the whole trip</span></div><p class="note" style="margin:0 4px 10px">Set the day, how, and who for everything from ' + esc(st.name) + ' at once.</p>' +
       '<div class="row"><input class="inp" type="date" id="t-date"><input class="inp" type="time" id="t-time"></div><div class="chips" id="t-how" style="margin-top:10px">' + HOW.map(([k, l]) => '<button class="chip" data-v="' + k + '">' + l + "</button>").join("") + '</div><div class="chips" id="t-who" style="margin-top:10px">' + WHO.map(([k, l]) => '<button class="chip" data-v="' + k + '">' + l + "</button>").join("") + '</div><button class="btn" id="t-go" style="margin-top:14px">Plan this trip</button>' : "") +
+    (food ? "" : '<div class="sec"><span>Store type</span></div><div class="chips" id="w-type">' + STORE_TYPES.filter(([k]) => k !== "food").map(([k, l]) => '<button class="chip' + ((st.cat || KIND_OF[st.name] || "") === k ? " on" : "") + '" data-v="' + k + '">' + l + "</button>").join("") + "</div>") +
     '<button class="danger" id="s-del">Remove ' + esc(st.name) + "</button>", () => {
-    const add = () => { const n = $("q-name").value.trim(); if (!n) return; change((d) => d.items.push({ id: uid(), name: n, qty: "", note: "", store: sid, date: "", time: "", how: "", who: "", img: "", by: me, at: Date.now() })); toast("Added ✓"); storeSheet(sid); setTimeout(() => $("q-name").focus(), 50); };
-    $("q-add").onclick = add; $("q-name").onkeydown = (e) => { if (e.key === "Enter") add(); };
+    scroller.scrollTop = y;
+    const grid = () => { $("w-grid").innerHTML = windowGrid(st); };
+    $("w-q").oninput = () => { shopQ = $("w-q").value; grid(); [...$("w-aisles").children].forEach((c) => c.classList.toggle("on", !shopQ && c.dataset.aisle === shopAisle)); };
+    $("w-q").onkeydown = (e) => { if (e.key === "Enter" && shopQ.trim()) { addFromWindow(sid, shopQ.trim(), 1); toast("Added ✓"); shopQ = ""; storeSheet(sid, true); } };
+    $("w-aisles").onclick = (e) => { const b = e.target.closest("[data-aisle]"); if (!b) return; shopAisle = b.dataset.aisle; shopQ = ""; $("w-q").value = ""; grid(); [...$("w-aisles").children].forEach((c) => c.classList.toggle("on", c === b)); };
+    $("w-grid").onclick = (e) => {
+      const m = e.target.closest("[data-minus]"); if (m) { e.stopPropagation(); addFromWindow(sid, m.dataset.minus, -1); storeSheet(sid, true); return; }
+      const t = e.target.closest("[data-add]"); if (!t) return;
+      addFromWindow(sid, t.dataset.add, 1); if (navigator.vibrate) navigator.vibrate(12);
+      if (shopQ) { shopQ = ""; } storeSheet(sid, true);
+    };
     $("q-more").onclick = () => itemSheet(null, sid);
+    if ($("w-type")) $("w-type").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; change((d) => { const s2 = d.stores.find((x) => x.id === sid); if (s2) s2.cat = b.dataset.v; }); shopAisle = null; storeSheet(sid); };
     if (its.length) {
       const trip = { how: "", who: "" };
       ["how", "who"].forEach((k) => { $("t-" + k).onclick = (e) => { const b = e.target.closest("button"); if (!b) return; trip[k] = trip[k] === b.dataset.v ? "" : b.dataset.v; [...$("t-" + k).children].forEach((c) => c.classList.toggle("on", c.dataset.v === trip[k])); }; });
@@ -626,7 +763,7 @@ function storeSheet(sid) {
 function addStoreSheet() {
   sheet('<h2>Add a store</h2><input class="inp search" id="a-q" placeholder="Search, or type a new one…"><div id="a-res"></div>' +
     '<div class="sec"><span>Not here?</span></div><div class="row"><input class="inp" id="a-name" placeholder="Name"><input class="inp" id="a-site" placeholder="website (optional)" autocapitalize="off"></div>' +
-    '<div class="chips" id="a-kind" style="margin-top:10px"><button class="chip on" data-v="store">🛍️ Store</button><button class="chip" data-v="food">🍔 Restaurant</button></div><button class="btn" id="a-add" style="margin-top:14px">Add it</button>', () => {
+    '<div class="lbl">What kind of place?</div><div class="chips" id="a-kind">' + STORE_TYPES.map(([k, l], i) => '<button class="chip' + (i === 0 ? " on" : "") + '" data-v="' + k + '">' + l + "</button>").join("") + '</div><button class="btn" id="a-add" style="margin-top:14px">Add it</button>', () => {
     const have = new Set(doc.stores.map((s) => s.name.toLowerCase()));
     const draw = () => {
       const q = $("a-q").value.trim().toLowerCase();
@@ -641,14 +778,14 @@ function addStoreSheet() {
       change((d) => d.stores.push({ id: uid(), name: p[0], domain: p[1], color: p[2], kind: FOOD.has(p[0]) ? "food" : "store" }));
       have.add(p[0].toLowerCase()); b.classList.add("have"); toast(p[0] + " added ✓");
     };
-    let kind = "store";
+    let kind = "grocery";
     $("a-kind").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; kind = b.dataset.v; [...$("a-kind").children].forEach((c) => c.classList.toggle("on", c === b)); };
     $("a-add").onclick = () => {
       const n = $("a-name").value.trim(); if (!n) { $("a-name").focus(); return; }
       let site = $("a-site").value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
       if (site && !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(site)) site = "";
       const colors = ["#ff6f61", "#4f8cff", "#2fbf8f", "#9a5cd6", "#ffb020", "#e05297"];
-      change((d) => d.stores.push({ id: uid(), name: n, domain: site, color: colors[n.length % colors.length], kind }));
+      change((d) => d.stores.push({ id: uid(), name: n, domain: site, color: colors[n.length % colors.length], kind: kind === "food" ? "food" : "store", cat: kind === "food" ? "" : kind }));
       closeSheet(); toast(n + " added ✓");
     };
   });
@@ -675,7 +812,7 @@ $("page").addEventListener("click", (e) => {
 });
 $("sheet-in").addEventListener("click", (e) => {
   const t = e.target.closest("[data-chk],[data-open]"); if (!t) return;
-  if (t.dataset.chk) { const id = t.dataset.chk; change((x) => { const i = x.items.find((y) => y.id === id); if (i) { i.done = !i.done; i.doneBy = me; } }); const s = doc.items.find((y) => y.id === id); if (s && s.store) storeSheet(s.store); }
+  if (t.dataset.chk) { const id = t.dataset.chk; change((x) => { const i = x.items.find((y) => y.id === id); if (i) { i.done = !i.done; i.doneBy = me; } }); const s = doc.items.find((y) => y.id === id); if (s && s.store) storeSheet(s.store, true); }
   else { const i = doc.items.find((y) => y.id === t.dataset.open); if (i) itemSheet(i); }
 });
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; render(); window.scrollTo(0, 0); }));
