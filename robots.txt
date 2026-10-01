@@ -1,6 +1,7 @@
 User-agent: *
 Disallow: /garden-notes
 Disallow: /listit
+Disallow: /pilotfish
 Allow: /
 Disallow: /tools/
 
