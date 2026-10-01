@@ -5,6 +5,8 @@
 //   - a cloud photo album (/api/photos/<app>[/<t>]) for Flutterbloom
 //   - notes for Flutterbloom (/api/notes/flutterbloom): read with her session,
 //     written from garden-notes.html with the Vigil (owner) session
+//   - List-It (/api/list/listit, /api/listimg/listit/<id>): one shared shopping
+//     list for two people, each with their own login (per-user verifiers)
 //   - a daily Flutterbloom reminder: Web Push subscriptions (/api/push/*) and an
 //     hourly cron that sends a payloadless push at her chosen local hour
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
@@ -21,12 +23,18 @@ const VERIFIERS = {
   graveyard: "261dec3b6c58bab0bc42a27857a907b61aba255be34f4ec43d314362dbb41fc1",
   sideways: "aa13d7c65c73f019135b485e79a0a19a00620f359a13b595c2affd79cf32dcb1",
   rootcause: "b4fa2d09b759cb87b3d7cbcf98e9541c4b263696de29876d02672c11a366823e",
+  // Shared apps: one verifier per person, so the session knows who is signed in.
+  listit: {
+    anders: "4861b5e5cd731bd68b61d90f5a11592b748da3f00bb22e1b821f83efbafdd7cd",
+    adrianna: "2d9ea0c1375a9447704e64a88c06b977f9aa73c4dcb2b487a3b2555abbe16eac",
+  },
 };
 const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways" };
 const SAVES = new Set(["flutterbloom"]);
 const SESSION_DAYS = 180;
 const MAX_SAVE = 512 * 1024;
 const MAX_PHOTO = 1.5 * 1024 * 1024, MAX_PHOTOS = 60;
+const MAX_LIST = 900 * 1024, MAX_LISTIMG = 1.5 * 1024 * 1024, MAX_LISTIMGS = 400;
 const LOGIN_LIMIT = 10, LOGIN_WINDOW = 15 * 60 * 1000;
 
 export class Store extends DurableObject {
@@ -36,8 +44,8 @@ export class Store extends DurableObject {
     if (s.exp < Date.now()) { await this.ctx.storage.delete("s:" + token); return null; }
     return s;
   }
-  async putSession(token, app) {
-    await this.ctx.storage.put("s:" + token, { app, exp: Date.now() + SESSION_DAYS * 864e5 });
+  async putSession(token, app, user) {
+    await this.ctx.storage.put("s:" + token, { app, user: user || null, exp: Date.now() + SESSION_DAYS * 864e5 });
   }
   async dropSession(token) { await this.ctx.storage.delete("s:" + token); }
   // Fixed-window counter; true while under the limit.
@@ -69,6 +77,32 @@ export class Store extends DurableObject {
   async putSub(id, rec) { await this.ctx.storage.put("push:" + id, rec); }
   async dropSub(id) { await this.ctx.storage.delete("push:" + id); }
   async subs() { return [...(await this.ctx.storage.list({ prefix: "push:" })).entries()].map(([k, v]) => ({ id: k.slice(5), ...v })); }
+  // List-It: the whole list is one document with a revision number. A write
+  // must name the revision it was built on; a stale one gets a 409 and the
+  // current document, and the client replays its changes on top.
+  async getList(app) { return (await this.ctx.storage.get("list:" + app)) || { rev: 0, data: null }; }
+  async putList(app, base, data, user) {
+    const cur = await this.getList(app);
+    if (base !== cur.rev) return { conflict: true, ...cur };
+    const next = { rev: cur.rev + 1, data, by: user, at: Date.now() };
+    await this.ctx.storage.put("list:" + app, next);
+    return next;
+  }
+  async getListImg(app, id) { return (await this.ctx.storage.get("limg:" + app + ":" + id)) || null; }
+  async putListImg(app, id, bytes) {
+    const idx = (await this.ctx.storage.get("limgs:" + app)) || [];
+    if (!idx.includes(id)) {
+      idx.push(id);
+      for (const old of idx.splice(0, Math.max(0, idx.length - MAX_LISTIMGS))) await this.ctx.storage.delete("limg:" + app + ":" + old);
+      await this.ctx.storage.put("limgs:" + app, idx);
+    }
+    await this.ctx.storage.put("limg:" + app + ":" + id, bytes);
+  }
+  async dropListImg(app, id) {
+    const idx = ((await this.ctx.storage.get("limgs:" + app)) || []).filter((x) => x !== id);
+    await this.ctx.storage.put("limgs:" + app, idx);
+    await this.ctx.storage.delete("limg:" + app + ":" + id);
+  }
   async getNotes(app) { return (await this.ctx.storage.get("notes:" + app)) || []; }
   async putNotes(app, notes) { await this.ctx.storage.put("notes:" + app, notes); }
 
@@ -112,10 +146,14 @@ function cookie(req, name) {
   return m ? m[1] : null;
 }
 async function session(req, env, app) {
+  const s = await sessionRec(req, env, app);
+  return s ? s.token : null;
+}
+async function sessionRec(req, env, app) {
   const token = cookie(req, "mf_" + app);
   if (!token) return null;
   const s = await store(env).getSession(token);
-  return s && s.app === app ? token : null;
+  return s && s.app === app ? { token, user: s.user || null } : null;
 }
 function sameHex(a, b) {
   if (a.length !== b.length) return false;
@@ -132,10 +170,16 @@ async function login(req, env) {
   const ip = req.headers.get("cf-connecting-ip") || "unknown";
   if (!(await store(env).hit("login:" + app + ":" + ip, LOGIN_LIMIT, LOGIN_WINDOW))) return json({ error: "slow down" }, 429);
   const given = hex(await crypto.subtle.digest("SHA-256", Uint8Array.from(proof.match(/../g), (h) => parseInt(h, 16))));
-  if (!sameHex(given, VERIFIERS[app])) return json({ error: "wrong" }, 401);
+  const v = VERIFIERS[app];
+  let user = null;
+  if (typeof v === "string") { if (!sameHex(given, v)) return json({ error: "wrong" }, 401); }
+  else {
+    for (const [name, h] of Object.entries(v)) if (sameHex(given, h)) user = name;
+    if (!user) return json({ error: "wrong" }, 401);
+  }
   const token = hex(crypto.getRandomValues(new Uint8Array(32)));
-  await store(env).putSession(token, app);
-  return json({ ok: true }, 200, {
+  await store(env).putSession(token, app, user);
+  return json({ ok: true, user }, 200, {
     "set-cookie": `mf_${app}=${token}; Path=/; Max-Age=${SESSION_DAYS * 86400}; HttpOnly; Secure; SameSite=Lax`,
   });
 }
@@ -226,6 +270,46 @@ async function notes(req, env, app) {
   return json({ error: "method" }, 405);
 }
 
+// List-It: a shared list. GET returns {rev, data, me}; PUT {base, data}.
+const LISTS = new Set(["listit"]);
+async function list(req, env, app) {
+  if (!LISTS.has(app)) return json({ error: "not found" }, 404);
+  const me = await sessionRec(req, env, app);
+  if (!me) return json({ error: "signed out" }, 401);
+  const s = store(env);
+  if (req.method === "GET") return json({ ...(await s.getList(app)), me: me.user });
+  if (req.method === "PUT") {
+    const text = await req.text();
+    if (text.length > MAX_LIST) return json({ error: "too big" }, 413);
+    let body;
+    try { body = JSON.parse(text); } catch { return json({ error: "bad json" }, 400); }
+    if (!body || typeof body.base !== "number" || !body.data || typeof body.data !== "object") return json({ error: "bad list" }, 400);
+    const r = await s.putList(app, body.base, body.data, me.user);
+    return json({ ...r, me: me.user }, r.conflict ? 409 : 200);
+  }
+  return json({ error: "method" }, 405);
+}
+async function listImg(req, env, app, id) {
+  if (!LISTS.has(app)) return json({ error: "not found" }, 404);
+  if (!(await session(req, env, app))) return json({ error: "signed out" }, 401);
+  if (!/^[a-z0-9]{8,32}$/.test(id || "")) return json({ error: "bad id" }, 400);
+  const s = store(env);
+  if (req.method === "GET") {
+    const bytes = await s.getListImg(app, id);
+    return bytes ? new Response(bytes, { headers: { "content-type": "image/jpeg", "cache-control": "private, max-age=31536000, immutable" } }) : json({ error: "not found" }, 404);
+  }
+  if (req.method === "PUT") {
+    const bytes = await req.arrayBuffer();
+    if (!bytes.byteLength || bytes.byteLength > MAX_LISTIMG) return json({ error: "too big" }, 413);
+    const head = new Uint8Array(bytes, 0, 3);
+    if (head[0] !== 0xff || head[1] !== 0xd8 || head[2] !== 0xff) return json({ error: "jpeg only" }, 415);
+    await s.putListImg(app, id, bytes);
+    return json({ ok: true });
+  }
+  if (req.method === "DELETE") { await s.dropListImg(app, id); return json({ ok: true }); }
+  return json({ error: "method" }, 405);
+}
+
 // Web Push (RFC 8030/8292) without a payload: the service worker picks the
 // words, so nothing needs encrypting; the request only carries a VAPID JWT.
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -308,6 +392,8 @@ export default {
       if (route === "photos" && app) return photos(req, env, app, sub);
       if (route === "notes" && app) return notes(req, env, app);
       if (route === "push" && app) return push(req, env, app);
+      if (route === "list" && app) return list(req, env, app);
+      if (route === "listimg" && app) return listImg(req, env, app, sub);
       return json({ error: "not found" }, 404);
     }
     const app = PAGES[path.replace(/\.html$/, "").replace(/\/$/, "")];
