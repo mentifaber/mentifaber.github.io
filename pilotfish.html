@@ -82,7 +82,7 @@ button{background:none;border:0;cursor:pointer}
 .chip.on{border-color:var(--coral);background:var(--coral);color:#fff}
 /* tabs + fab */
 .tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 8px calc(var(--safe-b) + 8px);z-index:20}
-.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:800;color:var(--dim);padding:4px 16px}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:800;color:var(--dim);padding:4px 6px;flex:1}
 .tabs button i{font-style:normal;font-size:22px;filter:grayscale(1);opacity:.6}
 .tabs button.on{color:var(--coral)}.tabs button.on i{filter:none;opacity:1}
 .fab{position:fixed;right:18px;bottom:calc(var(--safe-b) + 80px);width:62px;height:62px;border-radius:50%;background:var(--coral);color:#fff;font-size:34px;font-weight:700;box-shadow:0 10px 26px rgba(14,148,171,.45);z-index:21;line-height:1}
@@ -163,6 +163,22 @@ textarea.inp{min-height:96px;resize:vertical;line-height:1.45}
 .tile.on{border-color:var(--coral);background:rgba(14,148,171,.10)}
 .tile .cnt{position:absolute;top:5px;right:6px;background:var(--coral);color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;padding:0 6px}
 .tile .minus{position:absolute;top:5px;left:6px;width:24px;height:24px;border-radius:50%;background:var(--bg);border:2px solid var(--line);font-style:normal;font-weight:900;display:grid;place-items:center;font-size:15px;line-height:1}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-h b{font-size:20px;font-weight:900}
+.cal-h button{width:40px;height:40px;border-radius:12px;background:var(--card);border:2px solid var(--line);font-size:18px;font-weight:900}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:var(--card);border-radius:20px;padding:10px;box-shadow:0 2px 12px rgba(20,60,80,.06)}
+.cal .dow{text-align:center;font-size:11px;font-weight:900;color:var(--dim);padding-bottom:4px}
+.cal .d{aspect-ratio:1/1.05;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;font-weight:800;font-size:14px;position:relative}
+.cal .d.out{opacity:.3}
+.cal .d.today{background:rgba(14,148,171,.12);color:var(--coral)}
+.cal .d.sel{background:var(--coral);color:#fff}
+.cal .d .dots{display:flex;gap:2px;margin-top:3px;flex-wrap:wrap;justify-content:center;max-width:90%}
+.cal .d .dots i{width:6px;height:6px;border-radius:50%;display:block}
+.ev{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.ev:last-child{border-bottom:0}
+.ev .e{font-size:22px;line-height:1.2;width:28px;text-align:center}
+.ev .t{font-weight:800;font-size:16px;line-height:1.3}
+.ev .s{font-size:12.5px;color:var(--dim);font-weight:700;margin-top:3px}
 </style>
 </head>
 <body>
@@ -192,6 +208,7 @@ textarea.inp{min-height:96px;resize:vertical;line-height:1.45}
   <button data-t="talk" class="on"><i>🦈</i>Talk</button>
   <button data-t="list"><i>📝</i>List</button>
   <button data-t="plan"><i>📅</i>Plan</button>
+  <button data-t="cal"><i>📆</i>Calendar</button>
   <button data-t="baby"><i>🍼</i>Baby</button>
 </nav>
 <div class="sheet hidden" id="sheet"><div class="in" id="sheet-in"></div></div>
@@ -421,6 +438,86 @@ function pageBaby() {
   if (names.length) h += '<div class="group" style="margin-top:12px">' + names.map((n) => { const mine = (n.hearts || []).includes(me), both = (n.hearts || []).length === 2; return '<div class="name">' + (both ? "💞 " : "") + esc(n.name) + '<span class="note" style="margin:0;font-size:12px">' + esc(NAMES[n.by]) + '</span><button class="h' + (mine ? " on" : "") + '" data-heart="' + n.id + '">' + (mine ? "❤️" : "🤍") + " " + (n.hearts || []).length + '</button><button data-delname="' + n.id + '" style="color:var(--dim);padding:4px 6px">✕</button></div>'; }).join("") + "</div>";
   return h;
 }
+/* ── calendar: our events plus everything else with a date ── */
+const EV_EMO = ["📌", "🎉", "🍽️", "🩺", "👶", "🎂", "✈️", "🏠", "💼", "💙", "🦈", "🛒"];
+let calY = new Date().getFullYear(), calM = new Date().getMonth(), calSel = new Date().toISOString().slice(0, 10);
+const ymd = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+calSel = ymd(new Date());
+// Everything that has a date, from every part of the app, in one shape.
+function allEvents() {
+  const out = [];
+  (doc.events || []).forEach((e) => out.push({ src: "ev", id: e.id, date: e.date, time: e.time, title: e.title, emoji: e.emoji || "📌", who: e.who, note: e.note, color: "#0e94ab" }));
+  doc.items.forEach((i) => { if (i.date && !i.done) { const st = storeOf(i.store); out.push({ src: "item", id: i.id, date: i.date, time: i.time, title: i.name + (st ? " · " + st.name : ""), emoji: i.how === "delivery" ? "🚗" : i.how === "shipping" ? "📦" : "🛍️", who: i.who, note: i.how ? HOW_SHORT[i.how] : "", color: "#7a5cd6" }); } });
+  const b = doc.baby || {};
+  (b.appts || []).forEach((a) => out.push({ src: "appt", id: a.id, date: a.date, time: a.time, title: a.what || "Appointment", emoji: "🩺", who: a.who, note: a.note, color: "#24b38a" }));
+  if (b.due) out.push({ src: "due", id: "due", date: b.due, time: "", title: "Baby's due date", emoji: "🍼", who: "both", note: "", color: "#ff7b6b" });
+  return out.sort((x, y) => (x.date + (x.time || "99")).localeCompare(y.date + (y.time || "99")));
+}
+function evRow(e) {
+  const t = e.time ? new Date("2000-01-01T" + e.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "All day";
+  const who = e.who ? (e.who === "both" ? "👫 Both" : "🙋 " + NAMES[e.who]) : "";
+  return '<button class="ev" data-ev="' + e.src + ":" + e.id + '"><span class="e">' + e.emoji + '</span><span><div class="t">' + esc(e.title) + '</div><div class="s">' + [t, who, e.note].filter(Boolean).map(esc).join(" · ") + "</div></span></button>";
+}
+function pageCal() {
+  const evs = allEvents(), byDay = {};
+  evs.forEach((e) => (byDay[e.date] = byDay[e.date] || []).push(e));
+  const first = new Date(calY, calM, 1), start = new Date(calY, calM, 1 - first.getDay()), today = ymd(new Date());
+  let h = '<div class="cal-h"><button data-calnav="-1">‹</button><b>' + first.toLocaleDateString([], { month: "long", year: "numeric" }) + '</b><button data-calnav="1">›</button></div><div class="cal">' +
+    ["S", "M", "T", "W", "T", "F", "S"].map((d) => '<div class="dow">' + d + "</div>").join("");
+  for (let k = 0; k < 42; k++) {
+    const d = new Date(start); d.setDate(start.getDate() + k); const key = ymd(d), list = byDay[key] || [];
+    if (k >= 35 && d.getMonth() !== calM) break;
+    h += '<button class="d' + (d.getMonth() !== calM ? " out" : "") + (key === today ? " today" : "") + (key === calSel ? " sel" : "") + '" data-day="' + key + '">' + d.getDate() +
+      (list.length ? '<span class="dots">' + list.slice(0, 4).map((e) => '<i style="background:' + (key === calSel ? "#fff" : e.color) + '"></i>').join("") + "</span>" : "") + "</button>";
+  }
+  h += "</div>";
+  const sel = new Date(calSel + "T12:00"), day = byDay[calSel] || [];
+  h += '<div class="sec"><span>' + sel.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) + '</span><button data-addev="1">+ Add</button></div>' +
+    (day.length ? '<div class="group">' + day.map(evRow).join("") + "</div>" : '<p class="small" style="margin:0 4px">Nothing yet. Tap + Add to put something on this day.</p>');
+  const up = evs.filter((e) => e.date >= today).slice(0, 8);
+  if (up.length) h += '<div class="sec"><span>Coming up</span></div><div class="group">' + up.map((e) => evRow({ ...e, note: new Date(e.date + "T12:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + (e.note ? " · " + e.note : "") })).join("") + "</div>";
+  h += '<p class="small" style="text-align:center;margin-top:14px"><span style="color:#0e94ab">●</span> ours · <span style="color:#7a5cd6">●</span> shopping · <span style="color:#24b38a">●</span> appointments · <span style="color:#ff7b6b">●</span> due date</p>';
+  return h;
+}
+function eventSheet(ev, date) {
+  const it = ev ? { ...ev } : { id: uid(), title: "", date: date || calSel, time: "", who: "both", note: "", emoji: "📌", by: me };
+  sheet('<h2>' + (ev ? "Edit event" : "New event") + '</h2><input class="inp" id="e-title" placeholder="What\'s happening?" value="' + esc(it.title) + '">' +
+    '<div class="lbl">Pick an icon</div><div class="chips" id="e-emo">' + EV_EMO.map((x) => '<button class="chip' + (it.emoji === x ? " on" : "") + '" data-v="' + x + '" style="font-size:20px;padding:6px 10px">' + x + "</button>").join("") + "</div>" +
+    '<div class="lbl">When?</div><div class="row"><input class="inp" type="date" id="e-date" value="' + esc(it.date) + '"><input class="inp" type="time" id="e-time" value="' + esc(it.time) + '"></div>' +
+    '<div class="lbl">Who?</div><div class="chips" id="e-who">' + WHO.map(([k, l]) => '<button class="chip' + (it.who === k ? " on" : "") + '" data-v="' + k + '">' + l + "</button>").join("") + "</div>" +
+    '<div class="lbl">Notes</div><textarea class="inp" id="e-note">' + esc(it.note) + "</textarea>" +
+    '<div class="actions"><button class="btn soft" id="e-x">Cancel</button><button class="btn" id="e-ok">Save</button></div>' + (ev ? '<button class="danger" id="e-del">Delete</button>' : ""), () => {
+    const pick = (box, key) => { $(box).onclick = (e) => { const b = e.target.closest("button"); if (!b) return; it[key] = b.dataset.v; [...$(box).children].forEach((c) => c.classList.toggle("on", c === b)); }; };
+    pick("e-emo", "emoji"); pick("e-who", "who");
+    $("e-x").onclick = closeSheet;
+    $("e-ok").onclick = () => {
+      it.title = $("e-title").value.trim(); it.date = $("e-date").value; it.time = $("e-time").value; it.note = $("e-note").value.trim();
+      if (!it.title) { $("e-title").focus(); toast("Give it a name"); return; }
+      if (!it.date) { toast("Pick a date"); return; }
+      change((d) => { d.events = d.events || []; const k = d.events.findIndex((x) => x.id === it.id); if (k >= 0) d.events[k] = it; else d.events.push(it); });
+      calSel = it.date; const dd = new Date(it.date + "T12:00"); calY = dd.getFullYear(); calM = dd.getMonth();
+      closeSheet(); toast("On the calendar 📆");
+    };
+    if (ev) $("e-del").onclick = () => { change((d) => { d.events = (d.events || []).filter((x) => x.id !== ev.id); }); closeSheet(); };
+    if (!ev) setTimeout(() => $("e-title").focus(), 250);
+  });
+}
+function calClick(e) {
+  const t = e.target.closest("[data-calnav],[data-day],[data-addev],[data-ev]"); if (!t) return false;
+  const d = t.dataset;
+  if (d.calnav) { calM += Number(d.calnav); if (calM < 0) { calM = 11; calY--; } if (calM > 11) { calM = 0; calY++; } render(); return true; }
+  if (d.day) { calSel = d.day; const dd = new Date(d.day + "T12:00"); if (dd.getMonth() !== calM) { calM = dd.getMonth(); calY = dd.getFullYear(); } render(); return true; }
+  if (d.addev) { eventSheet(null, calSel); return true; }
+  if (d.ev) {
+    const [src, id] = d.ev.split(":");
+    if (src === "ev") eventSheet((doc.events || []).find((x) => x.id === id));
+    else if (src === "item") { const i = doc.items.find((x) => x.id === id); if (i) itemSheet(i); }
+    else if (src === "appt") apptSheet(((doc.baby || {}).appts || []).find((x) => x.id === id));
+    else { tab = "baby"; render(); }
+    return true;
+  }
+  return false;
+}
 function apptSheet(a) {
   const it = a ? { ...a } : { id: uid(), what: "", date: "", time: "", who: "both", note: "" };
   sheet('<h2>' + (a ? "Appointment" : "New appointment") + '</h2><input class="inp" id="ap-what" placeholder="e.g. OB checkup, ultrasound 🩺" value="' + esc(it.what) + '">' +
@@ -501,6 +598,7 @@ function render() {
   if (tab === "stores") pg.innerHTML = pageStores();
   if (tab === "talk") pg.innerHTML = pageTalk();
   if (tab === "baby") pg.innerHTML = pageBaby();
+  if (tab === "cal") pg.innerHTML = pageCal();
   $("fab").classList.toggle("hidden", tab === "talk" || tab === "baby");
 }
 function stripHTML() {
@@ -798,6 +896,7 @@ $("page").addEventListener("click", (e) => {
   if (e.target.closest("#m-bell")) return toggleBell();
   const rp = e.target.closest("[data-reply]"); if (rp) return sendReply(rp.dataset.reply, rp.dataset.re);
   if (tab === "baby" && babyClick(e)) return;
+  if (tab === "cal" && calClick(e)) return;
   const t = e.target.closest("[data-chk],[data-open],[data-store],[data-addstore],[data-toggledone],[data-cleardone],[data-planwho],[data-feel],[data-need]"); if (!t) return;
   const d = t.dataset;
   if (d.feel) { pickF.has(d.feel) ? pickF.delete(d.feel) : pickF.add(d.feel); t.classList.toggle("on"); return; }
@@ -816,12 +915,12 @@ $("sheet-in").addEventListener("click", (e) => {
   else { const i = doc.items.find((y) => y.id === t.dataset.open); if (i) itemSheet(i); }
 });
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; render(); window.scrollTo(0, 0); }));
-$("fab").onclick = () => itemSheet(null);
+$("fab").onclick = () => (tab === "cal" ? eventSheet(null, calSel) : itemSheet(null));
 
 $("page").addEventListener("input", (e) => { if (e.target.id === "m-note") draft = e.target.value; });
 setInterval(() => { if (me && !document.hidden && $("sheet").classList.contains("hidden")) pullMoods().catch(() => {}); }, 15000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && me) pullMoods().catch(() => {}); });
-if (/^#(talk|list|plan|baby)$/.test(location.hash)) tab = location.hash.slice(1);
+if (/^#(talk|list|plan|cal|baby)$/.test(location.hash)) tab = location.hash.slice(1);
 const boot = () => { pullMoods().catch(() => {}); initPush(); };
 pull().then((ok) => (ok ? (showApp(), boot()) : showLogin())).catch(showLogin);
 })();
