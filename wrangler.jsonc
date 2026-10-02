@@ -17,7 +17,8 @@
       "/weaver-live", "/weaver-live.html",
       "/graveyard", "/graveyard.html",
       "/rootcause", "/rootcause.html",
-      "/sideways", "/sideways.html"
+      "/sideways", "/sideways.html",
+      "/tether", "/tether.html"
     ]
   },
   "durable_objects": {
