@@ -25,6 +25,7 @@ const TARGETS = {
   weaver: { out: "weaver-live.html", src: ".private/weaver-live.html" },
   graveyard: { out: "graveyard.html", src: ".private/graveyard-game.html" },
   tether: { out: "tether.html", src: ".private/tether-game.html" },
+  angels: { out: "angels.html", src: ".private/angels-src.html" },
   sideways: { out: "sideways.html", src: ".private/sideways-game.html" },
   rootcause: { out: "rootcause.html", src: ".private/rootcause-game.html" },
 };
