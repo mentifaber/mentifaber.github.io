@@ -84,6 +84,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const TAU = Math.PI * 2, V = (x, y, z) => new THREE.Vector3(x, y, z), rand = (a, b) => a + Math.random() * (b - a), lerp = (a, b, k) => a + (b - a) * k;
@@ -93,15 +94,27 @@ const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return
 /* ── renderer, camera, post ── */
 const cv = document.getElementById("cv");
 const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+const LOW = matchMedia("(pointer:coarse)").matches || (navigator.hardwareConcurrency || 8) <= 4;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LOW ? 1.25 : 1.75));
+renderer.shadowMap.enabled = !LOW; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
 const camera = new THREE.PerspectiveCamera(42, 1, .05, 3000);
 const controls = new OrbitControls(camera, cv); controls.enableDamping = true; controls.dampingFactor = .06; controls.enablePan = false; controls.autoRotate = true; controls.autoRotateSpeed = .35;
-const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: LOW ? 0 : 4 })); composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 1, .6, .2); composer.addPass(bloom); composer.addPass(new OutputPass());
+// the lens: light shafts streaming from the brightest source, a touch of colour fringing, grain and a vignette
+const grade = new ShaderPass({ uniforms: { tDiffuse: { value: null }, sun: { value: new THREE.Vector2(.5, .5) }, rays: { value: 0 }, time: { value: 0 }, ca: { value: .004 }, grain: { value: .035 } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 sun; uniform float rays, time, ca, grain; varying vec2 vUv;
+  void main(){ vec2 uv=vUv; vec2 d=(uv-.5)*ca*length(uv-.5)*2.; vec3 col=vec3(texture2D(tDiffuse,uv+d).r, texture2D(tDiffuse,uv).g, texture2D(tDiffuse,uv-d).b);
+    if(rays>0.){ vec2 dt=(uv-sun)/56.; vec2 c=uv; float dec=1.; vec3 acc=vec3(0.); for(int i=0;i<56;i++){ c-=dt; vec3 s=texture2D(tDiffuse,c).rgb; float l=max(0.,dot(s,vec3(.3,.59,.11))-.55); acc+=s*l*dec; dec*=.965; } col+=acc*rays/30.; }
+    float v=smoothstep(1.,.3,length((uv-.5)*vec2(1.1,1.))); col*=mix(.45,1.,v);
+    col+=(fract(sin(dot(uv*vec2(12.9898,78.233)+fract(time),vec2(1.)))*43758.5453)-.5)*grain;
+    gl_FragColor=vec4(col,1.); }` });
+composer.addPass(grade);
 function resize() { const r = cv.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); composer.setSize(r.width, r.height); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 addEventListener("resize", resize);
 
@@ -124,6 +137,7 @@ const irisTex = (hue) => ctex(256, 128, (g, w, h) => {
   for (let i = 0; i < 260; i++) { const x = Math.random() * w; g.strokeStyle = Math.random() < .5 ? "hsla(" + (hue + 20) + ",80%,70%,.35)" : "rgba(0,0,0,.35)"; g.lineWidth = rand(.5, 1.6); g.beginPath(); g.moveTo(x, top); g.lineTo(x + rand(-3, 3), h * rand(.7, 1)); g.stroke(); }
   g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, h - 10, w, 10);
 });
+const furTex = ctex(64, 256, (g, w, h) => { for (let i = 0; i < 70; i++) { const x = Math.random() * w, l = rand(.5, 1); g.strokeStyle = "rgba(255,255,255," + rand(.5, 1) + ")"; g.lineWidth = rand(1, 3); g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + rand(-10, 10), h * (1 - l / 2), x + rand(-14, 14), h * (1 - l)); g.stroke(); } });
 const scleraTex = ctex(512, 256, (g, w, h) => {
   g.fillStyle = "#efe6d6"; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 90; i++) { let x = Math.random() * w, y = h * rand(.55, 1); g.strokeStyle = "rgba(170,30,30," + rand(.15, .45) + ")"; g.lineWidth = rand(.4, 1.6); g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += rand(-14, 14); y -= rand(4, 14); g.lineTo(x, y); } g.stroke(); }
@@ -206,7 +220,7 @@ const featherGeo = new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, .5, 0);
 { const p = featherGeo.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.pow(p.getY(i), 2) * .12); featherGeo.computeVertexNormals(); }
 function wing(opt) {
   const g = new THREE.Group(), len = opt.len || 4, n = opt.n || 16, rows = opt.rows || 3, a0 = opt.a0 ?? -.3, a1 = opt.a1 ?? 1.5;
-  const mat = new THREE.MeshPhysicalMaterial({ map: featherTex, alphaTest: .35, side: THREE.DoubleSide, color: opt.color || 0xf2e6cf, roughness: opt.rough ?? .65, metalness: opt.metal || 0, sheen: .6, sheenColor: new THREE.Color(0xffffff), emissive: opt.emissive || 0x000000, emissiveMap: opt.emissive ? featherTex : null, emissiveIntensity: opt.eI || 0 });
+  const mat = new THREE.MeshPhysicalMaterial({ map: featherTex, bumpMap: featherTex, bumpScale: 3, alphaTest: .35, side: THREE.DoubleSide, color: opt.color || 0xf2e6cf, roughness: opt.rough ?? .65, metalness: opt.metal || 0, sheen: .6, sheenColor: new THREE.Color(0xffffff), emissive: opt.emissive || 0x000000, emissiveMap: opt.emissive ? featherTex : null, emissiveIntensity: opt.eI || 0 });
   const inst = new THREE.InstancedMesh(featherGeo, mat, n * rows), d = new THREE.Object3D(); let k = 0; const tips = [], eyePts = [];
   for (let r = 0; r < rows; r++) for (let i = 0; i < n; i++) {
     const f = i / (n - 1), a = lerp(a0, a1, f) + rand(-.03, .03), ro = len * (.06 + (1 - f) * .22) * (1 - r * .2), L = len * (.5 + .5 * Math.sin(f * Math.PI * .85 + .25)) * (1 - r * .3), wd = len * .12 * (1 - r * .12);
@@ -236,7 +250,7 @@ class Fire {
       this.age[i] += dt; const k = Math.min(1, this.age[i] / this.life[i]), j = i * 3;
       this.v[j + 1] += (this.kind === 2 ? -1 : this.kind === 3 ? 0 : 2.2) * dt; this.v[j] *= .985; this.v[j + 2] *= .985;
       this.p[j] += this.v[j] * dt; this.p[j + 1] += this.v[j + 1] * dt; this.p[j + 2] += this.v[j + 2] * dt;
-      let r, g, b; if (this.kind === 1) { r = 2.4; g = 2.5; b = 3; } else if (this.kind === 4) { r = .5; g = 2.6; b = 1; } else if (this.kind === 3) { r = 3; g = 2.6; b = 1.8; } else { r = 3.2 - k * 1.2; g = lerp(2.4, .25, Math.min(1, k * 1.4)); b = lerp(1.4, 0, Math.min(1, k * 3)); }
+      let r, g, b; if (this.kind === 1) { r = 2.4; g = 2.5; b = 3; } else if (this.kind === 4) { r = .5; g = 2.6; b = 1; } else if (this.kind === 3) { r = 1.2; g = 1.05; b = .8; } else { r = 3.2 - k * 1.2; g = lerp(2.4, .25, Math.min(1, k * 1.4)); b = lerp(1.4, 0, Math.min(1, k * 3)); }
       const a = Math.pow(1 - k, 1.4) * Math.min(1, this.age[i] * 12) * .45; this.c.set([r * .7, g * .7, b * .7, a], i * 4); this.sz[i] = this.base[i] * (1 + k * (this.kind === 0 ? .6 : 0));
     }
     const at = this.pts.geometry.attributes; at.position.needsUpdate = at.size.needsUpdate = at.col.needsUpdate = true;
@@ -280,6 +294,43 @@ function water(w, d, color) {
 function displace(geo, amt, freq = 1.3, seed = 1) { const p = geo.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = Math.sin(v.x * freq + seed) * Math.cos(v.y * freq * 1.3 + seed * 2) * Math.sin(v.z * freq * .9 + seed * 3) + .5 * Math.sin(v.x * freq * 3.1 + v.z * 2.3); v.multiplyScalar(1 + n * amt); p.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); return geo; }
 function stars(n, r) { const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(0, TAU), e = rand(.05, 1.4), rr = r * rand(.9, 1); p.set([Math.cos(a) * Math.cos(e) * rr, Math.sin(e) * rr, Math.sin(a) * Math.cos(e) * rr], i * 3); } const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3)); return new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: .8 })); }
 
+// sculpted heads for the four faces. Built facing +z, about one unit across
+function sculpt(geo, fn) { const p = geo.attributes.position, v = new THREE.Vector3(), n = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); n.copy(v).normalize(); v.addScaledVector(n, fn(n, v)); p.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); return geo; }
+const bump = (n, cx, cy, cz, r, a) => { const d = (n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2; return a * Math.exp(-d / (r * r)); };
+function cards(parent, n, tex, color, place) { const m = new THREE.InstancedMesh(featherGeo, new THREE.MeshStandardMaterial({ map: tex, alphaTest: .3, side: THREE.DoubleSide, color, roughness: .95 }), n), d = new THREE.Object3D(); for (let i = 0; i < n; i++) { place(d, i); d.updateMatrix(); m.setMatrixAt(i, d.matrix); } m.castShadow = true; parent.add(m); return m; }
+function sculptHead(kind, tint) {
+  const g = new THREE.Group(), dark = new THREE.MeshStandardMaterial({ color: 0x120a06, roughness: .4 });
+  if (kind === "lion") {
+    const skin = new THREE.MeshPhysicalMaterial({ color: tint || 0xc58a3c, roughness: .85, sheen: 1, sheenColor: new THREE.Color(0xffd590) });
+    { const sk = new THREE.Mesh(sculpt(new THREE.SphereGeometry(.45, 72, 54), (n) => bump(n, 0, -.28, .96, .42, .34) + bump(n, 0, .12, .98, .2, .1) + bump(n, 0, .42, .85, .3, .07) - bump(n, .34, .2, .9, .12, .09) - bump(n, -.34, .2, .9, .12, .09) + bump(n, 0, -.8, .55, .3, .08) - bump(n, 0, -.55, .82, .1, .04)), skin); sk.scale.set(1, .95, 1.12); g.add(sk); }
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(.08, 24, 16), dark); nose.scale.set(1.5, .7, .8); nose.position.set(0, -.06, .74); g.add(nose); [-1, 1].forEach((d) => { const pad = new THREE.Mesh(new THREE.SphereGeometry(.11, 24, 16), skin); pad.scale.set(1, .8, .9); pad.position.set(d * .085, -.2, .62); g.add(pad); }); const chin = new THREE.Mesh(new THREE.SphereGeometry(.08, 16, 12), new THREE.MeshPhysicalMaterial({ color: 0xe8d2b0, roughness: .9 })); chin.position.set(0, -.34, .55); g.add(chin); const lip = new THREE.Mesh(new THREE.BoxGeometry(.02, .1, .02), dark); lip.position.set(0, -.14, .72); g.add(lip);
+    [-1, 1].forEach((d) => { const ear = new THREE.Mesh(new THREE.SphereGeometry(.07, 16, 12), skin); ear.scale.set(1, .9, .4); ear.position.set(d * .3, .4, -.12); g.add(ear); });
+    new Eyes(g, [{ p: V(-.15, .14, .44), s: .05 }, { p: V(.15, .14, .44), s: .05 }], { iris: "gold", glow: .6 });
+    cards(g, 520, furTex, 0x4a2610, (d, i) => { const a = rand(0, TAU), rr = rand(.3, 1); const dir = V(Math.cos(a) * rr, Math.sin(a) * rr, rand(-.9, .05)).normalize(); if (dir.z > -.05 && Math.abs(dir.x) < .45 && dir.y > -.5) dir.z = -.3; d.position.copy(dir).multiplyScalar(.4); d.lookAt(dir.clone().multiplyScalar(3).add(V(0, -.6, -.8))); d.rotateX(Math.PI / 2); d.scale.set(.2, rand(.55, 1.15), .2); });
+  } else if (kind === "ox") {
+    const hide = new THREE.MeshPhysicalMaterial({ color: tint || 0x5a3418, roughness: .8, sheen: .6, sheenColor: new THREE.Color(0xc08a5a) });
+    const sk = new THREE.Mesh(sculpt(new THREE.SphereGeometry(.42, 64, 48), (n) => bump(n, 0, -.45, .85, .45, .28) + bump(n, 0, .5, .7, .4, .06) - bump(n, .55, .2, .7, .15, .05) - bump(n, -.55, .2, .7, .15, .05)), hide); sk.scale.set(1, 1.15, 1.2); g.add(sk);
+    const muz = new THREE.Mesh(new THREE.SphereGeometry(.22, 32, 20), new THREE.MeshPhysicalMaterial({ color: 0x3a2418, roughness: .35, clearcoat: .6 })); muz.scale.set(1.25, .8, .7); muz.position.set(0, -.36, .5); g.add(muz);
+    [-1, 1].forEach((d) => { const ns = new THREE.Mesh(new THREE.SphereGeometry(.045, 12, 8), dark); ns.position.set(d * .09, -.33, .64); g.add(ns);
+      const horn = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(d * .3, .32, 0), V(d * .65, .42, .05), V(d * .82, .7, .15), V(d * .72, .98, .28)]), 24, .06, 12), new THREE.MeshPhysicalMaterial({ color: 0xe9dcc0, roughness: .35, clearcoat: .5 })); g.add(horn);
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(.12, 16, 10), hide); ear.scale.set(1.4, .55, .35); ear.position.set(d * .48, .2, -.02); g.add(ear); });
+    new Eyes(g, [{ p: V(-.26, .1, .36), s: .06 }, { p: V(.26, .1, .36), s: .06 }], { iris: "red" });
+  } else if (kind === "eagle") {
+    const fea = new THREE.MeshPhysicalMaterial({ color: 0xf0e8dc, map: featherTex, roughness: .9, sheen: 1 });
+    g.add(new THREE.Mesh(sculpt(new THREE.SphereGeometry(.4, 64, 48), (n) => bump(n, 0, .35, .85, .3, .07) + bump(n, 0, -.8, -.2, .6, .1)), fea));
+    const beak = new THREE.ConeGeometry(.13, .5, 32, 16); beak.rotateX(Math.PI / 2); beak.translate(0, 0, .25); { const p = beak.attributes.position; for (let i = 0; i < p.count; i++) { const z = p.getZ(i); p.setY(i, p.getY(i) - Math.pow(Math.max(0, z - .05), 2) * 1.6); } beak.computeVertexNormals(); }
+    const bk = new THREE.Mesh(beak, new THREE.MeshPhysicalMaterial({ color: 0xe0a82a, roughness: .3, clearcoat: .8 })); bk.position.set(0, -.04, .3); g.add(bk);
+    [-1, 1].forEach((d) => { const ridge = new THREE.Mesh(new THREE.CapsuleGeometry(.03, .16, 4, 8), dark); ridge.rotation.z = d * 1.2; ridge.position.set(d * .16, .17, .34); g.add(ridge); });
+    new Eyes(g, [{ p: V(-.17, .1, .32), s: .05 }, { p: V(.17, .1, .32), s: .05 }], { iris: "gold" });
+  } else {
+    const skin = new THREE.MeshPhysicalMaterial({ color: tint || 0xb98a68, roughness: .55, sheen: .4, sheenColor: new THREE.Color(0xffc8a8) });
+    const hd = new THREE.Mesh(sculpt(new THREE.SphereGeometry(.4, 72, 54), (n) => bump(n, 0, .02, .98, .12, .09) + bump(n, 0, .3, .92, .32, .03) - bump(n, .32, .18, .9, .13, .05) - bump(n, -.32, .18, .9, .13, .05) + bump(n, 0, -.62, .75, .25, .04) + bump(n, .5, -.15, .8, .2, .02) + bump(n, -.5, -.15, .8, .2, .02)), skin); hd.scale.set(.9, 1.15, 1); g.add(hd);
+    new Eyes(g, [{ p: V(-.13, .07, .33), s: .045 }, { p: V(.13, .07, .33), s: .045 }], { iris: "blue" });
+    cards(g, 160, furTex, 0x2a1a10, (d, i) => { const a = rand(-1.4, 1.4), y = rand(-.5, -.15); d.position.set(Math.sin(a) * .34, y, Math.cos(a) * .3); d.rotation.set(Math.PI + rand(-.3, .3), a, 0); d.scale.set(.1, rand(.2, .4), .1); });
+    cards(g, 200, furTex, 0x2a1a10, (d, i) => { const a = rand(0, TAU), e = rand(.2, 1.3); const dir = V(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)); if (dir.z > .5 && e < .7) dir.z = -dir.z; d.position.copy(dir).multiplyScalar(.36); d.lookAt(dir.clone().multiplyScalar(2).add(V(0, -1, -1))); d.rotateX(Math.PI / 2); d.scale.set(.12, rand(.25, .45), .12); });
+  }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); return g;
+}
 // one cherub as Ezekiel saw it, reusable (Eden has two)
 function cherub(sc = 1) {
   const g = new THREE.Group();
@@ -289,7 +340,8 @@ function cherub(sc = 1) {
   [-1, 1].forEach((d) => { const leg = new THREE.Mesh(new THREE.CylinderGeometry(.13, .11, 1.8, 16), brass); leg.position.set(d * .26, .9, 0); g.add(leg); const hoof = new THREE.Mesh(new THREE.CylinderGeometry(.16, .22, .22, 16), brass); hoof.position.set(d * .26, .1, .04); g.add(hoof); const cleft = new THREE.Mesh(new THREE.BoxGeometry(.03, .24, .5), new THREE.MeshBasicMaterial({ color: 0 })); cleft.position.set(d * .26, .1, 0); g.add(cleft); });
   // the head: four carved faces around a column, one to each side
   const head = new THREE.Group(); head.position.y = 4.35; g.add(head);
-  ["man", "lion", "ox", "eagle"].forEach((k, i) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.62, .55, 1.05, 24, 1, true, i * TAU / 4 - TAU / 8, TAU / 4), new THREE.MeshStandardMaterial({ map: faceTex(k), bumpMap: faceTex(k), bumpScale: 6, metalness: .55, roughness: .42, color: 0xe0b070, transparent: true, alphaTest: .2, side: THREE.DoubleSide })); head.add(m); });
+  // man before, lion on the right, ox on the left, eagle behind (Ezekiel 1:10)
+  [["man", 0], ["lion", -Math.PI / 2], ["eagle", Math.PI], ["ox", Math.PI / 2]].forEach(([k, a]) => { const h = sculptHead(k); h.scale.setScalar(.95); h.position.set(Math.sin(a) * .5, 0, Math.cos(a) * .5); h.rotation.y = a; head.add(h); });
   const cap = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 12, 0, TAU, 0, Math.PI / 2), coal); cap.position.y = .5; head.add(cap); const core = new THREE.Mesh(new THREE.CylinderGeometry(.5, .45, 1.05, 24), coal); head.add(core);
   // wings: two stretched up to touch the next creature, two covering the body
   const wm = { color: 0xe9d6b0, rows: 3, eyes: true, iris: "gold" };
@@ -325,7 +377,7 @@ seraphim() {
   const stone = new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: .9, map: rockTex }); const posts = [-6, 6].map((x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 14, 1), stone); m.position.set(x, 5, -4); world.add(m); return m; });
   world.add(at(ground(0x150c08), 0, -3, 0));
   const tmp = new THREE.Vector3();
-  return { cam: [0, 3, 15], tgt: [0, 2.2, 0], bloom: [1.25, .7, .15], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "IS THE LORD OF HOSTS:", "THE WHOLE EARTH IS FULL OF HIS GLORY"],
+  return { sun: [0, 2.2, 0], cam: [0, 3, 15], tgt: [0, 2.2, 0], bloom: [1.25, .7, .15], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "IS THE LORD OF HOSTS:", "THE WHOLE EARTH IS FULL OF HIS GLORY"],
     tick(t, dt) {
       const f = Math.sin(t * 2.4); fly.forEach((w) => (w.rotation.z = f * .32 * w.scale.x)); L.intensity = 70 + Math.random() * 30 * LS;
       for (const w of [...fly, ...faceW, ...feetW]) { const tips = w.userData.tips; for (let k = 0; k < 3; k++) { const tp = tips[(Math.random() * tips.length) | 0]; tmp.copy(tp).multiplyScalar(rand(.3, 1)); w.localToWorld(tmp); fire.emit(tmp, V(rand(-.4, .4), rand(.4, 1.6), rand(-.4, .4)), rand(.5, 1.3), rand(.5, 1.2)); } }
@@ -364,7 +416,7 @@ wheels() {
   const dust = new Fire(500, world, 3);
   world.add(at(ground(0x0a0a08, 300, .9, rockTex), 0, -2, 0)); world.add(stars(1500, 400));
   world.add(new THREE.HemisphereLight(0x8899aa, 0x110d08, .5));
-  return { cam: [0, 1, 18], tgt: [0, 4, 0], bloom: [1.0, .5, .3], exp: 1.15,
+  return { sun: [0, 4, 0], rays: 1, cam: [0, 1, 18], tgt: [0, 4, 0], bloom: [1.0, .5, .3], exp: 1.15,
     tick(t, dt) {
       rig.rotation.x = Math.sin(t * .13) * .4; rig.rotation.y = t * .12; rings[0].rotation.z = t * .5; rings[1].rotation.x = t * .5;
       for (let k = 0; k < 6; k++) { const a = rand(0, TAU), r = rand(0, 1.5); spirit.emit(V(Math.cos(a) * r, Math.sin(a) * r, rand(-1, 1)), V(-Math.sin(a) * 2, Math.cos(a) * 2, rand(-.5, .5)), rand(.6, 1.4), rand(.15, .4)); }
@@ -384,14 +436,14 @@ living() {
   kinds.forEach(([k, col], i) => {
     const b = new THREE.Group(); world.add(b); beasts.push(b);
     const body = new THREE.Mesh(new THREE.SphereGeometry(.8, 32, 24), new THREE.MeshPhysicalMaterial({ color: col, roughness: .7, sheen: 1, sheenColor: new THREE.Color(col) })); body.scale.set(1, 1.25, .9); b.add(body);
-    const mask = new THREE.Mesh(new THREE.CylinderGeometry(.82, .78, 1.15, 24, 1, true, -TAU / 7, TAU / 3.5), new THREE.MeshStandardMaterial({ map: faceTex(k), bumpMap: faceTex(k), bumpScale: 5, roughness: .6, metalness: .2, transparent: true, alphaTest: .2, side: THREE.DoubleSide })); mask.position.y = .25; b.add(mask);
+    const hh = sculptHead(k); hh.scale.setScalar(1.35); hh.position.set(0, .35, .55); b.add(hh);
     const ws = []; [[1.4, 2.0, 2.6], [-.3, .45, 2.3], [-1.6, -1.0, 1.9]].forEach(([a0, a1, len]) => [1, -1].forEach((d) => { const w = wing({ len, n: 11, rows: 2, a0, a1, eyes: true, iris: "blue", eyeScale: 1.3, color: 0xf3ead8 }); w.position.set(d * .5, .2, -.3); w.scale.x = d; w.rotation.y = d * .5; b.add(w); ws.push(w); }));
     // full of eyes before and behind
     const ep = []; for (let j = 0; j < 22; j++) { const a = rand(0, TAU), y = rand(-.9, .9); if (Math.cos(a) > .5 && y > -.3) continue; ep.push({ p: V(Math.cos(a) * .8 * Math.sqrt(1 - y * y / 1.2), y * 1.1, Math.sin(a) * .75), s: rand(.07, .11) }); }
     new Eyes(b, ep, { iris: "blue" }); b.userData.ws = ws;
   });
   world.add(stars(2000, 300));
-  return { cam: [0, 4, 17], tgt: [0, 3.6, 0], bloom: [1.15, .6, .3], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "LORD GOD ALMIGHTY,", "WHICH WAS, AND IS, AND IS TO COME"],
+  return { sun: [0, 4, 0], rays: 1.1, cam: [0, 4, 17], tgt: [0, 3.6, 0], bloom: [1.15, .6, .3], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "LORD GOD ALMIGHTY,", "WHICH WAS, AND IS, AND IS TO COME"],
     tick(t) {
       bow.lookAt(camera.position);
       beasts.forEach((b, i) => { const a = t * .1 + i * TAU / 4 + Math.PI / 4; b.position.set(Math.cos(a) * 6.5, 3.6 + Math.sin(t * 1.2 + i) * .3, Math.sin(a) * 6.5); b.lookAt(camera.position.x, b.position.y, camera.position.z); b.rotateY(Math.PI / 2 * 0); b.userData.ws.forEach((w, j) => (w.rotation.z = Math.sin(t * 5 + j + i) * .18 * w.scale.x)); });
@@ -415,7 +467,7 @@ eden() {
   const guard = new THREE.Mesh(new THREE.BoxGeometry(1.2, .14, .2), metal(0xd4a24a, .2)); sword.add(guard); const hilt = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .8, 8), metal(0x6a4a2a, .4)); hilt.position.y = -.45; sword.add(hilt);
   const sl = PL(0xff8a3a, 60, 25, 1.4); sword.add(sl);
   const fire = new Fire(2400, world, 0); const tmp = V(0, 0, 0);
-  return { cam: [0, 3.5, 14], tgt: [0, 3, -1], bloom: [1.2, .6, .25], exp: 1.05,
+  return { sun: [0, 7, -9], rays: .7, cam: [0, 3.5, 14], tgt: [0, 3, -1], bloom: [1.2, .6, .25], exp: 1.05,
     tick(t) {
       sword.rotation.set(t * 1.7, t * 2.3, t * 1.1);
       for (let k = 0; k < 14; k++) { tmp.set(0, rand(0, 5), 0); sword.localToWorld(tmp); fire.emit(tmp, V(rand(-.3, .3), rand(.3, 1.2), rand(-.3, .3)), rand(.3, .8), rand(.25, .55)); }
@@ -439,7 +491,7 @@ linen() {
   // Daniel, with no strength left in him
   const dan = figure({ h: 1.8, robe: 0x3a2e22 }); dan.rotation.x = -Math.PI / 2; dan.position.set(-3.4, .15, -1.2); dan.rotation.z = .5; world.add(dan);
   const fire = new Fire(500, world, 0);
-  return { cam: [0, 2.6, 10], tgt: [0, 2.6, 0], bloom: [1.1, .6, .4], exp: 1.0,
+  return { sun: [0, 4.1, 0], rays: .9, cam: [0, 2.6, 10], tgt: [0, 2.6, 0], bloom: [1.1, .6, .4], exp: 1.0,
     tick(t, dt) {
       const flick = Math.random() < .25 ? 1 : .45; fl.intensity = 50 * flick * LS; faceGlow.material.opacity = .6 + flick * .4; man.userData.head.material.emissiveIntensity = 3 + flick * 6;
       lamps.forEach((s) => { s.scale.setScalar(.4 + Math.random() * .2); }); for (let k = 0; k < 2; k++) lamps.forEach((s) => { const p = s.getWorldPosition(V(0, 0, 0)); fire.emit(p, V(rand(-.05, .05), rand(.1, .3), 0), .3, .08); });
@@ -462,7 +514,7 @@ mighty() {
   const cols = [0xff3a3a, 0xff9a2a, 0xffe84a, 0x4ad66a, 0x3a9aff, 0x7a5aff]; cols.forEach((c, i) => { const r = new THREE.Mesh(new THREE.TorusGeometry(8 + i * .5, .22, 8, 120, Math.PI), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: .6 })); r.position.copy(sunG.position).add(V(0, -2, 0)); world.add(r); sunG.userData["r" + i] = r; });
   // the little book, open
   const book = new THREE.Group(); book.position.set(7, 22, 2); world.add(book); [-1, 1].forEach((d) => { const pg = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.5, .05), new THREE.MeshStandardMaterial({ color: 0xf2e6c4, roughness: .8, emissive: 0x332a18 })); pg.position.x = d * .55; pg.rotation.y = d * -.25; book.add(pg); }); book.add(glowSprite(0xfff2d0, 3, .4));
-  return { cam: [0, 6, 52], tgt: [0, 17, 0], bloom: [1.0, .7, .35], exp: 1.0,
+  return { sun: [0, 34, 0], rays: 1.2, cam: [0, 6, 52], tgt: [0, 17, 0], bloom: [1.0, .7, .35], exp: 1.0,
     tick(t) {
       legs.forEach((x) => { for (let k = 0; k < 22; k++) fire.emit(V(x + rand(-1, 1), rand(0, 16), rand(-1, 1)), V(rand(-.3, .3), rand(1, 3), rand(-.3, .3)), rand(.5, 1.1), rand(.8, 1.8)); });
       for (let i = 0; i < 6; i++) sunG.userData["r" + i].lookAt(camera.position.x, sunG.position.y - 2, camera.position.z);
@@ -483,7 +535,7 @@ tomb() {
   // the keepers, as dead men
   [[-5.5, 2.5, .3], [-4, 4, -.4]].forEach(([x, z, r]) => { const g = figure({ h: 1.8, robe: 0x5a4a32, armM: metal(0x7a6a4a, .5) }); g.rotation.x = -Math.PI / 2; g.rotation.z = r; g.position.set(x, .2, z); world.add(g); const sp = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 3, 6), metal(0x8a7a5a, .5)); sp.rotation.z = Math.PI / 2 + r; sp.position.set(x + .5, .1, z + .6); world.add(sp); });
   const cam0 = V(-2, 2.6, 11);
-  return { cam: [-2, 2.6, 11], tgt: [-1.6, 2.6, 0], bloom: [1.0, .6, .45], exp: 1.05,
+  return { sun: [-1.6, 4.6, .3], rays: .8, cam: [-2, 2.6, 11], tgt: [-1.6, 2.6, 0], bloom: [1.0, .6, .45], exp: 1.05,
     tick(t) { const fl = Math.random() < .3 ? 1 : .55; L.intensity = 70 * fl * LS; fg.material.opacity = fl; if (Math.random() < .01) bolt(V(-1.6, 4.6, 0), V(rand(-10, 6), 18, rand(-5, 0)));
       const q = Math.sin(t * .6) > .9 ? .04 : 0; camera.position.x += rand(-q, q); camera.position.y += rand(-q, q); } };
 },
@@ -541,7 +593,7 @@ host() {
   const n = 6000, p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(-1.3, 1.3) - Math.PI / 2, e = rand(.12, 1.2), r = rand(40, 160); p.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3); }
   const hg = new THREE.BufferGeometry(); hg.setAttribute("position", new THREE.BufferAttribute(p, 3));
   const hm = new THREE.PointsMaterial({ map: glowTex, color: new THREE.Color(0xfff2d0).multiplyScalar(1.1), size: 1.5, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }); const hostP = new THREE.Points(hg, hm); world.add(hostP);
-  return { cam: [0, 1.2, 16], tgt: [0, 5, -2], bloom: [1.2, .7, .25], exp: 1.0, cry: ["GLORY TO GOD IN THE HIGHEST,", "AND ON EARTH PEACE,", "GOOD WILL TOWARD MEN"],
+  return { sun: [0, 5.5, -2], rays: 1, cam: [0, 1.2, 16], tgt: [0, 5, -2], bloom: [1.2, .7, .25], exp: 1.0, cry: ["GLORY TO GOD IN THE HIGHEST,", "AND ON EARTH PEACE,", "GOOD WILL TOWARD MEN"],
     tick(t) { const k = Math.min(1, Math.max(0, ((t % 20) - 3) / 3)); hm.opacity = k * .8; sk.material.opacity = .8 * (1 - k * .7); hostP.rotation.y = Math.sin(t * .05) * .05; } };
 },
 strangers() {
@@ -579,7 +631,7 @@ covering() {
   const L = PL(0xff7a3a, 60, 30, 1.4); L.position.y = 1; world.add(L); const key = PL(0xfff0d8, 50, 30, 1.4); key.position.set(3, 6, 6); world.add(key);
   world.add(ground(0x120806, 200, .9, rockTex));
   const base = gems.instanceColor.array.slice();
-  return { cam: [0, 4, 15], tgt: [0, 2.4, 0], bloom: [1.0, .6, .5], exp: 1.05,
+  return { sun: [0, 3.8, 0], rays: .6, cam: [0, 4, 15], tgt: [0, 2.4, 0], bloom: [1.0, .6, .5], exp: 1.05,
     tick(t, dt) {
       const cyc = (t % 20) / 20, fall = Math.max(0, (cyc - .6) / .4), dark = Math.min(1, Math.max(0, (cyc - .45) / .15));
       fallG.position.y = -fall * fall * 16; fallG.rotation.z = fall * .9; fallG.rotation.y = t * .2; halo.material.opacity = .6 * (1 - dark);
@@ -597,6 +649,10 @@ function show(id) {
   for (const c of [...world.children]) { world.remove(c); disposeAll(c); }
   S.eyes = []; S.fires = []; S.smokes = []; S.bolts = []; S.upd = []; flash.intensity = 0;
   cur = SC[id](); T0 = performance.now();
+  S.dust = new Fire(LOW ? 150 : 400, world, 3);
+  let key = null; world.traverse((o) => { if ((o.isPointLight || o.isDirectionalLight) && (!key || o.intensity > key.intensity)) key = o; if (o.isMesh && !(o.material && o.material.isMeshBasicMaterial)) { o.castShadow = true; o.receiveShadow = true; } });
+  if (key && !LOW) { key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -.0005; key.shadow.radius = 4; if (key.isDirectionalLight) Object.assign(key.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, far: 120 }); }
+  S.sun = cur.sun ? V(...cur.sun) : null; grade.uniforms.rays.value = 0;
   camera.position.set(...cur.cam); controls.target.set(...cur.tgt); controls.update();
   bloom.strength = cur.bloom[0] * .7; bloom.radius = cur.bloom[1] * .8; bloom.threshold = Math.max(.75, cur.bloom[2]); renderer.toneMappingExposure = cur.exp;
   scene.environmentIntensity = .35;
@@ -606,7 +662,9 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; const t = (now - T0) / 1000;
   if (cur) {
-    cur.tick && cur.tick(t, dt); S.upd.forEach((f) => f(t, dt)); S.fires.forEach((f) => f.update(dt)); S.eyes.forEach((e) => e.update(t));
+    cur.tick && cur.tick(t, dt);
+    if (S.dust && Math.random() < .7) { const c = camera.position; S.dust.emit(V(c.x + rand(-8, 8), c.y + rand(-4, 5), c.z + rand(-14, -2)).applyAxisAngle(V(0, 1, 0), 0), V(rand(-.1, .1), rand(-.05, .08), rand(-.1, .1)), rand(4, 8), rand(.02, .05)); }
+    grade.uniforms.time.value = t; if (S.sun && !LOW) { const p = S.sun.clone().project(camera); const on = p.z < 1 && Math.abs(p.x) < 1.6 && Math.abs(p.y) < 1.6; grade.uniforms.sun.value.set(p.x * .5 + .5, p.y * .5 + .5); grade.uniforms.rays.value = lerp(grade.uniforms.rays.value, on ? (cur.rays || .8) : 0, .1); } S.upd.forEach((f) => f(t, dt)); S.fires.forEach((f) => f.update(dt)); S.eyes.forEach((e) => e.update(t));
     for (const list of S.smokes) for (const s of list) { s.position.addScaledVector(s.userData.v, dt); s.material.rotation += s.userData.r * dt; const b = s.userData.box; if (s.position.y > b[3]) s.position.y = b[2]; }
     S.bolts = S.bolts.filter(([l, life], i) => { S.bolts[i][1] -= dt; if (S.bolts[i][1] <= 0) { world.remove(l); l.geometry.dispose(); l.material.dispose(); return false; } return true; });
     flash.intensity *= Math.pow(.02, dt);
@@ -618,14 +676,14 @@ function frame(now) {
 resize(); requestAnimationFrame(frame);
 
 const E = [
-{ id: "seraphim", group: "Before the throne", name: "Seraphim", term: "שְׂרָפִים · śərāpîm · “burning ones”", tag: "Six wings, on fire, crying to one another.",
+{ id: "seraphim", art: ["The Byzantine and Orthodox tradition paints a seraph as a face floating inside three pairs of red wings: the four great seraphim in the pendentives of Hagia Sophia, whose mosaic face was uncovered in 2009, are the classic example. In the West, Giotto's Stigmatization of St Francis shows a crucified seraph in six wings.", "Art nearly always shows the face. Isaiah says two wings cover it. Here the face stays hidden, and the burning is literal: \u015b\u0101r\u0101p is the verb \u201cto burn.\u201d"], group: "Before the throne", name: "Seraphim", term: "שְׂרָפִים · śərāpîm · “burning ones”", tag: "Six wings, on fire, crying to one another.",
   refs: [["Isaiah 6:1–3", "In the year that king Uzziah died I saw also the Lord sitting upon a throne, high and lifted up, and his train filled the temple. Above it stood the seraphims: each one had six wings; with twain he covered his face, and with twain he covered his feet, and with twain he did fly. And one cried unto another, and said, Holy, holy, holy, is the LORD of hosts: the whole earth is full of his glory."],
          ["Isaiah 6:4", "And the posts of the door moved at the voice of him that cried, and the house was filled with smoke."],
          ["Isaiah 6:6", "Then flew one of the seraphims unto me, having a live coal in his hand, which he had taken with the tongs from off the altar:"]],
   map: [["Six wings: two over the face, two over the feet, two in flight", "Isa 6:2"], ["Fire throughout: the name itself means “burning”", "śārap, to burn"], ["The cry, passed back and forth", "Isa 6:3"], ["Smoke and a shaking threshold", "Isa 6:4"], ["A hand holding a live coal in tongs", "Isa 6:6"]],
   not: "Isaiah never describes a seraph's body or face. You only see what the wings don't cover, and that's the point of the vision. The word śārāp is also used for the “fiery serpents” of Numbers 21:6, so some scholars think seraphim had a serpentine look. The text doesn't settle it, so this render leaves the body hidden in fire.",
   trad: "Later Christian writers, especially Pseudo-Dionysius (5th–6th century), ranked seraphim highest in a ninefold hierarchy. That ranking is tradition, not scripture." },
-{ id: "cherubim", group: "Before the throne", name: "Cherubim", term: "כְּרוּבִים · kərûḇîm", tag: "Four faces, four wings, feet like a calf's, burning like coals.",
+{ id: "cherubim", art: ["Byzantine and Orthodox art turned Ezekiel's creature into the Tetramorph: four heads on one body, wings covered in eyes, often standing on winged wheels. Raphael's Vision of Ezekiel (c. 1518) shows the four as separate animals carrying God. From the Renaissance on, \u201ccherub\u201d in popular art drifted to the winged baby (the putto).", "Icons usually skip the straight legs, the calf's hooves of burnished brass, the human hands under the wings, and the creature looking \u201clike burning coals of fire.\u201d This build puts all of them in, with the faces on the sides Ezekiel names: man in front, lion on the right, ox on the left, eagle behind."], group: "Before the throne", name: "Cherubim", term: "כְּרוּבִים · kərûḇîm", tag: "Four faces, four wings, feet like a calf's, burning like coals.",
   refs: [["Ezekiel 1:5–7", "Also out of the midst thereof came the likeness of four living creatures. And this was their appearance; they had the likeness of a man. And every one had four faces, and every one had four wings. And their feet were straight feet; and the sole of their feet was like the sole of a calf's foot: and they sparkled like the colour of burnished brass."],
          ["Ezekiel 1:8–11", "And they had the hands of a man under their wings on their four sides… As for the likeness of their faces, they four had the face of a man, and the face of a lion, on the right side: and they four had the face of an ox on the left side; they four also had the face of an eagle. Thus were their faces: and their wings were stretched upward; two wings of every one were joined one to another, and two covered their bodies."],
          ["Ezekiel 1:13–14", "As for the likeness of the living creatures, their appearance was like burning coals of fire, and like the appearance of lamps: it went up and down among the living creatures; and the fire was bright, and out of the fire went forth lightning. And the living creatures ran and returned as the appearance of a flash of lightning."],
@@ -633,71 +691,71 @@ const E = [
   map: [["An upright, manlike frame", "Ezek 1:5"], ["Four faces on one head (man, lion, ox, eagle) turning as you watch", "Ezek 1:10"], ["Two wings stretched up, two covering the body", "Ezek 1:11"], ["Human hands under the wings", "Ezek 1:8"], ["Straight legs, calf's hooves, gleaming like burnished brass", "Ezek 1:7"], ["Coals and torches moving among them, lightning from the fire", "Ezek 1:13"], ["Eyes across the body, back, hands and wings", "Ezek 10:12"]],
   not: "Nothing like the chubby winged babies of Renaissance art. Those are “putti”, borrowed from classical Cupid imagery. In scripture a cherub is a guardian of the holiest places, and Ezekiel fell on his face at the sight.",
   trad: "In Ezekiel 10:14 the ox face is called “the face of a cherub”, so some translators think the ox face was simply what a cherub's face looked like." },
-{ id: "wheels", group: "Before the throne", name: "The Wheels", term: "אוֹפַנִּים · ʾôp̄annîm · “wheels”", tag: "A wheel in the middle of a wheel, the rims so high they were dreadful, full of eyes.",
+{ id: "wheels", art: ["Byzantine art drew the \u201cThrones\u201d as fiery wheels with wings and eyes beneath the Lord in majesty, and Bible engravings from the 1600s show Ezekiel's wheels as interlocking rings full of eyes. The modern \u201cbiblically accurate angel\u201d wave online is mostly built on this one image.", "Paintings tend to give the wheels wings, which the text never does, and they lose the scale, the beryl colour and the fact that the wheels can go in four directions without turning. Here they are two enormous, unwinged rings set crosswise, the colour of tar\u0161\u00ee\u0161 stone, with every eye turning to you."], group: "Before the throne", name: "The Wheels", term: "אוֹפַנִּים · ʾôp̄annîm · “wheels”", tag: "A wheel in the middle of a wheel, the rims so high they were dreadful, full of eyes.",
   refs: [["Ezekiel 1:15–16", "Now as I beheld the living creatures, behold one wheel upon the earth by the living creatures, with his four faces. The appearance of the wheels and their work was like unto the colour of a beryl: and they four had one likeness: and their appearance and their work was as it were a wheel in the middle of a wheel."],
          ["Ezekiel 1:17–18", "When they went, they went upon their four sides: and they turned not when they went. As for their rings, they were so high that they were dreadful; and their rings were full of eyes round about them four."],
          ["Ezekiel 1:20", "Whithersoever the spirit was to go, they went… for the spirit of the living creature was in the wheels."]],
   map: [["Two wheels set crosswise through each other, so it can go any of four ways without turning", "Ezek 1:16–17"], ["The colour of beryl (Hebrew taršîš, a golden or yellow-green stone)", "Ezek 1:16"], ["Rims enormous and frightening", "Ezek 1:18"], ["Every rim lined with eyes, looking back at you", "Ezek 1:18"], ["The spirit of the creature inside them, glowing at the hub", "Ezek 1:20"]],
   not: "In the text, the wheels move together with the cherubim; they aren't separate free-floating angels. Ezekiel calls them wheels, not angels.",
   trad: "Treating the ʾôp̄annîm as their own order of angels (the “Ophanim”) comes later: 1 Enoch 61:10 and 71:7, then Jewish mystical writing and Maimonides' list of ten ranks. In some later Christian lists they are linked to the “thrones”." },
-{ id: "living", group: "Before the throne", name: "The Four Living Creatures", term: "ζῷα · zōa · “living ones”", tag: "Full of eyes before and behind. They rest not day and night.",
+{ id: "living", art: ["The four creatures of Revelation became the symbols of the four Gospel writers: the Book of Kells and Romanesque church doorways place a man, lion, ox and eagle around Christ. The Spanish Beatus manuscripts of the 10th\u201311th centuries paint them closer to the text, with six wings and eyes everywhere.", "The Gospel-symbol tradition drops the six wings, the eyes \u201cbefore and behind\u2026 and within,\u201d and the endless cry. These four have all three, around an emerald rainbow over a sea of glass."], group: "Before the throne", name: "The Four Living Creatures", term: "ζῷα · zōa · “living ones”", tag: "Full of eyes before and behind. They rest not day and night.",
   refs: [["Revelation 4:6–7", "…and in the midst of the throne, and round about the throne, were four beasts full of eyes before and behind. And the first beast was like a lion, and the second beast like a calf, and the third beast had a face as a man, and the fourth beast was like a flying eagle."],
          ["Revelation 4:8", "And the four beasts had each of them six wings about him; and they were full of eyes within: and they rest not day and night, saying, Holy, holy, holy, Lord God Almighty, which was, and is, and is to come."],
          ["Revelation 4:3, 6", "…and there was a rainbow round about the throne, in sight like unto an emerald… And before the throne there was a sea of glass like unto crystal."]],
   map: [["Four creatures circling the throne", "Rev 4:6"], ["Lion, calf, man and flying eagle: one face each", "Rev 4:7"], ["Six wings each, covered in eyes", "Rev 4:8"], ["An emerald rainbow around the throne", "Rev 4:3"], ["A sea of glass like crystal", "Rev 4:6"], ["The unceasing cry", "Rev 4:8"]],
   not: "These are not the same as Ezekiel's cherubim, though related. John's creatures have one face each and six wings, like seraphim. Ezekiel's have four faces each and four wings.",
   trad: "From Irenaeus (2nd century) onward, the four were read as symbols of the four Gospels. Jerome's version became the standard one: man for Matthew, lion for Mark, ox for Luke, eagle for John." },
-{ id: "eden", group: "Guardians", name: "Cherubim at the Gate of Eden", term: "Genesis 3:24", tag: "And a flaming sword which turned every way.",
+{ id: "eden", art: ["Masaccio's Expulsion (Brancacci Chapel) and Gustave Dor\u00e9's engravings show one robed angel with a sword above Adam and Eve. Medieval manuscripts often put a single red seraph at the gate.", "Genesis has plural cherubim (not one angel) and a sword \u201cwhich turned every way\u201d that may not be in anyone's hand. Here two of Ezekiel's cherubim guard the way, and the sword spins on its own between them."], group: "Guardians", name: "Cherubim at the Gate of Eden", term: "Genesis 3:24", tag: "And a flaming sword which turned every way.",
   refs: [["Genesis 3:24", "So he drove out the man; and he placed at the east of the garden of Eden Cherubims, and a flaming sword which turned every way, to keep the way of the tree of life."],
          ["Exodus 25:20", "And the cherubims shall stretch forth their wings on high, covering the mercy seat with their wings, and their faces shall look one to another…"]],
   map: [["Cherubim stationed at the east side of the garden", "Gen 3:24"], ["A sword of fire, turning in every direction", "Gen 3:24"], ["The tree of life glowing behind them, closed off", "Gen 3:24"], ["Outstretched wings, faces turned toward each other (the pose used for the Ark)", "Ex 25:20"]],
   not: "Genesis doesn't say who holds the sword. It may be wielded by the cherubim, or it may be a separate thing that turns by itself. Here it spins on its own between them.",
   trad: "" },
-{ id: "linen", group: "Messengers", name: "The Man Clothed in Linen", term: "Daniel 10", tag: "A face like lightning and eyes like lamps of fire.",
+{ id: "linen", art: ["This vision is rarely painted on its own; when it is, the figure usually gets wings and looks like a conventional angel.", "Daniel gives no wings. He gives a body like beryl, a face like lightning, eyes like torches, arms and feet of polished bronze, a gold belt, and a voice that knocked him to the ground. Every one of those is modelled here."], group: "Messengers", name: "The Man Clothed in Linen", term: "Daniel 10", tag: "A face like lightning and eyes like lamps of fire.",
   refs: [["Daniel 10:5–6", "Then I lifted up mine eyes, and looked, and behold a certain man clothed in linen, whose loins were girded with fine gold of Uphaz: His body also was like the beryl, and his face as the appearance of lightning, and his eyes as lamps of fire, and his arms and his feet like in colour to polished brass, and the voice of his words like the voice of a multitude."],
          ["Daniel 10:7–8", "And I Daniel alone saw the vision: for the men that were with me saw not the vision; but a great quaking fell upon them, so that they fled to hide themselves. Therefore I was left alone, and saw this great vision, and there remained no strength in me…"]],
   map: [["The shape of a man, in linen", "Dan 10:5"], ["A belt of fine gold from Uphaz", "Dan 10:5"], ["A body like beryl, glowing through the robe", "Dan 10:6"], ["A face flashing like lightning", "Dan 10:6"], ["Eyes like burning lamps", "Dan 10:6"], ["Arms and feet of polished bronze", "Dan 10:6"], ["A voice like a crowd, drawn as rings of sound", "Dan 10:6"], ["The river Hiddekel (Tigris) where it happened", "Dan 10:4"]],
   not: "No wings. Most angels in scripture are never described with wings at all.",
   trad: "Who this is gets debated. Some say Gabriel (named in Daniel 8:16 and 9:21), some a pre-incarnate appearance of Christ, because the description closely matches Revelation 1:13–15." },
-{ id: "mighty", group: "Messengers", name: "The Mighty Angel", term: "Revelation 10", tag: "One foot on the sea, one on the land, a rainbow on his head.",
+{ id: "mighty", art: ["Albrecht D\u00fcrer's Apocalypse woodcut of John eating the book (1498) is the definitive image: a face like the sun, a rainbow, legs as columns of fire, one foot on sea and one on land.", "D\u00fcrer drew him human-sized on the page. Here he is at the scale the text implies: you look up at him from the ground, and the seven thunders answer when he cries."], group: "Messengers", name: "The Mighty Angel", term: "Revelation 10", tag: "One foot on the sea, one on the land, a rainbow on his head.",
   refs: [["Revelation 10:1–2", "And I saw another mighty angel come down from heaven, clothed with a cloud: and a rainbow was upon his head, and his face was as it were the sun, and his feet as pillars of fire: And he had in his hand a little book open: and he set his right foot upon the sea, and his left foot on the earth,"],
          ["Revelation 10:3", "And cried with a loud voice, as when a lion roareth: and when he had cried, seven thunders uttered their voices."]],
   map: [["Coming down, wrapped in cloud", "Rev 10:1"], ["A rainbow over his head", "Rev 10:1"], ["A face like the sun", "Rev 10:1"], ["Legs like pillars of fire", "Rev 10:1"], ["A little open book in his hand", "Rev 10:2"], ["Right foot on the sea, left on the land", "Rev 10:2"], ["The seven thunders", "Rev 10:3"]],
   not: "Revelation gives his size only by implication: someone standing on sea and land at once is enormous. This render takes that literally.",
   trad: "" },
-{ id: "tomb", group: "Messengers", name: "The Angel at the Tomb", term: "Matthew 28", tag: "His countenance like lightning; the guards became as dead men.",
+{ id: "tomb", art: ["Resurrection paintings, for example Fra Angelico's Holy Women at the Tomb at San Marco, show a calm, winged angel sitting on the tomb, often gesturing to it.", "Matthew's angel is terrifying: an earthquake, a face like lightning, and soldiers who \u201cbecame as dead men.\u201d No wings appear in any of the four Gospels. This one sits on the rolled stone with the guards collapsed beside it."], group: "Messengers", name: "The Angel at the Tomb", term: "Matthew 28", tag: "His countenance like lightning; the guards became as dead men.",
   refs: [["Matthew 28:2–4", "And, behold, there was a great earthquake: for the angel of the Lord descended from heaven, and came and rolled back the stone from the door, and sat upon it. His countenance was like lightning, and his raiment white as snow: And for fear of him the keepers did shake, and became as dead men."],
          ["Matthew 28:5", "And the angel answered and said unto the women, Fear not ye: for I know that ye seek Jesus, which was crucified."]],
   map: [["The stone rolled away, the angel sitting on top of it", "Mt 28:2"], ["A face like lightning", "Mt 28:3"], ["Clothes as white as snow", "Mt 28:3"], ["The guards on the ground", "Mt 28:4"], ["The earthquake, drawn as tremors", "Mt 28:2"]],
   not: "Mark 16:5 describes “a young man… clothed in a long white garment” sitting inside the tomb, and Luke 24:4 says “two men… in shining garments.” They all look human. None of the accounts mention wings.",
   trad: "" },
-{ id: "destroyer", group: "Messengers", name: "The Destroying Angel", term: "1 Chronicles 21", tag: "Between the earth and the heaven, a drawn sword stretched over Jerusalem.",
+{ id: "destroyer", art: ["This scene is rarely painted. When it is, the angel looks like a standard soldier saint.", "Chronicles places him \u201cbetween the earth and the heaven,\u201d standing in the sky with a drawn sword stretched over the whole city, and David and the elders face down in sackcloth. That is the composition here."], group: "Messengers", name: "The Destroying Angel", term: "1 Chronicles 21", tag: "Between the earth and the heaven, a drawn sword stretched over Jerusalem.",
   refs: [["1 Chronicles 21:16", "And David lifted up his eyes, and saw the angel of the LORD stand between the earth and the heaven, having a drawn sword in his hand stretched out over Jerusalem. Then David and the elders of Israel, who were clothed in sackcloth, fell upon their faces."],
          ["1 Chronicles 21:27", "And the LORD commanded the angel; and he put up his sword again into the sheath thereof."]],
   map: [["Standing in the air between ground and sky", "1 Chr 21:16"], ["A drawn sword held out over the city", "1 Chr 21:16"], ["David and the elders face down in sackcloth", "1 Chr 21:16"], ["The threshing floor of Ornan, where it ended", "1 Chr 21:15"]],
   not: "The same event is in 2 Samuel 24, which gives no visual description. Chronicles is where the sword appears.",
   trad: "" },
-{ id: "chariots", group: "Hosts", name: "Horses and Chariots of Fire", term: "2 Kings 6", tag: "The mountain was full of them, round about Elisha.",
+{ id: "chariots", art: ["Orthodox icons of Elijah taken up show a fiery chariot drawn by flame-red horses. Elisha's vision at Dothan is seldom painted at all.", "2 Kings 6 isn't one chariot; it's a whole mountain full of them, unseen until the servant's eyes are opened. They fade in exactly that way."], group: "Hosts", name: "Horses and Chariots of Fire", term: "2 Kings 6", tag: "The mountain was full of them, round about Elisha.",
   refs: [["2 Kings 6:15–17", "…an host compassed the city both with horses and chariots. And his servant said unto him, Alas, my master! how shall we do? And he answered, Fear not: for they that be with us are more than they that be with them. And Elisha prayed, and said, LORD, I pray thee, open his eyes, that he may see. And the LORD opened the eyes of the young man; and he saw: and, behold, the mountain was full of horses and chariots of fire round about Elisha."],
          ["2 Kings 2:11", "…behold, there appeared a chariot of fire, and horses of fire, and parted them both asunder; and Elijah went up by a whirlwind into heaven."]],
   map: [["A whole mountain full of them", "2 Kgs 6:17"], ["Horses and chariots made of fire", "2 Kgs 6:17"], ["Surrounding Elisha and his servant", "2 Kgs 6:17"], ["Hidden until his eyes were opened: they fade in", "2 Kgs 6:17"]],
   not: "The text never calls them angels outright. They are “they that be with us”, the armies of the LORD of hosts.",
   trad: "" },
-{ id: "host", group: "Hosts", name: "The Heavenly Host", term: "Luke 2", tag: "Suddenly there was with the angel a multitude.",
+{ id: "host", art: ["The Annunciation to the Shepherds is a staple from Byzantine mosaics onward. Rembrandt's 1634 etching fills the sky with a whirl of cherub-babies breaking out of the dark.", "Scripture's host is an army (\u201chost\u201d means army) of numbers like \u201cten thousand times ten thousand,\u201d and the first angel brings \u201cthe glory of the Lord\u201d with him. The babies are tradition. Here, one blazing figure is followed by a sky that suddenly fills."], group: "Hosts", name: "The Heavenly Host", term: "Luke 2", tag: "Suddenly there was with the angel a multitude.",
   refs: [["Luke 2:9", "And, lo, the angel of the Lord came upon them, and the glory of the Lord shone round about them: and they were sore afraid."],
          ["Luke 2:13–14", "And suddenly there was with the angel a multitude of the heavenly host praising God, and saying, Glory to God in the highest, and on earth peace, good will toward men."],
          ["Daniel 7:10", "…thousand thousands ministered unto him, and ten thousand times ten thousand stood before him…"]],
   map: [["One angel first, with glory shining around the shepherds", "Lk 2:9"], ["Then, suddenly, a multitude", "Lk 2:13"], ["Numbers beyond counting", "Dan 7:10"], ["The song", "Lk 2:14"]],
   not: "The Greek says they were “saying”, not singing, though praise sung or spoken fits either way.",
   trad: "" },
-{ id: "strangers", group: "Hosts", name: "Strangers, Unawares", term: "Genesis 18 · Hebrews 13", tag: "Three men stood by him.",
+{ id: "strangers", art: ["Andrei Rublev's Trinity icon (c. 1411) is the most famous image of this scene: three winged angels seated at Abraham's table.", "Genesis says \u201cthree men.\u201d They walk, sit and eat, and nothing in the text sets them apart. They are rendered as ordinary travellers, and only the faintest shimmer gives them away."], group: "Hosts", name: "Strangers, Unawares", term: "Genesis 18 · Hebrews 13", tag: "Three men stood by him.",
   refs: [["Genesis 18:1–2", "And the LORD appeared unto him in the plains of Mamre: and he sat in the tent door in the heat of the day; And he lift up his eyes and looked, and, lo, three men stood by him…"],
          ["Genesis 19:1", "And there came two angels to Sodom at even; and Lot sat in the gate of Sodom…"],
          ["Hebrews 13:2", "Be not forgetful to entertain strangers: for thereby some have entertained angels unawares."]],
   map: [["Three ordinary travellers", "Gen 18:2"], ["Midday heat at Mamre, a tent and the oaks", "Gen 18:1"], ["Nothing visibly different about them, except a shimmer if you look closely", "Heb 13:2"]],
   not: "This is the most common way angels appear in the Bible: as people, unrecognised. They ate, walked and were taken for guests.",
   trad: "" },
-{ id: "covering", group: "The fallen", name: "The Anointed Cherub That Covereth", term: "Ezekiel 28", tag: "Every precious stone was thy covering.",
+{ id: "covering", art: ["Fall-of-Lucifer imagery, from Bosch to Dor\u00e9's engravings for Paradise Lost, usually shows a beautiful winged man thrown down, often turning monstrous as he falls.", "Ezekiel's text is stranger: a cherub covered in nine named gems and gold, walking among \u201cstones of fire,\u201d perfect until iniquity was found. The stones dim and crack here before the fall."], group: "The fallen", name: "The Anointed Cherub That Covereth", term: "Ezekiel 28", tag: "Every precious stone was thy covering.",
   refs: [["Ezekiel 28:13", "Thou hast been in Eden the garden of God; every precious stone was thy covering, the sardius, topaz, and the diamond, the beryl, the onyx, and the jasper, the sapphire, the emerald, and the carbuncle, and gold…"],
          ["Ezekiel 28:14–15", "Thou art the anointed cherub that covereth; and I have set thee so: thou wast upon the holy mountain of God; thou hast walked up and down in the midst of the stones of fire. Thou wast perfect in thy ways from the day that thou wast created, till iniquity was found in thee."],
          ["Ezekiel 28:16", "…therefore I will cast thee as profane out of the mountain of God: and I will destroy thee, O covering cherub, from the midst of the stones of fire."]],
@@ -720,6 +778,7 @@ function go(i) {
   document.getElementById("t-name").textContent = e.name.toUpperCase(); document.getElementById("t-term").textContent = e.term; document.getElementById("t-tag").textContent = e.tag;
   art.innerHTML = "<h4>WHAT SCRIPTURE SAYS</h4>" + e.refs.map(([r, q]) => "<blockquote>" + esc(q) + "<cite>" + r + " · KJV</cite></blockquote>").join("") +
     "<h4>WHAT YOU ARE LOOKING AT</h4><ul class='map'>" + e.map.map(([d, r]) => "<li>" + esc(d) + "<span>" + r + "</span></li>").join("") + "</ul>" +
+    (e.art ? "<h4>HOW ART HAS SHOWN IT</h4><p>" + esc(e.art[0]) + "</p><h4>WHAT ART LEAVES OUT, AND THIS BUILD PUTS BACK</h4><div class='note'>" + esc(e.art[1]) + "</div>" : "") +
     (e.not ? "<h4>WORTH KNOWING</h4><div class='note'>" + esc(e.not) + "</div>" : "") +
     (e.trad ? "<h4>LATER TRADITION, NOT SCRIPTURE</h4><p class='trad'>" + esc(e.trad) + "</p>" : "");
   history.replaceState(null, "", "#" + e.id); show(e.id);
