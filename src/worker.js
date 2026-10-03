@@ -24,6 +24,7 @@ const VERIFIERS = {
   weaver: "b59d2ac35c4c4373c1e92188fe5bbef03cc3aaa23b90a426bf1a5f47ba884bad",
   graveyard: "261dec3b6c58bab0bc42a27857a907b61aba255be34f4ec43d314362dbb41fc1",
   tether: "083bdeee6fba0f331bee005687d827c06a45ea7d37e9d6b27b32a28db7b3bfcb",
+  angels: "fb454be6d1bb3a7c209276f3bc1e37ae2f2f5f6d2fc820510e54b301b63433b8",
   sideways: "aa13d7c65c73f019135b485e79a0a19a00620f359a13b595c2affd79cf32dcb1",
   rootcause: "b4fa2d09b759cb87b3d7cbcf98e9541c4b263696de29876d02672c11a366823e",
   // Shared apps: one verifier per person, so the session knows who is signed in.
@@ -32,7 +33,7 @@ const VERIFIERS = {
     adrianna: "2d9ea0c1375a9447704e64a88c06b977f9aa73c4dcb2b487a3b2555abbe16eac",
   },
 };
-const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways", "/tether": "tether" };
+const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways", "/tether": "tether", "/angels": "angels" };
 const SAVES = new Set(["flutterbloom"]);
 const SESSION_DAYS = 180;
 const MAX_SAVE = 512 * 1024;

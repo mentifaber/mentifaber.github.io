@@ -1,791 +1,400 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#06050a">
-<title>Be Not Afraid — an atlas of the heavenly host</title>
-<meta name="description" content="Every angelic being the Bible actually describes, rendered from the verses alone, with the text, what each detail comes from, and what later tradition added.">
-<meta property="og:title" content="Be Not Afraid">
-<meta property="og:description" content="The heavenly host as scripture describes it: seraphim, cherubim, the wheels full of eyes, the living creatures, and more. Rendered from the verses, nothing added.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306050a'/%3E%3Cellipse cx='32' cy='32' rx='22' ry='9' fill='none' stroke='%23e9c46a' stroke-width='3'/%3E%3Cellipse cx='32' cy='32' rx='9' ry='22' fill='none' stroke='%23e9c46a' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23fff3c4'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<title>Be Not Afraid</title>
 <style>
-:root{--bg:#06050a;--ink:#efe6d2;--dim:rgba(239,230,210,.6);--faint:rgba(239,230,210,.14);--gold:#e9c46a;--fire:#ff8a3d;--serif:'Cormorant Garamond',Georgia,serif;--cap:'Cinzel',serif;--mono:'JetBrains Mono',monospace}
+:root{--ink:#efe6d2;--dim:rgba(239,230,210,.55);--gold:#e9c46a}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:19px;line-height:1.55}
-a{color:var(--gold)}
-header{padding:28px 20px 10px;text-align:center}
-header h1{font-family:var(--cap);font-weight:700;letter-spacing:.22em;font-size:clamp(26px,5vw,44px);color:var(--gold)}
-header p{color:var(--dim);font-style:italic;max-width:720px;margin:6px auto 0}
-.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1500px;margin:0 auto;min-height:80vh}
-nav{border-right:1px solid var(--faint);padding:10px 0;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto}
-nav h3{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--dim);padding:14px 18px 6px;font-weight:400}
-nav button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font-family:var(--cap);font-size:14px;letter-spacing:.08em;padding:9px 18px;cursor:pointer;border-left:2px solid transparent}
-nav button small{display:block;font-family:var(--serif);font-style:italic;font-size:14px;letter-spacing:0;color:var(--dim)}
-nav button:hover{background:rgba(233,196,106,.06)}
-nav button.on{border-left-color:var(--gold);background:rgba(233,196,106,.1);color:var(--gold)}
-main{min-width:0}
-.stage{position:relative;height:min(78vh,820px);background:radial-gradient(ellipse at 50% 45%,#120d18 0,#06050a 70%);border-bottom:1px solid var(--faint)}
-canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
-#cry,#ov{position:absolute;left:0;right:0;top:9%;text-align:center;font-family:var(--cap);font-weight:700;letter-spacing:.2em;color:#fff1c8;font-size:clamp(16px,2.6vw,28px);pointer-events:none;text-shadow:0 0 24px rgba(255,200,120,.8);opacity:0;transition:opacity .2s}
-.hint{position:absolute;right:18px;bottom:14px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);pointer-events:none}
-.title{position:absolute;left:24px;bottom:18px;pointer-events:none;text-shadow:0 2px 16px #000}
-.title h2{font-family:var(--cap);font-size:clamp(20px,3.2vw,36px);letter-spacing:.14em;color:var(--gold)}
-.title .term{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.08em}
-.title .tag{font-style:italic;font-size:20px;max-width:560px}
-.ctl{position:absolute;right:16px;top:14px;display:flex;gap:6px}
-.ctl button{background:rgba(0,0,0,.5);border:1px solid var(--faint);color:var(--dim);font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:8px;cursor:pointer}
-.ctl button:hover{color:var(--gold);border-color:var(--gold)}
-article{padding:26px 28px 60px;max-width:900px}
-article h4{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--gold);margin:26px 0 10px;font-weight:600}
-blockquote{border-left:2px solid var(--gold);padding:4px 0 4px 16px;margin:0 0 14px;font-size:20px}
-blockquote cite{display:block;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--dim);margin-top:4px;letter-spacing:.06em}
-ul.map{list-style:none}
-ul.map li{padding:7px 0;border-bottom:1px dashed var(--faint);display:grid;grid-template-columns:1fr auto;gap:12px}
-ul.map li span{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap}
-.note{background:rgba(255,138,61,.06);border:1px solid rgba(255,138,61,.25);border-radius:10px;padding:12px 16px;margin-bottom:10px}
-.trad{color:var(--dim)}
-footer{text-align:center;color:var(--dim);font-size:15px;padding:30px 20px 50px;border-top:1px solid var(--faint)}
-@media (max-width:820px){
-  .wrap{grid-template-columns:1fr}
-  nav{position:static;max-height:none;display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--faint);padding:0}
-  nav h3{display:none}
-  nav button{white-space:nowrap;border-left:0;border-bottom:2px solid transparent;padding:12px 14px;width:auto}
-  nav button small{display:none}
-  nav button.on{border-bottom-color:var(--gold)}
-  .stage{height:62vh}
-  article{padding:20px 16px 50px}
-  ul.map li{grid-template-columns:1fr}
-}
+body{background:#06050a;color:var(--ink);font-family:Georgia,serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.corner{position:fixed;top:16px;left:16px;color:var(--dim);text-decoration:none;font-size:14px}
+h1{font-family:Georgia,serif;letter-spacing:.24em;color:var(--gold);font-size:28px;margin-bottom:8px;text-align:center}
+.lock-card{width:100%;max-width:340px;margin-top:22px;border:1px solid rgba(239,230,210,.14);border-radius:14px;padding:22px}
+.field{margin-bottom:12px}label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px;letter-spacing:.1em}
+input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid rgba(239,230,210,.2);background:#0d0b12;color:var(--ink);font-size:16px}
+.enter-btn{width:100%;padding:12px;border:0;border-radius:9px;background:var(--gold);color:#1a1205;font-weight:700;letter-spacing:.12em;cursor:pointer;margin-top:4px}
+.lock-error{min-height:20px;color:#ff8a6a;font-size:14px;margin-top:10px;text-align:center}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+p{color:var(--dim);font-style:italic;text-align:center}
 </style>
 </head><body>
-<header>
-  <h1>BE NOT AFRAID</h1>
-  <p>Every heavenly being the Bible actually describes, drawn from the words on the page and nothing else. Each one is built in 3D, line by line, from the verses quoted beneath it (King James Version). Drag to walk around it. Some of them are frightening, and the people who saw them were afraid.</p>
-</header>
-<div class="wrap">
-  <nav id="nav"></nav>
-  <main>
-    <div class="stage">
-      <canvas id="cv"></canvas>
-      <div id="cry"></div><div id="ov"></div><div class="hint">DRAG TO LOOK AROUND · SCROLL TO ZOOM</div>
-      <div class="title"><div class="term" id="t-term"></div><h2 id="t-name"></h2><div class="tag" id="t-tag"></div></div>
-      <div class="ctl"><button id="b-prev">‹ PREV</button><button id="b-next">NEXT ›</button></div>
-    </div>
-    <article id="art"></article>
-  </main>
+<a class="corner" href="index.html">← Atlas</a>
+<h1>BE NOT AFRAID</h1>
+<p>In progress. Private for now.</p>
+<div class="lock-card">
+  <div class="field"><label for="tt-user">USERNAME</label><input id="tt-user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
+  <div class="field"><label for="tt-pass">PASSWORD</label><input id="tt-pass" type="password" autocomplete="current-password"></div>
+  <button class="enter-btn" id="tt-submit">ENTER</button>
+  <div class="lock-error" id="tt-error"></div>
 </div>
-<footer>Scripture quotations are from the King James Version (public domain). Where a detail comes from later tradition rather than the text, it is labelled as such. Made by Claude for mentifaber.org.</footer>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
-<script type="module">
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-
-const TAU = Math.PI * 2, V = (x, y, z) => new THREE.Vector3(x, y, z), rand = (a, b) => a + Math.random() * (b - a), lerp = (a, b, k) => a + (b - a) * k;
-const LS = .12, PL = (c, i, d, k) => new THREE.PointLight(c, i * LS, d, k);
-const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
-
-/* ── renderer, camera, post ── */
-const cv = document.getElementById("cv");
-const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance" });
-const LOW = matchMedia("(pointer:coarse)").matches || (navigator.hardwareConcurrency || 8) <= 4;
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LOW ? 1.25 : 1.75));
-renderer.shadowMap.enabled = !LOW; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
-const scene = new THREE.Scene();
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
-const camera = new THREE.PerspectiveCamera(42, 1, .05, 3000);
-const controls = new OrbitControls(camera, cv); controls.enableDamping = true; controls.dampingFactor = .06; controls.enablePan = false; controls.autoRotate = true; controls.autoRotateSpeed = .35;
-const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: LOW ? 0 : 4 })); composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 1, .6, .2); composer.addPass(bloom); composer.addPass(new OutputPass());
-// the lens: light shafts streaming from the brightest source, a touch of colour fringing, grain and a vignette
-const grade = new ShaderPass({ uniforms: { tDiffuse: { value: null }, sun: { value: new THREE.Vector2(.5, .5) }, rays: { value: 0 }, time: { value: 0 }, ca: { value: .004 }, grain: { value: .035 } },
-  vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
-  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 sun; uniform float rays, time, ca, grain; varying vec2 vUv;
-  void main(){ vec2 uv=vUv; vec2 d=(uv-.5)*ca*length(uv-.5)*2.; vec3 col=vec3(texture2D(tDiffuse,uv+d).r, texture2D(tDiffuse,uv).g, texture2D(tDiffuse,uv-d).b);
-    if(rays>0.){ vec2 dt=(uv-sun)/56.; vec2 c=uv; float dec=1.; vec3 acc=vec3(0.); for(int i=0;i<56;i++){ c-=dt; vec3 s=texture2D(tDiffuse,c).rgb; float l=max(0.,dot(s,vec3(.3,.59,.11))-.55); acc+=s*l*dec; dec*=.965; } col+=acc*rays/30.; }
-    float v=smoothstep(1.,.3,length((uv-.5)*vec2(1.1,1.))); col*=mix(.45,1.,v);
-    col+=(fract(sin(dot(uv*vec2(12.9898,78.233)+fract(time),vec2(1.)))*43758.5453)-.5)*grain;
-    gl_FragColor=vec4(col,1.); }` });
-composer.addPass(grade);
-function resize() { const r = cv.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); composer.setSize(r.width, r.height); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
-addEventListener("resize", resize);
-
-/* ── procedural textures ── */
-function ctex(w, h, draw, srgb = true) { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); draw(g, w, h); const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
-const glowTex = ctex(128, 128, (g, w) => { const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.2, "rgba(255,255,255,.6)"); r.addColorStop(.5, "rgba(255,255,255,.15)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, w, w); });
-const smokeTex = ctex(256, 256, (g, w) => { for (let i = 0; i < 60; i++) { const x = w / 2 + (Math.random() - .5) * w * .5, y = w / 2 + (Math.random() - .5) * w * .5, r = rand(20, 70); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(255,255,255,.18)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, w); } });
-const featherTex = ctex(96, 384, (g, w, h) => {
-  g.fillStyle = "#fff"; g.beginPath(); g.moveTo(w / 2, h); g.quadraticCurveTo(-w * .05, h * .55, w * .45, 0); g.quadraticCurveTo(w * 1.08, h * .45, w / 2, h); g.fill();
-  g.strokeStyle = "rgba(0,0,0,.16)"; g.lineWidth = 1; for (let y = 10; y < h; y += 3) { g.beginPath(); g.moveTo(w / 2, y); g.lineTo(3, y - 16); g.moveTo(w / 2, y); g.lineTo(w - 3, y - 16); g.stroke(); }
-  const sh = g.createLinearGradient(0, 0, w, 0); sh.addColorStop(0, "rgba(0,0,0,.25)"); sh.addColorStop(.5, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.3)"); g.globalCompositeOperation = "source-atop"; g.fillStyle = sh; g.fillRect(0, 0, w, h);
-  g.globalCompositeOperation = "source-over"; g.strokeStyle = "rgba(60,40,20,.55)"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(w / 2, h); g.lineTo(w * .46, 4); g.stroke();
-  g.globalCompositeOperation = "destination-out"; g.lineWidth = 2; for (let i = 0; i < 7; i++) { const y = rand(30, h - 60), side = Math.random() < .5; g.beginPath(); g.moveTo(side ? 0 : w, y - 8); g.lineTo(w / 2, y + 10); g.stroke(); }
-});
-// iris laid out for a sphere cap: top of the texture is the pupil, bottom is the limbal ring
-const irisTex = (hue) => ctex(256, 128, (g, w, h) => {
-  g.fillStyle = "#050302"; g.fillRect(0, 0, w, h);
-  const top = h * .36; const gr = g.createLinearGradient(0, top, 0, h); gr.addColorStop(0, "hsl(" + hue + ",70%,22%)"); gr.addColorStop(.25, "hsl(" + (hue + 8) + ",75%,48%)"); gr.addColorStop(.75, "hsl(" + hue + ",60%,32%)"); gr.addColorStop(1, "hsl(" + hue + ",40%,8%)");
-  g.fillStyle = gr; g.fillRect(0, top, w, h - top);
-  for (let i = 0; i < 260; i++) { const x = Math.random() * w; g.strokeStyle = Math.random() < .5 ? "hsla(" + (hue + 20) + ",80%,70%,.35)" : "rgba(0,0,0,.35)"; g.lineWidth = rand(.5, 1.6); g.beginPath(); g.moveTo(x, top); g.lineTo(x + rand(-3, 3), h * rand(.7, 1)); g.stroke(); }
-  g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, h - 10, w, 10);
-});
-const furTex = ctex(64, 256, (g, w, h) => { for (let i = 0; i < 70; i++) { const x = Math.random() * w, l = rand(.5, 1); g.strokeStyle = "rgba(255,255,255," + rand(.5, 1) + ")"; g.lineWidth = rand(1, 3); g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + rand(-10, 10), h * (1 - l / 2), x + rand(-14, 14), h * (1 - l)); g.stroke(); } });
-const scleraTex = ctex(512, 256, (g, w, h) => {
-  g.fillStyle = "#efe6d6"; g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 90; i++) { let x = Math.random() * w, y = h * rand(.55, 1); g.strokeStyle = "rgba(170,30,30," + rand(.15, .45) + ")"; g.lineWidth = rand(.4, 1.6); g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += rand(-14, 14); y -= rand(4, 14); g.lineTo(x, y); } g.stroke(); }
-  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(150,90,80,.35)"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
-});
-const coalTex = ctex(512, 512, (g, w, h) => { g.fillStyle = "#120402"; g.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { let x = Math.random() * w, y = Math.random() * h; g.strokeStyle = "hsl(" + rand(10, 40) + ",100%," + rand(40, 70) + "%)"; g.lineWidth = rand(1, 4); g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += rand(-30, 30); y += rand(-30, 30); g.lineTo(x, y); } g.stroke(); } });
-const rockTex = ctex(512, 512, (g, w, h) => { g.fillStyle = "#5a554c"; g.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { g.fillStyle = "rgba(" + (Math.random() < .5 ? "0,0,0" : "255,255,255") + "," + rand(.02, .1) + ")"; g.fillRect(Math.random() * w, Math.random() * h, rand(1, 6), rand(1, 6)); } });
-rockTex.wrapS = rockTex.wrapT = THREE.RepeatWrapping;
-const linenTex = ctex(256, 256, (g, w, h) => { g.fillStyle = "#e9e3d4"; g.fillRect(0, 0, w, h); for (let i = 0; i < w; i += 2) { g.fillStyle = "rgba(0,0,0," + rand(0, .05) + ")"; g.fillRect(i, 0, 1, h); g.fillRect(0, i, w, 1); } });
-linenTex.wrapS = linenTex.wrapT = THREE.RepeatWrapping; linenTex.repeat.set(6, 6);
-// carved bronze masks for the four faces
-const FACE = {};
-function faceTex(kind) {
-  if (FACE[kind]) return FACE[kind];
-  return (FACE[kind] = ctex(256, 256, (g, w) => { drawFace(g, kind, w / 2, w / 2 + 6, 92); }));
-}
-function drawFace(g, kind, x, y, s, col) {
-  g.save(); g.translate(x, y); g.scale(s / 50, s / 50); g.lineJoin = "round"; g.lineCap = "round";
-  const stroke = "#2a1606";
-  if (kind === "lion") {
-    for (let i = 0; i < 22; i++) { const a = i / 22 * TAU; g.fillStyle = i % 2 ? "#b8621f" : "#d9892e"; g.beginPath(); g.moveTo(Math.cos(a - .18) * 34, Math.sin(a - .18) * 34); g.lineTo(Math.cos(a) * 54, Math.sin(a) * 54); g.lineTo(Math.cos(a + .18) * 34, Math.sin(a + .18) * 34); g.fill(); }
-    g.fillStyle = col || "#e7b45a"; g.beginPath(); g.ellipse(0, 4, 32, 36, 0, 0, TAU); g.fill();
-    g.fillStyle = stroke; g.beginPath(); g.moveTo(-9, 12); g.lineTo(9, 12); g.lineTo(0, 22); g.fill();
-    g.strokeStyle = stroke; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 22); g.lineTo(0, 28); g.moveTo(-12, 32); g.quadraticCurveTo(0, 26, 12, 32); g.stroke();
-    g.fillStyle = "#ffd27a"; [-13, 13].forEach((ex) => { g.beginPath(); g.ellipse(ex, -6, 6, 4, 0, 0, TAU); g.fill(); }); g.fillStyle = stroke; [-13, 13].forEach((ex) => { g.beginPath(); g.ellipse(ex, -6, 1.6, 4, 0, 0, TAU); g.fill(); });
-  } else if (kind === "ox") {
-    g.strokeStyle = "#e9dcc0"; g.lineWidth = 7; g.beginPath(); g.moveTo(-26, -20); g.quadraticCurveTo(-52, -30, -44, -56); g.moveTo(26, -20); g.quadraticCurveTo(52, -30, 44, -56); g.stroke();
-    g.fillStyle = col || "#8a5a32"; g.beginPath(); g.moveTo(-30, -26); g.quadraticCurveTo(0, -40, 30, -26); g.lineTo(24, 22); g.quadraticCurveTo(0, 46, -24, 22); g.closePath(); g.fill();
-    g.fillStyle = "#c79a6c"; g.beginPath(); g.ellipse(0, 24, 20, 14, 0, 0, TAU); g.fill(); g.fillStyle = stroke; [-8, 8].forEach((nx) => { g.beginPath(); g.ellipse(nx, 24, 3.5, 5, 0, 0, TAU); g.fill(); });
-    [-40, 40].forEach((ex) => { g.fillStyle = col || "#8a5a32"; g.beginPath(); g.ellipse(ex, -16, 12, 6, ex > 0 ? .4 : -.4, 0, TAU); g.fill(); });
-    g.fillStyle = "#1a0d05"; [-14, 14].forEach((ex) => { g.beginPath(); g.arc(ex, -8, 4.5, 0, TAU); g.fill(); });
-  } else if (kind === "eagle") {
-    g.fillStyle = col || "#6b4a2b"; g.beginPath(); g.ellipse(0, -2, 30, 36, 0, 0, TAU); g.fill();
-    g.fillStyle = "#f2ead8"; g.beginPath(); g.ellipse(0, -10, 24, 24, 0, 0, TAU); g.fill();
-    g.fillStyle = "#e3a82b"; g.beginPath(); g.moveTo(-10, 0); g.quadraticCurveTo(0, -6, 10, 0); g.quadraticCurveTo(8, 26, -2, 34); g.quadraticCurveTo(2, 20, -10, 0); g.fill();
-    g.fillStyle = "#ffcf3d"; [-12, 12].forEach((ex) => { g.beginPath(); g.arc(ex, -12, 5, 0, TAU); g.fill(); }); g.fillStyle = "#000"; [-12, 12].forEach((ex) => { g.beginPath(); g.arc(ex, -12, 2.4, 0, TAU); g.fill(); });
-    g.strokeStyle = "#3a2410"; g.lineWidth = 3; g.beginPath(); g.moveTo(-20, -20); g.lineTo(-6, -15); g.moveTo(20, -20); g.lineTo(6, -15); g.stroke();
-  } else {
-    g.fillStyle = col || "#d8a878"; g.beginPath(); g.ellipse(0, 0, 28, 38, 0, 0, TAU); g.fill();
-    g.fillStyle = "#5a3418"; g.beginPath(); g.moveTo(-28, -6); g.quadraticCurveTo(-30, -44, 0, -42); g.quadraticCurveTo(30, -44, 28, -6); g.quadraticCurveTo(20, -30, 0, -30); g.quadraticCurveTo(-20, -30, -28, -6); g.fill();
-    g.beginPath(); g.moveTo(-26, 8); g.quadraticCurveTo(-24, 46, 0, 50); g.quadraticCurveTo(24, 46, 26, 8); g.quadraticCurveTo(14, 26, 0, 24); g.quadraticCurveTo(-14, 26, -26, 8); g.fill();
-    g.fillStyle = "#fff"; [-11, 11].forEach((ex) => { g.beginPath(); g.ellipse(ex, -6, 6, 3.5, 0, 0, TAU); g.fill(); }); g.fillStyle = "#3b220e"; [-11, 11].forEach((ex) => { g.beginPath(); g.arc(ex, -6, 2.6, 0, TAU); g.fill(); });
-    g.strokeStyle = "#7a4a26"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(0, -4); g.lineTo(-3, 10); g.lineTo(3, 11); g.stroke();
-  }
-  g.restore();
-}
-
-
-/* ── building blocks ── */
-const S = { eyes: [], fires: [], smokes: [], bolts: [], upd: [], lights: [] };
-const world = new THREE.Group(); scene.add(world);
-const glowSprite = (color, size, opacity = 1) => { const m = new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: opacity * .45, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }); const s = new THREE.Sprite(m); s.scale.setScalar(size); return s; };
-
-// a field of eyeballs that all turn to look at whoever is watching
-const eyeGeo = new THREE.SphereGeometry(1, 28, 18), irisGeo = new THREE.SphereGeometry(1.012, 28, 10, 0, TAU, 0, .62).rotateX(Math.PI / 2);
-const IRIS = { gold: irisTex(38), green: irisTex(140), blue: irisTex(205), red: irisTex(5) };
-class Eyes {
-  constructor(parent, pts, opt = {}) {
-    this.pts = pts; this.parent = parent; const n = pts.length;
-    this.a = new THREE.InstancedMesh(eyeGeo, new THREE.MeshPhysicalMaterial({ map: scleraTex, roughness: .22, clearcoat: 1, clearcoatRoughness: .05, emissive: opt.glow ? 0x332211 : 0x000000 }), n);
-    this.b = new THREE.InstancedMesh(irisGeo, new THREE.MeshPhysicalMaterial({ map: IRIS[opt.iris || "gold"], roughness: .15, clearcoat: 1, emissive: opt.glow ? 0xffffff : 0x000000, emissiveMap: opt.glow ? IRIS[opt.iris || "gold"] : null, emissiveIntensity: opt.glow || 0 }), n);
-    parent.add(this.a, this.b); this.d = new THREE.Object3D(); this.off = pts.map(() => [rand(0, 100), rand(.4, 1.2)]); this.blink = pts.map(() => rand(0, 9));
-    S.eyes.push(this);
-  }
-  update(t) {
-    const lc = this.parent.worldToLocal(camera.position.clone());
-    for (let i = 0; i < this.pts.length; i++) {
-      const p = this.pts[i], d = this.d, o = this.off[i];
-      d.position.copy(p.p); d.scale.setScalar(p.s);
-      // little saccades so they never look mechanical
-      const j = Math.floor(t * o[1] + o[0]); d.lookAt(lc.x + (hash(j) - .5) * 1.4, lc.y + (hash(j + 7) - .5) * 1.4, lc.z);
-      const bk = (t + this.blink[i]) % 7; if (bk < .14) d.scale.y *= Math.max(.05, Math.abs(bk - .07) / .07);
-      d.updateMatrix(); this.a.setMatrixAt(i, d.matrix); this.b.setMatrixAt(i, d.matrix);
-    }
-    this.a.instanceMatrix.needsUpdate = this.b.instanceMatrix.needsUpdate = true;
-  }
-}
-// feathers in rows, fanned out from a root: the basic wing
-const featherGeo = new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, .5, 0);
-{ const p = featherGeo.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.pow(p.getY(i), 2) * .12); featherGeo.computeVertexNormals(); }
-function wing(opt) {
-  const g = new THREE.Group(), len = opt.len || 4, n = opt.n || 16, rows = opt.rows || 3, a0 = opt.a0 ?? -.3, a1 = opt.a1 ?? 1.5;
-  const mat = new THREE.MeshPhysicalMaterial({ map: featherTex, bumpMap: featherTex, bumpScale: 3, alphaTest: .35, side: THREE.DoubleSide, color: opt.color || 0xf2e6cf, roughness: opt.rough ?? .65, metalness: opt.metal || 0, sheen: .6, sheenColor: new THREE.Color(0xffffff), emissive: opt.emissive || 0x000000, emissiveMap: opt.emissive ? featherTex : null, emissiveIntensity: opt.eI || 0 });
-  const inst = new THREE.InstancedMesh(featherGeo, mat, n * rows), d = new THREE.Object3D(); let k = 0; const tips = [], eyePts = [];
-  for (let r = 0; r < rows; r++) for (let i = 0; i < n; i++) {
-    const f = i / (n - 1), a = lerp(a0, a1, f) + rand(-.03, .03), ro = len * (.06 + (1 - f) * .22) * (1 - r * .2), L = len * (.5 + .5 * Math.sin(f * Math.PI * .85 + .25)) * (1 - r * .3), wd = len * .12 * (1 - r * .12);
-    d.position.set(Math.cos(a) * ro, Math.sin(a) * ro, r * .03 * len); d.rotation.set(0, 0, a - Math.PI / 2); d.rotateX(rand(-.08, .08) - r * .05); d.scale.set(wd, L, wd); d.updateMatrix(); inst.setMatrixAt(k++, d.matrix);
-    const dir = V(Math.cos(a), Math.sin(a), 0);
-    if (r === 0) tips.push(d.position.clone().addScaledVector(dir, L));
-    if (opt.eyes && r < 2) for (const q of r === 0 ? [.55, .82] : [.6]) eyePts.push({ p: d.position.clone().addScaledVector(dir, L * q).add(V(0, 0, len * (.02 + r * .03))), s: wd * .26 * (1.05 - q * .4) * (opt.eyeScale || 1) });
-  }
-  g.add(inst); if (eyePts.length) new Eyes(g, eyePts, { iris: opt.iris || "gold" });
-  g.userData.tips = tips; return g;
-}
-// particle fire (and holy light, and ash) with HDR colour so it blooms
-class Fire {
-  constructor(n, parent, kind = 0) {
-    this.n = n; this.kind = kind; this.i = 0; this.p = new Float32Array(n * 3); this.v = new Float32Array(n * 3); this.age = new Float32Array(n).fill(9); this.life = new Float32Array(n).fill(1); this.sz = new Float32Array(n); this.base = new Float32Array(n); this.c = new Float32Array(n * 4);
-    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(this.p, 3)); geo.setAttribute("size", new THREE.BufferAttribute(this.sz, 1)); geo.setAttribute("col", new THREE.BufferAttribute(this.c, 4));
-    const mat = new THREE.ShaderMaterial({ uniforms: { map: { value: glowTex }, h: { value: 600 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      vertexShader: "attribute float size; attribute vec4 col; varying vec4 vC; uniform float h; void main(){ vC=col; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=size*h/-mv.z; gl_Position=projectionMatrix*mv; }",
-      fragmentShader: "uniform sampler2D map; varying vec4 vC; void main(){ float a=texture2D(map,gl_PointCoord).a; gl_FragColor=vec4(vC.rgb, a*vC.a); }" });
-    this.pts = new THREE.Points(geo, mat); this.pts.frustumCulled = false; parent.add(this.pts); this.mat = mat; S.fires.push(this);
-  }
-  emit(p, v, life, size) { const i = this.i; this.i = (i + 1) % this.n; this.p.set([p.x, p.y, p.z], i * 3); this.v.set([v.x, v.y, v.z], i * 3); this.age[i] = 0; this.life[i] = life; this.base[i] = size; }
-  update(dt) {
-    this.mat.uniforms.h.value = renderer.domElement.height * .5;
-    for (let i = 0; i < this.n; i++) {
-      if (this.age[i] >= this.life[i]) { this.sz[i] = 0; continue; }
-      this.age[i] += dt; const k = Math.min(1, this.age[i] / this.life[i]), j = i * 3;
-      this.v[j + 1] += (this.kind === 2 ? -1 : this.kind === 3 ? 0 : 2.2) * dt; this.v[j] *= .985; this.v[j + 2] *= .985;
-      this.p[j] += this.v[j] * dt; this.p[j + 1] += this.v[j + 1] * dt; this.p[j + 2] += this.v[j + 2] * dt;
-      let r, g, b; if (this.kind === 1) { r = 2.4; g = 2.5; b = 3; } else if (this.kind === 4) { r = .5; g = 2.6; b = 1; } else if (this.kind === 3) { r = 1.2; g = 1.05; b = .8; } else { r = 3.2 - k * 1.2; g = lerp(2.4, .25, Math.min(1, k * 1.4)); b = lerp(1.4, 0, Math.min(1, k * 3)); }
-      const a = Math.pow(1 - k, 1.4) * Math.min(1, this.age[i] * 12) * .45; this.c.set([r * .7, g * .7, b * .7, a], i * 4); this.sz[i] = this.base[i] * (1 + k * (this.kind === 0 ? .6 : 0));
-    }
-    const at = this.pts.geometry.attributes; at.position.needsUpdate = at.size.needsUpdate = at.col.needsUpdate = true;
-  }
-}
-// smoke and cloud
-function smoke(parent, n, box, color, op, size) {
-  const list = []; for (let i = 0; i < n; i++) { const m = new THREE.SpriteMaterial({ map: smokeTex, color, transparent: true, opacity: op * rand(.5, 1), depthWrite: false }); const s = new THREE.Sprite(m); s.position.set(rand(box[0], box[1]), rand(box[2], box[3]), rand(box[4], box[5])); s.scale.setScalar(size * rand(.6, 1.4)); s.userData = { v: V(rand(-.1, .1), rand(.02, .12), rand(-.1, .1)), r: rand(-.1, .1), box }; parent.add(s); list.push(s); }
-  S.smokes.push(list); return list;
-}
-// lightning: a jagged bright line that lives for a moment, with a flash
-const flash = PL(0xdfe8ff, 0, 80, 1.5); scene.add(flash);
-function bolt(a, b, color = 0xeef3ff) {
-  const pts = [], n = 16, dir = b.clone().sub(a), side = V(-dir.y, dir.x, 0).normalize();
-  for (let i = 0; i <= n; i++) { const k = i / n, p = a.clone().lerp(b, k); if (i && i < n) p.addScaledVector(side, rand(-1, 1) * dir.length() * .06).add(V(0, 0, rand(-.3, .3))); pts.push(p); }
-  const m = new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(6), toneMapped: false, transparent: true });
-  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), m); world.add(l); S.bolts.push([l, .14]); flash.position.copy(a.clone().lerp(b, .5)); flash.intensity = 200 * LS;
-}
-// a robed human form
-function figure(opt = {}) {
-  const g = new THREE.Group(), h = opt.h || 2;
-  const prof = [[0, 0], [.27, 0], [.29, .02], [.26, .2], [.23, .45], [.2, .62], [.19, .7], [.22, .76], [.2, .8], [.12, .83], [.06, .85], [0, .85]].map(([r, y]) => new THREE.Vector2(r * h, y * h));
-  const robe = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), new THREE.MeshPhysicalMaterial({ color: opt.robe ?? 0xe8e2d2, map: linenTex, roughness: .85, sheen: 1, sheenRoughness: .5, sheenColor: new THREE.Color(0xffffff), transparent: !!opt.op, opacity: opt.op || 1, emissive: opt.emissive || 0, emissiveIntensity: opt.eI || 0 }));
-  { const p = robe.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = p.getY(i), a = Math.atan2(z, x), k = 1 - y / h; const f = 1 + Math.sin(a * 9) * .05 * k; p.setX(i, x * f); p.setZ(i, z * f); } robe.geometry.computeVertexNormals(); }
-  g.add(robe);
-  const skinM = new THREE.MeshPhysicalMaterial({ color: opt.skin ?? 0xc89a74, roughness: .5, emissive: opt.faceGlow || 0, emissiveIntensity: opt.faceI || 0, sheen: .3 });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(h * .068, 32, 24), skinM); head.scale.set(1, 1.2, 1.05); head.position.y = h * .92; g.add(head);
-  const armM = opt.armM || new THREE.MeshPhysicalMaterial({ color: opt.robe ?? 0xe8e2d2, map: linenTex, roughness: .85, sheen: 1 });
-  [-1, 1].forEach((d) => { const arm = new THREE.Mesh(new THREE.CapsuleGeometry(h * .035, h * .3, 6, 12), armM); arm.position.set(d * h * .21, h * .6, h * .03); arm.rotation.z = d * .12; g.add(arm); const hand = new THREE.Mesh(new THREE.SphereGeometry(h * .032, 16, 12), opt.handM || skinM); hand.position.set(d * h * .235, h * .42, h * .05); g.add(hand); });
-  if (opt.belt) { const b = new THREE.Mesh(new THREE.TorusGeometry(h * .2, h * .016, 10, 40), new THREE.MeshStandardMaterial({ color: opt.belt, metalness: 1, roughness: .22 })); b.rotation.x = Math.PI / 2; b.position.y = h * .5; b.scale.set(1.08, 1, 1); g.add(b); }
-  g.userData.head = head; return g;
-}
-const at = (o, x, y, z) => { o.position.set(x, y, z); return o; };
-const metal = (c, r = .25) => new THREE.MeshStandardMaterial({ color: c, metalness: 1, roughness: r });
-function ground(color, size = 200, rough = .95, tex) { const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size, 1, 1), new THREE.MeshStandardMaterial({ color, roughness: rough, map: tex || null })); m.rotation.x = -Math.PI / 2; return m; }
-function water(w, d, color) {
-  const geo = new THREE.PlaneGeometry(w, d, 80, 40); geo.rotateX(-Math.PI / 2); const m = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color, roughness: .08, metalness: .2, clearcoat: 1 }));
-  const base = geo.attributes.position.array.slice(); m.userData.tick = (t) => { const p = geo.attributes.position; for (let i = 0; i < p.count; i++) { const x = base[i * 3], z = base[i * 3 + 2]; p.setY(i, Math.sin(x * .6 + t * 1.4) * .08 + Math.sin(z * .9 + t * 1.1 + x * .3) * .06); } p.needsUpdate = true; geo.computeVertexNormals(); };
-  S.upd.push(m.userData.tick); return m;
-}
-function displace(geo, amt, freq = 1.3, seed = 1) { const p = geo.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = Math.sin(v.x * freq + seed) * Math.cos(v.y * freq * 1.3 + seed * 2) * Math.sin(v.z * freq * .9 + seed * 3) + .5 * Math.sin(v.x * freq * 3.1 + v.z * 2.3); v.multiplyScalar(1 + n * amt); p.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); return geo; }
-function stars(n, r) { const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(0, TAU), e = rand(.05, 1.4), rr = r * rand(.9, 1); p.set([Math.cos(a) * Math.cos(e) * rr, Math.sin(e) * rr, Math.sin(a) * Math.cos(e) * rr], i * 3); } const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3)); return new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: .8 })); }
-
-// sculpted heads for the four faces. Built facing +z, about one unit across
-function sculpt(geo, fn) { const p = geo.attributes.position, v = new THREE.Vector3(), n = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); n.copy(v).normalize(); v.addScaledVector(n, fn(n, v)); p.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); return geo; }
-const bump = (n, cx, cy, cz, r, a) => { const d = (n.x - cx) ** 2 + (n.y - cy) ** 2 + (n.z - cz) ** 2; return a * Math.exp(-d / (r * r)); };
-function cards(parent, n, tex, color, place) { const m = new THREE.InstancedMesh(featherGeo, new THREE.MeshStandardMaterial({ map: tex, alphaTest: .3, side: THREE.DoubleSide, color, roughness: .95 }), n), d = new THREE.Object3D(); for (let i = 0; i < n; i++) { place(d, i); d.updateMatrix(); m.setMatrixAt(i, d.matrix); } m.castShadow = true; parent.add(m); return m; }
-function sculptHead(kind, tint) {
-  const g = new THREE.Group(), dark = new THREE.MeshStandardMaterial({ color: 0x120a06, roughness: .4 });
-  if (kind === "lion") {
-    const skin = new THREE.MeshPhysicalMaterial({ color: tint || 0xc58a3c, roughness: .85, sheen: 1, sheenColor: new THREE.Color(0xffd590) });
-    { const sk = new THREE.Mesh(sculpt(new THREE.SphereGeometry(.45, 72, 54), (n) => bump(n, 0, -.28, .96, .42, .34) + bump(n, 0, .12, .98, .2, .1) + bump(n, 0, .42, .85, .3, .07) - bump(n, .34, .2, .9, .12, .09) - bump(n, -.34, .2, .9, .12, .09) + bump(n, 0, -.8, .55, .3, .08) - bump(n, 0, -.55, .82, .1, .04)), skin); sk.scale.set(1, .95, 1.12); g.add(sk); }
-    const nose = new THREE.Mesh(new THREE.SphereGeometry(.08, 24, 16), dark); nose.scale.set(1.5, .7, .8); nose.position.set(0, -.06, .74); g.add(nose); [-1, 1].forEach((d) => { const pad = new THREE.Mesh(new THREE.SphereGeometry(.11, 24, 16), skin); pad.scale.set(1, .8, .9); pad.position.set(d * .085, -.2, .62); g.add(pad); }); const chin = new THREE.Mesh(new THREE.SphereGeometry(.08, 16, 12), new THREE.MeshPhysicalMaterial({ color: 0xe8d2b0, roughness: .9 })); chin.position.set(0, -.34, .55); g.add(chin); const lip = new THREE.Mesh(new THREE.BoxGeometry(.02, .1, .02), dark); lip.position.set(0, -.14, .72); g.add(lip);
-    [-1, 1].forEach((d) => { const ear = new THREE.Mesh(new THREE.SphereGeometry(.07, 16, 12), skin); ear.scale.set(1, .9, .4); ear.position.set(d * .3, .4, -.12); g.add(ear); });
-    new Eyes(g, [{ p: V(-.15, .14, .44), s: .05 }, { p: V(.15, .14, .44), s: .05 }], { iris: "gold", glow: .6 });
-    cards(g, 520, furTex, 0x4a2610, (d, i) => { const a = rand(0, TAU), rr = rand(.3, 1); const dir = V(Math.cos(a) * rr, Math.sin(a) * rr, rand(-.9, .05)).normalize(); if (dir.z > -.05 && Math.abs(dir.x) < .45 && dir.y > -.5) dir.z = -.3; d.position.copy(dir).multiplyScalar(.4); d.lookAt(dir.clone().multiplyScalar(3).add(V(0, -.6, -.8))); d.rotateX(Math.PI / 2); d.scale.set(.2, rand(.55, 1.15), .2); });
-  } else if (kind === "ox") {
-    const hide = new THREE.MeshPhysicalMaterial({ color: tint || 0x5a3418, roughness: .8, sheen: .6, sheenColor: new THREE.Color(0xc08a5a) });
-    const sk = new THREE.Mesh(sculpt(new THREE.SphereGeometry(.42, 64, 48), (n) => bump(n, 0, -.45, .85, .45, .28) + bump(n, 0, .5, .7, .4, .06) - bump(n, .55, .2, .7, .15, .05) - bump(n, -.55, .2, .7, .15, .05)), hide); sk.scale.set(1, 1.15, 1.2); g.add(sk);
-    const muz = new THREE.Mesh(new THREE.SphereGeometry(.22, 32, 20), new THREE.MeshPhysicalMaterial({ color: 0x3a2418, roughness: .35, clearcoat: .6 })); muz.scale.set(1.25, .8, .7); muz.position.set(0, -.36, .5); g.add(muz);
-    [-1, 1].forEach((d) => { const ns = new THREE.Mesh(new THREE.SphereGeometry(.045, 12, 8), dark); ns.position.set(d * .09, -.33, .64); g.add(ns);
-      const horn = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(d * .3, .32, 0), V(d * .65, .42, .05), V(d * .82, .7, .15), V(d * .72, .98, .28)]), 24, .06, 12), new THREE.MeshPhysicalMaterial({ color: 0xe9dcc0, roughness: .35, clearcoat: .5 })); g.add(horn);
-      const ear = new THREE.Mesh(new THREE.SphereGeometry(.12, 16, 10), hide); ear.scale.set(1.4, .55, .35); ear.position.set(d * .48, .2, -.02); g.add(ear); });
-    new Eyes(g, [{ p: V(-.26, .1, .36), s: .06 }, { p: V(.26, .1, .36), s: .06 }], { iris: "red" });
-  } else if (kind === "eagle") {
-    const fea = new THREE.MeshPhysicalMaterial({ color: 0xf0e8dc, map: featherTex, roughness: .9, sheen: 1 });
-    g.add(new THREE.Mesh(sculpt(new THREE.SphereGeometry(.4, 64, 48), (n) => bump(n, 0, .35, .85, .3, .07) + bump(n, 0, -.8, -.2, .6, .1)), fea));
-    const beak = new THREE.ConeGeometry(.13, .5, 32, 16); beak.rotateX(Math.PI / 2); beak.translate(0, 0, .25); { const p = beak.attributes.position; for (let i = 0; i < p.count; i++) { const z = p.getZ(i); p.setY(i, p.getY(i) - Math.pow(Math.max(0, z - .05), 2) * 1.6); } beak.computeVertexNormals(); }
-    const bk = new THREE.Mesh(beak, new THREE.MeshPhysicalMaterial({ color: 0xe0a82a, roughness: .3, clearcoat: .8 })); bk.position.set(0, -.04, .3); g.add(bk);
-    [-1, 1].forEach((d) => { const ridge = new THREE.Mesh(new THREE.CapsuleGeometry(.03, .16, 4, 8), dark); ridge.rotation.z = d * 1.2; ridge.position.set(d * .16, .17, .34); g.add(ridge); });
-    new Eyes(g, [{ p: V(-.17, .1, .32), s: .05 }, { p: V(.17, .1, .32), s: .05 }], { iris: "gold" });
-  } else {
-    const skin = new THREE.MeshPhysicalMaterial({ color: tint || 0xb98a68, roughness: .55, sheen: .4, sheenColor: new THREE.Color(0xffc8a8) });
-    const hd = new THREE.Mesh(sculpt(new THREE.SphereGeometry(.4, 72, 54), (n) => bump(n, 0, .02, .98, .12, .09) + bump(n, 0, .3, .92, .32, .03) - bump(n, .32, .18, .9, .13, .05) - bump(n, -.32, .18, .9, .13, .05) + bump(n, 0, -.62, .75, .25, .04) + bump(n, .5, -.15, .8, .2, .02) + bump(n, -.5, -.15, .8, .2, .02)), skin); hd.scale.set(.9, 1.15, 1); g.add(hd);
-    new Eyes(g, [{ p: V(-.13, .07, .33), s: .045 }, { p: V(.13, .07, .33), s: .045 }], { iris: "blue" });
-    cards(g, 160, furTex, 0x2a1a10, (d, i) => { const a = rand(-1.4, 1.4), y = rand(-.5, -.15); d.position.set(Math.sin(a) * .34, y, Math.cos(a) * .3); d.rotation.set(Math.PI + rand(-.3, .3), a, 0); d.scale.set(.1, rand(.2, .4), .1); });
-    cards(g, 200, furTex, 0x2a1a10, (d, i) => { const a = rand(0, TAU), e = rand(.2, 1.3); const dir = V(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)); if (dir.z > .5 && e < .7) dir.z = -dir.z; d.position.copy(dir).multiplyScalar(.36); d.lookAt(dir.clone().multiplyScalar(2).add(V(0, -1, -1))); d.rotateX(Math.PI / 2); d.scale.set(.12, rand(.25, .45), .12); });
-  }
-  g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); return g;
-}
-// one cherub as Ezekiel saw it, reusable (Eden has two)
-function cherub(sc = 1) {
-  const g = new THREE.Group();
-  const coal = new THREE.MeshStandardMaterial({ color: 0x1a0805, roughness: .8, emissive: 0xff5a1a, emissiveMap: coalTex, emissiveIntensity: 1.6 });
-  const body = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [.42, .05], [.55, .6], [.6, 1.3], [.5, 1.9], [.3, 2.15], [0, 2.2]].map(([r, y]) => new THREE.Vector2(r, y)), 40), coal); body.position.y = 1.7; g.add(body);
-  const brass = metal(0xd4a24a, .16);
-  [-1, 1].forEach((d) => { const leg = new THREE.Mesh(new THREE.CylinderGeometry(.13, .11, 1.8, 16), brass); leg.position.set(d * .26, .9, 0); g.add(leg); const hoof = new THREE.Mesh(new THREE.CylinderGeometry(.16, .22, .22, 16), brass); hoof.position.set(d * .26, .1, .04); g.add(hoof); const cleft = new THREE.Mesh(new THREE.BoxGeometry(.03, .24, .5), new THREE.MeshBasicMaterial({ color: 0 })); cleft.position.set(d * .26, .1, 0); g.add(cleft); });
-  // the head: four carved faces around a column, one to each side
-  const head = new THREE.Group(); head.position.y = 4.35; g.add(head);
-  // man before, lion on the right, ox on the left, eagle behind (Ezekiel 1:10)
-  [["man", 0], ["lion", -Math.PI / 2], ["eagle", Math.PI], ["ox", Math.PI / 2]].forEach(([k, a]) => { const h = sculptHead(k); h.scale.setScalar(.95); h.position.set(Math.sin(a) * .5, 0, Math.cos(a) * .5); h.rotation.y = a; head.add(h); });
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 12, 0, TAU, 0, Math.PI / 2), coal); cap.position.y = .5; head.add(cap); const core = new THREE.Mesh(new THREE.CylinderGeometry(.5, .45, 1.05, 24), coal); head.add(core);
-  // wings: two stretched up to touch the next creature, two covering the body
-  const wm = { color: 0xe9d6b0, rows: 3, eyes: true, iris: "gold" };
-  const up = [wing({ ...wm, len: 4.6, n: 18, a0: .25, a1: 1.45 }), wing({ ...wm, len: 4.6, n: 18, a0: .25, a1: 1.45 })];
-  up[0].position.set(.45, 3.7, -.2); up[1].position.set(-.45, 3.7, -.2); up[1].scale.x = -1; up.forEach((w) => { w.rotation.y = .25 * Math.sign(w.scale.x); g.add(w); });
-  const low = [wing({ ...wm, len: 2.6, n: 13, a0: -1.6, a1: -.55 }), wing({ ...wm, len: 2.6, n: 13, a0: -1.6, a1: -.55 })];
-  low[0].position.set(.55, 3.5, .45); low[1].position.set(-.55, 3.5, .45); low[1].scale.x = -1; low.forEach((w) => { w.rotation.y = -.55 * Math.sign(w.scale.x); g.add(w); });
-  // hands of a man under the wings
-  const skin = new THREE.MeshPhysicalMaterial({ color: 0xb98a64, roughness: .55, sheen: .3 });
-  [-1, 1].forEach((d) => { const hd = new THREE.Group(); hd.position.set(d * .95, 2.9, .2); const palm = new THREE.Mesh(new THREE.BoxGeometry(.22, .3, .08, 2, 2, 2), skin); hd.add(palm); for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.CapsuleGeometry(.025, .16, 4, 8), skin); fg.position.set((f - 1.5) * .055, -.24, 0); hd.add(fg); } g.add(hd); });
-  // eyes over the whole body
-  const bp = []; for (let i = 0; i < 26; i++) { const a = rand(0, TAU), y = rand(.25, 1.95), r = .55 * Math.sin(Math.PI * Math.min(1, y / 2.2 + .15)) + .02; bp.push({ p: V(Math.cos(a) * r, y + 1.7, Math.sin(a) * r), s: rand(.06, .1) }); }
-  new Eyes(g, bp, { iris: "gold" });
-  g.scale.setScalar(sc);
-  const lamps = []; for (let i = 0; i < 5; i++) { const s = glowSprite(0xff8a3a, 1.2); g.add(s); lamps.push(s); }
-  g.userData.tick = (t) => { coal.emissiveIntensity = 1.3 + Math.sin(t * 3) * .3 + Math.random() * .3; up.forEach((w, i) => (w.rotation.z = Math.sin(t * 1.3 + i) * .04)); lamps.forEach((s, i) => s.position.set(Math.sin(t * .6 + i * 2) * 1.6, 2 + (Math.sin(t * 1.7 + i * 1.3) * .5 + .5) * 3, Math.cos(t * .6 + i * 2) * 1.6)); };
-  S.upd.push(g.userData.tick); return g;
-}
-
-/* ── the scenes ── */
-let cryEl = document.getElementById("cry");
-const SC = {
-seraphim() {
-  scene.background = new THREE.Color(0x0b0503); scene.fog = new THREE.FogExp2(0x1a0c06, .045);
-  const core = new THREE.Group(); core.position.y = 2.2; world.add(core);
-  core.add(glowSprite(0xfff1c8, 5), glowSprite(0xff9a3d, 11, .7)); const L = PL(0xff9040, 80, 40, 1.6); core.add(L);
-  const fireM = { color: 0x8a2a08, emissive: 0xff6a1a, eI: 4.2, rows: 3, rough: .5 };
-  const mk = (len, n, a0, a1, x, y, z, ry, rz) => { const ws = []; [1, -1].forEach((d) => { const w = wing({ ...fireM, len, n, a0, a1 }); w.position.set(d * x, y, z); w.scale.x = d; w.rotation.set(0, ry * d, rz * d); core.add(w); ws.push(w); }); return ws; };
-  const fly = mk(5.2, 20, -.35, .9, .35, 0, 0, .1, 0), faceW = mk(2.8, 12, 1.25, 2.1, .3, .5, .6, -.5, 0), feetW = mk(2.8, 12, -2.1, -1.25, .3, -.5, .6, -.5, 0);
-  const fire = new Fire(2600, world, 0);
-  smoke(world, 40, [-9, 9, -2, 8, -8, 2], 0x6a5a50, .35, 7);
-  // the posts of the door
-  const stone = new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: .9, map: rockTex }); const posts = [-6, 6].map((x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 14, 1), stone); m.position.set(x, 5, -4); world.add(m); return m; });
-  world.add(at(ground(0x150c08), 0, -3, 0));
-  const tmp = new THREE.Vector3();
-  return { sun: [0, 2.2, 0], cam: [0, 3, 15], tgt: [0, 2.2, 0], bloom: [1.25, .7, .15], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "IS THE LORD OF HOSTS:", "THE WHOLE EARTH IS FULL OF HIS GLORY"],
-    tick(t, dt) {
-      const f = Math.sin(t * 2.4); fly.forEach((w) => (w.rotation.z = f * .32 * w.scale.x)); L.intensity = 70 + Math.random() * 30 * LS;
-      for (const w of [...fly, ...faceW, ...feetW]) { const tips = w.userData.tips; for (let k = 0; k < 3; k++) { const tp = tips[(Math.random() * tips.length) | 0]; tmp.copy(tp).multiplyScalar(rand(.3, 1)); w.localToWorld(tmp); fire.emit(tmp, V(rand(-.4, .4), rand(.4, 1.6), rand(-.4, .4)), rand(.5, 1.3), rand(.5, 1.2)); } }
-      for (let k = 0; k < 8; k++) fire.emit(V(rand(-.5, .5), 2.2 + rand(-1, 1), rand(-.3, .3)), V(rand(-.5, .5), rand(1, 2.5), rand(-.5, .5)), rand(.6, 1.2), rand(.4, .9));
-      const sh = (Math.floor(t / 1.6) % 5 === 3) ? .05 : 0; posts.forEach((p, i) => (p.position.x = (i ? 6 : -6) + Math.sin(t * 50) * sh));
-    } };
-},
-cherubim() {
-  scene.background = new THREE.Color(0x07050a); scene.fog = new THREE.FogExp2(0x0a0608, .035);
-  const c = cherub(1); world.add(c);
-  // the other three, glimpsed, wings touching
-  [[-9, -4], [9, -4], [0, -10]].forEach(([x, z]) => { const o = cherub(.95); o.position.set(x, 0, z); o.rotation.y = Math.atan2(-x, -z); world.add(o); });
-  world.add(ground(0x0c0806));
-  const L = PL(0xff8a3a, 40, 30, 1.5); L.position.set(0, 4, 3); world.add(L); world.add(new THREE.HemisphereLight(0x443322, 0x080404, .6));
-  return { cam: [0, 4, 11], tgt: [0, 3.2, 0], bloom: [1.0, .6, .25], exp: 1.1,
-    tick(t) { if (Math.random() < .03) bolt(V(rand(-4, 4), rand(1, 7), rand(-2, 2)), V(rand(-6, 6), rand(0, 9), rand(-3, 3))); } };
-},
-wheels() {
-  scene.background = new THREE.Color(0x050608); scene.fog = new THREE.FogExp2(0x060708, .02);
-  const rig = new THREE.Group(); rig.position.y = 4; world.add(rig);
-  const beryl = new THREE.MeshPhysicalMaterial({ color: 0xc9a84a, metalness: 1, roughness: .3, clearcoat: .6, emissive: 0x2a1a00, emissiveIntensity: .4 });
-  const R = 5, rr = .55, rings = [];
-  for (let k = 0; k < 2; k++) {
-    const ring = new THREE.Group(); rig.add(ring); rings.push(ring);
-    const tor = new THREE.Mesh(new THREE.TorusGeometry(R, rr, 40, 260), beryl); ring.add(tor);
-    // engraved bands
-    [-1, 1].forEach((d) => { const b = new THREE.Mesh(new THREE.TorusGeometry(R + d * rr * .7, .06, 8, 260), metal(0x8a6a2a, .4)); b.position.z = 0; ring.add(b); });
-    const pts = []; const N = 70;
-    for (let i = 0; i < N; i++) for (const v of [0, 1.15, -1.15]) { const u = (i + (v ? .5 : 0)) / N * TAU, rad = R + rr * Math.cos(v); pts.push({ p: V(Math.cos(u) * rad, Math.sin(u) * rad, rr * Math.sin(v)).multiplyScalar(1).add(V(Math.cos(u) * Math.cos(v), Math.sin(u) * Math.cos(v), Math.sin(v)).multiplyScalar(.08)), s: v ? .2 : .27 }); }
-    new Eyes(ring, pts, { iris: "green" });
-  }
-  rings[1].rotation.y = Math.PI / 2;
-  // the spirit of the living creature in the wheels
-  const hub = new THREE.Group(); rig.add(hub); hub.add(glowSprite(0xfff4d0, 4), glowSprite(0xd8e8ff, 9, .5)); const L = PL(0xffe8b0, 60, 40, 1.4); hub.add(L);
-  const spirit = new Fire(1200, rig, 1);
-  const dust = new Fire(500, world, 3);
-  world.add(at(ground(0x0a0a08, 300, .9, rockTex), 0, -2, 0)); world.add(stars(1500, 400));
-  world.add(new THREE.HemisphereLight(0x8899aa, 0x110d08, .5));
-  return { sun: [0, 4, 0], rays: 1, cam: [0, 1, 18], tgt: [0, 4, 0], bloom: [1.0, .5, .3], exp: 1.15,
-    tick(t, dt) {
-      rig.rotation.x = Math.sin(t * .13) * .4; rig.rotation.y = t * .12; rings[0].rotation.z = t * .5; rings[1].rotation.x = t * .5;
-      for (let k = 0; k < 6; k++) { const a = rand(0, TAU), r = rand(0, 1.5); spirit.emit(V(Math.cos(a) * r, Math.sin(a) * r, rand(-1, 1)), V(-Math.sin(a) * 2, Math.cos(a) * 2, rand(-.5, .5)), rand(.6, 1.4), rand(.15, .4)); }
-      if (Math.random() < .5) dust.emit(V(rand(-12, 12), rand(-2, 0), rand(-8, 8)), V(rand(-.2, .2), rand(.1, .5), 0), rand(3, 6), rand(.04, .08));
-      if (Math.random() < .012) bolt(V(0, 4, 0), V(rand(-7, 7), rand(-1, 10), rand(-5, 5)), 0xfff0c0);
-    } };
-},
-living() {
-  scene.background = new THREE.Color(0x04050c); scene.fog = new THREE.FogExp2(0x05060c, .02);
-  const throne = new THREE.Group(); throne.position.y = 4; world.add(throne);
-  throne.add(glowSprite(0xffffff, 8), glowSprite(0xfff1d0, 18, .5)); const L = PL(0xfff0d0, 120, 60, 1.3); throne.add(L);
-  // a rainbow round about the throne, in sight like unto an emerald
-  const bow = new THREE.Mesh(new THREE.TorusGeometry(5.2, .18, 16, 200), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x3cff9a).multiplyScalar(1.4), toneMapped: false, transparent: true, opacity: .3 })); throne.add(bow);
-  // a sea of glass like unto crystal
-  const sea = new THREE.Mesh(new THREE.CircleGeometry(60, 64), new THREE.MeshPhysicalMaterial({ color: 0xbfe6f0, metalness: .9, roughness: .04, clearcoat: 1 })); sea.rotation.x = -Math.PI / 2; sea.position.y = -1.5; world.add(sea);
-  const kinds = [["lion", 0xe7b45a], ["ox", 0x8a5a32], ["man", 0xd8a878], ["eagle", 0x6b4a2b]], beasts = [];
-  kinds.forEach(([k, col], i) => {
-    const b = new THREE.Group(); world.add(b); beasts.push(b);
-    const body = new THREE.Mesh(new THREE.SphereGeometry(.8, 32, 24), new THREE.MeshPhysicalMaterial({ color: col, roughness: .7, sheen: 1, sheenColor: new THREE.Color(col) })); body.scale.set(1, 1.25, .9); b.add(body);
-    const hh = sculptHead(k); hh.scale.setScalar(1.35); hh.position.set(0, .35, .55); b.add(hh);
-    const ws = []; [[1.4, 2.0, 2.6], [-.3, .45, 2.3], [-1.6, -1.0, 1.9]].forEach(([a0, a1, len]) => [1, -1].forEach((d) => { const w = wing({ len, n: 11, rows: 2, a0, a1, eyes: true, iris: "blue", eyeScale: 1.3, color: 0xf3ead8 }); w.position.set(d * .5, .2, -.3); w.scale.x = d; w.rotation.y = d * .5; b.add(w); ws.push(w); }));
-    // full of eyes before and behind
-    const ep = []; for (let j = 0; j < 22; j++) { const a = rand(0, TAU), y = rand(-.9, .9); if (Math.cos(a) > .5 && y > -.3) continue; ep.push({ p: V(Math.cos(a) * .8 * Math.sqrt(1 - y * y / 1.2), y * 1.1, Math.sin(a) * .75), s: rand(.07, .11) }); }
-    new Eyes(b, ep, { iris: "blue" }); b.userData.ws = ws;
-  });
-  world.add(stars(2000, 300));
-  return { sun: [0, 4, 0], rays: 1.1, cam: [0, 4, 17], tgt: [0, 3.6, 0], bloom: [1.15, .6, .3], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "LORD GOD ALMIGHTY,", "WHICH WAS, AND IS, AND IS TO COME"],
-    tick(t) {
-      bow.lookAt(camera.position);
-      beasts.forEach((b, i) => { const a = t * .1 + i * TAU / 4 + Math.PI / 4; b.position.set(Math.cos(a) * 6.5, 3.6 + Math.sin(t * 1.2 + i) * .3, Math.sin(a) * 6.5); b.lookAt(camera.position.x, b.position.y, camera.position.z); b.rotateY(Math.PI / 2 * 0); b.userData.ws.forEach((w, j) => (w.rotation.z = Math.sin(t * 5 + j + i) * .18 * w.scale.x)); });
-    } };
-},
-eden() {
-  scene.background = new THREE.Color(0x030806); scene.fog = new THREE.FogExp2(0x040a06, .04);
-  world.add(ground(0x0a1408)); world.add(new THREE.HemisphereLight(0x5a8a6a, 0x050805, .4));
-  // the tree of life, behind them
-  const tree = new THREE.Group(); tree.position.set(0, 0, -9); world.add(tree);
-  const bark = new THREE.MeshStandardMaterial({ color: 0x2a2014, roughness: .95, map: rockTex });
-  const trunk = new THREE.Mesh(displace(new THREE.CylinderGeometry(.5, .9, 6, 16, 12), .08), bark); trunk.position.y = 3; tree.add(trunk);
-  for (let i = 0; i < 9; i++) { const br = new THREE.Mesh(new THREE.CylinderGeometry(.08, .25, 3.5, 8), bark); br.position.set(0, 5.5, 0); br.rotation.set(rand(-1, 1), rand(0, TAU), rand(.5, 1.1)); br.translateY(1.5); tree.add(br); }
-  const leaves = new Fire(1400, tree, 4); tree.add(glowSprite(0x9dffb0, 14, .35)); const tl = PL(0x8affa0, 30, 30, 1.5); tl.position.y = 6; tree.add(tl);
-  for (let i = 0; i < 14; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(.14, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd96b).multiplyScalar(2.5), toneMapped: false })); f.position.set(rand(-2.4, 2.4), rand(5.5, 8.5), rand(-2.4, 2.4)); tree.add(f); }
-  // the cherubims at the east of the garden
-  [-1, 1].forEach((d) => { const c = cherub(.75); c.position.set(d * 5, 0, -1); c.rotation.y = -d * .7; world.add(c); });
-  // the flaming sword which turned every way
-  const sword = new THREE.Group(); sword.position.set(0, 3.2, 1); world.add(sword);
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(.12, 5, .5), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xfff2c0).multiplyScalar(3), toneMapped: false })); blade.position.y = 2.5; sword.add(blade);
-  const guard = new THREE.Mesh(new THREE.BoxGeometry(1.2, .14, .2), metal(0xd4a24a, .2)); sword.add(guard); const hilt = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .8, 8), metal(0x6a4a2a, .4)); hilt.position.y = -.45; sword.add(hilt);
-  const sl = PL(0xff8a3a, 60, 25, 1.4); sword.add(sl);
-  const fire = new Fire(2400, world, 0); const tmp = V(0, 0, 0);
-  return { sun: [0, 7, -9], rays: .7, cam: [0, 3.5, 14], tgt: [0, 3, -1], bloom: [1.2, .6, .25], exp: 1.05,
-    tick(t) {
-      sword.rotation.set(t * 1.7, t * 2.3, t * 1.1);
-      for (let k = 0; k < 14; k++) { tmp.set(0, rand(0, 5), 0); sword.localToWorld(tmp); fire.emit(tmp, V(rand(-.3, .3), rand(.3, 1.2), rand(-.3, .3)), rand(.3, .8), rand(.25, .55)); }
-      for (let k = 0; k < 4; k++) leaves.emit(V(rand(-2.8, 2.8), rand(5, 9), rand(-2.8, 2.8)), V(0, rand(-.05, .05), 0), rand(1.5, 3), rand(.2, .5));
-    } };
-},
-linen() {
-  scene.background = new THREE.Color(0x06060a); scene.fog = new THREE.FogExp2(0x07080c, .03);
-  world.add(new THREE.HemisphereLight(0x8a98aa, 0x0a0806, .35));
-  const riv = water(80, 30, 0x0c1a24); riv.position.set(0, -.05, 6); world.add(riv); world.add(at(ground(0x14110c, 200, .95, rockTex), 0, -.1, -10));
-  const h = 4.4, brassM = metal(0xe0a84a, .12);
-  // his body like the beryl, showing through the linen
-  const inner = glowSprite(0xf2d878, 4.5, .9); inner.position.set(0, 2.2, .2); world.add(inner); const innerL = PL(0xf2d878, 30, 8, 1.5); innerL.position.set(0, 2.2, .8); world.add(innerL);
-  const man = figure({ h, robe: 0xf4efe2, op: .94, emissive: 0xf2d878, eI: .25, belt: 0xf0c050, armM: brassM, handM: brassM, faceGlow: 0xdfeaff, faceI: 6 }); world.add(man);
-  [-1, 1].forEach((d) => { const ft = new THREE.Mesh(new THREE.SphereGeometry(.16, 16, 10), brassM); ft.scale.set(1, .5, 1.8); ft.position.set(d * .22, .06, .3); world.add(ft); });
-  // eyes as lamps of fire
-  const eyesG = new THREE.Group(); eyesG.position.set(0, h * .935, h * .065); world.add(eyesG); const lamps = [-1, 1].map((d) => { const s = glowSprite(0xff7a1a, .5); s.position.x = d * .1; eyesG.add(s); return s; });
-  const fl = PL(0xdfe8ff, 40, 30, 1.4); fl.position.set(0, h * .93, .6); world.add(fl); const faceGlow = glowSprite(0xe8f0ff, 2.2); faceGlow.position.set(0, h * .93, .1); world.add(faceGlow);
-  // the voice of his words like the voice of a multitude
-  const rings = []; for (let i = 0; i < 5; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(1, .01, 6, 100), new THREE.MeshBasicMaterial({ color: 0xffe2b0, transparent: true, opacity: .15 })); r.position.set(0, h * .93, 0); world.add(r); rings.push(r); }
-  // Daniel, with no strength left in him
-  const dan = figure({ h: 1.8, robe: 0x3a2e22 }); dan.rotation.x = -Math.PI / 2; dan.position.set(-3.4, .15, -1.2); dan.rotation.z = .5; world.add(dan);
-  const fire = new Fire(500, world, 0);
-  return { sun: [0, 4.1, 0], rays: .9, cam: [0, 2.6, 10], tgt: [0, 2.6, 0], bloom: [1.1, .6, .4], exp: 1.0,
-    tick(t, dt) {
-      const flick = Math.random() < .25 ? 1 : .45; fl.intensity = 50 * flick * LS; faceGlow.material.opacity = .6 + flick * .4; man.userData.head.material.emissiveIntensity = 3 + flick * 6;
-      lamps.forEach((s) => { s.scale.setScalar(.4 + Math.random() * .2); }); for (let k = 0; k < 2; k++) lamps.forEach((s) => { const p = s.getWorldPosition(V(0, 0, 0)); fire.emit(p, V(rand(-.05, .05), rand(.1, .3), 0), .3, .08); });
-      rings.forEach((r, i) => { const k = ((t * .5 + i / 5) % 1); r.scale.setScalar(.6 + k * 9); r.material.opacity = .18 * (1 - k); r.lookAt(camera.position); });
-      if (Math.random() < .015) bolt(V(0, h * .95, 0), V(rand(-8, 8), rand(10, 16), rand(-6, 2)));
-    } };
-},
-mighty() {
-  scene.background = new THREE.Color(0x0e1320); scene.fog = new THREE.FogExp2(0x101626, .008);
-  world.add(new THREE.HemisphereLight(0x9aa8c8, 0x1a120a, .5));
-  const sea = water(120, 160, 0x0c2236); sea.position.set(-60, 0, 0); world.add(sea);
-  const land = new THREE.Mesh(displace(new THREE.PlaneGeometry(120, 160, 60, 60).rotateX(-Math.PI / 2), .0), new THREE.MeshStandardMaterial({ color: 0x2a2014, roughness: 1, map: rockTex })); { const p = land.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, Math.max(0, Math.sin(p.getX(i) * .1) * 2 + Math.cos(p.getZ(i) * .13) * 1.5 + 1)); land.geometry.computeVertexNormals(); } land.position.set(60, -.5, 0); world.add(land);
-  // his feet as pillars of fire
-  const fire = new Fire(4000, world, 0); const legs = [-2.4, 2.4];
-  legs.forEach((x) => { const col = new THREE.Mesh(new THREE.CylinderGeometry(.9, 1.2, 16, 20, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff6a1a).multiplyScalar(1.4), toneMapped: false, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false })); col.position.set(x, 8, 0); world.add(col); const l = PL(0xff7a2a, 120, 50, 1.3); l.position.set(x, 4, 2); world.add(l); });
-  // clothed with a cloud
-  smoke(world, 120, [-5, 5, 15, 30, -3, 3], 0xd8dce8, .5, 6);
-  // his face as the sun, a rainbow upon his head
-  const sunG = new THREE.Group(); sunG.position.set(0, 34, 0); world.add(sunG); sunG.add(glowSprite(0xfffbe6, 9), glowSprite(0xffd27a, 26, .55)); const sl = PL(0xfff0c0, 400, 200, 1.2); sunG.add(sl);
-  const cols = [0xff3a3a, 0xff9a2a, 0xffe84a, 0x4ad66a, 0x3a9aff, 0x7a5aff]; cols.forEach((c, i) => { const r = new THREE.Mesh(new THREE.TorusGeometry(8 + i * .5, .22, 8, 120, Math.PI), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: .6 })); r.position.copy(sunG.position).add(V(0, -2, 0)); world.add(r); sunG.userData["r" + i] = r; });
-  // the little book, open
-  const book = new THREE.Group(); book.position.set(7, 22, 2); world.add(book); [-1, 1].forEach((d) => { const pg = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.5, .05), new THREE.MeshStandardMaterial({ color: 0xf2e6c4, roughness: .8, emissive: 0x332a18 })); pg.position.x = d * .55; pg.rotation.y = d * -.25; book.add(pg); }); book.add(glowSprite(0xfff2d0, 3, .4));
-  return { sun: [0, 34, 0], rays: 1.2, cam: [0, 6, 52], tgt: [0, 17, 0], bloom: [1.0, .7, .35], exp: 1.0,
-    tick(t) {
-      legs.forEach((x) => { for (let k = 0; k < 22; k++) fire.emit(V(x + rand(-1, 1), rand(0, 16), rand(-1, 1)), V(rand(-.3, .3), rand(1, 3), rand(-.3, .3)), rand(.5, 1.1), rand(.8, 1.8)); });
-      for (let i = 0; i < 6; i++) sunG.userData["r" + i].lookAt(camera.position.x, sunG.position.y - 2, camera.position.z);
-      if (Math.random() < .02) bolt(V(rand(-30, 30), 45, rand(-10, 10)), V(rand(-30, 30), 5, rand(-10, 10)));
-    } };
-},
-tomb() {
-  scene.background = new THREE.Color(0x0d0c12); scene.fog = new THREE.FogExp2(0x100f14, .03);
-  world.add(ground(0x1a1610, 200, .95, rockTex));
-  const dawn = new THREE.DirectionalLight(0xffb070, 1.2); dawn.position.set(-20, 4, 6); world.add(dawn); world.add(new THREE.HemisphereLight(0x4a4a66, 0x0a0806, .4));
-  const rockM = new THREE.MeshStandardMaterial({ color: 0x6a6252, roughness: .95, map: rockTex });
-  const hill = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(7, 5), .08, 1.1, 3), rockM); hill.scale.set(1.4, .9, 1); hill.position.set(5, 0, -6); world.add(hill);
-  const door = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshBasicMaterial({ color: 0x000000 })); door.position.set(1.6, 1.4, -.9); door.rotation.y = -.5; world.add(door);
-  // the stone, rolled back, and the angel sitting on it
-  const stone = new THREE.Mesh(displace(new THREE.CylinderGeometry(1.7, 1.7, .6, 40, 2), .02), rockM); stone.rotation.z = Math.PI / 2; stone.rotation.y = .3; stone.position.set(-1.6, 1.7, .2); world.add(stone);
-  const ang = figure({ h: 3, robe: 0xffffff, emissive: 0xcfd8ff, eI: .5, faceGlow: 0xffffff, faceI: 8 }); ang.position.set(-1.6, 1.8, .2); world.add(ang);
-  const L = PL(0xdfe8ff, 60, 30, 1.3); L.position.set(-1.6, 4.6, 1.5); world.add(L); const fg = glowSprite(0xeef3ff, 2.5); fg.position.set(-1.6, 4.6, .3); world.add(fg); const aura = glowSprite(0xdfe8ff, 9, .35); aura.position.set(-1.6, 3.6, 0); world.add(aura);
-  // the keepers, as dead men
-  [[-5.5, 2.5, .3], [-4, 4, -.4]].forEach(([x, z, r]) => { const g = figure({ h: 1.8, robe: 0x5a4a32, armM: metal(0x7a6a4a, .5) }); g.rotation.x = -Math.PI / 2; g.rotation.z = r; g.position.set(x, .2, z); world.add(g); const sp = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 3, 6), metal(0x8a7a5a, .5)); sp.rotation.z = Math.PI / 2 + r; sp.position.set(x + .5, .1, z + .6); world.add(sp); });
-  const cam0 = V(-2, 2.6, 11);
-  return { sun: [-1.6, 4.6, .3], rays: .8, cam: [-2, 2.6, 11], tgt: [-1.6, 2.6, 0], bloom: [1.0, .6, .45], exp: 1.05,
-    tick(t) { const fl = Math.random() < .3 ? 1 : .55; L.intensity = 70 * fl * LS; fg.material.opacity = fl; if (Math.random() < .01) bolt(V(-1.6, 4.6, 0), V(rand(-10, 6), 18, rand(-5, 0)));
-      const q = Math.sin(t * .6) > .9 ? .04 : 0; camera.position.x += rand(-q, q); camera.position.y += rand(-q, q); } };
-},
-destroyer() {
-  scene.background = new THREE.Color(0x140404); scene.fog = new THREE.FogExp2(0x1a0606, .022);
-  world.add(ground(0x0a0606)); world.add(new THREE.HemisphereLight(0x5a2020, 0x050202, .5));
-  // Jerusalem
-  const bm = new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: .9, map: rockTex }); const city = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), bm, 260), d = new THREE.Object3D();
-  for (let i = 0; i < 260; i++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 12, hh = rand(.6, 2.6); d.position.set(Math.cos(a) * r, hh / 2, Math.sin(a) * r - 4); d.scale.set(rand(.8, 1.8), hh, rand(.8, 1.8)); d.rotation.y = rand(0, .3); d.updateMatrix(); city.setMatrixAt(i, d.matrix); } world.add(city);
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 32, 16, 0, TAU, 0, Math.PI / 2), metal(0xb08a4a, .35)); dome.position.set(0, 2.4, -4); world.add(dome); const temple = new THREE.Mesh(new THREE.BoxGeometry(4, 2.4, 3), bm); temple.position.set(0, 1.2, -4); world.add(temple);
-  for (let i = 0; i < 40; i++) { const w = glowSprite(0xffa050, .3, .8); w.position.set(rand(-11, 11), rand(.3, 2), rand(-14, 6)); world.add(w); }
-  // between the earth and the heaven
-  const ang = figure({ h: 9, robe: 0x3a0a08, faceGlow: 0xffd0a0, faceI: 2, armM: new THREE.MeshPhysicalMaterial({ color: 0x3a0a08, roughness: .8, sheen: 1 }) }); ang.position.set(6, 8, -6); ang.rotation.y = -.6; world.add(ang);
-  const aura = glowSprite(0xff4a2a, 22, .3); aura.position.set(6, 13, -6); world.add(aura);
-  // a drawn sword in his hand stretched out over Jerusalem
-  const sword = new THREE.Group(); sword.position.set(4.3, 11.8, -4.6); sword.rotation.set(0, -.4, 2.35); world.add(sword);
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(.18, 10, .6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd8c0).multiplyScalar(2.6), toneMapped: false })); blade.position.y = 5; sword.add(blade); sword.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, .2, .3), metal(0xc9a24a, .2)));
-  const sl = PL(0xff5a3a, 120, 40, 1.3); sl.position.set(0, 5, 0); sword.add(sl);
-  smoke(world, 50, [-16, 16, 4, 16, -16, 0], 0x5a1a12, .4, 9);
-  // David and the elders, faces to the ground
-  for (let i = 0; i < 6; i++) { const e = figure({ h: 1.4, robe: 0x4a3a24 }); e.rotation.x = -Math.PI / 2; e.position.set(-6 + i * .9, .15, 9); world.add(e); }
-  const fire = new Fire(800, world, 0), tmp = V(0, 0, 0);
-  return { cam: [-6, 3, 22], tgt: [1, 7, -3], bloom: [1.0, .6, .35], exp: 1.05,
-    tick(t) { sword.rotation.z = 2.35 + Math.sin(t * .7) * .03; for (let k = 0; k < 6; k++) { tmp.set(0, rand(0, 10), 0); sword.localToWorld(tmp); fire.emit(tmp, V(rand(-.2, .2), rand(-.6, .2), rand(-.2, .2)), rand(.4, .9), rand(.2, .5)); } } };
-},
-chariots() {
-  scene.background = new THREE.Color(0x06060c); scene.fog = new THREE.FogExp2(0x07070d, .012);
-  world.add(stars(3000, 500)); world.add(new THREE.HemisphereLight(0x3a3a5a, 0x050404, .35));
-  const mtn = new THREE.Mesh(displace(new THREE.ConeGeometry(16, 14, 64, 24), .06, .7, 5), new THREE.MeshStandardMaterial({ color: 0x2a241c, roughness: 1, map: rockTex })); mtn.position.y = 7; world.add(mtn);
-  world.add(ground(0x0e0c0a, 300, 1, rockTex));
-  // Elisha and the young man
-  [[-.5, 0x3a2e20], [.5, 0x2a2218]].forEach(([x, c]) => { const f = figure({ h: 1.8, robe: c }); f.position.set(x, 0, 18); world.add(f); });
-  const N = 34, ch = []; const fire = new Fire(6000, world, 0);
-  for (let i = 0; i < N; i++) { const g = new THREE.Group(); world.add(g); const body = new THREE.Mesh(new THREE.SphereGeometry(.5, 16, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff9a3a).multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false })); body.scale.set(2.2, .7, .7); body.position.x = .9; g.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 8), body.material); head.scale.set(1.3, .7, .6); head.position.set(2.3, .55, 0); g.add(head);
-    const wheel = new THREE.Mesh(new THREE.TorusGeometry(.55, .08, 8, 30), body.material); wheel.position.set(-.9, -.1, .4); g.add(wheel); const w2 = wheel.clone(); w2.position.z = -.4; g.add(w2);
-    g.userData = { r: rand(9, 21), y: rand(2, 16), sp: rand(.2, .45) * (i % 2 ? 1 : -1), ph: rand(0, TAU), bob: rand(0, TAU) }; ch.push(g); }
-  const L = PL(0xff8a3a, 0, 120, 1.2); L.position.set(0, 10, 10); world.add(L); const tmp = V(0, 0, 0);
-  return { cam: [0, 5, 38], tgt: [0, 7, 0], bloom: [1.25, .7, .2], exp: 1.05, overlay: "LORD, I PRAY THEE, OPEN HIS EYES",
-    tick(t, dt) { const open = Math.min(1, Math.max(0, ((t % 18) - 2.5) / 4)); L.intensity = 70 * open * LS;
-      ch.forEach((g) => { const u = g.userData, a = u.ph + t * u.sp; g.position.set(Math.cos(a) * u.r, u.y * (1 - Math.max(0, (u.r - 9)) / 30) + Math.sin(t * 2 + u.bob) * .3, Math.sin(a) * u.r); g.rotation.y = -a + (u.sp > 0 ? -Math.PI / 2 : Math.PI / 2); g.scale.setScalar(open); g.visible = open > .02;
-        if (open > .1) for (let k = 0; k < 5; k++) { tmp.set(rand(-1.5, 2.6), rand(-.4, .8), rand(-.4, .4)); g.localToWorld(tmp); fire.emit(tmp, V(rand(-.4, .4), rand(.2, 1), rand(-.4, .4)), rand(.3, .8), rand(.4, .9) * open); } });
-      document.getElementById("ov").style.opacity = 1 - open; } };
-},
-host() {
-  scene.background = new THREE.Color(0x020309); scene.fog = new THREE.FogExp2(0x030409, .01);
-  const sk = stars(2500, 500); world.add(sk); world.add(new THREE.HemisphereLight(0x2a3050, 0x050404, .3));
-  const field = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 80, 80).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x0c0e08, roughness: 1 })); { const p = field.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, Math.sin(p.getX(i) * .05) * 1.5 + Math.cos(p.getZ(i) * .04) * 1.2 - 1.2); field.geometry.computeVertexNormals(); } world.add(field);
-  [[-2.5, 6], [-1.6, 6.6], [2.8, 5.6]].forEach(([x, z]) => { const s = figure({ h: 1.75, robe: 0x2a2418 }); s.position.set(x, -.2, z); world.add(s); });
-  const wool = new THREE.MeshStandardMaterial({ color: 0xd8d2c0, roughness: 1 }); for (let i = 0; i < 12; i++) { const sh = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(.35, 2), .15, 4, i), wool); sh.scale.set(1.4, .9, .9); sh.position.set(rand(-4, 4), .05, rand(3, 9)); world.add(sh); }
-  // the angel of the Lord, and the glory shone round about
-  const ang = figure({ h: 3.4, robe: 0xffffff, emissive: 0xfff4d8, eI: 1.2, faceGlow: 0xffffff, faceI: 6 }); ang.position.set(0, 3, -2); world.add(ang);
-  const glory = glowSprite(0xfff2d0, 16, .4); glory.position.set(0, 5, -2); world.add(glory); const L = PL(0xfff0d0, 90, 60, 1.2); L.position.set(0, 6, 0); world.add(L);
-  // suddenly, a multitude of the heavenly host
-  const n = 6000, p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(-1.3, 1.3) - Math.PI / 2, e = rand(.12, 1.2), r = rand(40, 160); p.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3); }
-  const hg = new THREE.BufferGeometry(); hg.setAttribute("position", new THREE.BufferAttribute(p, 3));
-  const hm = new THREE.PointsMaterial({ map: glowTex, color: new THREE.Color(0xfff2d0).multiplyScalar(1.1), size: 1.5, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }); const hostP = new THREE.Points(hg, hm); world.add(hostP);
-  return { sun: [0, 5.5, -2], rays: 1, cam: [0, 1.2, 16], tgt: [0, 5, -2], bloom: [1.2, .7, .25], exp: 1.0, cry: ["GLORY TO GOD IN THE HIGHEST,", "AND ON EARTH PEACE,", "GOOD WILL TOWARD MEN"],
-    tick(t) { const k = Math.min(1, Math.max(0, ((t % 20) - 3) / 3)); hm.opacity = k * .8; sk.material.opacity = .8 * (1 - k * .7); hostP.rotation.y = Math.sin(t * .05) * .05; } };
-},
-strangers() {
-  scene.background = new THREE.Color(0xe8c890); scene.fog = new THREE.Fog(0xe6c690, 20, 120);
-  const sun = new THREE.DirectionalLight(0xfff0d0, 3.2); sun.position.set(10, 30, 8); world.add(sun); world.add(new THREE.HemisphereLight(0xfff0d8, 0x8a6a3a, 1.1));
-  world.add(ground(0xc8a46a, 400, 1, rockTex));
-  const bark = new THREE.MeshStandardMaterial({ color: 0x3a2e1c, roughness: 1 }), leaf = new THREE.MeshStandardMaterial({ color: 0x4a5a26, roughness: .9 });
-  for (let i = 0; i < 5; i++) { const tr = new THREE.Group(); tr.position.set(-12 + i * 3.4, 0, -7 - (i % 2) * 3); world.add(tr); const tk = new THREE.Mesh(new THREE.CylinderGeometry(.3, .5, 4, 10), bark); tk.position.y = 2; tr.add(tk); for (let k = 0; k < 7; k++) { const f = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(1.6, 2), .12, 2, k), leaf); f.position.set(rand(-1.5, 1.5), rand(4, 6), rand(-1.5, 1.5)); tr.add(f); } }
-  // the tent door, and Abraham sitting in it
-  const tent = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3.4, 4, 1, true), new THREE.MeshStandardMaterial({ color: 0x3a2618, roughness: 1, side: THREE.DoubleSide })); tent.position.set(-4, 1.7, -1); tent.rotation.y = Math.PI / 4; world.add(tent);
-  const ab = figure({ h: 1.7, robe: 0xe8dcc0 }); ab.position.set(-4, 0, 1.2); ab.scale.y = .72; world.add(ab);
-  // three men stood by him
-  const men = [[2.5, 1.5, 0x7a6a52], [4, .6, 0x8a7a5e], [5.4, 1.8, 0x6a5a44]].map(([x, z, c]) => { const m = figure({ h: 1.85, robe: c, emissive: 0xffffff, eI: 0 }); m.position.set(x, 0, z); m.rotation.y = -1.2; world.add(m); return m; });
-  return { cam: [10, 2.4, 13], tgt: [0, 1.4, 0], bloom: [.35, .4, .85], exp: .95,
-    tick(t) { men.forEach((m, i) => { const k = Math.max(0, Math.sin(t * .8 + i * 2)) ** 8; m.children[0].material.emissiveIntensity = k * .25; }); } };
-},
-covering() {
-  scene.background = new THREE.Color(0x070405); scene.fog = new THREE.FogExp2(0x0a0506, .03);
-  world.add(new THREE.HemisphereLight(0x5a4a40, 0x0a0404, .4));
-  const fallG = new THREE.Group(); world.add(fallG);
-  // every precious stone was thy covering
-  const STONES = [0xb5172e, 0xf2c12e, 0xf4f9ff, 0xd9d26a, 0x1a1a1a, 0xc0533a, 0x1f4fbf, 0x1f9a52, 0x7a0f1c];
-  const body = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [.6, .1], [.75, 1.2], [.7, 2.4], [.45, 3.1], [.3, 3.4], [0, 3.5]].map(([r, y]) => new THREE.Vector2(r, y)), 40), metal(0xd4a24a, .3)); fallG.add(body);
-  const gm = new THREE.MeshPhysicalMaterial({ roughness: .02, metalness: 0, clearcoat: 1, ior: 2.2, specularIntensity: 1, envMapIntensity: 2.5 });
-  const N = 520, gems = new THREE.InstancedMesh(new THREE.OctahedronGeometry(.12, 0), gm, N), d = new THREE.Object3D(), col = new THREE.Color();
-  const prof = (y) => y < .1 ? .6 : y < 1.2 ? .6 + (y - .1) / 1.1 * .15 : y < 2.4 ? .75 - (y - 1.2) / 1.2 * .05 : y < 3.1 ? .7 - (y - 2.4) / .7 * .25 : .3;
-  for (let i = 0; i < N; i++) { const y = rand(.05, 3.3), a = rand(0, TAU), r = prof(y) + .05; d.position.set(Math.cos(a) * r, y, Math.sin(a) * r); d.lookAt(0, y, 0); d.rotateX(rand(0, 1)); d.scale.setScalar(rand(.7, 1.4)); d.updateMatrix(); gems.setMatrixAt(i, d.matrix); gems.setColorAt(i, col.setHex(STONES[i % 9])); }
-  fallG.add(gems);
-  const ws = [wing({ len: 4.4, n: 18, rows: 3, a0: .2, a1: 1.5, color: 0xffd27a, metal: 1, rough: .25 }), wing({ len: 4.4, n: 18, rows: 3, a0: .2, a1: 1.5, color: 0xffd27a, metal: 1, rough: .25 })];
-  ws.forEach((w, i) => { w.position.set(i ? -.5 : .5, 2.8, -.3); w.scale.x = i ? -1 : 1; w.rotation.y = i ? -.3 : .3; fallG.add(w); });
-  const halo = glowSprite(0xfff0c8, 6, .6); halo.position.y = 3.8; fallG.add(halo);
-  // the stones of fire
-  const fire = new Fire(2500, world, 0), sp = [];
-  for (let i = 0; i < 16; i++) { const a = i / 16 * TAU, s = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(.22, 2), .1, 3, i), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff6a2a).multiplyScalar(2), toneMapped: false })); s.position.set(Math.cos(a) * 3.6, .2, Math.sin(a) * 3.6); world.add(s); sp.push(s.position); }
-  const L = PL(0xff7a3a, 60, 30, 1.4); L.position.y = 1; world.add(L); const key = PL(0xfff0d8, 50, 30, 1.4); key.position.set(3, 6, 6); world.add(key);
-  world.add(ground(0x120806, 200, .9, rockTex));
-  const base = gems.instanceColor.array.slice();
-  return { sun: [0, 3.8, 0], rays: .6, cam: [0, 4, 15], tgt: [0, 2.4, 0], bloom: [1.0, .6, .5], exp: 1.05,
-    tick(t, dt) {
-      const cyc = (t % 20) / 20, fall = Math.max(0, (cyc - .6) / .4), dark = Math.min(1, Math.max(0, (cyc - .45) / .15));
-      fallG.position.y = -fall * fall * 16; fallG.rotation.z = fall * .9; fallG.rotation.y = t * .2; halo.material.opacity = .6 * (1 - dark);
-      const a = gems.instanceColor.array; for (let i = 0; i < a.length; i++) a[i] = base[i] * (1 - dark * .92); gems.instanceColor.needsUpdate = true;
-      for (const p of sp) for (let k = 0; k < 3; k++) fire.emit(V(p.x + rand(-.3, .3), .5, p.z + rand(-.3, .3)), V(rand(-.2, .2), rand(.6, 1.6), rand(-.2, .2)), rand(.4, 1), rand(.3, .7));
-      if (fall > 0) for (let k = 0; k < 20; k++) fire.emit(V(rand(-1, 1), fallG.position.y + rand(0, 3), rand(-1, 1)), V(rand(-.5, .5), rand(1, 3), rand(-.5, .5)), rand(.5, 1), rand(.5, 1));
-    } };
-},
-};
-
-/* ── scene switching and the loop ── */
-let cur = null, T0 = performance.now();
-function disposeAll(o) { o.traverse((c) => { if (c.geometry) c.geometry.dispose(); if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => m.dispose()); }); }
-function show(id) {
-  for (const c of [...world.children]) { world.remove(c); disposeAll(c); }
-  S.eyes = []; S.fires = []; S.smokes = []; S.bolts = []; S.upd = []; flash.intensity = 0;
-  cur = SC[id](); T0 = performance.now();
-  S.dust = new Fire(LOW ? 150 : 400, world, 3);
-  let key = null; world.traverse((o) => { if ((o.isPointLight || o.isDirectionalLight) && (!key || o.intensity > key.intensity)) key = o; if (o.isMesh && !(o.material && o.material.isMeshBasicMaterial)) { o.castShadow = true; o.receiveShadow = true; } });
-  if (key && !LOW) { key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -.0005; key.shadow.radius = 4; if (key.isDirectionalLight) Object.assign(key.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, far: 120 }); }
-  S.sun = cur.sun ? V(...cur.sun) : null; grade.uniforms.rays.value = 0;
-  camera.position.set(...cur.cam); controls.target.set(...cur.tgt); controls.update();
-  bloom.strength = cur.bloom[0] * .7; bloom.radius = cur.bloom[1] * .8; bloom.threshold = Math.max(.75, cur.bloom[2]); renderer.toneMappingExposure = cur.exp;
-  scene.environmentIntensity = .35;
-  const ov = document.getElementById("ov"); ov.textContent = cur.overlay || ""; ov.style.opacity = cur.overlay ? 1 : 0;
-}
-let last = performance.now();
-function frame(now) {
-  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; const t = (now - T0) / 1000;
-  if (cur) {
-    cur.tick && cur.tick(t, dt);
-    if (S.dust && Math.random() < .7) { const c = camera.position; S.dust.emit(V(c.x + rand(-8, 8), c.y + rand(-4, 5), c.z + rand(-14, -2)).applyAxisAngle(V(0, 1, 0), 0), V(rand(-.1, .1), rand(-.05, .08), rand(-.1, .1)), rand(4, 8), rand(.02, .05)); }
-    grade.uniforms.time.value = t; if (S.sun && !LOW) { const p = S.sun.clone().project(camera); const on = p.z < 1 && Math.abs(p.x) < 1.6 && Math.abs(p.y) < 1.6; grade.uniforms.sun.value.set(p.x * .5 + .5, p.y * .5 + .5); grade.uniforms.rays.value = lerp(grade.uniforms.rays.value, on ? (cur.rays || .8) : 0, .1); } S.upd.forEach((f) => f(t, dt)); S.fires.forEach((f) => f.update(dt)); S.eyes.forEach((e) => e.update(t));
-    for (const list of S.smokes) for (const s of list) { s.position.addScaledVector(s.userData.v, dt); s.material.rotation += s.userData.r * dt; const b = s.userData.box; if (s.position.y > b[3]) s.position.y = b[2]; }
-    S.bolts = S.bolts.filter(([l, life], i) => { S.bolts[i][1] -= dt; if (S.bolts[i][1] <= 0) { world.remove(l); l.geometry.dispose(); l.material.dispose(); return false; } return true; });
-    flash.intensity *= Math.pow(.02, dt);
-    if (cur.cry) { const i = Math.floor(t / 1.25) % cur.cry.length, k = (t / 1.25) % 1; cryEl.textContent = cur.cry[i]; cryEl.style.opacity = Math.sin(k * Math.PI) * .9; } else cryEl.style.opacity = 0;
-  }
-  controls.update(); composer.render();
-  requestAnimationFrame(frame);
-}
-resize(); requestAnimationFrame(frame);
-
-const E = [
-{ id: "seraphim", art: ["The Byzantine and Orthodox tradition paints a seraph as a face floating inside three pairs of red wings: the four great seraphim in the pendentives of Hagia Sophia, whose mosaic face was uncovered in 2009, are the classic example. In the West, Giotto's Stigmatization of St Francis shows a crucified seraph in six wings.", "Art nearly always shows the face. Isaiah says two wings cover it. Here the face stays hidden, and the burning is literal: \u015b\u0101r\u0101p is the verb \u201cto burn.\u201d"], group: "Before the throne", name: "Seraphim", term: "שְׂרָפִים · śərāpîm · “burning ones”", tag: "Six wings, on fire, crying to one another.",
-  refs: [["Isaiah 6:1–3", "In the year that king Uzziah died I saw also the Lord sitting upon a throne, high and lifted up, and his train filled the temple. Above it stood the seraphims: each one had six wings; with twain he covered his face, and with twain he covered his feet, and with twain he did fly. And one cried unto another, and said, Holy, holy, holy, is the LORD of hosts: the whole earth is full of his glory."],
-         ["Isaiah 6:4", "And the posts of the door moved at the voice of him that cried, and the house was filled with smoke."],
-         ["Isaiah 6:6", "Then flew one of the seraphims unto me, having a live coal in his hand, which he had taken with the tongs from off the altar:"]],
-  map: [["Six wings: two over the face, two over the feet, two in flight", "Isa 6:2"], ["Fire throughout: the name itself means “burning”", "śārap, to burn"], ["The cry, passed back and forth", "Isa 6:3"], ["Smoke and a shaking threshold", "Isa 6:4"], ["A hand holding a live coal in tongs", "Isa 6:6"]],
-  not: "Isaiah never describes a seraph's body or face. You only see what the wings don't cover, and that's the point of the vision. The word śārāp is also used for the “fiery serpents” of Numbers 21:6, so some scholars think seraphim had a serpentine look. The text doesn't settle it, so this render leaves the body hidden in fire.",
-  trad: "Later Christian writers, especially Pseudo-Dionysius (5th–6th century), ranked seraphim highest in a ninefold hierarchy. That ranking is tradition, not scripture." },
-{ id: "cherubim", art: ["Byzantine and Orthodox art turned Ezekiel's creature into the Tetramorph: four heads on one body, wings covered in eyes, often standing on winged wheels. Raphael's Vision of Ezekiel (c. 1518) shows the four as separate animals carrying God. From the Renaissance on, \u201ccherub\u201d in popular art drifted to the winged baby (the putto).", "Icons usually skip the straight legs, the calf's hooves of burnished brass, the human hands under the wings, and the creature looking \u201clike burning coals of fire.\u201d This build puts all of them in, with the faces on the sides Ezekiel names: man in front, lion on the right, ox on the left, eagle behind."], group: "Before the throne", name: "Cherubim", term: "כְּרוּבִים · kərûḇîm", tag: "Four faces, four wings, feet like a calf's, burning like coals.",
-  refs: [["Ezekiel 1:5–7", "Also out of the midst thereof came the likeness of four living creatures. And this was their appearance; they had the likeness of a man. And every one had four faces, and every one had four wings. And their feet were straight feet; and the sole of their feet was like the sole of a calf's foot: and they sparkled like the colour of burnished brass."],
-         ["Ezekiel 1:8–11", "And they had the hands of a man under their wings on their four sides… As for the likeness of their faces, they four had the face of a man, and the face of a lion, on the right side: and they four had the face of an ox on the left side; they four also had the face of an eagle. Thus were their faces: and their wings were stretched upward; two wings of every one were joined one to another, and two covered their bodies."],
-         ["Ezekiel 1:13–14", "As for the likeness of the living creatures, their appearance was like burning coals of fire, and like the appearance of lamps: it went up and down among the living creatures; and the fire was bright, and out of the fire went forth lightning. And the living creatures ran and returned as the appearance of a flash of lightning."],
-         ["Ezekiel 10:12, 20", "And their whole body, and their backs, and their hands, and their wings, and the wheels, were full of eyes round about… This is the living creature that I saw under the God of Israel by the river of Chebar; and I knew that they were the cherubims."]],
-  map: [["An upright, manlike frame", "Ezek 1:5"], ["Four faces on one head (man, lion, ox, eagle) turning as you watch", "Ezek 1:10"], ["Two wings stretched up, two covering the body", "Ezek 1:11"], ["Human hands under the wings", "Ezek 1:8"], ["Straight legs, calf's hooves, gleaming like burnished brass", "Ezek 1:7"], ["Coals and torches moving among them, lightning from the fire", "Ezek 1:13"], ["Eyes across the body, back, hands and wings", "Ezek 10:12"]],
-  not: "Nothing like the chubby winged babies of Renaissance art. Those are “putti”, borrowed from classical Cupid imagery. In scripture a cherub is a guardian of the holiest places, and Ezekiel fell on his face at the sight.",
-  trad: "In Ezekiel 10:14 the ox face is called “the face of a cherub”, so some translators think the ox face was simply what a cherub's face looked like." },
-{ id: "wheels", art: ["Byzantine art drew the \u201cThrones\u201d as fiery wheels with wings and eyes beneath the Lord in majesty, and Bible engravings from the 1600s show Ezekiel's wheels as interlocking rings full of eyes. The modern \u201cbiblically accurate angel\u201d wave online is mostly built on this one image.", "Paintings tend to give the wheels wings, which the text never does, and they lose the scale, the beryl colour and the fact that the wheels can go in four directions without turning. Here they are two enormous, unwinged rings set crosswise, the colour of tar\u0161\u00ee\u0161 stone, with every eye turning to you."], group: "Before the throne", name: "The Wheels", term: "אוֹפַנִּים · ʾôp̄annîm · “wheels”", tag: "A wheel in the middle of a wheel, the rims so high they were dreadful, full of eyes.",
-  refs: [["Ezekiel 1:15–16", "Now as I beheld the living creatures, behold one wheel upon the earth by the living creatures, with his four faces. The appearance of the wheels and their work was like unto the colour of a beryl: and they four had one likeness: and their appearance and their work was as it were a wheel in the middle of a wheel."],
-         ["Ezekiel 1:17–18", "When they went, they went upon their four sides: and they turned not when they went. As for their rings, they were so high that they were dreadful; and their rings were full of eyes round about them four."],
-         ["Ezekiel 1:20", "Whithersoever the spirit was to go, they went… for the spirit of the living creature was in the wheels."]],
-  map: [["Two wheels set crosswise through each other, so it can go any of four ways without turning", "Ezek 1:16–17"], ["The colour of beryl (Hebrew taršîš, a golden or yellow-green stone)", "Ezek 1:16"], ["Rims enormous and frightening", "Ezek 1:18"], ["Every rim lined with eyes, looking back at you", "Ezek 1:18"], ["The spirit of the creature inside them, glowing at the hub", "Ezek 1:20"]],
-  not: "In the text, the wheels move together with the cherubim; they aren't separate free-floating angels. Ezekiel calls them wheels, not angels.",
-  trad: "Treating the ʾôp̄annîm as their own order of angels (the “Ophanim”) comes later: 1 Enoch 61:10 and 71:7, then Jewish mystical writing and Maimonides' list of ten ranks. In some later Christian lists they are linked to the “thrones”." },
-{ id: "living", art: ["The four creatures of Revelation became the symbols of the four Gospel writers: the Book of Kells and Romanesque church doorways place a man, lion, ox and eagle around Christ. The Spanish Beatus manuscripts of the 10th\u201311th centuries paint them closer to the text, with six wings and eyes everywhere.", "The Gospel-symbol tradition drops the six wings, the eyes \u201cbefore and behind\u2026 and within,\u201d and the endless cry. These four have all three, around an emerald rainbow over a sea of glass."], group: "Before the throne", name: "The Four Living Creatures", term: "ζῷα · zōa · “living ones”", tag: "Full of eyes before and behind. They rest not day and night.",
-  refs: [["Revelation 4:6–7", "…and in the midst of the throne, and round about the throne, were four beasts full of eyes before and behind. And the first beast was like a lion, and the second beast like a calf, and the third beast had a face as a man, and the fourth beast was like a flying eagle."],
-         ["Revelation 4:8", "And the four beasts had each of them six wings about him; and they were full of eyes within: and they rest not day and night, saying, Holy, holy, holy, Lord God Almighty, which was, and is, and is to come."],
-         ["Revelation 4:3, 6", "…and there was a rainbow round about the throne, in sight like unto an emerald… And before the throne there was a sea of glass like unto crystal."]],
-  map: [["Four creatures circling the throne", "Rev 4:6"], ["Lion, calf, man and flying eagle: one face each", "Rev 4:7"], ["Six wings each, covered in eyes", "Rev 4:8"], ["An emerald rainbow around the throne", "Rev 4:3"], ["A sea of glass like crystal", "Rev 4:6"], ["The unceasing cry", "Rev 4:8"]],
-  not: "These are not the same as Ezekiel's cherubim, though related. John's creatures have one face each and six wings, like seraphim. Ezekiel's have four faces each and four wings.",
-  trad: "From Irenaeus (2nd century) onward, the four were read as symbols of the four Gospels. Jerome's version became the standard one: man for Matthew, lion for Mark, ox for Luke, eagle for John." },
-{ id: "eden", art: ["Masaccio's Expulsion (Brancacci Chapel) and Gustave Dor\u00e9's engravings show one robed angel with a sword above Adam and Eve. Medieval manuscripts often put a single red seraph at the gate.", "Genesis has plural cherubim (not one angel) and a sword \u201cwhich turned every way\u201d that may not be in anyone's hand. Here two of Ezekiel's cherubim guard the way, and the sword spins on its own between them."], group: "Guardians", name: "Cherubim at the Gate of Eden", term: "Genesis 3:24", tag: "And a flaming sword which turned every way.",
-  refs: [["Genesis 3:24", "So he drove out the man; and he placed at the east of the garden of Eden Cherubims, and a flaming sword which turned every way, to keep the way of the tree of life."],
-         ["Exodus 25:20", "And the cherubims shall stretch forth their wings on high, covering the mercy seat with their wings, and their faces shall look one to another…"]],
-  map: [["Cherubim stationed at the east side of the garden", "Gen 3:24"], ["A sword of fire, turning in every direction", "Gen 3:24"], ["The tree of life glowing behind them, closed off", "Gen 3:24"], ["Outstretched wings, faces turned toward each other (the pose used for the Ark)", "Ex 25:20"]],
-  not: "Genesis doesn't say who holds the sword. It may be wielded by the cherubim, or it may be a separate thing that turns by itself. Here it spins on its own between them.",
-  trad: "" },
-{ id: "linen", art: ["This vision is rarely painted on its own; when it is, the figure usually gets wings and looks like a conventional angel.", "Daniel gives no wings. He gives a body like beryl, a face like lightning, eyes like torches, arms and feet of polished bronze, a gold belt, and a voice that knocked him to the ground. Every one of those is modelled here."], group: "Messengers", name: "The Man Clothed in Linen", term: "Daniel 10", tag: "A face like lightning and eyes like lamps of fire.",
-  refs: [["Daniel 10:5–6", "Then I lifted up mine eyes, and looked, and behold a certain man clothed in linen, whose loins were girded with fine gold of Uphaz: His body also was like the beryl, and his face as the appearance of lightning, and his eyes as lamps of fire, and his arms and his feet like in colour to polished brass, and the voice of his words like the voice of a multitude."],
-         ["Daniel 10:7–8", "And I Daniel alone saw the vision: for the men that were with me saw not the vision; but a great quaking fell upon them, so that they fled to hide themselves. Therefore I was left alone, and saw this great vision, and there remained no strength in me…"]],
-  map: [["The shape of a man, in linen", "Dan 10:5"], ["A belt of fine gold from Uphaz", "Dan 10:5"], ["A body like beryl, glowing through the robe", "Dan 10:6"], ["A face flashing like lightning", "Dan 10:6"], ["Eyes like burning lamps", "Dan 10:6"], ["Arms and feet of polished bronze", "Dan 10:6"], ["A voice like a crowd, drawn as rings of sound", "Dan 10:6"], ["The river Hiddekel (Tigris) where it happened", "Dan 10:4"]],
-  not: "No wings. Most angels in scripture are never described with wings at all.",
-  trad: "Who this is gets debated. Some say Gabriel (named in Daniel 8:16 and 9:21), some a pre-incarnate appearance of Christ, because the description closely matches Revelation 1:13–15." },
-{ id: "mighty", art: ["Albrecht D\u00fcrer's Apocalypse woodcut of John eating the book (1498) is the definitive image: a face like the sun, a rainbow, legs as columns of fire, one foot on sea and one on land.", "D\u00fcrer drew him human-sized on the page. Here he is at the scale the text implies: you look up at him from the ground, and the seven thunders answer when he cries."], group: "Messengers", name: "The Mighty Angel", term: "Revelation 10", tag: "One foot on the sea, one on the land, a rainbow on his head.",
-  refs: [["Revelation 10:1–2", "And I saw another mighty angel come down from heaven, clothed with a cloud: and a rainbow was upon his head, and his face was as it were the sun, and his feet as pillars of fire: And he had in his hand a little book open: and he set his right foot upon the sea, and his left foot on the earth,"],
-         ["Revelation 10:3", "And cried with a loud voice, as when a lion roareth: and when he had cried, seven thunders uttered their voices."]],
-  map: [["Coming down, wrapped in cloud", "Rev 10:1"], ["A rainbow over his head", "Rev 10:1"], ["A face like the sun", "Rev 10:1"], ["Legs like pillars of fire", "Rev 10:1"], ["A little open book in his hand", "Rev 10:2"], ["Right foot on the sea, left on the land", "Rev 10:2"], ["The seven thunders", "Rev 10:3"]],
-  not: "Revelation gives his size only by implication: someone standing on sea and land at once is enormous. This render takes that literally.",
-  trad: "" },
-{ id: "tomb", art: ["Resurrection paintings, for example Fra Angelico's Holy Women at the Tomb at San Marco, show a calm, winged angel sitting on the tomb, often gesturing to it.", "Matthew's angel is terrifying: an earthquake, a face like lightning, and soldiers who \u201cbecame as dead men.\u201d No wings appear in any of the four Gospels. This one sits on the rolled stone with the guards collapsed beside it."], group: "Messengers", name: "The Angel at the Tomb", term: "Matthew 28", tag: "His countenance like lightning; the guards became as dead men.",
-  refs: [["Matthew 28:2–4", "And, behold, there was a great earthquake: for the angel of the Lord descended from heaven, and came and rolled back the stone from the door, and sat upon it. His countenance was like lightning, and his raiment white as snow: And for fear of him the keepers did shake, and became as dead men."],
-         ["Matthew 28:5", "And the angel answered and said unto the women, Fear not ye: for I know that ye seek Jesus, which was crucified."]],
-  map: [["The stone rolled away, the angel sitting on top of it", "Mt 28:2"], ["A face like lightning", "Mt 28:3"], ["Clothes as white as snow", "Mt 28:3"], ["The guards on the ground", "Mt 28:4"], ["The earthquake, drawn as tremors", "Mt 28:2"]],
-  not: "Mark 16:5 describes “a young man… clothed in a long white garment” sitting inside the tomb, and Luke 24:4 says “two men… in shining garments.” They all look human. None of the accounts mention wings.",
-  trad: "" },
-{ id: "destroyer", art: ["This scene is rarely painted. When it is, the angel looks like a standard soldier saint.", "Chronicles places him \u201cbetween the earth and the heaven,\u201d standing in the sky with a drawn sword stretched over the whole city, and David and the elders face down in sackcloth. That is the composition here."], group: "Messengers", name: "The Destroying Angel", term: "1 Chronicles 21", tag: "Between the earth and the heaven, a drawn sword stretched over Jerusalem.",
-  refs: [["1 Chronicles 21:16", "And David lifted up his eyes, and saw the angel of the LORD stand between the earth and the heaven, having a drawn sword in his hand stretched out over Jerusalem. Then David and the elders of Israel, who were clothed in sackcloth, fell upon their faces."],
-         ["1 Chronicles 21:27", "And the LORD commanded the angel; and he put up his sword again into the sheath thereof."]],
-  map: [["Standing in the air between ground and sky", "1 Chr 21:16"], ["A drawn sword held out over the city", "1 Chr 21:16"], ["David and the elders face down in sackcloth", "1 Chr 21:16"], ["The threshing floor of Ornan, where it ended", "1 Chr 21:15"]],
-  not: "The same event is in 2 Samuel 24, which gives no visual description. Chronicles is where the sword appears.",
-  trad: "" },
-{ id: "chariots", art: ["Orthodox icons of Elijah taken up show a fiery chariot drawn by flame-red horses. Elisha's vision at Dothan is seldom painted at all.", "2 Kings 6 isn't one chariot; it's a whole mountain full of them, unseen until the servant's eyes are opened. They fade in exactly that way."], group: "Hosts", name: "Horses and Chariots of Fire", term: "2 Kings 6", tag: "The mountain was full of them, round about Elisha.",
-  refs: [["2 Kings 6:15–17", "…an host compassed the city both with horses and chariots. And his servant said unto him, Alas, my master! how shall we do? And he answered, Fear not: for they that be with us are more than they that be with them. And Elisha prayed, and said, LORD, I pray thee, open his eyes, that he may see. And the LORD opened the eyes of the young man; and he saw: and, behold, the mountain was full of horses and chariots of fire round about Elisha."],
-         ["2 Kings 2:11", "…behold, there appeared a chariot of fire, and horses of fire, and parted them both asunder; and Elijah went up by a whirlwind into heaven."]],
-  map: [["A whole mountain full of them", "2 Kgs 6:17"], ["Horses and chariots made of fire", "2 Kgs 6:17"], ["Surrounding Elisha and his servant", "2 Kgs 6:17"], ["Hidden until his eyes were opened: they fade in", "2 Kgs 6:17"]],
-  not: "The text never calls them angels outright. They are “they that be with us”, the armies of the LORD of hosts.",
-  trad: "" },
-{ id: "host", art: ["The Annunciation to the Shepherds is a staple from Byzantine mosaics onward. Rembrandt's 1634 etching fills the sky with a whirl of cherub-babies breaking out of the dark.", "Scripture's host is an army (\u201chost\u201d means army) of numbers like \u201cten thousand times ten thousand,\u201d and the first angel brings \u201cthe glory of the Lord\u201d with him. The babies are tradition. Here, one blazing figure is followed by a sky that suddenly fills."], group: "Hosts", name: "The Heavenly Host", term: "Luke 2", tag: "Suddenly there was with the angel a multitude.",
-  refs: [["Luke 2:9", "And, lo, the angel of the Lord came upon them, and the glory of the Lord shone round about them: and they were sore afraid."],
-         ["Luke 2:13–14", "And suddenly there was with the angel a multitude of the heavenly host praising God, and saying, Glory to God in the highest, and on earth peace, good will toward men."],
-         ["Daniel 7:10", "…thousand thousands ministered unto him, and ten thousand times ten thousand stood before him…"]],
-  map: [["One angel first, with glory shining around the shepherds", "Lk 2:9"], ["Then, suddenly, a multitude", "Lk 2:13"], ["Numbers beyond counting", "Dan 7:10"], ["The song", "Lk 2:14"]],
-  not: "The Greek says they were “saying”, not singing, though praise sung or spoken fits either way.",
-  trad: "" },
-{ id: "strangers", art: ["Andrei Rublev's Trinity icon (c. 1411) is the most famous image of this scene: three winged angels seated at Abraham's table.", "Genesis says \u201cthree men.\u201d They walk, sit and eat, and nothing in the text sets them apart. They are rendered as ordinary travellers, and only the faintest shimmer gives them away."], group: "Hosts", name: "Strangers, Unawares", term: "Genesis 18 · Hebrews 13", tag: "Three men stood by him.",
-  refs: [["Genesis 18:1–2", "And the LORD appeared unto him in the plains of Mamre: and he sat in the tent door in the heat of the day; And he lift up his eyes and looked, and, lo, three men stood by him…"],
-         ["Genesis 19:1", "And there came two angels to Sodom at even; and Lot sat in the gate of Sodom…"],
-         ["Hebrews 13:2", "Be not forgetful to entertain strangers: for thereby some have entertained angels unawares."]],
-  map: [["Three ordinary travellers", "Gen 18:2"], ["Midday heat at Mamre, a tent and the oaks", "Gen 18:1"], ["Nothing visibly different about them, except a shimmer if you look closely", "Heb 13:2"]],
-  not: "This is the most common way angels appear in the Bible: as people, unrecognised. They ate, walked and were taken for guests.",
-  trad: "" },
-{ id: "covering", art: ["Fall-of-Lucifer imagery, from Bosch to Dor\u00e9's engravings for Paradise Lost, usually shows a beautiful winged man thrown down, often turning monstrous as he falls.", "Ezekiel's text is stranger: a cherub covered in nine named gems and gold, walking among \u201cstones of fire,\u201d perfect until iniquity was found. The stones dim and crack here before the fall."], group: "The fallen", name: "The Anointed Cherub That Covereth", term: "Ezekiel 28", tag: "Every precious stone was thy covering.",
-  refs: [["Ezekiel 28:13", "Thou hast been in Eden the garden of God; every precious stone was thy covering, the sardius, topaz, and the diamond, the beryl, the onyx, and the jasper, the sapphire, the emerald, and the carbuncle, and gold…"],
-         ["Ezekiel 28:14–15", "Thou art the anointed cherub that covereth; and I have set thee so: thou wast upon the holy mountain of God; thou hast walked up and down in the midst of the stones of fire. Thou wast perfect in thy ways from the day that thou wast created, till iniquity was found in thee."],
-         ["Ezekiel 28:16", "…therefore I will cast thee as profane out of the mountain of God: and I will destroy thee, O covering cherub, from the midst of the stones of fire."]],
-  map: [["Covered in nine named stones, plus gold", "Ezek 28:13"], ["Walking among stones of fire", "Ezek 28:14"], ["A guardian (covering) cherub with wings spread", "Ezek 28:14"], ["Perfect, then cracking: the fall", "Ezek 28:15–16"]],
-  not: "On its face, this passage is a lament over the king of Tyre. Reading it as the fall of Satan is an interpretation, popular since the early church fathers but not stated in the text.",
-  trad: "Paired with Isaiah 14:12 (“How art thou fallen from heaven, O Lucifer”), this became the classic picture of Satan's fall. “Lucifer” is the Latin rendering of hêlēl, “shining one”, which in context is addressed to the king of Babylon." },
-];
-
-/* ── UI ── */
-const nav = document.getElementById("nav"), art = document.getElementById("art");
-let lastGroup = "", idx = 0;
-E.forEach((e, i) => {
-  if (e.group !== lastGroup) { const h = document.createElement("h3"); h.textContent = e.group.toUpperCase(); nav.appendChild(h); lastGroup = e.group; }
-  const b = document.createElement("button"); b.innerHTML = e.name + "<small>" + e.tag + "</small>"; b.onclick = () => go(i); b.dataset.i = i; nav.appendChild(b);
-});
-const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-function go(i) {
-  idx = (i + E.length) % E.length; const e = E[idx];
-  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", +b.dataset.i === idx));
-  document.getElementById("t-name").textContent = e.name.toUpperCase(); document.getElementById("t-term").textContent = e.term; document.getElementById("t-tag").textContent = e.tag;
-  art.innerHTML = "<h4>WHAT SCRIPTURE SAYS</h4>" + e.refs.map(([r, q]) => "<blockquote>" + esc(q) + "<cite>" + r + " · KJV</cite></blockquote>").join("") +
-    "<h4>WHAT YOU ARE LOOKING AT</h4><ul class='map'>" + e.map.map(([d, r]) => "<li>" + esc(d) + "<span>" + r + "</span></li>").join("") + "</ul>" +
-    (e.art ? "<h4>HOW ART HAS SHOWN IT</h4><p>" + esc(e.art[0]) + "</p><h4>WHAT ART LEAVES OUT, AND THIS BUILD PUTS BACK</h4><div class='note'>" + esc(e.art[1]) + "</div>" : "") +
-    (e.not ? "<h4>WORTH KNOWING</h4><div class='note'>" + esc(e.not) + "</div>" : "") +
-    (e.trad ? "<h4>LATER TRADITION, NOT SCRIPTURE</h4><p class='trad'>" + esc(e.trad) + "</p>" : "");
-  history.replaceState(null, "", "#" + e.id); show(e.id);
-}
-document.getElementById("b-prev").onclick = () => go(idx - 1); document.getElementById("b-next").onclick = () => go(idx + 1);
-addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(idx + 1); if (e.key === "ArrowLeft") go(idx - 1); });
-go(Math.max(0, E.findIndex((e) => "#" + e.id === location.hash)));
-window.__angels = { go, n: E.length };
+<script type="application/octet-stream" id="mf-blob">
+1jJAQYa7hNH855CnjV1jlcCszP13mGUumCJob3co98fD3DuQK6qv3jlITRjEIdIxBlYq6uW0WJjkNxX3sjbzxtIDlBwkwoZi5X+9SoLiGjr5Kq1kRVmSoGFT
+M4/N1oQQ0IxNtAEaj6+BFSjpi3cItQrUEYgv5zO/3d71Sjs2jZrPMc82dN2oHS+7f3fHRCTUXf9pcs90LKMwCUb9kRntaNmEe+c0Wgm4ORxORFJqjlv6H4Is
+VR1kR344IugwQB2he0B5CrPCHx3n30VnOcl3194K34Ol0je9phm3LvUAbl99iQHsUcKky9XVoiDkbgZ6bDiWizWIkjuODS3MN1mqv/gxNpaFuQze+nWCbFsd
+gdOfp0OEN1pkImgyFAdVXJNS035LjhYDX2U+V1iDraCKj4FXKsx36tfYrXHbXVQvUz427eGAM1THpzdxNfG9DL1U70/2kzCamdM/S9YTO4eUarSRejDSE3WR
+3j6iw0Uw5EA3iRRHfXV/ATzJeqzxvObPt3bYtlDO4LOwlfMHxyrP4rPt87HN3pj6vmPyphtW3BbTa3PxA0MuRUAMuHBgUDw9dFJJGN+EaDYRSNpgmNY3l06K
+zYpEFDYvF5tndDLl4Qe2s9CUuX5nkSfwBpEI3J7AlQYxdVHd7+FSft+g20zCPM9B2z1R3aGQsZ9iOI4zMNOU2BXDytIVD6sCB227SaTbMz7sGmMg52VRoNOP
+wZqUWDYTKmSKC/zfcvv61q2G9Axfb08LK0WvGVbC7F5nWmeUk65c7zB3GoWSI5IVgEwO3Ov7KJt6YR1q95L0v5o16/LNN3FapYh7qHjUUyftwHWU/7+dQNdq
+x0zijjKRJzuFPiRcM1Fdt37rx3DA08PclouuVvmrJ8AWVg1iGKTGZgf5TFMmLs6dNKVwY9vuEeNOvL0jaBUb+Wc5lcCiCIqht+jVao9ExRJEvKT/bOfiVKVw
+Z2qv20IPERiF1QXMxC/HNV4E/3DWDWQ8UzkhaMi/9/p/gU47xhFTWTcBAglKUmLqT9gjtUi0pGgGMxvBxeMRitKBMJ03dkO7zYB84bSfuAptk0+RUXdqJq2i
+7BmngU9eIkAsgI6L/kKcDvMLMQ6Gt59AnfVqBOLCkrrm84mAqjyHBpOZXS9QZi1mdlzRsuRRjaKPBsl6hd8X27WIYIPX8PBaHkuA9gWqYdoQSNAjakWEScAw
+mIAh6Io+oBRVkbIlRl2rjMBAo/y8STWSssVsZ5Wj/HE7vntIvZulylHcnmINRUI/PCFuThpqm5PGaIpEGP/4ZfaxTDpVZInsV+bei8+IWoKWsMYwdGkqqnag
+j9YfuEfj20sYClze129uYKzua55JHgUabPjMl1ve6a7nqbBkl46CThyC0AKsCcCcM53RCVBNHH6KrmRHspmaeEIPtt2dgyxFCC2PVobHIwhyQq66ucwd1b6J
+uf8BDfHS3aEOmVtIjKouiZB2KmvDb9uJ4RLSMVUkGLtlzjPNq5kIiTreZLXHo00+1sG0LRWfK3kiEQ3ytXHYnOQRryH70WBVejX5gN+1nTxRqIwnGXlV9vzI
+iqsHvB9Bxw4dF3IBhN8Q1fTHb9E6+rBmEPf7epKa+SOER/1smvE8g/Ke9935uOupWFbwtq316e93VA7BbQtUQwYxnttqKQM3S7jQUoicKqJk5PY2FPx/qwfc
+QU4QoNGSHosEe4O7B/XbocirfLbXMaoHFuzps6NzW+TRY5XdeUXGfFEA2yDA4s1XnQkGWbK4mxAo6tRWhepmE7RT9xDaY5L66BaQo+x9xo5072/oClWbo0Zo
+h1geeogKaq24ehvPN19kL3wrThq0gl+ijlQACMU2+ZCMHka5CZxUbaqqcaRVMNT/2mJX6WX8T9wUWv6yRQA1KqHW3isDSkkMe9YomxItjMiRg2l+U78zAezt
+EqPpJc3ynUmX9iR4TxoKgfARsuTkprD//WvWUk1b7gPtoXgEB5jKTcbPksX38/XWwb9HIYrd+nLtXpE0b99F/IoY1NYFsli8w3HB4ir21h6GirszH3Owj3ge
+UNCfXG/2dL1uV/ZRRws86DuTjL792mAaRmDzEuhVzg6BsYocDXxl6H+jbITDfImpwFBalfgD1D1wjq1QYsclJyBc62So9jf7rpN67PePRhxwV/s4qpjL8fLN
+gBJ6Dr3V88OqgDF5w5JW/EkCqVXm4iAg39LSeycePQcdGLuXbAFhFlm2IRszyK3Lg6oERkQCCFgLF7nFBqJwhssYPgVQwy3uIRVCFhkrVgs/pZddaKvN7Kkh
+IHPBK+J3ppeOMnL+WPc+6lQTlesBwj6fE2/hMahm1ah1+TIHZLNRYNwjtiqpnWEuL5dZTrY6ucNdb9RbTqiXpeKk+q0G5BFCvOnfW6cS2F5hb+hvcwVz5RPG
+JmxTLohtpgiYfb44tkMru5WuzvS/suTCP8+ECPGgdHreW3aSKkD8duvaIOCPf9ENmtVp50cuIe6ma9TyS4d4xwClVnQ54rTUwzlSnIvSxCy3nOyUy+hbll3J
+KZ+yhXLTLOXE5qbqJyhHkhvy0yqxC4ijjR6wutyGyqYI07UB7eihcXBb9jvqW730hgJTXZMwtUQV98GvGvDftYKloXJ1jihrVR0i5/aJm7pTP984anLhVPR2
+7R83iuJmoxKLV95yVk0YivsIRx0UYFuI/Jf0bKZEGlkNkrvSM4Pej/+clyrahGu6aLcOXJl5hpZI5B+KduXF/WGGn1O50GBeMwL2ocULJBgjENZ0pEOkYFdI
+WapLzrzgfOzhBgsZw3B0oHTbtituy5RkWqiYu6gA1Y4MzeuBy492uH3E2goS5KYuL1lBfBgmJ4VQ0+eW9GARSnnU3GvWFI+f6uUj0JKui7QEtI3lGtww3vEP
+YSTkx6IX5Jx6NHw4Ls5FWuXAGfQdSpB0kRJb8CivzAhGGVfxaGuZ3ByYgEYkAdnIIL5PdmtTpo2aiSttFT+ooFYdOajtBIsezyfCyf2BDHYp0yKt5tf1HnLS
+ypT+PH55Dr3hjoRHfqe5NgYN2qw4zJMyMCgjzWP9AssliOugTBKFrv240zGHI64/MyFdNXzlEBHaUGl5/if4Y8gx0sL83kJIPa2povVDJ65c7WtFxSjVHMu+
+IMuojFXv3vleQuIvbF7Em4Bhr0aPvwEeV9v1Y6G/+kh8MvPhIWl0j7f1vjhayw9PUQGcq/J7ddl/IrcTC+AecDUGwXqGqcEf0SJYK29NfnHN3LrneB+sEWYc
+pPZUgMQyTLPuzgaiOTApt9TteAQp43wWXehDvkhsWacZuTVsiUrlhubcxqRf1SkUrVO/EVW+BPK5EIh7hZ/jp4881f7hiU8zxEQnpbSt2EOJMtUl2tjgrmom
+dQPW0/KjU1bolCxZy20mIAgA430ax4ppwHtuNehdwyJmjWjOhWnocrgX9mZyt2+G5LpShSpnnGiIhF9cS44Drp0k++YL4vg6EJzb/PshjCIMC5jTdeoJGzCL
+QT5Nmx557TP5vRm3fgWVNTeLP1OKaVFnbu+QVauW+fwNqVq2TmP11yijEHOW3UT6T3BZ2b0oMYpiIcXLl+STK8Ce9kQTpdeF7CPED0YuIBbxjnJk7ipz2PBX
+rKhUgiVBORXTf3yw+SBrbKyiIpRkaXHxGf68rGw65ekJAhbVwK5CnXojUNbK3cKE9KysO2AvGxuPePeCrA9ecX/A33i5QXkC+jkYeyGcnKmTwysJbP252frB
+z8IOmnwFbkf/o4k+y2Nbi5yM63J/7uP45YRSSCBVg4dyDMZSn3ZJZR0gw5ZKT6/3od9otJRJssSJkzs2YzxNmCSBtwHRMBjVTH7xfMLgtIQjdtEy2LalyRXe
++Q8yE982STWP/ZCEOdsPxp43M011mDZiJWFCamyt15TZlW4VXVk1dvZbd7n9FDx/qVWllPTfwWA2uXmabU1h7oatzRgyacKxYltbVLrh5lDou/Y0cVrZ4Nqj
+K5rZEh8Ok27g7BTUNHlNBctbUCUN+ifIDovMIItJl9XA7VPl1NAEKVWyPttyqg0qs6pt0PafU6+8EI6a2sJvCw1R4A67ntHs/x7SKsIZFpmgwHHDwqgnpOJY
+CjBTrY50t5lT0EOBSc2+G+nr/f3tcSqnwwggv1rtVfgex3uTgOeFIgfeWgAwj8lJvTRHzRN63lF/G/Z9wAcniDlmK4vVxZp4zWw8EZyI+XTknMdesb+wAZXz
+ybekW6MqpUUtHJvvvyKFEiHduSKLikKlVQYi+u3AJPiVSqjrk4fR/sA9LKMAQFZn9LZh5jjdlfRKlkg3dXnaZeVETPCflU/6Xiq5p3c2bLVFpODzfRkrnDYA
+05KCStf+faAX5+ES78I3yzO2bdx5vQMBuub45rWwYq6p7qnMk4ErwU69J+rvRwLl+aqS1GuJcboT+KH879FxpiOh8gMrk6W+0Ls0uoYDVzGd8r/rLllvfFKr
+LCm34sJ04wI0aLCF745qAXnZ0m3RDNpg3MfgaSbqNIo8TZZe8JVelhzCpXlBAPW7zyF+OhdqYU+h7gcyue6SyYGUDnzLVKP1Q69l7oQOHC+Wo8pAZW6qNVMT
+OArrk0boR2xPmW601b8j5ffcZegqEflij6HelpWxSNZ7A0g2CBRvNUE2SWsaKRMMKdO98GKvJir/WrONF22UfIpYhHDaFSYp+0HUXgoOBRAZdw1/lV85eQgn
++QIaZSGeWT+AlQnswUd5bo9DejqYLaJqtwoHC/4E9kBH/R9mJbb5Dpsz4I/0svhaM6TITWVIZHLiULhLK/INEalp/MQWhdgszSCG35lTKAcPLyL03eo9OJAk
+IJL9moGxOfUGdbbOfdB75Yhfs1X/sncqNVmld7k9twSX++UghIqUChJz1Hpm3pWy68iLg0cu+hR7IaFnvuIneAwnDKswbEuJiitEZDpaMpG1tcIXklfWcTPw
+DJxTKmSuAFko3rTSWVo6dJoTEQjKNrtATYUHrasF9y19hkpd0TgQH8R9zmWXuzygJpoQtdY/ftGbh3X2nYIwLpSfNOPbfMA1UPPlZQ2BbLVYYPvuP2gArLGJ
+B2P5eyKiyw0ZHRMnOUcom8dF3Xp70vVebypDwdYlUZNhOIv314olfw/1HyhSrOMOimZcu5EofXGs2gMiHA766MDQY5DOIr20ZzlC7QylTem1d7ZAfXXanXLM
+zfGPNzAMjQ7q/F7QFfR0cJUWAH4+gNpfo57xE6+61Ijc5Xcdt71CTsDXKu7/EygmkdbVIrCYO9LjwxNxCk8Kil61uQbY5hhHXu+YUqPN2U46+ALVC6Ax6s0v
+eUaKungg4X+8YpNTyw5V2G12Hj24h1OqiC/MoJWmaipN/6diMnKjpLEvZHi5fQKuyCkkf1sG+KIMOVnf3qFMHIrCeGB0atHj8u2RZA2Fo3QjQXJFrSAWvika
+bM8oW6RJceNTOJaA/banmxqmESGTppQmIYQuaaxwiteC4LhnAdfMWs3bQmooYIRWHbUcs/hMJ8Oi7Px5rGCIO6yVhlSOkV+zniqKYxH/CLNjQm64/j//Cw1a
+KDxWdU+C4bsx2A7MaXUvFgfXf0DMMSZZ7CZ5dPNqC03Ebu/9sLPZvzkUUQx04XXa07f5aRGVegyETfDpKO71EZa5QmZxkOODGGqUIpzk56ROZyQ1yjeKFYd7
+3EvsiNoOrrq23CzLHFJGVyftSM8zhgkKj4e8IRCWUhWaQhJZ9VQ/6rbEKNEtK+kcejU9rcTFxjm6IHxi/yk0MCTErhduTBKlF+27lZpRXPGpw0lfPHRaCo6e
+WdFqcu/KMQ2sCc9lQYdcL0rcWywVES5AezJqW8LSabKGF+Emr86WfKoLKPznbJphAOYG4XOX2NdG3yNW/kebmReVFvoLJwK74biOn7LRsv+GuVDLZPqcQTB5
+bM1rroZCAsGZjLxOcF86suVlZd/+mjv+7eIH9S5RP3yhIDECuUMVPh1a/7jXGRRobso6S3lwgVQTtiN8y6dDcOC9bWco1ls8CKZvWoNp8qS1CrQey6h+ooQl
+SFkgCTp+WSaiD+ATORzUWK2nJt5A1bXosVJopJs6d+dhwWsGVmQAPoEJFEHi/nxDQvxO9+GWeihypnO8RQavuS16R2Z1OHr6GUsO1rLTaymALnM1XfxLPHfb
+bfubMtK18Nnqs8Tov0VOrfjaluUN1Zqc+dJ1ZwZQmQypYgtgTYGalWgsF+qEpWhoh+pIfmWCqg2+sNnRwSk6y6/cbFnicW+O8LUhDtgnwr6q/tMwEvGi3v1Z
+YIY+2SbV7ivPe1RfTokIk6PzJTH+AbSSBw3YL2SvZ/De1RuNrZJGkxxUCu6xfo9EkkN0xzneGR6zK3BDCkXy1ySxW89SdJhd5t0DP6K90fPP4SDBzl9vlocb
+v1VcQuyLUJ250IrvBAvjfG8FIxvmUSka5lrkOKqlbl7Eg+NkvvggiMoIIYJgXNhplNLQ/uamC8eD3ydLJqnaEBJ6esm6TTrgYVeO9sEkfCi/52AARE69FzDo
+/6CZs4+t9Eb5SgFlFqA2hCH+JVQdYqDJaNDdyvhNwIVjt1voGqf22gUYes8oGplQBkS59jpXjtnHhOk3pAtL1S5Lkgo1PB2bNqed02wVU7D//UWYGD2WMIFP
+ktfTPK0rG/hCtopEAoc5nEaaZKdzXi3tDg1PrfGNV2Hd3VAtaE0x21QuPjBOVWM4nnVmcWpUfT77eM6XRh3Fu5Gt9+gbYJMh6zC3B/av6KcXxVl2snPUHlUC
+tgI/YiCC9NyOi2yB5pnmE0+q937BDW1vtO19h77W6bB6xKf5wU2cpekyWW+HlUUqrNusibf5ltTtPTWmkW81DLbpzyowuo4Gtigb4ewAcCWfFIrv3AvXLRmp
+Fqe/3SgUWm9/QPsqNpL7m7M0XTqzkIh8b8J4eQhu1JORAc6zfENeF2Ixp8+nC/P5ZALWJQJ278Miq93lju3lJ13B9hOOTX2k7VrNke3jgoGlpcP3yPHquDEC
+shnVqxGU4sIkPM3EuxnCr1uIgwlRZtq1hVjKv464khW4K1x7+X0gxLLRN35D1rAymfkRLN4drz/IWWnN6oFCYtscDbD4Av3UGWJ8hkpJQ3sdBL+jUhUiQ3Ss
+HtA+2tUeorsyoLPm3iHtkAa3UTWkATefVEVMUFqo0GIpNGvKYT0lEK21snQ/01+Q+Mxwll6bhW9yXNNdjvFtdJJDYr8V5zCrjPPlIuexn0gIQqT0QIGFZ/1+
+dS4U+s9zm0v0o+HxackCR/7CwdVOQLT6Z1iJR0rr0E9JJRBhLE/LwLnqHMTJiSFpwQtw3EwjP3gg+fmwttchBvXlt74BGTGMWZgZWPOr86z1kfk/A2jPveQd
+/GtROUiCLU4R+MW6Pw0lOsNOnEyWDJ3Hf+Mo9HkozXPCNxXiGS3bjE4Hw/LdLh+W8zO9yhYRmpon4NBcxO3G/o1exdrVrXtOf36jLf27/Rt7nqs8WUwTzZld
+IdA2Hpa4p5yq6iLiNnebjxLzdomOXwh0d/rm2xOCn6ydvad7pqmAIx5+d0Yyw11vnd5WnjSmY8z7CTDH/ia7+/NuNN/syq9u32qWoIn6Aa8mkohSSWAC9reJ
+FhXQXpjQIBOMM1iinNm+n2KouaZaYJ91IDvv9FFNlkKclV+U5UBOTI1RMeVZdDTn5hJUvbORv+wxiLKP+H5Ljy7+3/fMc+epy+D5nReRnXtl8+PYS/MzhO7L
+f42aQlO/gbOTL1NLlm/EznHMNdR79XZVFv8cqoz6FKpPJxhGYElhpqtsPH8WvcvAQlmCnjwaUgrDo+7i+Ti4bJIStxpak90R4tAVWb5eH+QMXNkQHf51DjF2
+td0sW+sbfEJqa9PjhfTABj0sUTI4eFC7XO3HmLzVnicdMYP/41o56uQa1v+g/yl9MpTb0/51CCWm/vnD0e/zKMiFqcXeszTt9dagKKvF2CfGzz5IRCEpimbO
+ZaJTJzGt320UMtVIx+Q7luAxet0wR5OE7X40SccH1gUbV0ZDyDVpFvvF18Ngz3t893Vpcfh73AUHMFHMbvmjdaW0Lw+WYrBbBBrwOjc6DEBoM8Aw8wmHefKi
+I9MYgX+gJFak6cKs6653SoaA5/bW2oP4RFFdXECOPzdeEEy+EBJUTPDGYTI+SCihz3NQCiEtf5j3wSpaH1Oj9i7eDqJtYEF6yjPmcrZ5otYyfZ9MP3hJkqSv
+2Ch3e0zAlQotMfHjOG0Ry2teyT3ghlM4iCngIcCdpYDKLilQ25lll0sh9ZayB5h72vSU2+XG8sk0qS9VPJ2itwVv4w4eRZ+W+uVVqfs0W+39v8QmsnnDZSDJ
+6NnC7COthwwC5Na1RB1RDunX4uc08Xj5Fxl3kdbolOLFQZM6gnvwp94RliRQ0qIZQi0x+qx8eQpwthEUeoO/Q67+XwP/aFUsn3L9DymVBJgF59DcNe7udX3d
+JUTBMFgE2jEB+5NYX3x1TZLrk3KyKTcPsfq3XwU4hlRSm40IwXBkcQix3viSiewBDwYOR06/TIRiZNAtp7dkf7O20lb/n2eOCCorzpP4N8GTzJfQMFirdOZR
+H9lTQ5RSzoaTgqfqvabufw22fB/M/E6PwCaY75R1ErPQiHJY9GABS+owVDGvuOSeKB0KnFKhCVZKj+/tlw9gN71HXGLBEUerB1xR0Aif1LfsTxn278ED0Wmn
+vyvYNzXENw6F1lcwygzuDQ63VJGeh88Ku17FgFrW67K/v/piWstohcjCcg0H05N8dg77uPzz718a59K3vTSQ5bs0ssKiEpVQ6EvCd2wk2xjcnsVUAa5QlMcr
+lUq/XqP1heeOHbAmE9RV3zCcICTYKS9m2enMaRkBOf7Ty83LH1bclUxj4MQ7EFo+hA/W1u+6oYlR6k2eCSs7SaLWHbJdykn1j1ka05/tNlYOqV5dHUsbXoYX
+qPhO30NRWOMbtucOCnVSNt8W3haMvWy4e70zCNSDPxU0boN2NI36bfaokHbN4dqk0a9MygZzb0pdDDc1QcDC7T36tjd/1dlf1dfNol+E4vq7tx0vSVUgPP0l
+gD/Fv+qrT9mNHR1EJiHWzZM4bAb/1G8vG8UMD5Ef3p0STGaj11Hjle60NiLvKzMCmMMdHWo70OOblj6nmSDu1z57nK3EuraH/M7ivHmflyFMHL/8nGvapYA6
+1MV9Hs1DorD0Yc2CBP0iLJn8E7Vb2Ng/vtOjji83UhSv/K7eVm5lOEcgC/nWnrlxeFGC1V3lpvj0MsBjbd2D2fArcsJav4nP3r2eD8ZvdgjmPEaREYoVRZoK
+hNTeHYEIaHRZEVBbZmqMVa0rsw/tViAKZTt3/V5BN9mWBZNEscSWxloT74neTODrkCGuXSJT352DbWmw2qcuA9qokEtsXd7+iyaoTN3ztkWbT9NCA9utUB05
+jkhmgxtqZoghg3ri+kz2Z/EhESdPjPB24s2vcKiZM59y1GLLeTc84slhIwGYuA6zwguZOQlpbRqpDgreo8drtHaXqkXfpJrEFoRCxNWvJVgGdQkPrrlmiVa4
+DRWCXxwu5Sb9YQ35rxNyFolD8CIujSboOQ52Q2xuolSKZE8A8W3sj4eUm++rN6G/HHKnIsvg6qiZjgxJclAgmprhlLAMzfJkaXoFfxKcra2OF7f1MZYOxmbn
+AAWz5FFx0990gt9qseehJB2HFktTiX5iXXJ6gyf5y6Z6R+waChECekgEf1conA2u3gY4Z4+RL/9ojJoOPFGNhlXhhjRm4f7x0u8vteSpjyh+WpMyxtG5iNxa
+WykWK8XIVBFztUQpYCs/Px8Y2sSKgr6Xhow6Q30SroeFu5/9cF9PhE/iWe7FgFLo1Fl40VcSwKIhXcY9XsD6vIeWjbRrD2Csmaxa5TpQLXzLdbsoCrQJgmTr
+2muL8xRqqTTs0EqU8NldMwPbtknj/r5f+LXYAo8r78fsebRUBrMajLGYrU+MUN45andrnVX5uba72vpdfYClbr0jje4f7PqYaZI/+YLV2bb/YiuE9Nnp0Glb
+ra3wTloWbsyWGBhxXQ0c2YnjthDVWjPzWPSPWoX9KTzGPxNQ0wDPqaL5f4Qb6BeCoj9p6KIVVnmYHshpw/x6U6SDy4aukXHkxQXrm8ShwvNR9mc7ScVbX/Lk
+ElmnbWG5tJnKQBKtHlLCiCz8u1B30+5H4H0IBHLPy6i3cOHVif7mL6UGT1FK6bS0VDaInXRHefXoxwoSD9PVOrqgzHE5yZTOzRaNWyKisNNgS59PDRvWsBj+
+8RiRiDnhg91UyVVIjdqKUdA9sqIld55qd9Fl034lJ1ERiOadXWB3L7cumlw/+NODXGHjGwYN6F72g+HvZV//MuLGTjf9mw8tncRQMHIFT870Uo4g4SC6FOnK
+oRUOCINPueZ98VOB74PLGMWxrCsuYbppunrj+fL1orjr+2qKhRDlq41tsjYobxgsqgyW0Wk67sYE33EcI+CRlUSIwa1vjixZfYwDA46Ali9melWY8v0VISgc
+QmDTF4CJPx6aV0J3/lhgSnj/cZNBCQdcsSay3M4D15buyzoGe7WHU5NS6rhab7tnYZ0vwWLBqoDoFP9+Gd4XnIT2eM5zYtEPmbs635fuoxjHZemXEbzbsJS2
+67hWAiZPRn4iRSzC1R4wRrczfmZsvcGe1ay2nYymbrtUMREe5PTUqWtwR6CO0PkNuxrriVRa7Mx9MrxnTm3r6XUszYk37uLn5jNqjuVl4qtUnUzplRcH2BpO
+s9rvFdvwy/t4Cu9KuK9TFQgHOLBGQ/q9EjXjIEF77JJKULgKbPh23bsDzKNb7d+/eD16NZp9+FXRhOJqLpiHnEbRcgYBaczK/JZisbHgGRCOHCBZoyWyho4T
+Xu8iXhdFo+0imb13BjrJoB5vqRRomHTrnzIp0FCSWyYDio4CvzgxIrEHbQMK/8RRAON2lKIwroKQTbQhzGvKhMQChUeZfP2OgNnM6EY0IDQ2v1ph4wv/ajUe
+LemPVm7WBHJbYTpsNCsfSxGKZ+/jUswavuohDw6G393heJDMjSsjtZNdPssQ1XIsnDNCOt9+RFdNc42QZWWXvXK9qa0vuaYWvzPmxGym3rQyYJe7ZEti2Dho
+q0YXlCu4fCpsomewKNpRz+Q/3hqr0EKI8wD7pgPsxdAtMzXYyWpgbPywySCq8WFjeOcsbEkq1GTYOnBd7eHZLKw4ieMTPz/F8ehTDfJLfbCh1IE2WFiFn74n
+6G5EaWpCSJS5PZO+a1Um/cyQGUV4Ej4jOE8Os614cfc3yPYB10Pt1b29JiwMmGjDlbBJpUChALo0X5QXUcj05RN9Q6LsvG1acKjD2CvLat1U6M75cSOJSIGN
+Cx0xmmg10KDadhrC1wqOdkell+H8eBIkflXARW740/6ZBu2TG7EwOjAL7MYgjU9vfDpnGhycgCsH+1ciu6rpJbpXRNV03BoO0XU9FbOBktOtpN6wLLDSvbRS
+hVjBm54WKZt4SYrb/SzR8BYhCqWlvamM3GEsj3l7v5aqInXrkCAmib4o0Xs/LYqUZSWDNqDNuJmkJSDvHSB+skJmqJL2enG4QwWIB072tXzLJ7QaBKdWQg9G
+Fw1bLx2ZRkTi2NfcPQLiBj0gozaiZ11GHdKrYf7e6wHOkdYkYmhGML1NarfQxCWopc8kfjr69YIwPjtBMBDDCyN4aSgvR+Z1FGitZm59CmSmsAtiofsHr57v
+uxlNp1LqpVEKJSMgqn4fXSnKPROEfcFn78dSg0j+zhl/tZTKTvNOe8xhy3yWzx3lOvP0dXvO7POazMrHg9cCmB5Rxe0y4Zmd5G3FB4YG5OWWBjK4WtgAXcWR
+sdn01Sw2vYUFnGjw3iR3YEQymfpvddHO7LYlU0yQdyX8TbRqhCByI4UgpQTLiB4i4FKi+hTfHKPuK84xPDEw3t9wgNgY22Nqgxjhoi6C1p71wyYm8MMK4bZe
+MKlxQ8c56+XvoMtlANoUn0oM6zj/A2jQorsmp37kr0suSDVLafXa2LuXD3WwuyFtGM7HMOvfJ3uD8RiPTCPRlJq1EzEBl4O/G3sZRt96DHc5ZvkJvIxrHYAz
+yoAm6xpeE37YYMdOQ8w+LHCXu6WL17BxXNDrHuO6Ubfriu8wxVB8YyJejZB/vDz+YxprXoIFSId6hVtilIxqjow55xDho2WygHJJA+BDfZ+G8nudfJ/oo1u9
+8ykWrGvTaGMEsUWwjLfEaEiwy9y217oP1DEUCI7zWv8AA3fcFKgEMyX/yM3rc8b/FdlWyqo7zIey74iW11UbghHqxEvLwfVxEiHP9Udne4ep9ZJaWRevKe/d
+ieEbXGg+kj5LEw4gaq+6CXwq3JxiUaf2O88tt3ZPZYp+ObB/2zBBz6x4TYYgDroCnW5WamiwkWSQ0Vd+0lbjqGpm2P5EcB/cJXXPv9/ZcaOFhoiP8TeeSrHE
+epKgnS/Yt2T9fX/raZOoJg/Tm0UfKOozxKVre04OpvFFW6OPg9y83uodGbtYcKOeMrmV9rLBrIRZ5rjfe2P873+r/atESz6M+AqlUuKA2Jz7JOTG5LZsQkiJ
+CWSR8KIoa4Apm/Wl7wpn7yndHoaH5qDZfsd+68r9bXOzPNhkzqXOfjY4IEsi2bJCRBQsNUl1PpAxkuDMfAKn0x7dVGWgL+lLxqRTur0BQKUlHNfnGiP2CbYu
+Z+yruYzDb/gSH0c93FqkU+KTXwmT7MT4c3rDUfreiwz+mazbdo6cWNeojLmmLP84qpllX/NHGL3no7uXgQYObF8hqk6eaRby6h4YKyc6iYjKmMzBR7eYeMFC
+VYfIJEW+NJMhHLUOaTiZG7Tu7cKjGv8wMtVtxmiDjrctZkl84M+03eFkpaRDrAKXfzJLMx6dkBU7Bpb+lsPkR7GU7alfGPMhV+IqmLyYhCdQpRwpfEhFytdq
+9DYIz3rvObZsdlUUOuYK8GmCW8HCqNoaZXVqMK5mL6/DoIjKwD8sjQF7YY75c0PAUXRtkU49/V4DFP7Z2ybc/YbtNQfoQl50q8bziiiaJPiN+vb6/57sm7Hb
+C8WsoiwmYjg/uOVPXaNjfAjIrEl+HFO2LdRIc12zPHkug6xlA/LLnnzoezSDwf/DpbDa2fxUHeh9Bjs46Ky0PkEkNdFFNScwvV6CUkDuNu1B/0LhJc4ycZhO
+XQboMOGAGnPTb2xSDkKyTFwvNfMrtiuSJrYahAA04gOgWcvBfWSNJHRexWjk+scREgjt6doldV3SKfPTkqlc02d6KTL5n1T3CXlfo/42VeHfp6H8PxWahn4z
+8ZlH56Zg4ZTctZoK4zwTx7u6/ZCTS6dtEF7DPWR4Dt3Eav/lMlCpcz+DIaSwTc3PNmpmr958eMh48TYpdmVVLfaN019p+9sgJBn1voeM9IyzpceQrN1+m3PG
+OLCU9qB2GZgaZPZTFpiopldFs8GKKzXoFK7W03RUYAg7x94OI/jjuvChigQoG2fScWjuYJitfXjnijlYqYRsUdfowpur/ZH3KQHt66cR4X+EE+Ip4bT8D69P
+hcT9f45sWKcqCwlG4KE45PCtqkk5tU/SIQdfIlRvzutN0vVZZbLgKjuS5Vgf5uuIW8pTas8DTQ+ZVhpKolOYsTrdCJjZGORlDkaXZvIFsvQanq2hXrcdeKv0
+L+WqqY48HJlSbRRhynNURX3V6by8ldOVmzgFlMLALci3DKiX0J8V6DUdPzkD/zFhGBEk+0tmm1itFsfQ3PXcU8WV6PBfAlLQCthwC2KNHOMZ1fH/B7c/aF85
+goBTcVBZru8OPPBjKAfCWz5bxVr2sUQSSNXOQay66ywHNNm1gT1U8dCAmxyN1MwwONXP3eD3pv0FBVBwkFxmNjC+tIuQSSg+6W+6ygqcaZD6eMvJ7xRJhuIf
+qR7dX+llzIM/7h6oUr+8m5//RIJHqTtl9xXPn3bdDg3f9qKFtSVQwVevVnzv2cUMUdGLiHZvytQAoTvV6mUpxL33O0EesGDPVyB1Kp0fuUpBFr+bEp9CabBJ
+QAnCMG6DXH96JPW3nVIJzIotRy5bN38f9qoTOZP1G0RfGS/s8Q4EPhwWxRUOSDKdiX4VgIPjk0MQeU+CQMBYBeNr7inQZWrUR/u1jQ7OwvXR0Yn+lZqSHFcV
+Yv/0MjJysICnpi1/bQLDsO/zOFjpWbWRYmGB2IkFYEIlaZgG/QfmQ1jbBxM3wbn4K9UtTBqs64jkoF0N6O90YX8ynwQYqQTkVz/7sA5xkoaKzfVqj7BXRNWF
+2P1Ln80/6ddiDMv4Hqat4IdCwrn4f5NAWuTBGVNZZmxXvg/+vvViPF8InyPvy/ua+sqWERGDk3X2Y/U+u3GtXbGA+JN6P3JEE6PZoH2o4mV6dtGgrG0NOfty
+V9t8MyGhv3bQ7OMOWaVg1VLgCZoq0kfSCDdiDl4cW7MpaWdqms03VFoL6Q4hPs+9K5ZEp1EuOxJ9NSKVlFpiAQOysSO8ciKM5SUwynUzlNGHzTjp4FrGUfr2
+bh2qMF68TEGut9NX/Uh6mpLad16RnDc2eELZwOgvarZjyTox0LhF7dod3uixzHYfn3Oc6kZN/mzaQU/YtlIj8DWNKEG6N/jjGPMs0Z8Oa5RGLWWWaQ+Y+FvZ
+X6Ukjic9m+UsHZ4wJcRNZ58aenpwR5pdWYjdNLeREB3+N1VIvsIdrG79hDzVnZjYWKLfnWM/KXHHfPtMiroH3W7AOBxUgd4hQNJo5wZD84UD+k5OniIaWzuQ
+2MJkrnM/Uw0hSsVa4b5gvinW3xD//zzdSQX1MWMBpEK4DgfTUovHqSXqlpYy2A8LFeUNC8jbjCxkyFjqOzP9vJGAvEZ0isJXaCoguE8ktEq5/Ub9ukETsUu8
+OTdFDOG753hFvjEBb0RE+jb1yNdIS+w6zxZkT1n69fAtfywW3ZJHXdgkF3Ex3KqgHTmEH5e/Ql1I30Uxv8gGHHwnfJMyMdrRMb/pUod8UKbyxQTDeGa0qm4r
+IopDJP7ayqnutGpqtq3lSXxJsFwMBHgj7h6jHLLzbGK0AoIMWNThZiJ8JD9eqfs2dZD2Jqebbm544gSQo/jQNBkstGAVsofq+TmZ4tXxMQt5Q/z8YasmmMLQ
+Pnj/Q0UhmKyZSqADj1mwM9V3tIL6o2Xhn4a/n1k08WtlupCtZ3bcjDRaaLuxcM7W5uzqfYWsCqE2rsgUnOlr+0Z+OjLdBIauopfOPM4LxgtGDFQuO0jtUUlm
+lsbmYKy6WD7zNhQCdYw1/7PpS/chb7zhKMLDXdFFs9NqNXYDKbXl23kXTYQY9H7UeX8TPuwEodljCEwkAGi8XNTPRxiSS3U1J4bauS6w5eqsjyvYRLLygrGV
+AlAKSjtugCOsp0GJrRde2N5EnZr2hiYRTP9gU4fy+7V702j+zmNoCJBslsBC3ngwoRoySfrwA6hnL1ncGI3sAzB/2i/7wjutpB3nJhhLHaxe3T8xFaP2wkjx
+eAnAzL307rRCQx6IhkesgPHgLz9TqY8lwLF9WEdvns384iA9gZOVzuBD2wEbRG8r8wUbT84lZC78imkRSKZX/VmKmUjJuDnvFDocKxzPUw1/HGPWf7+lJSXr
+KVFNc+3FHtL4mAPAr0/qhIVbeSrM2ODs7Tn7Br3/FQxC9vXOab55OedtKGrvDlA2SHYP0lgR3o63ZF0+etNg1i9Va3m28tlyBPsk5sVlipqscHjaP9XdXIaf
+etktVaj6WO0eA/8KwTDUByoVDzJFLdWSyaO2MV+BVM5UyKqRelRvEhLNWHFuQU/FATw61iaUFvbj2CcxDPXdqWk1bkqZ3jgLeDhUDnnnB/iG+aenPeeDg3Cd
+xQcSdm3GRxTusKwF4aD2r+60FoJV9KQsEgHbE5C+Rt+3d2VGsnRqlobBRd7bCVUgRzQh2cClzlYqS5zhDnv8Q54QGqt7bds3v8UBpi3/rg0JFXH9SV0yZ20l
+z9MvwbJRurku2ICxaPPmrv+f1fUMe6GgsLocBFxEuaFXwdsHVcpC7WcTd4Ox7KHj8DiQ1EbXoZO0lUksxxQtUdlNfKUg/bEKbeU7ehCtpDvFcRsi37Fg9ZwA
+t4piRdBJ6cKP7HXYpHpthhrs4iPderhbaisoe6G7FQgn18PiARTDeM+wL8mODxteS7AazFzVRheD4XCQbue88DrNZzi1cfA7Kc69+ArnyR6ajZPxzIMGFl8y
+/NDtOgw684drRY70uRt7RDlxYyYqGTySKu33vMFqR7FIiI5B7RIsPFi7t03TFCH8zKBbuLk0f7zVK39LIDDbnjygsyhycGNH9qhE34L1ZVFVQxmSH+y3rGDV
+fTdhABakrGsJmC7V/Dk2gL5TzGL8f1TWaI9pYURplLqqVSIVaM7jrHguGJDgZ6AltOMKXYP6O3PhOD8mFHGm5I0PzSpIT5fW62oT9T5dz5U4qw3FZAMXvWfP
+199Em0LQuInk7upAn8hfCX0YGapQ5pwooTWNExgxRRxSIKOg564FEcxVa2/x4xSp2APf16gDBklse+p0YAo09IfWUbSmqqm+vHABTskJ88q5cywsbvcZZYqe
+PpGFlhICqGC+U/eLQqe+ZOfDmiRncwzD/UhTcraLj663d5Ibt7NeCUmXF4afPSPLX2y0aOp3ljDIHyR0/tnEqonaL1sEbTcyzaAm8/2kd7pyvGxx8/k4cbI5
+asOzNnvKyjV+b4s7RdzrO5pq2yyr5Hhgsez0vgsWoJDJ205a1fTt+FgdR1fR8/67x0e4q4uR+jrqnyXMBgGUqOVq0iwn0peb87nWSVy2B3EpsLlX5/CdZCXH
+i659rkskjmf7K4guiKw2zOWTPeqEeXYJin0Hz4Pvjw+E2zCxOgGABkViUtr2TeT4YoEs1QXVr5Q0t0v0emtZTrcdwx7Sb1suVmlLH5RhOtBV8UM/29kIgnU5
+ybx71pc+aCQRMRH/XqGxBJrRxhSW/q/7PRsTELJkuDy8Ve0sJXuH98j49f/Wkfe5pge+PCkROkFkY7I1PEO3SPE6C9JIq4WvGnzXyy59Pwss+CZe/CEvtVx7
+CeJlBnHOsUIbK31S1VtfnCLHofSSpHT7gC6N8YHmhhzmO+rVN5D4CdYiAB5GAChxxBrUse5Qci2AvtEO3pQx3VYxpSkn4aKCsx/lidAiYtnHgmVnw/VGHWTR
+A4dYmntaw/H/9N2Bb6KJeaNvdE1ef3eJFsa50ZsXYlNBjt87HwLL6b3a3UUFA/R0wfAxRH3cOZZQl/6DbQguhqAFB5HFk5whJ4dQEILPgfdazcdAEXXEKJws
+2PMEmz70L6BfQe6t2k+cfPErCX7MLtlg0/lTFK5bAdb6u93KvVYfPfGoM9t+gp2+kNLf4c3V5RlxyOAoxbxZo8DLvOGNm/HsgNOFo+65AGb91GU2vSb7R+Z5
++RGOPRa5zlcD52PUi5ysG4C+9PwYCajjGR95CTSboeRpWBXDQ+/6Y39dcjNMpGb1wkRHjL4BHHFsooeaNdzeUDOjPySL/LC+UAdAYOLf2nFtEipQLWekpcWH
+wPJVGxQim0AadP9JtJhcN7/kHDNdVe16p7DkNfRRWId1ePeHKy/274Qt8eBVYainEUyuue1IeUzecTj+WdDlA8GMXaAG7I6XQvp/N6bhoNzDkEGPeZjZtWId
+s10Y8PmJZq0es+Vuwke1Bn0uYTOie2xkOEoRL2UnNCAtTSXylfp0hkl523Xjg9iuB4eUCnSeHNpGRxxiK+iFJs8IgdFi88colMLo1sGQAVKXGi1GnGlCU54E
+GvCX5ePut1pr9JmrTqPcHFfp7dn33O7dFqgeDXgW+1pQi0cYJF4EJvPD7j1Hzm0wOCrW4Kbb/uvNtVoDjsfJ11H7WQ6bQgP4+sRwo3d8bIXHVmNvRYhr97uu
++i2XuvWOuAMLZfgIDgY8sG+9fYWszjaXssia0ZC1S2TOo0Bdh//ZlbXTOeVMu0yBaxX/W+oKBHy2nZRBOcMFlOqg6dlP1iLYbM5rAOnqyQ5K3bx7SFvKGI8r
+FX5ouJYkSrEol+vGM3ltbceXX7jMmR8bWUbdBFg14WvhGoZ+NX3grHA6Aa88VC5FmFFa7hZAs405k9+RbXwzVXYRDLtEYtvIRB34zTelkIbOrmzrRrn9RqC6
+nWhkmhj5oliU8LMIsAn4KOElnDD70bmoyCJSWdXVLrsdzwntT+drl3R2Ry2RNFfhQVcunjs6NBBeSJ+bLj/QNzvWT8FvddeX6PH5K6HaMGsDJb0rC/2woUP1
+ijHFVVF6q1J6jG+pR6tOfsyS8Z78O1NDpivl8tfTzl56CRLeTkTHp1bzcsdreHUhnkbtLnDJY/cbo6DZjsYo35t39R+2hLgcJ1y7KeBanyJFy2GaBsumpAdE
+iSnFBvKDTtM1hH3S/FClDxMxAa0z0/lrVu27klkV+V5do78dwuSQdx4GUqOzN9JYMha9p1c7p4vCxKDfQUc2EVt76e+89ch7GvAgk60yvTXfF4QVNb1sA9CA
+AWiAPoh7wS9W9LdkJEBaWIJ3Re2/UE6FrnaPgzyvFOSJ2wpbiPkgpBSfwtFXAF4uRSYu4vLqJgULrPXg9Uuf4rRqeWz5cmbB74wUeFqpI/cHVp22L/Ywdwab
+xMq4q8n1oJKgMGBqxq/m/ehI2Ojq6V8Yv+i+jBa6lqvEtyNn/GPhpZ361+r1w+Wy6lnSFdSYrzTTKE2dFv99TruPSmzQzFGlxmj4qq9LmutSj/cXqoRcHuLC
+pzCDIwkAq0zC+IUXOqcvU6VIuy2MhgDlNUXgit9bKqVEU0zqeahrNxMsGJ5XW6p1g68cze+PLhp9swtEtwBpnOGlMvyFgFG2bfOib70/TvbCJxXFZFhEGnM1
+JYMTfZ6o5/OGzUIHiQMYbEOYs/6Jhf9+H6oYIqABOuiIhwVFcqsY1Bh49v1Hx8ZAPYR3m/SrjL94DeShRm/eb5eIYxcoNqUOZVsk+Lg/1JR5Jxeq3jf2cD6F
+6JUW0oyAMFuqUsiGUJnl2lU+cLw7cZ7wUO6yYOYM+8w0lllKsO1JJIgdr1kI1cXucqg1l8HJMGvOLxI9Dq4SwXTHfvIbF6jV6SmL5a/X5+ZBYZRD+qfoLubP
+bqDTzCk9bK09ncb3rRnVHfAA+xzbWmrhsKpjKHZRMJIAVPTXwpAdn1sT8ENKgcJ/qPkQI9/hsKUNnlFd1ip2GQ7X1Ir5gRMaOwlL9YJFD51qIWjCXmjRHs8G
+dQRFQzXObO8Lc4MmKnny8yAfZi3Pfpvp2miZbLNtyVfRe03cFI62UEGO8Vo4tJX7ksed3AzHnHVtzRzG2cjK0eCneGF+6PiXJOxVUryUHxyy8koYRpA0m2Ms
+XzgnEeBq5CnEr5f0dWuyn6Kw7fptF2spqvoHR4JUmT5wtNzkwWe/MK0OilJBd8SWT2feoEnxuPpYq8sm9W+V3jCPdU8feB7i12RX4+XP2zw3LTwpEg4OpJfZ
+7TJNg91qWMPRldZchuHC9ujnaJ/DdulWJmPCjuLIzA0YHbrq4l0PQ2BdGT1P9DyOEaHLB0ZTphZ8WEhb9QP/qqQ0vUC38//Rs2+EUy9xQrP7vEAegN8cIsnG
+fTEhSsOblreETsr+5/RZJX0q/y5MaZpaKXc8/nYktOcjHsV0jLQiuU/JNm0m7SvBsoTbp/hJlHfXdDvHEyqL3nJD4QgvpiuyWYlqxvNayDTTtvAi86AxVWM5
+HAXImXjDlNfLCGjq2x9QrpIJ0b9jx+ZHI5WJU6Nj4JAFTod51pzQw6wwlhsUSzokaXIWuEU9ALdIJSupVw/QJg8yw33OOlgRO9qzIj+18IlwXfDN0kroTk9W
+S5Kx6xryWB23RWhxZ6C8L6gfNoAcGpJJ42GzkEg8xK2TMY0L1eBLtu/XXMIU1g3em5JUFfQg+neKqERGGRA/mg2ISjasnvklVqTl3Oi60Auy7FnY3o9qgdgk
+tU2bgOsx0lZgeGicyN3zwWTavi9oKWUAOwERICg/B5fxgi4NNbC3b8bndNPypi3kYDaNusrvoXMTdt5cqEkblh0jf3LM8jA9ti5NS+NByc+KKs3+gbLYsSdx
+A0Jj87FsYZwAzraAh1Wvb962Z6GwSje7uKZx6YmIn7E1ppt/9T/jNcBjotvNTGAcQ66yNIOUGoZyrft26uOuHJ6ntNvOHXwjjHaIbUF89HrC56iUZshb8orO
+gd4PQrt4e1tSoEhXpDTP69HQV7lI1N2mym15CILWgfMNjasL+Tiq1Kqg+gvQC06dfAbNmlSzyYiSWueCRtzIXOpiMLOTVJeA9zCue5bJmc8Pe4rIaYBh1zm/
+ZDBM0jOjKHadFDt3rrdT4YkV1yYZwyTd073dXdpltO9inMijc+uvcKFw9a4CxQE+gK0yq9YiUh/Jah3oFehzz4kZ1CTrpiGqM0zalU+5wrHkqzsq55Q9SgP0
+B/l4WhDuzjTFDAdLnfVtm/Xo3yQDoe62V8sZRyjTASheTmc+T79Z7rwdHAK4zWwBS22eX9Qu8gPqd7r+nl3yiIfqZX3X2gpTN8q7k4hBfc4SU7nNtAXU9xpX
+B8MrdWUgeVOeMWEfc3v6trAZSaGG3p56VFmrqEOvVPW8ZpoAE7T2DpiYXCuOMGtIJeRBjaaICwelqvqNdu/IrB/ZhdEjBWoDe9+GGWv5YSHvtZ1SUO2aUt3c
+VgcT5WzBPvKvLgWYFQsr66Zz8H1E3yuLe432IpPZ+vRphaGvBXmcpKQz5ij+GkOnt7HnocmERXNZHb10rHc6VnFKS9R7oTdO1I1FY+I1NgX1bwgMievdM/D3
+VEUXgPskZi/OdhsOhfKE2a83OlqL2hoDMFX/ETAtFEhXAiFTOtOg5qzE836Av6DSzrzXmlBDaS+sP20CKZfjWLE8eSvI8laMeKvhTMa1FASIplT/Hdxd1K2k
+MFgqqeOb+mSCplw82sEBmPoA27mkVuzb1XEahBbuDOPHQlq7Xa4sKpkwoCf0x9I8Hgf/xCAeCR8We7LGs0Z/BGFD9goZ1OcA8NACYm5RuER6PIB1QWfMasJX
+3ISjqEXKnkL1l87dsMdzYW0xhw8hCoV2nM+j29BP5EmIiTtlGnlQJ7KNhN0OEMj/GE4bNv88yWcnJZltsvsI4gchxI2lW8XeIVNlQ0rGcdFaTSGoLMgpAFQ0
+nbFq6XDbOT6yL4WAkOsoCLq1BfzV4H3N+4ZyOSbvSkqzVMvFaAMBTfEYLQi3+9Wv7P03de78rVfF/i5F5Ulm+qG1nl8NG40J4tn3JEzVTGi7welBgUKHXpCU
+nYfBaOqngqRn/vC5DGerR5ln12/xc3kUPqZGH1Ii5dLmchaJI17heAJg09a0y3lAjkTUmsiY2HN/ysQJiMSpsoSCYjuW1XiHgIP0c8yEgUoeyTLskc3Muv4R
+oIAdOegJuLCMv/V7QxHWRL4wM6Twt648l65YIyCjYCfHquKyi/T9UnjDHyF2c0AiURTIM2xsZx5mlZxbjsawX9kviiZBnQAm2GVRQhQtnyVktyT3EpjR5Jh8
+//sgSzzFbRB7bpstfIgoxq9yInHqYo/tSFI378FM8xjBCMPny6FDHG9OGQAayBkti1fK52jBqtfbMcCPzED7EcYMaafSwbQM/DXccIMJJXzRsHslfguTfD6u
+v7cI35jfls6SG66nwzRijTJznlugl+Plt9cbEVJWeEzKQ9x8Ej2mVs1Jeo+TPwo0Y3yLt1weaT8tB1wU62qlm3sS3dBEscbVnkoGEFgGL+lcmxZ6e0fyqsIr
+N3xmzCJK/STa1zLquLLoJH+IZTopFFA0OZnfykZ12Qky2k7/ZDcOqok1mZv9YqIIDY6kBF2niGMB/+JFoHRh+++N5wDRb8p9nmvgGwTo7Mz4cLPY3SfF5pEe
+U7A5a+5edelNQGFNeoDkGGjh/drClQ4w6gSNWBVVDRt9Jb3PdfO5VnVrKB3J9EDbchnm8aJdPpRj+EcVTmC7v1px+mbWEmyeV1Q3qfZaDWrflsyTnJvzpRUD
+rSJg974WR4npE13EPuufxFRSIccLSbpOF6vpdlh+Afg40kampBRYwf6llHMRjh5RgW1ctxpK93L7o5m/wQqHSqLIIafZoupUxrY7UfZdoPsMM9MhFPbH1FoK
+PwtGQtCmmv8fVmuicQfxafZYTfEKRRw/rlZJDi4SAj9w1PAwvsfQ9kM8pi1WglWbG1z2fCq6VZyHvrsodso7tRRqy+nsLrkc2ZDZLj1d/hFzY1BHoZIyXaa7
+GOv4RW6Myx1x7RAbSrafRBEPyLJLtCe1LNt/D6DLg4fElK9VizyMdUO9nJIohc3In7aOMOjf8kpHnX57fpIzDQU7JUf0JdKNF81Aqg+yn4gSA3WYILv8l4RX
+6A3hlcYRlNtkqPbclRFo4sz77mYSFmDWpfbb+OOJIYTnB/2BE3aHLuW0geo5VF47PDobeL424yyfBawHEE39/dX/M13UnHfhjOAggy+GH0mPu1JKDPXVALeR
+ZnB7uSAOfKYJRR6pdkzychxaUKu/ARi8SMy2FZszzTBG3sjmTY4yPi38liO3IGmoW7aH864E9u9Mn7RPCZd0SnQLMS1DsTPgraKeFhAVLNpjGPyBqeg0EvhM
+BeaYTOsjoWpvFUv6GctCswrOKV/tHkvmnR4J25R/FlpHjPXLPF5k0XuVSfvARW9q6JFcjq6pMCuroBQoOpOuaKfZQIuMVZsfVAstwM+QlY//oE8+q9SEqyEc
+Job4PxONHPcQ3fMbNZZ+2VhJZbM8t+cHsc2cdJF3PNJtqtJI+ptB6DDgDesl9zENGipqEVamUKw8kuLDe1q1kYnmE7WIC5UQxLTLpvXUF4GGkQeJptC+Byb7
+x3vynDs7Fq1XMnW31yRv4IM17CS+zIMZh5Izlo0SOi3yFzKC99Px16YUwpmUeI3MGwtkkrFJhgeWbv4ug6mBBddvL1/uCoKti6kBrlOLW0XSiIaaC5nisopM
+Mjgb91KB00EukH4a/qST2kQYKkBem/Kbceslxqe0XvcHa6d/sF6dzpgJX9t3O0pSu3A5ghj0453+KBHjhR0S0mZKCusuWoixB3UZ6PDIWZAe95ZWN7uK+zG+
+0W/iXYLXbyptpX8MKfMO3NY4ay0acuFBkLynNQbK7KSxIuZcMbnk+S/+oo4tdYPJT63Uh6oBjbcGN8wVcE7VqoT7EMlolHlULhwtUiIrEqHSbr4S7GpvU88r
+XLWLHxFeKP7W1BMHlPzOCSYRHilE2lj6Y8rKU+zUYK49tIHetXFa6YEqM9nl1W5bvbzah5nQrJsW43ghD3+0nNURRYDnihfU+McJrhpG//1/YhfiwkyenuFz
+jygzBSnrSFqNHnns6Usv9wdxLtSX/w35DoxnA4UCulMxRT9ereSZHCvAPMB4Wd9lBVRHqd854N0CrkSs0QOijuUuL+NHNeIMhdUySJf7Jk8qwDWItsgqGELl
+6QJ/JwRHsuFULhyv8+16b3DnocaxbPIrnqmJUpGXHgP/WGYfzMfrdRiFrttu7BnARxrlU3PgAGE4QsdjpmcnmwRbcjwvcKWSh3F1wM3NJ9GgJG5QLCYbgmDv
+KMLTsm3ITzY0rHcfxH7OIem+cprfoewIUDvuSF3Kc6tU56GMMMUS6MUofntxdcomx/PB6l6F2vD3R1WiaWB2YDYn6oDnaXilLzIaZ4Bb1MCePoahZEvr/t1n
+unzyzS2q8/q1YiuSZIAv7snJyw+R0uJ0ThVq3SyRbN0MCFNRHTEeM6sfMbRPqJZY0FNvL0DU+31zB3KQfplAoPv8qwREikdE36DhY9q3vjPOv2zQE3SYfsi6
+tO+yL6vFT0uFVhECcmYhQswGV12/NBPNKltqa8Ilr1tOLIeRJ9LAmJ1YDxA2NgNDairOo5yfitgzUgCLds01YG5s6oL5nfFaWEe8I47qbGLWXYc1HUksQR0e
+6gBjCVe0HOCujauvwVJEn98Orv9TRxsoGnposY0oDg3hdaptoUwJcZQ9LcbtNArT7P5PEDiHcFhHb6cJ4oeimLy6wLW/XH4GCLULiDE0Vg7XausZwafUVDTb
+3HmouZ7a7llf42aMl4rZ/2PmTvTyJl7VQcfEk+rQFB4SpAbo0QHCIDGPGDYtu10kRUgPymz2PTJQMMvL2Mhn3PqqUEZC4mo1OP+ovRegZngYrUTpwfQMIIQe
+Bp7be8I+VqG/5Oyi3fdDNbyjijdAWw1MQdrFVguIPreCaCybxysGH6Cn1RT85ERCTLXjsKuz0KPOTxUMnotgkOQF6AF3oqqK24kIxmvUiXsp9emWj1r6++Mt
+BHJ7wY9YQvALTr4WZ5jMcj4hkff4wtbuTObz15PpUKhQET9Zz+Yhn+7v1eUcCHrttYFdJZ4IxK8o4fqa2bgxVa5Tq6QpRNagIFgFsm9duZh7d8SpxqVJuYOg
+x2OPlUOZ9cd4UTrpKlnfn0ysZ9K+9G4vcHuRSBPIELkLlzd3P1bHgGOu4GrHdstTtu27CX4Uw7pmQS2dAModXQ6A0tqnMn5cC5m2ekJJ6dSFANpeb2kLloSj
+grY9ltwWv8/esfSs89iIAatEE5mZ95FBGe+tvr+k47inkbi6wavWhH+WLmWV9H+aYhPLahmk3GjVSG9umP4JVeDAsebL1/rjIVnfB4myO8pbL81waPwxgnHt
+g5uIvrlYr3RmPaRIeNDjar+DBalJdCnJzWpdYo1ioEUR1r8JUg9rvCzFrDIqH73wcXptSehJYOrtJVb+ZKIMnivsVJ0QwsxMg6nGMRZt9uvB0RwtqPhV/++v
+mgAH6XS75Hjfw1fC2VQ4bu7vYmzvYw8cm+QXup1FI5nMMHBuoliVNOqXDgQBSYJRwoAds7+EVZqg3/nQgNc/oREjOFE1XuP1wRBtCHK9MhrLi2idID2ERP/V
+/y6lFJdxFOTF/YylrjLjAToamFu0KavGW0wl6KGlg3aNbY4IoFBMg5UDCcFm98z1cTjDHS/Y/8HZfHfb9qZrZlypRB9E73+9QdxPDtaWtHgmkv0WZxKAdxGT
+MX1TnGpb176qNSxgLxB44oBp/9e/Irg6F1llY2N10HVOIsz9XemXSNw04gWqeZC6yWQGvD6Wq3aXePyLBQgKE2FxsiNnFd0VgoXBqzNBe5ngtOInrpu5T1m8
+Y2c1X2DvHTb1oey2CIzKctq/jsM98b3wVHK8CtXKOlWLizELld1j3gzgSv7klekoMWPFmIdniy8CUgZCo5lleRLoSycjbrl8Fd0rjvBI+IMAUPkHsDT1Wlcl
+xre8JVS2XZvTMfZTxQAuzbtmH2Zz1JRrZvdNR1Tr+W82sEY4s4S27XGBDOnHRLO1sS/qiKK9bwKFXnSUEDmf1PShsNUrl7kNOx+K3RzQgsF6HUYE+gXFNxMP
+1fYyok2LAVwR0ek4FoSpJA0piatsNkOQFmJeam74AXe2gdO2cTxyVlRbJWdRZYwWMSXxv+V87+tZ+xFNKidzDo8ck7o4HW8wGjYHwQfxqhk+QUU5978KlvRX
+bzEY2zE3+AqCBHW+mMR2fku042Ni01Fgn9dx8CfPM63TDO2OXgSsTIukQzZSCfk0AhACiGoNXa2UaKSVNoJNyu4LBKYV2llqp1rV6cH7ErHJHj84/dCzWfOn
+krgIKMK2bNPe6zV3/X/aflkeZzpOmY20vP+cA0zvfJDw9giD6vyqJOWpjvd2/uQaja8fQdN/pNtYhhD6l+v0GajWouh0lfur+bIwxuQqxWcT5bktHOCEM7Jr
+q1gHktIRO1/yJlYe6lUkj7yzm769HaHbLztuPD9FAAQL/svqjyqQCN8Bp/UWGipD2wqrkLn/Zw9LiIRiiIPfi+a8xy+5e2blhXx8COJIu6tLcNByf7FE67ns
+7tdIbczKm0UB7nifO7ZjPTAu9e/kcLC1pPKF//MB47MA+aWvOlDUrGHpyhIptttBG07ABhST90nNEwBoCyeZcseKH9eBt2pJ/Wsv1RMbLbE5ei4Dk9Ac1Fe6
+ed14IbyiygqRXw6o4ijN85h/8hpWsJxYZQMaGSDF2J5lDIYNhvUjgrM8hshO+WXbexuhn6+TBIK0aIiq+rkLvJDsQb/9aAiGDfg8YbFN8B8CHxonJytVxUjn
+GtVXU6PncnW9xvnpkMKsSdu4kaObknU4ZJIYIb6ACJc61pLerhErXjpw0LUz8sNME6OAUFXwnGg9g4EhekRxutMLoJ0UuRpWaMJI30NHQ/pYafsgkxGaRMr/
+o8rgdBB5iNwDUcXHjoqx2pO8c+o3GccEXH7D8sj1MjpgWz+hKpvcsXNt5jnB+vI7QFQtsk/5qMv2jEToHaD3bXCbuREnor0BIxzmghDzsJuvmoLw12uSeTIi
+Ns1w/B6mlgwNOjM8wqm2aRqLzqPMeb9kT+RCrXzMZ7WYy1YxONdNKg8GOITRrnFjbInj3y9Tn6Hv/RaGTc8xmZTGKbKb0ouE0fNZ3mwdBdy+OT2QP1daC2g0
+Dh/ByJEIJoevbm0LOAT5fij9aaAl0jqrJm6DvHD3vNImVtlA3q8cTv0/pko/0DUovTxeEulyRvLIVHonMs8DaoqZ1CTU7ebNT2Ibx/wjTiyoHOhIbxVdm1IM
+CIYsNpF+kMJxbycEkVLzCLTimouJZQ6jwDi/rNQag7gHEC8V39KilzzOVym8v3L2IBBu/B2gXOXyVEVjsBVt3cl+Z9KCcTz7RHFKKTbuLKDlwYumFvlcnST5
+INWNBgU+5uCvgMNJcbrfgFFk//Fxf8MEmGfXyY5VWC4AFKLKkjVGodAsIEqEQYFQSK7hmMYadmhZLXIjV5CFuEAwKAg0IQBfshn5Xe64Mgc8vc9JkxJzFfKQ
+tim/QGeNjTDqLhLtW7wMo26z/u5uPbcG5BICnto8+IMeK7o+n+fimjC4eWm+hh5rLvPD62Q/ahTXVpO72q3sbsXPVOCq5tez+iDdq7Whaamc6BATmIV91giZ
+Vtwp4fi+CjjF3gh9JUDTnGUEdl6dwRX6AxaWxdQUg08UF6rrSUI5EsxIti5mYcTXPSjikQL2yBc0QIIISgLbt/VcKQTR6KFipWpvLKXN6w60qQ/zeslJt3q1
+4YjW89F+z9cpWoQdZdlaAiIBYSJvUZzngaDssCMGTRlVYc9wCBB+HAntxnPdBoAi6REAkEPpuLHPbZs14UGAemNO22CdkLDv7OLmqPNEDGRP/M1heMX4mdKG
+o0zXk+ubNQkfH/M7pU3T86SRuWxqdbuNVr3saRtq/PMIqRBiGjSGqD0ZtrKaZfKcqJsE0Z1pIOkQfYyGAj0pc/Oi5FOT6bOclS+wcJuG+xr6/wImS5P7LwFQ
+wnBjv9eHWlqfr4x0z52Yn8g6D1H+yLMnovYHuthpa794edMobmJaSx9ZuQmAfCQmQUk+iBkRzi8BEsPX/PY5xse+Y3INNXA0skFRld3cu4VHz7ALW3jUit9A
+D705kh9zt+j1lR7Bs7sMf5HfsUNLxNlcrIYRu0kE8tnCCH7z4ez2rqp2fw5TtqmymcLcTK0q/ePSJW797eP5wLnM4UH/yWnYJgqVex6kaxmyai6AGMRJbuc+
+HzskStDXdXZF0TcmxmNCWvQ/92ITArQIHwL39+2Srk9z06z0Z+x/mrdSn97AveSuKq97WCbtHVCzyF0ZRfFYWIhjeFPzHGEi4ASKSZL00kcf/UIUih8wNc6w
+hu5q9A6ANT5+8WCYXD39g+6aNHmw/7mKKzAqTTDxCfyDL2ouvkuXZbM7e0VNrCdyBxWBB+2SRmtw4wG2S2wXPQXf0XwOscCHH/5cWNNHq2Km2u7N7s1ndZHt
+Nn/2HuX+UDdeAPdjsw83NmjG5KoaeXB+m3CL8wp/kd3FuT1stOvmQVL5YLJ776LV3fkBKSd3UZakUzr6oUlbhkpW2dolJo6jDcQ4+zLm36271kkHmpgM2TMy
+jW1aQJyVSzRgP7g3EqjJHt/D/cic3TXJT1DKBs+asCvjj7GKBfsz4ATKKezq82J+555g26MymvtmJ4xt/CJW/5oa/iXkSbwUmgMCtXox9Gpkkafqbl6l5D5d
+O87PBN6JRqhPbCTbtOb3FtHR/cIb985V28pViAAtzR+56gTpeVsKGvjZ1PF+QrpNFOq96J5vgXiYVQ4vZodg6XLsbtXbB1qVk6D1Bq4nzKdFGFY5Z9Cg2BZb
+eOfzmL2lcxt5DOg+usVUErCjJpSV8XvbL1X/GItcacOJhILI2ZIj95icMG2ekwlACCW3KtUfg5E2CuJP9Q7nqhzxoqsTraeKF6Ho9IyNKMgL1t1oBGFNXPuG
+cPIwYhxp5mH31m/2ODpF2vkSiVxB5oQFo56DtkRSfoxXy5L8kEt7qazMWm9xv4/koKpde1ED2fJGgUiKr4+CVv8XrELNzFYK5bKJO7YH1P6iKev2uIqjNQl2
+cqk57uU0i6ei8FwIDXdSrCuZtfByEP/SOxNr2IZhR6G7yT3ZJMceB/h6y68rFTGZm8F0EgChGU98JFVtrfJN0b6/gkid+/AOMquU3zr5+nwpPK+8YIugBAh6
+R+WwGNgJy5k+7BYA0a3HgXUWpSdVjGG9yLqmzH5Xv7cSDvubCidh/1aEjlQGK5w/7he4x17I93dlsYvdU196LNEpD+AYENJzRQaW5D+f3KY3+BXXPeMH07O2
+tWQJRpqW+BBnRKDxW58J8xzw6RVis5DuZ+YGnGDFW1Upf48WgZEgQ9oZs1c8rt+pNWXXviDMgozBiDNBUKjQ/E69dT/Y0PcHYv4vaR1ADVimg+Vjvz05vFLG
+B27G5WNt5qzY+wpy7agfpNECzpyL6UUV/9b3ekscXMdfFH5AfhoJtZbkp9qDWkEBvLbxNeRX3w87PbBF7zO001bXgVRV1hpjq/UsxB/nD1GXzDuaSVxyc8FY
+9GtiiXXKDmvReZJRPe07bz2e2AVgpg51TMKXRZvGgXAXxzBTvl7zyvr8x0lmPqmAIcxZCJU0leFOjOXZz7cWrMVq4og6qFbauaunmNWaPXB329P725L0Gtna
+evQQ6cUhSXVAkDNT3P3VtY+qBmqA17finApW8lILyQFkTeoRxtChqpSmUFaGw0MBUe+y3Ltk4ApI9LZP+2UbQnosk0x5oZ2KAiLyjC+2UTMy7hx8DDV47pQQ
+be8bUOH4EBTMt6Ceb4R25rl8BstjSEayr/bK3PHLuk+vY/Dp3ChQOOQeHNOd1y6/RoTYJlOngpDWbaygvu+w9C9gbtdElyNQA3jLYolfMfiqapbmMMZ+QWJp
+8NxxUe1KU0MXzzB0XpW/ujssXiBpV/X9TOgKfSkOIdPhm2RH/qBUrS+R1T+xylF7kdQC9EKvufAuR90VChnv41tFxSPSZsxywIeZ0iP5SUnpOJpqGg6cpTA9
+WqpZ2WpK9XwA95zqDDnPhnLdUXDoIoVk64eQEkbULDoU4AH0DaXUQAh6ktl/nRF9yyAbdXRXoLi0/SxsalDiskKcLL7M2Y/78ihM97aQcQyo7zgslx0nf4ua
+Rve0v4WIm4QqjSR+XHRhfcMqEe1sUk5xTedjD1JfhovgNJHPrK8FoWhZBH3mJI1G/DzBEoNcCnS3A5jEKhBAEAxC/PpY3KJY3NzWp9HglSXikejRk82QQ0xs
+x/PtU7TZkOJO7yIkRGeOHPaRHn3yraevC+UeTeswDzrsvas8QMpDbh9bZ7X0mZ1gQM7Jo3NqHd7QaBookf+xNORwlvv+KDVuO31JZXaFgYWIQx6jJiWHrsJX
+NI97Ue+M3Zyz8X0so/kiFX9zxqTVlgqqfkvw2M9jhMZKTRDPlLWRuuBM5jZ6NYTXxifX6VWHeyFqOh8dBrJ9T8PBKO2WTtrgmrimOnIYC4eHOOd++MFfsW80
+gjmbJxbEx7UlfkSbwrmrqK6tsnshyYcwoSRybX5G5JHK0PBQLNT0O72t6k/tFCvgKFgltIyvko7s33aZsr9RHoMYL4BuGwpPW/9bKo4HRl7j8vJH4Nm5qLqz
+5ZDWCAX60aVZf10ZpnWXKzIVYlNnFS/mkGqRkaSeugUJ29nu05P2w4Aw+f78rjMJMzMFnfXvDyTi6soOduNv2T+wGe4MiBb4beU6Tt7at0x6gg4vrqEmo3BX
+yGtU7PG4/LHiWuM0zGdNpwT0lUhO/+FGKWTvKVHUE9/0/zxMOPX3uzc2pAslnw05k5BCWOl+5NmCQoa0T0+jNsa1dbPmSh7vN3ON9ae7Bz3eUFmI6PVrTrrG
+z+tABH/sDVCIYVTgfSZTugRHuHyrH4tAzo8vh5bUN2MSrGiczL8ESqvjau1bhGt9e4q4UJOK2O1Al4rovMFONJBBk9rDZDyi6D6vAhLgMlj7fkAp/HLDWFja
+x4dhpT6FPOiwyIow1MTCem5108D7mU4wus5BcnMTBCaAXL8wCbYy4Xv12CTIgtcAxLfhwxcA4uksbs26YO7L4/jMWPFeewZ9IShILNPNLhqAhZMPnOmbkf69
+2PlGcwZhZdpdkz2cbCXoGe9vMj5zvUVfsZzFXYfwqC88PXLO2iqvVG3ubUygeFAPYHxordK8WVEH3HKkQqVCCsw5wwO86mfaLI1pTaKH7Dxt4KNUNHSALNe7
+eeoDT3NWoxC2sm3zs0PWt2QoWNIOgi4ZA61E4RxhXpkYpGFwaI9hu1uylwBzcbQVR0tzEWbHoNFkdlNfYz28Vmx1lhL6RQ/2Y6GeiMRR9+h1f5cObirLdvLp
+JSCIg19I7vNjEoW1i994X5LhHkqpWgocWSgk/FFTa7SFg2aHPDeiD91Z4yztR7Kk5Fl0BwLtJloJ1U3g+dPIKg10FWCBjwvZOlG7TIaIWkc1rFUyc0XRezmB
++U7EyUDUYCSTfqP8hCwgYGw7VbYK+U+ZF6a8Tf1Og13/6h8Zb+nNWQgkyIk7Y4TZ2Vr4kIqGjzo269ZZiFNj1MQKYnhHXD0xBFszNLMoWlEMPo5He4E1mHTI
+eg/+NRxOK2QBGlV1uXjSYnuFai9uR0oa3LIW5Y90FG2MSosirwxSB4P6u9Xhl+N3FbmG9O/PtUmovB0G/sqvqbShF3RkLT9fv0OQLWY3vAsSoXUTr9v4CPXq
+ND+V0Qx9gDNFeeFw92OiFbQsfjL98rwldZMnhBNz+gNrSFedMbKg/fvjNpMFbHjLNBQqSN5CcxMMHlhPR03yJ9RCS6gM31XlcBqWY16y4TzcVlPnVQQzqzBv
+0DPoEXE9c8oIU66Q+gvT7425HLvReo9tZAzzNYPKq57xd+UyV/JPfath3PO5PxQZdA8MDOUPxUt1lISmfBnU+oOqGgxNr6we1r8GTu4Id+/wsxPLRBwal+8C
+7odXFJIlrWWNd8PnsFWS1X2O4CSZOnx7zBbVWOA+y8h7nh3bAZ8VLIcemlC2TLGA04esh2hgQAp08aAhs7XQBSRUpSRHq4+D3ei+V/9+0DpWcLPSjeV8aEMq
+fiVlUy9VAwQL/gnrm1GUPKyoZf17MR1+KFMrHFvoTt6CixzfWfXp+FeyWqUBkoo4Fm4h31IORarNJM7S7Agj+ngi3UwccxPKw81ffI4XQTBKduA68A5uAyXE
+CgqyW9bwMWbGxZoNGlJ+UXEgqKWKNCrc03ZyxMF/lahJOJfr9sZriLKtM6IL7bjaa7lR+b021ZZsxU+G19CX07o28rpbfPGs1SS8/DU4tnz+WhOetLKmda3o
+S0Fne347pslw+CLekQ1Z2boaxGpW3tFcUTsZSRAE0KBK2q+VMhnbcLlnSWOiBv3fGJQ5b+N/8xU7eVP8zoky/VT/85fhWzN6QZ2thyeRGNN8sNHAVdq+a9wc
+dxPsoGRfWNkuTeY2Iju8cACGENcrMO6Lek9WKiU9WXV3yCPblSTEtzsKn5FY0MTWPH4Esk5Lg76LaNc0jYW+JStBbNWAdXjt4SZuflqO1+U1pCjcqR95zzIo
+5oJ5ynqvPV3pcFSvhzLH4DG17STeIIRFpwUmJBVlJzkeWvWk+5DvJhnnuV3x7dGVqDToxbVrYwb43Rcf6Ejhk5s+5WkuSLYZ1JS237J+AFYnmvoLc5OlRLc7
+dFjGXOA38FBBwkdRILAPSTvbht6H6WqhmWNyWl8fhE4ectsaHrY/jK5VE5DyVgFmxKjuJCNJVdiU90PujZkpoaEkKTAubkhUSUAOxffP5ykB/IF0a+AvBYF9
+prgDEV6fo1PkrrVRlc09rGPZTgGce6EMubE/J9ppEfeKm/7APsrwAQessL/U16C+HBjhQOt9oaxiSj0589eSdXXTYj7RIUAZ0eBEfMgdCyOnNJ0yAe/hHSG9
+O7cA/IHKX5GMzLGHTxLos2eqiAG2YBucAlCTzcQQ0H+ipEt8/dZrHulkapbkL51fysC/Yv1ht00/MwOb2+sYCbjCSjUISCG4xptcSPjwK96Nn3KsteFb6Y+m
+U3mDvwSS3yay6s4Bm8dI4uOgXRINOvZNV0WMO5O0y+IKXe/Qs+LYrVHAIcH6uhO0I2zIv05N1wfH4wjEl8GvU5wD9+waXJf5T2y48Iccx2pRB5spHctbs2Hq
+k6Uejk+Z+JOD10EdV5qfZM6RvqzFW4mxyUixsl4IppWAm8q3jP/EBLLJDg+/rhAP8yF5f+PyoMBOxufxgHS1fBwJ+ehgwvaCsQEeB3RErYl7enAXTM7Rqff/
+ss9tF+oKbwdTRw1Fu0UkLmydgoIrnOxEPKRc9D/PSbsl/SsCb/b5QofS6Ihx1ZdO1lPvZKBcrBDFvLYqPrI+o8Fn9lY3GIrYewtSk8ayU2jQVblXUEZ8pXBX
+0Z7i44dB8++ckFVZaqwUj9K+6fMjpgMsKtiH2DGQX6S0T4m2Ftoakjlu5y7qEs5x8zdegpX5mwGAyT21/kCj0CI+5B9UdCNrmDAzCe4bJm466lleSkg3qVyj
+5Avt4wtE8niSNHQb4wzcDJkboqBgEXbUsQecGpDxScPYS7TC9G9Znamr7Z2x6wJNvwNMgftqBlABHccQLcqjjPdyk/Uv4k7cRv3K+rU23XgPJ42WCYnYVJx3
+agsvY49rEqNjB6/Ii+J0LYuUFE3GQYWu8xVogWowfXaDt0wfCb9msqCg4zXTVk6E9xPhMazPiSTBYWH6mt/4ziURMKANgNgdqg9yJHRko+bTkmOe2p94Sr7g
+xYEKvvwl8qSkRCbGK28vIo5zh3QejWSFpHtqoq3PCD+qWIfWdfKhwrg7maOFwqhgEN085si+TPjMyR68zTR73Z/RgW3xE69Mlfph59tj6PPTWdAnuTG+S7h/
+vqN3mggON6mjFEicTuRGRVrKxH88WRXL3WedcqFxuYx8diWw3Ve+b5mIEBfnNsCRRNAbZ39go8ekj9PY5mf+yDbf+2/WvPeFLO90ckWOjaQ2dYvAPmeAdm0+
+QAjKMP8Cvzj2r47GxZetMjOOFvj9vPESimcMIHhqa9hC9DikRp3hy5SnI/v6xyceTbiwkmqAZk2kO2rP+PMVKRLkG6Dsggza97z4Z66Z7cEim/2FYNJQJZAj
+RhLZEGOk0swtsSIRZWjQGKRHJgtWfmr12YYVwp2Piw/oCh8hG6iAqE5APDtO6FY8XjmRHT5LDWAvt1y+ahgMxKKAkR9AIqjhx/HX/rsnI4k5k4fPIkDAt1R9
++3KlmT9ZdwNjH94OH+8byVgjsitvFsgEN7WTgx3W9lzNqNSV2FYMGdf0sZeWqnLExsG8VApd459wj2qCsX+Iivj0lMMagLUUb+K/b2SXesVltAmpzH/hbmbx
+NAiyppX/ZvPVzjEf7tfPJ1fMl5cY1bo+n6UyWFFM7jD+XET11MC2BVqY2RwXUGw9wG72oC7IOkr0wsAT1/D73e5/WsHSgl8VAyzGWgx/XgQiACtulfF6G3gQ
+e0yt7YN4N9ahl+foNqAKVcWAP/+rhHCsGVfyVN2D6I6sw29n6BJ7qWmyf/lG9Zb37kBDpux4//1Zna9mFzVjQOdSY8j5LM4k+tFfPcergYCOt/YMZ/8vUqBt
+7yHh5jIo+Jn1KmcrcrnCM6XSzl8bdiFf9LGdNzWi2MqrdrQc6vti+xwpsW+J3mv1G8NvH+fIGwUBG4EquGEXwK+K+UzjFSujnaB7DGsNejnUGMYEP8oI6JNI
+KyW3MSBhn8a9xMDVCgr8cuxuy4azlZHInMeYbO4OhcBjBp4ydGE5FzUczQaMbid4kgQIKtB0+1KFth2UJS+OeKdON9XM7+8DMMi6ARkmqoo7N2s6wIGDuOt/
+omQksNghv1xxq2/8Kr5k+CtGzCftOJA54YeXXpqKPaC8eSeig7a5E3btRzDue3ZKx3Hu15XIuVVwI8XyzFrgH4i3rUQ9edjM3X9cSQwBWTq+6kbNce0HfZwp
+r9pJOkj/3GMz41lB7IW2PBD6Ki+dlLPY0jTNlvS6h9YNEt4cogkOITdhmnGYWTNnu5ehwWwF/80JjIq6sruk9XUVJAuHuHdW35E9QtjLV7hV0UsWK4uololH
+DE9ezG9sjLBBqt9JbD9VI/plaYtQImdrHoNA5Acd6jCvLWZP+fOB70zWwWOkxt5KbcXyyDpE/CRZWCAbcHekZA+HMuh7A/Ixp1qwNKgAqpCXqEv49GoIZDgJ
+/jG+DBA0QCqA2jOZBYu7jPun9tARocuZpvJZ+1QjxwIDvNzgxC8h25vgmGpumDt+qFfpon2hAfgXyIaXfYslu0yG9gJyDMLBRJX2QsaGKjthqyHNE66/NHVl
+kjZsGgy1oQWhRP9tiCiT4uainPrO+XKrRq+OCz+qHAVUZmLs9feXvNJoQG8cFbnRiuP1HH8vx/YpcPt973DO7r9xCUttWVRJWME31ks2y7r6II6uHpcNzh76
+J5521V261B8pdLL14jjTBHioYPa27EYkoyct4ijV+8KbMCvvKy3r1TRIktcNd7dIw+7xLIMQ/iyIYwETuHiVXDNtrGcGFqAmQwiHNYS5B+0dGrEiHaAvP6UV
+OFGBiJq742wJfxeBd8Zx/Z3XALbhqRlEJOwVHTBZVNdA24Up1yUVlnCT9Ukd6Sa2T3lib2olbzvI+Lc2ae94seazO9axIjjGuU5RZ1K3PV+tEfuCQnYaT92P
+6iaAgOifwOqeXLWoYuzKRp/f23X1gKAdZDZ0dY2x+wOLne1Y+EXzAOnL/Wr674kF2g4LDMgkJOKO2s7WqbpCq/bj3gOre9rN43YiCfQpu53tpd1yu97O0R+v
+8hur0D6nOcC89NiIkhIdZ8SsrBuj6Xtg0ZWA0ZhBFqdiIZ/zPOl7R/JdYVTDP26OTG+0lKHfsPs2V0eORZYGkmCk9GvnA9tpZ3lYDHFmlswJtVVz87OAis1A
+6QalYNFXnqajSluZ9S7Oj+BlsZoI3o4QLTsEjUz9u7SgstZwCdgZn7wuDDg1opcAIr4UQnyHwUu4+vy9/XxnO7+seLo5c6ejUgVeErj9L946madXmnylVdwa
+5Dfy6BjWT/GlSbYDaRfRAHUlymMXrfjWy23l5GiAfFHfh59LR8E+xvUuEBEueLmB4MyuWelu3QFZgtI5ejgpDnI5s9BwB8IlV5FBIGdxqtMHYPYqUb+dNtgf
+lkXtQ/csvLbEyQjp7qWWA2D/Co7gfNmMyGZMxscDZP4KfmFL0S37pF1RXplJf7ZziO0V16RVrzL8ADvCjKv1WxWuyPbZLu+J+vNywdZfFT2biAKXN1rKl/tn
+0xWQoFTfLNifrwHs8UZ4a+6az7jwu1a4dMUmZw8/iG6VFXncDOSdxhc4wO0p08DCwJQBuFOMJyz+sLtE/SuyxUu/tP9EYwS+TMY58pYThB5EaLgOj5Qaf238
+NfyKT2fXzXtUMFDJB/lrzHR918UfVVUpNZFmGGFawvzNvS7x3F+RRaCwEM8Ky4TP2ZVLlMpV8se7t3dTngkR5/8b7sEhwXOi9GJV2/FuEwBAMFoUU9+6ALsP
+Xfcaoj5oIoKSWUPzAB9BE5bZUffQulSRWiyRCYTbhTx6Qmsrkmzy2yRyfgJLr8nnWIw5Rte/PIATaCtzOpfpMtr3WPWW+edQy1Nl9o8n/ozGBfI2rpJEi88e
+LRcO/d47H9HqLsdRvMxL+gf/T1D5WYARWKSqkcTvc5hx42jF4Nw28Ry4fh4j2+i1A9FqK1GK7mbJ5cqW8I42lBuOS2hJFDspUpDgh10Mudnq1oMbxBFPmD8w
+Tj9BYds0cOHLHJDPXdDw5DAUdby8wTS2gWAB09+17mvSOPrBo9oSQHo/6lbJjiZt+rIT8Xw1tMN7KF4PjnUV8A51+SZkUI4GLgyhE5YJjZUjlDztZuGi+8iA
+pl3gLDZpR/GuFKpDrpa2V6znFDuVnQWpkthM0FeQTsgxO6XUO3RrRgODrkLm2C0/65Xn/H+EvSCRqcgtsZconmFTDBcFL38YTLJLPcBObJpPgyuX55CF0bOf
+4XjHX9l5b4urxiOko1m3OCDmPpdK7UaplsPAnyqIs+TbjELZ+x8z4QCbA8mvGNsrxiszbdXAsSDELEGwDSUbDWSzyKMbtmh12rUjqB42ti09kqV86spLE0KY
+aVV0TpN5YsKpORnqGGQfKAo4tq8RpBFG/Ql1QHzZAGmRtPy8/AE8Ily3+rQKzqpZC4HwKkyM7DvdCzVtEbJSXm/fQ0kRsDs5sroeSSnwoCuHHX/xvwvs4Rk8
+zrY3JRCTc4X2hhbJ4MZSeOYTpBZD9bUvoMPHRjIfB+72JWd9uoSdK/uYy0gsnHHb4hvWfSZJdMr2kpX6uTHbq5MKxzR6yh+gmalfteTbuFjUs8BP+oFx69iJ
+tPmz56oN/zlhGlWaFLXG+WtWSBoGAs0tOlWS+J5l0Aay6UAYGBdKOsV4USoklYl0+OnCKYg0H281Y5q8keDqlcGqPCt/j9wmUlK9XSJnC+ZOjGD6vd/Thh5P
+mbYz9kjqkXUTiVR26lw9YN9VM3tW+7/QUB3jO/JlIw/Zu1LbDa3VXGGSub/J4ufibzoTwzrR2lRdI1tuU3SbZIEMY/xNj6oHFrx4j+57tnTmtOpErrMikL3u
+WNcvFhGnLJz7PtArYntj2AYNjhgmUQSNWrARXIAJRluD2s6PHQw2O7oyhdKTfHHxCfzCaV3ai5Sx8NnYBsr7GD3oGhiECnoAo7KkHY8zvwB9Y1aQxV5LDBdU
+x9eSDJDjCU2GThRK0X1P8gQum/sWob+q+RMAc/zJB71gqnTRWRjLdb06+Kv57dYLSNwIDZJm+D0nGpNxCrWXCRJs5KoQCRD6jWjb9ia2EP2Iza02R7pgDbdv
+nhNXfBHR9a7kLc/xjm7wy0mtCr5hPW35GSGT9AGVmdVMoibv0jfBuO7s2JDpa5vbjhv5t8Pclb3ouucqX95tQt+VtfjAgO+wNXM35ZGDIXuL+tRUPHG8XoS6
+upJijZWa2S2BH7tTzh0AAFx/Erb2vGUKcRCL5luDH3CROt9Eu6ftHPF2eUUI7DupMi+xmKu4ujVVSUtALkaZO9UmAk6MMbLnhpj7X3/5xRGZMh2jnooiusA6
+uJx6Fez3gQgXJPT/qjesQdDK2DTesb/MeUv2CmOxKetnoYvnxBdWW8lMMappYU3t+cSW0GLiaDvhGQs/hHnqGegHJjDR619FEqSX6+g+w7x7h15m1TxQKCUd
+yiBOz8Kr4wJLMjVR+zQ1XNjWXG2CrgxAxhaej0E+t7x24VLiiI4D5ej0cqSUVy4GJCe/RLXvZhB78aVukGE6ZhK+0Zu2FITv/J1jbZ3fb1blv/Di/117MC4o
+BszrWl9tLS7hMAll+EClzjeMpXX6GeS+O8SRvCiEh0OLIRAiUUbU4YS/h0YIyS5qBcgi9AptTCwPTo7XE/ZFu+1XY3D60J5R2lgaIWXQrq6d5prgVt2d0r/Q
+PGlsxs+RgknrhUypjlWPlFSDTMV6254la+aG0kPJbtjXY3yDuAW7wdGjXO5nAjVLZ1ZvkRInPwoS09F1K1cobi+II4eRi6RRNWHH6/F8t3Vl268KZDUD8iMQ
+EULLysIKYXFxsqySuZPZK3FkkOmIjfn2aoLSD/RM7iHnHR1eup50uNiS1AV9wk3+BeLPlcnqr9P1FyhT3rJsmD3x8TmbeSUWEzNhMq8HePdT5fAljTD3pYOS
+/pXP+oPFt9yfbUB/BoF/2RQMVqg6ENkJS/gQtl4Jn4jdwjZIdOaNTAeG/s/5oEIqur25Et+b92UWO4VK6269GNprlEZShEDsiniSSSQUelLLPj3TvBvbNn6v
+wFLM+7GvNIXs1AI4tU6bXI1pN2KGIzq/wVs4jxRiIU7zugbAZEDPpYuhh6HsgBO9KlbUKnM3sNZWZcHKZRfJRQxEhL24ZHr02jTdTRrC4kcM2129a5LcP3B9
+3TvX/uWX3iuspH6/mRPrEfawEK4+5KYebdZsMgMmiRKaK28tCAY3WpT/VwPezCw/k3vnRVflzx4gsByfUTFQ6bA40Qwzh3yZbsjV7rmdrnF30ToNYhuuqY4B
+E6+awH2vjM2DWdnJZu00etxs7XwDsrNI6oVFPRGcXg0JZyzC6sDxxvmRXwq6CR4fYyQpRcgaGPhHsozS6s6mFzYsCHp/u1OZ9Rv1hREhHAx1sihO77q68L+L
+Zu4wOUT6fkH0Apmtj5ij2oA/xKREtP9Agq38dyaCbqyZmcaIQHsblcO1IN4iHsvxKHm3xWoH4mahlB4WIDZi9hazBp908lX+434hxkeLu1CmsSWFjpT5M0ua
+r99/AVLjxm965wqUo5IGb+xwfHYy7OK0Dow1Ygr6kHDn1YfonaQXW3ZTm+IDIfAWSBC9xXkUe/lxRUqHjybiCjJbXb/LFc9a5GPy5raQ25eBW5Xvh0KqSBLQ
+qUcXssMiD7QkbXQVc5IAoK95iTnrA6jVKy8a0oPUGuFBvty8MDb8i/CPYkJSLgBvo25E9+v75EreY/H1GrKMKJwj8mN9/g6HeyOi76ilrn+NhOKiAVu9prrP
+4oI/KADADJWrTfY5OW6ExEmGyO/OaJzlrGy23ElLEA8mkfSYUM1/mFZKLFOeUXpNdh4Q2M3yoPg8kgrQmXbxSFlCm31Gz4nB87RCweRDQN+i5vSfaXrZFTLC
+xSXiizIA/GoIXOD3RwlItgITUx0qnSeeqzYRev54w/uqaGSwLySlDgjNjXsgkfklLDuBDsFv2EyjroRzsTShYrVmlgqXTW8wEotMJRKUCfbxTtO1PWreHFME
+cz4ixGFUVEzHYhFDK1FN+jA1DFYlVBv2dZSAUYV7o4JtXljsu4+bYIce6cjbW0o/VdlmC4JD0+L6El0ZtNhGsWRLcutgWH5uhXjq8oSinKRK/Nx2iIZlXXaD
+aq2Eb7kN9DyifFfFHr5u6eCM2Vr5+Xjx/s8MoHoZkwIRB5jIkFRAUFTp47ROR43GQ6xSUwE7/oW72GzO5OzriFmCrGWjhLVLhxc6MXS8ssMoOO7JdEjwaSre
+pzELoRPNr8BdCUxd70bDhjKjvlIejOF/Xg0NQ7cQdEjDtkO94+5wrJwo9SjBs0i6d/L8yJbwnbnqeVgMhoUwC1HrNhIPYKE/LCXmUpSR6kJmBBsQei0yXww7
+107tD8Pg31bFQLg98w2rhoyo5zB8r1bHIFSIygo/M/UbWbddGUey/jXsuSveUs+DAFwa5gHiTxCHJqIaGylwLkAxE4E8FN4Ck44qt3mZ1oEoFSb8VTiLhxWj
+zN1ugPN60vGnmMP16SML2hLu6a7g0zF6N4rFemBfYrgtCDpsVUXDuhCyIOvnq4fr3ETrx8JTRlKdHgSJPVQ8e9awIgMXz/47v0rIhLU/8NUVEDdQHuRSCiWC
+Y2r+ez9TRVX3uq6ZfbwS2xEzd/P32aVr1GQ2VsjfS9RLg6gYR4B88ZBwU33R28N976N/hniLYblV3mDCEE1IY5dnUWr12Kug9LDWeEgQ9b5ELE6yJI50xP5x
+RiEr/G6rXvUsksAYekBEJpN7aMKzLMvzw78dH6CLSandsERCFB9ACYlRU/NTIaTvWhNnAVkwQxhnVufhhPi0toNtBV7+oUOt1VCLCt8g1EtSu25Ivh6WREj0
+KXqBoUGdw8ZeHXSmK8UEZ1GiUqs2omE98487pxDWWg6x4uw+XOIQPLeFiPmLW4+VUVD7IHjOYkYhvvMxpmab916pfkkb4vvlkVnyUvkM2OoG6PJvw4x6wL9Q
+3EAD/PSrzUw7+PPXtdAVKDh4gMwmZ58x3yKa+IzEziNcmRyiwm5g43Icp1H/OUNvbshf/cDYYd6OjDdWphNh48b4S7k7I/hJo+nsEmY1FSNGyQoxm4fWgMO6
+XhySoAQH0e4ctC8PdoyPviPCq4tUpH8rMR3Wfu+UVsKm3Ru/gMEk1LzA24z7xTOy511YEbHprse8CYz2mEWBgr1Dx2Du7x+AQlbaVerkRNAqwDUYjkq85dM5
+DUmQ7NG7fgwvah2ETuHLIq/aIPCJ3MbEq+IjOO4+60bZfNiz7883gAhOHOQxz48bJCoI3DM1ygqgjw2olc1FFg8Rdx1ha/X1XCC83ZtnBfbCf8sijS58CI8W
+Ybnd5jrXFhaS7nJHW+tVVKupQKJey1nodt8McoWFTNp95dg1R2neo1vGh813QQuGw8X4hamBxJCcOFlQ0k3y76L6EYjUdEF4RF/8cXtbo99Z9el+P5wXOS2P
+ZQcLojvfWTqkQ5mRbfqK9eDLJyKIrKSNyuxv19lpwpiAOM/lsp3CLgfNLCt4KCLLyWXD3bPHJ3HhkdGxXtlUSqzSRxsSvWv8bG3wL++vLtvCt5mEI22QjAdQ
+n9cOS9vjvjM3xsAOy0l3gS3WCeIuNam3i44kcfUr93iGDVXPFXpxmz4BbdKPGbR1P/wZA14Wif977aaM4XxL3t+dq9oQL//pROzJzA+AC6INePnsG3R2Kq0j
+jfB/w6KejnQeDrembHwJ4gqB+auS/XFz17UQhVXATo0lJWmcNhCemI7ZaiAVfmxIEtuz5plTm4SIOBo/nmyesginiCPKuanaoG7055Mpszvd1G8H0lhcJKi7
+gvD9dk8kfymuIEqLZqX8ElaaugYjSeqBNKXAqnItHctfYWHitsaoe6Zpe6KnZOxadP0Qq+kJZI/PQxM2nti2md41HZXQudJsMxdQgQSCGoWpn8gd+hct+doT
+t4QqREx2w452sYZSpXSK1xLHcM3xVBif3y4u3B7iXqiDnh0v1JAJpTWoEiQ8JXOaF+l+9AViVrwRfc5uPDN2/g5JqUfmpMA1BRR/inrmPPMg/O2H56iEnl2L
+2VZ86Y/HYKbYacnV74z0DTXB4kUmIoGVlnOzBiYOqHVg+PnC8p+PpoLNZ2pz05ebj5RFZ0uXH/8wWf3sNgQCQRrOipWUPM6KZvRWCfDSKnEX143BunYqnRRB
+LWj6fc7FbkBYXsA2J6MWR6WBwnlRFJcQcIPcBdeTncKAu2OweeWFOBBUFw5CUY48Wf7MeQDYk1sCK0jx9Xo9qqsW1xxQL/Fk2BAaLzitMMwTD1FeBxI0NfkY
+yjDVBgFELfoInewNzB9YyUGmpLdBFxTYoq1SHyFRh6GD0f8PT7odAHcdjJ0334/KTNtAKOnYVbo1w8iwS27ponm7r2sMEMXhEsL7pNTCDL9tHZUzl5aXqD/a
+wjx/R8wy/XXtdcwdqHyLpFq/NqSdUSUD+GGwlHjANKYkjJaAFRWqqZFQz6LLRgnZ418FOPGe9/t95eJHIPyaTpMvPOADqTmCRnKddIhNu74SmqgNFyUPTwz2
+05WAyaiF5NkRX+Cq6SH3w7dpNyRhMKBazwYM7y6qJcwUirbnWsPeY/QNcZtP4s8pv0tTX8wSUzgOD4Z5Gpy+pNSkZyOtHj9dSgg4YuVc7m+BzO0UV/weqUMu
+avwZacIlIgsbW9K9y6wqBwmXYDDJ3QDKbhKZcZvHa60pd8cdam1FTo1vb1afYuCO+mzikO9Q4N3sv0bNrz+6DKuoCZG72ULfKoJGWLzTy9HaHodUZnWGU797
+Hj8CKqorwBLCu7QpTl5e5mEvrurk+NJgPlh/3faxIZwkzWeOesaNDprm9Wzrw5uoRBqIP4EL6iZNUhSQJx8xkm49oeLM0y/8QO4Jb2YAdkKMzK9ARlj1VYPV
+o9jdAimGGjLsccXm6ilviunJ6Q5CNBME5O+XrtYpSfzHAxY6xOz5ixE5ZXbIPLbC54Lkxiv+nTdccvkxwnWVRo/6+p/5+TN1Gh0ZeD22HYisycLCHJkS+GVL
+a5p2gdPEzmf4d1zCnT7B5Psxo3gCGON4EBBufG8lpU3kgcZoGdJ/5DEd5QFgMGDEwlqb01i6vQSVx6s5HBtQ4UzI1xroxOYprumqyBP4VD5IQidAlorLiKW7
+nQCKWr04sJlqFx0kfU2XsNZUBnlIa67nAm1yEnPMwHS5/vyhgoehblCAsc8zpTn0G/7qKEjukL9tA8rH+6T6Z/gd6+b/KKBHovWm3D7btMH+n/9NU4Rz6g4x
+RYYVesWenWaYpFRoZ59GJLkajoB0pej+8akJ3kPIPriXY++U3TSdaAAtqWrTnzG5pnRY5VVspw+ns2uXWK/XHALRMPYleW2zvPj69pRlRBzoGJCDiu8+IeWw
+rzT10I4PQcothaKTmBEyzFZzjQqUn6Q30Mv6Zx7fQuKwDwca/SaHmSqeMFm8bS+fx0DrnMs6lN+T2s0wHqT82LnXWD1niX8OHIm1n1sIfTpW7fkcpD35CvcE
+8E7Q5HKDY+W+6F1NfVz2rZKcMeJm8BYLjnAZZrg8zNUyOX02GSn8IDmsheQJ1xYPu46cU77U7xx7VUyt5HFjwCKmru1NXI1WLvx0kwkKF3Oe5gXKszsEYZbq
+grZpksn4mqBM5BONCwXv/0y/4g4KeLMbjEYzJ94oFZOOzWtljhs6GPz//JEsmwHY7Cj1EqnT4psTMYp5MgvfbKXf/RBpyDauwbdTWs2LVCbZHgdPfMHXdyv4
+X+F8lCzFVako2/TERaF3ADiq189TlbiE3DJ2/VxX3OZ9me5+QPTs3P+p0D7xtpw7z0a7f45C8Kgy/kFN0fr63HpIkDNFjJ6J1+vKC8PQEOYdJGKi1i08zovy
+8ortZ29n8XAk/E0uJnLjjFs59eHnju39k1B3LvK+9T9PXeLO+9oZf8PXmUkEzFm6cgP3ovH2jAvzBmOtN3USQzNpM2DGwHfkIjJXNJ94y4NJtdJaSLF66cCC
+r4//slSHnO4sA0C/xRoxDvdtA4zzJRBd4Dpy0KvYyoXUPN8C4F/PQjHblh8tFA02evZ/a6oPZkvM/ZIr59/i2X62He6MxQjrmtuldq/0mZIFM5SkbVtwb9Zs
+LNkXDYgL1oCrejfQJnU01xgyAtXtyfXYprMAyDA4brTWeUjLSjtb9P34YHmS35cfV9z55UAsDUrYUaRz0VbNU5hQEMzeE50Y2hZ/FNkhcb9mZECfp/LZSGDc
+m1IL3EclFiJeFaO+Vrxej2mcO9aVN+fL+XQ19gA56HyfPeLubZi7xOkYIqkFO/wuBkAAoPaHtHkJ0dkTkxLG6KlI/QFsIXykIv7DKzON+PxS1Wm+OdjcWfHO
+6ftwm5Cv7ioLanG5ZTQVP699NDvjJAY2Smdqv6fYZQ/RdS45WU8LZ6uRHn+NDMQ9Qa8PIMLA8qua2qvuoiThn6KeU1k7Kl86GgiA4P7d8H2siwd24VKlr4QF
+oEK0mH1RQ/19KV0fDuajQXP8LYJa971rXmiLBevQ3CStv5mMKMz3YyJXiGzTIZZOwd5wGDMgacxJqa8S1/pdYNpF0cu3sNy56Okuy8W4o8yA/qcMORfdir39
+Sxl2nWhMHKh1ZHWylrCphuy/MjeaY2Clh2zbOCno7j1QVT61xaKpZsgNWh5XRm3Ej+2uXJNi7JS2zg==
+</script>
+<script src="assets/seal.js"></script>
+<script>
+MFSeal({ app: "angels", storeKey: "angels-key", user: document.getElementById("tt-user"), pass: document.getElementById("tt-pass"), btn: document.getElementById("tt-submit"), err: document.getElementById("tt-error"), card: document.querySelector(".lock-card"), busyText: "…", emptyText: "Both fields.", denyText: "Not this time." });
 </script>
 </body></html>
