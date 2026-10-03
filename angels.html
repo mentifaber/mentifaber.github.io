@@ -25,8 +25,10 @@ nav button small{display:block;font-family:var(--serif);font-style:italic;font-s
 nav button:hover{background:rgba(233,196,106,.06)}
 nav button.on{border-left-color:var(--gold);background:rgba(233,196,106,.1);color:var(--gold)}
 main{min-width:0}
-.stage{position:relative;height:min(74vh,760px);background:radial-gradient(ellipse at 50% 45%,#120d18 0,#06050a 70%);border-bottom:1px solid var(--faint)}
-canvas{display:block;width:100%;height:100%}
+.stage{position:relative;height:min(78vh,820px);background:radial-gradient(ellipse at 50% 45%,#120d18 0,#06050a 70%);border-bottom:1px solid var(--faint)}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#cry,#ov{position:absolute;left:0;right:0;top:9%;text-align:center;font-family:var(--cap);font-weight:700;letter-spacing:.2em;color:#fff1c8;font-size:clamp(16px,2.6vw,28px);pointer-events:none;text-shadow:0 0 24px rgba(255,200,120,.8);opacity:0;transition:opacity .2s}
+.hint{position:absolute;right:18px;bottom:14px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);pointer-events:none}
 .title{position:absolute;left:24px;bottom:18px;pointer-events:none;text-shadow:0 2px 16px #000}
 .title h2{font-family:var(--cap);font-size:clamp(20px,3.2vw,36px);letter-spacing:.14em;color:var(--gold)}
 .title .term{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.08em}
@@ -59,13 +61,14 @@ footer{text-align:center;color:var(--dim);font-size:15px;padding:30px 20px 50px;
 </head><body>
 <header>
   <h1>BE NOT AFRAID</h1>
-  <p>Every heavenly being the Bible actually describes, drawn from the words on the page and nothing else. Each render is built line by line from the verses quoted beneath it (King James Version).</p>
+  <p>Every heavenly being the Bible actually describes, drawn from the words on the page and nothing else. Each one is built in 3D, line by line, from the verses quoted beneath it (King James Version). Drag to walk around it. Some of them are frightening, and the people who saw them were afraid.</p>
 </header>
 <div class="wrap">
   <nav id="nav"></nav>
   <main>
     <div class="stage">
       <canvas id="cv"></canvas>
+      <div id="cry"></div><div id="ov"></div><div class="hint">DRAG TO LOOK AROUND · SCROLL TO ZOOM</div>
       <div class="title"><div class="term" id="t-term"></div><h2 id="t-name"></h2><div class="tag" id="t-tag"></div></div>
       <div class="ctl"><button id="b-prev">‹ PREV</button><button id="b-next">NEXT ›</button></div>
     </div>
@@ -73,108 +76,547 @@ footer{text-align:center;color:var(--dim);font-size:15px;padding:30px 20px 50px;
   </main>
 </div>
 <footer>Scripture quotations are from the King James Version (public domain). Where a detail comes from later tradition rather than the text, it is labelled as such. Made by Claude for mentifaber.org.</footer>
-<script>
-(() => {
-const TAU = Math.PI * 2, cv = document.getElementById("cv"), cx = cv.getContext("2d");
-let W = 1, H = 1, DPR = 1, mx = .5, my = .4, cur = 0, t0 = performance.now();
-function resize() { const r = cv.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = W * DPR; cv.height = H * DPR; }
-addEventListener("resize", resize);
-cv.addEventListener("pointermove", (e) => { const r = cv.getBoundingClientRect(); mx = (e.clientX - r.left) / r.width; my = (e.clientY - r.top) / r.height; });
-const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
-const lerp = (a, b, k) => a + (b - a) * k;
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-/* ── drawing helpers ── */
-function glow(x, y, r, c, a) { const g = cx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, "rgba(0,0,0,0)"); cx.globalAlpha = a == null ? 1 : a; cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r, 0, TAU); cx.fill(); cx.globalAlpha = 1; }
-// an eye that blinks on its own clock and watches the pointer
-function eye(x, y, r, t, seed, rot, iris) {
-  if (r < .8) return;
-  const bl = Math.max(0, Math.sin(t * (.6 + hash(seed) * .5) + seed * 9)); const open = bl > .985 ? .08 : 1;
-  cx.save(); cx.translate(x, y); cx.rotate(rot || 0);
-  cx.fillStyle = "#f6efe0"; cx.beginPath(); cx.moveTo(-r, 0); cx.quadraticCurveTo(0, -r * .9 * open, r, 0); cx.quadraticCurveTo(0, r * .9 * open, -r, 0); cx.fill();
-  if (open > .5) {
-    const px = (mx * W - x) / W, py = (my * H - y) / H, k = Math.min(1, Math.hypot(px, py) * 3), a = Math.atan2(py, px) - (rot || 0);
-    cx.save(); cx.beginPath(); cx.moveTo(-r, 0); cx.quadraticCurveTo(0, -r * .9, r, 0); cx.quadraticCurveTo(0, r * .9, -r, 0); cx.clip();
-    const ix = Math.cos(a) * r * .32 * k, iy = Math.sin(a) * r * .2 * k;
-    cx.fillStyle = iris || "#c9962e"; cx.beginPath(); cx.arc(ix, iy, r * .46, 0, TAU); cx.fill();
-    cx.fillStyle = "#050305"; cx.beginPath(); cx.arc(ix, iy, r * .2, 0, TAU); cx.fill();
-    cx.fillStyle = "rgba(255,255,255,.8)"; cx.beginPath(); cx.arc(ix - r * .12, iy - r * .12, r * .08, 0, TAU); cx.fill(); cx.restore();
-  }
-  cx.strokeStyle = "rgba(60,30,10,.7)"; cx.lineWidth = Math.max(.6, r * .1); cx.beginPath(); cx.moveTo(-r, 0); cx.quadraticCurveTo(0, -r * .9 * open, r, 0); cx.quadraticCurveTo(0, r * .9 * open, -r, 0); cx.stroke();
-  cx.restore();
+const TAU = Math.PI * 2, V = (x, y, z) => new THREE.Vector3(x, y, z), rand = (a, b) => a + Math.random() * (b - a), lerp = (a, b, k) => a + (b - a) * k;
+const LS = .12, PL = (c, i, d, k) => new THREE.PointLight(c, i * LS, d, k);
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+/* ── renderer, camera, post ── */
+const cv = document.getElementById("cv");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+const camera = new THREE.PerspectiveCamera(42, 1, .05, 3000);
+const controls = new OrbitControls(camera, cv); controls.enableDamping = true; controls.dampingFactor = .06; controls.enablePan = false; controls.autoRotate = true; controls.autoRotateSpeed = .35;
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 1, .6, .2); composer.addPass(bloom); composer.addPass(new OutputPass());
+function resize() { const r = cv.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); composer.setSize(r.width, r.height); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+addEventListener("resize", resize);
+
+/* ── procedural textures ── */
+function ctex(w, h, draw, srgb = true) { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); draw(g, w, h); const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+const glowTex = ctex(128, 128, (g, w) => { const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.2, "rgba(255,255,255,.6)"); r.addColorStop(.5, "rgba(255,255,255,.15)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, w, w); });
+const smokeTex = ctex(256, 256, (g, w) => { for (let i = 0; i < 60; i++) { const x = w / 2 + (Math.random() - .5) * w * .5, y = w / 2 + (Math.random() - .5) * w * .5, r = rand(20, 70); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(255,255,255,.18)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, w); } });
+const featherTex = ctex(96, 384, (g, w, h) => {
+  g.fillStyle = "#fff"; g.beginPath(); g.moveTo(w / 2, h); g.quadraticCurveTo(-w * .05, h * .55, w * .45, 0); g.quadraticCurveTo(w * 1.08, h * .45, w / 2, h); g.fill();
+  g.strokeStyle = "rgba(0,0,0,.16)"; g.lineWidth = 1; for (let y = 10; y < h; y += 3) { g.beginPath(); g.moveTo(w / 2, y); g.lineTo(3, y - 16); g.moveTo(w / 2, y); g.lineTo(w - 3, y - 16); g.stroke(); }
+  const sh = g.createLinearGradient(0, 0, w, 0); sh.addColorStop(0, "rgba(0,0,0,.25)"); sh.addColorStop(.5, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.3)"); g.globalCompositeOperation = "source-atop"; g.fillStyle = sh; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "source-over"; g.strokeStyle = "rgba(60,40,20,.55)"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(w / 2, h); g.lineTo(w * .46, 4); g.stroke();
+  g.globalCompositeOperation = "destination-out"; g.lineWidth = 2; for (let i = 0; i < 7; i++) { const y = rand(30, h - 60), side = Math.random() < .5; g.beginPath(); g.moveTo(side ? 0 : w, y - 8); g.lineTo(w / 2, y + 10); g.stroke(); }
+});
+// iris laid out for a sphere cap: top of the texture is the pupil, bottom is the limbal ring
+const irisTex = (hue) => ctex(256, 128, (g, w, h) => {
+  g.fillStyle = "#050302"; g.fillRect(0, 0, w, h);
+  const top = h * .36; const gr = g.createLinearGradient(0, top, 0, h); gr.addColorStop(0, "hsl(" + hue + ",70%,22%)"); gr.addColorStop(.25, "hsl(" + (hue + 8) + ",75%,48%)"); gr.addColorStop(.75, "hsl(" + hue + ",60%,32%)"); gr.addColorStop(1, "hsl(" + hue + ",40%,8%)");
+  g.fillStyle = gr; g.fillRect(0, top, w, h - top);
+  for (let i = 0; i < 260; i++) { const x = Math.random() * w; g.strokeStyle = Math.random() < .5 ? "hsla(" + (hue + 20) + ",80%,70%,.35)" : "rgba(0,0,0,.35)"; g.lineWidth = rand(.5, 1.6); g.beginPath(); g.moveTo(x, top); g.lineTo(x + rand(-3, 3), h * rand(.7, 1)); g.stroke(); }
+  g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, h - 10, w, 10);
+});
+const scleraTex = ctex(512, 256, (g, w, h) => {
+  g.fillStyle = "#efe6d6"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 90; i++) { let x = Math.random() * w, y = h * rand(.55, 1); g.strokeStyle = "rgba(170,30,30," + rand(.15, .45) + ")"; g.lineWidth = rand(.4, 1.6); g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += rand(-14, 14); y -= rand(4, 14); g.lineTo(x, y); } g.stroke(); }
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(150,90,80,.35)"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+});
+const coalTex = ctex(512, 512, (g, w, h) => { g.fillStyle = "#120402"; g.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { let x = Math.random() * w, y = Math.random() * h; g.strokeStyle = "hsl(" + rand(10, 40) + ",100%," + rand(40, 70) + "%)"; g.lineWidth = rand(1, 4); g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += rand(-30, 30); y += rand(-30, 30); g.lineTo(x, y); } g.stroke(); } });
+const rockTex = ctex(512, 512, (g, w, h) => { g.fillStyle = "#5a554c"; g.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { g.fillStyle = "rgba(" + (Math.random() < .5 ? "0,0,0" : "255,255,255") + "," + rand(.02, .1) + ")"; g.fillRect(Math.random() * w, Math.random() * h, rand(1, 6), rand(1, 6)); } });
+rockTex.wrapS = rockTex.wrapT = THREE.RepeatWrapping;
+const linenTex = ctex(256, 256, (g, w, h) => { g.fillStyle = "#e9e3d4"; g.fillRect(0, 0, w, h); for (let i = 0; i < w; i += 2) { g.fillStyle = "rgba(0,0,0," + rand(0, .05) + ")"; g.fillRect(i, 0, 1, h); g.fillRect(0, i, w, 1); } });
+linenTex.wrapS = linenTex.wrapT = THREE.RepeatWrapping; linenTex.repeat.set(6, 6);
+// carved bronze masks for the four faces
+const FACE = {};
+function faceTex(kind) {
+  if (FACE[kind]) return FACE[kind];
+  return (FACE[kind] = ctex(256, 256, (g, w) => { drawFace(g, kind, w / 2, w / 2 + 6, 92); }));
 }
-// a wing as a fan of long tapered feathers; eyes optional, fire optional
-function wing(x, y, ang, len, spread, n, col, t, o) {
-  o = o || {};
-  for (let i = n - 1; i >= 0; i--) {
-    const k = n === 1 ? .5 : i / (n - 1), a = ang + (k - .5) * spread, L = len * (.62 + .38 * Math.sin(k * Math.PI)) * (o.taper ? 1 - k * .3 : 1), wv = Math.sin(t * 3 + i) * .015;
-    const ex = x + Math.cos(a + wv) * L, ey = y + Math.sin(a + wv) * L, nx = -Math.sin(a) * len * .055, ny = Math.cos(a) * len * .055;
-    const g = cx.createLinearGradient(x, y, ex, ey); g.addColorStop(0, col[0]); g.addColorStop(.7, col[1]); g.addColorStop(1, col[2] || "rgba(0,0,0,0)");
-    cx.fillStyle = g; cx.beginPath(); cx.moveTo(x - nx * .4, y - ny * .4); cx.quadraticCurveTo((x + ex) / 2 + nx, (y + ey) / 2 + ny, ex, ey); cx.quadraticCurveTo((x + ex) / 2 - nx, (y + ey) / 2 - ny, x + nx * .4, y + ny * .4); cx.fill();
-    cx.strokeStyle = "rgba(255,240,200,.18)"; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(ex, ey); cx.stroke();
-    if (o.eyes) for (let j = 1; j <= o.eyes; j++) { const q = .3 + j / (o.eyes + 1) * .65; eye(lerp(x, ex, q), lerp(y, ey, q), len * .045 * (1.1 - q * .5), t, i * 31 + j * 7 + (o.seed || 0), a); }
-    if (o.fire && Math.random() < .5) sparks.push({ x: ex, y: ey, vx: Math.cos(a) * 20 + (Math.random() - .5) * 30, vy: -40 - Math.random() * 60, life: .6 + Math.random() * .6, t: 0, c: Math.random() < .5 ? "#ffd27a" : "#ff6a2a", r: 1 + Math.random() * 2.5 });
-  }
-}
-let sparks = [];
-function drawSparks(dt) { for (const p of sparks) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; } sparks = sparks.filter((p) => p.t < p.life); if (sparks.length > 900) sparks.splice(0, sparks.length - 900);
-  cx.globalCompositeOperation = "lighter"; for (const p of sparks) { cx.globalAlpha = 1 - p.t / p.life; cx.fillStyle = p.c; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, TAU); cx.fill(); } cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over"; }
-function bolt(x1, y1, x2, y2, c, w) { cx.strokeStyle = c; cx.lineWidth = w; cx.shadowColor = c; cx.shadowBlur = 18; cx.beginPath(); cx.moveTo(x1, y1); const n = 9; for (let i = 1; i < n; i++) { const k = i / n; cx.lineTo(lerp(x1, x2, k) + (Math.random() - .5) * 40, lerp(y1, y2, k) + (Math.random() - .5) * 40); } cx.lineTo(x2, y2); cx.stroke(); cx.shadowBlur = 0; }
-// the four faces named in Ezekiel and Revelation, as simple carved masks
-function face(kind, x, y, s, col) {
-  cx.save(); cx.translate(x, y); cx.scale(s / 50, s / 50); cx.lineJoin = "round"; cx.lineCap = "round";
+function drawFace(g, kind, x, y, s, col) {
+  g.save(); g.translate(x, y); g.scale(s / 50, s / 50); g.lineJoin = "round"; g.lineCap = "round";
   const stroke = "#2a1606";
   if (kind === "lion") {
-    for (let i = 0; i < 22; i++) { const a = i / 22 * TAU; cx.fillStyle = i % 2 ? "#b8621f" : "#d9892e"; cx.beginPath(); cx.moveTo(Math.cos(a - .18) * 34, Math.sin(a - .18) * 34); cx.lineTo(Math.cos(a) * 54, Math.sin(a) * 54); cx.lineTo(Math.cos(a + .18) * 34, Math.sin(a + .18) * 34); cx.fill(); }
-    cx.fillStyle = col || "#e7b45a"; cx.beginPath(); cx.ellipse(0, 4, 32, 36, 0, 0, TAU); cx.fill();
-    cx.fillStyle = stroke; cx.beginPath(); cx.moveTo(-9, 12); cx.lineTo(9, 12); cx.lineTo(0, 22); cx.fill();
-    cx.strokeStyle = stroke; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(0, 22); cx.lineTo(0, 28); cx.moveTo(-12, 32); cx.quadraticCurveTo(0, 26, 12, 32); cx.stroke();
-    cx.fillStyle = "#ffd27a"; [-13, 13].forEach((ex) => { cx.beginPath(); cx.ellipse(ex, -6, 6, 4, 0, 0, TAU); cx.fill(); }); cx.fillStyle = stroke; [-13, 13].forEach((ex) => { cx.beginPath(); cx.ellipse(ex, -6, 1.6, 4, 0, 0, TAU); cx.fill(); });
+    for (let i = 0; i < 22; i++) { const a = i / 22 * TAU; g.fillStyle = i % 2 ? "#b8621f" : "#d9892e"; g.beginPath(); g.moveTo(Math.cos(a - .18) * 34, Math.sin(a - .18) * 34); g.lineTo(Math.cos(a) * 54, Math.sin(a) * 54); g.lineTo(Math.cos(a + .18) * 34, Math.sin(a + .18) * 34); g.fill(); }
+    g.fillStyle = col || "#e7b45a"; g.beginPath(); g.ellipse(0, 4, 32, 36, 0, 0, TAU); g.fill();
+    g.fillStyle = stroke; g.beginPath(); g.moveTo(-9, 12); g.lineTo(9, 12); g.lineTo(0, 22); g.fill();
+    g.strokeStyle = stroke; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 22); g.lineTo(0, 28); g.moveTo(-12, 32); g.quadraticCurveTo(0, 26, 12, 32); g.stroke();
+    g.fillStyle = "#ffd27a"; [-13, 13].forEach((ex) => { g.beginPath(); g.ellipse(ex, -6, 6, 4, 0, 0, TAU); g.fill(); }); g.fillStyle = stroke; [-13, 13].forEach((ex) => { g.beginPath(); g.ellipse(ex, -6, 1.6, 4, 0, 0, TAU); g.fill(); });
   } else if (kind === "ox") {
-    cx.strokeStyle = "#e9dcc0"; cx.lineWidth = 7; cx.beginPath(); cx.moveTo(-26, -20); cx.quadraticCurveTo(-52, -30, -44, -56); cx.moveTo(26, -20); cx.quadraticCurveTo(52, -30, 44, -56); cx.stroke();
-    cx.fillStyle = col || "#8a5a32"; cx.beginPath(); cx.moveTo(-30, -26); cx.quadraticCurveTo(0, -40, 30, -26); cx.lineTo(24, 22); cx.quadraticCurveTo(0, 46, -24, 22); cx.closePath(); cx.fill();
-    cx.fillStyle = "#c79a6c"; cx.beginPath(); cx.ellipse(0, 24, 20, 14, 0, 0, TAU); cx.fill(); cx.fillStyle = stroke; [-8, 8].forEach((nx) => { cx.beginPath(); cx.ellipse(nx, 24, 3.5, 5, 0, 0, TAU); cx.fill(); });
-    [-40, 40].forEach((ex) => { cx.fillStyle = col || "#8a5a32"; cx.beginPath(); cx.ellipse(ex, -16, 12, 6, ex > 0 ? .4 : -.4, 0, TAU); cx.fill(); });
-    cx.fillStyle = "#1a0d05"; [-14, 14].forEach((ex) => { cx.beginPath(); cx.arc(ex, -8, 4.5, 0, TAU); cx.fill(); });
+    g.strokeStyle = "#e9dcc0"; g.lineWidth = 7; g.beginPath(); g.moveTo(-26, -20); g.quadraticCurveTo(-52, -30, -44, -56); g.moveTo(26, -20); g.quadraticCurveTo(52, -30, 44, -56); g.stroke();
+    g.fillStyle = col || "#8a5a32"; g.beginPath(); g.moveTo(-30, -26); g.quadraticCurveTo(0, -40, 30, -26); g.lineTo(24, 22); g.quadraticCurveTo(0, 46, -24, 22); g.closePath(); g.fill();
+    g.fillStyle = "#c79a6c"; g.beginPath(); g.ellipse(0, 24, 20, 14, 0, 0, TAU); g.fill(); g.fillStyle = stroke; [-8, 8].forEach((nx) => { g.beginPath(); g.ellipse(nx, 24, 3.5, 5, 0, 0, TAU); g.fill(); });
+    [-40, 40].forEach((ex) => { g.fillStyle = col || "#8a5a32"; g.beginPath(); g.ellipse(ex, -16, 12, 6, ex > 0 ? .4 : -.4, 0, TAU); g.fill(); });
+    g.fillStyle = "#1a0d05"; [-14, 14].forEach((ex) => { g.beginPath(); g.arc(ex, -8, 4.5, 0, TAU); g.fill(); });
   } else if (kind === "eagle") {
-    cx.fillStyle = col || "#6b4a2b"; cx.beginPath(); cx.ellipse(0, -2, 30, 36, 0, 0, TAU); cx.fill();
-    cx.fillStyle = "#f2ead8"; cx.beginPath(); cx.ellipse(0, -10, 24, 24, 0, 0, TAU); cx.fill();
-    cx.fillStyle = "#e3a82b"; cx.beginPath(); cx.moveTo(-10, 0); cx.quadraticCurveTo(0, -6, 10, 0); cx.quadraticCurveTo(8, 26, -2, 34); cx.quadraticCurveTo(2, 20, -10, 0); cx.fill();
-    cx.fillStyle = "#ffcf3d"; [-12, 12].forEach((ex) => { cx.beginPath(); cx.arc(ex, -12, 5, 0, TAU); cx.fill(); }); cx.fillStyle = "#000"; [-12, 12].forEach((ex) => { cx.beginPath(); cx.arc(ex, -12, 2.4, 0, TAU); cx.fill(); });
-    cx.strokeStyle = "#3a2410"; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(-20, -20); cx.lineTo(-6, -15); cx.moveTo(20, -20); cx.lineTo(6, -15); cx.stroke();
+    g.fillStyle = col || "#6b4a2b"; g.beginPath(); g.ellipse(0, -2, 30, 36, 0, 0, TAU); g.fill();
+    g.fillStyle = "#f2ead8"; g.beginPath(); g.ellipse(0, -10, 24, 24, 0, 0, TAU); g.fill();
+    g.fillStyle = "#e3a82b"; g.beginPath(); g.moveTo(-10, 0); g.quadraticCurveTo(0, -6, 10, 0); g.quadraticCurveTo(8, 26, -2, 34); g.quadraticCurveTo(2, 20, -10, 0); g.fill();
+    g.fillStyle = "#ffcf3d"; [-12, 12].forEach((ex) => { g.beginPath(); g.arc(ex, -12, 5, 0, TAU); g.fill(); }); g.fillStyle = "#000"; [-12, 12].forEach((ex) => { g.beginPath(); g.arc(ex, -12, 2.4, 0, TAU); g.fill(); });
+    g.strokeStyle = "#3a2410"; g.lineWidth = 3; g.beginPath(); g.moveTo(-20, -20); g.lineTo(-6, -15); g.moveTo(20, -20); g.lineTo(6, -15); g.stroke();
   } else {
-    cx.fillStyle = col || "#d8a878"; cx.beginPath(); cx.ellipse(0, 0, 28, 38, 0, 0, TAU); cx.fill();
-    cx.fillStyle = "#5a3418"; cx.beginPath(); cx.moveTo(-28, -6); cx.quadraticCurveTo(-30, -44, 0, -42); cx.quadraticCurveTo(30, -44, 28, -6); cx.quadraticCurveTo(20, -30, 0, -30); cx.quadraticCurveTo(-20, -30, -28, -6); cx.fill();
-    cx.beginPath(); cx.moveTo(-26, 8); cx.quadraticCurveTo(-24, 46, 0, 50); cx.quadraticCurveTo(24, 46, 26, 8); cx.quadraticCurveTo(14, 26, 0, 24); cx.quadraticCurveTo(-14, 26, -26, 8); cx.fill();
-    cx.fillStyle = "#fff"; [-11, 11].forEach((ex) => { cx.beginPath(); cx.ellipse(ex, -6, 6, 3.5, 0, 0, TAU); cx.fill(); }); cx.fillStyle = "#3b220e"; [-11, 11].forEach((ex) => { cx.beginPath(); cx.arc(ex, -6, 2.6, 0, TAU); cx.fill(); });
-    cx.strokeStyle = "#7a4a26"; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(0, -4); cx.lineTo(-3, 10); cx.lineTo(3, 11); cx.stroke();
+    g.fillStyle = col || "#d8a878"; g.beginPath(); g.ellipse(0, 0, 28, 38, 0, 0, TAU); g.fill();
+    g.fillStyle = "#5a3418"; g.beginPath(); g.moveTo(-28, -6); g.quadraticCurveTo(-30, -44, 0, -42); g.quadraticCurveTo(30, -44, 28, -6); g.quadraticCurveTo(20, -30, 0, -30); g.quadraticCurveTo(-20, -30, -28, -6); g.fill();
+    g.beginPath(); g.moveTo(-26, 8); g.quadraticCurveTo(-24, 46, 0, 50); g.quadraticCurveTo(24, 46, 26, 8); g.quadraticCurveTo(14, 26, 0, 24); g.quadraticCurveTo(-14, 26, -26, 8); g.fill();
+    g.fillStyle = "#fff"; [-11, 11].forEach((ex) => { g.beginPath(); g.ellipse(ex, -6, 6, 3.5, 0, 0, TAU); g.fill(); }); g.fillStyle = "#3b220e"; [-11, 11].forEach((ex) => { g.beginPath(); g.arc(ex, -6, 2.6, 0, TAU); g.fill(); });
+    g.strokeStyle = "#7a4a26"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(0, -4); g.lineTo(-3, 10); g.lineTo(3, 11); g.stroke();
   }
-  cx.restore();
-}
-function sky(top, bot) { const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(1, bot); cx.fillStyle = g; cx.fillRect(0, 0, W, H); }
-function stars(n, a) { for (let i = 0; i < n; i++) { cx.globalAlpha = (.2 + hash(i + 5) * .7) * (a || 1) * (.6 + .4 * Math.sin(T * 2 + i)); cx.fillStyle = "#fff"; cx.fillRect(hash(i) * W, hash(i + 99) * H, 1.4, 1.4); } cx.globalAlpha = 1; }
-function cry(words, x, y, size, t, col) { const i = Math.floor(t / 1.1) % words.length, k = (t / 1.1) % 1; cx.globalAlpha = Math.sin(k * Math.PI) * .75; cx.fillStyle = col || "#ffe9b0"; cx.font = "700 " + size + "px Cinzel, serif"; cx.textAlign = "center"; cx.fillText(words[i], x, y - k * 10); cx.globalAlpha = 1; }
-// a simple robed human figure (most angels in scripture look like men)
-function figure(x, y, h, robe, skin, o) {
-  o = o || {}; const w = h * .26, sh = y - h * .78;
-  // robe: shoulders, a long fall of cloth, a soft hem
-  cx.fillStyle = robe; cx.beginPath(); cx.moveTo(x - w * .2, sh - h * .02); cx.quadraticCurveTo(x - w * .62, sh, x - w * .66, sh + h * .08);
-  cx.quadraticCurveTo(x - w * .82, y - h * .35, x - w * 1.0, y); cx.quadraticCurveTo(x, y + h * .025, x + w * 1.0, y); cx.quadraticCurveTo(x + w * .82, y - h * .35, x + w * .66, sh + h * .08); cx.quadraticCurveTo(x + w * .62, sh, x + w * .2, sh - h * .02); cx.closePath(); cx.fill();
-  const sg = cx.createLinearGradient(x - w, 0, x + w, 0); sg.addColorStop(0, "rgba(0,0,0,.38)"); sg.addColorStop(.35, "rgba(0,0,0,0)"); sg.addColorStop(.6, "rgba(255,255,255,.06)"); sg.addColorStop(1, "rgba(0,0,0,.42)"); cx.fillStyle = sg; cx.fill();
-  cx.strokeStyle = "rgba(0,0,0,.16)"; cx.lineWidth = Math.max(1, h * .006); for (let i = -2; i <= 2; i++) { cx.beginPath(); cx.moveTo(x + i * w * .14, sh + h * .2); cx.quadraticCurveTo(x + i * w * .3, y - h * .3, x + i * w * .42, y - h * .01); cx.stroke(); }
-  if (o.belt) { cx.fillStyle = o.belt; cx.beginPath(); cx.moveTo(x - w * .62, y - h * .53); cx.quadraticCurveTo(x, y - h * .5, x + w * .62, y - h * .53); cx.lineTo(x + w * .64, y - h * .49); cx.quadraticCurveTo(x, y - h * .46, x - w * .64, y - h * .49); cx.closePath(); cx.fill(); cx.fillRect(x - w * .06, y - h * .5, w * .1, h * .12); }
-  // sleeves and hands
-  [-1, 1].forEach((d) => {
-    cx.fillStyle = robe; cx.beginPath(); cx.moveTo(x + d * w * .6, sh + h * .02); cx.quadraticCurveTo(x + d * w * .95, sh + h * .2, x + d * w * .9, y - h * .38); cx.lineTo(x + d * w * .66, y - h * .4); cx.quadraticCurveTo(x + d * w * .7, sh + h * .2, x + d * w * .45, sh + h * .06); cx.closePath(); cx.fill();
-    cx.fillStyle = "rgba(0,0,0,.18)"; cx.fill();
-    cx.fillStyle = o.arms || skin; cx.beginPath(); cx.ellipse(x + d * w * .8, y - h * .37, h * .022, h * .03, 0, 0, TAU); cx.fill();
-  });
-  // neck, head, hair
-  cx.fillStyle = skin; cx.fillRect(x - h * .025, sh - h * .05, h * .05, h * .06);
-  cx.beginPath(); cx.ellipse(x, y - h * .87, h * .068, h * .088, 0, 0, TAU); cx.fill();
-  if (!o.bare) { cx.fillStyle = o.hair || "rgba(60,40,25,.9)"; cx.beginPath(); cx.ellipse(x, y - h * .905, h * .072, h * .062, 0, Math.PI, 0); cx.fill(); }
+  g.restore();
 }
 
-/* ── the entries ── */
+
+/* ── building blocks ── */
+const S = { eyes: [], fires: [], smokes: [], bolts: [], upd: [], lights: [] };
+const world = new THREE.Group(); scene.add(world);
+const glowSprite = (color, size, opacity = 1) => { const m = new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: opacity * .45, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }); const s = new THREE.Sprite(m); s.scale.setScalar(size); return s; };
+
+// a field of eyeballs that all turn to look at whoever is watching
+const eyeGeo = new THREE.SphereGeometry(1, 28, 18), irisGeo = new THREE.SphereGeometry(1.012, 28, 10, 0, TAU, 0, .62).rotateX(Math.PI / 2);
+const IRIS = { gold: irisTex(38), green: irisTex(140), blue: irisTex(205), red: irisTex(5) };
+class Eyes {
+  constructor(parent, pts, opt = {}) {
+    this.pts = pts; this.parent = parent; const n = pts.length;
+    this.a = new THREE.InstancedMesh(eyeGeo, new THREE.MeshPhysicalMaterial({ map: scleraTex, roughness: .22, clearcoat: 1, clearcoatRoughness: .05, emissive: opt.glow ? 0x332211 : 0x000000 }), n);
+    this.b = new THREE.InstancedMesh(irisGeo, new THREE.MeshPhysicalMaterial({ map: IRIS[opt.iris || "gold"], roughness: .15, clearcoat: 1, emissive: opt.glow ? 0xffffff : 0x000000, emissiveMap: opt.glow ? IRIS[opt.iris || "gold"] : null, emissiveIntensity: opt.glow || 0 }), n);
+    parent.add(this.a, this.b); this.d = new THREE.Object3D(); this.off = pts.map(() => [rand(0, 100), rand(.4, 1.2)]); this.blink = pts.map(() => rand(0, 9));
+    S.eyes.push(this);
+  }
+  update(t) {
+    const lc = this.parent.worldToLocal(camera.position.clone());
+    for (let i = 0; i < this.pts.length; i++) {
+      const p = this.pts[i], d = this.d, o = this.off[i];
+      d.position.copy(p.p); d.scale.setScalar(p.s);
+      // little saccades so they never look mechanical
+      const j = Math.floor(t * o[1] + o[0]); d.lookAt(lc.x + (hash(j) - .5) * 1.4, lc.y + (hash(j + 7) - .5) * 1.4, lc.z);
+      const bk = (t + this.blink[i]) % 7; if (bk < .14) d.scale.y *= Math.max(.05, Math.abs(bk - .07) / .07);
+      d.updateMatrix(); this.a.setMatrixAt(i, d.matrix); this.b.setMatrixAt(i, d.matrix);
+    }
+    this.a.instanceMatrix.needsUpdate = this.b.instanceMatrix.needsUpdate = true;
+  }
+}
+// feathers in rows, fanned out from a root: the basic wing
+const featherGeo = new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, .5, 0);
+{ const p = featherGeo.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.pow(p.getY(i), 2) * .12); featherGeo.computeVertexNormals(); }
+function wing(opt) {
+  const g = new THREE.Group(), len = opt.len || 4, n = opt.n || 16, rows = opt.rows || 3, a0 = opt.a0 ?? -.3, a1 = opt.a1 ?? 1.5;
+  const mat = new THREE.MeshPhysicalMaterial({ map: featherTex, alphaTest: .35, side: THREE.DoubleSide, color: opt.color || 0xf2e6cf, roughness: opt.rough ?? .65, metalness: opt.metal || 0, sheen: .6, sheenColor: new THREE.Color(0xffffff), emissive: opt.emissive || 0x000000, emissiveMap: opt.emissive ? featherTex : null, emissiveIntensity: opt.eI || 0 });
+  const inst = new THREE.InstancedMesh(featherGeo, mat, n * rows), d = new THREE.Object3D(); let k = 0; const tips = [], eyePts = [];
+  for (let r = 0; r < rows; r++) for (let i = 0; i < n; i++) {
+    const f = i / (n - 1), a = lerp(a0, a1, f) + rand(-.03, .03), ro = len * (.06 + (1 - f) * .22) * (1 - r * .2), L = len * (.5 + .5 * Math.sin(f * Math.PI * .85 + .25)) * (1 - r * .3), wd = len * .12 * (1 - r * .12);
+    d.position.set(Math.cos(a) * ro, Math.sin(a) * ro, r * .03 * len); d.rotation.set(0, 0, a - Math.PI / 2); d.rotateX(rand(-.08, .08) - r * .05); d.scale.set(wd, L, wd); d.updateMatrix(); inst.setMatrixAt(k++, d.matrix);
+    const dir = V(Math.cos(a), Math.sin(a), 0);
+    if (r === 0) tips.push(d.position.clone().addScaledVector(dir, L));
+    if (opt.eyes && r < 2) for (const q of r === 0 ? [.55, .82] : [.6]) eyePts.push({ p: d.position.clone().addScaledVector(dir, L * q).add(V(0, 0, len * (.02 + r * .03))), s: wd * .26 * (1.05 - q * .4) * (opt.eyeScale || 1) });
+  }
+  g.add(inst); if (eyePts.length) new Eyes(g, eyePts, { iris: opt.iris || "gold" });
+  g.userData.tips = tips; return g;
+}
+// particle fire (and holy light, and ash) with HDR colour so it blooms
+class Fire {
+  constructor(n, parent, kind = 0) {
+    this.n = n; this.kind = kind; this.i = 0; this.p = new Float32Array(n * 3); this.v = new Float32Array(n * 3); this.age = new Float32Array(n).fill(9); this.life = new Float32Array(n).fill(1); this.sz = new Float32Array(n); this.base = new Float32Array(n); this.c = new Float32Array(n * 4);
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(this.p, 3)); geo.setAttribute("size", new THREE.BufferAttribute(this.sz, 1)); geo.setAttribute("col", new THREE.BufferAttribute(this.c, 4));
+    const mat = new THREE.ShaderMaterial({ uniforms: { map: { value: glowTex }, h: { value: 600 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: "attribute float size; attribute vec4 col; varying vec4 vC; uniform float h; void main(){ vC=col; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=size*h/-mv.z; gl_Position=projectionMatrix*mv; }",
+      fragmentShader: "uniform sampler2D map; varying vec4 vC; void main(){ float a=texture2D(map,gl_PointCoord).a; gl_FragColor=vec4(vC.rgb, a*vC.a); }" });
+    this.pts = new THREE.Points(geo, mat); this.pts.frustumCulled = false; parent.add(this.pts); this.mat = mat; S.fires.push(this);
+  }
+  emit(p, v, life, size) { const i = this.i; this.i = (i + 1) % this.n; this.p.set([p.x, p.y, p.z], i * 3); this.v.set([v.x, v.y, v.z], i * 3); this.age[i] = 0; this.life[i] = life; this.base[i] = size; }
+  update(dt) {
+    this.mat.uniforms.h.value = renderer.domElement.height * .5;
+    for (let i = 0; i < this.n; i++) {
+      if (this.age[i] >= this.life[i]) { this.sz[i] = 0; continue; }
+      this.age[i] += dt; const k = Math.min(1, this.age[i] / this.life[i]), j = i * 3;
+      this.v[j + 1] += (this.kind === 2 ? -1 : this.kind === 3 ? 0 : 2.2) * dt; this.v[j] *= .985; this.v[j + 2] *= .985;
+      this.p[j] += this.v[j] * dt; this.p[j + 1] += this.v[j + 1] * dt; this.p[j + 2] += this.v[j + 2] * dt;
+      let r, g, b; if (this.kind === 1) { r = 2.4; g = 2.5; b = 3; } else if (this.kind === 4) { r = .5; g = 2.6; b = 1; } else if (this.kind === 3) { r = 3; g = 2.6; b = 1.8; } else { r = 3.2 - k * 1.2; g = lerp(2.4, .25, Math.min(1, k * 1.4)); b = lerp(1.4, 0, Math.min(1, k * 3)); }
+      const a = Math.pow(1 - k, 1.4) * Math.min(1, this.age[i] * 12) * .45; this.c.set([r * .7, g * .7, b * .7, a], i * 4); this.sz[i] = this.base[i] * (1 + k * (this.kind === 0 ? .6 : 0));
+    }
+    const at = this.pts.geometry.attributes; at.position.needsUpdate = at.size.needsUpdate = at.col.needsUpdate = true;
+  }
+}
+// smoke and cloud
+function smoke(parent, n, box, color, op, size) {
+  const list = []; for (let i = 0; i < n; i++) { const m = new THREE.SpriteMaterial({ map: smokeTex, color, transparent: true, opacity: op * rand(.5, 1), depthWrite: false }); const s = new THREE.Sprite(m); s.position.set(rand(box[0], box[1]), rand(box[2], box[3]), rand(box[4], box[5])); s.scale.setScalar(size * rand(.6, 1.4)); s.userData = { v: V(rand(-.1, .1), rand(.02, .12), rand(-.1, .1)), r: rand(-.1, .1), box }; parent.add(s); list.push(s); }
+  S.smokes.push(list); return list;
+}
+// lightning: a jagged bright line that lives for a moment, with a flash
+const flash = PL(0xdfe8ff, 0, 80, 1.5); scene.add(flash);
+function bolt(a, b, color = 0xeef3ff) {
+  const pts = [], n = 16, dir = b.clone().sub(a), side = V(-dir.y, dir.x, 0).normalize();
+  for (let i = 0; i <= n; i++) { const k = i / n, p = a.clone().lerp(b, k); if (i && i < n) p.addScaledVector(side, rand(-1, 1) * dir.length() * .06).add(V(0, 0, rand(-.3, .3))); pts.push(p); }
+  const m = new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(6), toneMapped: false, transparent: true });
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), m); world.add(l); S.bolts.push([l, .14]); flash.position.copy(a.clone().lerp(b, .5)); flash.intensity = 200 * LS;
+}
+// a robed human form
+function figure(opt = {}) {
+  const g = new THREE.Group(), h = opt.h || 2;
+  const prof = [[0, 0], [.27, 0], [.29, .02], [.26, .2], [.23, .45], [.2, .62], [.19, .7], [.22, .76], [.2, .8], [.12, .83], [.06, .85], [0, .85]].map(([r, y]) => new THREE.Vector2(r * h, y * h));
+  const robe = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), new THREE.MeshPhysicalMaterial({ color: opt.robe ?? 0xe8e2d2, map: linenTex, roughness: .85, sheen: 1, sheenRoughness: .5, sheenColor: new THREE.Color(0xffffff), transparent: !!opt.op, opacity: opt.op || 1, emissive: opt.emissive || 0, emissiveIntensity: opt.eI || 0 }));
+  { const p = robe.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = p.getY(i), a = Math.atan2(z, x), k = 1 - y / h; const f = 1 + Math.sin(a * 9) * .05 * k; p.setX(i, x * f); p.setZ(i, z * f); } robe.geometry.computeVertexNormals(); }
+  g.add(robe);
+  const skinM = new THREE.MeshPhysicalMaterial({ color: opt.skin ?? 0xc89a74, roughness: .5, emissive: opt.faceGlow || 0, emissiveIntensity: opt.faceI || 0, sheen: .3 });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(h * .068, 32, 24), skinM); head.scale.set(1, 1.2, 1.05); head.position.y = h * .92; g.add(head);
+  const armM = opt.armM || new THREE.MeshPhysicalMaterial({ color: opt.robe ?? 0xe8e2d2, map: linenTex, roughness: .85, sheen: 1 });
+  [-1, 1].forEach((d) => { const arm = new THREE.Mesh(new THREE.CapsuleGeometry(h * .035, h * .3, 6, 12), armM); arm.position.set(d * h * .21, h * .6, h * .03); arm.rotation.z = d * .12; g.add(arm); const hand = new THREE.Mesh(new THREE.SphereGeometry(h * .032, 16, 12), opt.handM || skinM); hand.position.set(d * h * .235, h * .42, h * .05); g.add(hand); });
+  if (opt.belt) { const b = new THREE.Mesh(new THREE.TorusGeometry(h * .2, h * .016, 10, 40), new THREE.MeshStandardMaterial({ color: opt.belt, metalness: 1, roughness: .22 })); b.rotation.x = Math.PI / 2; b.position.y = h * .5; b.scale.set(1.08, 1, 1); g.add(b); }
+  g.userData.head = head; return g;
+}
+const at = (o, x, y, z) => { o.position.set(x, y, z); return o; };
+const metal = (c, r = .25) => new THREE.MeshStandardMaterial({ color: c, metalness: 1, roughness: r });
+function ground(color, size = 200, rough = .95, tex) { const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size, 1, 1), new THREE.MeshStandardMaterial({ color, roughness: rough, map: tex || null })); m.rotation.x = -Math.PI / 2; return m; }
+function water(w, d, color) {
+  const geo = new THREE.PlaneGeometry(w, d, 80, 40); geo.rotateX(-Math.PI / 2); const m = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color, roughness: .08, metalness: .2, clearcoat: 1 }));
+  const base = geo.attributes.position.array.slice(); m.userData.tick = (t) => { const p = geo.attributes.position; for (let i = 0; i < p.count; i++) { const x = base[i * 3], z = base[i * 3 + 2]; p.setY(i, Math.sin(x * .6 + t * 1.4) * .08 + Math.sin(z * .9 + t * 1.1 + x * .3) * .06); } p.needsUpdate = true; geo.computeVertexNormals(); };
+  S.upd.push(m.userData.tick); return m;
+}
+function displace(geo, amt, freq = 1.3, seed = 1) { const p = geo.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = Math.sin(v.x * freq + seed) * Math.cos(v.y * freq * 1.3 + seed * 2) * Math.sin(v.z * freq * .9 + seed * 3) + .5 * Math.sin(v.x * freq * 3.1 + v.z * 2.3); v.multiplyScalar(1 + n * amt); p.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); return geo; }
+function stars(n, r) { const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(0, TAU), e = rand(.05, 1.4), rr = r * rand(.9, 1); p.set([Math.cos(a) * Math.cos(e) * rr, Math.sin(e) * rr, Math.sin(a) * Math.cos(e) * rr], i * 3); } const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3)); return new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: .8 })); }
+
+// one cherub as Ezekiel saw it, reusable (Eden has two)
+function cherub(sc = 1) {
+  const g = new THREE.Group();
+  const coal = new THREE.MeshStandardMaterial({ color: 0x1a0805, roughness: .8, emissive: 0xff5a1a, emissiveMap: coalTex, emissiveIntensity: 1.6 });
+  const body = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [.42, .05], [.55, .6], [.6, 1.3], [.5, 1.9], [.3, 2.15], [0, 2.2]].map(([r, y]) => new THREE.Vector2(r, y)), 40), coal); body.position.y = 1.7; g.add(body);
+  const brass = metal(0xd4a24a, .16);
+  [-1, 1].forEach((d) => { const leg = new THREE.Mesh(new THREE.CylinderGeometry(.13, .11, 1.8, 16), brass); leg.position.set(d * .26, .9, 0); g.add(leg); const hoof = new THREE.Mesh(new THREE.CylinderGeometry(.16, .22, .22, 16), brass); hoof.position.set(d * .26, .1, .04); g.add(hoof); const cleft = new THREE.Mesh(new THREE.BoxGeometry(.03, .24, .5), new THREE.MeshBasicMaterial({ color: 0 })); cleft.position.set(d * .26, .1, 0); g.add(cleft); });
+  // the head: four carved faces around a column, one to each side
+  const head = new THREE.Group(); head.position.y = 4.35; g.add(head);
+  ["man", "lion", "ox", "eagle"].forEach((k, i) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.62, .55, 1.05, 24, 1, true, i * TAU / 4 - TAU / 8, TAU / 4), new THREE.MeshStandardMaterial({ map: faceTex(k), bumpMap: faceTex(k), bumpScale: 6, metalness: .55, roughness: .42, color: 0xe0b070, transparent: true, alphaTest: .2, side: THREE.DoubleSide })); head.add(m); });
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 12, 0, TAU, 0, Math.PI / 2), coal); cap.position.y = .5; head.add(cap); const core = new THREE.Mesh(new THREE.CylinderGeometry(.5, .45, 1.05, 24), coal); head.add(core);
+  // wings: two stretched up to touch the next creature, two covering the body
+  const wm = { color: 0xe9d6b0, rows: 3, eyes: true, iris: "gold" };
+  const up = [wing({ ...wm, len: 4.6, n: 18, a0: .25, a1: 1.45 }), wing({ ...wm, len: 4.6, n: 18, a0: .25, a1: 1.45 })];
+  up[0].position.set(.45, 3.7, -.2); up[1].position.set(-.45, 3.7, -.2); up[1].scale.x = -1; up.forEach((w) => { w.rotation.y = .25 * Math.sign(w.scale.x); g.add(w); });
+  const low = [wing({ ...wm, len: 2.6, n: 13, a0: -1.6, a1: -.55 }), wing({ ...wm, len: 2.6, n: 13, a0: -1.6, a1: -.55 })];
+  low[0].position.set(.55, 3.5, .45); low[1].position.set(-.55, 3.5, .45); low[1].scale.x = -1; low.forEach((w) => { w.rotation.y = -.55 * Math.sign(w.scale.x); g.add(w); });
+  // hands of a man under the wings
+  const skin = new THREE.MeshPhysicalMaterial({ color: 0xb98a64, roughness: .55, sheen: .3 });
+  [-1, 1].forEach((d) => { const hd = new THREE.Group(); hd.position.set(d * .95, 2.9, .2); const palm = new THREE.Mesh(new THREE.BoxGeometry(.22, .3, .08, 2, 2, 2), skin); hd.add(palm); for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.CapsuleGeometry(.025, .16, 4, 8), skin); fg.position.set((f - 1.5) * .055, -.24, 0); hd.add(fg); } g.add(hd); });
+  // eyes over the whole body
+  const bp = []; for (let i = 0; i < 26; i++) { const a = rand(0, TAU), y = rand(.25, 1.95), r = .55 * Math.sin(Math.PI * Math.min(1, y / 2.2 + .15)) + .02; bp.push({ p: V(Math.cos(a) * r, y + 1.7, Math.sin(a) * r), s: rand(.06, .1) }); }
+  new Eyes(g, bp, { iris: "gold" });
+  g.scale.setScalar(sc);
+  const lamps = []; for (let i = 0; i < 5; i++) { const s = glowSprite(0xff8a3a, 1.2); g.add(s); lamps.push(s); }
+  g.userData.tick = (t) => { coal.emissiveIntensity = 1.3 + Math.sin(t * 3) * .3 + Math.random() * .3; up.forEach((w, i) => (w.rotation.z = Math.sin(t * 1.3 + i) * .04)); lamps.forEach((s, i) => s.position.set(Math.sin(t * .6 + i * 2) * 1.6, 2 + (Math.sin(t * 1.7 + i * 1.3) * .5 + .5) * 3, Math.cos(t * .6 + i * 2) * 1.6)); };
+  S.upd.push(g.userData.tick); return g;
+}
+
+/* ── the scenes ── */
+let cryEl = document.getElementById("cry");
+const SC = {
+seraphim() {
+  scene.background = new THREE.Color(0x0b0503); scene.fog = new THREE.FogExp2(0x1a0c06, .045);
+  const core = new THREE.Group(); core.position.y = 2.2; world.add(core);
+  core.add(glowSprite(0xfff1c8, 5), glowSprite(0xff9a3d, 11, .7)); const L = PL(0xff9040, 80, 40, 1.6); core.add(L);
+  const fireM = { color: 0x8a2a08, emissive: 0xff6a1a, eI: 4.2, rows: 3, rough: .5 };
+  const mk = (len, n, a0, a1, x, y, z, ry, rz) => { const ws = []; [1, -1].forEach((d) => { const w = wing({ ...fireM, len, n, a0, a1 }); w.position.set(d * x, y, z); w.scale.x = d; w.rotation.set(0, ry * d, rz * d); core.add(w); ws.push(w); }); return ws; };
+  const fly = mk(5.2, 20, -.35, .9, .35, 0, 0, .1, 0), faceW = mk(2.8, 12, 1.25, 2.1, .3, .5, .6, -.5, 0), feetW = mk(2.8, 12, -2.1, -1.25, .3, -.5, .6, -.5, 0);
+  const fire = new Fire(2600, world, 0);
+  smoke(world, 40, [-9, 9, -2, 8, -8, 2], 0x6a5a50, .35, 7);
+  // the posts of the door
+  const stone = new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: .9, map: rockTex }); const posts = [-6, 6].map((x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 14, 1), stone); m.position.set(x, 5, -4); world.add(m); return m; });
+  world.add(at(ground(0x150c08), 0, -3, 0));
+  const tmp = new THREE.Vector3();
+  return { cam: [0, 3, 15], tgt: [0, 2.2, 0], bloom: [1.25, .7, .15], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "IS THE LORD OF HOSTS:", "THE WHOLE EARTH IS FULL OF HIS GLORY"],
+    tick(t, dt) {
+      const f = Math.sin(t * 2.4); fly.forEach((w) => (w.rotation.z = f * .32 * w.scale.x)); L.intensity = 70 + Math.random() * 30 * LS;
+      for (const w of [...fly, ...faceW, ...feetW]) { const tips = w.userData.tips; for (let k = 0; k < 3; k++) { const tp = tips[(Math.random() * tips.length) | 0]; tmp.copy(tp).multiplyScalar(rand(.3, 1)); w.localToWorld(tmp); fire.emit(tmp, V(rand(-.4, .4), rand(.4, 1.6), rand(-.4, .4)), rand(.5, 1.3), rand(.5, 1.2)); } }
+      for (let k = 0; k < 8; k++) fire.emit(V(rand(-.5, .5), 2.2 + rand(-1, 1), rand(-.3, .3)), V(rand(-.5, .5), rand(1, 2.5), rand(-.5, .5)), rand(.6, 1.2), rand(.4, .9));
+      const sh = (Math.floor(t / 1.6) % 5 === 3) ? .05 : 0; posts.forEach((p, i) => (p.position.x = (i ? 6 : -6) + Math.sin(t * 50) * sh));
+    } };
+},
+cherubim() {
+  scene.background = new THREE.Color(0x07050a); scene.fog = new THREE.FogExp2(0x0a0608, .035);
+  const c = cherub(1); world.add(c);
+  // the other three, glimpsed, wings touching
+  [[-9, -4], [9, -4], [0, -10]].forEach(([x, z]) => { const o = cherub(.95); o.position.set(x, 0, z); o.rotation.y = Math.atan2(-x, -z); world.add(o); });
+  world.add(ground(0x0c0806));
+  const L = PL(0xff8a3a, 40, 30, 1.5); L.position.set(0, 4, 3); world.add(L); world.add(new THREE.HemisphereLight(0x443322, 0x080404, .6));
+  return { cam: [0, 4, 11], tgt: [0, 3.2, 0], bloom: [1.0, .6, .25], exp: 1.1,
+    tick(t) { if (Math.random() < .03) bolt(V(rand(-4, 4), rand(1, 7), rand(-2, 2)), V(rand(-6, 6), rand(0, 9), rand(-3, 3))); } };
+},
+wheels() {
+  scene.background = new THREE.Color(0x050608); scene.fog = new THREE.FogExp2(0x060708, .02);
+  const rig = new THREE.Group(); rig.position.y = 4; world.add(rig);
+  const beryl = new THREE.MeshPhysicalMaterial({ color: 0xc9a84a, metalness: 1, roughness: .3, clearcoat: .6, emissive: 0x2a1a00, emissiveIntensity: .4 });
+  const R = 5, rr = .55, rings = [];
+  for (let k = 0; k < 2; k++) {
+    const ring = new THREE.Group(); rig.add(ring); rings.push(ring);
+    const tor = new THREE.Mesh(new THREE.TorusGeometry(R, rr, 40, 260), beryl); ring.add(tor);
+    // engraved bands
+    [-1, 1].forEach((d) => { const b = new THREE.Mesh(new THREE.TorusGeometry(R + d * rr * .7, .06, 8, 260), metal(0x8a6a2a, .4)); b.position.z = 0; ring.add(b); });
+    const pts = []; const N = 70;
+    for (let i = 0; i < N; i++) for (const v of [0, 1.15, -1.15]) { const u = (i + (v ? .5 : 0)) / N * TAU, rad = R + rr * Math.cos(v); pts.push({ p: V(Math.cos(u) * rad, Math.sin(u) * rad, rr * Math.sin(v)).multiplyScalar(1).add(V(Math.cos(u) * Math.cos(v), Math.sin(u) * Math.cos(v), Math.sin(v)).multiplyScalar(.08)), s: v ? .2 : .27 }); }
+    new Eyes(ring, pts, { iris: "green" });
+  }
+  rings[1].rotation.y = Math.PI / 2;
+  // the spirit of the living creature in the wheels
+  const hub = new THREE.Group(); rig.add(hub); hub.add(glowSprite(0xfff4d0, 4), glowSprite(0xd8e8ff, 9, .5)); const L = PL(0xffe8b0, 60, 40, 1.4); hub.add(L);
+  const spirit = new Fire(1200, rig, 1);
+  const dust = new Fire(500, world, 3);
+  world.add(at(ground(0x0a0a08, 300, .9, rockTex), 0, -2, 0)); world.add(stars(1500, 400));
+  world.add(new THREE.HemisphereLight(0x8899aa, 0x110d08, .5));
+  return { cam: [0, 1, 18], tgt: [0, 4, 0], bloom: [1.0, .5, .3], exp: 1.15,
+    tick(t, dt) {
+      rig.rotation.x = Math.sin(t * .13) * .4; rig.rotation.y = t * .12; rings[0].rotation.z = t * .5; rings[1].rotation.x = t * .5;
+      for (let k = 0; k < 6; k++) { const a = rand(0, TAU), r = rand(0, 1.5); spirit.emit(V(Math.cos(a) * r, Math.sin(a) * r, rand(-1, 1)), V(-Math.sin(a) * 2, Math.cos(a) * 2, rand(-.5, .5)), rand(.6, 1.4), rand(.15, .4)); }
+      if (Math.random() < .5) dust.emit(V(rand(-12, 12), rand(-2, 0), rand(-8, 8)), V(rand(-.2, .2), rand(.1, .5), 0), rand(3, 6), rand(.04, .08));
+      if (Math.random() < .012) bolt(V(0, 4, 0), V(rand(-7, 7), rand(-1, 10), rand(-5, 5)), 0xfff0c0);
+    } };
+},
+living() {
+  scene.background = new THREE.Color(0x04050c); scene.fog = new THREE.FogExp2(0x05060c, .02);
+  const throne = new THREE.Group(); throne.position.y = 4; world.add(throne);
+  throne.add(glowSprite(0xffffff, 8), glowSprite(0xfff1d0, 18, .5)); const L = PL(0xfff0d0, 120, 60, 1.3); throne.add(L);
+  // a rainbow round about the throne, in sight like unto an emerald
+  const bow = new THREE.Mesh(new THREE.TorusGeometry(5.2, .18, 16, 200), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x3cff9a).multiplyScalar(1.4), toneMapped: false, transparent: true, opacity: .3 })); throne.add(bow);
+  // a sea of glass like unto crystal
+  const sea = new THREE.Mesh(new THREE.CircleGeometry(60, 64), new THREE.MeshPhysicalMaterial({ color: 0xbfe6f0, metalness: .9, roughness: .04, clearcoat: 1 })); sea.rotation.x = -Math.PI / 2; sea.position.y = -1.5; world.add(sea);
+  const kinds = [["lion", 0xe7b45a], ["ox", 0x8a5a32], ["man", 0xd8a878], ["eagle", 0x6b4a2b]], beasts = [];
+  kinds.forEach(([k, col], i) => {
+    const b = new THREE.Group(); world.add(b); beasts.push(b);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(.8, 32, 24), new THREE.MeshPhysicalMaterial({ color: col, roughness: .7, sheen: 1, sheenColor: new THREE.Color(col) })); body.scale.set(1, 1.25, .9); b.add(body);
+    const mask = new THREE.Mesh(new THREE.CylinderGeometry(.82, .78, 1.15, 24, 1, true, -TAU / 7, TAU / 3.5), new THREE.MeshStandardMaterial({ map: faceTex(k), bumpMap: faceTex(k), bumpScale: 5, roughness: .6, metalness: .2, transparent: true, alphaTest: .2, side: THREE.DoubleSide })); mask.position.y = .25; b.add(mask);
+    const ws = []; [[1.4, 2.0, 2.6], [-.3, .45, 2.3], [-1.6, -1.0, 1.9]].forEach(([a0, a1, len]) => [1, -1].forEach((d) => { const w = wing({ len, n: 11, rows: 2, a0, a1, eyes: true, iris: "blue", eyeScale: 1.3, color: 0xf3ead8 }); w.position.set(d * .5, .2, -.3); w.scale.x = d; w.rotation.y = d * .5; b.add(w); ws.push(w); }));
+    // full of eyes before and behind
+    const ep = []; for (let j = 0; j < 22; j++) { const a = rand(0, TAU), y = rand(-.9, .9); if (Math.cos(a) > .5 && y > -.3) continue; ep.push({ p: V(Math.cos(a) * .8 * Math.sqrt(1 - y * y / 1.2), y * 1.1, Math.sin(a) * .75), s: rand(.07, .11) }); }
+    new Eyes(b, ep, { iris: "blue" }); b.userData.ws = ws;
+  });
+  world.add(stars(2000, 300));
+  return { cam: [0, 4, 17], tgt: [0, 3.6, 0], bloom: [1.15, .6, .3], exp: 1.05, cry: ["HOLY,", "HOLY,", "HOLY,", "LORD GOD ALMIGHTY,", "WHICH WAS, AND IS, AND IS TO COME"],
+    tick(t) {
+      bow.lookAt(camera.position);
+      beasts.forEach((b, i) => { const a = t * .1 + i * TAU / 4 + Math.PI / 4; b.position.set(Math.cos(a) * 6.5, 3.6 + Math.sin(t * 1.2 + i) * .3, Math.sin(a) * 6.5); b.lookAt(camera.position.x, b.position.y, camera.position.z); b.rotateY(Math.PI / 2 * 0); b.userData.ws.forEach((w, j) => (w.rotation.z = Math.sin(t * 5 + j + i) * .18 * w.scale.x)); });
+    } };
+},
+eden() {
+  scene.background = new THREE.Color(0x030806); scene.fog = new THREE.FogExp2(0x040a06, .04);
+  world.add(ground(0x0a1408)); world.add(new THREE.HemisphereLight(0x5a8a6a, 0x050805, .4));
+  // the tree of life, behind them
+  const tree = new THREE.Group(); tree.position.set(0, 0, -9); world.add(tree);
+  const bark = new THREE.MeshStandardMaterial({ color: 0x2a2014, roughness: .95, map: rockTex });
+  const trunk = new THREE.Mesh(displace(new THREE.CylinderGeometry(.5, .9, 6, 16, 12), .08), bark); trunk.position.y = 3; tree.add(trunk);
+  for (let i = 0; i < 9; i++) { const br = new THREE.Mesh(new THREE.CylinderGeometry(.08, .25, 3.5, 8), bark); br.position.set(0, 5.5, 0); br.rotation.set(rand(-1, 1), rand(0, TAU), rand(.5, 1.1)); br.translateY(1.5); tree.add(br); }
+  const leaves = new Fire(1400, tree, 4); tree.add(glowSprite(0x9dffb0, 14, .35)); const tl = PL(0x8affa0, 30, 30, 1.5); tl.position.y = 6; tree.add(tl);
+  for (let i = 0; i < 14; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(.14, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd96b).multiplyScalar(2.5), toneMapped: false })); f.position.set(rand(-2.4, 2.4), rand(5.5, 8.5), rand(-2.4, 2.4)); tree.add(f); }
+  // the cherubims at the east of the garden
+  [-1, 1].forEach((d) => { const c = cherub(.75); c.position.set(d * 5, 0, -1); c.rotation.y = -d * .7; world.add(c); });
+  // the flaming sword which turned every way
+  const sword = new THREE.Group(); sword.position.set(0, 3.2, 1); world.add(sword);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(.12, 5, .5), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xfff2c0).multiplyScalar(3), toneMapped: false })); blade.position.y = 2.5; sword.add(blade);
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(1.2, .14, .2), metal(0xd4a24a, .2)); sword.add(guard); const hilt = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .8, 8), metal(0x6a4a2a, .4)); hilt.position.y = -.45; sword.add(hilt);
+  const sl = PL(0xff8a3a, 60, 25, 1.4); sword.add(sl);
+  const fire = new Fire(2400, world, 0); const tmp = V(0, 0, 0);
+  return { cam: [0, 3.5, 14], tgt: [0, 3, -1], bloom: [1.2, .6, .25], exp: 1.05,
+    tick(t) {
+      sword.rotation.set(t * 1.7, t * 2.3, t * 1.1);
+      for (let k = 0; k < 14; k++) { tmp.set(0, rand(0, 5), 0); sword.localToWorld(tmp); fire.emit(tmp, V(rand(-.3, .3), rand(.3, 1.2), rand(-.3, .3)), rand(.3, .8), rand(.25, .55)); }
+      for (let k = 0; k < 4; k++) leaves.emit(V(rand(-2.8, 2.8), rand(5, 9), rand(-2.8, 2.8)), V(0, rand(-.05, .05), 0), rand(1.5, 3), rand(.2, .5));
+    } };
+},
+linen() {
+  scene.background = new THREE.Color(0x06060a); scene.fog = new THREE.FogExp2(0x07080c, .03);
+  world.add(new THREE.HemisphereLight(0x8a98aa, 0x0a0806, .35));
+  const riv = water(80, 30, 0x0c1a24); riv.position.set(0, -.05, 6); world.add(riv); world.add(at(ground(0x14110c, 200, .95, rockTex), 0, -.1, -10));
+  const h = 4.4, brassM = metal(0xe0a84a, .12);
+  // his body like the beryl, showing through the linen
+  const inner = glowSprite(0xf2d878, 4.5, .9); inner.position.set(0, 2.2, .2); world.add(inner); const innerL = PL(0xf2d878, 30, 8, 1.5); innerL.position.set(0, 2.2, .8); world.add(innerL);
+  const man = figure({ h, robe: 0xf4efe2, op: .94, emissive: 0xf2d878, eI: .25, belt: 0xf0c050, armM: brassM, handM: brassM, faceGlow: 0xdfeaff, faceI: 6 }); world.add(man);
+  [-1, 1].forEach((d) => { const ft = new THREE.Mesh(new THREE.SphereGeometry(.16, 16, 10), brassM); ft.scale.set(1, .5, 1.8); ft.position.set(d * .22, .06, .3); world.add(ft); });
+  // eyes as lamps of fire
+  const eyesG = new THREE.Group(); eyesG.position.set(0, h * .935, h * .065); world.add(eyesG); const lamps = [-1, 1].map((d) => { const s = glowSprite(0xff7a1a, .5); s.position.x = d * .1; eyesG.add(s); return s; });
+  const fl = PL(0xdfe8ff, 40, 30, 1.4); fl.position.set(0, h * .93, .6); world.add(fl); const faceGlow = glowSprite(0xe8f0ff, 2.2); faceGlow.position.set(0, h * .93, .1); world.add(faceGlow);
+  // the voice of his words like the voice of a multitude
+  const rings = []; for (let i = 0; i < 5; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(1, .01, 6, 100), new THREE.MeshBasicMaterial({ color: 0xffe2b0, transparent: true, opacity: .15 })); r.position.set(0, h * .93, 0); world.add(r); rings.push(r); }
+  // Daniel, with no strength left in him
+  const dan = figure({ h: 1.8, robe: 0x3a2e22 }); dan.rotation.x = -Math.PI / 2; dan.position.set(-3.4, .15, -1.2); dan.rotation.z = .5; world.add(dan);
+  const fire = new Fire(500, world, 0);
+  return { cam: [0, 2.6, 10], tgt: [0, 2.6, 0], bloom: [1.1, .6, .4], exp: 1.0,
+    tick(t, dt) {
+      const flick = Math.random() < .25 ? 1 : .45; fl.intensity = 50 * flick * LS; faceGlow.material.opacity = .6 + flick * .4; man.userData.head.material.emissiveIntensity = 3 + flick * 6;
+      lamps.forEach((s) => { s.scale.setScalar(.4 + Math.random() * .2); }); for (let k = 0; k < 2; k++) lamps.forEach((s) => { const p = s.getWorldPosition(V(0, 0, 0)); fire.emit(p, V(rand(-.05, .05), rand(.1, .3), 0), .3, .08); });
+      rings.forEach((r, i) => { const k = ((t * .5 + i / 5) % 1); r.scale.setScalar(.6 + k * 9); r.material.opacity = .18 * (1 - k); r.lookAt(camera.position); });
+      if (Math.random() < .015) bolt(V(0, h * .95, 0), V(rand(-8, 8), rand(10, 16), rand(-6, 2)));
+    } };
+},
+mighty() {
+  scene.background = new THREE.Color(0x0e1320); scene.fog = new THREE.FogExp2(0x101626, .008);
+  world.add(new THREE.HemisphereLight(0x9aa8c8, 0x1a120a, .5));
+  const sea = water(120, 160, 0x0c2236); sea.position.set(-60, 0, 0); world.add(sea);
+  const land = new THREE.Mesh(displace(new THREE.PlaneGeometry(120, 160, 60, 60).rotateX(-Math.PI / 2), .0), new THREE.MeshStandardMaterial({ color: 0x2a2014, roughness: 1, map: rockTex })); { const p = land.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, Math.max(0, Math.sin(p.getX(i) * .1) * 2 + Math.cos(p.getZ(i) * .13) * 1.5 + 1)); land.geometry.computeVertexNormals(); } land.position.set(60, -.5, 0); world.add(land);
+  // his feet as pillars of fire
+  const fire = new Fire(4000, world, 0); const legs = [-2.4, 2.4];
+  legs.forEach((x) => { const col = new THREE.Mesh(new THREE.CylinderGeometry(.9, 1.2, 16, 20, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff6a1a).multiplyScalar(1.4), toneMapped: false, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false })); col.position.set(x, 8, 0); world.add(col); const l = PL(0xff7a2a, 120, 50, 1.3); l.position.set(x, 4, 2); world.add(l); });
+  // clothed with a cloud
+  smoke(world, 120, [-5, 5, 15, 30, -3, 3], 0xd8dce8, .5, 6);
+  // his face as the sun, a rainbow upon his head
+  const sunG = new THREE.Group(); sunG.position.set(0, 34, 0); world.add(sunG); sunG.add(glowSprite(0xfffbe6, 9), glowSprite(0xffd27a, 26, .55)); const sl = PL(0xfff0c0, 400, 200, 1.2); sunG.add(sl);
+  const cols = [0xff3a3a, 0xff9a2a, 0xffe84a, 0x4ad66a, 0x3a9aff, 0x7a5aff]; cols.forEach((c, i) => { const r = new THREE.Mesh(new THREE.TorusGeometry(8 + i * .5, .22, 8, 120, Math.PI), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: .6 })); r.position.copy(sunG.position).add(V(0, -2, 0)); world.add(r); sunG.userData["r" + i] = r; });
+  // the little book, open
+  const book = new THREE.Group(); book.position.set(7, 22, 2); world.add(book); [-1, 1].forEach((d) => { const pg = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.5, .05), new THREE.MeshStandardMaterial({ color: 0xf2e6c4, roughness: .8, emissive: 0x332a18 })); pg.position.x = d * .55; pg.rotation.y = d * -.25; book.add(pg); }); book.add(glowSprite(0xfff2d0, 3, .4));
+  return { cam: [0, 6, 52], tgt: [0, 17, 0], bloom: [1.0, .7, .35], exp: 1.0,
+    tick(t) {
+      legs.forEach((x) => { for (let k = 0; k < 22; k++) fire.emit(V(x + rand(-1, 1), rand(0, 16), rand(-1, 1)), V(rand(-.3, .3), rand(1, 3), rand(-.3, .3)), rand(.5, 1.1), rand(.8, 1.8)); });
+      for (let i = 0; i < 6; i++) sunG.userData["r" + i].lookAt(camera.position.x, sunG.position.y - 2, camera.position.z);
+      if (Math.random() < .02) bolt(V(rand(-30, 30), 45, rand(-10, 10)), V(rand(-30, 30), 5, rand(-10, 10)));
+    } };
+},
+tomb() {
+  scene.background = new THREE.Color(0x0d0c12); scene.fog = new THREE.FogExp2(0x100f14, .03);
+  world.add(ground(0x1a1610, 200, .95, rockTex));
+  const dawn = new THREE.DirectionalLight(0xffb070, 1.2); dawn.position.set(-20, 4, 6); world.add(dawn); world.add(new THREE.HemisphereLight(0x4a4a66, 0x0a0806, .4));
+  const rockM = new THREE.MeshStandardMaterial({ color: 0x6a6252, roughness: .95, map: rockTex });
+  const hill = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(7, 5), .08, 1.1, 3), rockM); hill.scale.set(1.4, .9, 1); hill.position.set(5, 0, -6); world.add(hill);
+  const door = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshBasicMaterial({ color: 0x000000 })); door.position.set(1.6, 1.4, -.9); door.rotation.y = -.5; world.add(door);
+  // the stone, rolled back, and the angel sitting on it
+  const stone = new THREE.Mesh(displace(new THREE.CylinderGeometry(1.7, 1.7, .6, 40, 2), .02), rockM); stone.rotation.z = Math.PI / 2; stone.rotation.y = .3; stone.position.set(-1.6, 1.7, .2); world.add(stone);
+  const ang = figure({ h: 3, robe: 0xffffff, emissive: 0xcfd8ff, eI: .5, faceGlow: 0xffffff, faceI: 8 }); ang.position.set(-1.6, 1.8, .2); world.add(ang);
+  const L = PL(0xdfe8ff, 60, 30, 1.3); L.position.set(-1.6, 4.6, 1.5); world.add(L); const fg = glowSprite(0xeef3ff, 2.5); fg.position.set(-1.6, 4.6, .3); world.add(fg); const aura = glowSprite(0xdfe8ff, 9, .35); aura.position.set(-1.6, 3.6, 0); world.add(aura);
+  // the keepers, as dead men
+  [[-5.5, 2.5, .3], [-4, 4, -.4]].forEach(([x, z, r]) => { const g = figure({ h: 1.8, robe: 0x5a4a32, armM: metal(0x7a6a4a, .5) }); g.rotation.x = -Math.PI / 2; g.rotation.z = r; g.position.set(x, .2, z); world.add(g); const sp = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 3, 6), metal(0x8a7a5a, .5)); sp.rotation.z = Math.PI / 2 + r; sp.position.set(x + .5, .1, z + .6); world.add(sp); });
+  const cam0 = V(-2, 2.6, 11);
+  return { cam: [-2, 2.6, 11], tgt: [-1.6, 2.6, 0], bloom: [1.0, .6, .45], exp: 1.05,
+    tick(t) { const fl = Math.random() < .3 ? 1 : .55; L.intensity = 70 * fl * LS; fg.material.opacity = fl; if (Math.random() < .01) bolt(V(-1.6, 4.6, 0), V(rand(-10, 6), 18, rand(-5, 0)));
+      const q = Math.sin(t * .6) > .9 ? .04 : 0; camera.position.x += rand(-q, q); camera.position.y += rand(-q, q); } };
+},
+destroyer() {
+  scene.background = new THREE.Color(0x140404); scene.fog = new THREE.FogExp2(0x1a0606, .022);
+  world.add(ground(0x0a0606)); world.add(new THREE.HemisphereLight(0x5a2020, 0x050202, .5));
+  // Jerusalem
+  const bm = new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: .9, map: rockTex }); const city = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), bm, 260), d = new THREE.Object3D();
+  for (let i = 0; i < 260; i++) { const a = rand(0, TAU), r = Math.sqrt(Math.random()) * 12, hh = rand(.6, 2.6); d.position.set(Math.cos(a) * r, hh / 2, Math.sin(a) * r - 4); d.scale.set(rand(.8, 1.8), hh, rand(.8, 1.8)); d.rotation.y = rand(0, .3); d.updateMatrix(); city.setMatrixAt(i, d.matrix); } world.add(city);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 32, 16, 0, TAU, 0, Math.PI / 2), metal(0xb08a4a, .35)); dome.position.set(0, 2.4, -4); world.add(dome); const temple = new THREE.Mesh(new THREE.BoxGeometry(4, 2.4, 3), bm); temple.position.set(0, 1.2, -4); world.add(temple);
+  for (let i = 0; i < 40; i++) { const w = glowSprite(0xffa050, .3, .8); w.position.set(rand(-11, 11), rand(.3, 2), rand(-14, 6)); world.add(w); }
+  // between the earth and the heaven
+  const ang = figure({ h: 9, robe: 0x3a0a08, faceGlow: 0xffd0a0, faceI: 2, armM: new THREE.MeshPhysicalMaterial({ color: 0x3a0a08, roughness: .8, sheen: 1 }) }); ang.position.set(6, 8, -6); ang.rotation.y = -.6; world.add(ang);
+  const aura = glowSprite(0xff4a2a, 22, .3); aura.position.set(6, 13, -6); world.add(aura);
+  // a drawn sword in his hand stretched out over Jerusalem
+  const sword = new THREE.Group(); sword.position.set(4.3, 11.8, -4.6); sword.rotation.set(0, -.4, 2.35); world.add(sword);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(.18, 10, .6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd8c0).multiplyScalar(2.6), toneMapped: false })); blade.position.y = 5; sword.add(blade); sword.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, .2, .3), metal(0xc9a24a, .2)));
+  const sl = PL(0xff5a3a, 120, 40, 1.3); sl.position.set(0, 5, 0); sword.add(sl);
+  smoke(world, 50, [-16, 16, 4, 16, -16, 0], 0x5a1a12, .4, 9);
+  // David and the elders, faces to the ground
+  for (let i = 0; i < 6; i++) { const e = figure({ h: 1.4, robe: 0x4a3a24 }); e.rotation.x = -Math.PI / 2; e.position.set(-6 + i * .9, .15, 9); world.add(e); }
+  const fire = new Fire(800, world, 0), tmp = V(0, 0, 0);
+  return { cam: [-6, 3, 22], tgt: [1, 7, -3], bloom: [1.0, .6, .35], exp: 1.05,
+    tick(t) { sword.rotation.z = 2.35 + Math.sin(t * .7) * .03; for (let k = 0; k < 6; k++) { tmp.set(0, rand(0, 10), 0); sword.localToWorld(tmp); fire.emit(tmp, V(rand(-.2, .2), rand(-.6, .2), rand(-.2, .2)), rand(.4, .9), rand(.2, .5)); } } };
+},
+chariots() {
+  scene.background = new THREE.Color(0x06060c); scene.fog = new THREE.FogExp2(0x07070d, .012);
+  world.add(stars(3000, 500)); world.add(new THREE.HemisphereLight(0x3a3a5a, 0x050404, .35));
+  const mtn = new THREE.Mesh(displace(new THREE.ConeGeometry(16, 14, 64, 24), .06, .7, 5), new THREE.MeshStandardMaterial({ color: 0x2a241c, roughness: 1, map: rockTex })); mtn.position.y = 7; world.add(mtn);
+  world.add(ground(0x0e0c0a, 300, 1, rockTex));
+  // Elisha and the young man
+  [[-.5, 0x3a2e20], [.5, 0x2a2218]].forEach(([x, c]) => { const f = figure({ h: 1.8, robe: c }); f.position.set(x, 0, 18); world.add(f); });
+  const N = 34, ch = []; const fire = new Fire(6000, world, 0);
+  for (let i = 0; i < N; i++) { const g = new THREE.Group(); world.add(g); const body = new THREE.Mesh(new THREE.SphereGeometry(.5, 16, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff9a3a).multiplyScalar(1.6), toneMapped: false, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false })); body.scale.set(2.2, .7, .7); body.position.x = .9; g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 8), body.material); head.scale.set(1.3, .7, .6); head.position.set(2.3, .55, 0); g.add(head);
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(.55, .08, 8, 30), body.material); wheel.position.set(-.9, -.1, .4); g.add(wheel); const w2 = wheel.clone(); w2.position.z = -.4; g.add(w2);
+    g.userData = { r: rand(9, 21), y: rand(2, 16), sp: rand(.2, .45) * (i % 2 ? 1 : -1), ph: rand(0, TAU), bob: rand(0, TAU) }; ch.push(g); }
+  const L = PL(0xff8a3a, 0, 120, 1.2); L.position.set(0, 10, 10); world.add(L); const tmp = V(0, 0, 0);
+  return { cam: [0, 5, 38], tgt: [0, 7, 0], bloom: [1.25, .7, .2], exp: 1.05, overlay: "LORD, I PRAY THEE, OPEN HIS EYES",
+    tick(t, dt) { const open = Math.min(1, Math.max(0, ((t % 18) - 2.5) / 4)); L.intensity = 70 * open * LS;
+      ch.forEach((g) => { const u = g.userData, a = u.ph + t * u.sp; g.position.set(Math.cos(a) * u.r, u.y * (1 - Math.max(0, (u.r - 9)) / 30) + Math.sin(t * 2 + u.bob) * .3, Math.sin(a) * u.r); g.rotation.y = -a + (u.sp > 0 ? -Math.PI / 2 : Math.PI / 2); g.scale.setScalar(open); g.visible = open > .02;
+        if (open > .1) for (let k = 0; k < 5; k++) { tmp.set(rand(-1.5, 2.6), rand(-.4, .8), rand(-.4, .4)); g.localToWorld(tmp); fire.emit(tmp, V(rand(-.4, .4), rand(.2, 1), rand(-.4, .4)), rand(.3, .8), rand(.4, .9) * open); } });
+      document.getElementById("ov").style.opacity = 1 - open; } };
+},
+host() {
+  scene.background = new THREE.Color(0x020309); scene.fog = new THREE.FogExp2(0x030409, .01);
+  const sk = stars(2500, 500); world.add(sk); world.add(new THREE.HemisphereLight(0x2a3050, 0x050404, .3));
+  const field = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 80, 80).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x0c0e08, roughness: 1 })); { const p = field.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, Math.sin(p.getX(i) * .05) * 1.5 + Math.cos(p.getZ(i) * .04) * 1.2 - 1.2); field.geometry.computeVertexNormals(); } world.add(field);
+  [[-2.5, 6], [-1.6, 6.6], [2.8, 5.6]].forEach(([x, z]) => { const s = figure({ h: 1.75, robe: 0x2a2418 }); s.position.set(x, -.2, z); world.add(s); });
+  const wool = new THREE.MeshStandardMaterial({ color: 0xd8d2c0, roughness: 1 }); for (let i = 0; i < 12; i++) { const sh = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(.35, 2), .15, 4, i), wool); sh.scale.set(1.4, .9, .9); sh.position.set(rand(-4, 4), .05, rand(3, 9)); world.add(sh); }
+  // the angel of the Lord, and the glory shone round about
+  const ang = figure({ h: 3.4, robe: 0xffffff, emissive: 0xfff4d8, eI: 1.2, faceGlow: 0xffffff, faceI: 6 }); ang.position.set(0, 3, -2); world.add(ang);
+  const glory = glowSprite(0xfff2d0, 16, .4); glory.position.set(0, 5, -2); world.add(glory); const L = PL(0xfff0d0, 90, 60, 1.2); L.position.set(0, 6, 0); world.add(L);
+  // suddenly, a multitude of the heavenly host
+  const n = 6000, p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(-1.3, 1.3) - Math.PI / 2, e = rand(.12, 1.2), r = rand(40, 160); p.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3); }
+  const hg = new THREE.BufferGeometry(); hg.setAttribute("position", new THREE.BufferAttribute(p, 3));
+  const hm = new THREE.PointsMaterial({ map: glowTex, color: new THREE.Color(0xfff2d0).multiplyScalar(1.1), size: 1.5, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }); const hostP = new THREE.Points(hg, hm); world.add(hostP);
+  return { cam: [0, 1.2, 16], tgt: [0, 5, -2], bloom: [1.2, .7, .25], exp: 1.0, cry: ["GLORY TO GOD IN THE HIGHEST,", "AND ON EARTH PEACE,", "GOOD WILL TOWARD MEN"],
+    tick(t) { const k = Math.min(1, Math.max(0, ((t % 20) - 3) / 3)); hm.opacity = k * .8; sk.material.opacity = .8 * (1 - k * .7); hostP.rotation.y = Math.sin(t * .05) * .05; } };
+},
+strangers() {
+  scene.background = new THREE.Color(0xe8c890); scene.fog = new THREE.Fog(0xe6c690, 20, 120);
+  const sun = new THREE.DirectionalLight(0xfff0d0, 3.2); sun.position.set(10, 30, 8); world.add(sun); world.add(new THREE.HemisphereLight(0xfff0d8, 0x8a6a3a, 1.1));
+  world.add(ground(0xc8a46a, 400, 1, rockTex));
+  const bark = new THREE.MeshStandardMaterial({ color: 0x3a2e1c, roughness: 1 }), leaf = new THREE.MeshStandardMaterial({ color: 0x4a5a26, roughness: .9 });
+  for (let i = 0; i < 5; i++) { const tr = new THREE.Group(); tr.position.set(-12 + i * 3.4, 0, -7 - (i % 2) * 3); world.add(tr); const tk = new THREE.Mesh(new THREE.CylinderGeometry(.3, .5, 4, 10), bark); tk.position.y = 2; tr.add(tk); for (let k = 0; k < 7; k++) { const f = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(1.6, 2), .12, 2, k), leaf); f.position.set(rand(-1.5, 1.5), rand(4, 6), rand(-1.5, 1.5)); tr.add(f); } }
+  // the tent door, and Abraham sitting in it
+  const tent = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3.4, 4, 1, true), new THREE.MeshStandardMaterial({ color: 0x3a2618, roughness: 1, side: THREE.DoubleSide })); tent.position.set(-4, 1.7, -1); tent.rotation.y = Math.PI / 4; world.add(tent);
+  const ab = figure({ h: 1.7, robe: 0xe8dcc0 }); ab.position.set(-4, 0, 1.2); ab.scale.y = .72; world.add(ab);
+  // three men stood by him
+  const men = [[2.5, 1.5, 0x7a6a52], [4, .6, 0x8a7a5e], [5.4, 1.8, 0x6a5a44]].map(([x, z, c]) => { const m = figure({ h: 1.85, robe: c, emissive: 0xffffff, eI: 0 }); m.position.set(x, 0, z); m.rotation.y = -1.2; world.add(m); return m; });
+  return { cam: [10, 2.4, 13], tgt: [0, 1.4, 0], bloom: [.35, .4, .85], exp: .95,
+    tick(t) { men.forEach((m, i) => { const k = Math.max(0, Math.sin(t * .8 + i * 2)) ** 8; m.children[0].material.emissiveIntensity = k * .25; }); } };
+},
+covering() {
+  scene.background = new THREE.Color(0x070405); scene.fog = new THREE.FogExp2(0x0a0506, .03);
+  world.add(new THREE.HemisphereLight(0x5a4a40, 0x0a0404, .4));
+  const fallG = new THREE.Group(); world.add(fallG);
+  // every precious stone was thy covering
+  const STONES = [0xb5172e, 0xf2c12e, 0xf4f9ff, 0xd9d26a, 0x1a1a1a, 0xc0533a, 0x1f4fbf, 0x1f9a52, 0x7a0f1c];
+  const body = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [.6, .1], [.75, 1.2], [.7, 2.4], [.45, 3.1], [.3, 3.4], [0, 3.5]].map(([r, y]) => new THREE.Vector2(r, y)), 40), metal(0xd4a24a, .3)); fallG.add(body);
+  const gm = new THREE.MeshPhysicalMaterial({ roughness: .02, metalness: 0, clearcoat: 1, ior: 2.2, specularIntensity: 1, envMapIntensity: 2.5 });
+  const N = 520, gems = new THREE.InstancedMesh(new THREE.OctahedronGeometry(.12, 0), gm, N), d = new THREE.Object3D(), col = new THREE.Color();
+  const prof = (y) => y < .1 ? .6 : y < 1.2 ? .6 + (y - .1) / 1.1 * .15 : y < 2.4 ? .75 - (y - 1.2) / 1.2 * .05 : y < 3.1 ? .7 - (y - 2.4) / .7 * .25 : .3;
+  for (let i = 0; i < N; i++) { const y = rand(.05, 3.3), a = rand(0, TAU), r = prof(y) + .05; d.position.set(Math.cos(a) * r, y, Math.sin(a) * r); d.lookAt(0, y, 0); d.rotateX(rand(0, 1)); d.scale.setScalar(rand(.7, 1.4)); d.updateMatrix(); gems.setMatrixAt(i, d.matrix); gems.setColorAt(i, col.setHex(STONES[i % 9])); }
+  fallG.add(gems);
+  const ws = [wing({ len: 4.4, n: 18, rows: 3, a0: .2, a1: 1.5, color: 0xffd27a, metal: 1, rough: .25 }), wing({ len: 4.4, n: 18, rows: 3, a0: .2, a1: 1.5, color: 0xffd27a, metal: 1, rough: .25 })];
+  ws.forEach((w, i) => { w.position.set(i ? -.5 : .5, 2.8, -.3); w.scale.x = i ? -1 : 1; w.rotation.y = i ? -.3 : .3; fallG.add(w); });
+  const halo = glowSprite(0xfff0c8, 6, .6); halo.position.y = 3.8; fallG.add(halo);
+  // the stones of fire
+  const fire = new Fire(2500, world, 0), sp = [];
+  for (let i = 0; i < 16; i++) { const a = i / 16 * TAU, s = new THREE.Mesh(displace(new THREE.IcosahedronGeometry(.22, 2), .1, 3, i), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff6a2a).multiplyScalar(2), toneMapped: false })); s.position.set(Math.cos(a) * 3.6, .2, Math.sin(a) * 3.6); world.add(s); sp.push(s.position); }
+  const L = PL(0xff7a3a, 60, 30, 1.4); L.position.y = 1; world.add(L); const key = PL(0xfff0d8, 50, 30, 1.4); key.position.set(3, 6, 6); world.add(key);
+  world.add(ground(0x120806, 200, .9, rockTex));
+  const base = gems.instanceColor.array.slice();
+  return { cam: [0, 4, 15], tgt: [0, 2.4, 0], bloom: [1.0, .6, .5], exp: 1.05,
+    tick(t, dt) {
+      const cyc = (t % 20) / 20, fall = Math.max(0, (cyc - .6) / .4), dark = Math.min(1, Math.max(0, (cyc - .45) / .15));
+      fallG.position.y = -fall * fall * 16; fallG.rotation.z = fall * .9; fallG.rotation.y = t * .2; halo.material.opacity = .6 * (1 - dark);
+      const a = gems.instanceColor.array; for (let i = 0; i < a.length; i++) a[i] = base[i] * (1 - dark * .92); gems.instanceColor.needsUpdate = true;
+      for (const p of sp) for (let k = 0; k < 3; k++) fire.emit(V(p.x + rand(-.3, .3), .5, p.z + rand(-.3, .3)), V(rand(-.2, .2), rand(.6, 1.6), rand(-.2, .2)), rand(.4, 1), rand(.3, .7));
+      if (fall > 0) for (let k = 0; k < 20; k++) fire.emit(V(rand(-1, 1), fallG.position.y + rand(0, 3), rand(-1, 1)), V(rand(-.5, .5), rand(1, 3), rand(-.5, .5)), rand(.5, 1), rand(.5, 1));
+    } };
+},
+};
+
+/* ── scene switching and the loop ── */
+let cur = null, T0 = performance.now();
+function disposeAll(o) { o.traverse((c) => { if (c.geometry) c.geometry.dispose(); if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => m.dispose()); }); }
+function show(id) {
+  for (const c of [...world.children]) { world.remove(c); disposeAll(c); }
+  S.eyes = []; S.fires = []; S.smokes = []; S.bolts = []; S.upd = []; flash.intensity = 0;
+  cur = SC[id](); T0 = performance.now();
+  camera.position.set(...cur.cam); controls.target.set(...cur.tgt); controls.update();
+  bloom.strength = cur.bloom[0] * .7; bloom.radius = cur.bloom[1] * .8; bloom.threshold = Math.max(.75, cur.bloom[2]); renderer.toneMappingExposure = cur.exp;
+  scene.environmentIntensity = .35;
+  const ov = document.getElementById("ov"); ov.textContent = cur.overlay || ""; ov.style.opacity = cur.overlay ? 1 : 0;
+}
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; const t = (now - T0) / 1000;
+  if (cur) {
+    cur.tick && cur.tick(t, dt); S.upd.forEach((f) => f(t, dt)); S.fires.forEach((f) => f.update(dt)); S.eyes.forEach((e) => e.update(t));
+    for (const list of S.smokes) for (const s of list) { s.position.addScaledVector(s.userData.v, dt); s.material.rotation += s.userData.r * dt; const b = s.userData.box; if (s.position.y > b[3]) s.position.y = b[2]; }
+    S.bolts = S.bolts.filter(([l, life], i) => { S.bolts[i][1] -= dt; if (S.bolts[i][1] <= 0) { world.remove(l); l.geometry.dispose(); l.material.dispose(); return false; } return true; });
+    flash.intensity *= Math.pow(.02, dt);
+    if (cur.cry) { const i = Math.floor(t / 1.25) % cur.cry.length, k = (t / 1.25) % 1; cryEl.textContent = cur.cry[i]; cryEl.style.opacity = Math.sin(k * Math.PI) * .9; } else cryEl.style.opacity = 0;
+  }
+  controls.update(); composer.render();
+  requestAnimationFrame(frame);
+}
+resize(); requestAnimationFrame(frame);
+
 const E = [
 { id: "seraphim", group: "Before the throne", name: "Seraphim", term: "שְׂרָפִים · śərāpîm · “burning ones”", tag: "Six wings, on fire, crying to one another.",
   refs: [["Isaiah 6:1–3", "In the year that king Uzziah died I saw also the Lord sitting upon a throne, high and lifted up, and his train filled the temple. Above it stood the seraphims: each one had six wings; with twain he covered his face, and with twain he covered his feet, and with twain he did fly. And one cried unto another, and said, Holy, holy, holy, is the LORD of hosts: the whole earth is full of his glory."],
@@ -264,311 +706,27 @@ const E = [
   trad: "Paired with Isaiah 14:12 (“How art thou fallen from heaven, O Lucifer”), this became the classic picture of Satan's fall. “Lucifer” is the Latin rendering of hêlēl, “shining one”, which in context is addressed to the king of Babylon." },
 ];
 
-/* ── renderers ── */
-let T = 0;
-const R = {
-seraphim(t, dt) {
-  sky("#1a0a05", "#050203"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 800;
-  // smoke filling the house
-  for (let i = 0; i < 14; i++) { const a = t * .05 + i; glow(x + Math.sin(a * 1.3 + i) * W * .35, y + Math.cos(a + i * 2) * H * .3, 220 * s, "rgba(90,70,60,.22)"); }
-  glow(x, y, 380 * s, "rgba(255,150,60,.35)"); glow(x, y, 160 * s, "rgba(255,240,200,.6)");
-  const flap = Math.sin(t * 2.2);
-  const fire = ["#fff3c4", "#ff9a3d", "rgba(160,20,0,0)"];
-  // flight pair
-  wing(x - 30 * s, y - 10 * s, Math.PI + .1 - flap * .35, 330 * s, 1.1, 13, fire, t, { fire: true });
-  wing(x + 30 * s, y - 10 * s, -.1 + flap * .35, 330 * s, 1.1, 13, fire, t, { fire: true });
-  // feet pair, crossed over the lower body
-  wing(x - 26 * s, y + 20 * s, 1.15, 220 * s, .55, 9, ["#ffe2a0", "#ff6a2a", "rgba(120,10,0,0)"], t, { fire: true });
-  wing(x + 26 * s, y + 20 * s, Math.PI - 1.15, 220 * s, .55, 9, ["#ffe2a0", "#ff6a2a", "rgba(120,10,0,0)"], t, { fire: true });
-  // face pair, crossed over the face
-  wing(x - 24 * s, y - 34 * s, -1.25, 200 * s, .5, 9, ["#fff8de", "#ffb04a", "rgba(160,30,0,0)"], t, { fire: true });
-  wing(x + 24 * s, y - 34 * s, Math.PI + 1.25, 200 * s, .5, 9, ["#fff8de", "#ffb04a", "rgba(160,30,0,0)"], t, { fire: true });
-  for (let i = 0; i < 6; i++) sparks.push({ x: x + (Math.random() - .5) * 120 * s, y: y + (Math.random() - .5) * 160 * s, vx: (Math.random() - .5) * 40, vy: -60 - Math.random() * 90, life: .8 + Math.random(), t: 0, c: Math.random() < .5 ? "#ffd27a" : "#ff5a1a", r: 1 + Math.random() * 3 });
-  drawSparks(dt);
-  // the live coal in tongs, held out low
-  const hx = x + 150 * s, hy = y + 150 * s + Math.sin(t) * 6;
-  cx.strokeStyle = "#8a7a6a"; cx.lineWidth = 3 * s; cx.beginPath(); cx.moveTo(hx - 60 * s, hy - 40 * s); cx.lineTo(hx, hy - 4 * s); cx.moveTo(hx - 60 * s, hy - 30 * s); cx.lineTo(hx, hy + 4 * s); cx.stroke();
-  glow(hx + 6 * s, hy, 30 * s, "rgba(255,90,20,.9)"); cx.fillStyle = "#ffcf7a"; cx.beginPath(); cx.arc(hx + 6 * s, hy, 7 * s, 0, TAU); cx.fill();
-  cry(["HOLY,", "HOLY,", "HOLY,", "IS THE LORD OF HOSTS"], x, H * .12, Math.round(22 * s + 8), t, "#ffe9b0");
-  // the posts of the door moved at the voice
-  cx.save(); cx.translate(Math.sin(t * 40) * (Math.floor(t / 1.1) % 4 === 3 ? 2 : 0), 0); cx.fillStyle = "rgba(40,25,15,.8)"; cx.fillRect(W * .06, H * .1, 24 * s, H * .9); cx.fillRect(W * .94 - 24 * s, H * .1, 24 * s, H * .9); cx.restore();
-},
-cherubim(t, dt) {
-  sky("#0b0812", "#030205"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 820;
-  // the others, glimpsed: four of them, wings touching
-  [-1, 1].forEach((d) => { cx.globalAlpha = .18; glow(x + d * W * .38, y, 160 * s, "rgba(255,170,80,.6)"); cx.globalAlpha = 1; });
-  glow(x, y, 330 * s, "rgba(255,140,40,.28)");
-  // upper wings stretched up and out, reaching the creatures beside
-  wing(x - 34 * s, y - 70 * s, -2.2, 360 * s, .6, 11, ["#f2d39a", "#b77a2e", "rgba(60,20,0,0)"], t, { eyes: 2, seed: 1 });
-  wing(x + 34 * s, y - 70 * s, -.94, 360 * s, .6, 11, ["#f2d39a", "#b77a2e", "rgba(60,20,0,0)"], t, { eyes: 2, seed: 2 });
-  // body: straight legs, calf's feet of burnished brass
-  const brass = "hsl(38," + (60 + Math.sin(t * 9) * 20) + "%," + (55 + Math.sin(t * 13) * 10) + "%)";
-  cx.strokeStyle = brass; cx.lineWidth = 16 * s; cx.lineCap = "round"; cx.beginPath(); cx.moveTo(x - 24 * s, y + 40 * s); cx.lineTo(x - 24 * s, y + 230 * s); cx.moveTo(x + 24 * s, y + 40 * s); cx.lineTo(x + 24 * s, y + 230 * s); cx.stroke();
-  cx.fillStyle = brass; [-24, 24].forEach((dx) => { cx.beginPath(); cx.moveTo(x + (dx - 12) * s, y + 230 * s); cx.lineTo(x + (dx + 12) * s, y + 230 * s); cx.lineTo(x + (dx + 5) * s, y + 252 * s); cx.lineTo(x + dx * s, y + 242 * s); cx.lineTo(x + (dx - 5) * s, y + 252 * s); cx.closePath(); cx.fill(); glow(x + dx * s, y + 246 * s, 26 * s, "rgba(255,230,160,.7)", .5 + .5 * Math.sin(t * 11 + dx)); });
-  cx.fillStyle = "#3a2312"; cx.beginPath(); cx.ellipse(x, y + 20 * s, 54 * s, 110 * s, 0, 0, TAU); cx.fill();
-  for (let i = 0; i < 10; i++) eye(x + (hash(i) - .5) * 70 * s, y - 40 * s + hash(i + 3) * 150 * s, 9 * s, t, 50 + i);
-  // lower wings covering the body
-  wing(x - 40 * s, y - 40 * s, 1.25, 210 * s, .45, 9, ["#e8c27e", "#8e5a22", "rgba(40,15,0,0)"], t, { eyes: 1, seed: 3 });
-  wing(x + 40 * s, y - 40 * s, Math.PI - 1.25, 210 * s, .45, 9, ["#e8c27e", "#8e5a22", "rgba(40,15,0,0)"], t, { eyes: 1, seed: 4 });
-  // hands of a man under the wings
-  cx.fillStyle = "#d8a878"; [-1, 1].forEach((d) => { const hx = x + d * 92 * s, hy = y + 30 * s; cx.beginPath(); cx.ellipse(hx, hy, 11 * s, 15 * s, d * .3, 0, TAU); cx.fill(); for (let f = 0; f < 4; f++) { cx.beginPath(); cx.ellipse(hx + d * (f - 1.5) * 4.5 * s, hy + 15 * s, 2.6 * s, 7 * s, 0, 0, TAU); cx.fill(); } });
-  // four faces on one head, turning
-  const kinds = ["man", "lion", "ox", "eagle"], hy = y - 120 * s, rot = t * .5;
-  const order = kinds.map((k, i) => ({ k, a: rot + i * TAU / 4 })).sort((a, b) => Math.cos(a.a) - Math.cos(b.a));
-  for (const f of order) { const c = Math.cos(f.a); if (c < -.2) continue; cx.save(); cx.translate(x + Math.sin(f.a) * 52 * s, hy); cx.scale(Math.max(.05, c), 1); cx.globalAlpha = .35 + .65 * Math.max(0, c); face(f.k, 0, 0, 46 * s); cx.restore(); }
-  cx.globalAlpha = 1;
-  // coals and lamps going up and down among them; lightning out of the fire
-  for (let i = 0; i < 7; i++) { const py = y + Math.sin(t * 1.6 + i * 1.7) * 200 * s, px = x + Math.sin(t * .7 + i * 2.3) * 260 * s; glow(px, py, 24 * s, "rgba(255,110,30,.9)"); cx.fillStyle = "#ffe6a8"; cx.beginPath(); cx.arc(px, py, 4 * s, 0, TAU); cx.fill(); }
-  if (Math.random() < .045) bolt(x + (Math.random() - .5) * 400 * s, y + (Math.random() - .5) * 300 * s, x + (Math.random() - .5) * 600 * s, y + (Math.random() - .5) * 500 * s, "#fff6d0", 2.4);
-},
-wheels(t, dt) {
-  sky("#06080a", "#020203"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 800, Rr = 280 * s;
-  glow(x, y, 460 * s, "rgba(200,190,90,.22)"); if (Math.random() < .02) bolt(x, y, x + (Math.random() - .5) * W, y + (Math.random() - .5) * H, "#fff8d8", 2); glow(x, y, 90 * s, "rgba(255,250,220,.9)");
-  // the spirit at the hub
-  for (let i = 0; i < 3; i++) { cx.strokeStyle = "rgba(255,245,200," + (.3 - i * .08) + ")"; cx.lineWidth = 2; cx.beginPath(); cx.arc(x, y, 40 * s + ((t * 30 + i * 20) % 60) * s, 0, TAU); cx.stroke(); }
-  // two rims at right angles, tumbling slowly; points projected in 3D
-  const rings = [[t * .35, 0], [t * .35 + Math.PI / 2, .9]];
-  const pts = [];
-  rings.forEach(([a, tilt], ri) => {
-    const N = 132, E2 = 33;
-    for (let i = 0; i < N; i++) {
-      const u = i / N * TAU; let px = Math.cos(u) * Rr, py = Math.sin(u) * Rr, pz = 0;
-      // spin the wheel about its axle, then set it crosswise
-      let qx = px * Math.cos(a) - pz * Math.sin(a), qz = px * Math.sin(a) + pz * Math.cos(a); px = qx; pz = qz;
-      const tl = tilt + t * .12, qy = py * Math.cos(tl) - pz * Math.sin(tl); pz = py * Math.sin(tl) + pz * Math.cos(tl); py = qy;
-      const yaw = t * .2 + ri * Math.PI / 2, rx = px * Math.cos(yaw) + pz * Math.sin(yaw); pz = -px * Math.sin(yaw) + pz * Math.cos(yaw); px = rx;
-      const k = 900 / (900 + pz);
-      pts.push({ x: x + px * k, y: y + py * k, z: pz, k, eye: i % (N / E2) === 0, seed: ri * 1000 + i, ri });
-    }
-  });
-  pts.sort((a, b) => b.z - a.z);
-  // rims first, then the eyes on top so neighbours never cover them
-  for (const p of pts) {
-    const lit = .45 + .55 * (1 - (p.z + Rr) / (2 * Rr));
-    cx.fillStyle = "hsl(" + (46 + p.ri * 10) + ",58%," + (14 + lit * 42) + "%)"; cx.beginPath(); cx.arc(p.x, p.y, 19 * s * p.k, 0, TAU); cx.fill(); if (p.seed % 3 === 0) { cx.fillStyle = "rgba(255,250,210," + lit * .35 + ")"; cx.beginPath(); cx.arc(p.x - 4 * s, p.y - 4 * s, 6 * s * p.k, 0, TAU); cx.fill(); }
-  }
-  for (const p of pts) if (p.eye) { const lit = .45 + .55 * (1 - (p.z + Rr) / (2 * Rr)), r = 17 * s * p.k; cx.globalAlpha = .35 + .65 * lit; eye(p.x, p.y, r, t, p.seed, 0, "#3e8f6a"); cx.globalAlpha = 1; }
-  // the rims are dreadfully high: dust moving past to show the scale
-  for (let i = 0; i < 40; i++) { cx.globalAlpha = .3; cx.fillStyle = "#d9cf9a"; cx.fillRect((hash(i) * W + t * 15 * (1 + hash(i + 1))) % W, hash(i + 7) * H, 1.5, 1.5); } cx.globalAlpha = 1;
-},
-living(t, dt) {
-  sky("#06070f", "#020205"); const x = W / 2, y = H * .48, s = Math.min(W, H) / 820;
-  // sea of glass and the emerald rainbow
-  const g = cx.createLinearGradient(0, H * .72, 0, H); g.addColorStop(0, "rgba(150,210,230,.18)"); g.addColorStop(1, "rgba(30,60,80,.05)"); cx.fillStyle = g; cx.fillRect(0, H * .72, W, H * .28);
-  for (let i = 0; i < 18; i++) { cx.strokeStyle = "rgba(200,240,255,.08)"; cx.beginPath(); cx.moveTo(0, H * .74 + i * 14); cx.lineTo(W, H * .74 + i * 14 + Math.sin(t + i) * 3); cx.stroke(); }
-  cx.lineWidth = 14 * s; cx.strokeStyle = "rgba(60,220,130,.35)"; cx.beginPath(); cx.arc(x, y, 150 * s, 0, TAU); cx.stroke();
-  glow(x, y, 200 * s, "rgba(255,250,230,.9)"); glow(x, y, 60 * s, "#fff");
-  const kinds = [["lion", "#e7b45a"], ["ox", "#8a5a32"], ["man", "#d8a878"], ["eagle", "#6b4a2b"]];
-  kinds.forEach(([k, col], i) => {
-    const a = t * .12 + i * TAU / 4 - Math.PI / 4, cxp = x + Math.cos(a) * 280 * s, cyp = y + Math.sin(a) * 200 * s, f = Math.sin(t * 3 + i);
-    const W6 = [[-2.4, .55], [-.74, .55], [-1.9, .5], [-1.24, .5], [2.6, .5], [.54, .5]];
-    W6.forEach(([ang, sp], j) => wing(cxp, cyp, ang + (j < 4 ? f * .18 * (j % 2 ? 1 : -1) : 0), (j < 2 ? 150 : j < 4 ? 110 : 100) * s, sp, 7, ["#f5e6c4", "#a98a5a", "rgba(40,30,20,0)"], t, { eyes: 2, seed: i * 50 + j }));
-    face(k, cxp, cyp, 40 * s, col);
-  });
-  cry(["HOLY,", "HOLY,", "HOLY,", "LORD GOD ALMIGHTY", "WHICH WAS,", "AND IS,", "AND IS TO COME"], x, H * .1, Math.round(18 * s + 8), t, "#fff3c4");
-},
-eden(t, dt) {
-  sky("#08100a", "#020402"); const x = W / 2, y = H * .55, s = Math.min(W, H) / 800;
-  // the garden and the tree of life, behind the guard
-  glow(x, H * .32, 240 * s, "rgba(140,255,160,.25)"); cx.fillStyle = "rgba(20,40,22,.9)"; cx.fillRect(x - 10 * s, H * .32, 20 * s, H * .25);
-  for (let i = 0; i < 30; i++) { const a = i / 30 * TAU; glow(x + Math.cos(a) * 90 * s * hash(i), H * .28 + Math.sin(a) * 60 * s * hash(i + 3), 40 * s, "rgba(90,200,110,.35)"); }
-  for (let i = 0; i < 9; i++) { cx.fillStyle = "#ffd96b"; cx.beginPath(); cx.arc(x + (hash(i * 3) - .5) * 160 * s, H * .25 + (hash(i * 5) - .5) * 90 * s, 4 * s, 0, TAU); cx.fill(); }
-  cx.fillStyle = "#0a0f08"; cx.fillRect(0, H * .78, W, H * .22);
-  // two cherubim, wings reaching toward each other, faces turned in
-  [-1, 1].forEach((d) => {
-    const cxp = x + d * 230 * s; cx.strokeStyle = "#c9923a"; cx.lineWidth = 11 * s; cx.lineCap = "round"; cx.beginPath(); cx.moveTo(cxp - 14 * s, y + 80 * s); cx.lineTo(cxp - 14 * s, y + 190 * s); cx.moveTo(cxp + 14 * s, y + 80 * s); cx.lineTo(cxp + 14 * s, y + 190 * s); cx.stroke();
-    const bg = cx.createLinearGradient(cxp - 40 * s, 0, cxp + 40 * s, 0); bg.addColorStop(0, "#1e130a"); bg.addColorStop(.5, "#5a3a1c"); bg.addColorStop(1, "#1e130a"); cx.fillStyle = bg; cx.beginPath(); cx.ellipse(cxp, y + 30 * s, 38 * s, 100 * s, 0, 0, TAU); cx.fill();
-    for (let i = 0; i < 4; i++) eye(cxp + (hash(i + d * 9) - .5) * 40 * s, y + hash(i + 3 + d) * 120 * s - 20 * s, 7 * s, t, i + d * 20);
-    wing(cxp, y - 40 * s, d < 0 ? -.45 : Math.PI + .45, 250 * s, .7, 10, ["#e9c98a", "#9a6a2a", "rgba(40,20,0,0)"], t, { eyes: 1, seed: d + 5 });
-    wing(cxp, y - 30 * s, d < 0 ? -2.0 : -1.14, 180 * s, .6, 8, ["#e9c98a", "#9a6a2a", "rgba(40,20,0,0)"], t, {});
-    cx.save(); cx.translate(cxp, y - 90 * s); cx.scale(d * .65, 1); face(["lion", "ox", "eagle", "man"][Math.floor(t / 3 + (d > 0 ? 2 : 0)) % 4], 0, 0, 40 * s); cx.restore();
-  });
-  // the flaming sword, turning every way
-  cx.save(); cx.translate(x, y + 20 * s); cx.rotate(t * 2.6); cx.scale(1, .8 + .2 * Math.cos(t * 1.3));
-  for (let k = 0; k < 2; k++) { cx.rotate(Math.PI); const g = cx.createLinearGradient(0, 0, 200 * s, 0); g.addColorStop(0, "#fff8d0"); g.addColorStop(.6, "#ff8a2a"); g.addColorStop(1, "rgba(255,40,0,0)"); cx.fillStyle = g; cx.shadowColor = "#ff8a2a"; cx.shadowBlur = 40; cx.beginPath(); cx.moveTo(0, -14 * s); cx.lineTo(250 * s, 0); cx.lineTo(0, 14 * s); cx.fill(); cx.shadowBlur = 0; }
-  cx.fillStyle = "#e9c46a"; cx.fillRect(-8 * s, -26 * s, 16 * s, 52 * s);
-  cx.restore();
-  for (let i = 0; i < 2; i++) { const a = t * 2.6 + Math.random() * TAU; sparks.push({ x: x + Math.cos(a) * 180 * s * Math.random(), y: y + 20 * s + Math.sin(a) * 90 * s * Math.random(), vx: (Math.random() - .5) * 60, vy: -30 - Math.random() * 60, life: .5 + Math.random() * .5, t: 0, c: Math.random() < .5 ? "#ffcf6a" : "#ff4a10", r: 1.5 + Math.random() * 2 }); }
-  drawSparks(dt); glow(x, y + 20 * s, 120 * s, "rgba(255,120,40,.35)");
-},
-linen(t, dt) {
-  sky("#08070a", "#030304"); const x = W / 2, base = H * .86, s = Math.min(W, H) / 800, h = 560 * s;
-  // the Tigris
-  for (let i = 0; i < 10; i++) { cx.strokeStyle = "rgba(120,150,170," + (.12 - i * .01) + ")"; cx.lineWidth = 2; cx.beginPath(); for (let px = 0; px <= W; px += 20) cx.lineTo(px, base + 14 + i * 9 + Math.sin(px * .02 + t * 1.5 + i) * 3); cx.stroke(); }
-  // voice of a multitude
-  for (let i = 0; i < 5; i++) { const r = ((t * 120 + i * 90) % 450) * s; cx.strokeStyle = "rgba(255,230,180," + (.25 * (1 - r / (450 * s))) + ")"; cx.lineWidth = 2; cx.beginPath(); cx.arc(x, base - h * .87, r, 0, TAU); cx.stroke(); }
-  glow(x, base - h * .5, h * .7, "rgba(230,200,120,.18)");
-  // body like beryl showing through the linen
-  glow(x, base - h * .45, h * .35, "rgba(225,210,120,.55)");
-  figure(x, base, h, "rgba(245,240,228,.88)", "#fff", { belt: "#e9b84a", arms: "#d39a45", bare: true });
-  // arms and feet like polished brass
-  const gl = .6 + .4 * Math.sin(t * 7);
-  cx.fillStyle = "hsl(36,70%," + (50 + gl * 18) + "%)"; [-1, 1].forEach((d) => { cx.beginPath(); cx.ellipse(x + d * h * .07, base - 2 * s, 20 * s, 8 * s, 0, 0, TAU); cx.fill(); glow(x + d * h * .208, base - h * .37, 22 * s, "rgba(255,210,120,.6)", gl); });
-  // face as lightning, eyes as lamps of fire
-  const fy = base - h * .87, fl = Math.random() < .25 ? 1 : .55;
-  glow(x, fy, 110 * s * fl, "rgba(220,235,255,.95)"); glow(x, fy, 46 * s, "#ffffff");
-  [-1, 1].forEach((d) => { glow(x + d * 14 * s, fy - 6 * s, 16 * s, "rgba(255,120,20,.95)"); cx.fillStyle = "#ffd36b"; cx.beginPath(); cx.ellipse(x + d * 14 * s, fy - 6 * s, 5 * s, 7 * s + Math.sin(t * 20 + d) * 2 * s, 0, 0, TAU); cx.fill(); });
-  if (Math.random() < .03) bolt(x, fy, x + (Math.random() - .5) * W * .6, fy - H * .4, "#e8f0ff", 2);
-  // Daniel, face down on the bank
-  cx.fillStyle = "#1a1410"; cx.beginPath(); cx.ellipse(W * .16, base + 4 * s, 46 * s, 10 * s, 0, 0, TAU); cx.fill(); cx.beginPath(); cx.arc(W * .16 + 46 * s, base, 9 * s, 0, TAU); cx.fill();
-},
-mighty(t, dt) {
-  const s = Math.min(W, H) / 800, x = W / 2, horizon = H * .78;
-  sky("#141a2a", "#05060a");
-  // sea on his right (our left), land on his left (our right)
-  cx.fillStyle = "#0b1d2c"; cx.fillRect(0, horizon, x, H - horizon); for (let i = 0; i < 12; i++) { cx.strokeStyle = "rgba(140,190,220,.15)"; cx.beginPath(); for (let px = 0; px <= x; px += 14) cx.lineTo(px, horizon + 8 + i * 12 + Math.sin(px * .03 + t * 2 + i) * 3); cx.stroke(); }
-  cx.fillStyle = "#1a140c"; cx.beginPath(); cx.moveTo(x, horizon); for (let px = x; px <= W; px += 30) cx.lineTo(px, horizon - Math.abs(Math.sin(px * .01)) * 30 * s); cx.lineTo(W, H); cx.lineTo(x, H); cx.fill();
-  // legs as pillars of fire
-  [[-1, x - 90 * s], [1, x + 90 * s]].forEach(([d, lx]) => { const top = H * .44; for (let i = 0; i < 8; i++) { const k = i / 8; glow(lx + Math.sin(t * 6 + i) * 6 * s, lerp(horizon, top, k), (46 - k * 10) * s, "rgba(255," + (100 + k * 100) + ",30,.75)"); } for (let i = 0; i < 2; i++) sparks.push({ x: lx + (Math.random() - .5) * 50 * s, y: lerp(horizon, top, Math.random()), vx: (Math.random() - .5) * 20, vy: -50 - Math.random() * 60, life: .6, t: 0, c: "#ffb04a", r: 2 }); });
-  drawSparks(dt);
-  // clothed with a cloud
-  for (let i = 0; i < 46; i++) { const k = hash(i + 11), cy = lerp(H * .14, H * .5, k), spread = (60 + k * 120) * s, a = hash(i) * TAU; glow(x + Math.cos(a) * spread * hash(i + 4) + Math.sin(t * .4 + i) * 8, cy + Math.sin(a) * 30 * s, (70 + 40 * k) * s, "rgba(225,228,240,.3)"); }
-  // the face as the sun
-  const fy = H * .1; glow(x, fy, 200 * s, "rgba(255,230,140,.6)"); glow(x, fy, 60 * s, "#fffbe6");
-  for (let i = 0; i < 24; i++) { const a = i / 24 * TAU + t * .1; cx.strokeStyle = "rgba(255,230,150,.35)"; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(x + Math.cos(a) * 70 * s, fy + Math.sin(a) * 70 * s); cx.lineTo(x + Math.cos(a) * 130 * s, fy + Math.sin(a) * 130 * s); cx.stroke(); }
-  // a rainbow upon his head
-  ["#ff4a4a", "#ffa63d", "#ffe85a", "#5ad66a", "#4aa8ff", "#7a5aff"].forEach((c, i) => { cx.strokeStyle = c; cx.globalAlpha = .45; cx.lineWidth = 7 * s; cx.beginPath(); cx.arc(x, fy + 40 * s, (190 + i * 8) * s, Math.PI * 1.08, Math.PI * 1.92); cx.stroke(); }); cx.globalAlpha = 1;
-  // the little book, open
-  const bx = x + 170 * s, by = H * .33; cx.fillStyle = "#f2e6c4"; cx.save(); cx.translate(bx, by); cx.rotate(-.2); cx.fillRect(-26 * s, -18 * s, 24 * s, 34 * s); cx.fillRect(2 * s, -18 * s, 24 * s, 34 * s); cx.restore(); glow(bx, by, 50 * s, "rgba(255,240,200,.35)");
-  // seven thunders
-  if (Math.random() < .03) for (let k = 0; k < 2; k++) bolt(Math.random() * W, 0, Math.random() * W, horizon * .7, "#e6ecff", 2);
-},
-tomb(t, dt) {
-  sky("#0f0e14", "#040406"); const s = Math.min(W, H) / 800, gy = H * .82, quake = Math.sin(t * 30) * (Math.sin(t * .7) > .85 ? 3 : 0);
-  cx.save(); cx.translate(quake, 0);
-  cx.fillStyle = "#16130f"; cx.fillRect(0, gy, W, H - gy);
-  // the rock face and the open door
-  cx.fillStyle = "#24201a"; cx.beginPath(); cx.moveTo(W * .5, gy); cx.quadraticCurveTo(W * .58, H * .2, W, H * .15); cx.lineTo(W, gy); cx.fill();
-  cx.fillStyle = "#050404"; cx.beginPath(); cx.ellipse(W * .74, gy - 70 * s, 50 * s, 70 * s, 0, Math.PI, 0); cx.fill(); cx.fillRect(W * .74 - 50 * s, gy - 70 * s, 100 * s, 70 * s);
-  // the stone, rolled back
-  const sx = W * .48, sr = 80 * s; cx.fillStyle = "#4a4338"; cx.beginPath(); cx.arc(sx, gy - sr, sr, 0, TAU); cx.fill(); cx.strokeStyle = "#2c2720"; cx.lineWidth = 3; cx.stroke();
-  // the angel sitting on it: raiment white as snow, countenance like lightning
-  const ax = sx, ay = gy - sr * 2 + 6 * s;
-  glow(ax, ay - 60 * s, 260 * s, "rgba(220,230,255,.35)");
-  figure(ax, ay + 40 * s, 210 * s, "#fbfdff", "#fff", { bare: true });
-  const fl = Math.random() < .3 ? 1 : .6; glow(ax, ay - 143 * s, 80 * s * fl, "rgba(235,242,255,.95)");
-  if (Math.random() < .02) bolt(ax, ay - 125 * s, ax + (Math.random() - .5) * W * .5, 0, "#eef3ff", 2);
-  // the keepers, as dead men
-  [W * .2, W * .3].forEach((gx, i) => { cx.fillStyle = "#2a241c"; cx.beginPath(); cx.ellipse(gx, gy + 8 * s, 50 * s, 10 * s, i ? .1 : -.1, 0, TAU); cx.fill(); cx.fillStyle = "#6a5a40"; cx.beginPath(); cx.arc(gx + (i ? -50 : 50) * s, gy + 4 * s, 9 * s, 0, TAU); cx.fill(); cx.strokeStyle = "#8a7a5a"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(gx - 30 * s, gy - 6 * s); cx.lineTo(gx + 40 * s, gy - 30 * s); cx.stroke(); });
-  cx.restore();
-  // dawn
-  const dg = cx.createLinearGradient(0, gy - 200, 0, gy); dg.addColorStop(0, "rgba(255,170,90,0)"); dg.addColorStop(1, "rgba(255,170,90,.12)"); cx.fillStyle = dg; cx.fillRect(0, gy - 200, W * .5, 200);
-},
-destroyer(t, dt) {
-  sky("#1a0606", "#050202"); const s = Math.min(W, H) / 800, gy = H * .8;
-  // Jerusalem
-  cx.fillStyle = "#0d0807"; for (let i = 0; i < 40; i++) { const bx = W * .1 + i * W * .02, bh = (20 + hash(i) * 70) * s; cx.fillRect(bx, gy - bh, W * .019, bh); } cx.fillRect(0, gy, W, H - gy);
-  cx.beginPath(); cx.arc(W * .5, gy - 80 * s, 30 * s, Math.PI, 0); cx.fill();
-  // standing between the earth and the heaven
-  const x = W * .55, y = H * .5, h = 360 * s; glow(x, y - h * .4, 300 * s, "rgba(255,80,40,.25)");
-  for (let i = 0; i < 12; i++) glow(x + (hash(i) - .5) * 300 * s, y + (hash(i + 2) - .3) * 200 * s, 120 * s, "rgba(120,20,10,.25)");
-  figure(x, y, h, "#3a0d0a", "#ffcfa0", { arms: "#e8b48a", hair: "#1a0505" });
-  glow(x, y - h * .87, 40 * s, "rgba(255,220,180,.8)");
-  // the drawn sword stretched out over the city
-  const hx = x - h * .26, hy = y - h * .5; cx.save(); cx.translate(hx, hy); cx.rotate(Math.PI + .25 + Math.sin(t * .8) * .03);
-  const g = cx.createLinearGradient(0, 0, 330 * s, 0); g.addColorStop(0, "#fff"); g.addColorStop(1, "#ff6a3a"); cx.fillStyle = g; cx.shadowColor = "#ff5a2a"; cx.shadowBlur = 30; cx.beginPath(); cx.moveTo(0, -6 * s); cx.lineTo(330 * s, 0); cx.lineTo(0, 6 * s); cx.fill(); cx.shadowBlur = 0; cx.fillStyle = "#c9a24a"; cx.fillRect(-6 * s, -22 * s, 8 * s, 44 * s); cx.restore();
-  // David and the elders face down in sackcloth
-  for (let i = 0; i < 6; i++) { cx.fillStyle = "#3a2e1e"; cx.beginPath(); cx.ellipse(W * .78 + i * 22 * s, gy + 20 * s, 16 * s, 5 * s, 0, 0, TAU); cx.fill(); }
-},
-chariots(t, dt) {
-  sky("#0b0a14", "#030306"); const s = Math.min(W, H) / 800, open = Math.min(1, Math.max(0, (t % 14) / 4 - .25));
-  stars(120);
-  // the mountain
-  cx.fillStyle = "#120f0c"; cx.beginPath(); cx.moveTo(0, H); cx.lineTo(W * .1, H * .7); cx.lineTo(W * .5, H * .3); cx.lineTo(W * .9, H * .7); cx.lineTo(W, H); cx.fill();
-  // full of horses and chariots of fire, shown as the servant's eyes open
-  for (let i = 0; i < 46; i++) {
-    const a = t * (.25 + hash(i) * .2) * (i % 2 ? 1 : -1) + hash(i + 3) * TAU, rx = W * (.18 + hash(i + 7) * .26), ry = H * (.08 + hash(i + 9) * .18);
-    const px = W * .5 + Math.cos(a) * rx, py = H * .55 + Math.sin(a) * ry, dir = Math.sign(-Math.sin(a) * (i % 2 ? 1 : -1)) || 1, sc = (10 + hash(i) * 8) * s;
-    cx.globalAlpha = open * (.5 + .5 * hash(i + 2)); glow(px, py, sc * 4, "rgba(255,120,30,.6)");
-    cx.fillStyle = "#ffcf6a"; cx.beginPath(); cx.ellipse(px + dir * sc * 1.4, py - sc * .2, sc * 1.1, sc * .5, 0, 0, TAU); cx.fill(); cx.beginPath(); cx.ellipse(px + dir * sc * 2.4, py - sc * .8, sc * .45, sc * .3, dir * -.6, 0, TAU); cx.fill();
-    cx.strokeStyle = "#ffe8a8"; cx.lineWidth = 2; cx.beginPath(); cx.arc(px - dir * sc * .6, py + sc * .2, sc * .6, 0, TAU); cx.stroke();
-    if (Math.random() < .3) sparks.push({ x: px, y: py, vx: -dir * 40, vy: -20 - Math.random() * 30, life: .5, t: 0, c: "#ff8a2a", r: 2 });
-  }
-  cx.globalAlpha = 1; drawSparks(dt);
-  // Elisha and the young man
-  [W * .48, W * .52].forEach((ex, i) => figure(ex, H * .93, 44 * s, i ? "#2a2218" : "#3a2e20", "#c9a07a"));
-  cx.fillStyle = "rgba(255,240,200," + (1 - open) * .7 + ")"; cx.font = "600 " + Math.round(14 * s + 6) + "px Cinzel"; cx.textAlign = "center"; cx.fillText("LORD, I PRAY THEE, OPEN HIS EYES", W / 2, H * .15);
-},
-host(t, dt) {
-  sky("#020410", "#06080c"); const s = Math.min(W, H) / 800, k = Math.min(1, Math.max(0, ((t % 16) - 3) / 4));
-  stars(160, 1 - k * .6);
-  // the fields and the shepherds
-  cx.fillStyle = "#07090a"; cx.beginPath(); cx.moveTo(0, H * .85); cx.quadraticCurveTo(W * .5, H * .78, W, H * .86); cx.lineTo(W, H); cx.lineTo(0, H); cx.fill();
-  [.3, .36, .62].forEach((fx, i) => figure(W * fx, H * .88, 40 * s, "#1c1a14", "#8a6a4a"));
-  for (let i = 0; i < 9; i++) { cx.fillStyle = "#cfc8b4"; cx.beginPath(); cx.ellipse(W * (.4 + hash(i) * .2), H * (.9 + hash(i + 2) * .04), 9 * s, 6 * s, 0, 0, TAU); cx.fill(); }
-  // the angel, and the glory shining round about
-  // suddenly, a multitude
-  for (let i = 0; i < 600; i++) { const px = hash(i * 1.3) * W, py = hash(i * 2.1) * H * .7, tw = .6 + .4 * Math.sin(t * 3 + i); if (Math.abs(px - W / 2) < 90 * s && py > H * .2) continue; cx.globalAlpha = k * tw * (.5 + hash(i) * .5); glow(px, py, (6 + hash(i + 9) * 10) * s, "rgba(255,245,210,.9)"); }
-  cx.globalAlpha = 1;
-  glow(W / 2, H * .4, 360 * s, "rgba(255,240,190,.35)"); figure(W / 2, H * .6, 220 * s, "rgba(255,252,240,.97)", "#fff6e6", { bare: true }); glow(W / 2, H * .6 - 192 * s, 60 * s, "rgba(255,255,255,.9)");
-  if (k > .5) cry(["GLORY TO GOD IN THE HIGHEST,", "AND ON EARTH PEACE,", "GOOD WILL TOWARD MEN"], W / 2, H * .1, Math.round(16 * s + 8), t, "#fff6d8");
-},
-strangers(t, dt) {
-  sky("#d9a65a", "#f3dcaa"); const s = Math.min(W, H) / 800, gy = H * .78;
-  // the heat of the day at Mamre
-  glow(W * .8, H * .15, 200 * s, "rgba(255,255,230,.9)");
-  cx.fillStyle = "#a8834a"; cx.fillRect(0, gy, W, H - gy);
-  for (let i = 0; i < 4; i++) { const tx = W * (.08 + i * .07); cx.fillStyle = "#3a3018"; cx.fillRect(tx, gy - 140 * s, 12 * s, 140 * s); cx.fillStyle = "#4a5a28"; cx.beginPath(); cx.ellipse(tx + 6 * s, gy - 160 * s, 60 * s, 46 * s, 0, 0, TAU); cx.fill(); }
-  // the tent door, Abraham sitting in it
-  cx.fillStyle = "#5a3a22"; cx.beginPath(); cx.moveTo(W * .3, gy); cx.lineTo(W * .4, gy - 130 * s); cx.lineTo(W * .52, gy); cx.fill(); cx.fillStyle = "#1a1008"; cx.beginPath(); cx.moveTo(W * .38, gy); cx.lineTo(W * .41, gy - 70 * s); cx.lineTo(W * .45, gy); cx.fill();
-  figure(W * .41, gy, 60 * s, "#e8dcc0", "#a8724a");
-  // three men stood by him; only a shimmer gives anything away
-  [.66, .72, .78].forEach((fx, i) => { const x = W * fx + Math.sin(t * .4 + i) * 2, sh = .5 + .5 * Math.sin(t * 2 + i * 2); cx.globalAlpha = .12 * sh; glow(x, gy - 60 * s, 70 * s, "#fff"); cx.globalAlpha = 1; figure(x, gy, 120 * s, ["#7a6a52", "#8a7a5e", "#6a5a44"][i], "#9a6a44"); });
-  // heat haze
-  for (let i = 0; i < 6; i++) { cx.strokeStyle = "rgba(255,255,255,.08)"; cx.beginPath(); for (let px = 0; px <= W; px += 16) cx.lineTo(px, gy - 10 - i * 8 + Math.sin(px * .05 + t * 3 + i) * 2); cx.stroke(); }
-},
-covering(t, dt) {
-  sky("#0a0608", "#030203"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 800, cyc = (t % 18) / 18, fall = Math.max(0, (cyc - .62) / .38);
-  // stones of fire underfoot
-  for (let i = 0; i < 14; i++) { const sx = W * (i + .5) / 14, sy = H * .86 + Math.sin(i) * 8; glow(sx, sy, 34 * s, "rgba(255,90,30,.8)"); cx.fillStyle = "#ffd27a"; cx.beginPath(); cx.arc(sx, sy, 7 * s, 0, TAU); cx.fill(); }
-  cx.save(); cx.translate(x, y + fall * fall * H * .7); cx.rotate(fall * .5); cx.globalAlpha = 1 - fall * .7;
-  // covering wings
-  wing(-30 * s, -60 * s, -2.5, 280 * s, .8, 12, ["#ffeab0", "#c9962e", "rgba(60,30,0,0)"], t, {});
-  wing(30 * s, -60 * s, -.64, 280 * s, .8, 12, ["#ffeab0", "#c9962e", "rgba(60,30,0,0)"], t, {});
-  // every precious stone was thy covering
-  const STONES = ["#b5172e", "#f2c12e", "#eef6ff", "#d9d26a", "#1a1a1a", "#c0533a", "#1f4fbf", "#1f9a52", "#7a0f1c"];
-  for (let i = 0; i < 120; i++) { const a = hash(i) * TAU, r = Math.sqrt(hash(i + 3)) * 1, px = Math.cos(a) * r * 60 * s, py = Math.sin(a) * r * 150 * s + 20 * s, c = STONES[i % 9], tw = .6 + .4 * Math.sin(t * 4 + i);
-    cx.fillStyle = c; cx.beginPath(); cx.moveTo(px, py - 9 * s); cx.lineTo(px + 7 * s, py); cx.lineTo(px, py + 9 * s); cx.lineTo(px - 7 * s, py); cx.fill(); cx.globalAlpha = (1 - fall * .7) * tw * .6; cx.fillStyle = "#fff"; cx.fillRect(px - 1, py - 4 * s, 2, 2); cx.globalAlpha = 1 - fall * .7; }
-  cx.strokeStyle = "#e9c46a"; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 20 * s, 64 * s, 156 * s, 0, 0, TAU); cx.stroke();
-  // iniquity found: cracks spreading
-  if (cyc > .45) { const k = Math.min(1, (cyc - .45) / .2); cx.strokeStyle = "#000"; cx.lineWidth = 3; for (let i = 0; i < 6; i++) { cx.beginPath(); let px = 0, py = -100 * s + i * 40 * s; cx.moveTo(px, py); for (let j = 0; j < 5 * k; j++) { px += (hash(i * 9 + j) - .5) * 50 * s; py += 20 * s; cx.lineTo(px, py); } cx.stroke(); } }
-  cx.restore(); cx.globalAlpha = 1;
-  if (cyc < .45) glow(x, y - 160 * s, 60 * s, "rgba(255,240,200,.8)");
-},
-};
-
 /* ── UI ── */
 const nav = document.getElementById("nav"), art = document.getElementById("art");
-let lastGroup = "";
+let lastGroup = "", idx = 0;
 E.forEach((e, i) => {
   if (e.group !== lastGroup) { const h = document.createElement("h3"); h.textContent = e.group.toUpperCase(); nav.appendChild(h); lastGroup = e.group; }
   const b = document.createElement("button"); b.innerHTML = e.name + "<small>" + e.tag + "</small>"; b.onclick = () => go(i); b.dataset.i = i; nav.appendChild(b);
 });
 const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 function go(i) {
-  cur = (i + E.length) % E.length; const e = E[cur]; sparks = []; t0 = performance.now();
-  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", +b.dataset.i === cur));
+  idx = (i + E.length) % E.length; const e = E[idx];
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", +b.dataset.i === idx));
   document.getElementById("t-name").textContent = e.name.toUpperCase(); document.getElementById("t-term").textContent = e.term; document.getElementById("t-tag").textContent = e.tag;
   art.innerHTML = "<h4>WHAT SCRIPTURE SAYS</h4>" + e.refs.map(([r, q]) => "<blockquote>" + esc(q) + "<cite>" + r + " · KJV</cite></blockquote>").join("") +
     "<h4>WHAT YOU ARE LOOKING AT</h4><ul class='map'>" + e.map.map(([d, r]) => "<li>" + esc(d) + "<span>" + r + "</span></li>").join("") + "</ul>" +
     (e.not ? "<h4>WORTH KNOWING</h4><div class='note'>" + esc(e.not) + "</div>" : "") +
     (e.trad ? "<h4>LATER TRADITION, NOT SCRIPTURE</h4><p class='trad'>" + esc(e.trad) + "</p>" : "");
-  history.replaceState(null, "", "#" + e.id);
+  history.replaceState(null, "", "#" + e.id); show(e.id);
 }
-document.getElementById("b-prev").onclick = () => go(cur - 1); document.getElementById("b-next").onclick = () => go(cur + 1);
-addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(cur + 1); if (e.key === "ArrowLeft") go(cur - 1); });
-resize(); go(Math.max(0, E.findIndex((e) => "#" + e.id === location.hash)));
-let last = performance.now();
-function frame(now) {
-  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; T = Math.max(0, (now - t0) / 1000);
-  cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.clearRect(0, 0, W, H);
-  try { R[E[cur].id](T, dt); } catch (err) { console.error(err); }
-  // a soft vignette over everything
-  const vg = cx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.55)"); cx.fillStyle = vg; cx.fillRect(0, 0, W, H);
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
+document.getElementById("b-prev").onclick = () => go(idx - 1); document.getElementById("b-next").onclick = () => go(idx + 1);
+addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(idx + 1); if (e.key === "ArrowLeft") go(idx - 1); });
+go(Math.max(0, E.findIndex((e) => "#" + e.id === location.hash)));
 window.__angels = { go, n: E.length };
-})();
 </script>
 </body></html>
