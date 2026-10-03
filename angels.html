@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06050a">
+<title>Be Not Afraid — an atlas of the heavenly host</title>
+<meta name="description" content="Every angelic being the Bible actually describes, rendered from the verses alone, with the text, what each detail comes from, and what later tradition added.">
+<meta property="og:title" content="Be Not Afraid">
+<meta property="og:description" content="The heavenly host as scripture describes it: seraphim, cherubim, the wheels full of eyes, the living creatures, and more. Rendered from the verses, nothing added.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306050a'/%3E%3Cellipse cx='32' cy='32' rx='22' ry='9' fill='none' stroke='%23e9c46a' stroke-width='3'/%3E%3Cellipse cx='32' cy='32' rx='9' ry='22' fill='none' stroke='%23e9c46a' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23fff3c4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06050a;--ink:#efe6d2;--dim:rgba(239,230,210,.6);--faint:rgba(239,230,210,.14);--gold:#e9c46a;--fire:#ff8a3d;--serif:'Cormorant Garamond',Georgia,serif;--cap:'Cinzel',serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:19px;line-height:1.55}
+a{color:var(--gold)}
+header{padding:28px 20px 10px;text-align:center}
+header h1{font-family:var(--cap);font-weight:700;letter-spacing:.22em;font-size:clamp(26px,5vw,44px);color:var(--gold)}
+header p{color:var(--dim);font-style:italic;max-width:720px;margin:6px auto 0}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1500px;margin:0 auto;min-height:80vh}
+nav{border-right:1px solid var(--faint);padding:10px 0;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto}
+nav h3{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--dim);padding:14px 18px 6px;font-weight:400}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font-family:var(--cap);font-size:14px;letter-spacing:.08em;padding:9px 18px;cursor:pointer;border-left:2px solid transparent}
+nav button small{display:block;font-family:var(--serif);font-style:italic;font-size:14px;letter-spacing:0;color:var(--dim)}
+nav button:hover{background:rgba(233,196,106,.06)}
+nav button.on{border-left-color:var(--gold);background:rgba(233,196,106,.1);color:var(--gold)}
+main{min-width:0}
+.stage{position:relative;height:min(74vh,760px);background:radial-gradient(ellipse at 50% 45%,#120d18 0,#06050a 70%);border-bottom:1px solid var(--faint)}
+canvas{display:block;width:100%;height:100%}
+.title{position:absolute;left:24px;bottom:18px;pointer-events:none;text-shadow:0 2px 16px #000}
+.title h2{font-family:var(--cap);font-size:clamp(20px,3.2vw,36px);letter-spacing:.14em;color:var(--gold)}
+.title .term{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.08em}
+.title .tag{font-style:italic;font-size:20px;max-width:560px}
+.ctl{position:absolute;right:16px;top:14px;display:flex;gap:6px}
+.ctl button{background:rgba(0,0,0,.5);border:1px solid var(--faint);color:var(--dim);font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:8px;cursor:pointer}
+.ctl button:hover{color:var(--gold);border-color:var(--gold)}
+article{padding:26px 28px 60px;max-width:900px}
+article h4{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--gold);margin:26px 0 10px;font-weight:600}
+blockquote{border-left:2px solid var(--gold);padding:4px 0 4px 16px;margin:0 0 14px;font-size:20px}
+blockquote cite{display:block;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--dim);margin-top:4px;letter-spacing:.06em}
+ul.map{list-style:none}
+ul.map li{padding:7px 0;border-bottom:1px dashed var(--faint);display:grid;grid-template-columns:1fr auto;gap:12px}
+ul.map li span{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap}
+.note{background:rgba(255,138,61,.06);border:1px solid rgba(255,138,61,.25);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+.trad{color:var(--dim)}
+footer{text-align:center;color:var(--dim);font-size:15px;padding:30px 20px 50px;border-top:1px solid var(--faint)}
+@media (max-width:820px){
+  .wrap{grid-template-columns:1fr}
+  nav{position:static;max-height:none;display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--faint);padding:0}
+  nav h3{display:none}
+  nav button{white-space:nowrap;border-left:0;border-bottom:2px solid transparent;padding:12px 14px;width:auto}
+  nav button small{display:none}
+  nav button.on{border-bottom-color:var(--gold)}
+  .stage{height:62vh}
+  article{padding:20px 16px 50px}
+  ul.map li{grid-template-columns:1fr}
+}
+</style>
+</head><body>
+<header>
+  <h1>BE NOT AFRAID</h1>
+  <p>Every heavenly being the Bible actually describes, drawn from the words on the page and nothing else. Each render is built line by line from the verses quoted beneath it (King James Version).</p>
+</header>
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main>
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="title"><div class="term" id="t-term"></div><h2 id="t-name"></h2><div class="tag" id="t-tag"></div></div>
+      <div class="ctl"><button id="b-prev">‹ PREV</button><button id="b-next">NEXT ›</button></div>
+    </div>
+    <article id="art"></article>
+  </main>
+</div>
+<footer>Scripture quotations are from the King James Version (public domain). Where a detail comes from later tradition rather than the text, it is labelled as such. Made by Claude for mentifaber.org.</footer>
+<script>
+(() => {
+const TAU = Math.PI * 2, cv = document.getElementById("cv"), cx = cv.getContext("2d");
+let W = 1, H = 1, DPR = 1, mx = .5, my = .4, cur = 0, t0 = performance.now();
+function resize() { const r = cv.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2); W = r.width; H = r.height; cv.width = W * DPR; cv.height = H * DPR; }
+addEventListener("resize", resize);
+cv.addEventListener("pointermove", (e) => { const r = cv.getBoundingClientRect(); mx = (e.clientX - r.left) / r.width; my = (e.clientY - r.top) / r.height; });
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const lerp = (a, b, k) => a + (b - a) * k;
+
+/* ── drawing helpers ── */
+function glow(x, y, r, c, a) { const g = cx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, "rgba(0,0,0,0)"); cx.globalAlpha = a == null ? 1 : a; cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r, 0, TAU); cx.fill(); cx.globalAlpha = 1; }
+// an eye that blinks on its own clock and watches the pointer
+function eye(x, y, r, t, seed, rot, iris) {
+  if (r < .8) return;
+  const bl = Math.max(0, Math.sin(t * (.6 + hash(seed) * .5) + seed * 9)); const open = bl > .985 ? .08 : 1;
+  cx.save(); cx.translate(x, y); cx.rotate(rot || 0);
+  cx.fillStyle = "#f6efe0"; cx.beginPath(); cx.moveTo(-r, 0); cx.quadraticCurveTo(0, -r * .9 * open, r, 0); cx.quadraticCurveTo(0, r * .9 * open, -r, 0); cx.fill();
+  if (open > .5) {
+    const px = (mx * W - x) / W, py = (my * H - y) / H, k = Math.min(1, Math.hypot(px, py) * 3), a = Math.atan2(py, px) - (rot || 0);
+    cx.save(); cx.beginPath(); cx.moveTo(-r, 0); cx.quadraticCurveTo(0, -r * .9, r, 0); cx.quadraticCurveTo(0, r * .9, -r, 0); cx.clip();
+    const ix = Math.cos(a) * r * .32 * k, iy = Math.sin(a) * r * .2 * k;
+    cx.fillStyle = iris || "#c9962e"; cx.beginPath(); cx.arc(ix, iy, r * .46, 0, TAU); cx.fill();
+    cx.fillStyle = "#050305"; cx.beginPath(); cx.arc(ix, iy, r * .2, 0, TAU); cx.fill();
+    cx.fillStyle = "rgba(255,255,255,.8)"; cx.beginPath(); cx.arc(ix - r * .12, iy - r * .12, r * .08, 0, TAU); cx.fill(); cx.restore();
+  }
+  cx.strokeStyle = "rgba(60,30,10,.7)"; cx.lineWidth = Math.max(.6, r * .1); cx.beginPath(); cx.moveTo(-r, 0); cx.quadraticCurveTo(0, -r * .9 * open, r, 0); cx.quadraticCurveTo(0, r * .9 * open, -r, 0); cx.stroke();
+  cx.restore();
+}
+// a wing as a fan of long tapered feathers; eyes optional, fire optional
+function wing(x, y, ang, len, spread, n, col, t, o) {
+  o = o || {};
+  for (let i = n - 1; i >= 0; i--) {
+    const k = n === 1 ? .5 : i / (n - 1), a = ang + (k - .5) * spread, L = len * (.62 + .38 * Math.sin(k * Math.PI)) * (o.taper ? 1 - k * .3 : 1), wv = Math.sin(t * 3 + i) * .015;
+    const ex = x + Math.cos(a + wv) * L, ey = y + Math.sin(a + wv) * L, nx = -Math.sin(a) * len * .055, ny = Math.cos(a) * len * .055;
+    const g = cx.createLinearGradient(x, y, ex, ey); g.addColorStop(0, col[0]); g.addColorStop(.7, col[1]); g.addColorStop(1, col[2] || "rgba(0,0,0,0)");
+    cx.fillStyle = g; cx.beginPath(); cx.moveTo(x - nx * .4, y - ny * .4); cx.quadraticCurveTo((x + ex) / 2 + nx, (y + ey) / 2 + ny, ex, ey); cx.quadraticCurveTo((x + ex) / 2 - nx, (y + ey) / 2 - ny, x + nx * .4, y + ny * .4); cx.fill();
+    cx.strokeStyle = "rgba(255,240,200,.18)"; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(ex, ey); cx.stroke();
+    if (o.eyes) for (let j = 1; j <= o.eyes; j++) { const q = .3 + j / (o.eyes + 1) * .65; eye(lerp(x, ex, q), lerp(y, ey, q), len * .045 * (1.1 - q * .5), t, i * 31 + j * 7 + (o.seed || 0), a); }
+    if (o.fire && Math.random() < .5) sparks.push({ x: ex, y: ey, vx: Math.cos(a) * 20 + (Math.random() - .5) * 30, vy: -40 - Math.random() * 60, life: .6 + Math.random() * .6, t: 0, c: Math.random() < .5 ? "#ffd27a" : "#ff6a2a", r: 1 + Math.random() * 2.5 });
+  }
+}
+let sparks = [];
+function drawSparks(dt) { for (const p of sparks) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; } sparks = sparks.filter((p) => p.t < p.life); if (sparks.length > 900) sparks.splice(0, sparks.length - 900);
+  cx.globalCompositeOperation = "lighter"; for (const p of sparks) { cx.globalAlpha = 1 - p.t / p.life; cx.fillStyle = p.c; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, TAU); cx.fill(); } cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over"; }
+function bolt(x1, y1, x2, y2, c, w) { cx.strokeStyle = c; cx.lineWidth = w; cx.shadowColor = c; cx.shadowBlur = 18; cx.beginPath(); cx.moveTo(x1, y1); const n = 9; for (let i = 1; i < n; i++) { const k = i / n; cx.lineTo(lerp(x1, x2, k) + (Math.random() - .5) * 40, lerp(y1, y2, k) + (Math.random() - .5) * 40); } cx.lineTo(x2, y2); cx.stroke(); cx.shadowBlur = 0; }
+// the four faces named in Ezekiel and Revelation, as simple carved masks
+function face(kind, x, y, s, col) {
+  cx.save(); cx.translate(x, y); cx.scale(s / 50, s / 50); cx.lineJoin = "round"; cx.lineCap = "round";
+  const stroke = "#2a1606";
+  if (kind === "lion") {
+    for (let i = 0; i < 22; i++) { const a = i / 22 * TAU; cx.fillStyle = i % 2 ? "#b8621f" : "#d9892e"; cx.beginPath(); cx.moveTo(Math.cos(a - .18) * 34, Math.sin(a - .18) * 34); cx.lineTo(Math.cos(a) * 54, Math.sin(a) * 54); cx.lineTo(Math.cos(a + .18) * 34, Math.sin(a + .18) * 34); cx.fill(); }
+    cx.fillStyle = col || "#e7b45a"; cx.beginPath(); cx.ellipse(0, 4, 32, 36, 0, 0, TAU); cx.fill();
+    cx.fillStyle = stroke; cx.beginPath(); cx.moveTo(-9, 12); cx.lineTo(9, 12); cx.lineTo(0, 22); cx.fill();
+    cx.strokeStyle = stroke; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(0, 22); cx.lineTo(0, 28); cx.moveTo(-12, 32); cx.quadraticCurveTo(0, 26, 12, 32); cx.stroke();
+    cx.fillStyle = "#ffd27a"; [-13, 13].forEach((ex) => { cx.beginPath(); cx.ellipse(ex, -6, 6, 4, 0, 0, TAU); cx.fill(); }); cx.fillStyle = stroke; [-13, 13].forEach((ex) => { cx.beginPath(); cx.ellipse(ex, -6, 1.6, 4, 0, 0, TAU); cx.fill(); });
+  } else if (kind === "ox") {
+    cx.strokeStyle = "#e9dcc0"; cx.lineWidth = 7; cx.beginPath(); cx.moveTo(-26, -20); cx.quadraticCurveTo(-52, -30, -44, -56); cx.moveTo(26, -20); cx.quadraticCurveTo(52, -30, 44, -56); cx.stroke();
+    cx.fillStyle = col || "#8a5a32"; cx.beginPath(); cx.moveTo(-30, -26); cx.quadraticCurveTo(0, -40, 30, -26); cx.lineTo(24, 22); cx.quadraticCurveTo(0, 46, -24, 22); cx.closePath(); cx.fill();
+    cx.fillStyle = "#c79a6c"; cx.beginPath(); cx.ellipse(0, 24, 20, 14, 0, 0, TAU); cx.fill(); cx.fillStyle = stroke; [-8, 8].forEach((nx) => { cx.beginPath(); cx.ellipse(nx, 24, 3.5, 5, 0, 0, TAU); cx.fill(); });
+    [-40, 40].forEach((ex) => { cx.fillStyle = col || "#8a5a32"; cx.beginPath(); cx.ellipse(ex, -16, 12, 6, ex > 0 ? .4 : -.4, 0, TAU); cx.fill(); });
+    cx.fillStyle = "#1a0d05"; [-14, 14].forEach((ex) => { cx.beginPath(); cx.arc(ex, -8, 4.5, 0, TAU); cx.fill(); });
+  } else if (kind === "eagle") {
+    cx.fillStyle = col || "#6b4a2b"; cx.beginPath(); cx.ellipse(0, -2, 30, 36, 0, 0, TAU); cx.fill();
+    cx.fillStyle = "#f2ead8"; cx.beginPath(); cx.ellipse(0, -10, 24, 24, 0, 0, TAU); cx.fill();
+    cx.fillStyle = "#e3a82b"; cx.beginPath(); cx.moveTo(-10, 0); cx.quadraticCurveTo(0, -6, 10, 0); cx.quadraticCurveTo(8, 26, -2, 34); cx.quadraticCurveTo(2, 20, -10, 0); cx.fill();
+    cx.fillStyle = "#ffcf3d"; [-12, 12].forEach((ex) => { cx.beginPath(); cx.arc(ex, -12, 5, 0, TAU); cx.fill(); }); cx.fillStyle = "#000"; [-12, 12].forEach((ex) => { cx.beginPath(); cx.arc(ex, -12, 2.4, 0, TAU); cx.fill(); });
+    cx.strokeStyle = "#3a2410"; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(-20, -20); cx.lineTo(-6, -15); cx.moveTo(20, -20); cx.lineTo(6, -15); cx.stroke();
+  } else {
+    cx.fillStyle = col || "#d8a878"; cx.beginPath(); cx.ellipse(0, 0, 28, 38, 0, 0, TAU); cx.fill();
+    cx.fillStyle = "#5a3418"; cx.beginPath(); cx.moveTo(-28, -6); cx.quadraticCurveTo(-30, -44, 0, -42); cx.quadraticCurveTo(30, -44, 28, -6); cx.quadraticCurveTo(20, -30, 0, -30); cx.quadraticCurveTo(-20, -30, -28, -6); cx.fill();
+    cx.beginPath(); cx.moveTo(-26, 8); cx.quadraticCurveTo(-24, 46, 0, 50); cx.quadraticCurveTo(24, 46, 26, 8); cx.quadraticCurveTo(14, 26, 0, 24); cx.quadraticCurveTo(-14, 26, -26, 8); cx.fill();
+    cx.fillStyle = "#fff"; [-11, 11].forEach((ex) => { cx.beginPath(); cx.ellipse(ex, -6, 6, 3.5, 0, 0, TAU); cx.fill(); }); cx.fillStyle = "#3b220e"; [-11, 11].forEach((ex) => { cx.beginPath(); cx.arc(ex, -6, 2.6, 0, TAU); cx.fill(); });
+    cx.strokeStyle = "#7a4a26"; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(0, -4); cx.lineTo(-3, 10); cx.lineTo(3, 11); cx.stroke();
+  }
+  cx.restore();
+}
+function sky(top, bot) { const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(1, bot); cx.fillStyle = g; cx.fillRect(0, 0, W, H); }
+function stars(n, a) { for (let i = 0; i < n; i++) { cx.globalAlpha = (.2 + hash(i + 5) * .7) * (a || 1) * (.6 + .4 * Math.sin(T * 2 + i)); cx.fillStyle = "#fff"; cx.fillRect(hash(i) * W, hash(i + 99) * H, 1.4, 1.4); } cx.globalAlpha = 1; }
+function cry(words, x, y, size, t, col) { const i = Math.floor(t / 1.1) % words.length, k = (t / 1.1) % 1; cx.globalAlpha = Math.sin(k * Math.PI) * .75; cx.fillStyle = col || "#ffe9b0"; cx.font = "700 " + size + "px Cinzel, serif"; cx.textAlign = "center"; cx.fillText(words[i], x, y - k * 10); cx.globalAlpha = 1; }
+// a simple robed human figure (most angels in scripture look like men)
+function figure(x, y, h, robe, skin, o) {
+  o = o || {}; const w = h * .26, sh = y - h * .78;
+  // robe: shoulders, a long fall of cloth, a soft hem
+  cx.fillStyle = robe; cx.beginPath(); cx.moveTo(x - w * .2, sh - h * .02); cx.quadraticCurveTo(x - w * .62, sh, x - w * .66, sh + h * .08);
+  cx.quadraticCurveTo(x - w * .82, y - h * .35, x - w * 1.0, y); cx.quadraticCurveTo(x, y + h * .025, x + w * 1.0, y); cx.quadraticCurveTo(x + w * .82, y - h * .35, x + w * .66, sh + h * .08); cx.quadraticCurveTo(x + w * .62, sh, x + w * .2, sh - h * .02); cx.closePath(); cx.fill();
+  const sg = cx.createLinearGradient(x - w, 0, x + w, 0); sg.addColorStop(0, "rgba(0,0,0,.38)"); sg.addColorStop(.35, "rgba(0,0,0,0)"); sg.addColorStop(.6, "rgba(255,255,255,.06)"); sg.addColorStop(1, "rgba(0,0,0,.42)"); cx.fillStyle = sg; cx.fill();
+  cx.strokeStyle = "rgba(0,0,0,.16)"; cx.lineWidth = Math.max(1, h * .006); for (let i = -2; i <= 2; i++) { cx.beginPath(); cx.moveTo(x + i * w * .14, sh + h * .2); cx.quadraticCurveTo(x + i * w * .3, y - h * .3, x + i * w * .42, y - h * .01); cx.stroke(); }
+  if (o.belt) { cx.fillStyle = o.belt; cx.beginPath(); cx.moveTo(x - w * .62, y - h * .53); cx.quadraticCurveTo(x, y - h * .5, x + w * .62, y - h * .53); cx.lineTo(x + w * .64, y - h * .49); cx.quadraticCurveTo(x, y - h * .46, x - w * .64, y - h * .49); cx.closePath(); cx.fill(); cx.fillRect(x - w * .06, y - h * .5, w * .1, h * .12); }
+  // sleeves and hands
+  [-1, 1].forEach((d) => {
+    cx.fillStyle = robe; cx.beginPath(); cx.moveTo(x + d * w * .6, sh + h * .02); cx.quadraticCurveTo(x + d * w * .95, sh + h * .2, x + d * w * .9, y - h * .38); cx.lineTo(x + d * w * .66, y - h * .4); cx.quadraticCurveTo(x + d * w * .7, sh + h * .2, x + d * w * .45, sh + h * .06); cx.closePath(); cx.fill();
+    cx.fillStyle = "rgba(0,0,0,.18)"; cx.fill();
+    cx.fillStyle = o.arms || skin; cx.beginPath(); cx.ellipse(x + d * w * .8, y - h * .37, h * .022, h * .03, 0, 0, TAU); cx.fill();
+  });
+  // neck, head, hair
+  cx.fillStyle = skin; cx.fillRect(x - h * .025, sh - h * .05, h * .05, h * .06);
+  cx.beginPath(); cx.ellipse(x, y - h * .87, h * .068, h * .088, 0, 0, TAU); cx.fill();
+  if (!o.bare) { cx.fillStyle = o.hair || "rgba(60,40,25,.9)"; cx.beginPath(); cx.ellipse(x, y - h * .905, h * .072, h * .062, 0, Math.PI, 0); cx.fill(); }
+}
+
+/* ── the entries ── */
+const E = [
+{ id: "seraphim", group: "Before the throne", name: "Seraphim", term: "שְׂרָפִים · śərāpîm · “burning ones”", tag: "Six wings, on fire, crying to one another.",
+  refs: [["Isaiah 6:1–3", "In the year that king Uzziah died I saw also the Lord sitting upon a throne, high and lifted up, and his train filled the temple. Above it stood the seraphims: each one had six wings; with twain he covered his face, and with twain he covered his feet, and with twain he did fly. And one cried unto another, and said, Holy, holy, holy, is the LORD of hosts: the whole earth is full of his glory."],
+         ["Isaiah 6:4", "And the posts of the door moved at the voice of him that cried, and the house was filled with smoke."],
+         ["Isaiah 6:6", "Then flew one of the seraphims unto me, having a live coal in his hand, which he had taken with the tongs from off the altar:"]],
+  map: [["Six wings: two over the face, two over the feet, two in flight", "Isa 6:2"], ["Fire throughout: the name itself means “burning”", "śārap, to burn"], ["The cry, passed back and forth", "Isa 6:3"], ["Smoke and a shaking threshold", "Isa 6:4"], ["A hand holding a live coal in tongs", "Isa 6:6"]],
+  not: "Isaiah never describes a seraph's body or face. You only see what the wings don't cover, and that's the point of the vision. The word śārāp is also used for the “fiery serpents” of Numbers 21:6, so some scholars think seraphim had a serpentine look. The text doesn't settle it, so this render leaves the body hidden in fire.",
+  trad: "Later Christian writers, especially Pseudo-Dionysius (5th–6th century), ranked seraphim highest in a ninefold hierarchy. That ranking is tradition, not scripture." },
+{ id: "cherubim", group: "Before the throne", name: "Cherubim", term: "כְּרוּבִים · kərûḇîm", tag: "Four faces, four wings, feet like a calf's, burning like coals.",
+  refs: [["Ezekiel 1:5–7", "Also out of the midst thereof came the likeness of four living creatures. And this was their appearance; they had the likeness of a man. And every one had four faces, and every one had four wings. And their feet were straight feet; and the sole of their feet was like the sole of a calf's foot: and they sparkled like the colour of burnished brass."],
+         ["Ezekiel 1:8–11", "And they had the hands of a man under their wings on their four sides… As for the likeness of their faces, they four had the face of a man, and the face of a lion, on the right side: and they four had the face of an ox on the left side; they four also had the face of an eagle. Thus were their faces: and their wings were stretched upward; two wings of every one were joined one to another, and two covered their bodies."],
+         ["Ezekiel 1:13–14", "As for the likeness of the living creatures, their appearance was like burning coals of fire, and like the appearance of lamps: it went up and down among the living creatures; and the fire was bright, and out of the fire went forth lightning. And the living creatures ran and returned as the appearance of a flash of lightning."],
+         ["Ezekiel 10:12, 20", "And their whole body, and their backs, and their hands, and their wings, and the wheels, were full of eyes round about… This is the living creature that I saw under the God of Israel by the river of Chebar; and I knew that they were the cherubims."]],
+  map: [["An upright, manlike frame", "Ezek 1:5"], ["Four faces on one head (man, lion, ox, eagle) turning as you watch", "Ezek 1:10"], ["Two wings stretched up, two covering the body", "Ezek 1:11"], ["Human hands under the wings", "Ezek 1:8"], ["Straight legs, calf's hooves, gleaming like burnished brass", "Ezek 1:7"], ["Coals and torches moving among them, lightning from the fire", "Ezek 1:13"], ["Eyes across the body, back, hands and wings", "Ezek 10:12"]],
+  not: "Nothing like the chubby winged babies of Renaissance art. Those are “putti”, borrowed from classical Cupid imagery. In scripture a cherub is a guardian of the holiest places, and Ezekiel fell on his face at the sight.",
+  trad: "In Ezekiel 10:14 the ox face is called “the face of a cherub”, so some translators think the ox face was simply what a cherub's face looked like." },
+{ id: "wheels", group: "Before the throne", name: "The Wheels", term: "אוֹפַנִּים · ʾôp̄annîm · “wheels”", tag: "A wheel in the middle of a wheel, the rims so high they were dreadful, full of eyes.",
+  refs: [["Ezekiel 1:15–16", "Now as I beheld the living creatures, behold one wheel upon the earth by the living creatures, with his four faces. The appearance of the wheels and their work was like unto the colour of a beryl: and they four had one likeness: and their appearance and their work was as it were a wheel in the middle of a wheel."],
+         ["Ezekiel 1:17–18", "When they went, they went upon their four sides: and they turned not when they went. As for their rings, they were so high that they were dreadful; and their rings were full of eyes round about them four."],
+         ["Ezekiel 1:20", "Whithersoever the spirit was to go, they went… for the spirit of the living creature was in the wheels."]],
+  map: [["Two wheels set crosswise through each other, so it can go any of four ways without turning", "Ezek 1:16–17"], ["The colour of beryl (Hebrew taršîš, a golden or yellow-green stone)", "Ezek 1:16"], ["Rims enormous and frightening", "Ezek 1:18"], ["Every rim lined with eyes, looking back at you", "Ezek 1:18"], ["The spirit of the creature inside them, glowing at the hub", "Ezek 1:20"]],
+  not: "In the text, the wheels move together with the cherubim; they aren't separate free-floating angels. Ezekiel calls them wheels, not angels.",
+  trad: "Treating the ʾôp̄annîm as their own order of angels (the “Ophanim”) comes later: 1 Enoch 61:10 and 71:7, then Jewish mystical writing and Maimonides' list of ten ranks. In some later Christian lists they are linked to the “thrones”." },
+{ id: "living", group: "Before the throne", name: "The Four Living Creatures", term: "ζῷα · zōa · “living ones”", tag: "Full of eyes before and behind. They rest not day and night.",
+  refs: [["Revelation 4:6–7", "…and in the midst of the throne, and round about the throne, were four beasts full of eyes before and behind. And the first beast was like a lion, and the second beast like a calf, and the third beast had a face as a man, and the fourth beast was like a flying eagle."],
+         ["Revelation 4:8", "And the four beasts had each of them six wings about him; and they were full of eyes within: and they rest not day and night, saying, Holy, holy, holy, Lord God Almighty, which was, and is, and is to come."],
+         ["Revelation 4:3, 6", "…and there was a rainbow round about the throne, in sight like unto an emerald… And before the throne there was a sea of glass like unto crystal."]],
+  map: [["Four creatures circling the throne", "Rev 4:6"], ["Lion, calf, man and flying eagle: one face each", "Rev 4:7"], ["Six wings each, covered in eyes", "Rev 4:8"], ["An emerald rainbow around the throne", "Rev 4:3"], ["A sea of glass like crystal", "Rev 4:6"], ["The unceasing cry", "Rev 4:8"]],
+  not: "These are not the same as Ezekiel's cherubim, though related. John's creatures have one face each and six wings, like seraphim. Ezekiel's have four faces each and four wings.",
+  trad: "From Irenaeus (2nd century) onward, the four were read as symbols of the four Gospels. Jerome's version became the standard one: man for Matthew, lion for Mark, ox for Luke, eagle for John." },
+{ id: "eden", group: "Guardians", name: "Cherubim at the Gate of Eden", term: "Genesis 3:24", tag: "And a flaming sword which turned every way.",
+  refs: [["Genesis 3:24", "So he drove out the man; and he placed at the east of the garden of Eden Cherubims, and a flaming sword which turned every way, to keep the way of the tree of life."],
+         ["Exodus 25:20", "And the cherubims shall stretch forth their wings on high, covering the mercy seat with their wings, and their faces shall look one to another…"]],
+  map: [["Cherubim stationed at the east side of the garden", "Gen 3:24"], ["A sword of fire, turning in every direction", "Gen 3:24"], ["The tree of life glowing behind them, closed off", "Gen 3:24"], ["Outstretched wings, faces turned toward each other (the pose used for the Ark)", "Ex 25:20"]],
+  not: "Genesis doesn't say who holds the sword. It may be wielded by the cherubim, or it may be a separate thing that turns by itself. Here it spins on its own between them.",
+  trad: "" },
+{ id: "linen", group: "Messengers", name: "The Man Clothed in Linen", term: "Daniel 10", tag: "A face like lightning and eyes like lamps of fire.",
+  refs: [["Daniel 10:5–6", "Then I lifted up mine eyes, and looked, and behold a certain man clothed in linen, whose loins were girded with fine gold of Uphaz: His body also was like the beryl, and his face as the appearance of lightning, and his eyes as lamps of fire, and his arms and his feet like in colour to polished brass, and the voice of his words like the voice of a multitude."],
+         ["Daniel 10:7–8", "And I Daniel alone saw the vision: for the men that were with me saw not the vision; but a great quaking fell upon them, so that they fled to hide themselves. Therefore I was left alone, and saw this great vision, and there remained no strength in me…"]],
+  map: [["The shape of a man, in linen", "Dan 10:5"], ["A belt of fine gold from Uphaz", "Dan 10:5"], ["A body like beryl, glowing through the robe", "Dan 10:6"], ["A face flashing like lightning", "Dan 10:6"], ["Eyes like burning lamps", "Dan 10:6"], ["Arms and feet of polished bronze", "Dan 10:6"], ["A voice like a crowd, drawn as rings of sound", "Dan 10:6"], ["The river Hiddekel (Tigris) where it happened", "Dan 10:4"]],
+  not: "No wings. Most angels in scripture are never described with wings at all.",
+  trad: "Who this is gets debated. Some say Gabriel (named in Daniel 8:16 and 9:21), some a pre-incarnate appearance of Christ, because the description closely matches Revelation 1:13–15." },
+{ id: "mighty", group: "Messengers", name: "The Mighty Angel", term: "Revelation 10", tag: "One foot on the sea, one on the land, a rainbow on his head.",
+  refs: [["Revelation 10:1–2", "And I saw another mighty angel come down from heaven, clothed with a cloud: and a rainbow was upon his head, and his face was as it were the sun, and his feet as pillars of fire: And he had in his hand a little book open: and he set his right foot upon the sea, and his left foot on the earth,"],
+         ["Revelation 10:3", "And cried with a loud voice, as when a lion roareth: and when he had cried, seven thunders uttered their voices."]],
+  map: [["Coming down, wrapped in cloud", "Rev 10:1"], ["A rainbow over his head", "Rev 10:1"], ["A face like the sun", "Rev 10:1"], ["Legs like pillars of fire", "Rev 10:1"], ["A little open book in his hand", "Rev 10:2"], ["Right foot on the sea, left on the land", "Rev 10:2"], ["The seven thunders", "Rev 10:3"]],
+  not: "Revelation gives his size only by implication: someone standing on sea and land at once is enormous. This render takes that literally.",
+  trad: "" },
+{ id: "tomb", group: "Messengers", name: "The Angel at the Tomb", term: "Matthew 28", tag: "His countenance like lightning; the guards became as dead men.",
+  refs: [["Matthew 28:2–4", "And, behold, there was a great earthquake: for the angel of the Lord descended from heaven, and came and rolled back the stone from the door, and sat upon it. His countenance was like lightning, and his raiment white as snow: And for fear of him the keepers did shake, and became as dead men."],
+         ["Matthew 28:5", "And the angel answered and said unto the women, Fear not ye: for I know that ye seek Jesus, which was crucified."]],
+  map: [["The stone rolled away, the angel sitting on top of it", "Mt 28:2"], ["A face like lightning", "Mt 28:3"], ["Clothes as white as snow", "Mt 28:3"], ["The guards on the ground", "Mt 28:4"], ["The earthquake, drawn as tremors", "Mt 28:2"]],
+  not: "Mark 16:5 describes “a young man… clothed in a long white garment” sitting inside the tomb, and Luke 24:4 says “two men… in shining garments.” They all look human. None of the accounts mention wings.",
+  trad: "" },
+{ id: "destroyer", group: "Messengers", name: "The Destroying Angel", term: "1 Chronicles 21", tag: "Between the earth and the heaven, a drawn sword stretched over Jerusalem.",
+  refs: [["1 Chronicles 21:16", "And David lifted up his eyes, and saw the angel of the LORD stand between the earth and the heaven, having a drawn sword in his hand stretched out over Jerusalem. Then David and the elders of Israel, who were clothed in sackcloth, fell upon their faces."],
+         ["1 Chronicles 21:27", "And the LORD commanded the angel; and he put up his sword again into the sheath thereof."]],
+  map: [["Standing in the air between ground and sky", "1 Chr 21:16"], ["A drawn sword held out over the city", "1 Chr 21:16"], ["David and the elders face down in sackcloth", "1 Chr 21:16"], ["The threshing floor of Ornan, where it ended", "1 Chr 21:15"]],
+  not: "The same event is in 2 Samuel 24, which gives no visual description. Chronicles is where the sword appears.",
+  trad: "" },
+{ id: "chariots", group: "Hosts", name: "Horses and Chariots of Fire", term: "2 Kings 6", tag: "The mountain was full of them, round about Elisha.",
+  refs: [["2 Kings 6:15–17", "…an host compassed the city both with horses and chariots. And his servant said unto him, Alas, my master! how shall we do? And he answered, Fear not: for they that be with us are more than they that be with them. And Elisha prayed, and said, LORD, I pray thee, open his eyes, that he may see. And the LORD opened the eyes of the young man; and he saw: and, behold, the mountain was full of horses and chariots of fire round about Elisha."],
+         ["2 Kings 2:11", "…behold, there appeared a chariot of fire, and horses of fire, and parted them both asunder; and Elijah went up by a whirlwind into heaven."]],
+  map: [["A whole mountain full of them", "2 Kgs 6:17"], ["Horses and chariots made of fire", "2 Kgs 6:17"], ["Surrounding Elisha and his servant", "2 Kgs 6:17"], ["Hidden until his eyes were opened: they fade in", "2 Kgs 6:17"]],
+  not: "The text never calls them angels outright. They are “they that be with us”, the armies of the LORD of hosts.",
+  trad: "" },
+{ id: "host", group: "Hosts", name: "The Heavenly Host", term: "Luke 2", tag: "Suddenly there was with the angel a multitude.",
+  refs: [["Luke 2:9", "And, lo, the angel of the Lord came upon them, and the glory of the Lord shone round about them: and they were sore afraid."],
+         ["Luke 2:13–14", "And suddenly there was with the angel a multitude of the heavenly host praising God, and saying, Glory to God in the highest, and on earth peace, good will toward men."],
+         ["Daniel 7:10", "…thousand thousands ministered unto him, and ten thousand times ten thousand stood before him…"]],
+  map: [["One angel first, with glory shining around the shepherds", "Lk 2:9"], ["Then, suddenly, a multitude", "Lk 2:13"], ["Numbers beyond counting", "Dan 7:10"], ["The song", "Lk 2:14"]],
+  not: "The Greek says they were “saying”, not singing, though praise sung or spoken fits either way.",
+  trad: "" },
+{ id: "strangers", group: "Hosts", name: "Strangers, Unawares", term: "Genesis 18 · Hebrews 13", tag: "Three men stood by him.",
+  refs: [["Genesis 18:1–2", "And the LORD appeared unto him in the plains of Mamre: and he sat in the tent door in the heat of the day; And he lift up his eyes and looked, and, lo, three men stood by him…"],
+         ["Genesis 19:1", "And there came two angels to Sodom at even; and Lot sat in the gate of Sodom…"],
+         ["Hebrews 13:2", "Be not forgetful to entertain strangers: for thereby some have entertained angels unawares."]],
+  map: [["Three ordinary travellers", "Gen 18:2"], ["Midday heat at Mamre, a tent and the oaks", "Gen 18:1"], ["Nothing visibly different about them, except a shimmer if you look closely", "Heb 13:2"]],
+  not: "This is the most common way angels appear in the Bible: as people, unrecognised. They ate, walked and were taken for guests.",
+  trad: "" },
+{ id: "covering", group: "The fallen", name: "The Anointed Cherub That Covereth", term: "Ezekiel 28", tag: "Every precious stone was thy covering.",
+  refs: [["Ezekiel 28:13", "Thou hast been in Eden the garden of God; every precious stone was thy covering, the sardius, topaz, and the diamond, the beryl, the onyx, and the jasper, the sapphire, the emerald, and the carbuncle, and gold…"],
+         ["Ezekiel 28:14–15", "Thou art the anointed cherub that covereth; and I have set thee so: thou wast upon the holy mountain of God; thou hast walked up and down in the midst of the stones of fire. Thou wast perfect in thy ways from the day that thou wast created, till iniquity was found in thee."],
+         ["Ezekiel 28:16", "…therefore I will cast thee as profane out of the mountain of God: and I will destroy thee, O covering cherub, from the midst of the stones of fire."]],
+  map: [["Covered in nine named stones, plus gold", "Ezek 28:13"], ["Walking among stones of fire", "Ezek 28:14"], ["A guardian (covering) cherub with wings spread", "Ezek 28:14"], ["Perfect, then cracking: the fall", "Ezek 28:15–16"]],
+  not: "On its face, this passage is a lament over the king of Tyre. Reading it as the fall of Satan is an interpretation, popular since the early church fathers but not stated in the text.",
+  trad: "Paired with Isaiah 14:12 (“How art thou fallen from heaven, O Lucifer”), this became the classic picture of Satan's fall. “Lucifer” is the Latin rendering of hêlēl, “shining one”, which in context is addressed to the king of Babylon." },
+];
+
+/* ── renderers ── */
+let T = 0;
+const R = {
+seraphim(t, dt) {
+  sky("#1a0a05", "#050203"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 800;
+  // smoke filling the house
+  for (let i = 0; i < 14; i++) { const a = t * .05 + i; glow(x + Math.sin(a * 1.3 + i) * W * .35, y + Math.cos(a + i * 2) * H * .3, 220 * s, "rgba(90,70,60,.22)"); }
+  glow(x, y, 380 * s, "rgba(255,150,60,.35)"); glow(x, y, 160 * s, "rgba(255,240,200,.6)");
+  const flap = Math.sin(t * 2.2);
+  const fire = ["#fff3c4", "#ff9a3d", "rgba(160,20,0,0)"];
+  // flight pair
+  wing(x - 30 * s, y - 10 * s, Math.PI + .1 - flap * .35, 330 * s, 1.1, 13, fire, t, { fire: true });
+  wing(x + 30 * s, y - 10 * s, -.1 + flap * .35, 330 * s, 1.1, 13, fire, t, { fire: true });
+  // feet pair, crossed over the lower body
+  wing(x - 26 * s, y + 20 * s, 1.15, 220 * s, .55, 9, ["#ffe2a0", "#ff6a2a", "rgba(120,10,0,0)"], t, { fire: true });
+  wing(x + 26 * s, y + 20 * s, Math.PI - 1.15, 220 * s, .55, 9, ["#ffe2a0", "#ff6a2a", "rgba(120,10,0,0)"], t, { fire: true });
+  // face pair, crossed over the face
+  wing(x - 24 * s, y - 34 * s, -1.25, 200 * s, .5, 9, ["#fff8de", "#ffb04a", "rgba(160,30,0,0)"], t, { fire: true });
+  wing(x + 24 * s, y - 34 * s, Math.PI + 1.25, 200 * s, .5, 9, ["#fff8de", "#ffb04a", "rgba(160,30,0,0)"], t, { fire: true });
+  for (let i = 0; i < 6; i++) sparks.push({ x: x + (Math.random() - .5) * 120 * s, y: y + (Math.random() - .5) * 160 * s, vx: (Math.random() - .5) * 40, vy: -60 - Math.random() * 90, life: .8 + Math.random(), t: 0, c: Math.random() < .5 ? "#ffd27a" : "#ff5a1a", r: 1 + Math.random() * 3 });
+  drawSparks(dt);
+  // the live coal in tongs, held out low
+  const hx = x + 150 * s, hy = y + 150 * s + Math.sin(t) * 6;
+  cx.strokeStyle = "#8a7a6a"; cx.lineWidth = 3 * s; cx.beginPath(); cx.moveTo(hx - 60 * s, hy - 40 * s); cx.lineTo(hx, hy - 4 * s); cx.moveTo(hx - 60 * s, hy - 30 * s); cx.lineTo(hx, hy + 4 * s); cx.stroke();
+  glow(hx + 6 * s, hy, 30 * s, "rgba(255,90,20,.9)"); cx.fillStyle = "#ffcf7a"; cx.beginPath(); cx.arc(hx + 6 * s, hy, 7 * s, 0, TAU); cx.fill();
+  cry(["HOLY,", "HOLY,", "HOLY,", "IS THE LORD OF HOSTS"], x, H * .12, Math.round(22 * s + 8), t, "#ffe9b0");
+  // the posts of the door moved at the voice
+  cx.save(); cx.translate(Math.sin(t * 40) * (Math.floor(t / 1.1) % 4 === 3 ? 2 : 0), 0); cx.fillStyle = "rgba(40,25,15,.8)"; cx.fillRect(W * .06, H * .1, 24 * s, H * .9); cx.fillRect(W * .94 - 24 * s, H * .1, 24 * s, H * .9); cx.restore();
+},
+cherubim(t, dt) {
+  sky("#0b0812", "#030205"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 820;
+  // the others, glimpsed: four of them, wings touching
+  [-1, 1].forEach((d) => { cx.globalAlpha = .18; glow(x + d * W * .38, y, 160 * s, "rgba(255,170,80,.6)"); cx.globalAlpha = 1; });
+  glow(x, y, 330 * s, "rgba(255,140,40,.28)");
+  // upper wings stretched up and out, reaching the creatures beside
+  wing(x - 34 * s, y - 70 * s, -2.2, 360 * s, .6, 11, ["#f2d39a", "#b77a2e", "rgba(60,20,0,0)"], t, { eyes: 2, seed: 1 });
+  wing(x + 34 * s, y - 70 * s, -.94, 360 * s, .6, 11, ["#f2d39a", "#b77a2e", "rgba(60,20,0,0)"], t, { eyes: 2, seed: 2 });
+  // body: straight legs, calf's feet of burnished brass
+  const brass = "hsl(38," + (60 + Math.sin(t * 9) * 20) + "%," + (55 + Math.sin(t * 13) * 10) + "%)";
+  cx.strokeStyle = brass; cx.lineWidth = 16 * s; cx.lineCap = "round"; cx.beginPath(); cx.moveTo(x - 24 * s, y + 40 * s); cx.lineTo(x - 24 * s, y + 230 * s); cx.moveTo(x + 24 * s, y + 40 * s); cx.lineTo(x + 24 * s, y + 230 * s); cx.stroke();
+  cx.fillStyle = brass; [-24, 24].forEach((dx) => { cx.beginPath(); cx.moveTo(x + (dx - 12) * s, y + 230 * s); cx.lineTo(x + (dx + 12) * s, y + 230 * s); cx.lineTo(x + (dx + 5) * s, y + 252 * s); cx.lineTo(x + dx * s, y + 242 * s); cx.lineTo(x + (dx - 5) * s, y + 252 * s); cx.closePath(); cx.fill(); glow(x + dx * s, y + 246 * s, 26 * s, "rgba(255,230,160,.7)", .5 + .5 * Math.sin(t * 11 + dx)); });
+  cx.fillStyle = "#3a2312"; cx.beginPath(); cx.ellipse(x, y + 20 * s, 54 * s, 110 * s, 0, 0, TAU); cx.fill();
+  for (let i = 0; i < 10; i++) eye(x + (hash(i) - .5) * 70 * s, y - 40 * s + hash(i + 3) * 150 * s, 9 * s, t, 50 + i);
+  // lower wings covering the body
+  wing(x - 40 * s, y - 40 * s, 1.25, 210 * s, .45, 9, ["#e8c27e", "#8e5a22", "rgba(40,15,0,0)"], t, { eyes: 1, seed: 3 });
+  wing(x + 40 * s, y - 40 * s, Math.PI - 1.25, 210 * s, .45, 9, ["#e8c27e", "#8e5a22", "rgba(40,15,0,0)"], t, { eyes: 1, seed: 4 });
+  // hands of a man under the wings
+  cx.fillStyle = "#d8a878"; [-1, 1].forEach((d) => { const hx = x + d * 92 * s, hy = y + 30 * s; cx.beginPath(); cx.ellipse(hx, hy, 11 * s, 15 * s, d * .3, 0, TAU); cx.fill(); for (let f = 0; f < 4; f++) { cx.beginPath(); cx.ellipse(hx + d * (f - 1.5) * 4.5 * s, hy + 15 * s, 2.6 * s, 7 * s, 0, 0, TAU); cx.fill(); } });
+  // four faces on one head, turning
+  const kinds = ["man", "lion", "ox", "eagle"], hy = y - 120 * s, rot = t * .5;
+  const order = kinds.map((k, i) => ({ k, a: rot + i * TAU / 4 })).sort((a, b) => Math.cos(a.a) - Math.cos(b.a));
+  for (const f of order) { const c = Math.cos(f.a); if (c < -.2) continue; cx.save(); cx.translate(x + Math.sin(f.a) * 52 * s, hy); cx.scale(Math.max(.05, c), 1); cx.globalAlpha = .35 + .65 * Math.max(0, c); face(f.k, 0, 0, 46 * s); cx.restore(); }
+  cx.globalAlpha = 1;
+  // coals and lamps going up and down among them; lightning out of the fire
+  for (let i = 0; i < 7; i++) { const py = y + Math.sin(t * 1.6 + i * 1.7) * 200 * s, px = x + Math.sin(t * .7 + i * 2.3) * 260 * s; glow(px, py, 24 * s, "rgba(255,110,30,.9)"); cx.fillStyle = "#ffe6a8"; cx.beginPath(); cx.arc(px, py, 4 * s, 0, TAU); cx.fill(); }
+  if (Math.random() < .045) bolt(x + (Math.random() - .5) * 400 * s, y + (Math.random() - .5) * 300 * s, x + (Math.random() - .5) * 600 * s, y + (Math.random() - .5) * 500 * s, "#fff6d0", 2.4);
+},
+wheels(t, dt) {
+  sky("#06080a", "#020203"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 800, Rr = 280 * s;
+  glow(x, y, 460 * s, "rgba(200,190,90,.22)"); if (Math.random() < .02) bolt(x, y, x + (Math.random() - .5) * W, y + (Math.random() - .5) * H, "#fff8d8", 2); glow(x, y, 90 * s, "rgba(255,250,220,.9)");
+  // the spirit at the hub
+  for (let i = 0; i < 3; i++) { cx.strokeStyle = "rgba(255,245,200," + (.3 - i * .08) + ")"; cx.lineWidth = 2; cx.beginPath(); cx.arc(x, y, 40 * s + ((t * 30 + i * 20) % 60) * s, 0, TAU); cx.stroke(); }
+  // two rims at right angles, tumbling slowly; points projected in 3D
+  const rings = [[t * .35, 0], [t * .35 + Math.PI / 2, .9]];
+  const pts = [];
+  rings.forEach(([a, tilt], ri) => {
+    const N = 132, E2 = 33;
+    for (let i = 0; i < N; i++) {
+      const u = i / N * TAU; let px = Math.cos(u) * Rr, py = Math.sin(u) * Rr, pz = 0;
+      // spin the wheel about its axle, then set it crosswise
+      let qx = px * Math.cos(a) - pz * Math.sin(a), qz = px * Math.sin(a) + pz * Math.cos(a); px = qx; pz = qz;
+      const tl = tilt + t * .12, qy = py * Math.cos(tl) - pz * Math.sin(tl); pz = py * Math.sin(tl) + pz * Math.cos(tl); py = qy;
+      const yaw = t * .2 + ri * Math.PI / 2, rx = px * Math.cos(yaw) + pz * Math.sin(yaw); pz = -px * Math.sin(yaw) + pz * Math.cos(yaw); px = rx;
+      const k = 900 / (900 + pz);
+      pts.push({ x: x + px * k, y: y + py * k, z: pz, k, eye: i % (N / E2) === 0, seed: ri * 1000 + i, ri });
+    }
+  });
+  pts.sort((a, b) => b.z - a.z);
+  // rims first, then the eyes on top so neighbours never cover them
+  for (const p of pts) {
+    const lit = .45 + .55 * (1 - (p.z + Rr) / (2 * Rr));
+    cx.fillStyle = "hsl(" + (46 + p.ri * 10) + ",58%," + (14 + lit * 42) + "%)"; cx.beginPath(); cx.arc(p.x, p.y, 19 * s * p.k, 0, TAU); cx.fill(); if (p.seed % 3 === 0) { cx.fillStyle = "rgba(255,250,210," + lit * .35 + ")"; cx.beginPath(); cx.arc(p.x - 4 * s, p.y - 4 * s, 6 * s * p.k, 0, TAU); cx.fill(); }
+  }
+  for (const p of pts) if (p.eye) { const lit = .45 + .55 * (1 - (p.z + Rr) / (2 * Rr)), r = 17 * s * p.k; cx.globalAlpha = .35 + .65 * lit; eye(p.x, p.y, r, t, p.seed, 0, "#3e8f6a"); cx.globalAlpha = 1; }
+  // the rims are dreadfully high: dust moving past to show the scale
+  for (let i = 0; i < 40; i++) { cx.globalAlpha = .3; cx.fillStyle = "#d9cf9a"; cx.fillRect((hash(i) * W + t * 15 * (1 + hash(i + 1))) % W, hash(i + 7) * H, 1.5, 1.5); } cx.globalAlpha = 1;
+},
+living(t, dt) {
+  sky("#06070f", "#020205"); const x = W / 2, y = H * .48, s = Math.min(W, H) / 820;
+  // sea of glass and the emerald rainbow
+  const g = cx.createLinearGradient(0, H * .72, 0, H); g.addColorStop(0, "rgba(150,210,230,.18)"); g.addColorStop(1, "rgba(30,60,80,.05)"); cx.fillStyle = g; cx.fillRect(0, H * .72, W, H * .28);
+  for (let i = 0; i < 18; i++) { cx.strokeStyle = "rgba(200,240,255,.08)"; cx.beginPath(); cx.moveTo(0, H * .74 + i * 14); cx.lineTo(W, H * .74 + i * 14 + Math.sin(t + i) * 3); cx.stroke(); }
+  cx.lineWidth = 14 * s; cx.strokeStyle = "rgba(60,220,130,.35)"; cx.beginPath(); cx.arc(x, y, 150 * s, 0, TAU); cx.stroke();
+  glow(x, y, 200 * s, "rgba(255,250,230,.9)"); glow(x, y, 60 * s, "#fff");
+  const kinds = [["lion", "#e7b45a"], ["ox", "#8a5a32"], ["man", "#d8a878"], ["eagle", "#6b4a2b"]];
+  kinds.forEach(([k, col], i) => {
+    const a = t * .12 + i * TAU / 4 - Math.PI / 4, cxp = x + Math.cos(a) * 280 * s, cyp = y + Math.sin(a) * 200 * s, f = Math.sin(t * 3 + i);
+    const W6 = [[-2.4, .55], [-.74, .55], [-1.9, .5], [-1.24, .5], [2.6, .5], [.54, .5]];
+    W6.forEach(([ang, sp], j) => wing(cxp, cyp, ang + (j < 4 ? f * .18 * (j % 2 ? 1 : -1) : 0), (j < 2 ? 150 : j < 4 ? 110 : 100) * s, sp, 7, ["#f5e6c4", "#a98a5a", "rgba(40,30,20,0)"], t, { eyes: 2, seed: i * 50 + j }));
+    face(k, cxp, cyp, 40 * s, col);
+  });
+  cry(["HOLY,", "HOLY,", "HOLY,", "LORD GOD ALMIGHTY", "WHICH WAS,", "AND IS,", "AND IS TO COME"], x, H * .1, Math.round(18 * s + 8), t, "#fff3c4");
+},
+eden(t, dt) {
+  sky("#08100a", "#020402"); const x = W / 2, y = H * .55, s = Math.min(W, H) / 800;
+  // the garden and the tree of life, behind the guard
+  glow(x, H * .32, 240 * s, "rgba(140,255,160,.25)"); cx.fillStyle = "rgba(20,40,22,.9)"; cx.fillRect(x - 10 * s, H * .32, 20 * s, H * .25);
+  for (let i = 0; i < 30; i++) { const a = i / 30 * TAU; glow(x + Math.cos(a) * 90 * s * hash(i), H * .28 + Math.sin(a) * 60 * s * hash(i + 3), 40 * s, "rgba(90,200,110,.35)"); }
+  for (let i = 0; i < 9; i++) { cx.fillStyle = "#ffd96b"; cx.beginPath(); cx.arc(x + (hash(i * 3) - .5) * 160 * s, H * .25 + (hash(i * 5) - .5) * 90 * s, 4 * s, 0, TAU); cx.fill(); }
+  cx.fillStyle = "#0a0f08"; cx.fillRect(0, H * .78, W, H * .22);
+  // two cherubim, wings reaching toward each other, faces turned in
+  [-1, 1].forEach((d) => {
+    const cxp = x + d * 230 * s; cx.strokeStyle = "#c9923a"; cx.lineWidth = 11 * s; cx.lineCap = "round"; cx.beginPath(); cx.moveTo(cxp - 14 * s, y + 80 * s); cx.lineTo(cxp - 14 * s, y + 190 * s); cx.moveTo(cxp + 14 * s, y + 80 * s); cx.lineTo(cxp + 14 * s, y + 190 * s); cx.stroke();
+    const bg = cx.createLinearGradient(cxp - 40 * s, 0, cxp + 40 * s, 0); bg.addColorStop(0, "#1e130a"); bg.addColorStop(.5, "#5a3a1c"); bg.addColorStop(1, "#1e130a"); cx.fillStyle = bg; cx.beginPath(); cx.ellipse(cxp, y + 30 * s, 38 * s, 100 * s, 0, 0, TAU); cx.fill();
+    for (let i = 0; i < 4; i++) eye(cxp + (hash(i + d * 9) - .5) * 40 * s, y + hash(i + 3 + d) * 120 * s - 20 * s, 7 * s, t, i + d * 20);
+    wing(cxp, y - 40 * s, d < 0 ? -.45 : Math.PI + .45, 250 * s, .7, 10, ["#e9c98a", "#9a6a2a", "rgba(40,20,0,0)"], t, { eyes: 1, seed: d + 5 });
+    wing(cxp, y - 30 * s, d < 0 ? -2.0 : -1.14, 180 * s, .6, 8, ["#e9c98a", "#9a6a2a", "rgba(40,20,0,0)"], t, {});
+    cx.save(); cx.translate(cxp, y - 90 * s); cx.scale(d * .65, 1); face(["lion", "ox", "eagle", "man"][Math.floor(t / 3 + (d > 0 ? 2 : 0)) % 4], 0, 0, 40 * s); cx.restore();
+  });
+  // the flaming sword, turning every way
+  cx.save(); cx.translate(x, y + 20 * s); cx.rotate(t * 2.6); cx.scale(1, .8 + .2 * Math.cos(t * 1.3));
+  for (let k = 0; k < 2; k++) { cx.rotate(Math.PI); const g = cx.createLinearGradient(0, 0, 200 * s, 0); g.addColorStop(0, "#fff8d0"); g.addColorStop(.6, "#ff8a2a"); g.addColorStop(1, "rgba(255,40,0,0)"); cx.fillStyle = g; cx.shadowColor = "#ff8a2a"; cx.shadowBlur = 40; cx.beginPath(); cx.moveTo(0, -14 * s); cx.lineTo(250 * s, 0); cx.lineTo(0, 14 * s); cx.fill(); cx.shadowBlur = 0; }
+  cx.fillStyle = "#e9c46a"; cx.fillRect(-8 * s, -26 * s, 16 * s, 52 * s);
+  cx.restore();
+  for (let i = 0; i < 2; i++) { const a = t * 2.6 + Math.random() * TAU; sparks.push({ x: x + Math.cos(a) * 180 * s * Math.random(), y: y + 20 * s + Math.sin(a) * 90 * s * Math.random(), vx: (Math.random() - .5) * 60, vy: -30 - Math.random() * 60, life: .5 + Math.random() * .5, t: 0, c: Math.random() < .5 ? "#ffcf6a" : "#ff4a10", r: 1.5 + Math.random() * 2 }); }
+  drawSparks(dt); glow(x, y + 20 * s, 120 * s, "rgba(255,120,40,.35)");
+},
+linen(t, dt) {
+  sky("#08070a", "#030304"); const x = W / 2, base = H * .86, s = Math.min(W, H) / 800, h = 560 * s;
+  // the Tigris
+  for (let i = 0; i < 10; i++) { cx.strokeStyle = "rgba(120,150,170," + (.12 - i * .01) + ")"; cx.lineWidth = 2; cx.beginPath(); for (let px = 0; px <= W; px += 20) cx.lineTo(px, base + 14 + i * 9 + Math.sin(px * .02 + t * 1.5 + i) * 3); cx.stroke(); }
+  // voice of a multitude
+  for (let i = 0; i < 5; i++) { const r = ((t * 120 + i * 90) % 450) * s; cx.strokeStyle = "rgba(255,230,180," + (.25 * (1 - r / (450 * s))) + ")"; cx.lineWidth = 2; cx.beginPath(); cx.arc(x, base - h * .87, r, 0, TAU); cx.stroke(); }
+  glow(x, base - h * .5, h * .7, "rgba(230,200,120,.18)");
+  // body like beryl showing through the linen
+  glow(x, base - h * .45, h * .35, "rgba(225,210,120,.55)");
+  figure(x, base, h, "rgba(245,240,228,.88)", "#fff", { belt: "#e9b84a", arms: "#d39a45", bare: true });
+  // arms and feet like polished brass
+  const gl = .6 + .4 * Math.sin(t * 7);
+  cx.fillStyle = "hsl(36,70%," + (50 + gl * 18) + "%)"; [-1, 1].forEach((d) => { cx.beginPath(); cx.ellipse(x + d * h * .07, base - 2 * s, 20 * s, 8 * s, 0, 0, TAU); cx.fill(); glow(x + d * h * .208, base - h * .37, 22 * s, "rgba(255,210,120,.6)", gl); });
+  // face as lightning, eyes as lamps of fire
+  const fy = base - h * .87, fl = Math.random() < .25 ? 1 : .55;
+  glow(x, fy, 110 * s * fl, "rgba(220,235,255,.95)"); glow(x, fy, 46 * s, "#ffffff");
+  [-1, 1].forEach((d) => { glow(x + d * 14 * s, fy - 6 * s, 16 * s, "rgba(255,120,20,.95)"); cx.fillStyle = "#ffd36b"; cx.beginPath(); cx.ellipse(x + d * 14 * s, fy - 6 * s, 5 * s, 7 * s + Math.sin(t * 20 + d) * 2 * s, 0, 0, TAU); cx.fill(); });
+  if (Math.random() < .03) bolt(x, fy, x + (Math.random() - .5) * W * .6, fy - H * .4, "#e8f0ff", 2);
+  // Daniel, face down on the bank
+  cx.fillStyle = "#1a1410"; cx.beginPath(); cx.ellipse(W * .16, base + 4 * s, 46 * s, 10 * s, 0, 0, TAU); cx.fill(); cx.beginPath(); cx.arc(W * .16 + 46 * s, base, 9 * s, 0, TAU); cx.fill();
+},
+mighty(t, dt) {
+  const s = Math.min(W, H) / 800, x = W / 2, horizon = H * .78;
+  sky("#141a2a", "#05060a");
+  // sea on his right (our left), land on his left (our right)
+  cx.fillStyle = "#0b1d2c"; cx.fillRect(0, horizon, x, H - horizon); for (let i = 0; i < 12; i++) { cx.strokeStyle = "rgba(140,190,220,.15)"; cx.beginPath(); for (let px = 0; px <= x; px += 14) cx.lineTo(px, horizon + 8 + i * 12 + Math.sin(px * .03 + t * 2 + i) * 3); cx.stroke(); }
+  cx.fillStyle = "#1a140c"; cx.beginPath(); cx.moveTo(x, horizon); for (let px = x; px <= W; px += 30) cx.lineTo(px, horizon - Math.abs(Math.sin(px * .01)) * 30 * s); cx.lineTo(W, H); cx.lineTo(x, H); cx.fill();
+  // legs as pillars of fire
+  [[-1, x - 90 * s], [1, x + 90 * s]].forEach(([d, lx]) => { const top = H * .44; for (let i = 0; i < 8; i++) { const k = i / 8; glow(lx + Math.sin(t * 6 + i) * 6 * s, lerp(horizon, top, k), (46 - k * 10) * s, "rgba(255," + (100 + k * 100) + ",30,.75)"); } for (let i = 0; i < 2; i++) sparks.push({ x: lx + (Math.random() - .5) * 50 * s, y: lerp(horizon, top, Math.random()), vx: (Math.random() - .5) * 20, vy: -50 - Math.random() * 60, life: .6, t: 0, c: "#ffb04a", r: 2 }); });
+  drawSparks(dt);
+  // clothed with a cloud
+  for (let i = 0; i < 46; i++) { const k = hash(i + 11), cy = lerp(H * .14, H * .5, k), spread = (60 + k * 120) * s, a = hash(i) * TAU; glow(x + Math.cos(a) * spread * hash(i + 4) + Math.sin(t * .4 + i) * 8, cy + Math.sin(a) * 30 * s, (70 + 40 * k) * s, "rgba(225,228,240,.3)"); }
+  // the face as the sun
+  const fy = H * .1; glow(x, fy, 200 * s, "rgba(255,230,140,.6)"); glow(x, fy, 60 * s, "#fffbe6");
+  for (let i = 0; i < 24; i++) { const a = i / 24 * TAU + t * .1; cx.strokeStyle = "rgba(255,230,150,.35)"; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(x + Math.cos(a) * 70 * s, fy + Math.sin(a) * 70 * s); cx.lineTo(x + Math.cos(a) * 130 * s, fy + Math.sin(a) * 130 * s); cx.stroke(); }
+  // a rainbow upon his head
+  ["#ff4a4a", "#ffa63d", "#ffe85a", "#5ad66a", "#4aa8ff", "#7a5aff"].forEach((c, i) => { cx.strokeStyle = c; cx.globalAlpha = .45; cx.lineWidth = 7 * s; cx.beginPath(); cx.arc(x, fy + 40 * s, (190 + i * 8) * s, Math.PI * 1.08, Math.PI * 1.92); cx.stroke(); }); cx.globalAlpha = 1;
+  // the little book, open
+  const bx = x + 170 * s, by = H * .33; cx.fillStyle = "#f2e6c4"; cx.save(); cx.translate(bx, by); cx.rotate(-.2); cx.fillRect(-26 * s, -18 * s, 24 * s, 34 * s); cx.fillRect(2 * s, -18 * s, 24 * s, 34 * s); cx.restore(); glow(bx, by, 50 * s, "rgba(255,240,200,.35)");
+  // seven thunders
+  if (Math.random() < .03) for (let k = 0; k < 2; k++) bolt(Math.random() * W, 0, Math.random() * W, horizon * .7, "#e6ecff", 2);
+},
+tomb(t, dt) {
+  sky("#0f0e14", "#040406"); const s = Math.min(W, H) / 800, gy = H * .82, quake = Math.sin(t * 30) * (Math.sin(t * .7) > .85 ? 3 : 0);
+  cx.save(); cx.translate(quake, 0);
+  cx.fillStyle = "#16130f"; cx.fillRect(0, gy, W, H - gy);
+  // the rock face and the open door
+  cx.fillStyle = "#24201a"; cx.beginPath(); cx.moveTo(W * .5, gy); cx.quadraticCurveTo(W * .58, H * .2, W, H * .15); cx.lineTo(W, gy); cx.fill();
+  cx.fillStyle = "#050404"; cx.beginPath(); cx.ellipse(W * .74, gy - 70 * s, 50 * s, 70 * s, 0, Math.PI, 0); cx.fill(); cx.fillRect(W * .74 - 50 * s, gy - 70 * s, 100 * s, 70 * s);
+  // the stone, rolled back
+  const sx = W * .48, sr = 80 * s; cx.fillStyle = "#4a4338"; cx.beginPath(); cx.arc(sx, gy - sr, sr, 0, TAU); cx.fill(); cx.strokeStyle = "#2c2720"; cx.lineWidth = 3; cx.stroke();
+  // the angel sitting on it: raiment white as snow, countenance like lightning
+  const ax = sx, ay = gy - sr * 2 + 6 * s;
+  glow(ax, ay - 60 * s, 260 * s, "rgba(220,230,255,.35)");
+  figure(ax, ay + 40 * s, 210 * s, "#fbfdff", "#fff", { bare: true });
+  const fl = Math.random() < .3 ? 1 : .6; glow(ax, ay - 143 * s, 80 * s * fl, "rgba(235,242,255,.95)");
+  if (Math.random() < .02) bolt(ax, ay - 125 * s, ax + (Math.random() - .5) * W * .5, 0, "#eef3ff", 2);
+  // the keepers, as dead men
+  [W * .2, W * .3].forEach((gx, i) => { cx.fillStyle = "#2a241c"; cx.beginPath(); cx.ellipse(gx, gy + 8 * s, 50 * s, 10 * s, i ? .1 : -.1, 0, TAU); cx.fill(); cx.fillStyle = "#6a5a40"; cx.beginPath(); cx.arc(gx + (i ? -50 : 50) * s, gy + 4 * s, 9 * s, 0, TAU); cx.fill(); cx.strokeStyle = "#8a7a5a"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(gx - 30 * s, gy - 6 * s); cx.lineTo(gx + 40 * s, gy - 30 * s); cx.stroke(); });
+  cx.restore();
+  // dawn
+  const dg = cx.createLinearGradient(0, gy - 200, 0, gy); dg.addColorStop(0, "rgba(255,170,90,0)"); dg.addColorStop(1, "rgba(255,170,90,.12)"); cx.fillStyle = dg; cx.fillRect(0, gy - 200, W * .5, 200);
+},
+destroyer(t, dt) {
+  sky("#1a0606", "#050202"); const s = Math.min(W, H) / 800, gy = H * .8;
+  // Jerusalem
+  cx.fillStyle = "#0d0807"; for (let i = 0; i < 40; i++) { const bx = W * .1 + i * W * .02, bh = (20 + hash(i) * 70) * s; cx.fillRect(bx, gy - bh, W * .019, bh); } cx.fillRect(0, gy, W, H - gy);
+  cx.beginPath(); cx.arc(W * .5, gy - 80 * s, 30 * s, Math.PI, 0); cx.fill();
+  // standing between the earth and the heaven
+  const x = W * .55, y = H * .5, h = 360 * s; glow(x, y - h * .4, 300 * s, "rgba(255,80,40,.25)");
+  for (let i = 0; i < 12; i++) glow(x + (hash(i) - .5) * 300 * s, y + (hash(i + 2) - .3) * 200 * s, 120 * s, "rgba(120,20,10,.25)");
+  figure(x, y, h, "#3a0d0a", "#ffcfa0", { arms: "#e8b48a", hair: "#1a0505" });
+  glow(x, y - h * .87, 40 * s, "rgba(255,220,180,.8)");
+  // the drawn sword stretched out over the city
+  const hx = x - h * .26, hy = y - h * .5; cx.save(); cx.translate(hx, hy); cx.rotate(Math.PI + .25 + Math.sin(t * .8) * .03);
+  const g = cx.createLinearGradient(0, 0, 330 * s, 0); g.addColorStop(0, "#fff"); g.addColorStop(1, "#ff6a3a"); cx.fillStyle = g; cx.shadowColor = "#ff5a2a"; cx.shadowBlur = 30; cx.beginPath(); cx.moveTo(0, -6 * s); cx.lineTo(330 * s, 0); cx.lineTo(0, 6 * s); cx.fill(); cx.shadowBlur = 0; cx.fillStyle = "#c9a24a"; cx.fillRect(-6 * s, -22 * s, 8 * s, 44 * s); cx.restore();
+  // David and the elders face down in sackcloth
+  for (let i = 0; i < 6; i++) { cx.fillStyle = "#3a2e1e"; cx.beginPath(); cx.ellipse(W * .78 + i * 22 * s, gy + 20 * s, 16 * s, 5 * s, 0, 0, TAU); cx.fill(); }
+},
+chariots(t, dt) {
+  sky("#0b0a14", "#030306"); const s = Math.min(W, H) / 800, open = Math.min(1, Math.max(0, (t % 14) / 4 - .25));
+  stars(120);
+  // the mountain
+  cx.fillStyle = "#120f0c"; cx.beginPath(); cx.moveTo(0, H); cx.lineTo(W * .1, H * .7); cx.lineTo(W * .5, H * .3); cx.lineTo(W * .9, H * .7); cx.lineTo(W, H); cx.fill();
+  // full of horses and chariots of fire, shown as the servant's eyes open
+  for (let i = 0; i < 46; i++) {
+    const a = t * (.25 + hash(i) * .2) * (i % 2 ? 1 : -1) + hash(i + 3) * TAU, rx = W * (.18 + hash(i + 7) * .26), ry = H * (.08 + hash(i + 9) * .18);
+    const px = W * .5 + Math.cos(a) * rx, py = H * .55 + Math.sin(a) * ry, dir = Math.sign(-Math.sin(a) * (i % 2 ? 1 : -1)) || 1, sc = (10 + hash(i) * 8) * s;
+    cx.globalAlpha = open * (.5 + .5 * hash(i + 2)); glow(px, py, sc * 4, "rgba(255,120,30,.6)");
+    cx.fillStyle = "#ffcf6a"; cx.beginPath(); cx.ellipse(px + dir * sc * 1.4, py - sc * .2, sc * 1.1, sc * .5, 0, 0, TAU); cx.fill(); cx.beginPath(); cx.ellipse(px + dir * sc * 2.4, py - sc * .8, sc * .45, sc * .3, dir * -.6, 0, TAU); cx.fill();
+    cx.strokeStyle = "#ffe8a8"; cx.lineWidth = 2; cx.beginPath(); cx.arc(px - dir * sc * .6, py + sc * .2, sc * .6, 0, TAU); cx.stroke();
+    if (Math.random() < .3) sparks.push({ x: px, y: py, vx: -dir * 40, vy: -20 - Math.random() * 30, life: .5, t: 0, c: "#ff8a2a", r: 2 });
+  }
+  cx.globalAlpha = 1; drawSparks(dt);
+  // Elisha and the young man
+  [W * .48, W * .52].forEach((ex, i) => figure(ex, H * .93, 44 * s, i ? "#2a2218" : "#3a2e20", "#c9a07a"));
+  cx.fillStyle = "rgba(255,240,200," + (1 - open) * .7 + ")"; cx.font = "600 " + Math.round(14 * s + 6) + "px Cinzel"; cx.textAlign = "center"; cx.fillText("LORD, I PRAY THEE, OPEN HIS EYES", W / 2, H * .15);
+},
+host(t, dt) {
+  sky("#020410", "#06080c"); const s = Math.min(W, H) / 800, k = Math.min(1, Math.max(0, ((t % 16) - 3) / 4));
+  stars(160, 1 - k * .6);
+  // the fields and the shepherds
+  cx.fillStyle = "#07090a"; cx.beginPath(); cx.moveTo(0, H * .85); cx.quadraticCurveTo(W * .5, H * .78, W, H * .86); cx.lineTo(W, H); cx.lineTo(0, H); cx.fill();
+  [.3, .36, .62].forEach((fx, i) => figure(W * fx, H * .88, 40 * s, "#1c1a14", "#8a6a4a"));
+  for (let i = 0; i < 9; i++) { cx.fillStyle = "#cfc8b4"; cx.beginPath(); cx.ellipse(W * (.4 + hash(i) * .2), H * (.9 + hash(i + 2) * .04), 9 * s, 6 * s, 0, 0, TAU); cx.fill(); }
+  // the angel, and the glory shining round about
+  // suddenly, a multitude
+  for (let i = 0; i < 600; i++) { const px = hash(i * 1.3) * W, py = hash(i * 2.1) * H * .7, tw = .6 + .4 * Math.sin(t * 3 + i); if (Math.abs(px - W / 2) < 90 * s && py > H * .2) continue; cx.globalAlpha = k * tw * (.5 + hash(i) * .5); glow(px, py, (6 + hash(i + 9) * 10) * s, "rgba(255,245,210,.9)"); }
+  cx.globalAlpha = 1;
+  glow(W / 2, H * .4, 360 * s, "rgba(255,240,190,.35)"); figure(W / 2, H * .6, 220 * s, "rgba(255,252,240,.97)", "#fff6e6", { bare: true }); glow(W / 2, H * .6 - 192 * s, 60 * s, "rgba(255,255,255,.9)");
+  if (k > .5) cry(["GLORY TO GOD IN THE HIGHEST,", "AND ON EARTH PEACE,", "GOOD WILL TOWARD MEN"], W / 2, H * .1, Math.round(16 * s + 8), t, "#fff6d8");
+},
+strangers(t, dt) {
+  sky("#d9a65a", "#f3dcaa"); const s = Math.min(W, H) / 800, gy = H * .78;
+  // the heat of the day at Mamre
+  glow(W * .8, H * .15, 200 * s, "rgba(255,255,230,.9)");
+  cx.fillStyle = "#a8834a"; cx.fillRect(0, gy, W, H - gy);
+  for (let i = 0; i < 4; i++) { const tx = W * (.08 + i * .07); cx.fillStyle = "#3a3018"; cx.fillRect(tx, gy - 140 * s, 12 * s, 140 * s); cx.fillStyle = "#4a5a28"; cx.beginPath(); cx.ellipse(tx + 6 * s, gy - 160 * s, 60 * s, 46 * s, 0, 0, TAU); cx.fill(); }
+  // the tent door, Abraham sitting in it
+  cx.fillStyle = "#5a3a22"; cx.beginPath(); cx.moveTo(W * .3, gy); cx.lineTo(W * .4, gy - 130 * s); cx.lineTo(W * .52, gy); cx.fill(); cx.fillStyle = "#1a1008"; cx.beginPath(); cx.moveTo(W * .38, gy); cx.lineTo(W * .41, gy - 70 * s); cx.lineTo(W * .45, gy); cx.fill();
+  figure(W * .41, gy, 60 * s, "#e8dcc0", "#a8724a");
+  // three men stood by him; only a shimmer gives anything away
+  [.66, .72, .78].forEach((fx, i) => { const x = W * fx + Math.sin(t * .4 + i) * 2, sh = .5 + .5 * Math.sin(t * 2 + i * 2); cx.globalAlpha = .12 * sh; glow(x, gy - 60 * s, 70 * s, "#fff"); cx.globalAlpha = 1; figure(x, gy, 120 * s, ["#7a6a52", "#8a7a5e", "#6a5a44"][i], "#9a6a44"); });
+  // heat haze
+  for (let i = 0; i < 6; i++) { cx.strokeStyle = "rgba(255,255,255,.08)"; cx.beginPath(); for (let px = 0; px <= W; px += 16) cx.lineTo(px, gy - 10 - i * 8 + Math.sin(px * .05 + t * 3 + i) * 2); cx.stroke(); }
+},
+covering(t, dt) {
+  sky("#0a0608", "#030203"); const x = W / 2, y = H * .5, s = Math.min(W, H) / 800, cyc = (t % 18) / 18, fall = Math.max(0, (cyc - .62) / .38);
+  // stones of fire underfoot
+  for (let i = 0; i < 14; i++) { const sx = W * (i + .5) / 14, sy = H * .86 + Math.sin(i) * 8; glow(sx, sy, 34 * s, "rgba(255,90,30,.8)"); cx.fillStyle = "#ffd27a"; cx.beginPath(); cx.arc(sx, sy, 7 * s, 0, TAU); cx.fill(); }
+  cx.save(); cx.translate(x, y + fall * fall * H * .7); cx.rotate(fall * .5); cx.globalAlpha = 1 - fall * .7;
+  // covering wings
+  wing(-30 * s, -60 * s, -2.5, 280 * s, .8, 12, ["#ffeab0", "#c9962e", "rgba(60,30,0,0)"], t, {});
+  wing(30 * s, -60 * s, -.64, 280 * s, .8, 12, ["#ffeab0", "#c9962e", "rgba(60,30,0,0)"], t, {});
+  // every precious stone was thy covering
+  const STONES = ["#b5172e", "#f2c12e", "#eef6ff", "#d9d26a", "#1a1a1a", "#c0533a", "#1f4fbf", "#1f9a52", "#7a0f1c"];
+  for (let i = 0; i < 120; i++) { const a = hash(i) * TAU, r = Math.sqrt(hash(i + 3)) * 1, px = Math.cos(a) * r * 60 * s, py = Math.sin(a) * r * 150 * s + 20 * s, c = STONES[i % 9], tw = .6 + .4 * Math.sin(t * 4 + i);
+    cx.fillStyle = c; cx.beginPath(); cx.moveTo(px, py - 9 * s); cx.lineTo(px + 7 * s, py); cx.lineTo(px, py + 9 * s); cx.lineTo(px - 7 * s, py); cx.fill(); cx.globalAlpha = (1 - fall * .7) * tw * .6; cx.fillStyle = "#fff"; cx.fillRect(px - 1, py - 4 * s, 2, 2); cx.globalAlpha = 1 - fall * .7; }
+  cx.strokeStyle = "#e9c46a"; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 20 * s, 64 * s, 156 * s, 0, 0, TAU); cx.stroke();
+  // iniquity found: cracks spreading
+  if (cyc > .45) { const k = Math.min(1, (cyc - .45) / .2); cx.strokeStyle = "#000"; cx.lineWidth = 3; for (let i = 0; i < 6; i++) { cx.beginPath(); let px = 0, py = -100 * s + i * 40 * s; cx.moveTo(px, py); for (let j = 0; j < 5 * k; j++) { px += (hash(i * 9 + j) - .5) * 50 * s; py += 20 * s; cx.lineTo(px, py); } cx.stroke(); } }
+  cx.restore(); cx.globalAlpha = 1;
+  if (cyc < .45) glow(x, y - 160 * s, 60 * s, "rgba(255,240,200,.8)");
+},
+};
+
+/* ── UI ── */
+const nav = document.getElementById("nav"), art = document.getElementById("art");
+let lastGroup = "";
+E.forEach((e, i) => {
+  if (e.group !== lastGroup) { const h = document.createElement("h3"); h.textContent = e.group.toUpperCase(); nav.appendChild(h); lastGroup = e.group; }
+  const b = document.createElement("button"); b.innerHTML = e.name + "<small>" + e.tag + "</small>"; b.onclick = () => go(i); b.dataset.i = i; nav.appendChild(b);
+});
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+function go(i) {
+  cur = (i + E.length) % E.length; const e = E[cur]; sparks = []; t0 = performance.now();
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", +b.dataset.i === cur));
+  document.getElementById("t-name").textContent = e.name.toUpperCase(); document.getElementById("t-term").textContent = e.term; document.getElementById("t-tag").textContent = e.tag;
+  art.innerHTML = "<h4>WHAT SCRIPTURE SAYS</h4>" + e.refs.map(([r, q]) => "<blockquote>" + esc(q) + "<cite>" + r + " · KJV</cite></blockquote>").join("") +
+    "<h4>WHAT YOU ARE LOOKING AT</h4><ul class='map'>" + e.map.map(([d, r]) => "<li>" + esc(d) + "<span>" + r + "</span></li>").join("") + "</ul>" +
+    (e.not ? "<h4>WORTH KNOWING</h4><div class='note'>" + esc(e.not) + "</div>" : "") +
+    (e.trad ? "<h4>LATER TRADITION, NOT SCRIPTURE</h4><p class='trad'>" + esc(e.trad) + "</p>" : "");
+  history.replaceState(null, "", "#" + e.id);
+}
+document.getElementById("b-prev").onclick = () => go(cur - 1); document.getElementById("b-next").onclick = () => go(cur + 1);
+addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(cur + 1); if (e.key === "ArrowLeft") go(cur - 1); });
+resize(); go(Math.max(0, E.findIndex((e) => "#" + e.id === location.hash)));
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; T = Math.max(0, (now - t0) / 1000);
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.clearRect(0, 0, W, H);
+  try { R[E[cur].id](T, dt); } catch (err) { console.error(err); }
+  // a soft vignette over everything
+  const vg = cx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.55)"); cx.fillStyle = vg; cx.fillRect(0, 0, W, H);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__angels = { go, n: E.length };
+})();
+</script>
+</body></html>
