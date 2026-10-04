@@ -166,7 +166,7 @@ const fx = (a, b) => a + Math.random() * (b - a); // cosmetic randomness never t
 const todayKey = () => { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
 
 /* ── tuning ── */
-const WORLD_H = 820, FLOOR = 760, R = 11, GRAV = 1900, MIN_L = 70, REACH = 660;
+const WORLD_H = 960, FLOOR = 880, POOL = 120, R = 11, GRAV = 1900, MIN_L = 70, REACH = 660;
 const CRUISE = 1000, MAXV = 1800;           // above cruise speed, air drag bites; nothing ever compounds forever
 const GAP_MIN = 210, GAP_MAX = 300;          // anchors are always this far apart, always within reach of the last
 const Y_MIN = 120, Y_MAX = 330, Y_STEP = 110;
@@ -229,11 +229,13 @@ const save = () => { try { localStorage.setItem(SAVE, JSON.stringify(prog)); } c
 /* ── canvas ── */
 const cv = $("cv"), cx = cv.getContext("2d");
 let W = 1, H = 1, DPR = 1, S = 1;
-function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.min(H / (FLOOR + 22), W / (H > W ? 900 : 1150)); }
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.max(Math.min(H / 640, W / (H > W ? 460 : 560)), Math.min(H / (FLOOR + POOL + 40), W / 1400)); }
 addEventListener("resize", resize); resize();
 let zoomK = 1;
 const zoom = () => S * (coop ? .82 : 1) * zoomK;
-const oy = () => H - (FLOOR + 22) * zoom(); // just a band of lava at the bottom, no black below it // world top on screen
+// the camera follows the ball up and down too, but never shows past the bottom of the lava pool
+const camYFor = (y) => { const vh = H / zoom(); const hi = FLOOR + POOL - vh; return hi < -120 ? hi : clamp(y - vh * .5, -120, hi); };
+const oy = () => -cam.y * zoom(); // world top on screen
 
 /* ── audio ── */
 let AC = null, master, filt, dly, musG, sfxG, bus = "s", step = 0, nextT = 0;
@@ -322,7 +324,7 @@ let players = [], anchors = [], gates = [], saws = [], shards = [], parts = [], 
 let genX = 0, genY = 0, maxX = 0, style = 0, got = 0, t = 0, slow = 0, shake = 0, biomeI = 0, flash = 0, lastMile = 0, revives = 0, topSpeed = 0, deathMsg = "";
 let ghostRec = [], ghostPlay = null;
 let rings = [], pads = [], pups = [], drones = [], x2T = 0, run = {}, doneNow = [], endTimer = 0;
-const cam = { x: 0 };
+const cam = { x: 0, y: 0 };
 const vib = (ms) => { if (!prog.set.haptics) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 
 function mkPlayer(id, anchor, ang, L) {
@@ -355,6 +357,7 @@ function newRun(m, isCoop) {
     if (it.head > 0 && !trial && m !== "daily") { it.head--; const a = anchors.find((x) => x.x >= 2700) || anchors[anchors.length - 1]; Object.assign(p, { hook: a, L: 200, x: a.x - 120, y: a.y + 160, startRope: false }); maxX = a.x - 120; cam.x = a.x - 120 - (W / zoom()) * .3; headX = a.x; generate(a.x + 2600); const safe = (q) => q.x < a.x - 600 || q.x > a.x + 1500; gates = gates.filter(safe); saws = saws.filter(safe); drones = drones.filter(safe); spouts = spouts.filter(safe); bumpers = bumpers.filter(safe); p.inv = 2.5; pop("HEAD START", a.x, a.y - 40, "#ffe066", 1.6, 1.2); }
     save();
   }
+  { const p0 = players[0]; cam.x = p0.x - (W / zoom()) * .5; cam.y = camYFor(p0.y); }
   state = "play"; prog.runs++;
   show(null); $("hud").classList.remove("hidden"); $("b-pause").classList.remove("hidden");
   $("hint").textContent = (moon ? "LOW GRAVITY · " : sprint ? "60s SPRINT · " : rush ? "SHARD RUSH · 60s · " : gaunt ? "POWER GAUNTLET · " : race ? "RACE TO " + prog.set.raceLen + "m · " : trial ? "TIME TRIAL · " + TRIAL_M + "m · " : "") + (coop ? (matchMedia("(pointer:coarse)").matches ? "P1 LEFT HALF · P2 RIGHT HALF · TAP TO START" : "P1: MOUSE / ↑   ·   P2: SPACE   ·   PRESS TO START") : "TAP TO START · HOLD TO STAY ON · LET GO TO FLY");
@@ -375,7 +378,7 @@ function generate(upTo) {
     genY = clamp(prevY + rnd(-Y_STEP, Y_STEP), clamp(Y_MIN + elev, 70, 220), clamp(Y_MAX + elev, 240, 390));
     const prevA = anchors[anchors.length - 1];
     anchors.push({ x: genX, y: genY, id: anchors.length, crumble: d > 1.2 && !(prevA && prevA.crumble) && rng() < .14, breakT: 0, dead: false });
-    const lowY = FLOOR - 110; // ropes self-shorten to stay off the lava, so swings bottom out just above it
+    const lowY = 650; // ropes self-shorten to stay off the lava, so swings bottom out just above it
     if (rng() < (rush ? .95 : .55)) { const n = rush ? 5 + (rng() * 4 | 0) : 3 + (rng() * 3 | 0); for (let i = 0; i < n; i++) { const k = (i + 1) / (n + 1); shards.push({ x: prevX + gap * k, y: lowY - 20 - Math.sin(k * Math.PI) * 110, got: false, p: rng() * TAU }); } }
     // boost rings sit on the arc you fly after a good release
     if (!zen && !trial && !race && d0 > .5 && genX > nextFlip && rng() < .05) { const fx0 = prevX + gap * .5; rings.push({ x: fx0, y: lowY - rnd(30, 100), r: 46, hit: {}, flip: 1 }, { x: fx0 + 1000, y: lowY - rnd(30, 100), r: 46, hit: {}, flip: -1 }); nextFlip = fx0 + 3500; }
@@ -640,8 +643,9 @@ function update(dtReal) {
     const z1 = zoom(), px = W * .62; cam.x += px / z0 - px / z1;
   }
   if (lead) {
-    const viewW = W / zoom(), want = coop ? lead.x - viewW * .58 : lead.x - viewW * .2 + clamp(lead.vx, 0, 1300) * .12;
+    const viewW = W / zoom(), want = coop ? lead.x - viewW * .55 : lead.x - viewW * .5 + clamp(lead.vx, 0, 1300) * .06;
     cam.x = lerp(cam.x, want, 1 - Math.exp(-(coop ? 3.5 : 6) * dtReal));
+    const ys = alive(), cy = coop && ys.length > 1 ? (ys[0].y + ys[1].y) / 2 : lead.y; cam.y = lerp(cam.y, camYFor(cy), 1 - Math.exp(-4 * dtReal));
   }
   hud();
 }
@@ -853,7 +857,7 @@ function draw(now) {
   }
   const bestM = coop || zen || hard || trial ? 0 : mode === "daily" ? 0 : prog.best;
   if (bestM > 20) { const x = bestM * 10 + 220; if (x > x0 && x < x1) { cx.fillStyle = "#ffe066"; cx.fillRect(x - 1.5, 60, 3, FLOOR - 60); cx.beginPath(); cx.moveTo(x, 60); cx.lineTo(x + 34, 72); cx.lineTo(x, 84); cx.fill(); cx.fillText("BEST " + bestM + "m", x, 52); } }
-  const lg = cx.createLinearGradient(0, FLOOR - 30, 0, WORLD_H); lg.addColorStop(0, "rgba(0,0,0,0)"); lg.addColorStop(.3, bm.lava); lg.addColorStop(1, "#000");
+  const lg = cx.createLinearGradient(0, FLOOR - 8, 0, FLOOR + POOL + 30); lg.addColorStop(0, bm.lava); lg.addColorStop(.25, bm.lava); lg.addColorStop(.7, "#3a0a06"); lg.addColorStop(1, "#120302");
   cx.fillStyle = lg; cx.beginPath(); cx.moveTo(x0, WORLD_H + 400);
   for (let x = x0; x <= x1; x += 30) cx.lineTo(x, FLOOR + Math.sin(x * .02 + clock * 3) * 6 + Math.sin(x * .053 - clock * 2) * 4);
   cx.lineTo(x1, WORLD_H + 400); cx.fill();
