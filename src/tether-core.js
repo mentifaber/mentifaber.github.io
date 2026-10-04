@@ -1029,7 +1029,7 @@ function olList(players) {
   OL("ol-list").innerHTML = others.length ? others.map((p) => '<div class="ol-row"><b></b><i>' + (p.status === "idle" ? "IN LOBBY" : "RACING") + '</i><button data-to="' + p.id + '"' + (p.status !== "idle" || olPending ? " disabled" : "") + ">" + (olPending === p.id ? "SENT…" : "CHALLENGE") + "</button></div>").join("") : '<div class="stat">Nobody else here yet. Share the link and wait, or come back soon.</div>';
   [...OL("ol-list").querySelectorAll(".ol-row b")].forEach((el, i) => (el.textContent = others[i].name));
 }
-let olPlayers = [];
+let olPlayers = [], olWaiting = false;
 const OLM = { dash: ["DASH", 1000, "First to 1000m wins."], race: ["RACE", 2500, "First to 2500m wins."], marathon: ["MARATHON", 5000, "First to 5000m wins. Pace yourself."], moon: ["LOW-G", 2500, "Half gravity. First to 2500m wins."], hard: ["HARDCORE", 2500, "Hardcore hazards, crashes cost 4s. First to 2500m wins."] };
 let olMode = prog.olMode && OLM[prog.olMode] ? prog.olMode : "race", olLen = 2500;
 function olModes() { OL("ol-modes").innerHTML = Object.entries(OLM).map(([k, v]) => '<button data-k="' + k + '" class="' + (k === olMode ? "on" : "") + '">' + v[0] + "</button>").join(""); }
@@ -1048,11 +1048,13 @@ function olMsg(m) {
   else if (m.t === "withdrawn") OL("ol-inv").classList.add("hidden");
   else if (m.t === "pending") { olPending = m.to; OL("ol-msg").textContent = "Challenge sent to " + m.name + ". Waiting…"; olList(olPlayers); }
   else if (m.t === "declined" || m.t === "busy" || m.t === "gone") { olPending = null; OL("ol-msg").textContent = m.t === "declined" ? m.by + " said not right now." : "They're busy."; olList(olPlayers); }
-  else if (m.t === "match") { olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; olMode = OLM[m.mode] ? m.mode : "race"; olLen = m.len || OLM[olMode][1]; OL("ol-rule").textContent = OLM[olMode][0] + " · " + OLM[olMode][2]; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
+  else if (m.t === "match") { olWaiting = false; olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; olMode = OLM[m.mode] ? m.mode : "race"; olLen = m.len || OLM[olMode][1]; OL("ol-rule").textContent = OLM[olMode][0] + " · " + OLM[olMode][2]; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
   else if (m.t === "opppick") { oppLook = { color: /^#[0-9a-f]{3,8}$/i.test(m.color) ? m.color : "#ff9a3d", trail: m.trail }; OL("ol-oppick").innerHTML = '<span style="color:' + oppLook.color + '">●</span> ' + (oppInfo ? oppInfo.name : "") + " picked their look."; }
   else if (m.t === "oppready") OL("ol-oppick").textContent = (oppInfo ? oppInfo.name : "They") + " is READY.";
   else if (m.t === "start") { OL("ol-cd").classList.remove("hidden"); let n = 3; const tick = () => { if (n > 0) { OL("ol-cd").textContent = n--; sfx("latch", 6); setTimeout(tick, 900); } else { OL("ol-cd").textContent = "GO"; newRun("online"); started = true; $("hint").textContent = "GO! LET GO TO SWING OFF"; } }; setTimeout(tick, Math.max(0, m.in - 2700)); }
   else if (m.t === "opp") { if (!remote) remote = { x: m.x, y: m.y, tx: m.x, ty: m.y, trail: [] }; remote.tx = m.x; remote.ty = m.y; remote.hx = m.hx; remote.hy = m.hy; remote.a = m.a; }
+  else if (m.t === "wait") { olWaiting = true; clearTimeout(endTimer); pop("WAITING FOR " + (m.who || "THEM").toUpperCase() + "…", players[0].x, players[0].y - 60, "#ffe066", 1.6, 4); }
+  else if (m.t === "result" && olWaiting) { olWaiting = false; netResult = m; clearTimeout(endTimer); endTimer = setTimeout(endRun, 700); }
   else if (m.t === "result") { netResult = m; if (online && state === "play") { state = "dying"; clearTimeout(endTimer); endTimer = setTimeout(endRun, m.win ? 300 : 900); if (!m.win) pop((m.by || "THEY") + " WON", players[0].x, players[0].y - 60, "#ff4f6a", 1.6, 1.4); } }
 }
 $("b-online").onclick = openOnline;
@@ -1097,13 +1099,16 @@ const AG = {
   start(m, sd) { forceSeed = sd | 0; newRun(m); forceSeed = 0; return AG.obs(); },
   // hold = true keeps the rope on (or grabs the next anchor); false lets go. Advances `secs` of game time at 60 fps.
   step(hold, secs) {
-    const n = Math.max(1, Math.min(180, Math.round((+secs || .25) * 60))), p = players[0]; let k = 0;
+    const n = Math.max(1, Math.min(180, Math.round((+secs || .25) * 60))), p = players[0]; let k = 0; AG.samples = [];
     for (; k < n && state === "play"; k++) {
+      if (k % 4 === 0) AG.samples.push({ x: Math.round(p.x), y: Math.round(p.y), hx: p.hook ? Math.round(p.hook.x) : null, hy: p.hook ? Math.round(p.hook.y) : null, a: p.alive });
       if (hold && !p.holding) press(0); else if (!hold && p.holding) release(0);
       update(1 / 60); if (window.__adv) window.__adv(1000 / 60);
     }
     return k;
   },
+  startOnline(sd, om, len) { onlineSeed = sd; olMode = om; olLen = len; newRun("online"); return AG.obs(); },
+  samples: [],
   over: () => state !== "play",
   obs() {
     const p = players[0]; if (!p) return null;
