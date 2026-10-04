@@ -1038,6 +1038,10 @@ function olList(players) {
   [...OL("ol-list").querySelectorAll(".ol-row b")].forEach((el, i) => (el.textContent = others[i].name));
 }
 let olPlayers = [], olWaiting = false;
+function waitBanner() {
+  const d = remote ? Math.round(Math.max(0, remote.x - 220) / 10) : 0;
+  $("hint").textContent = "YOU FINISHED · WAITING FOR " + (oppInfo ? oppInfo.name.toUpperCase() : "THEM") + " · " + d + "m / " + olLen + "m";
+}
 async function ghostList() {
   try {
     const j = await (await fetch("/api/tether/ghosts", { cache: "no-store" })).json();
@@ -1078,8 +1082,8 @@ function olMsg(m) {
   else if (m.t === "oppready") OL("ol-oppick").textContent = (oppInfo ? oppInfo.name : "They") + " is READY.";
   else if (m.t === "start") { if (oppInfo && /^\u{1F916}/u.test(oppInfo.name) && m.in > 5000) OL("ol-oppick").textContent = oppInfo.name + " is getting ready. The race starts in " + Math.round(m.in / 1000) + " seconds."; OL("ol-cd").classList.remove("hidden"); let n = 3; const tick = () => { if (n > 0) { OL("ol-cd").textContent = n--; sfx("latch", 6); setTimeout(tick, 900); } else { OL("ol-cd").textContent = "GO"; newRun("online"); started = true; $("hint").textContent = "GO! LET GO TO SWING OFF"; } }; setTimeout(tick, Math.max(0, m.in - 2700)); }
   else if (m.t === "opp") { if (!remote) remote = { x: m.x, y: m.y, tx: m.x, ty: m.y, trail: [] }; remote.tx = m.x; remote.ty = m.y; remote.hx = m.hx; remote.hy = m.hy; remote.a = m.a; }
-  else if (m.t === "wait") { olWaiting = true; clearTimeout(endTimer); pop("WAITING FOR " + (m.who || "THEM").toUpperCase() + "…", players[0].x, players[0].y - 60, "#ffe066", 1.6, 4); }
-  else if (m.t === "result" && olWaiting) { olWaiting = false; netResult = m; clearTimeout(endTimer); endTimer = setTimeout(endRun, 700); }
+  else if (m.t === "wait") { olWaiting = true; clearTimeout(endTimer); $("b-stopwait").classList.remove("hidden"); $("hint").classList.remove("hidden"); waitBanner(); }
+  else if (m.t === "result" && olWaiting) { olWaiting = false; $("b-stopwait").classList.add("hidden"); netResult = m; clearTimeout(endTimer); endTimer = setTimeout(endRun, 700); }
   else if (m.t === "result") { netResult = m; if (online && state === "play") { state = "dying"; clearTimeout(endTimer); endTimer = setTimeout(endRun, m.win ? 300 : 900); if (!m.win) pop((m.by || "THEY") + " WON", players[0].x, players[0].y - 60, "#ff4f6a", 1.6, 1.4); } }
 }
 $("b-online").onclick = openOnline;
@@ -1089,6 +1093,7 @@ OL("ol-inv").onclick = (e) => { const a = e.target.closest("[data-acc]"), d = e.
 OL("ol-skins").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { prog.skin = b.dataset.s; save(); olPickUI(); } };
 OL("ol-trails").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { prog.trail = b.dataset.t; save(); olPickUI(); } };
 OL("ol-ready").onclick = () => { netSend({ t: "ready" }); OL("ol-ready").disabled = true; OL("ol-ready").textContent = "WAITING FOR " + (oppInfo ? oppInfo.name.toUpperCase() : "THEM") + "…"; };
+$("b-stopwait").onclick = (e) => { e.stopPropagation(); olWaiting = false; $("b-stopwait").classList.add("hidden"); $("hint").classList.add("hidden"); clearTimeout(endTimer); netSend({ t: "leave" }); openOnline(); };
 $("b-olback").onclick = () => { if (net) { netSend({ t: "leave" }); net.onclose = null; net.close(); net = null; } olPending = null; title(); };
 function pause() { if (online) return; if (state === "play") { state = "paused"; show("s-pause"); } }
 $("b-play").onclick = () => newRun("classic");
@@ -1113,7 +1118,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(.033, (now - last) / 1000); last = now;
   if (state === "play") { update(dt); music(); }
-  else if (state === "dying") { for (const q of parts) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 600 * dt; } shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt); }
+  else if (state === "dying") { for (const q of parts) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 600 * dt; } shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt); if (remote) { const k = 1 - Math.exp(-14 * dt); remote.x += (remote.tx - remote.x) * k; remote.y += (remote.ty - remote.y) * k; } if (olWaiting) waitBanner(); }
   draw(now);
   requestAnimationFrame(frame);
 }

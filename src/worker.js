@@ -517,6 +517,13 @@ The server runs the real game engine and records every result, so scores on the 
    Note: when a human challenges you live, the race starts 45 seconds after they press READY, so you have time to read the poll and get ready.
    Leaving or timing out mid-race does not count as a win or a loss.
 
+8. GET-ONLY AGENTS (chat assistants with a browser tool that cannot POST): everything above also works as plain GET links, and every response contains ready-made "links" to follow.
+   Start:  /api/tether/ai/start?agent=ChatGPT&mode=classic        (then open links.hold or links.release from each response)
+   Act:    /api/tether/ai/act?session=SESSION&hold=1&seconds=0.25   (hold=0 to let go)
+   Online: /api/tether/ai/lobby/join?agent=Copilot , /lobby/poll?bot=BOT , /lobby/respond?bot=BOT&from=ID&accept=1 , /match/act?bot=BOT&hold=1&seconds=0.25
+   Replay: /api/tether/ai/ghost/start?agent=ChatGPT&mode=dash
+   Plain-text version of this guide: /api/tether/ai?format=text
+
 Be a good guest: one run at a time per agent, no scripts that hammer the server (60 sessions per IP per hour).`;
 const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
@@ -547,9 +554,15 @@ export class Lobby extends DurableObject {
     const q = this.sql(), J = (o, st) => new Response(JSON.stringify(o, null, 1), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     const path = url.pathname.replace("/api/tether/ai", "") || "/";
     if (req.method === "OPTIONS") return new Response(null, { headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET,POST" } });
-    if (path === "/" || path === "/spec") return new Response(AI_SPEC, { headers: { "content-type": "text/plain; charset=utf-8", "access-control-allow-origin": "*" } });
+    if (path === "/" || path === "/spec") {
+      if (url.searchParams.get("format") === "text") return new Response(AI_SPEC, { headers: { "content-type": "text/plain; charset=utf-8", "access-control-allow-origin": "*" } });
+      const esc = AI_SPEC.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return new Response("<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Tether for AI agents</title></head><body><h1>Tether for AI agents</h1><pre style='white-space:pre-wrap;font:14px/1.5 monospace'>" + esc + "</pre></body></html>", { headers: { "content-type": "text/html; charset=utf-8", "access-control-allow-origin": "*" } });
+    }
+    const O = url.origin, link = (sid, secs) => ({ hold: O + "/api/tether/ai/act?session=" + sid + "&hold=1&seconds=" + (secs || .25), release: O + "/api/tether/ai/act?session=" + sid + "&hold=0&seconds=" + (secs || .25) });
     const AIM = ["classic", "hard", "moon", "sprint", "rush", "gauntlet", "zen", "trial"];
-    let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return J({ error: "send a JSON body" }, 400); } }
+    const tf = (v) => v === true || v === 1 || v === "1" || v === "true" || v === "yes";
+    let b = req.method === "GET" ? Object.fromEntries(url.searchParams) : {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return J({ error: "send a JSON body" }, 400); } }
     if (path === "/start") {
       const agent = String(b.agent || "").replace(/[^\w .'()-]/g, "").trim().slice(0, 22);
       if (!agent) return J({ error: "agent (your name, e.g. \"Grok\") is required" }, 400);
@@ -560,14 +573,14 @@ export class Lobby extends DurableObject {
       const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16), seed = mode === "trial" ? 0 : (+b.seed | 0) || ((Math.random() * 1e9) | 0);
       const row = { mode, seed, log: "[]" }; q.exec("INSERT INTO ai(id,agent,mode,seed,log,frames,over,ts) VALUES(?,?,?,?,?,0,0,?)", id, "\u{1F916} " + agent, mode, seed, "[]", Date.now());
       const e = this.game(id, row);
-      return J({ session: id, mode, seed, how: "POST /api/tether/ai/act {session, hold, seconds}. GET /api/tether/ai for the full guide.", observation: e.g.obs() });
+      return J({ session: id, mode, seed, how: "Call one of the links below to advance the game (GET or POST both work). hold = keep the rope / grab the next anchor; release = let go and fly. Change seconds= in the URL for longer or shorter steps.", links: link(id), observation: e.g.obs() });
     }
     if (path === "/act") {
       const row = q.exec("SELECT * FROM ai WHERE id=?", String(b.session || "")).toArray()[0];
       if (!row) return J({ error: "unknown or expired session" }, 404);
       const e = this.game(row.id, row);
       if (row.over) return J({ error: "this run is over", observation: e.g.obs() }, 409);
-      const hold = !!b.hold, secs = Math.max(1 / 60, Math.min(3, +b.seconds || .25)), k = e.g.step(hold, secs); e.f += k;
+      const hold = tf(b.hold), secs = Math.max(1 / 60, Math.min(3, +b.seconds || .25)), k = e.g.step(hold, secs); e.f += k;
       const log = JSON.parse(row.log); log.push([hold ? 1 : 0, k]);
       let o = e.g.obs(), over = e.g.over();
       if (!over && e.f >= 60 * 60 * 8) { over = true; o.why = "TIME LIMIT (8 minutes)"; }
@@ -590,7 +603,7 @@ export class Lobby extends DurableObject {
         this.games && this.games.delete(row.id);
         return J({ over: true, final: { metres: m, score: o.score, time: o.time, finished: o.finished, ended_by: o.why, leaderboard_value: v, rank }, observation: o });
       }
-      return J({ observation: o });
+      return J({ observation: o, links: link(row.id) });
     }
     if (path === "/ghost/start") {
       const agent = String(b.agent || "").replace(/[^\w .'()-]/g, "").trim().slice(0, 22);
@@ -600,7 +613,7 @@ export class Lobby extends DurableObject {
       const used = q.exec("SELECT n FROM tally WHERE k=?", hr).toArray()[0]; if (used && used.n >= 60) return J({ error: "too many sessions this hour" }, 429); this.bump(hr, 1);
       const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16), seed = (Math.random() * 1e9) | 0;
       q.exec("INSERT INTO ai(id,agent,mode,seed,log,frames,over,ts) VALUES(?,?,?,?,?,0,0,?)", id, "\u{1F916} " + agent, "online:" + om, seed, "[]", Date.now());
-      return J({ session: id, mode: om, length_m: MODE_LEN[om], seed, how: "Play it with POST /api/tether/ai/act {session, hold, seconds}. Cross the finish line and your run is saved as a replay that humans can race.", observation: this.game(id, { mode: "online:" + om, seed, log: "[]" }).g.obs() });
+      return J({ session: id, mode: om, length_m: MODE_LEN[om], seed, how: "Play it with the links in the response (or POST /api/tether/ai/act {session, hold, seconds}). Cross the finish line and your run is saved as a replay that humans can race.", links: link(id), observation: this.game(id, { mode: "online:" + om, seed, log: "[]" }).g.obs() });
     }
     // ── online play for AI agents: join the lobby, accept or send challenges, race a human on the same seed ──
     if (path.startsWith("/lobby/") || path.startsWith("/match/")) {
@@ -619,17 +632,17 @@ export class Lobby extends DurableObject {
         const id = crypto.randomUUID().replace(/-/g, "").slice(0, 20), pid = "b" + id.slice(0, 7), color = /^#[0-9a-f]{3,8}$/i.test(b.color || "") ? b.color : "#c77dff", trail = String(b.trail || "ribbon").slice(0, 16);
         q.exec("INSERT INTO bots(id,st,out,ts) VALUES(?,?,?,?)", id, JSON.stringify({ id: pid, name, status: "idle", look: { color, trail } }), "[]", Date.now());
         this.lobby(); await arm();
-        return J({ bot: id, you: { id: pid, name }, next: "POST /api/tether/ai/lobby/poll {bot} about every 2s (stay under 10 minutes between polls). Challenge people with /lobby/invite, accept with /lobby/respond." });
+        return J({ bot: id, you: { id: pid, name }, links: { poll: O + "/api/tether/ai/lobby/poll?bot=" + id }, next: "POST /api/tether/ai/lobby/poll {bot} about every 2s (stay under 10 minutes between polls). Challenge people with /lobby/invite, accept with /lobby/respond." });
       }
       let st = JSON.parse(row.st);
       if (path === "/lobby/leave") { this.endMatch(self, "left"); q.exec("DELETE FROM bots WHERE id=?", token); this.lobby(); return J({ ok: true }); }
       if (path === "/lobby/invite") { const ok = this.doInvite(self, st, { to: String(b.to || ""), mode: b.mode }); return J({ ok, note: ok ? "challenge sent; poll for the match event" : "they are busy or gone" }); }
-      if (path === "/lobby/respond") { this.doRespond(self, st, { from: String(b.from || ""), accept: !!b.accept }); return J({ ok: true, note: "poll to see the match event" }); }
+      if (path === "/lobby/respond") { this.doRespond(self, st, { from: String(b.from || ""), accept: tf(b.accept) }); return J({ ok: true, note: "poll to see the match event" }); }
       if (path === "/lobby/poll") {
         await arm(); const events = JSON.parse(row.out); q.exec("UPDATE bots SET out='[]' WHERE id=?", token);
         const players = this.socks().map((x) => this.me(x)).filter((x) => x.name).concat(this.bots().map((x) => x.st)).filter((x) => x.id !== st.id).map((x) => ({ id: x.id, name: x.name, status: x.status }));
         st = this.me(self); const h = st.opp && this.find(st.opp), hs = h && this.me(h);
-        return J({ you: { id: st.id, name: st.name, status: st.status }, players, events, match: st.match ? { id: st.match, mode: st.mode, seed: st.seed, length_m: MODE_LEN[st.mode], opponent: hs && { id: hs.id, name: hs.name, metres: Math.max(0, Math.round(((hs.x || 220) - 220) / 10)) }, raceStarted: !!st.t0 && Date.now() >= st.t0, startsInMs: st.t0 ? Math.max(0, st.t0 - Date.now()) : null } : null });
+        return J({ you: { id: st.id, name: st.name, status: st.status }, links: st.match ? { act_hold: O + "/api/tether/ai/match/act?bot=" + token + "&hold=1&seconds=0.25", act_release: O + "/api/tether/ai/match/act?bot=" + token + "&hold=0&seconds=0.25", poll: O + "/api/tether/ai/lobby/poll?bot=" + token } : { poll: O + "/api/tether/ai/lobby/poll?bot=" + token }, players, events, match: st.match ? { id: st.match, mode: st.mode, seed: st.seed, length_m: MODE_LEN[st.mode], opponent: hs && { id: hs.id, name: hs.name, metres: Math.max(0, Math.round(((hs.x || 220) - 220) / 10)) }, raceStarted: !!st.t0 && Date.now() >= st.t0, startsInMs: st.t0 ? Math.max(0, st.t0 - Date.now()) : null } : null });
       }
       if (path === "/match/forfeit") { this.endMatch(self, "left"); this.set(self, { status: "idle", match: null, opp: null }); this.lobby(); return J({ ok: true }); }
       if (path === "/match/act") {
@@ -641,7 +654,7 @@ export class Lobby extends DurableObject {
         if (!gr) { q.exec("INSERT INTO ai(id,agent,mode,seed,log,frames,over,ts) VALUES(?,?,?,?,?,0,0,?)", gid, st.name, "online:" + st.mode, st.seed, "[]", Date.now()); gr = q.exec("SELECT * FROM ai WHERE id=?", gid).toArray()[0]; }
         const e = this.game(gid, gr);
         if (gr.over) return J({ error: "you already finished; wait for the result", observation: e.g.obs() }, 409);
-        const hold = !!b.hold, secs = Math.max(1 / 60, Math.min(3, +b.seconds || .25)), k = e.g.step(hold, secs); e.f += k;
+        const hold = tf(b.hold), secs = Math.max(1 / 60, Math.min(3, +b.seconds || .25)), k = e.g.step(hold, secs); e.f += k;
         const log = JSON.parse(gr.log); log.push([hold ? 1 : 0, k]);
         const o = e.g.obs(), fin = e.g.over() && o.finished;
         q.exec("UPDATE ai SET log=?, frames=?, over=?, ts=? WHERE id=?", JSON.stringify(log), e.f, fin ? 1 : 0, Date.now(), gid);
