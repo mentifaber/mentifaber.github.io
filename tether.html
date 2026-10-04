@@ -148,13 +148,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   </div>
   <div id="ol-lobby" class="ol-box hidden">
     <div class="ol-head"><span id="ol-me"></span><span id="ol-count"></span></div>
+    <div class="ol-sub">CHALLENGE MODE</div><div class="bd-tabs" id="ol-modes"></div>
     <div id="ol-inv" class="ol-inv hidden"></div>
     <div id="ol-list" class="ol-list"></div>
     <div class="stat" id="ol-msg"></div>
   </div>
   <div id="ol-prep" class="ol-box hidden">
     <div class="ol-vs"><b id="ol-vs-me"></b><span>VS</span><b id="ol-vs-opp"></b></div>
-    <div class="stat">Pick your look before the gun. Race to 2500m on the same course.</div>
+    <div class="stat">Pick your look before the gun. <span id="ol-rule"></span></div>
     <div class="ol-sub">ORB</div><div class="ol-sw" id="ol-skins"></div>
     <div class="ol-sub">TRAIL</div><div class="ol-sw" id="ol-trails"></div>
     <div class="stat" id="ol-oppick"></div>
@@ -396,8 +397,8 @@ function mkPlayer(id, anchor, ang, L) {
 function newRun(m, isCoop) {
   clearTimeout(endTimer); zoomK = 1;
   if (m === "free") m = isCoop ? "coop" : "classic";
-  online = m === "online"; mode = m; race = m === "race"; coop = !!(MODES[m] && MODES[m].two); zen = m === "zen"; hard = m === "hard"; trial = m === "trial"; rush = m === "rush"; gaunt = m === "gauntlet"; moon = m === "moon"; sprint = m === "sprint";
-  finishX = online ? 2500 * 10 + 220 : race ? prog.set.raceLen * 10 + 220 : trial ? TRIAL_M * 10 + 220 : Infinity; winner = null; slowmoT = 0; raceT = 0;
+  online = m === "online"; mode = m; race = m === "race"; coop = !!(MODES[m] && MODES[m].two); zen = m === "zen"; hard = m === "hard"; trial = m === "trial"; rush = m === "rush"; gaunt = m === "gauntlet"; moon = m === "moon" || (online && olMode === "moon"); sprint = m === "sprint"; if (online && olMode === "hard") hard = true;
+  finishX = online ? olLen * 10 + 220 : race ? prog.set.raceLen * 10 + 220 : trial ? TRIAL_M * 10 + 220 : Infinity; winner = null; slowmoT = 0; raceT = 0;
   // daily and time trial use fixed seeds, so everyone races the same world
   seed = online ? onlineSeed : m === "daily" ? todayKey() : trial ? 424242 : (Math.random() * 1e9) | 0; rng = mulberry(seed);
   flipK = 0; flipTo = 0; lastHaz = -1e9; lastSpout = -1e9; nextFlip = 0; anchors = []; winds = []; bumpers = []; spouts = []; rockets = []; rocketT = 6; gates = []; saws = []; shards = []; parts = []; pops = []; rings = []; pads = []; pups = []; drones = []; x2T = 0; doneNow = [];
@@ -745,7 +746,7 @@ function kill(p, why) {
   shake = .7; flash = .3; vib([60, 40, 90]);
   burst(p.x, p.y, 36, pcolor(p), 500); burst(p.x, p.y, 16, "#ffffff", 280); sfx("die");
   const others = alive();
-  if (online) { p.deadT = 1.6; pop("CRASHED · +1.6s", p.x, p.y - 50, pcolor(p), 1.4, .9); return false; }
+  if (online) { p.deadT = hard ? 4 : 1.6; pop(hard ? "CRASHED · +4s" : "CRASHED · +1.6s", p.x, p.y - 50, pcolor(p), 1.4, .9); return false; }
   if (race) { p.deadT = 1.6; pop((p.id ? "P2" : "P1") + " CRASHED · +1.6s", p.x, p.y - 50, pcolor(p), 1.4, .9); return false; }
   if (p.lives > 0) { p.lives--; setTimeout(() => { if (state === "play" || state === "paused") { respawn(p, p.x); pop("EXTRA LIFE", p.x, p.y - 40, "#ff5e7a", 1.2, 1.1); } }, 900); return false; }
   if (coop && others.length && revives > 0) { revives--; p.deadT = 2.2; pop((p.id ? "P2" : "P1") + " DOWN · BACK IN 2", others[0].x, others[0].y - 70, pcolor(p), 1.8, .9); return false; }
@@ -798,12 +799,12 @@ function endRun() {
   const m = dist(), sc = score(); prog.shards += got;
   let nb = "";
   if (online) {
-    save(); const won = netResult ? netResult.win : !!winner;
-    $("d-why").textContent = "ONLINE · VS " + (oppInfo ? oppInfo.name : "?").toUpperCase();
+    const won = netResult ? netResult.win : !!winner; prog.onl = prog.onl || { w: 0, l: 0, s: 0, bs: 0 }; if (won) { prog.onl.w++; prog.onl.s++; prog.onl.bs = Math.max(prog.onl.bs, prog.onl.s); } else { prog.onl.l++; prog.onl.s = 0; } save();
+    $("d-why").textContent = "ONLINE " + OLM[olMode][0] + " · VS " + (oppInfo ? oppInfo.name : "?").toUpperCase();
     $("d-dist").innerHTML = '<span style="color:' + (won ? "#9dff7a" : "#ff4f6a") + '">' + (won ? "YOU WIN" : "YOU LOSE") + "</span>";
     $("d-new").textContent = netResult && netResult.why === "left" ? "THEY LEFT THE RACE" : netResult && netResult.time ? "WINNING TIME " + netResult.time.toFixed(1) + "s" : "";
     $("d-stat").innerHTML = "YOU " + dist() + "m · " + raceT.toFixed(1) + "s · PERFECTS <b>" + players[0].perfects + "</b> · CRASHES <b>" + players[0].deaths + "</b>";
-    $("d-miss").innerHTML = ""; $("b-again").textContent = "BACK TO LOBBY"; ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
+    $("d-miss").innerHTML = "RECORD <b>" + prog.onl.w + "W – " + prog.onl.l + "L</b> · STREAK <b>" + prog.onl.s + "</b> · BEST STREAK <b>" + prog.onl.bs + "</b>"; $("b-again").textContent = "BACK TO LOBBY"; ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
   }
   $("b-again").textContent = "AGAIN";
   if (race) {
@@ -1173,7 +1174,7 @@ $("skins").onclick = (e) => {
   save(); shop();
 };
 /* ── leaderboard + live stats ── */
-const BMODES = [["classic", "CLASSIC", "pts"], ["hard", "HARD", "pts"], ["rush", "RUSH", "pts"], ["gauntlet", "GAUNTLET", "pts"], ["moon", "LOW-G", "pts"], ["sprint", "SPRINT", "m"], ["zen", "ZEN", "pts"], ["trial", "TRIAL", "s"]];
+const BMODES = [["classic", "CLASSIC", "pts"], ["hard", "HARD", "pts"], ["rush", "RUSH", "pts"], ["gauntlet", "GAUNTLET", "pts"], ["moon", "LOW-G", "pts"], ["sprint", "SPRINT", "m"], ["zen", "ZEN", "pts"], ["trial", "TRIAL", "s"], ["wins", "ONLINE WINS", "w"]];
 let bdMode = "classic", liveT = 0;
 const nm = () => (prog.olName || "").trim();
 function postScore(mode, v, m) {
@@ -1198,7 +1199,7 @@ async function loadBoard() {
   $("bd-list").innerHTML = '<div class="stat">Loading…</div>';
   try {
     const j = await (await fetch("/api/tether/board?mode=" + bdMode, { cache: "no-store" })).json(), u = BMODES.find((b) => b[0] === bdMode)[2], me = nm().toLowerCase();
-    $("bd-list").innerHTML = j.rows.length ? j.rows.map((r, i) => '<div class="bd-row' + (r.name.toLowerCase() === me ? " me" : "") + '"><em>' + (i + 1) + "</em><span></span><b>" + (u === "s" ? r.v.toFixed(2) + "s" : Math.round(r.v) + (u === "m" ? "m" : "")) + "</b></div>").join("") : '<div class="stat">No scores yet. Be the first.</div>';
+    $("bd-list").innerHTML = j.rows.length ? j.rows.map((r, i) => '<div class="bd-row' + (r.name.toLowerCase() === me ? " me" : "") + '"><em>' + (i + 1) + "</em><span></span><b>" + (u === "s" ? r.v.toFixed(2) + "s" : u === "w" ? Math.round(r.v) + "W–" + r.m + "L" : Math.round(r.v) + (u === "m" ? "m" : "")) + "</b></div>").join("") : '<div class="stat">No scores yet. Be the first.</div>';
     [...$("bd-list").querySelectorAll(".bd-row span")].forEach((el, i) => (el.textContent = j.rows[i].name));
   } catch (e) { $("bd-list").innerHTML = '<div class="stat">Leaderboard needs the live site.</div>'; }
 }
@@ -1232,6 +1233,11 @@ function olList(players) {
   [...OL("ol-list").querySelectorAll(".ol-row b")].forEach((el, i) => (el.textContent = others[i].name));
 }
 let olPlayers = [];
+const OLM = { dash: ["DASH", 1000, "First to 1000m wins."], race: ["RACE", 2500, "First to 2500m wins."], marathon: ["MARATHON", 5000, "First to 5000m wins. Pace yourself."], moon: ["LOW-G", 2500, "Half gravity. First to 2500m wins."], hard: ["HARDCORE", 2500, "Hardcore hazards, crashes cost 4s. First to 2500m wins."] };
+let olMode = prog.olMode && OLM[prog.olMode] ? prog.olMode : "race", olLen = 2500;
+function olModes() { OL("ol-modes").innerHTML = Object.entries(OLM).map(([k, v]) => '<button data-k="' + k + '" class="' + (k === olMode ? "on" : "") + '">' + v[0] + "</button>").join(""); }
+OL("ol-modes").onclick = (e) => { const b = e.target.closest("button"); if (b) { olMode = b.dataset.k; prog.olMode = olMode; save(); olModes(); } };
+olModes();
 function olPickUI() {
   const skins = SKINS.filter((x) => prog.skins.includes(x.id)), trails = TRAILS.filter((x) => prog.trails.includes(x.id) || !x.cost);
   OL("ol-skins").innerHTML = skins.map((x) => '<button data-s="' + x.id + '" class="' + (prog.skin === x.id ? "on" : "") + '"><i style="background:' + (x.c === "rainbow" ? "conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)" : x.c) + '"></i></button>').join("");
@@ -1245,7 +1251,7 @@ function olMsg(m) {
   else if (m.t === "withdrawn") OL("ol-inv").classList.add("hidden");
   else if (m.t === "pending") { olPending = m.to; OL("ol-msg").textContent = "Challenge sent to " + m.name + ". Waiting…"; olList(olPlayers); }
   else if (m.t === "declined" || m.t === "busy" || m.t === "gone") { olPending = null; OL("ol-msg").textContent = m.t === "declined" ? m.by + " said not right now." : "They're busy."; olList(olPlayers); }
-  else if (m.t === "match") { olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
+  else if (m.t === "match") { olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; olMode = OLM[m.mode] ? m.mode : "race"; olLen = m.len || OLM[olMode][1]; OL("ol-rule").textContent = OLM[olMode][0] + " · " + OLM[olMode][2]; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
   else if (m.t === "opppick") { oppLook = { color: /^#[0-9a-f]{3,8}$/i.test(m.color) ? m.color : "#ff9a3d", trail: m.trail }; OL("ol-oppick").innerHTML = '<span style="color:' + oppLook.color + '">●</span> ' + (oppInfo ? oppInfo.name : "") + " picked their look."; }
   else if (m.t === "oppready") OL("ol-oppick").textContent = (oppInfo ? oppInfo.name : "They") + " is READY.";
   else if (m.t === "start") { OL("ol-cd").classList.remove("hidden"); let n = 3; const tick = () => { if (n > 0) { OL("ol-cd").textContent = n--; sfx("latch", 6); setTimeout(tick, 900); } else { OL("ol-cd").textContent = "GO"; newRun("online"); started = true; $("hint").textContent = "GO! LET GO TO SWING OFF"; } }; setTimeout(tick, Math.max(0, m.in - 2700)); }
@@ -1254,7 +1260,7 @@ function olMsg(m) {
 }
 $("b-online").onclick = openOnline;
 OL("ol-go").onclick = olConnect; OL("ol-name").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") olConnect(); });
-OL("ol-list").onclick = (e) => { const b = e.target.closest("[data-to]"); if (b && !b.disabled) netSend({ t: "invite", to: b.dataset.to }); };
+OL("ol-list").onclick = (e) => { const b = e.target.closest("[data-to]"); if (b && !b.disabled) netSend({ t: "invite", to: b.dataset.to, mode: olMode }); };
 OL("ol-inv").onclick = (e) => { const a = e.target.closest("[data-acc]"), d = e.target.closest("[data-dec]"); if (a) netSend({ t: "respond", from: a.dataset.acc, accept: true }); if (d) { netSend({ t: "respond", from: d.dataset.dec, accept: false }); OL("ol-inv").classList.add("hidden"); } };
 OL("ol-skins").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { prog.skin = b.dataset.s; save(); olPickUI(); } };
 OL("ol-trails").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { prog.trail = b.dataset.t; save(); olPickUI(); } };
