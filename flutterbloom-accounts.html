@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flutterbloom Accounts</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#fbf5ef;--ink:#3b2f3f;--dim:#8a7a8c;--card:#fff;--line:#eadfe6;--acc:#c86b9a;--ok:#4f9d78;--bad:#c4515f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1720;--ink:#f1e8f2;--dim:#a898ab;--card:#29212d;--line:#3b3140;--acc:#e58fbb;--ok:#7cc7a2;--bad:#ef8794}}
+:root[data-theme="dark"]{--bg:#1d1720;--ink:#f1e8f2;--dim:#a898ab;--card:#29212d;--line:#3b3140;--acc:#e58fbb;--ok:#7cc7a2;--bad:#ef8794}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:24px 16px 60px}
+main{max-width:520px;margin:0 auto}h1{font-size:26px;margin:0 0 4px}p{color:var(--dim);margin:6px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:16px 0}
+h2{font-size:17px;margin:0 0 8px}label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
+input{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 16px;margin-top:14px;background:var(--acc);color:#fff;cursor:pointer}
+button.ghost{background:none;color:var(--bad);border:1px solid var(--line);margin:0;padding:6px 12px;font-size:14px}
+button:disabled{opacity:.6}.msg{min-height:1.4em;margin-top:10px;font-size:14px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.acct{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.acct:first-child{border-top:0}
+.hidden{display:none}code{background:var(--bg);padding:1px 6px;border-radius:6px}
+</style></head>
+<body><main>
+<h1>Flutterbloom accounts</h1>
+<p>Her login is the main account. Extra accounts (like a developer account) open the same garden app but each keeps its <b>own</b> garden, photos and reminder, so nothing you do there touches hers.</p>
+
+<div class="card" id="c-main">
+  <h2>1 · Confirm the main login</h2>
+  <p id="main-why">To share the garden's key with a new account, sign in once with <b>her</b> Flutterbloom name and password. Nothing here changes her garden.</p>
+  <label for="m-user">Her name</label><input id="m-user" autocomplete="off" autocapitalize="off">
+  <label for="m-pass">Her password</label><input id="m-pass" type="password" autocomplete="off">
+  <button id="m-go">Confirm</button><div class="msg" id="m-msg"></div>
+</div>
+
+<div class="card hidden" id="c-add">
+  <h2>2 · Add an account</h2>
+  <p>Pick a name and password for the new account. To sign in, type the name exactly as you set it here.</p>
+  <label for="a-user">Account name</label><input id="a-user" placeholder="dev" autocomplete="off" autocapitalize="off">
+  <label for="a-pass">Password</label><input id="a-pass" type="password" autocomplete="new-password">
+  <label for="a-pass2">Password again</label><input id="a-pass2" type="password" autocomplete="new-password">
+  <button id="a-go">Add account</button><div class="msg" id="a-msg"></div>
+</div>
+
+<div class="card hidden" id="c-list">
+  <h2>Extra accounts</h2>
+  <div id="list"></div>
+  <p style="margin-top:12px">Sign in to an extra account in a <b>different browser or a private window</b>. Each browser keeps one account's garden, so the lock screen won't mix them.</p>
+</div>
+</main>
+<script src="assets/seal.js"></script>
+<script>
+(() => {
+  const APP = "flutterbloom", ITER = 600000, $ = (id) => document.getElementById(id), subtle = crypto.subtle, enc = new TextEncoder();
+  const b64 = (a) => btoa(String.fromCharCode(...new Uint8Array(a))), unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const hex = (a) => [...new Uint8Array(a)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  const say = (id, t, ok) => { const el = $(id); el.textContent = t; el.className = "msg " + (ok === true ? "ok" : ok === false ? "bad" : ""); };
+  let blob = null, pageKey = null; // pageKey: the raw AES key that opens the garden
+
+  async function getBlob() {
+    const html = await (await fetch("/" + APP, { credentials: "same-origin", cache: "no-store" })).text();
+    const m = html.match(/id="mf-blob">([^<]*)<\/script>/); const b = m && m[1].replace(/\s+/g, "");
+    if (!b) throw new Error("The garden didn't load. Sign in again.");
+    const raw = unb64(b); blob = { salt: raw.slice(0, 16), iv: raw.slice(16, 28), ct: raw.slice(28) };
+  }
+  const derive = async (secret, salt) => subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" },
+    await subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveKey"]), { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+  async function opens(key) { try { await subtle.decrypt({ name: "AES-GCM", iv: blob.iv }, key, blob.ct); return true; } catch (e) { return false; } }
+
+  async function status() {
+    const r = await fetch("/api/accts/" + APP, { credentials: "same-origin", cache: "no-store" });
+    if (r.status !== 200) return null; return r.json();
+  }
+  async function ready() {
+    const st = await status();
+    if (!st || st.me) { $("main-why").innerHTML += st && st.me ? "<br><b>This browser is signed in as “" + st.me + "”</b>, which can't manage accounts." : ""; return; }
+    // signed in as the main account already: a remembered key on this device saves typing her password
+    try { await getBlob(); const saved = localStorage.getItem(APP + "-key"); if (saved) { const k = await subtle.importKey("raw", unb64(saved), { name: "AES-GCM" }, true, ["decrypt"]); if (await opens(k)) pageKey = await subtle.exportKey("raw", k); } } catch (e) {}
+    if (pageKey) { $("c-main").classList.add("hidden"); unlocked(); } else render(st);
+  }
+  function unlocked() { $("c-add").classList.remove("hidden"); status().then(render); }
+  function render(st) {
+    if (!st) return; $("c-list").classList.remove("hidden");
+    $("list").innerHTML = st.accounts.length ? "" : "<p>No extra accounts yet.</p>";
+    for (const a of st.accounts) { const row = document.createElement("div"); row.className = "acct";
+      row.innerHTML = "<span><b></b><br><small style='color:var(--dim)'>added " + new Date(a.at).toLocaleDateString() + "</small></span><button class='ghost'>Remove</button>";
+      row.querySelector("b").textContent = a.name;
+      row.querySelector("button").onclick = async () => { if (!confirm("Remove “" + a.name + "”? Its garden stays on the server but it can't sign in.")) return;
+        await fetch("/api/accts/" + APP, { method: "DELETE", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ user: a.name }) }); status().then(render); };
+      $("list").appendChild(row); }
+  }
+
+  $("m-go").onclick = async () => {
+    const u = $("m-user").value.trim(), p = $("m-pass").value; if (!u || !p) return say("m-msg", "Both fields, please.", false);
+    $("m-go").disabled = true; say("m-msg", "Checking… (this takes a few seconds)");
+    try {
+      const secret = u + "\0" + p;
+      const r = await fetch("/api/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ app: APP, proof: await MFSeal.proof(APP, secret) }) });
+      if (r.status === 429) throw new Error("Too many tries. Wait a few minutes.");
+      const j = await r.json(); if (!r.ok) throw new Error("That's not her login.");
+      if (j.user) throw new Error("That's the “" + j.user + "” account. Use her main login here.");
+      await getBlob(); const k = await derive(secret, blob.salt); if (!(await opens(k))) throw new Error("Signed in, but that login doesn't open this copy of the garden.");
+      pageKey = await subtle.exportKey("raw", k); $("m-pass").value = ""; say("m-msg", "Confirmed.", true); unlocked();
+    } catch (e) { say("m-msg", e.message, false); }
+    $("m-go").disabled = false;
+  };
+  $("a-go").onclick = async () => {
+    const u = $("a-user").value.trim(), p = $("a-pass").value;
+    if (!/^[a-z0-9._-]{2,24}$/.test(u)) return say("a-msg", "Name: 2 to 24 lowercase letters, numbers, dot, dash or underscore.", false);
+    if (p.length < 8) return say("a-msg", "Use at least 8 characters for the password.", false);
+    if (p !== $("a-pass2").value) return say("a-msg", "The passwords don't match.", false);
+    $("a-go").disabled = true; say("a-msg", "Locking the garden key to this account…");
+    try {
+      const secret = u + "\0" + p, proof = await MFSeal.proof(APP, secret);
+      const verifier = hex(await subtle.digest("SHA-256", Uint8Array.from(proof.match(/../g), (h) => parseInt(h, 16))));
+      const wk = await derive(secret, blob.salt), iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await subtle.encrypt({ name: "AES-GCM", iv }, wk, pageKey), wrap = new Uint8Array(12 + ct.byteLength); wrap.set(iv); wrap.set(new Uint8Array(ct), 12);
+      const r = await fetch("/api/accts/" + APP, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ user: u, verifier, wrap: b64(wrap) }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || "Couldn't add it.");
+      $("a-pass").value = $("a-pass2").value = ""; say("a-msg", "Added “" + u + "”. Sign in with it at mentifaber.org/flutterbloom in another browser or a private window.", true); status().then(render);
+    } catch (e) { say("a-msg", e.message, false); }
+    $("a-go").disabled = false;
+  };
+  ready();
+})();
+</script>
+</body></html>

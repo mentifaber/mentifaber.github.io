@@ -31,8 +31,8 @@
       return subtle.deriveBits({ name: "PBKDF2", salt: r[0], iterations: ITER, hash: "SHA-256" }, r[1], 256);
     }).then(hex);
   }
-  function blobOf(html) {
-    var m = html.match(/<script type="application\/octet-stream" id="mf-blob">([^<]*)<\/script>/);
+  function blobOf(html, id) {
+    var m = html.match(new RegExp('<script type="application\\/octet-stream" id="' + (id || "mf-blob") + '">([^<]*)<\\/script>'));
     return m ? m[1].replace(/\s+/g, "") : "";
   }
 
@@ -43,7 +43,8 @@
       var raw = unb64(text.replace(/\s+/g, ""));
       salt = raw.subarray(0, 16); iv = raw.subarray(16, 28); ct = raw.subarray(28);
     }
-    var sealed = !!blobEl.textContent.trim();
+    var sealed = !!blobEl.textContent.trim(), wrap = null, who;
+    var acctKey = "mf-acct-" + o.app;
     if (sealed) parse(blobEl.textContent);
     var idle = o.btn.textContent;
 
@@ -67,11 +68,21 @@
         if (r.status === 429) throw { msg: "Too many tries. Wait a few minutes and try again." };
         if (r.status === 401) throw { wrong: true };
         if (!r.ok) throw { msg: "Couldn't reach the server. Check your connection and try again." };
+        return r.json();
+      }).then(function (j) {
+        // One browser keeps one account's local data, so a different account must use its own browser
+        // (or a private window): otherwise one garden's local copy could be uploaded into the other's.
+        who = (j && j.user) || "";
+        var last = recall(acctKey); if (last == null && recall(o.storeKey)) last = "";
+        if (last != null && last !== who) {
+          MFSeal.forget(null, o.app);
+          throw { msg: "This browser belongs to " + (last ? "the “" + last + "” account" : "the main account") + ". Use another browser or a private window for this one." };
+        }
         return fetch(location.pathname, { credentials: "same-origin", cache: "no-store" });
       }).then(function (r) { return r.text(); }).then(function (html) {
         var b = blobOf(html);
         if (!b) throw { msg: "Signed in, but the page didn't load. Reload and try again." };
-        blobEl.textContent = b; parse(b); sealed = true;
+        blobEl.textContent = b; parse(b); sealed = true; wrap = blobOf(html, "mf-wrap") || null;
       });
     }
     function attempt() {
@@ -84,8 +95,15 @@
       }).then(function (base) {
         return subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
       }).then(function (key) {
+        if (!wrap) return key;
+        // an extra account: its login unlocks the page key that the main account wrapped for it
+        var w = unb64(wrap);
+        return subtle.decrypt({ name: "AES-GCM", iv: w.subarray(0, 12) }, key, w.subarray(12)).then(function (raw) {
+          return subtle.importKey("raw", raw, { name: "AES-GCM" }, true, ["decrypt"]);
+        }, function () { throw { msg: "This account needs to be linked again from the accounts page (the page was resealed)." }; });
+      }).then(function (key) {
         return subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct).then(function () { return subtle.exportKey("raw", key); })
-          .then(function (k) { store(o.storeKey, b64(k)); return reveal(key); });
+          .then(function (k) { store(o.storeKey, b64(k)); if (who != null) store(acctKey, who); return reveal(key); });
       }).catch(function (e) {
         o.pass.value = "";
         deny(e && e.msg ? e.msg : o.denyText || "That's not right — try again.");
@@ -104,8 +122,9 @@
   }
   // Forget this device's key; with an app name, also end the server session.
   MFSeal.forget = function (k, app) {
-    store(k, null);
+    if (k) store(k, null); // the browser stays bound to its account (mf-acct-<app>): its local data is that account's
     if (app) try { fetch("/api/logout/" + app, { method: "POST", credentials: "same-origin", keepalive: true }); } catch (e) {}
   };
+  MFSeal.proof = proof;
   window.MFSeal = MFSeal;
 })();
