@@ -452,7 +452,7 @@ export default {
     const path = url.pathname;
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
-      if (route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
+      if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "save" && app) return cloudSave(req, env, app);
@@ -476,7 +476,48 @@ export default {
 
 // ── Tether online: one lobby, WebSockets (hibernation-safe: every player's state lives on their socket)
 export class Lobby extends DurableObject {
+  sql() {
+    const q = this.ctx.storage.sql;
+    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
+    return q;
+  }
+  bump(k, n) { this.sql().exec("INSERT INTO tally(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); }
+  async api(req, url) {
+    const q = this.sql(), J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial"];
+    if (url.pathname.endsWith("/stats")) {
+      const day = new Date().toISOString().slice(0, 10), t = {};
+      for (const r of q.exec("SELECT k,n FROM tally").toArray()) t[r.k] = r.n;
+      const socks = this.socks().map((s) => this.me(s)).filter((a) => a.name);
+      return J({ online: socks.length, racing: socks.filter((a) => a.status === "racing").length, runs: t.runs || 0, metres: t.metres || 0, today: t["d" + day] || 0, players: q.exec("SELECT COUNT(DISTINCT name) c FROM board").one().c, bestm: t.bestm || 0 });
+    }
+    if (url.pathname.endsWith("/board")) {
+      const mode = MODES.includes(url.searchParams.get("mode")) ? url.searchParams.get("mode") : "classic";
+      const rows = q.exec("SELECT name,v,m FROM board WHERE mode=? ORDER BY v " + (ASC[mode] ? "ASC" : "DESC") + ", ts ASC LIMIT 25", mode).toArray();
+      return J({ mode, rows });
+    }
+    if (url.pathname.endsWith("/score") && req.method === "POST") {
+      let b; try { b = await req.json(); } catch (e) { return J({ ok: false }); }
+      const mode = String(b.mode || ""), v = +b.v, m = Math.max(0, Math.min(60000, Math.round(+b.m) || 0));
+      if (!MODES.includes(mode) && mode !== "other") return J({ ok: false });
+      if (!(v >= 0) || v > 5e6) return J({ ok: false });
+      this.bump("runs", 1); this.bump("metres", m); this.bump("d" + new Date().toISOString().slice(0, 10), 1);
+      const cur = q.exec("SELECT n FROM tally WHERE k='bestm'").toArray()[0]; if (!cur || m > cur.n) q.exec("INSERT INTO tally(k,n) VALUES('bestm',?) ON CONFLICT(k) DO UPDATE SET n=?", m, m);
+      const name = String(b.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16);
+      let rank = null;
+      if (name && MODES.includes(mode) && (!ASC[mode] || v > 0)) {
+        const old = q.exec("SELECT v FROM board WHERE mode=? AND name=?", mode, name).toArray()[0];
+        if (!old || (ASC[mode] ? v < old.v : v > old.v)) q.exec("INSERT INTO board(mode,name,v,m,ts) VALUES(?,?,?,?,?) ON CONFLICT(mode,name) DO UPDATE SET v=?,m=?,ts=?", mode, name, v, m, Date.now(), v, m, Date.now());
+        const mine = q.exec("SELECT v FROM board WHERE mode=? AND name=?", mode, name).one().v;
+        rank = q.exec("SELECT COUNT(*) c FROM board WHERE mode=? AND v " + (ASC[mode] ? "<" : ">") + " ?", mode, mine).one().c + 1;
+      }
+      return J({ ok: true, rank });
+    }
+    return new Response("not found", { status: 404 });
+  }
   async fetch(req) {
+    const url = new URL(req.url);
+    if (url.pathname.startsWith("/api/tether/")) return this.api(req, url);
     if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);
