@@ -9,6 +9,13 @@
 <meta property="og:description" content="An original first-person shooter, built from nothing but maths. Hold the line against Doubts, Echoes and Knots.">
 <meta property="og:image" content="https://mentifaber.org/assets/previews/thoughtform.png">
 <meta name="theme-color" content="#07040f">
+<link rel="manifest" href="assets/manifests/thoughtform.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/thoughtform.png">
+<link rel="icon" href="assets/icons/thoughtform.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Thoughtform">
 <style>
 :root{--ink:#efe9ff;--dim:#9b8fc2;--acc:#7dffd8;--hot:#ff5c8a;--gold:#ffd36b;--bg:#07040f}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -79,6 +86,28 @@ html,body{height:100%;background:var(--bg);color:var(--ink);overflow:hidden;font
 #tip{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:11px;letter-spacing:.22em;color:var(--acc);opacity:0;transition:opacity .4s;text-align:center;max-width:86vw}
 #tip.show{opacity:.9}
 select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:4px 8px}
+#rotate{position:fixed;inset:0;z-index:50;background:#07040f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+#rotate.hidden{display:none}
+@media (max-height:520px){
+  .bars{width:min(220px,34vw)}.bar{height:7px;margin-top:4px}.lbl{margin-top:4px;font-size:9px}
+  #radar{width:84px;height:84px}.top b{font-size:17px}.top{font-size:10px}.score b{font-size:19px}#feed{top:74px;font-size:10px;line-height:1.6}
+  .wep b{font-size:15px}#banner{top:24%}
+  .scr{gap:8px;padding:12px}.logo{font-size:clamp(30px,9vh,64px)}.btn{padding:11px 26px;font-size:13px}.lore{font-size:11px;line-height:1.6}
+  .perk{padding:10px 14px 10px 50px;margin:4px auto}
+}
+@media (pointer:coarse){#xh{width:30px;height:30px;margin:-15px 0 0 -15px}#feed{display:none}.keys{display:none}
+  .wep{top:calc(64px + env(safe-area-inset-top));bottom:auto}#ws,.ab{display:none}.wep b{font-size:13px;margin:2px 0 0}
+  #slots i{pointer-events:auto;width:30px;height:30px;line-height:30px}
+  #touch #tpause{left:auto;right:calc(110px + env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top));transform:none}
+  #touch #tfire{right:calc(22px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom));width:98px;height:98px}
+  #touch #tjump{right:calc(36px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));width:72px;height:72px}
+  #touch #tdash{right:calc(128px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));width:60px;height:60px}
+  #touch #talt{right:calc(134px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom));width:58px;height:58px}
+  #touch #tshock{right:calc(208px + env(safe-area-inset-right));bottom:calc(60px + env(safe-area-inset-bottom));width:54px;height:54px}
+  #touch #tbar{right:calc(208px + env(safe-area-inset-right));bottom:calc(132px + env(safe-area-inset-bottom));width:54px;height:54px}
+  #touch #trw{right:calc(36px + env(safe-area-inset-right));bottom:calc(214px + env(safe-area-inset-bottom));width:62px;height:62px}
+  #touch #tswap{display:none}
+}
 /* touch */
 .tc{position:fixed;pointer-events:auto;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:.15em;color:var(--ink)}
 #tfire{right:calc(26px + env(safe-area-inset-right));bottom:calc(120px + env(safe-area-inset-bottom));width:92px;height:92px;background:rgba(255,92,138,.18);border-color:rgba(255,92,138,.6)}
@@ -127,6 +156,8 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div class="stat" id="boot" style="min-height:1.4em;color:var(--acc)"></div>
   <p class="lore">You are the last clear thought in a mind that is coming apart. Doubts swarm, Echoes repeat themselves at you, and Knots tangle everything they touch. You hold a Quill made of intent. Write them out of existence. Hold the centre for as long as you can.</p>
   <button class="btn" id="b-play">ENTER THE MIND</button>
+  <button class="btn alt hidden" id="b-install">INSTALL AS AN APP</button>
+  <div class="stat hidden" id="ios-hint" style="max-width:420px;line-height:1.8">On iPhone or iPad: tap <b>Share</b>, then <b>Add to Home Screen</b>. It opens full screen, like an app.</div>
   <div class="keys" id="keys"><b>WASD</b> move · <b>MOUSE</b> look · <b>CLICK</b> fire · <b>RIGHT CLICK</b> surge · <b>1 2 3 4 / WHEEL</b> Quill, Scatter, Cannon, Beam<br><b>SPACE</b> jump, again in the air · <b>SHIFT</b> dash · <b>Q</b> shockwave · <b>F</b> barrier · <b>E</b> rewrite when focus is full · <b>ESC</b> pause</div>
   <div class="stat" id="t-best"></div>
   <div class="board" id="t-board"></div>
@@ -136,9 +167,11 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div class="logo" style="font-size:48px">PAUSED</div>
   <button class="btn" id="b-resume">RESUME</button>
   <button class="btn alt" id="b-quit">LEAVE THE MIND</button>
-  <div class="keys set"><label>SENSITIVITY <input type="range" id="sens" min="1" max="20" value="8"></label><label>FIELD OF VIEW <input type="range" id="fov" min="95" max="165" value="125"></label><label>VOLUME <input type="range" id="vol" min="0" max="100" value="55"></label><label>INVERT LOOK <input type="checkbox" id="inv"></label><label>MUSIC <input type="range" id="mus" min="0" max="100" value="50"></label><label>SCREEN SHAKE <input type="checkbox" id="shk" checked></label><label>REDUCED MOTION <input type="checkbox" id="rmo"></label><label>TIPS <input type="checkbox" id="tps" checked></label><label>QUALITY <select id="qual"><option value="auto">AUTO</option><option value="low">LOW</option><option value="high">HIGH</option></select></label><button class="btn alt" id="b-fs" style="min-width:0;padding:10px 18px;margin-top:6px">FULLSCREEN</button></div>
+  <div class="keys set"><label>SENSITIVITY <input type="range" id="sens" min="1" max="20" value="8"></label><label>FIELD OF VIEW <input type="range" id="fov" min="95" max="165" value="125"></label><label>VOLUME <input type="range" id="vol" min="0" max="100" value="55"></label><label>INVERT LOOK <input type="checkbox" id="inv"></label><label>MUSIC <input type="range" id="mus" min="0" max="100" value="50"></label><label>SCREEN SHAKE <input type="checkbox" id="shk" checked></label><label>REDUCED MOTION <input type="checkbox" id="rmo"></label><label>TIPS <input type="checkbox" id="tps" checked></label><label>AIM ASSIST <input type="checkbox" id="aim"></label><label>QUALITY <select id="qual"><option value="auto">AUTO</option><option value="low">LOW</option><option value="high">HIGH</option></select></label><button class="btn alt" id="b-fs" style="min-width:0;padding:10px 18px;margin-top:6px">FULLSCREEN</button></div>
   <div class="stat" id="p-stats" style="line-height:2;max-width:560px"></div>
 </section>
+
+<div id="rotate" class="hidden"><div class="logo" style="font-size:34px">↻</div><div class="tag">TURN YOUR PHONE SIDEWAYS</div><div class="stat">Thoughtform plays in landscape</div></div>
 
 <section class="scr hidden" id="s-perk">
   <div class="tag">THE MIND CLEARS FOR A MOMENT</div>
@@ -756,6 +789,8 @@ function radar() {
   rc.restore();
   rc.fillStyle = "#7dffd8"; rc.beginPath(); rc.moveTo(c, c - 6); rc.lineTo(c - 4, c + 4); rc.lineTo(c + 4, c + 4); rc.fill();
 }
+document.getElementById("slots").addEventListener("touchstart", (e) => { const t = e.target.closest("i"); if (t) { e.preventDefault(); e.stopPropagation(); setWeapon([...t.parentNode.children].indexOf(t)); } }, { passive: false });
+document.getElementById("slots").addEventListener("click", (e) => { const t = e.target.closest("i"); if (t) setWeapon([...t.parentNode.children].indexOf(t)); });
 function setWeapon(i) { if (!P || i === P.w || i < 0 || i > 3) return; P.w = i; P.cd = Math.max(P.cd, .18); SFX.swap(); $("wn").textContent = WEAP[i].name; $("ws").textContent = WEAP[i].sub; [...document.querySelectorAll("#slots i")].forEach((el, k) => el.classList.toggle("on", k === i)); }
 
 /* ───────────────────────── simulation ───────────────────────── */
@@ -763,6 +798,12 @@ function update(dt) {
   const es = slowT > 0 ? .35 : 1, edt = dt * es;
   // look
   const s = save.sens * .00028; P.yaw += look.x * s; P.pitch = Math.max(-1.45, Math.min(1.45, P.pitch - look.y * s * (save.inv ? -1 : 1))); look.x = look.y = 0;
+  // aim assist (on by default with touch): drift gently onto the thought nearest the crosshair
+  if (save.aim && (mouseDown || touchMode)) {
+    const f = dirOf(P.yaw, P.pitch), o = { x: P.x, y: P.y + EYE, z: P.z }; let best = null, bd = .11;
+    for (const e of enemies) { if (e.dead || e.grow < .8) continue; const vx = e.x - o.x, vy = e.y - o.y, vz = e.z - o.z, d = Math.hypot(vx, vy, vz); if (d > 40) continue; const ang = Math.acos(Math.min(1, (vx * f.x + vy * f.y + vz * f.z) / d)); if (ang < bd && worldRay(o, { x: vx / d, y: vy / d, z: vz / d }, d) >= d - .5) { bd = ang; best = e; } }
+    if (best) { const ty = Math.atan2(best.x - o.x, best.z - o.z), tp = Math.atan2(best.y - o.y, Math.hypot(best.x - o.x, best.z - o.z)); let dy = ty - P.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); const k = Math.min(1, dt * (mouseDown ? 6 : 2.5)); P.yaw += dy * k; P.pitch += (tp - P.pitch) * k; }
+  }
   // move
   let ix = mv.x, iz = mv.y;
   if (keys.has("KeyW") || keys.has("ArrowUp")) iz += 1; if (keys.has("KeyS") || keys.has("ArrowDown")) iz -= 1;
@@ -948,7 +989,7 @@ function demo() { return demoE.map((e, i) => { const a = T * .25 + i * 1.26, R =
 const touchMode = matchMedia("(pointer:coarse)").matches;
 function show(id) { ["s-title", "s-pause", "s-dead", "s-perk"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 function start() {
-  audio(); reset(); state = "play"; show(null); P.w = -1; setWeapon(0); $("hud").classList.remove("hidden");
+  goFull(); audio(); reset(); setTimeout(orient, 50); state = "play"; show(null); P.w = -1; setWeapon(0); $("hud").classList.remove("hidden");
   if (touchMode) $("touch").classList.remove("hidden"); else cv.requestPointerLock && cv.requestPointerLock();
 }
 function pause() { if (state !== "play") return; state = "paused"; show("s-pause"); keys.clear(); mouseDown = false;
@@ -966,6 +1007,7 @@ $("rmo").checked = !!save.rmo; $("rmo").onchange = (e) => { save.rmo = e.target.
 $("tps").checked = save.tips !== false; $("tps").onchange = (e) => { save.tips = e.target.checked; persist(); };
 $("qual").value = save.qual || "auto"; $("qual").onchange = (e) => { save.qual = e.target.value; persist(); scale = save.qual === "low" ? .38 : save.qual === "high" ? .85 : scale; resize(); };
 $("b-fs").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} };
+save.aim = save.aim === undefined ? touchMode : save.aim; $("aim").checked = !!save.aim; $("aim").onchange = (e) => { save.aim = e.target.checked; persist(); };
 $("perks").onclick = (e) => { const b = e.target.closest(".perk"); if (b) takePerk(+b.dataset.i); };
 let lockGrace = 0;
 function relock() { if (touchMode || !cv.requestPointerLock || document.pointerLockElement === cv) return; try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
@@ -1013,6 +1055,15 @@ if (touchMode) {
   const btn = (id, down, up) => { const el = $(id); el.addEventListener("touchstart", (e) => { e.preventDefault(); e.stopPropagation(); audio(); if (state === "play") down(); }, { passive: false }); if (up) el.addEventListener("touchend", (e) => { e.preventDefault(); up(); }); };
   btn("tfire", () => (mouseDown = true), () => (mouseDown = false)); btn("talt", surge); btn("tjump", jump); btn("tdash", dash); btn("trw", rewrite); btn("tpause", pause); btn("tswap", () => setWeapon((P.w + 1) % 4)); btn("tshock", shockwave); btn("tbar", barrier);
 }
+let deferredInstall = null;
+const standalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone;
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; if (!standalone()) $("b-install").classList.remove("hidden"); });
+if (!standalone() && /iphone|ipad|ipod/i.test(navigator.userAgent)) $("b-install").classList.remove("hidden");
+$("b-install").onclick = async () => { if (deferredInstall) { deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) {} deferredInstall = null; $("b-install").classList.add("hidden"); } else $("ios-hint").classList.toggle("hidden"); };
+addEventListener("appinstalled", () => $("b-install").classList.add("hidden"));
+function goFull() { if (!touchMode) return; try { const d = document.documentElement; if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen({ navigationUI: "hide" }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {})).catch(() => {}); } catch (e) {} }
+function orient() { const portrait = touchMode && innerHeight > innerWidth * 1.05; $("rotate").classList.toggle("hidden", !(portrait && (state === "play" || state === "paused"))); if (portrait && state === "play") pause(); }
+addEventListener("resize", orient); addEventListener("orientationchange", () => setTimeout(orient, 200));
 function bestLine() { board("t-board"); const mc = Object.keys(save.miles || {}).length; if (mc) setTimeout(() => { $("t-best").innerHTML += (save.best ? " · " : "") + "MILESTONES <b>" + mc + "/" + MILES.length + "</b>"; }, 0); $("t-best").innerHTML = save.best ? "BEST <b>" + save.best + "</b> · FURTHEST WAVE <b>" + save.bestWave + "</b>" : ""; }
 bestLine();
 { const L = ["seeding the neural lattice", "folding the chamber", "sharpening the Quill", "listening for Doubts", "the mind is awake"]; let i = 0; const tick = () => { $("boot").textContent = "› " + L[i] + (i < L.length - 1 ? "…" : ""); if (++i < L.length) setTimeout(tick, 420); }; tick(); }
@@ -1021,7 +1072,9 @@ window.TF = { state: () => ({ state, wave, score, hp: P && P.hp, enemies: enemie
     for (const [k, x, z, y] of [[0, -2.4, 2.5, 1.7], [1, 3.8, -3, 4.6], [2, -1, -9, 2.2], [3, 6, -11, 1.6], [0, -7, -14, 1.3], [1, -9, -4, 5.2]]) { spawn(k, { x, z }); const e = enemies[enemies.length - 1]; e.y = y; e.grow = 1; e.touch = 99; e.fire = 99; }
     orbs.push({ x: 2.6, y: 3.8, z: -.5, vx: 0, vy: 0, vz: 0, r: .32, t: 99 }); }, barrier, pshots: () => pshots.length };
 requestAnimationFrame(frame);
+setTimeout(orient, 300);
 })();
 </script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/thoughtform-sw.js", { scope: "/thoughtform" }).catch(() => {});</script>
 </body>
 </html>
