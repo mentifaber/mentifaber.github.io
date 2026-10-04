@@ -692,7 +692,7 @@ export class Lobby extends DurableObject {
   bump(k, n) { this.sql().exec("INSERT INTO tally(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); }
   async api(req, url) {
     const q = this.sql(), J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
-    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins"];
+    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform"];
     if (url.pathname.endsWith("/stats")) {
       const day = new Date().toISOString().slice(0, 10), t = {};
       for (const r of q.exec("SELECT k,n FROM tally").toArray()) t[r.k] = r.n;
