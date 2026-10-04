@@ -109,6 +109,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   #touch #tswap{display:none}
 }
 .prof{display:flex;align-items:center;gap:12px;font-size:12px;letter-spacing:.18em;color:var(--dim)}.prof b{color:var(--ink)}.prof .xp{width:140px;height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}.prof .xp i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),#9d8bff)}.prof .sh{color:var(--gold)}
+.wgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;width:min(820px,92vw)}@media(max-width:640px){.wgrid{grid-template-columns:1fr}}.board .ago{color:var(--dim);font-size:10px}
 .row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.row2 .btn{min-width:180px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;width:min(820px,92vw)}
 .card{pointer-events:auto;text-align:left;font:inherit;color:var(--ink);background:rgba(255,255,255,.05);border:1px solid rgba(157,139,255,.35);border-radius:14px;padding:12px 14px;cursor:pointer;position:relative}
@@ -170,6 +171,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div class="prof" id="t-prof"></div>
   <button class="btn" id="b-play">ENTER THE MIND</button>
   <div class="row2"><button class="btn alt" id="b-coop">CO-OP · ONLINE</button><button class="btn alt" id="b-shop">ARMORY</button></div>
+  <div class="row2"><button class="btn alt" id="b-world">WORLD BOARD</button><button class="btn alt" id="b-acct">PLAYER FILE</button></div>
   <button class="btn alt hidden" id="b-install">INSTALL AS AN APP</button>
   <div class="stat hidden" id="ios-hint" style="max-width:420px;line-height:1.8">On iPhone or iPad: tap <b>Share</b>, then <b>Add to Home Screen</b>. It opens full screen, like an app.</div>
   <div class="keys" id="keys"><b>WASD</b> move · <b>MOUSE</b> look · <b>CLICK</b> fire · <b>RIGHT CLICK</b> surge · <b>1 2 3 4 / WHEEL</b> Quill, Scatter, Cannon, Beam<br><b>SPACE</b> jump, again in the air · <b>SHIFT</b> dash · <b>Q</b> shockwave · <b>F</b> barrier · <b>E</b> rewrite when focus is full · <b>ESC</b> pause</div>
@@ -194,6 +196,25 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <button class="btn alt" id="b-sback">BACK</button>
 </section>
 
+<section class="scr hidden" id="s-world">
+  <div class="logo" style="font-size:clamp(30px,7vw,52px)">WORLD BOARD</div>
+  <div class="tag" id="w-sub">EVERY MIND, EVERY MODE · LIVE</div>
+  <div id="w-tabs" class="chips"></div>
+  <div class="wgrid"><div class="board" id="w-board"></div><div class="board" id="w-feed"></div></div>
+  <div class="cards" id="w-me"></div>
+  <button class="btn alt" id="b-wback">BACK</button>
+</section>
+
+<section class="scr hidden" id="s-acct">
+  <div class="logo" style="font-size:clamp(30px,7vw,52px)">PLAYER FILE</div>
+  <div class="stat" id="a-stat" style="max-width:560px;line-height:1.8"></div>
+  <div id="a-out"><div class="namebox"><input id="a-name" maxlength="16" placeholder="name" autocomplete="off" spellcheck="false"><input id="a-code" maxlength="9" placeholder="code (to log in)" autocomplete="off" spellcheck="false" style="width:150px;text-transform:uppercase"></div>
+    <div class="row2" style="margin-top:10px"><button class="btn" id="b-areg">CREATE MY FILE</button><button class="btn alt" id="b-alog">LOG IN</button></div></div>
+  <div id="a-in" class="hidden"><div class="prof" id="a-prof"></div><div class="board" id="a-devs" style="margin-top:12px"></div>
+    <div class="row2" style="margin-top:10px"><button class="btn alt" id="b-async">SYNC NOW</button><button class="btn alt" id="b-acode">SHOW MY CODE</button><button class="btn alt" id="b-aout">LOG OUT ON THIS DEVICE</button></div></div>
+  <button class="btn alt" id="b-aback">BACK</button>
+</section>
+
 <section class="scr hidden" id="s-coop">
   <div class="logo" style="font-size:clamp(30px,7vw,52px)">CO-OP</div>
   <div class="tag">TWO CLEAR THOUGHTS · ONE MIND · SHARED SCORE</div>
@@ -207,7 +228,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div class="logo" style="font-size:48px">PAUSED</div>
   <button class="btn" id="b-resume">RESUME</button>
   <button class="btn alt" id="b-quit">LEAVE THE MIND</button>
-  <div class="keys set"><label>SENSITIVITY <input type="range" id="sens" min="1" max="20" value="8"></label><label>FIELD OF VIEW <input type="range" id="fov" min="95" max="165" value="125"></label><label>VOLUME <input type="range" id="vol" min="0" max="100" value="55"></label><label>INVERT LOOK <input type="checkbox" id="inv"></label><label>MUSIC <input type="range" id="mus" min="0" max="100" value="50"></label><label>SCREEN SHAKE <input type="checkbox" id="shk" checked></label><label>REDUCED MOTION <input type="checkbox" id="rmo"></label><label>TIPS <input type="checkbox" id="tps" checked></label><label>AIM ASSIST <input type="checkbox" id="aim"></label><label>QUALITY <select id="qual"><option value="auto">AUTO</option><option value="low">LOW</option><option value="high">HIGH</option></select></label><button class="btn alt" id="b-fs" style="min-width:0;padding:10px 18px;margin-top:6px">FULLSCREEN</button></div>
+  <div class="keys set"><label>SENSITIVITY <input type="range" id="sens" min="1" max="20" value="8"></label><label>FIELD OF VIEW <input type="range" id="fov" min="95" max="165" value="125"></label><label>VOLUME <input type="range" id="vol" min="0" max="100" value="55"></label><label>INVERT LOOK <input type="checkbox" id="inv"></label><label>MUSIC <input type="range" id="mus" min="0" max="100" value="50"></label><label>SCREEN SHAKE <input type="checkbox" id="shk" checked></label><label>REDUCED MOTION <input type="checkbox" id="rmo"></label><label>TIPS <input type="checkbox" id="tps" checked></label><label>AIM ASSIST <input type="checkbox" id="aim"></label><label>GRAPHICS <select id="gfx"><option value="2">CINEMATIC</option><option value="1">BALANCED</option><option value="0">FAST</option></select></label><label>QUALITY <select id="qual"><option value="auto">AUTO</option><option value="low">LOW</option><option value="high">HIGH</option></select></label><button class="btn alt" id="b-fs" style="min-width:0;padding:10px 18px;margin-top:6px">FULLSCREEN</button></div>
   <div class="stat" id="p-stats" style="line-height:2;max-width:560px"></div>
 </section>
 
@@ -251,7 +272,7 @@ uniform vec4 TA[${MAXT}]; uniform vec4 TB[${MAXT}];
 uniform float RW, HURT, MUZ, HEAT, SURGE, WAVEP; uniform vec3 VB;
 uniform vec4 BOOM; uniform vec4 SHOCK; uniform float BAR;
 uniform vec3 QC; uniform float QH; uniform vec4 GEO; uniform vec3 PAL0, PAL1, PAL2; uniform float FOGK, FLASH, FOVK; uniform int REG; uniform vec4 SLAM;
-uniform vec4 SP[${MAXS}]; uniform int NS;
+uniform vec4 SP[${MAXS}]; uniform int NS; uniform int QL;
 #define PI 3.14159265
 mat2 rot(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
 float h21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
@@ -294,7 +315,7 @@ vec2 world(vec3 p){
   }
   return d;
 }
-vec2 map(vec3 p){
+vec2 scene(vec3 p){
   vec2 d = world(p);
   for (int i=0;i<${MAXE};i++){
     if (i>=NE) break;
@@ -337,14 +358,27 @@ vec2 map(vec3 p){
       de = max(shell, -gy*.9);
       de = min(de, length(q)-s*.34);
       for (int k=0;k<3;k++){ vec3 o=q; o.xz*=rot(T*(.6+float(k)*.3)+float(k)*2.1); o.yz*=rot(float(k)*1.1); de = min(de, sdTorus(o, vec2(s*(1.25+float(k)*.22), s*.035))); }
-    } else {                                   // ALLY: the other clear thought, holding the line with you
+    } else if (ei.x<7.5){                      // ALLY: the other clear thought, holding the line with you
       vec3 r=q; r.xz*=rot(ei.w);
       de = sdOct(r*vec3(1.,.45,1.), s*.45);
       vec3 rr=q; rr.y-=s*.9; rr.xz*=rot(T*2.); de = min(de, sdTorus(rr, vec2(s*.5, s*.05)));
       de = min(de, length(q-vec3(0.,s*.9,0.))-s*.18);
+    } else if (ei.x<8.5){                      // LOOP: two rings that keep passing through each other
+      vec3 r=q; r.xy*=rot(T*2.4+ei.z); r.yz*=rot(T*1.3);
+      de = min(sdTorus(r, vec2(s*.62, s*.13)), sdTorus((r-vec3(s*.62,0.,0.)).xzy, vec2(s*.62, s*.13)));
+      de = min(de, length(q)-s*.2);
+    } else {                                   // DENIAL: a bristling core that refuses to let anything end
+      vec3 r=q; r.xz*=rot(T*.7+ei.z);
+      float sp = sin(r.x*9./s)*sin(r.y*9./s)*sin(r.z*9./s);
+      de = (length(r)-s*(.62+.16*sp))*.6;
+      vec3 h=q; h.y-=s*.95; de = min(de, sdTorus(h, vec2(s*.55, s*.035)));
     }
     if (de < d.x) d = vec2(de, 10.+float(i));
   }
+  return d;
+}
+vec2 map(vec3 p){
+  vec2 d = scene(p);
   // the Quill, held in front of you (view space)
   vec3 v = p - C; vec3 vq = vec3(dot(v,rgt), dot(v,up), dot(v,fwd));
   vq -= vec3(.2, -.17, .46) + VB;
@@ -358,6 +392,11 @@ vec2 map(vec3 p){
   return d;
 }
 vec3 nrm(vec3 p){ vec2 k=vec2(1.,-1.)*.0015; return normalize(k.xyy*map(p+k.xyy).x+k.yyx*map(p+k.yyx).x+k.yxy*map(p+k.yxy).x+k.xxx*map(p+k.xxx).x); }
+// soft shadow toward the Seed: the world occludes, the light has a size
+float shadow(vec3 ro, vec3 rd, float tmax){ float r=1., t=.08, ph=1e9;
+  for (int i=0;i<36;i++){ float h = world(ro+rd*t).x; if (h<.001) return 0.; float y=h*h/(2.*ph), d=sqrt(max(0.,h*h-y*y)); r=min(r, 9.*d/max(0.,t-y)); ph=h; t+=clamp(h,.05,1.6); if (t>tmax) break; }
+  return clamp(r,0.,1.); }
+vec3 nrmS(vec3 p){ vec2 k=vec2(1.,-1.)*.002; return normalize(k.xyy*scene(p+k.xyy).x+k.yyx*scene(p+k.yyx).x+k.yxy*scene(p+k.yxy).x+k.xxx*scene(p+k.xxx).x); }
 float ao(vec3 p, vec3 n){ float o=0., w=1.; for(int i=1;i<5;i++){ float h=.12*float(i); o+=w*(h-map(p+n*h).x); w*=.6; } return clamp(1.-1.6*o,0.,1.); }
 vec3 pal(float t){ return .55+.45*cos(6.2831*(t+vec3(.0,.33,.67))); }
 vec3 sky(vec3 rd){
@@ -376,26 +415,11 @@ float segDist(vec3 ro, vec3 rd, vec3 a, vec3 b, float tmax, out float tt){
   vec3 pb = a + ba*s; float t = clamp(dot(pb-ro, rd), 0., tmax); tt=t;
   return length(ro+rd*t - pb);
 }
-void main(){
-  vec2 uv = (gl_FragCoord.xy - .5*R) / R.y;
-  float cy=cos(YP.x), sy=sin(YP.x), cp=cos(YP.y), sp=sin(YP.y);
-  fwd = vec3(sy*cp, sp, cy*cp); rgt = normalize(vec3(cy, 0., -sy)); up = cross(fwd, rgt);
-  float fov = FOVK - SURGE*.08;
-  vec3 ro = C, rd = normalize(fwd*fov + rgt*uv.x + up*uv.y);
-  float t = .02; vec2 h = vec2(0.); bool hit = false;
-  for (int i=0;i<120;i++){
-    vec3 p = ro + rd*t; h = map(p);
-    if (h.x < .0012*t) { hit = true; break; }
-    t += h.x; if (t > 90.) break;
-  }
-  vec3 col = sky(rd) * (PAL2*1.4 + .3) + FLASH*vec3(.6,.7,1.)*smoothstep(-.1,.6,rd.y);
-  vec3 L = vec3(0., 7., 0.);
-  float seedPulse = .6+.4*sin(T*3.);
+vec3 shade(vec3 p, vec3 n, vec3 rd, float m, float t, bool full, out float gloss){
+  vec3 L = vec3(0., 7., 0.); float seedPulse = .6+.4*sin(T*3.);
   vec3 seedCol = mix(vec3(.5,.9,1.), vec3(1.,.75,.3), RW);
-  if (hit){
-    vec3 p = ro + rd*t, n = nrm(p);
-    vec3 base = vec3(.2), emi = vec3(0.); float spec = .3, rough = 32.;
-    float m = h.y;
+  vec3 base = vec3(.2), emi = vec3(0.); float spec = .3, rough = 32.; gloss = 0.;
+
     if (m < 1.5){
       base = vec3(.07,.05,.12);
       // living neurons: cells drift, their membranes carry pulses outward from the Seed
@@ -434,21 +458,59 @@ void main(){
     } else {
       int idx = int(m - 10.); vec4 ei = EI[0];
       for (int j=0;j<${MAXE};j++) if (j==idx) ei = EI[j];
-      vec3 ec = ei.x<.5 ? vec3(1.,.28,.45) : ei.x<1.5 ? vec3(.95,.75,.2) : ei.x<2.5 ? vec3(.55,.25,1.) : ei.x<3.5 ? vec3(.3,1.,.6) : ei.x<4.5 ? vec3(.7,.95,1.) : ei.x<5.5 ? vec3(1.,.55,.15) : ei.x<6.5 ? vec3(1.,.9,.7) : vec3(.45,1.,.9);
+      vec3 ec = ei.x<.5 ? vec3(1.,.28,.45) : ei.x<1.5 ? vec3(.95,.75,.2) : ei.x<2.5 ? vec3(.55,.25,1.) : ei.x<3.5 ? vec3(.3,1.,.6) : ei.x<4.5 ? vec3(.7,.95,1.) : ei.x<5.5 ? vec3(1.,.55,.15) : ei.x<6.5 ? vec3(1.,.9,.7) : ei.x<7.5 ? vec3(.45,1.,.9) : ei.x<8.5 ? vec3(.35,.6,1.) : vec3(.95,.35,.95);
       base = ec*.35; spec = .9; rough = 70.;
       emi += ec*(.45+.35*sin(T*8.+ei.z)) + vec3(1.)*ei.y*1.6;
       emi *= ei.w>-50. ? 1. : 1.;
     }
-    vec3 ld = normalize(L - p); float dl = length(L-p);
-    float dif = max(dot(n, ld), 0.) * (1.6/(1.+dl*dl*.004));
-    vec3 hv = normalize(ld - rd);
-    float sp2 = pow(max(dot(n,hv),0.), rough)*spec;
-    float hd = max(dot(n, -rd), 0.)*.35;                                 // the light you carry
-    float occ = ao(p, n);
-    vec3 lit = base*(vec3(.12,.1,.2)*occ + seedCol*dif*.9 + vec3(.6,.7,1.)*hd) + seedCol*sp2*.6 + emi;
+  if (m < 1.5){ vec2 mq = p.xz*3.1; n = normalize(n + vec3(sin(mq.x+sin(mq.y*1.3))*.03, 0., sin(mq.y+sin(mq.x*1.7))*.03)); gloss = QL>1 ? .55 : 0.; base *= .7; }
+  else if (m > 2.5 && m < 3.5) gloss = QL>1 ? .25 : 0.;
+  else if (m > 3.5 && m < 4.5){ gloss = QL>1 ? .7 : 0.; base *= .55; spec = 1.2; rough = 140.; }
+  vec3 ld = normalize(L - p); float dl = length(L-p);
+  float sh = (full && QL>0) ? shadow(p+n*.04, ld, dl-2.4) : 1.;
+  float ndl = max(dot(n, ld), 0.), ndv = max(dot(n, -rd), 0.);
+  float dif = ndl * (1.9/(1.+dl*dl*.004)) * sh;
+  vec3 hv = normalize(ld - rd);
+  float fres = .04 + .96*pow(1.-ndv, 5.);
+  float sp2 = pow(max(dot(n,hv),0.), rough)*spec*(rough+8.)/40.*sh;
+  float hd = ndv*.3;                                                    // the light you carry
+  float occ = full ? ao(p, n) : .8;
+  vec3 amb = mix(PAL0*.05+vec3(.02,.015,.03), PAL2*.45+vec3(.08,.06,.14), n.y*.5+.5);  // sky above, the floor's glow below
+  vec3 rim = PAL1*pow(1.-ndv, 3.)*.25*occ;
+  vec3 lit = base*(amb*occ*(QL>0 ? .75 : 1.4) + seedCol*dif*(QL>0 ? 1.5 : 1.) + vec3(.6,.7,1.)*hd) + seedCol*sp2*(.6+fres) + emi + rim*(QL>0?1.:0.);
+  lit += FLASH*base*vec3(.8,.9,1.)*1.5;
+  gloss *= fres*.8+.2;
+  return lit;
+}
+void main(){
+  vec2 uv = (gl_FragCoord.xy - .5*R) / R.y;
+  float cy=cos(YP.x), sy=sin(YP.x), cp=cos(YP.y), sp=sin(YP.y);
+  fwd = vec3(sy*cp, sp, cy*cp); rgt = normalize(vec3(cy, 0., -sy)); up = cross(fwd, rgt);
+  float fov = FOVK - SURGE*.08;
+  vec3 ro = C, rd = normalize(fwd*fov + rgt*uv.x + up*uv.y);
+  float t = .02; vec2 h = vec2(0.); bool hit = false;
+  for (int i=0;i<120;i++){
+    vec3 p = ro + rd*t; h = map(p);
+    if (h.x < .0012*t) { hit = true; break; }
+    t += h.x; if (t > 90.) break;
+  }
+  vec3 col = sky(rd) * (PAL2*1.4 + .3) + FLASH*vec3(.6,.7,1.)*smoothstep(-.1,.6,rd.y);
+  vec3 L = vec3(0., 7., 0.);
+  float seedPulse = .6+.4*sin(T*3.);
+  vec3 seedCol = mix(vec3(.5,.9,1.), vec3(1.,.75,.3), RW);
+  if (hit){
+    vec3 p = ro + rd*t, n = nrm(p); float gl;
+    vec3 lit = shade(p, n, rd, h.y, t, true, gl);
+    if (gl > 0.){                                                       // polished floor: march the reflection
+      vec3 rr = reflect(rd, n), rp = p + n*.05; float rt = .05; vec2 rh = vec2(0.); bool rhit = false;
+      for (int i=0;i<56;i++){ rh = scene(rp+rr*rt); if (rh.x < .002*rt) { rhit = true; break; } rt += rh.x; if (rt > 60.) break; }
+      vec3 rc = sky(rr)*(PAL2*1.4+.3);
+      if (rhit){ vec3 q2 = rp+rr*rt; float g2; rc = mix(rc, shade(q2, nrmS(q2), rr, rh.y, rt, false, g2), exp(-rt*FOGK*1.4)); }
+      lit = mix(lit, lit*.45 + rc, gl);
+    }
     float fog = exp(-t*FOGK);
-    lit += FLASH*base*vec3(.8,.9,1.)*1.5;
-    col = mix(col, lit, fog);
+    vec3 fc = col + seedCol*.18*pow(max(dot(rd, normalize(L-ro)), 0.), 6.)*(QL>0?1.:0.);   // light caught in the haze
+    col = mix(fc, lit, fog);
   }
   // glows: enemy orbs, pickups, quill tracers, the Seed's halo, surge blast
   float tmax = hit ? t : 90.;
@@ -484,8 +546,8 @@ void main(){
   col = mix(col, vec3(.9,.05,.2), HURT*smoothstep(.25,.75,edge));
   if (REG == 2){ vec2 rq = gl_FragCoord.xy/R.y; rq.x += rq.y*.18; float lane = floor(rq.x*60.); float sp = h21(vec2(lane, 3.)); float y = fract(rq.y*.6 + T*(1.5+sp) + sp*7.); col += vec3(.5,.7,1.)*smoothstep(.985,1.,1.-abs(fract(rq.x*60.)-.5)*2.)*smoothstep(.0,.08,y)*smoothstep(.2,.08,y)*.25; }
   col += (h21(gl_FragCoord.xy+T) - .5)*.03;
-  col = 1. - exp(-col*1.25);
-  O = vec4(pow(col, vec3(.85)), 1.);
+  if (QL > 0){ col *= 1.3; col = clamp((col*(2.51*col+.03))/(col*(2.43*col+.59)+.14), 0., 1.); O = vec4(pow(col, vec3(.9)), 1.); }   // filmic
+  else { col = 1. - exp(-col*1.25); O = vec4(pow(col, vec3(.85)), 1.); }
 }`;
 function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
 const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
@@ -493,7 +555,7 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 const al = gl.getAttribLocation(prog, "a"); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
-const U = {}; for (const n of ["R", "T", "C", "YP", "E", "EI", "NE", "B", "NB", "K", "NK", "TA", "TB", "RW", "HURT", "MUZ", "HEAT", "SURGE", "WAVEP", "VB", "BOOM", "SHOCK", "BAR", "GEO", "PAL0", "PAL1", "PAL2", "FOGK", "FLASH", "FOVK", "REG", "SLAM", "SP", "NS", "QC", "QH"]) U[n] = gl.getUniformLocation(prog, n);
+const U = {}; for (const n of ["R", "T", "C", "YP", "E", "EI", "NE", "B", "NB", "K", "NK", "TA", "TB", "RW", "HURT", "MUZ", "HEAT", "SURGE", "WAVEP", "VB", "BOOM", "SHOCK", "BAR", "GEO", "PAL0", "PAL1", "PAL2", "FOGK", "FLASH", "FOVK", "REG", "SLAM", "SP", "NS", "QC", "QH", "QL"]) U[n] = gl.getUniformLocation(prog, n);
 const fSP = new Float32Array(MAXS * 4), fE = new Float32Array(MAXE * 4), fEI = new Float32Array(MAXE * 4), fB = new Float32Array(MAXB * 4), fK = new Float32Array(MAXK * 4), fTA = new Float32Array(MAXT * 4), fTB = new Float32Array(MAXT * 4);
 let scale = matchMedia("(pointer:coarse)").matches ? .42 : .62, W = 1, H = 1;
 function resize() { W = Math.max(1, Math.round(innerWidth * scale)); H = Math.max(1, Math.round(innerHeight * scale)); cv.width = W; cv.height = H; gl.viewport(0, 0, W, H); }
@@ -616,7 +678,11 @@ const MODES = [
   { id: "daily", n: "DAILY MIND", d: "Everyone gets the same waves and the same Insights today. Best of the day is yours.", lvl: 2 },
   { id: "hard", n: "HARDCORE", d: "60 resolve, faster and tougher thoughts, double score.", lvl: 3, board: "thoughtform-hard" },
   { id: "boss", n: "CRITIC RUSH", d: "Every wave is the Critic, stronger each time, in a new region.", lvl: 5, board: "thoughtform-boss" },
+  { id: "blitz", n: "BLITZ", d: "Three minutes. Thoughts pour in faster. Score everything you can before time runs out.", lvl: 4, board: "thoughtform-blitz" },
+  { id: "glass", n: "GLASS MIND", d: "One hit and you shatter. Triple damage, triple score.", lvl: 7, board: "thoughtform-glass" },
+  { id: "horde", n: "THE HORDE", d: "Twice the thoughts, mostly swarms, each one weaker. Pure crowd control.", lvl: 8, board: "thoughtform-horde" },
 ];
+const SMULT = { hard: 2, glass: 3 }, AMULT = { hard: 1.4, glass: 1.7, blitz: 1.2, horde: 1.15 };
 const MAPLVL = [1, 2, 4, 6];
 let mode = "endless", mapStart = 0, rand = Math.random;
 function mulberry(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -630,7 +696,7 @@ function profLine(el) {
   $(el).innerHTML = "<span>LEVEL <b>" + pr.lvl + "</b></span><span class='xp'><i style='width:" + Math.min(100, pr.xp / need * 100) + "%'></i></span><span class='sh'>◆ <b style='color:var(--gold)'>" + pr.shards.toLocaleString() + "</b></span>";
 }
 function award() {
-  const pr = save.prof, mult = mode === "hard" ? 1.4 : 1;
+  const pr = save.prof, mult = AMULT[mode] || 1;
   const sh = Math.round((score / 55 + kills * 1.2 + (P.bosses || 0) * 80) * (1 + pr.up.shard * .1) * mult), xp = Math.round(score / 7 + kills * 3);
   pr.shards += sh; pr.xp += xp; const ups = [];
   while (pr.xp >= xpNeed(pr.lvl)) { pr.xp -= xpNeed(pr.lvl); pr.lvl++; const bonus = 50 * pr.lvl; pr.shards += bonus; ups.push(pr.lvl); }
@@ -662,21 +728,56 @@ function openShop() {
 }
 function buy(key, cost) { const pr = save.prof; if (pr.owned[key]) return true; if (pr.shards < cost) { feedShop("NOT ENOUGH SHARDS"); return false; } pr.shards -= cost; pr.owned[key] = 1; persist(); SFX.pick(); return true; }
 function feedShop(t) { toast(t); }
-const persist = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} };
+const persist = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} if (save.acct) { clearTimeout(persist.t); persist.t = setTimeout(cloudPush, 2500); } };
+/* ───────────────────────── player file: one save that follows you to every device you log in on ───────────────────────── */
+if (!save.dev) save.dev = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const SYNC = ["prof", "best", "bestWave", "miles", "name"], progOf = (sv) => sv && sv.prof ? sv.prof.lvl * 1e6 + sv.prof.xp + (sv.best || 0) / 1e3 : -1;
+const devName = () => { const u = navigator.userAgent; const os = /iPhone/.test(u) ? "iPhone" : /iPad|Macintosh.*Mobile/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1) ? "iPad" : /Android/.test(u) ? "Android" : /Windows/.test(u) ? "Windows" : /Mac/.test(u) ? "Mac" : /CrOS/.test(u) ? "Chromebook" : /Linux/.test(u) ? "Linux" : "device";
+  const br = /Edg\//.test(u) ? "Edge" : /OPR\//.test(u) ? "Opera" : /Firefox\//.test(u) ? "Firefox" : /Chrome\//.test(u) ? "Chrome" : /Safari\//.test(u) ? "Safari" : ""; return os + (br ? " · " + br : "") + (matchMedia("(display-mode: standalone)").matches ? " · app" : ""); };
+const pick = (sv) => Object.fromEntries(SYNC.filter((k) => sv[k] !== undefined).map((k) => [k, sv[k]]));
+async function acct(op, extra) {
+  if (location.protocol === "file:") return { error: "player files need mentifaber.org" };
+  try { return await (await fetch("/api/tether/tf-acct", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ op, dev: save.dev, dn: devName(), ...extra }) })).json(); } catch (e) { return { error: "offline · will sync later" }; }
+}
+function adopt(remote) { if (remote && progOf(remote) > progOf(save)) { Object.assign(save, pick(remote)); save.prof = Object.assign(JSON.parse(JSON.stringify(PROF0)), save.prof); try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} return true; } return false; }
+async function cloudPush() { if (!save.acct) return; const r = await acct("save", { name: save.acct.name, code: save.acct.code, save: pick(save) }); if (r.ok) { save.acct.ts = r.ts; save.acct.devs = r.devs; try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} } return r; }
+async function cloudPull() { if (!save.acct) return; const r = await acct("load", { name: save.acct.name, code: save.acct.code }); if (r.ok) { save.acct.devs = r.devs; const got = adopt(r.save); if (!got && progOf(save) > progOf(r.save)) cloudPush(); if (got && state === "title") { bestLine(); toast("PROGRESS SYNCED FROM YOUR OTHER DEVICES"); } } else if (r.error && /match/.test(r.error)) { save.acct = null; persist(); } return r; }
+function openAcct(msg) {
+  const a = save.acct; $("a-out").classList.toggle("hidden", !!a); $("a-in").classList.toggle("hidden", !a);
+  if (!a) { $("a-name").value = save.name || ""; $("a-stat").innerHTML = msg || "Make a player file to keep your level, shards, Armory and bests on every device you play on, and to keep your name on the World Board yours. You get a code: write it down, it is how you log in on another phone, tablet or computer."; }
+  else { profLine("a-prof"); $("a-stat").innerHTML = msg || "LOGGED IN AS <b>" + esc(a.name) + "</b> · this device syncs on its own" + (a.ts ? " · last saved " + ago(a.ts) : "");
+    const d = a.devs || {}; $("a-devs").innerHTML = '<div class="tag" style="display:block;text-align:center">DEVICES ON THIS FILE</div>' + Object.entries(d).sort((x, y) => y[1].ts - x[1].ts).map(([id, v]) => '<div class="' + (id === save.dev ? "me" : "") + '"><span>' + esc(v.n || "device") + (id === save.dev ? " · THIS ONE" : "") + "</span><b>" + ago(v.ts) + "</b></div>").join(""); }
+  show("s-acct");
+}
+const ago = (ts) => { const s2 = Math.max(0, (Date.now() - ts) / 1000); return s2 < 60 ? "just now" : s2 < 3600 ? Math.floor(s2 / 60) + "m ago" : s2 < 86400 ? Math.floor(s2 / 3600) + "h ago" : Math.floor(s2 / 86400) + "d ago"; };
+const MLABEL = { thoughtform: "ENDLESS", "thoughtform-hard": "HARDCORE", "thoughtform-boss": "CRITIC RUSH", "thoughtform-coop": "CO-OP", "thoughtform-blitz": "BLITZ", "thoughtform-glass": "GLASS MIND", "thoughtform-horde": "THE HORDE" };
+let worldTab = "thoughtform", worldT = 0;
+async function openWorld() { show("s-world"); await worldLoad(); clearInterval(worldT); worldT = setInterval(() => { if ($("s-world").classList.contains("hidden")) clearInterval(worldT); else worldLoad(); }, 5000); }
+async function worldLoad() {
+  const me = (save.acct && save.acct.name) || save.name || "";
+  $("w-tabs").innerHTML = Object.entries(MLABEL).map(([k, n]) => '<button class="chip' + (k === worldTab ? " on" : "") + '" data-w="' + k + '">' + n + "</button>").join("");
+  if (location.protocol === "file:") { $("w-board").innerHTML = '<div class="stat">THE WORLD BOARD LIVES ON mentifaber.org</div>'; return; }
+  let j; try { j = await (await fetch("/api/tether/tf-world?name=" + encodeURIComponent(me), { cache: "no-store" })).json(); } catch (e) { $("w-sub").textContent = "OFFLINE · RETRYING"; return; }
+  $("w-sub").innerHTML = "<b>" + j.players + "</b> MINDS ON THE BOARDS · <b>" + j.files + "</b> PLAYER FILES · LIVE";
+  const m = j.modes[worldTab] || { top: [], n: 0 }, ml = me.toLowerCase();
+  $("w-board").innerHTML = '<div class="tag" style="display:block;text-align:center">' + MLABEL[worldTab] + " · TOP " + Math.min(10, m.n) + " OF " + m.n + "</div>" + (m.top.length ? m.top.map((r, i) => '<div class="' + (r.name.toLowerCase() === ml ? "me" : "") + '"><span>' + (i + 1) + ". " + esc(r.name) + "</span><b>" + Math.round(r.v) + " · W" + r.m + "</b></div>").join("") : '<div><span>nobody yet. be first</span></div>') + (m.me && m.me.rank > 10 ? '<div class="me"><span>' + m.me.rank + ". " + esc(me) + "</span><b>" + Math.round(m.me.v) + " · W" + m.me.m + "</b></div>" : "");
+  $("w-feed").innerHTML = '<div class="tag" style="display:block;text-align:center">JUST NOW, AROUND THE WORLD</div>' + (j.feed.length ? j.feed.map((f) => '<div class="' + (f.name.toLowerCase() === ml ? "me" : "") + '"><span>' + esc(f.name) + ' <span class="ago">' + (MLABEL[f.mode] || "") + " · " + ago(f.ts) + "</span></span><b>" + Math.round(f.v) + "</b></div>").join("") : "<div><span>quiet for now</span></div>");
+  $("w-me").innerHTML = me ? Object.entries(MLABEL).map(([k, n]) => { const x = j.modes[k] && j.modes[k].me; return '<button class="card' + (k === worldTab ? " on" : "") + '" data-w="' + k + '"><b>' + n + "</b><span>" + (x ? "YOU · #" + x.rank + " of " + j.modes[k].n : "not on this board yet") + "</span>" + (x ? "<em>" + Math.round(x.v) + "</em>" : "") + "</button>"; }).join("") : '<div class="stat">POST A SCORE OR MAKE A PLAYER FILE TO SEE WHERE YOU STAND</div>';
+}
 $("sens").value = save.sens;
 let sparks = [], slam = null, shakeT = 0, flashT = 0, boltT = 6, clearT = 0, bossE = null, pshots = [], shock = null, state = "title", T = 0, P, enemies, orbs, picks, tracers, boom, wave, waveLeft, toSpawn, spawnT, breathT, score, combo, comboT, kills, shots, hits, slowT, hurtT, feedT;
 const keys = new Set(); let mouseDown = false, altDown = false, look = { x: 0, y: 0 }, mv = { x: 0, y: 0 };
 function reset() {
   P = { x: 0, y: DAIS_H, z: 4, vx: 0, vy: 0, vz: 0, yaw: Math.PI, pitch: 0, hp: 100, focus: 0, heat: 0, over: false, overT: 0, cd: 0, air: 1, ground: true, dashT: 0, dashCd: 0, inv: 0, bob: 0, muz: 0, charge: 0, surgeCd: 0, w: 0, shockCd: 0, barCd: 0, barT: 0, hpMax: 100, perks: {}, cleared: false, picked: false,
-    m: { dmg: 1, heat: 1, leech: 0, chain: 0, dashCd: 1, air: 1, focus: 1, rwT: 7, volatile: 0, magnet: 1, drop: 1, pellets: 8, blast: 1, surgeCd: 1, armor: 1, abil: 1 } };
+    m: { dmg: 1, heat: 1, leech: 0, chain: 0, dashCd: 1, air: 1, focus: 1, rwT: 7, volatile: 0, magnet: 1, drop: 1, pellets: 8, blast: 1, surgeCd: 1, armor: 1, abil: 1, crit: 0, thorns: 0, rate: 1 } };
   pshots = []; shock = null; sparks = []; slam = null; bossE = null; setRegion(mode === "daily" ? today() % 4 : mode === "boss" ? 0 : mapStart); $("bossbar").classList.add("hidden");
-  const up = save.prof.up; P.m.dmg = 1 + up.dmg * .04; P.m.heat = 1 - up.cool * .05; P.hpMax = (mode === "hard" ? 60 : 100) + up.hp * 8; P.hp = P.hpMax; P.focus = Math.min(100, up.focus * 12);
+  const up = save.prof.up; P.m.dmg = 1 + up.dmg * .04; P.m.heat = 1 - up.cool * .05; P.hpMax = mode === "glass" ? 1 : (mode === "hard" ? 60 : 100) + up.hp * 8; P.hp = P.hpMax; if (mode === "glass") P.m.dmg *= 3; P.clock = mode === "blitz" ? 180 : 0; P.focus = Math.min(100, up.focus * 12);
   rand = mode === "daily" ? mulberry(today()) : Math.random;
   enemies = []; orbs = []; picks = []; tracers = []; boom = null; wave = 0; score = 0; combo = 0; comboT = 0; kills = 0; shots = 0; hits = 0; slowT = 0; hurtT = 0;
   nextWave();
 }
 function nextWave() {
-  wave++; toSpawn = 4 + wave * 2 + Math.floor(wave * wave * .15); waveLeft = toSpawn; spawnT = .6; breathT = 0;
+  wave++; toSpawn = Math.round((4 + wave * 2 + Math.floor(wave * wave * .15)) * (mode === "horde" ? 2 : mode === "blitz" ? 1.4 : 1)); waveLeft = toSpawn; spawnT = .6; breathT = 0;
   if (P) { P.cleared = false; P.picked = false; }
   const base = mode === "daily" ? today() % 4 : mapStart, reg = mode === "boss" ? (wave - 1) % REGIONS.length : (base + Math.floor((wave - 1) / 5)) % REGIONS.length;
   save.prof.maps[reg] = 1;
@@ -709,6 +810,9 @@ function takePerk(i) {
 }
 function kindFor() {
   const r = rand(), w = wave;
+  if (mode === "horde" && rand() < .35) return 5;
+  if (w >= 6 && rand() < .08) return 8;
+  if (w >= 7 && rand() < .06) return 9;
   if (w >= 3 && r < Math.min(.12 + w * .015, .25)) return 2;
   if (w >= 2 && rand() < .22) return 3;
   if (w >= 4 && rand() < .12) return 4;
@@ -724,8 +828,11 @@ const KIND = [
   { name: "LANCE", r: .85, hp: 50, sp: 3.4, pts: 220 },
   { name: "SWARM", r: .5, hp: 14, sp: 11, pts: 60 },
   { name: "THE CRITIC", r: 3.2, hp: 1700, sp: 2.4, pts: 3000 },
+  { name: "PARTNER", r: .75, hp: 1, sp: 0, pts: 0 },
+  { name: "LOOP", r: .95, hp: 70, sp: 5, pts: 260 },
+  { name: "DENIAL", r: 1.2, hp: 120, sp: 2.6, pts: 350 },
 ];
-const KCOL = ["#ff6f8f", "#ffd36b", "#b49bff", "#6fffb0", "#bff3ff", "#ff9a3d", "#fff1c9"], KSPARK = [1, 2, 3, 4, 5, 6, 2];
+const KCOL = ["#ff6f8f", "#ffd36b", "#b49bff", "#6fffb0", "#bff3ff", "#ff9a3d", "#fff1c9", "#73ffe6", "#6fa0ff", "#f070f0"], KSPARK = [1, 2, 3, 4, 5, 6, 2, 5, 5, 3];
 // insights: one is offered from three after every wave, and they stack
 const PERKS = [
   { id: "sharp", n: "SHARPER QUILL", d: "+20% damage with every instrument", f: (m) => (m.dmg *= 1.2) },
@@ -742,6 +849,9 @@ const PERKS = [
   { id: "proof", n: "HEAVY PROOF", d: "Logic Cannon bursts 30% wider and harder", f: (m) => (m.blast *= 1.3) },
   { id: "surge", n: "SURGE OVERLOAD", d: "right-click surge recharges almost twice as fast", f: (m) => (m.surgeCd *= .55) },
   { id: "skin", n: "THICK SKIN", d: "take 15% less damage", f: (m) => (m.armor *= .85) },
+  { id: "keen", n: "KEEN EYE", d: "+8% chance to crit, crits hit for double", f: (m) => (m.crit += .08) },
+  { id: "thorn", n: "THORNED THOUGHTS", d: "whatever touches you takes 30 damage", f: (m) => (m.thorns += 30) },
+  { id: "over", n: "OVERCLOCK", d: "every instrument fires 15% faster", f: (m) => (m.rate *= .85) },
   { id: "quick", n: "QUICK MIND", d: "shockwave and barrier recharge 30% faster", f: (m) => (m.abil *= .7) },
 ];
 // three instruments of intent: the Quill writes, the Scatter brainstorms, the Cannon proves
@@ -755,7 +865,7 @@ function spawn(kind, at) {
   if (enemies.length >= MAXE) return false;
   const K = KIND[kind], a = rand() * Math.PI * 2, R = 30;
   const e = { k: kind, x: at ? at.x : Math.cos(a) * R, z: at ? at.z : Math.sin(a) * R, y: kind === 1 ? 3.5 + Math.random() * 2 : kind === 2 ? 2.2 : kind === 3 ? 1.6 : kind === 4 ? 2.6 : kind === 6 ? 6 : 1.2, vx: 0, vz: 0, vy: 0,
-    id: spawn.n = (spawn.n || 0) + 1, hp: K.hp * (1 + wave * .06) * (mode === "hard" ? 1.35 : 1), max: K.hp * (1 + wave * .06), r: K.r, flash: 0, ph: Math.random() * 9, fire: 1.5 + Math.random() * 1.5, grow: at ? 1 : 0, touch: 0, orbit: Math.random() < .5 ? 1 : -1, charge: 0, atk: 0 };
+    id: spawn.n = (spawn.n || 0) + 1, hp: K.hp * (1 + wave * .06) * (mode === "hard" ? 1.35 : mode === "horde" ? .65 : 1), max: K.hp * (1 + wave * .06), r: K.r, flash: 0, ph: Math.random() * 9, fire: 1.5 + Math.random() * 1.5, grow: at ? 1 : 0, touch: 0, orbit: Math.random() < .5 ? 1 : -1, charge: 0, atk: 0 };
   if (kind < 6 && wave >= 3 && !at && rand() < Math.min(.06 + wave * .01, .18)) { e.elite = true; e.hp *= 2.5; e.max = e.hp; e.r *= 1.3; }
   enemies.push(e); return true;
 }
@@ -778,7 +888,7 @@ function addTracer(a, b, kind, remote) { if (coop && !remote && coop.out.tr.leng
 function burst(x, y, z, n, c, sp) { for (let i = 0; i < n; i++) { if (sparks.length >= MAXS) sparks.shift(); const a = Math.random() * 6.283, b = Math.random() * 2 - 1, v = (sp || 6) * (.4 + Math.random() * .6); sparks.push({ x, y, z, vx: Math.cos(a) * Math.sqrt(1 - b * b) * v, vy: b * v + 3, vz: Math.sin(a) * Math.sqrt(1 - b * b) * v, life: .7 + Math.random() * .3, c }); } }
 function damage(e, dmg, quiet, depth, remote) {
   if (!remote) dmg *= P.m.dmg; if (e.dead) return; let crit = false;
-  if (!depth && !remote && Math.random() < .12) { dmg *= 2; crit = true; }
+  if (!depth && !remote && Math.random() < .12 + P.m.crit) { dmg *= 2; crit = true; }
   if (coop && !coop.host) { // a guest only proposes damage; the host's mind decides what dies
     if (e.hp <= 0) return; coop.out.h.push([e.id, Math.round(dmg * 10) / 10]); e.hp -= dmg; e.flash = 1; e.lastHit = T; if (!quiet) { hits++; burst(e.x, e.y, e.z, 2, 0, 4); }
     floatText(e, (crit ? "CRIT " : "") + Math.round(dmg), crit ? "#ff9a3d" : "#efe9ff"); $("hm").classList.remove("on"); void $("hm").offsetWidth; $("hm").classList.add("on"); SFX.hit(); return;
@@ -793,9 +903,9 @@ function damage(e, dmg, quiet, depth, remote) {
     if (P.m.volatile && (depth || 0) < 2) { boom = { x: e.x, y: e.y, z: e.z, life: .6 }; for (const o of enemies) if (!o.dead && o !== e && Math.hypot(o.x - e.x, o.y - e.y, o.z - e.z) < 4) damage(o, P.m.volatile / P.m.dmg, true, (depth || 0) + 1); }
     if (e.k === 6) { P.bosses = (P.bosses || 0) + 1; bossE = null; $("bossbar").classList.add("hidden"); flashT = 1; shakeT = 1; P.hp = P.hpMax; P.focus = 100; banner("THE CRITIC FALLS", "YOU KNEW BETTER"); slam = null; }
     if (e.elite) { picks.push({ x: e.x, y: Math.max(.6, e.y), z: e.z, k: 0, t: 12 }); feed("ELITE ERASED", "#ffd36b"); }
-    const pts = Math.round(KIND[e.k].pts * (mode === "hard" ? 2 : 1) * (e.elite ? 2.5 : 1) * (1 + (combo - 1) * .25) * (slowT > 0 ? 1.5 : 1)); score += pts;
+    const pts = Math.round(KIND[e.k].pts * (SMULT[mode] || 1) * (e.elite ? 2.5 : 1) * (1 + (combo - 1) * .25) * (slowT > 0 ? 1.5 : 1)); score += pts;
     feed(KIND[e.k].name + " ERASED  +" + pts, KCOL[e.k]); SFX.kill(combo);
-    P.focus = Math.min(100, P.focus + [9, 14, 30, 11, 16, 4, 100][e.k] * P.m.focus * (slowT > 0 ? 0 : 1));
+    P.focus = Math.min(100, P.focus + [9, 14, 30, 11, 16, 4, 100, 0, 18, 20][e.k] * P.m.focus * (slowT > 0 ? 0 : 1));
     if (slowT > 0) P.hp = Math.min(P.hpMax, P.hp + 3);
     if (Math.random() < Math.min(.9, (.35 + Math.min(e.k, 3) * .15) * P.m.drop)) picks.push({ x: e.x, y: Math.max(.6, e.y), z: e.z, k: Math.random() < .55 ? 0 : 1, t: 12 });
     if (e.k === 2) for (let i = 0; i < 2; i++) if (spawn(0, { x: e.x + (i ? 1 : -1), z: e.z })) waveLeft++;
@@ -806,7 +916,7 @@ function fire() {
   if (P.down) return;
   if (P.over || P.cd > 0) return;
   const w = WEAP[P.w];
-  P.cd = w.cd * (slowT > 0 ? .65 : 1); P.heat += w.heat * P.m.heat * (slowT > 0 ? .4 : 1); P.muz = 1;
+  P.cd = w.cd * (slowT > 0 ? .65 : 1) * P.m.rate; P.heat += w.heat * P.m.heat * (slowT > 0 ? .4 : 1); P.muz = 1;
   if (P.heat >= 1) { P.over = true; P.overT = 1.3; SFX.heat(); feed("QUILL OVERHEATED", "#ff8a3d"); }
   if (P.w === 1) return scatter();
   if (P.w === 2) return cannon();
@@ -884,7 +994,7 @@ async function board(el, bm) {
 async function post() {
   const name = ($("tf-name").value || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16); if (!name || location.protocol === "file:" || !post.pending) return;
   save.name = name; persist(); const v = post.pending; post.pending = null; $("b-post").textContent = "POSTED";
-  try { await fetch("/api/tether/score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, mode: v.mode, v: v.score, m: v.wave }) }); } catch (e) {}
+  try { await fetch("/api/tether/score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, mode: v.mode, v: v.score, m: v.wave, code: save.acct && save.acct.name.toLowerCase() === name.toLowerCase() ? save.acct.code : undefined }) }).then((r) => r.json()).then((r) => { if (r && r.error === "claimed") { $("b-post").textContent = "NAME TAKEN"; toast("THAT NAME HAS A PLAYER FILE · LOG IN TO USE IT"); } }); } catch (e) {}
   board("d-board", v.mode);
 }
 function die() {
@@ -895,7 +1005,7 @@ function die() {
   award();
   if (coop) { netSend({ ev: ["over"] }); coop = null; if (net && net.ws) try { net.ws.send(JSON.stringify({ t: "leave" })); } catch (e) {} }
   const bm = mode === "coop" ? "thoughtform-coop" : (MODES.find((m) => m.id === mode) || {}).board; $("d-namebox").style.display = bm ? "" : "none";
-  post.pending = bm ? { score, wave, mode: bm } : null; $("tf-name").value = save.name || ""; $("b-post").textContent = "POST"; if (bm) { if (save.name) post(); else board("d-board", bm); } else $("d-board").innerHTML = "";
+  post.pending = bm ? { score, wave, mode: bm } : null; $("tf-name").value = (save.acct && save.acct.name) || save.name || ""; $("b-post").textContent = "POST"; if (bm) { if (save.name) post(); else board("d-board", bm); } else $("d-board").innerHTML = "";
 }
 
 /* ───────────────────────── readouts: damage numbers, radar, instruments ───────────────────────── */
@@ -967,11 +1077,12 @@ function update(dt) {
   if (P.over) { P.overT -= dt; P.heat = Math.max(0, P.heat - dt * .8); if (P.overT <= 0) P.over = false; } else P.heat = Math.max(0, P.heat - dt * (mouseDown ? .32 : .62));
   if (mouseDown) fire();
   slowT = Math.max(0, slowT - dt); hurtT = Math.max(0, hurtT - dt * 1.8);
+  if (P.clock) { P.clock -= dt; if (P.clock <= 0) { P.clock = 0; banner("TIME", "THE MIND HOLDS WHAT YOU WROTE"); die(); return; } }
   comboT -= dt; if (comboT <= 0) combo = 0;
   // waves
   if (G) {}
   else if (toSpawn > 0) { spawnT -= edt; if (spawnT <= 0) { const k = kindFor();
-    if (spawn(k)) { toSpawn--; spawnT = Math.max(.35, 1.4 - wave * .07);
+    if (spawn(k)) { toSpawn--; spawnT = Math.max(mode === "blitz" || mode === "horde" ? .18 : .35, (1.4 - wave * .07) * (mode === "blitz" || mode === "horde" ? .55 : 1));
       if (k === 5) { const a = enemies[enemies.length - 1]; for (let i = 0; i < 3; i++) if (spawn(5, { x: a.x + Math.cos(i * 2.1) * 1.4, z: a.z + Math.sin(i * 2.1) * 1.4 })) { enemies[enemies.length - 1].grow = 0; waveLeft++; } } }
     else spawnT = .5; } }
   else if (waveLeft <= 0 && !enemies.length) {
@@ -1002,17 +1113,18 @@ function update(dt) {
     if (e.k === 5) { tx += Math.sin(e.ph * 7) * .6; tz += Math.cos(e.ph * 6) * .6; }
     if (e.k === 4) { const want = 21, radial = dist > want + 3 ? 1 : dist < want - 3 ? -1 : 0; const ox = -tz * e.orbit, oz = tx * e.orbit; tx = tx * radial + ox * .5; tz = tz * radial + oz * .5; if (e.charge > 0) { tx *= .1; tz *= .1; } }
     if (e.k === 6) { const a = e.ph * .22, gx = Math.cos(a) * 11, gz = Math.sin(a) * 11, qx = gx - e.x, qz = gz - e.z, ql = Math.hypot(qx, qz) || 1; tx = qx / ql; tz = qz / ql; }
+    if (e.k === 9) { const want = 18, radial = dist > want + 2 ? 1 : dist < want - 2 ? -1 : 0; const ox = -tz * e.orbit, oz = tx * e.orbit; tx = tx * radial + ox * .6; tz = tz * radial + oz * .6; }
     if (e.k === 1) { const want = 15; const radial = dist > want + 2 ? 1 : dist < want - 2 ? -1 : 0; const ox = -tz * e.orbit, oz = tx * e.orbit; tx = tx * radial + ox * .9; tz = tz * radial + oz * .9; }
     for (const [px, pz] of PILLARS) { const qx = e.x - px, qz = e.z - pz, qd = Math.hypot(qx, qz); const pr = PILLAR_R + 1.8; if (qd < pr) { tx += qx / qd * (pr - qd) * .8; tz += qz / qd * (pr - qd) * .8; } }
     for (const o of enemies) { if (o === e || o.dead) continue; const qx = e.x - o.x, qz = e.z - o.z, qd = Math.hypot(qx, qz), m = e.r + o.r + .3; if (qd < m && qd > .01) { tx += qx / qd * (m - qd); tz += qz / qd * (m - qd); } }
     const tl = Math.hypot(tx, tz) || 1, sp = (mode === "hard" ? 1.18 : 1) * K.sp * (e.k === 0 ? 1 + Math.min(wave, 10) * .03 : 1) * e.grow;
     e.vx += (tx / tl * sp - e.vx) * Math.min(1, edt * 3); e.vz += (tz / tl * sp - e.vz) * Math.min(1, edt * 3);
     e.x += e.vx * edt; e.z += e.vz * edt;
-    const targetY = e.k === 6 ? 6 + Math.sin(e.ph * .7) * .8 : e.k === 4 ? 2.6 + Math.sin(e.ph * 1.3) * .3 : e.k === 5 ? 1 + Math.sin(e.ph * 5) * .5 + (dist < 4 ? (tg.y - .2) : 0) : e.k === 3 ? 1.5 + Math.sin(e.ph * 4) * .3 : e.k === 0 ? 1.1 + Math.sin(e.ph * 3) * .35 + (dist < 4 ? (tg.y - .2) : 0) : e.k === 1 ? 4 + Math.sin(e.ph) * .8 : 1.9 + Math.sin(e.ph * .8) * .2;
+    const targetY = e.k === 6 ? 6 + Math.sin(e.ph * .7) * .8 : e.k === 4 ? 2.6 + Math.sin(e.ph * 1.3) * .3 : e.k === 5 ? 1 + Math.sin(e.ph * 5) * .5 + (dist < 4 ? (tg.y - .2) : 0) : e.k === 3 ? 1.5 + Math.sin(e.ph * 4) * .3 : e.k === 0 ? 1.1 + Math.sin(e.ph * 3) * .35 + (dist < 4 ? (tg.y - .2) : 0) : e.k === 1 ? 4 + Math.sin(e.ph) * .8 : e.k === 9 ? 3.2 + Math.sin(e.ph * .9) * .5 : e.k === 8 ? 1.6 + Math.sin(e.ph * 2.2) * .4 : 1.9 + Math.sin(e.ph * .8) * .2;
     e.y += (Math.max(targetY, groundAt(e.x, e.z) + e.r * .6) - e.y) * Math.min(1, edt * 2.5);
     pushOut(e, e.r * .8);
     const d3 = Math.hypot(e.x - tg.x, e.y - (tg.y + 1), e.z - tg.z);
-    e.touch -= edt; if (d3 < e.r + .55 && e.touch <= 0 && e.grow > .9) { hitT(tg, [11, 11, 22, 11, 10, 6, 30][e.k]); e.touch = .7; e.vx -= tx * 6; e.vz -= tz * 6; }
+    e.touch -= edt; if (d3 < e.r + .55 && e.touch <= 0 && e.grow > .9) { hitT(tg, [11, 11, 22, 11, 10, 6, 30, 0, 14, 8][e.k]); if (tg.me && P.m.thorns) damage(e, P.m.thorns / P.m.dmg, true, 1); e.touch = .7; e.vx -= tx * 6; e.vz -= tz * 6; }
     if (e.k === 4 && e.grow >= 1) {                           // LANCE: tracks you, locks, fires a line you can sidestep
       if (e.charge > 0) {
         e.charge -= edt; if (e.charge > .45) e.aim = { x: tg.x, y: tg.y + 1.2, z: tg.z };
@@ -1031,6 +1143,14 @@ function update(dt) {
         if (e.atk === 1) { slam = { x: e.x, z: e.z, t: -1.15, hit: false }; SFX.charge(); }
         if (e.atk === 2) { for (let i = 0; i < 3; i++) if (spawn(5, { x: e.x + Math.cos(i * 2.1) * 3, z: e.z + Math.sin(i * 2.1) * 3 })) waveLeft++; feed("THE CRITIC CALLS ITS FEARS", "#ff9a3d"); }
       }
+    }
+    if (e.k === 8 && e.grow >= 1) {                           // LOOP: comes back around, somewhere else, right next to you
+      e.fire -= edt; if (e.fire <= 0) { e.fire = 3 + Math.random() * 1.5; burst(e.x, e.y, e.z, 8, 5, 6); const a = Math.random() * 6.283, R = 6 + Math.random() * 3;
+        e.x = tg.x + Math.cos(a) * R; e.z = tg.z + Math.sin(a) * R; pushOut(e, e.r); e.vx = e.vz = 0; burst(e.x, e.y, e.z, 8, 5, 6); SFX.dash(); }
+    }
+    if (e.k === 9 && e.grow >= 1) {                           // DENIAL: keeps the others from ever really dying
+      e.fire -= edt; if (e.fire <= 0) { e.fire = 2.2; let w = null; for (const o of enemies) if (o !== e && !o.dead && o.k !== 9 && o.hp < o.max && Math.hypot(o.x - e.x, o.z - e.z) < 14 && (!w || o.hp / o.max < w.hp / w.max)) w = o;
+        if (w) { w.hp = Math.min(w.max, w.hp + w.max * .25); w.flash = .6; addTracer({ x: e.x, y: e.y, z: e.z }, { x: w.x, y: w.y, z: w.z }, 1); SFX.orb(); } }
     }
     if (e.k === 1 && e.grow >= 1) {
       e.fire -= edt; if (e.fire <= 0) {
@@ -1072,7 +1192,7 @@ function hud() {
   $("he").firstChild.style.width = Math.min(100, P.heat * 100) + "%"; $("hen").textContent = P.over ? "OVERHEATED" : "";
   $("cdq").textContent = P.shockCd > 0 ? P.shockCd.toFixed(1) : "READY"; $("cdf").textContent = P.barT > 0 ? "ACTIVE " + P.barT.toFixed(1) : P.barCd > 0 ? P.barCd.toFixed(1) : "READY";
   radar();
-  $("left").textContent = (waveLeft > 0 ? waveLeft : 0) + " THOUGHTS REMAIN";
+  $("left").textContent = P.clock ? "⏱ " + Math.floor(P.clock / 60) + ":" + String(Math.floor(P.clock % 60)).padStart(2, "0") + " · " + Math.max(0, waveLeft) + " REMAIN" : (waveLeft > 0 ? waveLeft : 0) + " THOUGHTS REMAIN";
   $("rw").style.opacity = P.focus >= 100 && slowT <= 0 ? 1 : 0; $("rw").textContent = touchMode ? "FOCUS FULL · TAP REWRITE" : "FOCUS FULL · PRESS E TO REWRITE";
 }
 
@@ -1096,7 +1216,7 @@ function draw() {
   else { const bob = P.ground ? Math.sin(P.bob * 1.6) * .05 : 0, sk = save.shake === false || save.rmo ? 0 : shakeT * shakeT * .35; cx = P.x + (Math.random() - .5) * sk; cy = P.y + EYE + bob + (Math.random() - .5) * sk; cz = P.z + (Math.random() - .5) * sk; yaw = P.yaw; pitch = P.pitch; }
   { const Rg = REGIONS[REGI]; gl.uniform4f(U.GEO, ...Rg.geo); gl.uniform3f(U.PAL0, ...Rg.pal[0]); gl.uniform3f(U.PAL1, ...Rg.pal[1]); gl.uniform3f(U.PAL2, ...Rg.pal[2]); gl.uniform1f(U.FOGK, Rg.fog); gl.uniform1i(U.REG, REGI); }
   { const q = QUILLS.find((x) => x.id === save.prof.eq.quill) || QUILLS[0]; gl.uniform3f(U.QC, ...(q.c || [1, 1, 1])); gl.uniform1f(U.QH, q.c ? 0 : 1); }
-  gl.uniform1f(U.FLASH, save.rmo ? flashT * .25 : flashT); gl.uniform1f(U.FOVK, save.fov || 1.25);
+  gl.uniform1i(U.QL, save.gfx === undefined ? (touchMode ? 0 : 2) : save.gfx); gl.uniform1f(U.FLASH, save.rmo ? flashT * .25 : flashT); gl.uniform1f(U.FOVK, save.fov || 1.25);
   gl.uniform4f(U.SLAM, slam ? slam.x : 0, slam ? slam.z : 0, slam ? (slam.t < 0 ? 3.2 : slam.t * 17) : 0, slam && P && state !== "title" ? (slam.t < 0 ? 1 : 2) : 0);
   { let n = 0; fSP.fill(0); if (P && state !== "title") for (const sp of sparks) { if (n >= MAXS) break; fSP.set([sp.x, sp.y, sp.z, sp.c + Math.min(.999, sp.life)], n * 4); n++; } gl.uniform4fv(U.SP, fSP); gl.uniform1i(U.NS, n); }
   gl.uniform2f(U.R, W, H); gl.uniform1f(U.T, T); gl.uniform3f(U.C, cx, cy, cz); gl.uniform2f(U.YP, yaw, pitch);
@@ -1171,7 +1291,7 @@ function onRel(d) {
   if (d.s) { const by = new Map(enemies.map((e) => [e.id, e])), next = [];
     for (const [id, k, x, y, z, r, grow, el, ph, ch, hp] of d.s) { let e = by.get(id); if (!e) e = { id, k, x, y, z, r, flash: 0, ph }; by.delete(id);
       Object.assign(e, { k, tx: x, ty: y, tz: z, r, grow, elite: !!el, hp }); if (Math.abs(e.ph - ph) > 1) e.ph = ph; if (ch) { e.aim = { x: ch[0], y: ch[1], z: ch[2] }; e.charge = ch[3]; } else e.charge = 0; next.push(e); }
-    for (const e of by.values()) { burst(e.x, e.y, e.z, e.k === 6 ? 32 : 10, KSPARK[e.k], e.k === 6 ? 14 : 7); if (e.lastHit && T - e.lastHit < .6) { P.focus = Math.min(100, P.focus + [9, 14, 30, 11, 16, 4, 100][e.k] * P.m.focus); if (P.m.leech) P.hp = Math.min(P.hpMax, P.hp + P.m.leech); SFX.kill(1); } }
+    for (const e of by.values()) { burst(e.x, e.y, e.z, e.k === 6 ? 32 : 10, KSPARK[e.k], e.k === 6 ? 14 : 7); if (e.lastHit && T - e.lastHit < .6) { P.focus = Math.min(100, P.focus + [9, 14, 30, 11, 16, 4, 100, 0, 18, 20][e.k] * P.m.focus); if (P.m.leech) P.hp = Math.min(P.hpMax, P.hp + P.m.leech); SFX.kill(1); } }
     enemies = next; }
   if (d.o) orbs = d.o.map(([x, y, z, vx, vy, vz, r]) => ({ x, y, z, vx, vy, vz, r, t: 6 }));
   if (d.k) picks = d.k.map(([x, y, z, k]) => ({ x, y, z, k, t: 12 }));
@@ -1236,7 +1356,7 @@ function startCoop() {
 
 /* ───────────────────────── input ───────────────────────── */
 const touchMode = matchMedia("(pointer:coarse)").matches;
-function show(id) { ["s-title", "s-pause", "s-dead", "s-perk", "s-modes", "s-shop", "s-coop"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
+function show(id) { ["s-title", "s-pause", "s-dead", "s-perk", "s-modes", "s-shop", "s-coop", "s-world", "s-acct"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 function start() {
   goFull(); audio(); reset(); setTimeout(orient, 50); state = "play"; show(null); P.w = -1; setWeapon(0); $("hud").classList.remove("hidden");
   if (touchMode) $("touch").classList.remove("hidden"); else cv.requestPointerLock && cv.requestPointerLock();
@@ -1249,6 +1369,23 @@ $("b-go").onclick = () => { const m = MODES.find((x) => x.id === mode); if (save
 $("b-mback").onclick = $("b-sback").onclick = () => { show("s-title"); bestLine(); };
 $("b-shop").onclick = () => { audio(); openShop(); };
 $("b-coop").onclick = () => { audio(); openCoop(); };
+$("b-world").onclick = () => { audio(); openWorld(); }; $("b-wback").onclick = $("b-aback").onclick = () => { clearInterval(worldT); show("s-title"); bestLine(); };
+$("w-tabs").onclick = $("w-me").onclick = (e) => { const b = e.target.closest("[data-w]"); if (b) { worldTab = b.dataset.w; worldLoad(); } };
+$("b-acct").onclick = () => { audio(); openAcct(); if (save.acct) cloudPull().then(() => !$("s-acct").classList.contains("hidden") && openAcct()); };
+for (const id of ["a-name", "a-code"]) $(id).addEventListener("keydown", (e) => e.stopPropagation());
+$("b-areg").onclick = async () => { const name = $("a-name").value.trim(); if (!name) return openAcct("PICK A NAME FIRST");
+  const r = await acct("register", { name, save: pick(save) }); if (!r.ok) return openAcct((r.error || "could not create").toUpperCase());
+  save.acct = { name: r.name, code: r.code, devs: r.devs, ts: Date.now() }; save.name = r.name; persist();
+  openAcct("YOUR FILE IS MADE. YOUR CODE IS <b style='font-size:20px;letter-spacing:.2em;color:var(--gold)'>" + r.code + "</b><br>Write it down or screenshot it. Log in anywhere with your name and this code."); };
+$("b-alog").onclick = async () => { const name = $("a-name").value.trim(), code = $("a-code").value.trim(); if (!name || !code) return openAcct("TYPE YOUR NAME AND YOUR CODE");
+  const r = await acct("login", { name, code }); if (!r.ok) return openAcct((r.error || "could not log in").toUpperCase());
+  save.acct = { name: r.name, code: code.toUpperCase(), devs: r.devs, ts: r.ts }; save.name = r.name; const got = adopt(r.save); persist(); if (!got) cloudPush();
+  applyLook(); openAcct(got ? "WELCOME BACK, <b>" + esc(r.name) + "</b> · YOUR PROGRESS IS ON THIS DEVICE NOW" : "LOGGED IN · THIS DEVICE WAS FURTHER ALONG, SO ITS PROGRESS WAS SAVED TO YOUR FILE"); };
+$("b-async").onclick = async () => { const r = await cloudPull(); await cloudPush(); openAcct(r && r.ok ? "SYNCED" : ((r && r.error) || "could not sync").toUpperCase()); };
+$("b-acode").onclick = () => openAcct("YOUR CODE: <b style='font-size:20px;letter-spacing:.2em;color:var(--gold)'>" + esc(save.acct.code) + "</b>");
+$("b-aout").onclick = () => { save.acct = null; persist(); openAcct("LOGGED OUT ON THIS DEVICE. YOUR FILE IS SAFE; LOG IN AGAIN ANY TIME."); };
+$("gfx").value = String(save.gfx === undefined ? (touchMode ? 0 : 2) : save.gfx); $("gfx").onchange = (e) => { save.gfx = +e.target.value; persist(); };
+if (save.acct) setTimeout(cloudPull, 800);
 $("b-cback").onclick = () => { show("s-title"); bestLine(); };
 $("b-cjoin").onclick = netJoin; $("c-name").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") netJoin(); });
 $("c-list").onclick = (e) => { const b = e.target.closest("[data-inv],[data-acc],[data-dec]"); if (!b || !net) return; const d = b.dataset;
