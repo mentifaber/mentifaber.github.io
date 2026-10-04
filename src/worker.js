@@ -557,9 +557,9 @@ export class Lobby extends DurableObject {
     if (path === "/" || path === "/spec") {
       if (url.searchParams.get("format") === "text") return new Response(AI_SPEC, { headers: { "content-type": "text/plain; charset=utf-8", "access-control-allow-origin": "*" } });
       const esc = AI_SPEC.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      return new Response("<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Tether for AI agents</title></head><body><h1>Tether for AI agents</h1><pre style='white-space:pre-wrap;font:14px/1.5 monospace'>" + esc + "</pre></body></html>", { headers: { "content-type": "text/html; charset=utf-8", "access-control-allow-origin": "*" } });
+      return new Response("<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Tether for AI agents</title></head><body><h1>Tether for AI agents</h1><p>AI assistants that can only open links: open one of these to start a run, then keep opening the hold or release link from each response.</p><ul>" + ["classic", "sprint", "trial", "moon"].map((m) => "<li><a href='" + url.origin + "/api/tether/ai/start?agent=Guest&mode=" + m + "'>Start a " + m + " run</a> (change agent=Guest to your name)</li>").join("") + "<li><a href='" + url.origin + "/api/tether/ai/ghost/start?agent=Guest&mode=dash'>Record a dash replay for humans to race</a></li></ul><pre style='white-space:pre-wrap;font:14px/1.5 monospace'>" + esc + "</pre></body></html>", { headers: { "content-type": "text/html; charset=utf-8", "access-control-allow-origin": "*" } });
     }
-    const O = url.origin, link = (sid, secs) => ({ hold: O + "/api/tether/ai/act?session=" + sid + "&hold=1&seconds=" + (secs || .25), release: O + "/api/tether/ai/act?session=" + sid + "&hold=0&seconds=" + (secs || .25) });
+    const O = url.origin, link = (sid, n, secs) => ({ hold: O + "/api/tether/ai/act?session=" + sid + "&n=" + (n || 0) + "&hold=1&seconds=" + (secs || .25), release: O + "/api/tether/ai/act?session=" + sid + "&n=" + (n || 0) + "&hold=0&seconds=" + (secs || .25) });
     const AIM = ["classic", "hard", "moon", "sprint", "rush", "gauntlet", "zen", "trial"];
     const tf = (v) => v === true || v === 1 || v === "1" || v === "true" || v === "yes";
     let b = req.method === "GET" ? Object.fromEntries(url.searchParams) : {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return J({ error: "send a JSON body" }, 400); } }
@@ -580,6 +580,7 @@ export class Lobby extends DurableObject {
       if (!row) return J({ error: "unknown or expired session" }, 404);
       const e = this.game(row.id, row);
       if (row.over) return J({ error: "this run is over", observation: e.g.obs() }, 409);
+      if (b.n !== undefined && +b.n !== e.f) return J({ note: "That step was already played (links are single-use). Continue from these links.", observation: e.g.obs(), links: link(row.id, e.f) });
       const hold = tf(b.hold), secs = Math.max(1 / 60, Math.min(3, +b.seconds || .25)), k = e.g.step(hold, secs); e.f += k;
       const log = JSON.parse(row.log); log.push([hold ? 1 : 0, k]);
       let o = e.g.obs(), over = e.g.over();
@@ -603,7 +604,7 @@ export class Lobby extends DurableObject {
         this.games && this.games.delete(row.id);
         return J({ over: true, final: { metres: m, score: o.score, time: o.time, finished: o.finished, ended_by: o.why, leaderboard_value: v, rank }, observation: o });
       }
-      return J({ observation: o, links: link(row.id) });
+      return J({ observation: o, links: link(row.id, e.f) });
     }
     if (path === "/ghost/start") {
       const agent = String(b.agent || "").replace(/[^\w .'()-]/g, "").trim().slice(0, 22);
