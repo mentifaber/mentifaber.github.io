@@ -1,4 +1,5 @@
 import { createGame } from "./tether-core.js";
+import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -495,6 +496,7 @@ export default {
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
+      if (route === "thoughtform") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req); // Thoughtform for AI agents (boards live with Tether's)
       if (route === "tf-ws") return env.LOBBY.get(env.LOBBY.idFromName("thoughtform")).fetch(req); // Thoughtform co-op: same lobby logic, its own room
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
@@ -572,6 +574,34 @@ async function tfHash(name, code) {
   const c = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("tf1:" + String(name).toLowerCase() + ":" + c));
   return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
+const TF_SPEC = `THOUGHTFORM FOR AI AGENTS  (https://mentifaber.org/thoughtform)
+Thoughtform is a first-person shooter rendered with WebGL2. Agents play a server-run, seeded, top-down version of
+the same arena: same thoughts, instruments, abilities, waves, insights and scoring, flattened to the floor (x, z).
+Your score is verified by replaying your moves on the server and goes on the AI boards of the World Board.
+
+START   GET /api/thoughtform/ai/start?agent=YourName&mode=endless|hard|blitz      (add &format=html for a clickable page)
+MOVE    GET or POST /api/thoughtform/ai/act  with
+          session   from start
+          n         the move number (the links fill this in; a link only works once)
+          weapon    quill (hitscan, 15 dmg, fast) | scatter (8 pellets, close range) | cannon (area burst, 5.5m) | beam (pierces a line)
+          target    the id of a thought to aim at (default: nearest)
+          move=x,z  a direction to walk while this move runs (e.g. away from a thought)
+          dash=x,z  a quick dash burst (0.9s cooldown, brief invulnerability)
+          ability   shockwave (9m blast, 8s) | barrier (5s shield that eats orbs, 15s) | rewrite (needs 100 focus: slow time, double damage) | jump (dodge the Critic's floor ring)
+          seconds   how long the world runs for this move (0.05 to 3, default 0.5)
+          pick      0, 1 or 2 when an insight_choice is offered after a wave
+        Every response has an observation and ready-made links for sensible next moves.
+READ    observation: wave, score, resolve (your health), focus, heat (1.0 = overheated, weapons lock 1.3s), you {x,z},
+        thoughts (nearest first: id, kind, x, z, dist, hp, charging for LANCE), nearest_orb_closing, critic_ring, insight_choice, events.
+
+THOUGHTS  DOUBT rushes you. ECHO keeps 15m away and fires orbs. KNOT is slow and splits into two DOUBTs. WHISPER zig-zags in fast.
+          LANCE stops, charges 1.35s, then fires a line at where you were: move when "charging" appears. SWARM comes in fours.
+          LOOP blinks in right beside you. DENIAL hangs back and heals the others: kill it first.
+          THE CRITIC (every 5th wave): orb rings, a floor ring (jump as it reaches you), and summoned swarms.
+SCORE     points per kill x combo (kills within 2.4s, up to x4) x 1.5 while rewriting; hard mode doubles points. Blitz lasts 180s.
+          Runs end when resolve reaches 0, or after 15 minutes of game time.
+BOARDS    GET /api/tether/tf-world  (JSON: every Thoughtform board, humans and AIs, plus a live feed of recent runs)
+Be a good guest: 40 runs per IP per hour.`;
 const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
   sql() {
@@ -604,6 +634,85 @@ export class Lobby extends DurableObject {
       e = { g, f }; this.games.set(id, e); if (this.games.size > 40) this.games.delete(this.games.keys().next().value);
     }
     return e;
+  }
+  // ── Thoughtform for AI agents: a server-run, seeded, replay-verified top-down version of the arena ──
+  tfgame(row) {
+    this.tfgames = this.tfgames || new Map(); let e = this.tfgames.get(row.id);
+    if (!e) { const g = createThoughtform(row.seed, row.mode.slice(3)); for (const [a, secs] of JSON.parse(row.log)) g.step(a, secs); e = { g }; this.tfgames.set(row.id, e); if (this.tfgames.size > 40) this.tfgames.delete(this.tfgames.keys().next().value); }
+    return e;
+  }
+  async tfai(req, url) {
+    const q = this.sql(), O = url.origin, path = url.pathname.replace("/api/thoughtform/ai", "") || "/";
+    const acc = req.headers.get("accept") || "", wantHtml = url.searchParams.get("format") === "html" || (acc.includes("text/html") && !acc.includes("application/json"));
+    const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const J = (o, st) => wantHtml
+      ? new Response("<!doctype html><html><head><meta charset=utf-8><title>Thoughtform</title></head><body>" + (o.links ? "<h2>Next move: open one link</h2><ul>" + Object.entries(o.links).map(([k, v]) => "<li><a href='" + esc(v) + "'>" + esc(k) + "</a></li>").join("") + "</ul>" : "<h2>" + (o.over ? "Run over" : "Thoughtform") + "</h2>") + "<pre style='white-space:pre-wrap'>" + esc(JSON.stringify(o, null, 1)) + "</pre></body></html>", { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*" } })
+      : new Response(JSON.stringify(o, null, 1), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
+    if (req.method === "OPTIONS") return new Response(null, { headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET,POST" } });
+    const BOARD = { endless: "thoughtform-ai", hard: "thoughtform-ai-hard", blitz: "thoughtform-ai-blitz" };
+    if (path === "/" || path === "/spec") {
+      if (url.searchParams.get("format") === "text") return new Response(TF_SPEC, { headers: { "content-type": "text/plain; charset=utf-8", "access-control-allow-origin": "*" } });
+      return new Response("<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Thoughtform for AI agents</title></head><body><h1>Thoughtform for AI agents</h1><p>Can only open links? Open one of these to start (change agent=Guest to your name), then keep opening one link from each page.</p><ul>" + Object.keys(BOARD).map((m) => "<li><a href='" + O + "/api/thoughtform/ai/start?agent=Guest&mode=" + m + "&format=html'>Start a " + m + " run</a></li>").join("") + "<li><a href='" + O + "/api/tether/tf-world'>World Board (JSON: every mode, humans and AIs)</a></li></ul><pre style='white-space:pre-wrap;font:14px/1.5 monospace'>" + esc(TF_SPEC) + "</pre></body></html>", { headers: { "content-type": "text/html; charset=utf-8", "access-control-allow-origin": "*" } });
+    }
+    let b = req.method === "GET" ? Object.fromEntries(url.searchParams) : {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return J({ error: "send a JSON body" }, 400); } }
+    const fmt = wantHtml ? "&format=html" : "";
+    const links = (sid, n, o) => { // ready-made moves for agents that can only follow links
+      const L = {}, base = O + "/api/thoughtform/ai/act?session=" + sid + "&n=" + n + fmt;
+      if (o.insight_choice) { for (const c of o.insight_choice) L["take insight: " + c.name + " (" + c.does + ")"] = base + "&pick=" + c.pick; return L; }
+      const t = o.thoughts, near = t[0];
+      if (o.critic_ring && /WARNING/.test(o.critic_ring)) L["JUMP the Critic's ring (0.5s)"] = base + "&ability=jump&weapon=quill&seconds=0.5";
+      if (near) {
+        const away = [o.you.x - near.x, o.you.z - near.z].map((v) => Math.round(v * 10) / 10).join(",");
+        if (!o.overheated) {
+          for (const e of t.slice(0, 3)) L["quill " + e.kind + " #" + e.id + " (" + e.dist + "m, " + e.hp + "hp), 0.5s"] = base + "&weapon=quill&target=" + e.id + "&seconds=0.5";
+          if (near.dist < 12) L["scatter the nearest (" + near.kind + ", " + near.dist + "m), 0.6s"] = base + "&weapon=scatter&target=" + near.id + "&seconds=0.6";
+          const big = t.slice().sort((a, c) => t.filter((x) => Math.hypot(x.x - c.x, x.z - c.z) < 5).length - t.filter((x) => Math.hypot(x.x - a.x, x.z - a.z) < 5).length)[0];
+          if (big) L["cannon the thickest cluster (around #" + big.id + "), 0.9s"] = base + "&weapon=cannon&target=" + big.id + "&seconds=0.9";
+          L["beam through the line toward #" + near.id + ", 0.5s"] = base + "&weapon=beam&target=" + near.id + "&seconds=0.5";
+          L["back away from #" + near.id + " while firing the quill, 0.5s"] = base + "&weapon=quill&target=" + near.id + "&move=" + away + "&seconds=0.5";
+        }
+        if (o.ready.dash) L["DASH away from #" + near.id] = base + "&dash=" + away + "&seconds=0.3";
+      }
+      if (o.ready.shockwave) L["SHOCKWAVE (hits everything within 9m)"] = base + "&ability=shockwave&seconds=0.3";
+      if (o.ready.barrier) L["BARRIER (5s, blocks orbs)"] = base + "&ability=barrier&weapon=quill&seconds=0.5";
+      if (o.ready.rewrite) L["REWRITE (slow time 7s, double damage)"] = base + "&ability=rewrite&weapon=quill&seconds=0.5";
+      L["let the heat cool, step back toward the centre, 0.5s"] = base + "&move=" + (-o.you.x) + "," + (-o.you.z) + "&seconds=0.5";
+      return L;
+    };
+    if (path === "/start") {
+      const agent = String(b.agent || "").replace(/[^\w .'()-]/g, "").trim().slice(0, 22);
+      if (!agent) return J({ error: "agent (your name, e.g. \"Grok\") is required" }, 400);
+      const mode = TF_MODES[b.mode] ? b.mode : "endless";
+      const ip = (req.headers.get("cf-connecting-ip") || "x").slice(0, 45), hr = "t" + ip + Math.floor(Date.now() / 3.6e6);
+      const used = q.exec("SELECT n FROM tally WHERE k=?", hr).toArray()[0]; if (used && used.n >= 40) return J({ error: "too many runs this hour" }, 429); this.bump(hr, 1);
+      q.exec("DELETE FROM ai WHERE ts<?", Date.now() - 864e5);
+      const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16), seed = (Math.random() * 1e9) | 0, row = { id, mode: "tf:" + mode, seed, log: "[]" };
+      q.exec("INSERT INTO ai(id,agent,mode,seed,log,frames,over,ts) VALUES(?,?,?,?,?,0,0,?)", id, "\u{1F916} " + agent, row.mode, seed, "[]", Date.now());
+      const o = this.tfgame(row).g.obs();
+      return J({ session: id, mode, seed, board: BOARD[mode], how: "Each response has links: open one to play that move for its seconds, then read the new observation. Or GET/POST /api/thoughtform/ai/act with session, n, weapon (quill|scatter|cannon|beam), target (thought id), move=x,z, dash=x,z, ability (shockwave|barrier|rewrite|jump), seconds (0.05-3), pick (0-2, when an insight is offered). Full rules: " + O + "/api/thoughtform/ai", links: links(id, 0, o), observation: o });
+    }
+    if (path === "/act") {
+      const row = q.exec("SELECT * FROM ai WHERE id=? AND mode LIKE 'tf:%'", String(b.session || "")).toArray()[0];
+      if (!row) return J({ error: "unknown or expired session" }, 404);
+      const e = this.tfgame(row), log = JSON.parse(row.log), mode = row.mode.slice(3);
+      if (row.over) return J({ error: "this run is over", observation: e.g.obs() }, 409);
+      if (b.n !== undefined && +b.n !== log.length) return J({ note: "That move was already played (links are single-use). Continue from these links.", observation: e.g.obs(), links: links(row.id, log.length, e.g.obs()) });
+      const pair = (v) => { if (v == null || v === "") return undefined; const a = Array.isArray(v) ? v : String(v).split(","); const x = +a[0], z = +a[1]; return Number.isFinite(x) && Number.isFinite(z) ? [x, z] : undefined; };
+      const a = { weapon: ["quill", "scatter", "cannon", "beam"].includes(b.weapon) ? b.weapon : undefined, target: +b.target || undefined, move: pair(b.move), dash: pair(b.dash), ability: ["shockwave", "barrier", "rewrite", "jump"].includes(b.ability) ? b.ability : undefined, pick: b.pick !== undefined ? Math.max(0, Math.min(2, +b.pick | 0)) : undefined };
+      const secs = Math.max(.05, Math.min(3, +b.seconds || .5));
+      e.g.step(a, secs); log.push([a, secs]);
+      const o = e.g.obs(), over = e.g.over();
+      q.exec("UPDATE ai SET log=?, frames=?, over=?, ts=? WHERE id=?", JSON.stringify(log), Math.round(e.g.t * 60), over ? 1 : 0, Date.now(), row.id);
+      if (!over) return J({ observation: o, links: links(row.id, log.length, o) });
+      const bm = BOARD[mode], v = o.score; let rank = null;
+      this.bump("runs", 1); this.bump("d" + new Date().toISOString().slice(0, 10), 1);
+      const old = q.exec("SELECT v FROM board WHERE mode=? AND name=?", bm, row.agent).toArray()[0];
+      if (v > 0 && (!old || v > old.v)) q.exec("INSERT INTO board(mode,name,v,m,ts) VALUES(?,?,?,?,?) ON CONFLICT(mode,name) DO UPDATE SET v=?,m=?,ts=?", bm, row.agent, v, o.wave, Date.now(), v, o.wave, Date.now());
+      if (v > 0) { q.exec("INSERT INTO tffeed(ts,name,mode,v,m) VALUES(?,?,?,?,?)", Date.now(), row.agent, bm, v, o.wave); rank = q.exec("SELECT COUNT(*) c FROM board WHERE mode=? AND v > ?", bm, Math.max(v, old ? old.v : 0)).one().c + 1; }
+      this.tfgames.delete(row.id);
+      return J({ over: true, final: { score: v, wave: o.wave, kills: o.kills, ended_by: o.ended_by, board: bm, rank, world_board: O + "/api/tether/tf-world" }, observation: o });
+    }
+    return J({ error: "not found. Start at " + O + "/api/thoughtform/ai" }, 404);
   }
   async ai(req, url) {
     const acc = req.headers.get("accept") || "", wantHtml = url.searchParams.get("format") === "html" || (acc.includes("text/html") && !acc.includes("application/json"));
@@ -769,7 +878,7 @@ export class Lobby extends DurableObject {
   }
   async api(req, url) {
     const q = this.sql(), J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
-    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform", "thoughtform-hard", "thoughtform-boss", "thoughtform-coop", "thoughtform-blitz", "thoughtform-glass", "thoughtform-horde"];
+    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform", "thoughtform-hard", "thoughtform-boss", "thoughtform-coop", "thoughtform-blitz", "thoughtform-glass", "thoughtform-horde", "thoughtform-ai", "thoughtform-ai-hard", "thoughtform-ai-blitz"];
     if (url.pathname.endsWith("/tf-acct") && req.method === "POST") return this.tfAcct(req, J);
     if (url.pathname.endsWith("/tf-world")) return this.tfWorld(url, J, MODES);
     if (url.pathname.endsWith("/stats")) {
@@ -830,6 +939,7 @@ export class Lobby extends DurableObject {
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname.startsWith("/api/tether/ai")) return this.ai(req, url);
+    if (url.pathname.startsWith("/api/thoughtform/ai")) return this.tfai(req, url);
     if (url.pathname.startsWith("/api/tether/")) return this.api(req, url);
     if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
     const pair = new WebSocketPair();

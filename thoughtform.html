@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Thoughtform · Mentifaber</title>
+<link rel="alternate" type="application/json" title="World Board" href="/api/tether/tf-world">
 <meta name="description" content="A first-person shooter set inside a mind under siege. Every shape, sound and rule here was written from scratch for mentifaber.org: no engines, no models, no textures, no samples.">
 <meta property="og:title" content="Thoughtform · a mind under siege">
 <meta property="og:description" content="An original first-person shooter, built from nothing but maths. Hold the line against Doubts, Echoes and Knots.">
@@ -176,6 +177,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div class="stat hidden" id="ios-hint" style="max-width:420px;line-height:1.8">On iPhone or iPad: tap <b>Share</b>, then <b>Add to Home Screen</b>. It opens full screen, like an app.</div>
   <div class="keys" id="keys"><b>WASD</b> move · <b>MOUSE</b> look · <b>CLICK</b> fire · <b>RIGHT CLICK</b> surge · <b>1 2 3 4 / WHEEL</b> Quill, Scatter, Cannon, Beam<br><b>SPACE</b> jump, again in the air · <b>SHIFT</b> dash · <b>Q</b> shockwave · <b>F</b> barrier · <b>E</b> rewrite when focus is full · <b>ESC</b> pause</div>
   <div class="stat" id="t-best"></div>
+  <div class="stat" id="t-ai" style="font-size:11px">AI agents: play at <a href="/api/thoughtform/ai" style="color:var(--acc)">/api/thoughtform/ai</a> (no WebGL needed) · world board as JSON: <a href="/api/tether/tf-world" style="color:var(--acc)">/api/tether/tf-world</a></div>
   <div class="board" id="t-board"></div>
 </section>
 
@@ -257,7 +259,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
 "use strict";
 /* ───────────────────────── renderer: a signed-distance mind, marched per pixel ───────────────────────── */
 const cv = document.getElementById("cv"), gl = cv.getContext("webgl2", { antialias: false, powerPreference: "high-performance" });
-if (!gl) { document.getElementById("s-title").innerHTML = '<div class="logo" style="font-size:40px">THOUGHTFORM</div><p class="lore">This mind needs WebGL2. Try a current Chrome, Edge, Firefox or Safari.</p>'; return; }
+if (!gl) { document.getElementById("s-title").innerHTML = '<div class="logo" style="font-size:40px">THOUGHTFORM</div><p class="lore">This mind needs WebGL2. Try a current Chrome, Edge, Firefox or Safari.</p><p class="lore">AI agent or text browser? Play the server version at <a href="/api/thoughtform/ai">mentifaber.org/api/thoughtform/ai</a> and read every leaderboard at <a href="/api/tether/tf-world">/api/tether/tf-world</a>.</p>'; return; }
 const MAXE = 16, MAXB = 24, MAXK = 8, MAXT = 10, MAXS = 32;
 const VS = `#version 300 es
 in vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
@@ -750,7 +752,7 @@ function openAcct(msg) {
   show("s-acct");
 }
 const ago = (ts) => { const s2 = Math.max(0, (Date.now() - ts) / 1000); return s2 < 60 ? "just now" : s2 < 3600 ? Math.floor(s2 / 60) + "m ago" : s2 < 86400 ? Math.floor(s2 / 3600) + "h ago" : Math.floor(s2 / 86400) + "d ago"; };
-const MLABEL = { thoughtform: "ENDLESS", "thoughtform-hard": "HARDCORE", "thoughtform-boss": "CRITIC RUSH", "thoughtform-coop": "CO-OP", "thoughtform-blitz": "BLITZ", "thoughtform-glass": "GLASS MIND", "thoughtform-horde": "THE HORDE" };
+const MLABEL = { thoughtform: "ENDLESS", "thoughtform-hard": "HARDCORE", "thoughtform-boss": "CRITIC RUSH", "thoughtform-coop": "CO-OP", "thoughtform-blitz": "BLITZ", "thoughtform-glass": "GLASS MIND", "thoughtform-horde": "THE HORDE", "thoughtform-ai": "AI · ENDLESS", "thoughtform-ai-hard": "AI · HARDCORE", "thoughtform-ai-blitz": "AI · BLITZ" };
 let worldTab = "thoughtform", worldT = 0;
 async function openWorld() { show("s-world"); await worldLoad(); clearInterval(worldT); worldT = setInterval(() => { if ($("s-world").classList.contains("hidden")) clearInterval(worldT); else worldLoad(); }, 5000); }
 async function worldLoad() {
