@@ -75,6 +75,22 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .logo{white-space:nowrap}
 @media (max-width:360px){.logo{font-size:15vw}.row{gap:6px}.row .btn{padding-left:4px;padding-right:4px;min-width:0}}
 @media (orientation:landscape) and (max-height:500px){.lb{display:none}.logo{font-size:clamp(34px,11vh,60px)}.scr .tag,.scr .sub{margin-top:4px}}
+.ol-box{width:100%;max-width:360px;margin:14px auto 0}.ol-box.hidden{display:none}
+#ol-name{width:100%;margin:14px 0 4px;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--ink);font-family:var(--disp);font-size:18px;text-align:center}
+.ol-head{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.12em;color:var(--dim);margin-bottom:10px}.ol-head span:first-child{color:#5ef2ff}
+.ol-list{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;touch-action:pan-y}
+.ol-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);text-align:left}
+.ol-row b{flex:1;font-family:var(--disp);font-size:14px}.ol-row i{font-style:normal;font-size:10px;letter-spacing:.12em;color:var(--dim)}
+.ol-row button{padding:9px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,#5ef2ff,#b08bff);color:#07060f;font-family:var(--disp);font-weight:900;font-size:11px;letter-spacing:.06em}
+.ol-row button:disabled{opacity:.35}
+.ol-inv{padding:14px;border-radius:16px;background:rgba(255,79,216,.14);border:1px solid rgba(255,79,216,.55);margin-bottom:12px;animation:olp 1s ease-in-out infinite alternate}.ol-inv.hidden{display:none}
+@keyframes olp{to{box-shadow:0 0 24px rgba(255,79,216,.5)}}
+.ol-inv .row{margin-top:10px}
+.ol-vs{display:flex;align-items:center;justify-content:center;gap:14px;font-family:var(--disp);font-size:18px;margin-bottom:8px}.ol-vs span{color:#ff4fd8;font-size:13px}
+.ol-sub{font-size:10px;letter-spacing:.2em;color:var(--dim);margin:14px 0 6px;text-align:left}
+.ol-sw{display:flex;flex-wrap:wrap;gap:8px}.ol-sw button{width:42px;height:42px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.06);padding:6px}.ol-sw button.on{border-color:#fff}
+.ol-sw button i{display:block;width:100%;height:100%;border-radius:50%}
+.ol-count{font-family:var(--disp);font-size:72px;font-weight:900;color:#5ef2ff;margin-top:12px}.ol-count.hidden{display:none}
 </style>
 </head>
 <body>
@@ -91,6 +107,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="tag">one finger · one rope · no floor</div>
   <button class="btn" id="b-play">PLAY</button>
   <button class="btn alt" id="b-modes" style="border-color:rgba(255,79,216,.5)">MODES · RACE · CO-OP · MORE</button>
+  <button class="btn alt" id="b-online" style="border-color:rgba(94,242,255,.55)">ONLINE · RACE ANYONE</button>
   <button class="btn alt" id="b-daily">DAILY RUN · <span id="t-daily"></span></button>
   <div class="row"><button class="btn alt" id="b-shop">SHOP</button><button class="btn alt" id="b-set">⚙</button><button class="btn alt" id="b-how">HOW</button><button class="btn alt" id="b-snd">🔊</button></div>
   <div class="stat" id="t-stats"></div>
@@ -102,6 +119,31 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="logo" style="font-size:44px">MODES</div>
   <div class="modes" id="modes"></div>
   <button class="btn alt" id="b-modesback">BACK</button>
+</section>
+
+<section class="scr hidden" id="s-online">
+  <div class="logo" style="font-size:44px">ONLINE</div>
+  <div id="ol-join" class="ol-box">
+    <div class="stat">Pick a name, step into the lobby, and challenge anyone in it to a race.</div>
+    <input id="ol-name" maxlength="16" placeholder="your name" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="btn" id="ol-go">ENTER LOBBY</button>
+  </div>
+  <div id="ol-lobby" class="ol-box hidden">
+    <div class="ol-head"><span id="ol-me"></span><span id="ol-count"></span></div>
+    <div id="ol-inv" class="ol-inv hidden"></div>
+    <div id="ol-list" class="ol-list"></div>
+    <div class="stat" id="ol-msg"></div>
+  </div>
+  <div id="ol-prep" class="ol-box hidden">
+    <div class="ol-vs"><b id="ol-vs-me"></b><span>VS</span><b id="ol-vs-opp"></b></div>
+    <div class="stat">Pick your look before the gun. Race to 2500m on the same course.</div>
+    <div class="ol-sub">ORB</div><div class="ol-sw" id="ol-skins"></div>
+    <div class="ol-sub">TRAIL</div><div class="ol-sw" id="ol-trails"></div>
+    <div class="stat" id="ol-oppick"></div>
+    <button class="btn" id="ol-ready">READY</button>
+    <div class="ol-count hidden" id="ol-cd"></div>
+  </div>
+  <button class="btn alt" id="b-olback">LEAVE</button>
 </section>
 
 <section class="scr hidden" id="s-set">
@@ -150,7 +192,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <b>Power-ups</b> stack on the left of the screen: shield, magnet, ×2 score, long rope, slow-mo, jetpack (hold in the air), extra life, <b>reel</b> (hold to pull the rope in), <b>heavy ball</b> (smashes saws and drones) and <b>phase</b> (pass through anything).<br><br>
     <b>Modes:</b> Classic, Daily, Co-op, Race, Time Trial, Zen, Hardcore, Low Gravity, 60s Sprint, Shard Rush and Power Gauntlet. Ten biomes, each with its own weather and soundtrack.<br><br>
     Shards from runs and missions buy orbs, trails and items in the shop. Your best run races you as a ghost.<br><br>
-    <b>Two players:</b> player 1 on mouse or ↑, player 2 (<b style="color:#5dff7a">green</b>) on the <b>space bar</b>. On a phone, left half is player 1, right half is player 2.
+    <b>Online:</b> tap ONLINE, pick a name, and you land in a lobby listing everyone who is playing. Challenge anyone: they get the request in-game and can accept or decline. Once they accept you both pick an orb and trail, hit READY, and a countdown starts a 2500m race on the same course. Crashes cost 1.6 seconds, first to the line wins, and if your opponent quits you win.<br><br>
+    <b>Two players on one screen:</b> player 1 on mouse or ↑, player 2 (<b style="color:#5dff7a">green</b>) on the <b>space bar</b>. On a phone, left half is player 1, right half is player 2.
   </div>
   <button class="btn alt" id="b-howback">BACK</button>
 </section>
@@ -320,6 +363,7 @@ function sfx(k, extra) {
 let state = "title", mode = "classic", coop = false, race = false, zen = false, hard = false, trial = false, seed = 0, started = false;
 let flipK = 0, flipTo = 0, lastHaz = -1e9, lastSpout = -1e9, nextFlip = 0, rush = false, gaunt = false, moon = false, sprint = false, headX = 0, winds = [], bumpers = [], spouts = [], rockets = [], rocketT = 6;
 let finishX = Infinity, winner = null, slowmoT = 0, raceT = 0;
+let online = false, net = null, myId = null, oppInfo = null, onlineSeed = 0, remote = null, netResult = null, netSendT = 0, olPending = null, oppLook = { color: "#ff9a3d", trail: "ribbon" };
 let players = [], anchors = [], gates = [], saws = [], shards = [], parts = [], pops = [];
 let genX = 0, genY = 0, maxX = 0, style = 0, got = 0, t = 0, slow = 0, shake = 0, biomeI = 0, flash = 0, lastMile = 0, revives = 0, topSpeed = 0, deathMsg = "";
 let ghostRec = [], ghostPlay = null;
@@ -334,10 +378,10 @@ function mkPlayer(id, anchor, ang, L) {
 function newRun(m, isCoop) {
   clearTimeout(endTimer); zoomK = 1;
   if (m === "free") m = isCoop ? "coop" : "classic";
-  mode = m; race = m === "race"; coop = !!(MODES[m] && MODES[m].two); zen = m === "zen"; hard = m === "hard"; trial = m === "trial"; rush = m === "rush"; gaunt = m === "gauntlet"; moon = m === "moon"; sprint = m === "sprint";
-  finishX = race ? prog.set.raceLen * 10 + 220 : trial ? TRIAL_M * 10 + 220 : Infinity; winner = null; slowmoT = 0; raceT = 0;
+  online = m === "online"; mode = m; race = m === "race"; coop = !!(MODES[m] && MODES[m].two); zen = m === "zen"; hard = m === "hard"; trial = m === "trial"; rush = m === "rush"; gaunt = m === "gauntlet"; moon = m === "moon"; sprint = m === "sprint";
+  finishX = online ? 2500 * 10 + 220 : race ? prog.set.raceLen * 10 + 220 : trial ? TRIAL_M * 10 + 220 : Infinity; winner = null; slowmoT = 0; raceT = 0;
   // daily and time trial use fixed seeds, so everyone races the same world
-  seed = m === "daily" ? todayKey() : trial ? 424242 : (Math.random() * 1e9) | 0; rng = mulberry(seed);
+  seed = online ? onlineSeed : m === "daily" ? todayKey() : trial ? 424242 : (Math.random() * 1e9) | 0; rng = mulberry(seed);
   flipK = 0; flipTo = 0; lastHaz = -1e9; lastSpout = -1e9; nextFlip = 0; anchors = []; winds = []; bumpers = []; spouts = []; rockets = []; rocketT = 6; gates = []; saws = []; shards = []; parts = []; pops = []; rings = []; pads = []; pups = []; drones = []; x2T = 0; doneNow = [];
   run = { perfects: 0, closes: 0, rings: 0, boings: 0, pups: 0, od: 0, smash: 0, fives: 0, got: 0, dist: 0 };
   // A start anchor, always: you begin hanging from it, pulled back, ready to swing.
@@ -350,7 +394,8 @@ function newRun(m, isCoop) {
   revives = coop && !race ? 3 : 0;
   ghostRec = []; ghostPlay = !prog.set.ghost || coop || zen || hard || rush || moon || sprint ? null : m === "daily" ? (prog.daily[seed] && prog.daily[seed].ghost) : trial ? (prog.trial.ghost || null) : prog.ghost;
   // items bought in the shop are spent on the next solo run
-  if (!coop && !zen) {
+  remote = null; netResult = null;
+  if (!coop && !zen && !online) {
     const it = prog.items, p = players[0];
     if (it.shield > 0 && !hard) { it.shield--; p.shield = true; }
     if (it.life > 0 && !hard) { it.life--; p.lives = 1; }
@@ -594,6 +639,8 @@ function update(dtReal) {
     maxX = Math.max(maxX, p.x); p.best = Math.max(p.best, p.x);
   }
   if (started) raceT += dtReal;
+  if (online && net && (netSendT -= dtReal) <= 0) { netSendT = .066; const p = players[0]; netSend({ t: "st", x: Math.round(p.x), y: Math.round(p.y), hx: p.hook ? Math.round(p.hook.x) : null, hy: p.hook ? Math.round(p.hook.y) : null, a: p.alive }); }
+  if (remote) { const k = 1 - Math.exp(-14 * dtReal); remote.x += (remote.tx - remote.x) * k; remote.y += (remote.ty - remote.y) * k; }
   if (flipTo && !rings.some((q) => q.flip < 0 && q.x > maxX - 60)) flipTo = 0;
   flipK += (flipTo - flipK) * (1 - Math.exp(-6 * dtReal));
   // drones sleep where they hang. Pass one and it wakes, chases you for a couple of seconds, then gives up
@@ -656,6 +703,7 @@ const dist = () => Math.floor(Math.max(0, maxX - 220) / 10);
 const score = () => dist() + style;
 function addStyle(n) { style += Math.round(n * (x2T > 0 ? 2 : 1) * (hard ? 1.5 : moon ? 1.2 : 1)); }
 function finish(p) {
+  if (online) { winner = p; if (net) netSend({ t: "fin", time: raceT }); state = "dying"; flash = .5; sfx("five"); for (let i = 0; i < 6; i++) burst(p.x + fx(-40, 40), p.y + fx(-80, 80), 20, ["#ffe066", "#ff4fd8", "#5ef2ff"][i % 3], 420); clearTimeout(endTimer); endTimer = setTimeout(endRun, 1600); return; }
   winner = p; state = "dying"; flash = .5; sfx("five"); sfx("biome"); vib([40, 30, 40, 30, 120]);
   for (let i = 0; i < 6; i++) burst(p.x + fx(-40, 40), p.y + fx(-80, 80), 20, ["#ffe066", "#ff4fd8", "#5ef2ff"][i % 3], 420);
   pops = [];
@@ -679,6 +727,7 @@ function kill(p, why) {
   shake = .7; flash = .3; vib([60, 40, 90]);
   burst(p.x, p.y, 36, pcolor(p), 500); burst(p.x, p.y, 16, "#ffffff", 280); sfx("die");
   const others = alive();
+  if (online) { p.deadT = 1.6; pop("CRASHED · +1.6s", p.x, p.y - 50, pcolor(p), 1.4, .9); return false; }
   if (race) { p.deadT = 1.6; pop((p.id ? "P2" : "P1") + " CRASHED · +1.6s", p.x, p.y - 50, pcolor(p), 1.4, .9); return false; }
   if (p.lives > 0) { p.lives--; setTimeout(() => { if (state === "play" || state === "paused") { respawn(p, p.x); pop("EXTRA LIFE", p.x, p.y - 40, "#ff5e7a", 1.2, 1.1); } }, 900); return false; }
   if (coop && others.length && revives > 0) { revives--; p.deadT = 2.2; pop((p.id ? "P2" : "P1") + " DOWN · BACK IN 2", others[0].x, others[0].y - 70, pcolor(p), 1.8, .9); return false; }
@@ -717,6 +766,7 @@ function missionsHTML() { return activeMissions().map((m) => "◇ " + m[1] + " <
 // Respawn beside your partner, on the rope they're using (or the next anchor ahead).
 function revive(p) {
   // racers come back on screen, a little behind the leader and moving, so they can't get stuck in a left-behind loop
+  if (online) { respawn(p, p.best); p.vx = 420; return; }
   if (race) { const o = players[1 - p.id], vw = W / zoom(), lx = o && o.alive ? o.x : p.best; respawn(p, Math.max(cam.x + vw * .45, Math.min(lx - 60, p.best))); p.vx = Math.max(380, o && o.alive ? o.vx * .8 : 0); return; }
   const o = alive()[0]; if (!o) return;
   const a = o.hook || target(o) || anchors.find((x) => x.x > o.x) || anchors[anchors.length - 1];
@@ -729,6 +779,15 @@ function endRun() {
   state = "dead";
   const m = dist(), sc = score(); prog.shards += got;
   let nb = "";
+  if (online) {
+    save(); const won = netResult ? netResult.win : !!winner;
+    $("d-why").textContent = "ONLINE · VS " + (oppInfo ? oppInfo.name : "?").toUpperCase();
+    $("d-dist").innerHTML = '<span style="color:' + (won ? "#9dff7a" : "#ff4f6a") + '">' + (won ? "YOU WIN" : "YOU LOSE") + "</span>";
+    $("d-new").textContent = netResult && netResult.why === "left" ? "THEY LEFT THE RACE" : netResult && netResult.time ? "WINNING TIME " + netResult.time.toFixed(1) + "s" : "";
+    $("d-stat").innerHTML = "YOU " + dist() + "m · " + raceT.toFixed(1) + "s · PERFECTS <b>" + players[0].perfects + "</b> · CRASHES <b>" + players[0].deaths + "</b>";
+    $("d-miss").innerHTML = ""; $("b-again").textContent = "BACK TO LOBBY"; ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
+  }
+  $("b-again").textContent = "AGAIN";
   if (race) {
     const w = winner ? winner.id : players[0].best >= players[1].best ? 0 : 1; prog.race["p" + (w + 1)]++; save();
     $("d-why").textContent = "RACE TO " + prog.set.raceLen + "m"; $("d-dist").innerHTML = '<span style="color:' + pcolor(players[w]) + '">P' + (w + 1) + " WINS</span>"; $("d-new").textContent = "SERIES · P1 " + prog.race.p1 + " – " + prog.race.p2 + " P2";
@@ -763,6 +822,7 @@ function endRun() {
   show("s-dead");
 }
 function hud() {
+  if (online) { const opd = remote ? Math.round(Math.max(0, remote.x - 220) / 10) : 0; $("h-d").innerHTML = '<span style="color:' + pcolor(players[0]) + '">' + dist() + '</span> · <span style="color:' + oppLook.color + '">' + opd + "</span><small>/2500m</small>"; $("h-s").textContent = "VS " + (oppInfo ? oppInfo.name : "") + " · " + raceT.toFixed(1) + "s"; $("h-b").textContent = ""; $("h-l").textContent = ""; $("h-c").innerHTML = players[0].combo > 1 ? '<span style="color:#ff4fd8">×' + players[0].combo + "</span>" : ""; return; }
   if (race) { $("h-d").innerHTML = players.map((p) => '<span style="color:' + pcolor(p) + '">' + Math.round(Math.max(0, p.best - 220) / 10) + "</span>").join(" · ") + "<small>/" + prog.set.raceLen + "m</small>"; $("h-s").textContent = "RACE · " + raceT.toFixed(1) + "s"; }
   else if (trial) { $("h-d").innerHTML = dist() + "<small>/" + TRIAL_M + "m</small>"; $("h-s").textContent = raceT.toFixed(2) + "s" + (prog.trial.best ? " · BEST " + prog.trial.best.toFixed(2) : ""); }
   else if (sprint) { $("h-d").innerHTML = dist() + "<small>m</small>"; $("h-s").textContent = Math.max(0, 60 - raceT).toFixed(1) + "s LEFT"; }
@@ -957,6 +1017,14 @@ function draw(now) {
     if (coop) { cx.fillStyle = pcolor(p); cx.font = "900 11px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("P" + (p.id + 1), p.x, p.y - 20); }
     if (p.reachT > 0) { cx.strokeStyle = "rgba(157,255,122,.18)"; cx.lineWidth = 1; cx.beginPath(); cx.arc(p.x, p.y, REACH * 1.45, -1.4, .6); cx.stroke(); }
   }
+  if (online && remote) {
+    const c = oppLook.color; cx.globalAlpha = remote.a ? 1 : .35;
+    if (remote.hx != null) { cx.strokeStyle = c; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(remote.hx, remote.hy); cx.lineTo(remote.x, remote.y); cx.stroke(); }
+    remote.trail.push([remote.x, remote.y]); if (remote.trail.length > 18) remote.trail.shift();
+    cx.strokeStyle = c; cx.lineCap = "round"; for (let i = 1; i < remote.trail.length; i++) { const k = i / remote.trail.length; cx.globalAlpha = k * .5 * (remote.a ? 1 : .35); cx.lineWidth = R * 1.4 * k; cx.beginPath(); cx.moveTo(remote.trail[i - 1][0], remote.trail[i - 1][1]); cx.lineTo(remote.trail[i][0], remote.trail[i][1]); cx.stroke(); }
+    cx.globalAlpha = remote.a ? 1 : .35; drawOrb({ color: c }, remote.x, remote.y, R); cx.shadowBlur = 0;
+    cx.fillStyle = c; cx.font = "900 12px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText((oppInfo ? oppInfo.name : "").toUpperCase(), remote.x, remote.y - 22); cx.globalAlpha = 1;
+  }
   for (const q of pops) { cx.globalAlpha = 1 - q.t / q.life; cx.fillStyle = q.c; cx.font = "900 " + Math.round(18 * q.size) + "px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText(q.txt, q.x, q.y - q.t * 40); }
   cx.globalAlpha = 1;
   cx.restore();
@@ -968,6 +1036,9 @@ function draw(now) {
     if (dr.dead) continue; const x = dr.x, sx = (x - cam.x) * Z, sy = oy() + dr.y * Z;
     if (sx > W && sx < W * 2.2) { const k = 1 - (sx - W) / (W * 1.2), pl = .6 + .4 * Math.sin(clock * 12); cx.globalAlpha = Math.max(.3, k) * pl; cx.fillStyle = "#ff3b3b"; cx.beginPath(); cx.moveTo(W - 10, sy); cx.lineTo(W - 34, sy - 16); cx.lineTo(W - 34, sy + 16); cx.fill(); cx.fillStyle = "#fff"; cx.font = "900 14px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("!", W - 26, sy + 5); cx.globalAlpha = 1; }
   }
+  if (online && remote && state === "play") { const sx = (remote.x - cam.x) * Z, sy = clamp(oy() + remote.y * Z, 40, H - 40), dm = Math.round((remote.x - players[0].x) / 10);
+    if (sx < 0 || sx > W) { const right = sx > W; cx.fillStyle = oppLook.color; cx.globalAlpha = .9; cx.beginPath(); if (right) { cx.moveTo(W - 8, sy); cx.lineTo(W - 26, sy - 12); cx.lineTo(W - 26, sy + 12); } else { cx.moveTo(8, sy); cx.lineTo(26, sy - 12); cx.lineTo(26, sy + 12); } cx.fill();
+      cx.font = "700 12px JetBrains Mono, monospace"; cx.textAlign = right ? "right" : "left"; cx.fillText((dm > 0 ? "+" : "") + dm + "m", right ? W - 32 : 32, sy + 4); cx.globalAlpha = 1; cx.textAlign = "center"; } }
   // speed lines at the top end
   const lead = leader(); const spd = lead ? Math.hypot(lead.vx, lead.vy) : 0;
   if (spd > 950 && state === "play") { cx.strokeStyle = "rgba(255,255,255," + clamp((spd - 950) / 900, 0, .35) + ")"; cx.lineWidth = 1.5; for (let i = 0; i < 14; i++) { const y = hash(i * 7.3 + Math.floor(clock * 12)) * H, x = hash(i * 3.1 + Math.floor(clock * 12)) * W; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - 80, y); cx.stroke(); } }
@@ -1033,7 +1104,7 @@ function drawTitleOrb(now) {
 }
 
 /* ── screens ── */
-function show(id) { ["s-title", "s-dead", "s-pause", "s-shop", "s-how", "s-modes", "s-set"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
+function show(id) { ["s-title", "s-dead", "s-pause", "s-shop", "s-how", "s-modes", "s-set", "s-online"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 const dailyLabel = () => { const k = String(todayKey()); return k.slice(4, 6) + "/" + k.slice(6); };
 function title() {
   state = "title"; players = []; show("s-title"); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden"));
@@ -1081,12 +1152,65 @@ $("skins").onclick = (e) => {
   else { audio(); sfx("miss"); return; }
   save(); shop();
 };
-function pause() { if (state === "play") { state = "paused"; show("s-pause"); } }
+/* ── online: lobby, invites, picks, then a race on a shared seed ── */
+const OL = (id) => $(id), olShow = (which) => ["ol-join", "ol-lobby", "ol-prep"].forEach((k) => OL(k).classList.toggle("hidden", k !== which));
+function netSend(m) { try { if (net && net.readyState === 1) net.send(JSON.stringify(m)); } catch (e) {} }
+function openOnline() {
+  show("s-online"); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); state = "title"; players = [];
+  OL("ol-name").value = prog.olName || ""; $("b-again").textContent = "AGAIN";
+  if (net && net.readyState === 1) { olShow("ol-lobby"); netSend({ t: "leave" }); } else olShow("ol-join");
+}
+function olConnect() {
+  const name = OL("ol-name").value.trim().slice(0, 16); if (!name) { OL("ol-name").focus(); return; }
+  prog.olName = name; save(); audio();
+  if (location.protocol === "file:") { OL("ol-msg").textContent = "Online play needs the live site."; olShow("ol-lobby"); return; }
+  OL("ol-msg").textContent = "Connecting…"; olShow("ol-lobby");
+  net = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/tether-ws");
+  net.onopen = () => netSend({ t: "hello", name });
+  net.onclose = () => { net = null; if (online && state === "play") { netResult = { win: false, why: "connection lost" }; state = "dying"; endRun(); } else if (!$("s-online").classList.contains("hidden")) { OL("ol-msg").textContent = "Disconnected."; olShow("ol-join"); } };
+  net.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } olMsg(m); };
+}
+function olList(players) {
+  OL("ol-me").textContent = "YOU: " + (prog.olName || "").toUpperCase(); OL("ol-count").textContent = players.length + " ONLINE";
+  const others = players.filter((p) => p.id !== myId);
+  OL("ol-list").innerHTML = others.length ? others.map((p) => '<div class="ol-row"><b></b><i>' + (p.status === "idle" ? "IN LOBBY" : "RACING") + '</i><button data-to="' + p.id + '"' + (p.status !== "idle" || olPending ? " disabled" : "") + ">" + (olPending === p.id ? "SENT…" : "CHALLENGE") + "</button></div>").join("") : '<div class="stat">Nobody else here yet. Share the link and wait, or come back soon.</div>';
+  [...OL("ol-list").querySelectorAll(".ol-row b")].forEach((el, i) => (el.textContent = others[i].name));
+}
+let olPlayers = [];
+function olPickUI() {
+  const skins = SKINS.filter((x) => prog.skins.includes(x.id)), trails = TRAILS.filter((x) => prog.trails.includes(x.id) || !x.cost);
+  OL("ol-skins").innerHTML = skins.map((x) => '<button data-s="' + x.id + '" class="' + (prog.skin === x.id ? "on" : "") + '"><i style="background:' + (x.c === "rainbow" ? "conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)" : x.c) + '"></i></button>').join("");
+  OL("ol-trails").innerHTML = trails.map((x) => '<button data-t="' + x.id + '" title="' + x.n + '" class="' + (prog.trail === x.id ? "on" : "") + '" style="width:auto;padding:6px 10px;font-size:10px;color:var(--ink)">' + x.n + "</button>").join("");
+  const sk = skin(); netSend({ t: "pick", color: sk.c === "rainbow" ? "#ff6bf2" : sk.c, trail: prog.trail });
+}
+function olMsg(m) {
+  if (m.t === "welcome") { myId = m.id; OL("ol-msg").textContent = ""; }
+  else if (m.t === "lobby") { olPlayers = m.players; olList(m.players); }
+  else if (m.t === "invited") { OL("ol-inv").classList.remove("hidden"); OL("ol-inv").innerHTML = "<b></b> wants to race you!<div class=\"row\"><button class=\"btn\" data-acc=\"" + m.from + "\">ACCEPT</button><button class=\"btn alt\" data-dec=\"" + m.from + "\">NO THANKS</button></div>"; OL("ol-inv").querySelector("b").textContent = m.name; sfx("five"); vib([60, 40, 60]); }
+  else if (m.t === "withdrawn") OL("ol-inv").classList.add("hidden");
+  else if (m.t === "pending") { olPending = m.to; OL("ol-msg").textContent = "Challenge sent to " + m.name + ". Waiting…"; olList(olPlayers); }
+  else if (m.t === "declined" || m.t === "busy" || m.t === "gone") { olPending = null; OL("ol-msg").textContent = m.t === "declined" ? m.by + " said not right now." : "They're busy."; olList(olPlayers); }
+  else if (m.t === "match") { olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
+  else if (m.t === "opppick") { oppLook = { color: /^#[0-9a-f]{3,8}$/i.test(m.color) ? m.color : "#ff9a3d", trail: m.trail }; OL("ol-oppick").innerHTML = '<span style="color:' + oppLook.color + '">●</span> ' + (oppInfo ? oppInfo.name : "") + " picked their look."; }
+  else if (m.t === "oppready") OL("ol-oppick").textContent = (oppInfo ? oppInfo.name : "They") + " is READY.";
+  else if (m.t === "start") { OL("ol-cd").classList.remove("hidden"); let n = 3; const tick = () => { if (n > 0) { OL("ol-cd").textContent = n--; sfx("latch", 6); setTimeout(tick, 900); } else { OL("ol-cd").textContent = "GO"; newRun("online"); started = true; $("hint").textContent = "GO! LET GO TO SWING OFF"; } }; setTimeout(tick, Math.max(0, m.in - 2700)); }
+  else if (m.t === "opp") { if (!remote) remote = { x: m.x, y: m.y, tx: m.x, ty: m.y, trail: [] }; remote.tx = m.x; remote.ty = m.y; remote.hx = m.hx; remote.hy = m.hy; remote.a = m.a; }
+  else if (m.t === "result") { netResult = m; if (online && state === "play") { state = "dying"; clearTimeout(endTimer); endTimer = setTimeout(endRun, m.win ? 300 : 900); if (!m.win) pop((m.by || "THEY") + " WON", players[0].x, players[0].y - 60, "#ff4f6a", 1.6, 1.4); } }
+}
+$("b-online").onclick = openOnline;
+OL("ol-go").onclick = olConnect; OL("ol-name").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") olConnect(); });
+OL("ol-list").onclick = (e) => { const b = e.target.closest("[data-to]"); if (b && !b.disabled) netSend({ t: "invite", to: b.dataset.to }); };
+OL("ol-inv").onclick = (e) => { const a = e.target.closest("[data-acc]"), d = e.target.closest("[data-dec]"); if (a) netSend({ t: "respond", from: a.dataset.acc, accept: true }); if (d) { netSend({ t: "respond", from: d.dataset.dec, accept: false }); OL("ol-inv").classList.add("hidden"); } };
+OL("ol-skins").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { prog.skin = b.dataset.s; save(); olPickUI(); } };
+OL("ol-trails").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { prog.trail = b.dataset.t; save(); olPickUI(); } };
+OL("ol-ready").onclick = () => { netSend({ t: "ready" }); OL("ol-ready").disabled = true; OL("ol-ready").textContent = "WAITING FOR " + (oppInfo ? oppInfo.name.toUpperCase() : "THEM") + "…"; };
+$("b-olback").onclick = () => { if (net) { netSend({ t: "leave" }); net.onclose = null; net.close(); net = null; } olPending = null; title(); };
+function pause() { if (online) return; if (state === "play") { state = "paused"; show("s-pause"); } }
 $("b-play").onclick = () => newRun("classic");
 $("b-modes").onclick = modes; $("b-modesback").onclick = title;
 $("b-set").onclick = settings; $("b-setback").onclick = title;
 $("b-daily").onclick = () => newRun("daily");
-$("b-again").onclick = () => newRun(mode);
+$("b-again").onclick = () => (mode === "online" ? openOnline() : newRun(mode));
 $("b-menu").onclick = title; $("b-quit").onclick = title;
 // resuming keeps everyone on their ropes, only the held buttons are reset
 $("b-resume").onclick = () => { show(null); state = "play"; players.forEach((p) => (p.holding = false)); pointers.clear(); if (AC) nextT = AC.currentTime + .05; };
@@ -1109,7 +1233,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.TT = { give: (k, i) => { const p = players[i || 0]; pups.push({ x: p.x, y: p.y, k, got: false, p: 0 }); }, run: newRun, mode: () => ({ mode, race, coop, zen, hard, trial, finishX, winner: winner && winner.id, raceT }), drones: () => drones.length, press, release, s: (i) => { const p = players[i || 0] || {}; return { state, started, x: p.x, y: p.y, vx: p.vx, vy: p.vy, hook: !!p.hook, alive: p.alive, dist: dist(), score: score(), combo: p.combo, why: p.why || deathMsg, revives, top: topSpeed }; }, anchors: () => anchors.map((a) => [a.x, a.y]), pl: (i) => { const p = players[i]; return { hookT: p.hookT, startRope: p.startRope, holding: p.holding, hookId: p.hook && p.hook.id }; }, rings: () => rings.map((r) => [r.x, r.y, Object.keys(r.hit).length]), runStats: () => run, target: (i) => { const a = target(players[i || 0]); return a && [a.x, a.y]; } };
+window.TT = { warp: (x) => { const p = players[0]; p.hook = null; p.alive = true; p.deadT = 0; p.x = x; p.y = 300; p.vx = 600; p.vy = 0; p.inv = 5; }, ol: () => ({ online, remote: !!remote, res: netResult, state }), give: (k, i) => { const p = players[i || 0]; pups.push({ x: p.x, y: p.y, k, got: false, p: 0 }); }, run: newRun, mode: () => ({ mode, race, coop, zen, hard, trial, finishX, winner: winner && winner.id, raceT }), drones: () => drones.length, press, release, s: (i) => { const p = players[i || 0] || {}; return { state, started, x: p.x, y: p.y, vx: p.vx, vy: p.vy, hook: !!p.hook, alive: p.alive, dist: dist(), score: score(), combo: p.combo, why: p.why || deathMsg, revives, top: topSpeed }; }, anchors: () => anchors.map((a) => [a.x, a.y]), pl: (i) => { const p = players[i]; return { hookT: p.hookT, startRope: p.startRope, holding: p.holding, hookId: p.hook && p.hook.id }; }, rings: () => rings.map((r) => [r.x, r.y, Object.keys(r.hit).length]), runStats: () => run, target: (i) => { const a = target(players[i || 0]); return a && [a.x, a.y]; } };
 })();
 </script>
 <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/tether-sw.js", { scope: "/tether" }).catch(() => {});</script>
