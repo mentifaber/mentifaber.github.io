@@ -529,7 +529,15 @@ const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 250
 export class Lobby extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
-    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS ghosts(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, t REAL, m INTEGER, ts INTEGER, UNIQUE(agent,mode))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
+    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS ghosts(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, t REAL, m INTEGER, ts INTEGER, UNIQUE(agent,mode))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1;
+      // one-time: forfeits used to count as wins; they were stored with a 0s time. Take them back off the board.
+      if (!q.exec("SELECT n FROM tally WHERE k='mig_forfeits_v1'").toArray().length) {
+        for (const r of q.exec("SELECT rowid id, w, l FROM matches WHERE t=0").toArray()) {
+          q.exec("UPDATE board SET v=MAX(0,v-1) WHERE mode='wins' AND name=?", r.w); q.exec("UPDATE board SET m=MAX(0,m-1) WHERE mode='wins' AND name=?", r.l);
+          q.exec("DELETE FROM matches WHERE rowid=?", r.id);
+        }
+        q.exec("DELETE FROM board WHERE mode='wins' AND v=0 AND m=0"); q.exec("INSERT INTO tally(k,n) VALUES('mig_forfeits_v1',1)");
+      } }
     return q;
   }
   match(w, l, mode, t) {
