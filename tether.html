@@ -36,7 +36,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .hud .r{text-align:right}
 .hud .combo{font-family:var(--disp);font-size:20px;color:var(--hot);min-height:24px}
 .pz{position:fixed;right:14px;top:calc(var(--st) + 66px);width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.08);z-index:4;font-size:14px;pointer-events:auto}
-.scr{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--st) + 24px) 20px calc(var(--sb) + 24px);text-align:center;background:radial-gradient(120% 80% at 50% 40%,rgba(7,6,15,.35),rgba(7,6,15,.9));overflow-y:auto}
+.scr{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:calc(var(--st) + 24px) 20px calc(var(--sb) + 24px);text-align:center;background:radial-gradient(120% 80% at 50% 40%,rgba(7,6,15,.35),rgba(7,6,15,.9));overflow-y:auto}
 .logo{font-family:var(--disp);font-weight:900;font-size:clamp(56px,17vw,120px);letter-spacing:-.04em;line-height:.9;background:linear-gradient(180deg,#fff,#5ef2ff 55%,#ff4fd8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(94,242,255,.35))}
 .tag{font-size:11px;letter-spacing:.32em;color:var(--dim);margin:14px 0 30px;text-transform:uppercase}
 .btn{display:block;width:100%;max-width:340px;padding:17px;margin:8px auto 0;border-radius:16px;font-family:var(--disp);font-weight:900;font-size:17px;letter-spacing:.04em;color:#07060f;background:linear-gradient(90deg,#5ef2ff,#a98bff);box-shadow:0 10px 40px rgba(94,242,255,.3)}
@@ -67,6 +67,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .set .opts button{padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.08);font-size:11px}
 .set .opts button.on{background:var(--acc);color:#07060f;font-weight:700}
 .foot{margin-top:26px;font-size:9.5px;color:rgba(242,240,255,.35);letter-spacing:.16em;line-height:1.8}
+.scr>:first-child{margin-top:auto}.scr>:last-child{margin-bottom:auto}
+.scr{padding-left:calc(env(safe-area-inset-left,0px) + 16px);padding-right:calc(env(safe-area-inset-right,0px) + 16px);-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.hud{padding-left:calc(env(safe-area-inset-left,0px) + 14px);padding-right:calc(env(safe-area-inset-right,0px) + 14px)}
+@media (max-height:500px){.logo{font-size:clamp(40px,12vh,72px)}.btn{padding:11px;font-size:15px;margin-top:6px}.scr{padding-top:calc(var(--st) + 12px);padding-bottom:calc(var(--sb) + 12px)}.hud .d{font-size:24px}}
+@media (max-width:360px){.btn{padding:14px;font-size:15px}.hud .d{font-size:24px}.how{font-size:12px}}
+.logo{white-space:nowrap}
+@media (max-width:360px){.logo{font-size:15vw}.row{gap:6px}.row .btn{padding-left:4px;padding-right:4px;min-width:0}}
+@media (orientation:landscape) and (max-height:500px){.lb{display:none}.logo{font-size:clamp(34px,11vh,60px)}.scr .tag,.scr .sub{margin-top:4px}}
 </style>
 </head>
 <body>
@@ -79,7 +87,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div class="hint hidden" id="hint">TAP TO START</div>
 
 <section class="scr" id="s-title">
-  <div class="logo">TETH<br>ER</div>
+  <div class="logo">TETH<br class="lb">ER</div>
   <div class="tag">one finger · one rope · no floor</div>
   <button class="btn" id="b-play">PLAY</button>
   <button class="btn alt" id="b-modes" style="border-color:rgba(255,79,216,.5)">MODES · RACE · CO-OP · MORE</button>
@@ -221,10 +229,11 @@ const save = () => { try { localStorage.setItem(SAVE, JSON.stringify(prog)); } c
 /* ── canvas ── */
 const cv = $("cv"), cx = cv.getContext("2d");
 let W = 1, H = 1, DPR = 1, S = 1;
-function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = H / WORLD_H; }
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.min(H / WORLD_H, W / (H > W ? 1000 : 1150)); }
 addEventListener("resize", resize); resize();
 let zoomK = 1;
 const zoom = () => S * (coop ? .82 : 1) * zoomK;
+const oy = () => H - WORLD_H * zoom(); // world top on screen
 
 /* ── audio ── */
 let AC = null, master, filt, dly, musG, sfxG, bus = "s", step = 0, nextT = 0;
@@ -833,7 +842,7 @@ function draw(now) {
   { const bw = 100, off = camX * .35 * Z; cx.fillStyle = bm.acc; for (let i = Math.floor(off / bw) - 1; i < Math.floor(off / bw) + W / bw + 2; i++) { const hgt = (.12 + hash(i * 3.1 + 11) * .3) * H, top = H * .68 + H * .1 - hgt + H * .2; for (let wy = 0; wy < 5; wy++) for (let wx = 0; wx < 4; wx++) { const hh = hash(i * 13 + wy * 5 + wx); if (hh < .72) continue; cx.globalAlpha = .12 + .25 * (hh - .72) * 3.5 * (.6 + .4 * Math.sin(clock * (hh * 3) + i)); cx.fillRect(i * bw - off + 10 + wx * 20, top + 14 + wy * 22, 8, 10); } } cx.globalAlpha = 1; }
   if (title) { drawTitleOrb(now); return; }
   const sh = shake > 0 && prog.set.shake ? shake * 14 : 0;
-  cx.save(); cx.translate(fx(-sh, sh), fx(-sh, sh)); if (flipK > .001) { cx.translate(0, H / 2); cx.scale(1, Math.cos(flipK * Math.PI)); cx.translate(0, -H / 2); } cx.translate(0, H - WORLD_H * Z); cx.scale(Z, Z); cx.translate(-cam.x, 0);
+  cx.save(); cx.translate(fx(-sh, sh), fx(-sh, sh)); if (flipK > .001) { cx.translate(0, H / 2); cx.scale(1, Math.cos(flipK * Math.PI)); cx.translate(0, -H / 2); } cx.translate(0, oy()); cx.scale(Z, Z); cx.translate(-cam.x, 0);
   const vw = W / Z, x0 = cam.x - 50, x1 = cam.x + vw + 50;
   // distance markers and your best, painted into the world
   cx.font = "700 13px JetBrains Mono, monospace"; cx.textAlign = "center";
@@ -949,10 +958,10 @@ function draw(now) {
   cx.restore();
   if (bm.w !== "aurora" && bm.w !== "stars") drawWeather(bm, cam.x, false);
   // hazards coming from off the right edge get an arrow at the edge of the screen
-  for (const rk of rockets) { const sy = H - (WORLD_H - rk.y) * Z; if (rk.warn > 0) { const on = Math.floor(clock * 10) % 2; cx.fillStyle = on ? "#ff2a2a" : "#ffe066"; cx.globalAlpha = .95; cx.beginPath(); cx.moveTo(W - 14, sy - 34); cx.lineTo(W - 84, sy); cx.lineTo(W - 14, sy + 34); cx.fill(); cx.fillStyle = "#000"; cx.font = "900 34px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("!", W - 40, sy + 12);
+  for (const rk of rockets) { const sy = oy() + rk.y * Z; if (rk.warn > 0) { const on = Math.floor(clock * 10) % 2; cx.fillStyle = on ? "#ff2a2a" : "#ffe066"; cx.globalAlpha = .95; cx.beginPath(); cx.moveTo(W - 14, sy - 34); cx.lineTo(W - 84, sy); cx.lineTo(W - 14, sy + 34); cx.fill(); cx.fillStyle = "#000"; cx.font = "900 34px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("!", W - 40, sy + 12);
       cx.globalAlpha = .25 + .2 * on; cx.fillStyle = "#ff2a2a"; cx.fillRect(0, sy - 3, W, 6); cx.globalAlpha = 1; cx.font = "900 13px Unbounded, sans-serif"; cx.fillStyle = "#ffe066"; cx.fillText("ROCKET", W - 52, sy - 42); } }
   if (state === "play") for (const dr of []) {
-    if (dr.dead) continue; const x = dr.x, sx = (x - cam.x) * Z, sy = H - (WORLD_H - dr.y) * Z;
+    if (dr.dead) continue; const x = dr.x, sx = (x - cam.x) * Z, sy = oy() + dr.y * Z;
     if (sx > W && sx < W * 2.2) { const k = 1 - (sx - W) / (W * 1.2), pl = .6 + .4 * Math.sin(clock * 12); cx.globalAlpha = Math.max(.3, k) * pl; cx.fillStyle = "#ff3b3b"; cx.beginPath(); cx.moveTo(W - 10, sy); cx.lineTo(W - 34, sy - 16); cx.lineTo(W - 34, sy + 16); cx.fill(); cx.fillStyle = "#fff"; cx.font = "900 14px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("!", W - 26, sy + 5); cx.globalAlpha = 1; }
   }
   // speed lines at the top end
