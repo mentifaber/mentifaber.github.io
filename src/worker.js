@@ -479,8 +479,12 @@ const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 250
 export class Lobby extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
-    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
+    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
     return q;
+  }
+  match(w, l, mode, t) {
+    if (!w.name || !l.name) return; const d = (a) => Math.max(0, Math.round(((a.x || 220) - 220) / 10));
+    this.sql().exec("INSERT INTO matches(ts,mode,w,l,wd,ld,t) VALUES(?,?,?,?,?,?,?)", Date.now(), w.mode || "race", w.name, l.name, d(w), d(l), t || 0);
   }
   rec(name, win) {
     if (!name) return; const q = this.sql(), w = win ? 1 : 0, l = win ? 0 : 1;
@@ -499,7 +503,8 @@ export class Lobby extends DurableObject {
     if (url.pathname.endsWith("/board")) {
       const mode = MODES.includes(url.searchParams.get("mode")) ? url.searchParams.get("mode") : "classic";
       const rows = q.exec("SELECT name,v,m FROM board WHERE mode=? ORDER BY v " + (ASC[mode] ? "ASC" : "DESC") + ", ts ASC LIMIT 25", mode).toArray();
-      return J({ mode, rows });
+      const recent = mode === "wins" ? q.exec("SELECT ts,mode,w,l,wd,ld,t FROM matches ORDER BY ts DESC LIMIT 10").toArray() : undefined;
+      return J({ mode, rows, recent });
     }
     if (url.pathname.endsWith("/score") && req.method === "POST") {
       let b; try { b = await req.json(); } catch (e) { return J({ ok: false }); }
@@ -541,7 +546,7 @@ export class Lobby extends DurableObject {
   endMatch(ws, why) {
     const a = this.me(ws); if (!a.opp) return;
     const o = this.find(a.opp);
-    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.rec(this.me(o).name, true); this.rec(a.name, false); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
+    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.rec(this.me(o).name, true); this.rec(a.name, false); this.match(this.me(o), a, "race", 0); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
   }
   async webSocketMessage(ws, raw) {
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
@@ -557,16 +562,16 @@ export class Lobby extends DurableObject {
       if (a.status !== "idle" || b.status !== "idle") return this.send(ws, { t: "busy", to: b.id });
       const match = crypto.randomUUID().slice(0, 8), seed = (Math.random() * 1e9) | 0;
       this.set(ws, { status: "racing", match, opp: b.id, ready: false, fin: null }); this.set(o, { status: "racing", match, opp: a.id, ready: false, fin: null });
-      const om = b.invMode || "race", len = MODE_LEN[om] || 2500; this.send(ws, { t: "match", seed, len, mode: om, opp: { id: b.id, name: b.name } }); this.send(o, { t: "match", seed, len, mode: om, opp: { id: a.id, name: a.name } });
+      const om = b.invMode || "race"; this.set(ws, { mode: om }); this.set(o, { mode: om }); const len = MODE_LEN[om] || 2500; this.send(ws, { t: "match", seed, len, mode: om, opp: { id: b.id, name: b.name } }); this.send(o, { t: "match", seed, len, mode: om, opp: { id: a.id, name: a.name } });
       return this.lobby();
     }
     const o = a.opp && this.find(a.opp); if (!o || this.me(o).match !== a.match) return;
     if (m.t === "pick") return this.send(o, { t: "opppick", color: String(m.color || "").slice(0, 32), trail: String(m.trail || "").slice(0, 16) });
     if (m.t === "ready") { this.set(ws, { ready: true }); this.send(o, { t: "oppready" }); if (this.me(o).ready) { const go = { t: "start", in: 3200 }; this.send(ws, go); this.send(o, go); } return; }
-    if (m.t === "st") return this.send(o, { t: "opp", x: +m.x || 0, y: +m.y || 0, hx: m.hx == null ? null : +m.hx, hy: m.hy == null ? null : +m.hy, a: !!m.a });
+    if (m.t === "st") { this.set(ws, { x: +m.x || 0 }); } if (m.t === "st") return this.send(o, { t: "opp", x: +m.x || 0, y: +m.y || 0, hx: m.hx == null ? null : +m.hx, hy: m.hy == null ? null : +m.hy, a: !!m.a });
     if (m.t === "fin") {
       if (this.me(o).fin) return; this.set(ws, { fin: +m.time || 0 });
-      this.rec(a.name, true); this.rec(this.me(o).name, false); this.send(ws, { t: "result", win: true, time: +m.time }); this.send(o, { t: "result", win: false, time: +m.time, by: a.name });
+      this.rec(a.name, true); this.rec(this.me(o).name, false); this.match({ ...a, x: Math.max(a.x || 0, +m.x || 0) }, this.me(o), 0, +m.time); this.send(ws, { t: "result", win: true, time: +m.time }); this.send(o, { t: "result", win: false, time: +m.time, by: a.name });
       for (const s of [ws, o]) this.set(s, { status: "idle", match: null, opp: null, ready: false, fin: null });
       return this.lobby();
     }

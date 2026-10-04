@@ -722,7 +722,7 @@ const dist = () => Math.floor(Math.max(0, maxX - 220) / 10);
 const score = () => dist() + style;
 function addStyle(n) { style += Math.round(n * (x2T > 0 ? 2 : 1) * (hard ? 1.5 : moon ? 1.2 : 1)); }
 function finish(p) {
-  if (online) { winner = p; if (net) netSend({ t: "fin", time: raceT }); state = "dying"; flash = .5; sfx("five"); for (let i = 0; i < 6; i++) burst(p.x + fx(-40, 40), p.y + fx(-80, 80), 20, ["#ffe066", "#ff4fd8", "#5ef2ff"][i % 3], 420); clearTimeout(endTimer); endTimer = setTimeout(endRun, 1600); return; }
+  if (online) { winner = p; if (net) netSend({ t: "fin", time: raceT, x: Math.round(p.x) }); state = "dying"; flash = .5; sfx("five"); for (let i = 0; i < 6; i++) burst(p.x + fx(-40, 40), p.y + fx(-80, 80), 20, ["#ffe066", "#ff4fd8", "#5ef2ff"][i % 3], 420); clearTimeout(endTimer); endTimer = setTimeout(endRun, 1600); return; }
   winner = p; state = "dying"; flash = .5; sfx("five"); sfx("biome"); vib([40, 30, 40, 30, 120]);
   for (let i = 0; i < 6; i++) burst(p.x + fx(-40, 40), p.y + fx(-80, 80), 20, ["#ffe066", "#ff4fd8", "#5ef2ff"][i % 3], 420);
   pops = [];
@@ -803,7 +803,7 @@ function endRun() {
     $("d-why").textContent = "ONLINE " + OLM[olMode][0] + " · VS " + (oppInfo ? oppInfo.name : "?").toUpperCase();
     $("d-dist").innerHTML = '<span style="color:' + (won ? "#9dff7a" : "#ff4f6a") + '">' + (won ? "YOU WIN" : "YOU LOSE") + "</span>";
     $("d-new").textContent = netResult && netResult.why === "left" ? "THEY LEFT THE RACE" : netResult && netResult.time ? "WINNING TIME " + netResult.time.toFixed(1) + "s" : "";
-    $("d-stat").innerHTML = "YOU " + dist() + "m · " + raceT.toFixed(1) + "s · PERFECTS <b>" + players[0].perfects + "</b> · CRASHES <b>" + players[0].deaths + "</b>";
+    $("d-stat").innerHTML = "YOU " + dist() + "m  vs  " + (oppInfo ? oppInfo.name.toUpperCase() : "?") + " " + (remote ? Math.round(Math.max(0, remote.x - 220) / 10) : 0) + "m<br>" + raceT.toFixed(1) + "s · " + raceT.toFixed(1) + "s · PERFECTS <b>" + players[0].perfects + "</b> · CRASHES <b>" + players[0].deaths + "</b>";
     $("d-miss").innerHTML = "RECORD <b>" + prog.onl.w + "W – " + prog.onl.l + "L</b> · STREAK <b>" + prog.onl.s + "</b> · BEST STREAK <b>" + prog.onl.bs + "</b>"; $("b-again").textContent = "BACK TO LOBBY"; ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
   }
   $("b-again").textContent = "AGAIN";
@@ -1200,7 +1200,9 @@ async function loadBoard() {
   try {
     const j = await (await fetch("/api/tether/board?mode=" + bdMode, { cache: "no-store" })).json(), u = BMODES.find((b) => b[0] === bdMode)[2], me = nm().toLowerCase();
     $("bd-list").innerHTML = j.rows.length ? j.rows.map((r, i) => '<div class="bd-row' + (r.name.toLowerCase() === me ? " me" : "") + '"><em>' + (i + 1) + "</em><span></span><b>" + (u === "s" ? r.v.toFixed(2) + "s" : u === "w" ? Math.round(r.v) + "W–" + r.m + "L" : Math.round(r.v) + (u === "m" ? "m" : "")) + "</b></div>").join("") : '<div class="stat">No scores yet. Be the first.</div>';
-    [...$("bd-list").querySelectorAll(".bd-row span")].forEach((el, i) => (el.textContent = j.rows[i].name));
+    if (j.recent && j.recent.length) $("bd-list").innerHTML += '<div class="stat" style="margin-top:12px">RECENT MATCHES</div>' + j.recent.map(() => '<div class="bd-row" style="grid-template-columns:1fr"><span class="rc"></span></div>').join("");
+    [...$("bd-list").querySelectorAll(".bd-row .rc")].forEach((el, i) => { const r = j.recent[i]; el.textContent = r.w + " " + r.wd + "m  vs  " + r.l + " " + r.ld + "m" + (r.t ? " · " + r.t.toFixed(1) + "s" : ""); });
+    [...$("bd-list").querySelectorAll(".bd-row span:not(.rc)")].forEach((el, i) => (el.textContent = j.rows[i].name));
   } catch (e) { $("bd-list").innerHTML = '<div class="stat">Leaderboard needs the live site.</div>'; }
 }
 $("b-board").onclick = () => { audio(); openBoard(); };
