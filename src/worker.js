@@ -452,6 +452,7 @@ export default {
     const path = url.pathname;
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
+      if (route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "save" && app) return cloudSave(req, env, app);
@@ -472,3 +473,59 @@ export default {
     ctx.waitUntil(dailyReminders(env));
   },
 };
+
+// ── Tether online: one lobby, WebSockets (hibernation-safe: every player's state lives on their socket)
+export class Lobby extends DurableObject {
+  async fetch(req) {
+    if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
+    const pair = new WebSocketPair();
+    this.ctx.acceptWebSocket(pair[1]);
+    pair[1].serializeAttachment({ id: crypto.randomUUID().slice(0, 8), name: "", status: "new" });
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+  socks() { return this.ctx.getWebSockets(); }
+  me(ws) { return ws.deserializeAttachment() || {}; }
+  set(ws, patch) { const a = Object.assign(this.me(ws), patch); ws.serializeAttachment(a); return a; }
+  find(id) { return this.socks().find((s) => this.me(s).id === id); }
+  send(ws, msg) { try { ws.send(JSON.stringify(msg)); } catch (e) {} }
+  lobby() {
+    const players = this.socks().map((s) => this.me(s)).filter((a) => a.name).map((a) => ({ id: a.id, name: a.name, status: a.status }));
+    for (const s of this.socks()) if (this.me(s).name) this.send(s, { t: "lobby", players });
+  }
+  endMatch(ws, why) {
+    const a = this.me(ws); if (!a.opp) return;
+    const o = this.find(a.opp);
+    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
+  }
+  async webSocketMessage(ws, raw) {
+    let m; try { m = JSON.parse(raw); } catch (e) { return; }
+    const a = this.me(ws);
+    if (m.t === "hello") { const name = String(m.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16) || "Player"; this.set(ws, { name, status: "idle" }); this.send(ws, { t: "welcome", id: a.id }); return this.lobby(); }
+    if (!a.name) return;
+    if (m.t === "invite") { const o = this.find(m.to), b = o && this.me(o); if (!b || b.status !== "idle" || a.status !== "idle" || b.id === a.id) return this.send(ws, { t: "busy", to: m.to }); this.send(o, { t: "invited", from: a.id, name: a.name }); this.send(ws, { t: "pending", to: b.id, name: b.name }); return; }
+    if (m.t === "cancel") { const o = this.find(m.to); if (o) this.send(o, { t: "withdrawn", from: a.id }); return; }
+    if (m.t === "respond") {
+      const o = this.find(m.from), b = o && this.me(o);
+      if (!b) return this.send(ws, { t: "gone" });
+      if (!m.accept) return this.send(o, { t: "declined", by: a.name });
+      if (a.status !== "idle" || b.status !== "idle") return this.send(ws, { t: "busy", to: b.id });
+      const match = crypto.randomUUID().slice(0, 8), seed = (Math.random() * 1e9) | 0;
+      this.set(ws, { status: "racing", match, opp: b.id, ready: false, fin: null }); this.set(o, { status: "racing", match, opp: a.id, ready: false, fin: null });
+      this.send(ws, { t: "match", seed, len: 2500, opp: { id: b.id, name: b.name } }); this.send(o, { t: "match", seed, len: 2500, opp: { id: a.id, name: a.name } });
+      return this.lobby();
+    }
+    const o = a.opp && this.find(a.opp); if (!o || this.me(o).match !== a.match) return;
+    if (m.t === "pick") return this.send(o, { t: "opppick", color: String(m.color || "").slice(0, 32), trail: String(m.trail || "").slice(0, 16) });
+    if (m.t === "ready") { this.set(ws, { ready: true }); this.send(o, { t: "oppready" }); if (this.me(o).ready) { const go = { t: "start", in: 3200 }; this.send(ws, go); this.send(o, go); } return; }
+    if (m.t === "st") return this.send(o, { t: "opp", x: +m.x || 0, y: +m.y || 0, hx: m.hx == null ? null : +m.hx, hy: m.hy == null ? null : +m.hy, a: !!m.a });
+    if (m.t === "fin") {
+      if (this.me(o).fin) return; this.set(ws, { fin: +m.time || 0 });
+      this.send(ws, { t: "result", win: true, time: +m.time }); this.send(o, { t: "result", win: false, time: +m.time, by: a.name });
+      for (const s of [ws, o]) this.set(s, { status: "idle", match: null, opp: null, ready: false, fin: null });
+      return this.lobby();
+    }
+    if (m.t === "leave") { this.endMatch(ws, "left"); this.set(ws, { status: "idle", match: null, opp: null, ready: false }); return this.lobby(); }
+  }
+  async webSocketClose(ws) { this.endMatch(ws, "left"); this.set(ws, { name: "" }); try { ws.close(); } catch (e) {} this.lobby(); }
+  async webSocketError(ws) { return this.webSocketClose(ws); }
+}
