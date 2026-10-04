@@ -526,11 +526,15 @@ The server runs the real game engine and records every result, so scores on the 
    Plain-text version of this guide: /api/tether/ai?format=text
 
 Be a good guest: one run at a time per agent, no scripts that hammer the server (60 sessions per IP per hour).`;
+async function tfHash(name, code) {
+  const c = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("tf1:" + String(name).toLowerCase() + ":" + c));
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
 const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
-    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS ghosts(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, t REAL, m INTEGER, ts INTEGER, UNIQUE(agent,mode))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1;
+    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS ghosts(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, t REAL, m INTEGER, ts INTEGER, UNIQUE(agent,mode))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); q.exec("CREATE TABLE IF NOT EXISTS tfp(k TEXT PRIMARY KEY, name TEXT, h TEXT, save TEXT, devs TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS tffeed(ts INTEGER, name TEXT, mode TEXT, v REAL, m INTEGER)"); this._init = 1;
       // one-time: forfeits used to count as wins; they were stored with a 0s time. Take them back off the board.
       if (!q.exec("SELECT n FROM tally WHERE k='mig_forfeits_v1'").toArray().length) {
         for (const r of q.exec("SELECT rowid id, w, l FROM matches WHERE t=0").toArray()) {
@@ -691,9 +695,41 @@ export class Lobby extends DurableObject {
     return J({ error: "not found. GET /api/tether/ai for the guide." }, 404);
   }
   bump(k, n) { this.sql().exec("INSERT INTO tally(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); }
+  // Thoughtform player files: a name, a code to unlock it on any device, the synced save, and the devices that use it
+  async tfAcct(req, J) {
+    const q = this.sql(); let b; try { b = await req.json(); } catch (e) { return J({ error: "bad request" }); }
+    const name = String(b.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16), k = name.toLowerCase(); if (!name) return J({ error: "pick a name" });
+    const row = q.exec("SELECT * FROM tfp WHERE k=?", k).toArray()[0], now = Date.now();
+    const dev = String(b.dev || "").replace(/[^\w-]/g, "").slice(0, 24), dn = String(b.dn || "").replace(/[^\w .·()/-]/g, "").slice(0, 40);
+    if (b.op === "register") {
+      if (row) return J({ error: "that name already has a player file" });
+      const A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8)); let code = ""; for (const x of r) code += A[x % A.length];
+      const devs = dev ? { [dev]: { n: dn, ts: now } } : {};
+      q.exec("INSERT INTO tfp(k,name,h,save,devs,ts) VALUES(?,?,?,?,?,?)", k, name, await tfHash(name, code), b.save ? JSON.stringify(b.save).slice(0, 60000) : null, JSON.stringify(devs), now);
+      return J({ ok: true, name, code: code.slice(0, 4) + "-" + code.slice(4), devs });
+    }
+    if (!row || row.h !== (await tfHash(name, b.code))) { await new Promise((r) => setTimeout(r, 400)); return J({ error: "that name and code do not match" }); }
+    const devs = JSON.parse(row.devs || "{}"); if (dev) devs[dev] = { n: dn || (devs[dev] || {}).n || "device", ts: now };
+    if (b.op === "forget") delete devs[String(b.target || "")];
+    const keep = Object.entries(devs).sort((a, c) => c[1].ts - a[1].ts).slice(0, 12), dv = Object.fromEntries(keep);
+    if (b.op === "save") { const t = JSON.stringify(b.save || {}); if (t.length > 60000) return J({ error: "save too big" }); q.exec("UPDATE tfp SET save=?, devs=?, ts=? WHERE k=?", t, JSON.stringify(dv), now, k); return J({ ok: true, ts: now, devs: dv }); }
+    q.exec("UPDATE tfp SET devs=? WHERE k=?", JSON.stringify(dv), k);
+    return J({ ok: true, name: row.name, save: row.save ? JSON.parse(row.save) : null, ts: row.ts, devs: dv });
+  }
+  tfWorld(url, J, MODES) {
+    const q = this.sql(), me = String(url.searchParams.get("name") || "").trim().slice(0, 16), out = {};
+    for (const mode of MODES.filter((m) => m.startsWith("thoughtform"))) {
+      const top = q.exec("SELECT name,v,m FROM board WHERE mode=? ORDER BY v DESC, ts ASC LIMIT 10", mode).toArray(), n = q.exec("SELECT COUNT(*) c FROM board WHERE mode=?", mode).one().c;
+      const mine = me && q.exec("SELECT v,m FROM board WHERE mode=? AND name=? COLLATE NOCASE", mode, me).toArray()[0];
+      out[mode] = { top, n, me: mine ? { v: mine.v, m: mine.m, rank: q.exec("SELECT COUNT(*) c FROM board WHERE mode=? AND v > ?", mode, mine.v).one().c + 1 } : null };
+    }
+    return J({ modes: out, feed: q.exec("SELECT ts,name,mode,v,m FROM tffeed ORDER BY ts DESC LIMIT 14").toArray(), players: q.exec("SELECT COUNT(DISTINCT name) c FROM board WHERE mode LIKE 'thoughtform%'").one().c, files: q.exec("SELECT COUNT(*) c FROM tfp").one().c, now: Date.now() });
+  }
   async api(req, url) {
     const q = this.sql(), J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
-    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform", "thoughtform-hard", "thoughtform-boss", "thoughtform-coop"];
+    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform", "thoughtform-hard", "thoughtform-boss", "thoughtform-coop", "thoughtform-blitz", "thoughtform-glass", "thoughtform-horde"];
+    if (url.pathname.endsWith("/tf-acct") && req.method === "POST") return this.tfAcct(req, J);
+    if (url.pathname.endsWith("/tf-world")) return this.tfWorld(url, J, MODES);
     if (url.pathname.endsWith("/stats")) {
       const day = new Date().toISOString().slice(0, 10), t = {};
       for (const r of q.exec("SELECT k,n FROM tally").toArray()) t[r.k] = r.n;
@@ -733,6 +769,11 @@ export class Lobby extends DurableObject {
       this.bump("runs", 1); this.bump("metres", m); this.bump("d" + new Date().toISOString().slice(0, 10), 1);
       const cur = q.exec("SELECT n FROM tally WHERE k='bestm'").toArray()[0]; if (!cur || m > cur.n) q.exec("INSERT INTO tally(k,n) VALUES('bestm',?) ON CONFLICT(k) DO UPDATE SET n=?", m, m);
       const name = String(b.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16);
+      if (name && mode.startsWith("thoughtform")) { // a claimed Thoughtform name only posts with its player code
+        const acct = q.exec("SELECT h FROM tfp WHERE k=?", name.toLowerCase()).toArray()[0];
+        if (acct && acct.h !== (await tfHash(name, b.code))) return J({ ok: false, error: "claimed" });
+        q.exec("INSERT INTO tffeed(ts,name,mode,v,m) VALUES(?,?,?,?,?)", Date.now(), name, mode, v, m); q.exec("DELETE FROM tffeed WHERE ts < (SELECT MIN(ts) FROM (SELECT ts FROM tffeed ORDER BY ts DESC LIMIT 60))");
+      }
       let rank = null;
       if (name && MODES.includes(mode) && (!ASC[mode] || v > 0)) {
         const old = q.exec("SELECT v FROM board WHERE mode=? AND name=?", mode, name).toArray()[0];
