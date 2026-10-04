@@ -91,6 +91,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .ol-sw{display:flex;flex-wrap:wrap;gap:8px}.ol-sw button{width:42px;height:42px;border-radius:12px;border:2px solid transparent;background:rgba(255,255,255,.06);padding:6px}.ol-sw button.on{border-color:#fff}
 .ol-sw button i{display:block;width:100%;height:100%;border-radius:50%}
 .ol-count{font-family:var(--disp);font-size:72px;font-weight:900;color:#5ef2ff;margin-top:12px}.ol-count.hidden{display:none}
+.live{margin:6px 0;font-size:11px;letter-spacing:.14em;color:var(--ink);opacity:.85;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.live b{color:#9dff7a}.live i{font-style:normal;color:#ff4f6a}
+.bd-tabs{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:420px}
+.bd-tabs button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:var(--ink);font:inherit;font-size:10px;letter-spacing:.12em;padding:7px 10px;border-radius:8px}
+.bd-tabs button.on{background:#ffe066;color:#000;border-color:#ffe066}
+.bd-list{width:min(420px,92vw);font-size:13px}
+.bd-row{display:grid;grid-template-columns:34px 1fr auto;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.bd-row.me{background:rgba(255,224,102,.16)}.bd-row span{text-align:left}.bd-row em{font-style:normal;opacity:.6}
 </style>
 </head>
 <body>
@@ -110,6 +118,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <button class="btn alt" id="b-online" style="border-color:rgba(94,242,255,.55)">ONLINE · RACE ANYONE</button>
   <button class="btn alt" id="b-daily">DAILY RUN · <span id="t-daily"></span></button>
   <div class="row"><button class="btn alt" id="b-shop">SHOP</button><button class="btn alt" id="b-set">⚙</button><button class="btn alt" id="b-how">HOW</button><button class="btn alt" id="b-snd">🔊</button></div>
+  <button class="btn alt" id="b-board" style="border-color:rgba(255,224,102,.55)">LEADERBOARD</button>
+  <div class="stat live" id="t-live"></div>
   <div class="stat" id="t-stats"></div>
   <div class="stat" id="t-missions" style="font-size:11px;line-height:1.75"></div>
 </section>
@@ -118,6 +128,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="logo" style="font-size:44px">MODES</div>
   <div class="modes" id="modes"></div>
   <button class="btn alt" id="b-modesback">BACK</button>
+</section>
+
+<section class="scr hidden" id="s-board">
+  <div class="logo" style="font-size:44px">RANKS</div>
+  <div class="live" id="bd-live"></div>
+  <div class="bd-tabs" id="bd-tabs"></div>
+  <div class="bd-list" id="bd-list"></div>
+  <div class="ol-box"><input id="bd-name" maxlength="16" placeholder="your name for the board" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <button class="btn alt" id="bd-back">BACK</button>
 </section>
 
 <section class="scr hidden" id="s-online">
@@ -796,6 +815,7 @@ function endRun() {
   if (trial) {
     const done = !!winner, tm = raceT, prev = prog.trial.best;
     if (done && (!prev || tm < prev)) { prog.trial = { best: tm, ghost: ghostRec }; nb = "NEW RECORD"; }
+    postScore("trial", done ? tm : 0, m);
     save();
     $("d-why").textContent = done ? "TIME TRIAL · " + TRIAL_M + "m" : "DNF · " + deathMsg; $("d-dist").textContent = done ? tm.toFixed(2) + "s" : m + "m"; $("d-new").textContent = nb;
     $("d-stat").innerHTML = "BEST <b>" + (prog.trial.best ? prog.trial.best.toFixed(2) + "s" : "—") + "</b><br>PERFECTS <b>" + players[0].perfects + "</b> · RINGS <b>" + run.rings + "</b> · SHARDS <b>+" + got + "</b>";
@@ -812,6 +832,7 @@ function endRun() {
   else { if (sc > prog.bestScore) { prog.bestScore = sc; prog.ghost = ghostRec; nb = "NEW BEST"; } prog.best = Math.max(prog.best, m); }
   prog.top = (prog.top || []).concat(zen || rush || gaunt || moon || sprint ? [] : [{ s: sc, m, c: coop ? 1 : 0, d: mode === "daily" ? 1 : 0, h: hard ? 1 : 0 }]).sort((a, b) => b.s - a.s).slice(0, 5);
   save();
+  postScore(moon ? "moon" : sprint ? "sprint" : rush ? "rush" : gaunt ? "gauntlet" : zen ? "zen" : hard ? "hard" : coop || mode === "daily" ? "other" : "classic", sprint ? m : sc, m);
   $("d-miss").innerHTML = (doneNow.length ? doneNow.map((x) => '<span style="color:#9dff7a">✓ ' + x[1] + " +" + x[4] + "◆</span>").join("<br>") + "<br><br>" : "") + "NEXT<br>" + missionsHTML();
   $("d-why").textContent = sprint ? "60s SPRINT" : rush ? "SHARD RUSH · " + run.got + " SHARDS" : coop ? "BOTH OF YOU · " + deathMsg : deathMsg; $("d-dist").textContent = m + "m"; $("d-new").textContent = nb;
   const bestNow = moon ? prog.bestMoon : sprint ? (prog.bestSprint || 0) + "m" : rush ? prog.bestRush : gaunt ? prog.bestGaunt : zen ? prog.bestZen : hard ? prog.bestHard : coop ? prog.bestCoop : mode === "daily" ? (prog.daily[seed] || {}).best || 0 : prog.bestScore;
@@ -1103,7 +1124,7 @@ function drawTitleOrb(now) {
 }
 
 /* ── screens ── */
-function show(id) { ["s-title", "s-dead", "s-pause", "s-shop", "s-how", "s-modes", "s-set", "s-online"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
+function show(id) { ["s-title", "s-dead", "s-pause", "s-shop", "s-how", "s-modes", "s-set", "s-online", "s-board"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 const dailyLabel = () => { const k = String(todayKey()); return k.slice(4, 6) + "/" + k.slice(6); };
 function title() {
   state = "title"; players = []; show("s-title"); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden"));
@@ -1151,6 +1172,41 @@ $("skins").onclick = (e) => {
   else { audio(); sfx("miss"); return; }
   save(); shop();
 };
+/* ── leaderboard + live stats ── */
+const BMODES = [["classic", "CLASSIC", "pts"], ["hard", "HARD", "pts"], ["rush", "RUSH", "pts"], ["gauntlet", "GAUNTLET", "pts"], ["moon", "LOW-G", "pts"], ["sprint", "SPRINT", "m"], ["zen", "ZEN", "pts"], ["trial", "TRIAL", "s"]];
+let bdMode = "classic", liveT = 0;
+const nm = () => (prog.olName || "").trim();
+function postScore(mode, v, m) {
+  if (location.protocol === "file:") return;
+  try { fetch("/api/tether/score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: nm(), mode, v, m }), keepalive: true }).then((r) => r.json()).then((j) => { if (j && j.rank) $("d-new").textContent = ($("d-new").textContent ? $("d-new").textContent + " · " : "") + "RANK #" + j.rank; }).catch(() => {}); } catch (e) {}
+}
+const fmtN = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "k" : String(Math.round(n));
+async function liveStats() {
+  if (location.protocol === "file:") return;
+  try {
+    const j = await (await fetch("/api/tether/stats", { cache: "no-store" })).json();
+    const h = '<span><i>●</i> <b>' + j.online + "</b> ONLINE</span>" + (j.racing ? "<span><b>" + j.racing + "</b> RACING</span>" : "") + "<span><b>" + fmtN(j.today) + "</b> RUNS TODAY</span><span><b>" + fmtN(j.metres / 10) + "</b> METRES FLOWN</span>";
+    $("t-live").innerHTML = h; $("bd-live").innerHTML = h + "<span><b>" + j.players + "</b> RANKED · FURTHEST <b>" + Math.round(j.bestm / 10) + "m</b></span>";
+  } catch (e) {}
+}
+async function openBoard() {
+  show("s-board"); $("bd-name").value = nm();
+  $("bd-tabs").innerHTML = BMODES.map((b) => '<button data-m="' + b[0] + '" class="' + (b[0] === bdMode ? "on" : "") + '">' + b[1] + "</button>").join("");
+  liveStats(); loadBoard();
+}
+async function loadBoard() {
+  $("bd-list").innerHTML = '<div class="stat">Loading…</div>';
+  try {
+    const j = await (await fetch("/api/tether/board?mode=" + bdMode, { cache: "no-store" })).json(), u = BMODES.find((b) => b[0] === bdMode)[2], me = nm().toLowerCase();
+    $("bd-list").innerHTML = j.rows.length ? j.rows.map((r, i) => '<div class="bd-row' + (r.name.toLowerCase() === me ? " me" : "") + '"><em>' + (i + 1) + "</em><span></span><b>" + (u === "s" ? r.v.toFixed(2) + "s" : Math.round(r.v) + (u === "m" ? "m" : "")) + "</b></div>").join("") : '<div class="stat">No scores yet. Be the first.</div>';
+    [...$("bd-list").querySelectorAll(".bd-row span")].forEach((el, i) => (el.textContent = j.rows[i].name));
+  } catch (e) { $("bd-list").innerHTML = '<div class="stat">Leaderboard needs the live site.</div>'; }
+}
+$("b-board").onclick = () => { audio(); openBoard(); };
+$("bd-back").onclick = () => { show("s-title"); };
+$("bd-tabs").onclick = (e) => { const b = e.target.closest("button"); if (b) { bdMode = b.dataset.m; openBoard(); } };
+$("bd-name").onchange = () => { prog.olName = $("bd-name").value.replace(/[^\w .'-]/g, "").trim().slice(0, 16); save(); loadBoard(); };
+liveStats(); setInterval(() => { if (!document.hidden && ($("s-title").classList.contains("hidden") === false || $("s-board").classList.contains("hidden") === false)) liveStats(); }, 6000);
 /* ── online: lobby, invites, picks, then a race on a shared seed ── */
 const OL = (id) => $(id), olShow = (which) => ["ol-join", "ol-lobby", "ol-prep"].forEach((k) => OL(k).classList.toggle("hidden", k !== which));
 function netSend(m) { try { if (net && net.readyState === 1) net.send(JSON.stringify(m)); } catch (e) {} }
