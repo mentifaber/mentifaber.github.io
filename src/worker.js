@@ -454,6 +454,7 @@ export default {
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
+      if (route === "tf-ws") return env.LOBBY.get(env.LOBBY.idFromName("thoughtform")).fetch(req); // Thoughtform co-op: same lobby logic, its own room
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "save" && app) return cloudSave(req, env, app);
@@ -692,7 +693,7 @@ export class Lobby extends DurableObject {
   bump(k, n) { this.sql().exec("INSERT INTO tally(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); }
   async api(req, url) {
     const q = this.sql(), J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
-    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform"];
+    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins", "thoughtform", "thoughtform-hard", "thoughtform-boss", "thoughtform-coop"];
     if (url.pathname.endsWith("/stats")) {
       const day = new Date().toISOString().slice(0, 10), t = {};
       for (const r of q.exec("SELECT k,n FROM tally").toArray()) t[r.k] = r.n;
@@ -825,6 +826,7 @@ export class Lobby extends DurableObject {
     if (m.t === "cancel") { const o = this.find(m.to); if (o) this.send(o, { t: "withdrawn", from: a.id }); return; }
     if (m.t === "respond") return this.doRespond(ws, a, m);
     const o = a.opp && this.find(a.opp); if (!o || this.me(o).match !== a.match) return;
+    if (m.t === "rel") return this.send(o, { t: "rel", d: m.d }); // co-op games relay their own state between the pair
     if (m.t === "pick") return this.send(o, { t: "opppick", color: String(m.color || "").slice(0, 32), trail: String(m.trail || "").slice(0, 16) });
     if (m.t === "ready") { this.set(ws, { ready: true }); this.send(o, { t: "oppready" }); if (this.me(o).ready) { const wait = o.bot || ws.bot ? 45000 : 3200, t0 = Date.now() + wait, go = { t: "start", in: wait }; this.set(ws, { t0 }); this.set(o, { t0 }); this.send(ws, go); this.send(o, go); } return; }
     if (m.t === "st") { this.set(ws, { x: +m.x || 0 }); } if (m.t === "st") return this.send(o, { t: "opp", x: +m.x || 0, y: +m.y || 0, hx: m.hx == null ? null : +m.hx, hy: m.hy == null ? null : +m.hy, a: !!m.a });
