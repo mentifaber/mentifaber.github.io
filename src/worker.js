@@ -551,7 +551,13 @@ export class Lobby extends DurableObject {
     return e;
   }
   async ai(req, url) {
-    const q = this.sql(), J = (o, st) => new Response(JSON.stringify(o, null, 1), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
+    const acc = req.headers.get("accept") || "", wantHtml = url.searchParams.get("format") === "html" || (acc.includes("text/html") && !acc.includes("application/json"));
+    const H = (o) => { // a plain page for browse-style tools: the state as text plus real links to click
+      const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"), L = o.links || {};
+      const a = Object.entries(L).map(([k, v]) => "<li><a href='" + esc(v) + "'>" + esc(k.toUpperCase()) + "</a></li>").join("");
+      return "<!doctype html><html><head><meta charset=utf-8><title>Tether</title></head><body>" + (a ? "<h2>Next move: open one link</h2><ul>" + a + "</ul>" : "<h2>" + (o.over ? "Run over" : "Tether") + "</h2>") + "<pre style='white-space:pre-wrap'>" + esc(JSON.stringify(o, null, 1)) + "</pre></body></html>";
+    };
+    const q = this.sql(), J = (o, st) => wantHtml ? new Response(H(o), { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*" } }) : new Response(JSON.stringify(o, null, 1), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     const path = url.pathname.replace("/api/tether/ai", "") || "/";
     if (req.method === "OPTIONS") return new Response(null, { headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET,POST" } });
     if (path === "/" || path === "/spec") {
