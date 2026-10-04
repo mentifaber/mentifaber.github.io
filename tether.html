@@ -229,11 +229,11 @@ const save = () => { try { localStorage.setItem(SAVE, JSON.stringify(prog)); } c
 /* ── canvas ── */
 const cv = $("cv"), cx = cv.getContext("2d");
 let W = 1, H = 1, DPR = 1, S = 1;
-function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.min(H / WORLD_H, W / (H > W ? 1000 : 1150)); }
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.min(H / (FLOOR + 22), W / (H > W ? 900 : 1150)); }
 addEventListener("resize", resize); resize();
 let zoomK = 1;
 const zoom = () => S * (coop ? .82 : 1) * zoomK;
-const oy = () => H - WORLD_H * zoom(); // world top on screen
+const oy = () => H - (FLOOR + 22) * zoom(); // just a band of lava at the bottom, no black below it // world top on screen
 
 /* ── audio ── */
 let AC = null, master, filt, dly, musG, sfxG, bus = "s", step = 0, nextT = 0;
