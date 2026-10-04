@@ -475,16 +475,21 @@ export default {
 };
 
 // ── Tether online: one lobby, WebSockets (hibernation-safe: every player's state lives on their socket)
+const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
     if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
     return q;
   }
+  rec(name, win) {
+    if (!name) return; const q = this.sql(), w = win ? 1 : 0, l = win ? 0 : 1;
+    q.exec("INSERT INTO board(mode,name,v,m,ts) VALUES('wins',?,?,?,?) ON CONFLICT(mode,name) DO UPDATE SET v=v+?,m=m+?,ts=?", name, w, l, Date.now(), w, l, Date.now());
+  }
   bump(k, n) { this.sql().exec("INSERT INTO tally(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); }
   async api(req, url) {
     const q = this.sql(), J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
-    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial"];
+    const ASC = { trial: 1 }, MODES = ["classic", "hard", "rush", "gauntlet", "moon", "sprint", "zen", "trial", "wins"];
     if (url.pathname.endsWith("/stats")) {
       const day = new Date().toISOString().slice(0, 10), t = {};
       for (const r of q.exec("SELECT k,n FROM tally").toArray()) t[r.k] = r.n;
@@ -499,7 +504,7 @@ export class Lobby extends DurableObject {
     if (url.pathname.endsWith("/score") && req.method === "POST") {
       let b; try { b = await req.json(); } catch (e) { return J({ ok: false }); }
       const mode = String(b.mode || ""), v = +b.v, m = Math.max(0, Math.min(60000, Math.round(+b.m) || 0));
-      if (!MODES.includes(mode) && mode !== "other") return J({ ok: false });
+      if ((!MODES.includes(mode) && mode !== "other") || mode === "wins") return J({ ok: false });
       if (!(v >= 0) || v > 5e6) return J({ ok: false });
       this.bump("runs", 1); this.bump("metres", m); this.bump("d" + new Date().toISOString().slice(0, 10), 1);
       const cur = q.exec("SELECT n FROM tally WHERE k='bestm'").toArray()[0]; if (!cur || m > cur.n) q.exec("INSERT INTO tally(k,n) VALUES('bestm',?) ON CONFLICT(k) DO UPDATE SET n=?", m, m);
@@ -536,14 +541,14 @@ export class Lobby extends DurableObject {
   endMatch(ws, why) {
     const a = this.me(ws); if (!a.opp) return;
     const o = this.find(a.opp);
-    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
+    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.rec(this.me(o).name, true); this.rec(a.name, false); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
   }
   async webSocketMessage(ws, raw) {
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
     const a = this.me(ws);
     if (m.t === "hello") { const name = String(m.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16) || "Player"; this.set(ws, { name, status: "idle" }); this.send(ws, { t: "welcome", id: a.id }); return this.lobby(); }
     if (!a.name) return;
-    if (m.t === "invite") { const o = this.find(m.to), b = o && this.me(o); if (!b || b.status !== "idle" || a.status !== "idle" || b.id === a.id) return this.send(ws, { t: "busy", to: m.to }); this.send(o, { t: "invited", from: a.id, name: a.name }); this.send(ws, { t: "pending", to: b.id, name: b.name }); return; }
+    if (m.t === "invite") { const o = this.find(m.to), b = o && this.me(o); if (!b || b.status !== "idle" || a.status !== "idle" || b.id === a.id) return this.send(ws, { t: "busy", to: m.to }); const om = MODE_LEN[m.mode] ? m.mode : "race"; this.set(ws, { invMode: om }); this.send(o, { t: "invited", from: a.id, name: a.name, mode: om }); this.send(ws, { t: "pending", to: b.id, name: b.name }); return; }
     if (m.t === "cancel") { const o = this.find(m.to); if (o) this.send(o, { t: "withdrawn", from: a.id }); return; }
     if (m.t === "respond") {
       const o = this.find(m.from), b = o && this.me(o);
@@ -552,7 +557,7 @@ export class Lobby extends DurableObject {
       if (a.status !== "idle" || b.status !== "idle") return this.send(ws, { t: "busy", to: b.id });
       const match = crypto.randomUUID().slice(0, 8), seed = (Math.random() * 1e9) | 0;
       this.set(ws, { status: "racing", match, opp: b.id, ready: false, fin: null }); this.set(o, { status: "racing", match, opp: a.id, ready: false, fin: null });
-      this.send(ws, { t: "match", seed, len: 2500, opp: { id: b.id, name: b.name } }); this.send(o, { t: "match", seed, len: 2500, opp: { id: a.id, name: a.name } });
+      const om = b.invMode || "race", len = MODE_LEN[om] || 2500; this.send(ws, { t: "match", seed, len, mode: om, opp: { id: b.id, name: b.name } }); this.send(o, { t: "match", seed, len, mode: om, opp: { id: a.id, name: a.name } });
       return this.lobby();
     }
     const o = a.opp && this.find(a.opp); if (!o || this.me(o).match !== a.match) return;
@@ -561,7 +566,7 @@ export class Lobby extends DurableObject {
     if (m.t === "st") return this.send(o, { t: "opp", x: +m.x || 0, y: +m.y || 0, hx: m.hx == null ? null : +m.hx, hy: m.hy == null ? null : +m.hy, a: !!m.a });
     if (m.t === "fin") {
       if (this.me(o).fin) return; this.set(ws, { fin: +m.time || 0 });
-      this.send(ws, { t: "result", win: true, time: +m.time }); this.send(o, { t: "result", win: false, time: +m.time, by: a.name });
+      this.rec(a.name, true); this.rec(this.me(o).name, false); this.send(ws, { t: "result", win: true, time: +m.time }); this.send(o, { t: "result", win: false, time: +m.time, by: a.name });
       for (const s of [ws, o]) this.set(s, { status: "idle", match: null, opp: null, ready: false, fin: null });
       return this.lobby();
     }
