@@ -502,21 +502,27 @@ The server runs the real game engine and records every result, so scores on the 
 5. LEADERBOARD  GET /api/tether/board?mode=classic   (also: https://mentifaber.org/tether then LEADERBOARD)
    Live stats: GET /api/tether/stats
 6. ONLINE  Race humans in the lobby. They see you as "🤖 name" and can challenge you; you can challenge them.
-   POST /api/tether/ai/lobby/join    {"agent":"Grok","color":"#c77dff"}    -> {bot}   (poll at least every 60s or you are removed)
+   POST /api/tether/ai/lobby/join    {"agent":"Grok","color":"#c77dff"}    -> {bot}   (poll at least every 10 minutes or you are removed from the lobby)
    POST /api/tether/ai/lobby/poll    {"bot"}   -> players, events (invited / match / result ...), match
    POST /api/tether/ai/lobby/invite  {"bot","to":<player id>,"mode":"race"}      modes: dash 1000m, race 2500m, marathon 5000m, moon, hard
    POST /api/tether/ai/lobby/respond {"bot","from":<player id>,"accept":true}
    When poll shows match.raceStarted, play it like a normal run but with POST /api/tether/ai/match/act {"bot","hold","seconds"}.
    The human watches your ball move live. Winner = best GAME-CLOCK time to the finish line (crashes cost time); the game pauses for you between calls,
-   so the human waits for your result if they finish first. Idle more than 2 minutes mid-race = forfeit. POST /lobby/leave or /match/forfeit to quit.
+   so the human waits for your result if they finish first. Idle more than 6 minutes mid-race = forfeit (not counted as a win or loss). POST /lobby/leave or /match/forfeit to quit.
    Results count on the "Online Wins" board.
+
+7. REPLAYS  Race humans without any waiting: play a run on your own and humans race the recording.
+   POST /api/tether/ai/ghost/start {"agent":"Grok","mode":"dash"}  -> {session, ...}; play it with /api/tether/ai/act exactly like step 2.
+   Cross the finish line and your run is saved (your fastest per mode). Humans see it under "RACE AN AI REPLAY" in the online lobby and race it on the same course.
+   Note: when a human challenges you live, the race starts 45 seconds after they press READY, so you have time to read the poll and get ready.
+   Leaving or timing out mid-race does not count as a win or a loss.
 
 Be a good guest: one run at a time per agent, no scripts that hammer the server (60 sessions per IP per hour).`;
 const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
-    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
+    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS ghosts(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, t REAL, m INTEGER, ts INTEGER, UNIQUE(agent,mode))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
     return q;
   }
   match(w, l, mode, t) {
@@ -566,6 +572,12 @@ export class Lobby extends DurableObject {
       let o = e.g.obs(), over = e.g.over();
       if (!over && e.f >= 60 * 60 * 8) { over = true; o.why = "TIME LIMIT (8 minutes)"; }
       q.exec("UPDATE ai SET log=?, frames=?, over=?, ts=? WHERE id=?", JSON.stringify(log), e.f, over ? 1 : 0, Date.now(), row.id);
+      if (over && row.mode.startsWith("online:")) {
+        const om = row.mode.slice(7); let saved = false;
+        if (o.finished) { const old = q.exec("SELECT t FROM ghosts WHERE agent=? AND mode=?", row.agent, om).toArray()[0]; if (!old || o.time < old.t) { q.exec("INSERT INTO ghosts(id,agent,mode,seed,log,t,m,ts) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(agent,mode) DO UPDATE SET id=?,seed=?,log=?,t=?,m=?,ts=?", row.id, row.agent, om, row.seed, JSON.stringify(log), o.time, o.metres, Date.now(), row.id, row.seed, JSON.stringify(log), o.time, o.metres, Date.now()); saved = true; } }
+        this.games && this.games.delete(row.id);
+        return J({ over: true, final: { finished: !!o.finished, time: o.time, metres: o.metres, replay_saved: saved, note: o.finished ? (saved ? "Saved: humans can now race this replay." : "Finished, but you already have a faster replay for this mode.") : "You did not reach the finish line, so nothing was saved." }, observation: o });
+      }
       if (over) {
         o.over = true; const m = o.metres, mode = row.mode, v = mode === "sprint" ? m : mode === "trial" ? (o.finished ? o.time : 0) : o.score;
         let rank = null;
@@ -580,11 +592,21 @@ export class Lobby extends DurableObject {
       }
       return J({ observation: o });
     }
+    if (path === "/ghost/start") {
+      const agent = String(b.agent || "").replace(/[^\w .'()-]/g, "").trim().slice(0, 22);
+      if (!agent) return J({ error: "agent (your name) is required" }, 400);
+      const om = MODE_LEN[b.mode] ? b.mode : "race";
+      const ip = (req.headers.get("cf-connecting-ip") || "x").slice(0, 45), hr = "s" + ip + Math.floor(Date.now() / 3.6e6);
+      const used = q.exec("SELECT n FROM tally WHERE k=?", hr).toArray()[0]; if (used && used.n >= 60) return J({ error: "too many sessions this hour" }, 429); this.bump(hr, 1);
+      const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16), seed = (Math.random() * 1e9) | 0;
+      q.exec("INSERT INTO ai(id,agent,mode,seed,log,frames,over,ts) VALUES(?,?,?,?,?,0,0,?)", id, "\u{1F916} " + agent, "online:" + om, seed, "[]", Date.now());
+      return J({ session: id, mode: om, length_m: MODE_LEN[om], seed, how: "Play it with POST /api/tether/ai/act {session, hold, seconds}. Cross the finish line and your run is saved as a replay that humans can race.", observation: this.game(id, { mode: "online:" + om, seed, log: "[]" }).g.obs() });
+    }
     // ── online play for AI agents: join the lobby, accept or send challenges, race a human on the same seed ──
     if (path.startsWith("/lobby/") || path.startsWith("/match/")) {
       const token = String(b.bot || url.searchParams.get("bot") || ""), JOIN = path === "/lobby/join";
       let row = JOIN ? null : this.botRow(token);
-      if (!JOIN && !row) return J({ error: "unknown or expired bot. POST /api/tether/ai/lobby/join again (bots expire after 60s without polling)." }, 404);
+      if (!JOIN && !row) return J({ error: "unknown or expired bot. POST /api/tether/ai/lobby/join again (bots expire after 10 minutes without polling)." }, 404);
       const self = { bot: true, id: token };
       if (!JOIN) q.exec("UPDATE bots SET ts=? WHERE id=?", Date.now(), token);
       const arm = () => this.ctx.storage.setAlarm(Date.now() + 8000);
@@ -597,7 +619,7 @@ export class Lobby extends DurableObject {
         const id = crypto.randomUUID().replace(/-/g, "").slice(0, 20), pid = "b" + id.slice(0, 7), color = /^#[0-9a-f]{3,8}$/i.test(b.color || "") ? b.color : "#c77dff", trail = String(b.trail || "ribbon").slice(0, 16);
         q.exec("INSERT INTO bots(id,st,out,ts) VALUES(?,?,?,?)", id, JSON.stringify({ id: pid, name, status: "idle", look: { color, trail } }), "[]", Date.now());
         this.lobby(); await arm();
-        return J({ bot: id, you: { id: pid, name }, next: "POST /api/tether/ai/lobby/poll {bot} about every 2s (stay under 60s between polls). Challenge people with /lobby/invite, accept with /lobby/respond." });
+        return J({ bot: id, you: { id: pid, name }, next: "POST /api/tether/ai/lobby/poll {bot} about every 2s (stay under 10 minutes between polls). Challenge people with /lobby/invite, accept with /lobby/respond." });
       }
       let st = JSON.parse(row.st);
       if (path === "/lobby/leave") { this.endMatch(self, "left"); q.exec("DELETE FROM bots WHERE id=?", token); this.lobby(); return J({ ok: true }); }
@@ -648,6 +670,24 @@ export class Lobby extends DurableObject {
       for (const r of q.exec("SELECT k,n FROM tally").toArray()) t[r.k] = r.n;
       const socks = this.socks().map((s) => this.me(s)).filter((a) => a.name).concat(this.bots().map((x) => x.st));
       return J({ online: socks.length, racing: socks.filter((a) => a.status === "racing").length, runs: t.runs || 0, metres: t.metres || 0, today: t["d" + day] || 0, players: q.exec("SELECT COUNT(DISTINCT name) c FROM board").one().c, bestm: t.bestm || 0 });
+    }
+    if (url.pathname.endsWith("/ghosts")) {
+      const rows = q.exec("SELECT id,agent name,mode,t time,ts FROM ghosts ORDER BY ts DESC LIMIT 14").toArray().map((r) => ({ ...r, len: MODE_LEN[r.mode] }));
+      return J({ rows });
+    }
+    if (url.pathname.endsWith("/ghost")) {
+      const r = q.exec("SELECT * FROM ghosts WHERE id=?", url.searchParams.get("id") || "").toArray()[0]; if (!r) return J({ error: "gone" });
+      const g = createGame(); g.startOnline(r.seed, r.mode, MODE_LEN[r.mode] || 2500); const S = [];
+      for (const [h, k] of JSON.parse(r.log)) { g.step(!!h, k / 60); for (const p of g.samples) S.push([p.t, p.x, p.y, p.hx, p.hy, p.a ? 1 : 0]); }
+      return J({ id: r.id, name: r.agent, mode: r.mode, seed: r.seed, len: MODE_LEN[r.mode], time: r.t, samples: S });
+    }
+    if (url.pathname.endsWith("/ghost-result") && req.method === "POST") {
+      let b; try { b = await req.json(); } catch (e) { return J({ ok: false }); }
+      const r = q.exec("SELECT agent,mode,t FROM ghosts WHERE id=?", String(b.id || "")).toArray()[0], name = String(b.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16);
+      if (!r || !name) return J({ ok: false }); const win = !!b.win, m = Math.max(0, Math.min(6000, Math.round(+b.m) || 0));
+      this.rec(name, win); this.rec(r.agent, !win);
+      this.match(win ? { name, x: 220 + m * 10, mode: r.mode } : { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10, mode: r.mode }, win ? { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10 } : { name, x: 220 + m * 10 }, 0, win ? +b.time || 0 : r.t);
+      return J({ ok: true });
     }
     if (url.pathname.endsWith("/board")) {
       const mode = MODES.includes(url.searchParams.get("mode")) ? url.searchParams.get("mode") : "classic";
@@ -711,8 +751,8 @@ export class Lobby extends DurableObject {
         const h = a.opp && this.find(a.opp);
         if (!h || this.me(h).match !== a.match) { this.set(b, { status: "idle", match: null, opp: null }); continue; }
         if (a.fin != null && a.dl && now > a.dl && this.me(h).fin == null) { this.decide(h, b, false, null, a.fin); continue; } // they finished, the human never did
-        if (idle > 120000) { this.endMatch(b, "left"); q.exec("DELETE FROM bots WHERE id=?", b.id); }
-      } else if (idle > 60000) q.exec("DELETE FROM bots WHERE id=?", b.id);
+        if (idle > 360000) { this.endMatch(b, "left"); q.exec("DELETE FROM bots WHERE id=?", b.id); }
+      } else if (idle > 600000) q.exec("DELETE FROM bots WHERE id=?", b.id);
     }
     this.lobby();
     if (this.bots().length) await this.ctx.storage.setAlarm(Date.now() + 8000);
@@ -729,7 +769,7 @@ export class Lobby extends DurableObject {
   endMatch(ws, why) {
     const a = this.me(ws); if (!a.opp) return;
     const o = this.find(a.opp);
-    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.rec(this.me(o).name, true); this.rec(a.name, false); this.match(this.me(o), a, "race", 0); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
+    if (o && this.me(o).match === a.match) { this.send(o, { t: "result", win: true, why }); this.set(o, { status: "idle", match: null, opp: null, ready: false, fin: null }); }
   }
   doInvite(ws, a, m) {
     const o = this.find(m.to), b = o && this.me(o);
@@ -758,7 +798,7 @@ export class Lobby extends DurableObject {
     if (m.t === "respond") return this.doRespond(ws, a, m);
     const o = a.opp && this.find(a.opp); if (!o || this.me(o).match !== a.match) return;
     if (m.t === "pick") return this.send(o, { t: "opppick", color: String(m.color || "").slice(0, 32), trail: String(m.trail || "").slice(0, 16) });
-    if (m.t === "ready") { this.set(ws, { ready: true }); this.send(o, { t: "oppready" }); if (this.me(o).ready) { const t0 = Date.now() + 3200, go = { t: "start", in: 3200 }; this.set(ws, { t0 }); this.set(o, { t0 }); this.send(ws, go); this.send(o, go); } return; }
+    if (m.t === "ready") { this.set(ws, { ready: true }); this.send(o, { t: "oppready" }); if (this.me(o).ready) { const wait = o.bot || ws.bot ? 45000 : 3200, t0 = Date.now() + wait, go = { t: "start", in: wait }; this.set(ws, { t0 }); this.set(o, { t0 }); this.send(ws, go); this.send(o, go); } return; }
     if (m.t === "st") { this.set(ws, { x: +m.x || 0 }); } if (m.t === "st") return this.send(o, { t: "opp", x: +m.x || 0, y: +m.y || 0, hx: m.hx == null ? null : +m.hx, hy: m.hy == null ? null : +m.hy, a: !!m.a });
     if (m.t === "fin") {
       if (this.me(o).fin != null && !o.bot) return;

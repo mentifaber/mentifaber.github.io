@@ -163,6 +163,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <button class="btn" id="ol-ready">READY</button>
     <div class="ol-count hidden" id="ol-cd"></div>
   </div>
+  <div class="ol-box" id="ol-ghosts"><div class="ol-sub">RACE AN AI REPLAY · NO WAITING</div><div id="ol-glist" class="ol-list"></div></div>
   <button class="btn alt" id="b-olback">LEAVE</button>
 </section>
 
@@ -383,7 +384,7 @@ function sfx(k, extra) {
 let state = "title", mode = "classic", coop = false, race = false, zen = false, hard = false, trial = false, seed = 0, started = false;
 let flipK = 0, flipTo = 0, lastHaz = -1e9, lastSpout = -1e9, nextFlip = 0, rush = false, gaunt = false, moon = false, sprint = false, headX = 0, winds = [], bumpers = [], spouts = [], rockets = [], rocketT = 6;
 let forceSeed = 0, finishX = Infinity, winner = null, slowmoT = 0, raceT = 0;
-let online = false, net = null, myId = null, oppInfo = null, onlineSeed = 0, remote = null, netResult = null, netSendT = 0, olPending = null, oppLook = { color: "#ff9a3d", trail: "ribbon" };
+let ghostR = null, online = false, net = null, myId = null, oppInfo = null, onlineSeed = 0, remote = null, netResult = null, netSendT = 0, olPending = null, oppLook = { color: "#ff9a3d", trail: "ribbon" };
 let players = [], anchors = [], gates = [], saws = [], shards = [], parts = [], pops = [];
 let genX = 0, genY = 0, maxX = 0, style = 0, got = 0, t = 0, slow = 0, shake = 0, biomeI = 0, flash = 0, lastMile = 0, revives = 0, topSpeed = 0, deathMsg = "";
 let ghostRec = [], ghostPlay = null;
@@ -660,6 +661,12 @@ function update(dtReal) {
   }
   if (started) raceT += dtReal;
   if (online && net && (netSendT -= dtReal) <= 0) { netSendT = .066; const p = players[0]; netSend({ t: "st", x: Math.round(p.x), y: Math.round(p.y), hx: p.hook ? Math.round(p.hook.x) : null, hy: p.hook ? Math.round(p.hook.y) : null, a: p.alive }); }
+  if (ghostR && started && remote && state === "play") {
+    const S_ = ghostR.s; while (ghostR.i < S_.length - 2 && S_[ghostR.i + 1][0] <= raceT) ghostR.i++;
+    const a_ = S_[ghostR.i], b_ = S_[Math.min(ghostR.i + 1, S_.length - 1)], f_ = b_[0] > a_[0] ? clamp((raceT - a_[0]) / (b_[0] - a_[0]), 0, 1) : 1;
+    remote.tx = lerp(a_[1], b_[1], f_); remote.ty = lerp(a_[2], b_[2], f_); remote.hx = a_[3]; remote.hy = a_[4]; remote.a = !!a_[5];
+    if (raceT >= ghostR.time && !winner) { netResult = { win: false, time: ghostR.time, by: ghostR.name }; state = "dying"; flash = .2; pop(ghostR.name.toUpperCase() + " FINISHED FIRST", players[0].x, players[0].y - 60, "#ff4f6a", 1.6, 1.4); clearTimeout(endTimer); endTimer = setTimeout(endRun, 1100); }
+  }
   if (remote) { const k = 1 - Math.exp(-14 * dtReal); remote.x += (remote.tx - remote.x) * k; remote.y += (remote.ty - remote.y) * k; }
   if (flipTo && !rings.some((q) => q.flip < 0 && q.x > maxX - 60)) flipTo = 0;
   flipK += (flipTo - flipK) * (1 - Math.exp(-6 * dtReal));
@@ -800,7 +807,8 @@ function endRun() {
   const m = dist(), sc = score(); prog.shards += got;
   let nb = "";
   if (online) {
-    const won = netResult ? netResult.win : !!winner; prog.onl = prog.onl || { w: 0, l: 0, s: 0, bs: 0 }; if (won) { prog.onl.w++; prog.onl.s++; prog.onl.bs = Math.max(prog.onl.bs, prog.onl.s); } else { prog.onl.l++; prog.onl.s = 0; } save();
+    const won = netResult ? netResult.win : !!winner;
+    if (ghostR) { try { fetch("/api/tether/ghost-result", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: ghostR.id, name: nm() || "Player", win: won, time: raceT, m: dist() }) }); } catch (e) {} } prog.onl = prog.onl || { w: 0, l: 0, s: 0, bs: 0 }; if (won) { prog.onl.w++; prog.onl.s++; prog.onl.bs = Math.max(prog.onl.bs, prog.onl.s); } else { prog.onl.l++; prog.onl.s = 0; } save();
     $("d-why").textContent = "ONLINE " + OLM[olMode][0] + " · VS " + (oppInfo ? oppInfo.name : "?").toUpperCase();
     $("d-dist").innerHTML = '<span style="color:' + (won ? "#9dff7a" : "#ff4f6a") + '">' + (won ? "YOU WIN" : "YOU LOSE") + "</span>";
     $("d-new").textContent = netResult && netResult.why === "left" ? "THEY LEFT THE RACE" : netResult && netResult.time ? "WINNING TIME " + netResult.time.toFixed(1) + "s" : "";
@@ -844,7 +852,7 @@ function endRun() {
   show("s-dead");
 }
 function hud() {
-  if (online) { const opd = remote ? Math.round(Math.max(0, remote.x - 220) / 10) : 0; $("h-d").innerHTML = '<span style="color:' + pcolor(players[0]) + '">' + dist() + '</span> · <span style="color:' + oppLook.color + '">' + opd + "</span><small>/2500m</small>"; $("h-s").textContent = "VS " + (oppInfo ? oppInfo.name : "") + " · " + raceT.toFixed(1) + "s"; $("h-b").textContent = ""; $("h-l").textContent = ""; $("h-c").innerHTML = players[0].combo > 1 ? '<span style="color:#ff4fd8">×' + players[0].combo + "</span>" : ""; return; }
+  if (online) { const opd = remote ? Math.round(Math.max(0, remote.x - 220) / 10) : 0; $("h-d").innerHTML = '<span style="color:' + pcolor(players[0]) + '">' + dist() + '</span> · <span style="color:' + oppLook.color + '">' + opd + "</span><small>/" + olLen + "m</small>"; $("h-s").textContent = "VS " + (oppInfo ? oppInfo.name : "") + " · " + raceT.toFixed(1) + "s"; $("h-b").textContent = ""; $("h-l").textContent = ""; $("h-c").innerHTML = players[0].combo > 1 ? '<span style="color:#ff4fd8">×' + players[0].combo + "</span>" : ""; return; }
   if (race) { $("h-d").innerHTML = players.map((p) => '<span style="color:' + pcolor(p) + '">' + Math.round(Math.max(0, p.best - 220) / 10) + "</span>").join(" · ") + "<small>/" + prog.set.raceLen + "m</small>"; $("h-s").textContent = "RACE · " + raceT.toFixed(1) + "s"; }
   else if (trial) { $("h-d").innerHTML = dist() + "<small>/" + TRIAL_M + "m</small>"; $("h-s").textContent = raceT.toFixed(2) + "s" + (prog.trial.best ? " · BEST " + prog.trial.best.toFixed(2) : ""); }
   else if (sprint) { $("h-d").innerHTML = dist() + "<small>m</small>"; $("h-s").textContent = Math.max(0, 60 - raceT).toFixed(1) + "s LEFT"; }
@@ -1217,6 +1225,7 @@ liveStats(); setInterval(() => { if (!document.hidden && ($("s-title").classList
 const OL = (id) => $(id), olShow = (which) => ["ol-join", "ol-lobby", "ol-prep"].forEach((k) => OL(k).classList.toggle("hidden", k !== which));
 function netSend(m) { try { if (net && net.readyState === 1) net.send(JSON.stringify(m)); } catch (e) {} }
 function openOnline() {
+  ghostR = null; ghostList();
   show("s-online"); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); state = "title"; players = [];
   OL("ol-name").value = prog.olName || ""; $("b-again").textContent = "AGAIN";
   if (net && net.readyState === 1) { olShow("ol-lobby"); netSend({ t: "leave" }); } else olShow("ol-join");
@@ -1238,6 +1247,23 @@ function olList(players) {
   [...OL("ol-list").querySelectorAll(".ol-row b")].forEach((el, i) => (el.textContent = others[i].name));
 }
 let olPlayers = [], olWaiting = false;
+async function ghostList() {
+  try {
+    const j = await (await fetch("/api/tether/ghosts", { cache: "no-store" })).json();
+    OL("ol-glist").innerHTML = j.rows.length ? j.rows.map((r) => '<div class="ol-row"><b></b><i>' + (OLM[r.mode] ? OLM[r.mode][0] : r.mode).toUpperCase() + " · " + r.time.toFixed(1) + 's</i><button data-g="' + r.id + '">RACE</button></div>').join("") : '<div class="stat">No AI replays yet. AIs can post one through the API.</div>';
+    [...OL("ol-glist").querySelectorAll(".ol-row b")].forEach((el, i) => (el.textContent = j.rows[i].name));
+  } catch (e) { OL("ol-glist").innerHTML = '<div class="stat">Replays need the live site.</div>'; }
+}
+async function startGhost(id) {
+  try {
+    const g = await (await fetch("/api/tether/ghost?id=" + encodeURIComponent(id), { cache: "no-store" })).json(); if (!g.samples) { OL("ol-glist").innerHTML = '<div class="stat">That replay is gone.</div>'; return; }
+    audio(); olMode = OLM[g.mode] ? g.mode : "race"; olLen = g.len; onlineSeed = g.seed; oppInfo = { id: "g", name: g.name }; oppLook = { color: "#c77dff", trail: "ribbon" };
+    newRun("online"); const s0 = g.samples[0] || [0, 220, 300, null, null, 1];
+    ghostR = { id: g.id, name: g.name, time: g.time, s: g.samples, i: 0 }; remote = { x: s0[1], y: s0[2], tx: s0[1], ty: s0[2], hx: s0[3], hy: s0[4], a: true, trail: [] };
+    $("hint").textContent = "TAP TO START · RACING " + g.name.toUpperCase() + "'S REPLAY";
+  } catch (e) { OL("ol-glist").innerHTML = '<div class="stat">Could not load that replay.</div>'; }
+}
+OL("ol-glist").onclick = (e) => { const b = e.target.closest("[data-g]"); if (b) startGhost(b.dataset.g); };
 const OLM = { dash: ["DASH", 1000, "First to 1000m wins."], race: ["RACE", 2500, "First to 2500m wins."], marathon: ["MARATHON", 5000, "First to 5000m wins. Pace yourself."], moon: ["LOW-G", 2500, "Half gravity. First to 2500m wins."], hard: ["HARDCORE", 2500, "Hardcore hazards, crashes cost 4s. First to 2500m wins."] };
 let olMode = prog.olMode && OLM[prog.olMode] ? prog.olMode : "race", olLen = 2500;
 function olModes() { OL("ol-modes").innerHTML = Object.entries(OLM).map(([k, v]) => '<button data-k="' + k + '" class="' + (k === olMode ? "on" : "") + '">' + v[0] + "</button>").join(""); }
@@ -1256,10 +1282,10 @@ function olMsg(m) {
   else if (m.t === "withdrawn") OL("ol-inv").classList.add("hidden");
   else if (m.t === "pending") { olPending = m.to; OL("ol-msg").textContent = "Challenge sent to " + m.name + ". Waiting…"; olList(olPlayers); }
   else if (m.t === "declined" || m.t === "busy" || m.t === "gone") { olPending = null; OL("ol-msg").textContent = m.t === "declined" ? m.by + " said not right now." : "They're busy."; olList(olPlayers); }
-  else if (m.t === "match") { olWaiting = false; olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; olMode = OLM[m.mode] ? m.mode : "race"; olLen = m.len || OLM[olMode][1]; OL("ol-rule").textContent = OLM[olMode][0] + " · " + OLM[olMode][2]; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
+  else if (m.t === "match") { ghostR = null; olWaiting = false; olPending = null; OL("ol-inv").classList.add("hidden"); oppInfo = m.opp; onlineSeed = m.seed; olMode = OLM[m.mode] ? m.mode : "race"; olLen = m.len || OLM[olMode][1]; OL("ol-rule").textContent = OLM[olMode][0] + " · " + OLM[olMode][2]; oppLook = { color: "#ff9a3d", trail: "ribbon" }; OL("ol-vs-me").textContent = (prog.olName || "").toUpperCase(); OL("ol-vs-opp").textContent = m.opp.name.toUpperCase(); OL("ol-oppick").textContent = m.opp.name + " is choosing…"; OL("ol-ready").disabled = false; OL("ol-ready").textContent = "READY"; OL("ol-cd").classList.add("hidden"); olShow("ol-prep"); olPickUI(); sfx("biome"); }
   else if (m.t === "opppick") { oppLook = { color: /^#[0-9a-f]{3,8}$/i.test(m.color) ? m.color : "#ff9a3d", trail: m.trail }; OL("ol-oppick").innerHTML = '<span style="color:' + oppLook.color + '">●</span> ' + (oppInfo ? oppInfo.name : "") + " picked their look."; }
   else if (m.t === "oppready") OL("ol-oppick").textContent = (oppInfo ? oppInfo.name : "They") + " is READY.";
-  else if (m.t === "start") { OL("ol-cd").classList.remove("hidden"); let n = 3; const tick = () => { if (n > 0) { OL("ol-cd").textContent = n--; sfx("latch", 6); setTimeout(tick, 900); } else { OL("ol-cd").textContent = "GO"; newRun("online"); started = true; $("hint").textContent = "GO! LET GO TO SWING OFF"; } }; setTimeout(tick, Math.max(0, m.in - 2700)); }
+  else if (m.t === "start") { if (oppInfo && /^\u{1F916}/u.test(oppInfo.name) && m.in > 5000) OL("ol-oppick").textContent = oppInfo.name + " is getting ready. The race starts in " + Math.round(m.in / 1000) + " seconds."; OL("ol-cd").classList.remove("hidden"); let n = 3; const tick = () => { if (n > 0) { OL("ol-cd").textContent = n--; sfx("latch", 6); setTimeout(tick, 900); } else { OL("ol-cd").textContent = "GO"; newRun("online"); started = true; $("hint").textContent = "GO! LET GO TO SWING OFF"; } }; setTimeout(tick, Math.max(0, m.in - 2700)); }
   else if (m.t === "opp") { if (!remote) remote = { x: m.x, y: m.y, tx: m.x, ty: m.y, trail: [] }; remote.tx = m.x; remote.ty = m.y; remote.hx = m.hx; remote.hy = m.hy; remote.a = m.a; }
   else if (m.t === "wait") { olWaiting = true; clearTimeout(endTimer); pop("WAITING FOR " + (m.who || "THEM").toUpperCase() + "…", players[0].x, players[0].y - 60, "#ffe066", 1.6, 4); }
   else if (m.t === "result" && olWaiting) { olWaiting = false; netResult = m; clearTimeout(endTimer); endTimer = setTimeout(endRun, 700); }
@@ -1309,7 +1335,7 @@ const AG = {
   step(hold, secs) {
     const n = Math.max(1, Math.min(180, Math.round((+secs || .25) * 60))), p = players[0]; let k = 0; AG.samples = [];
     for (; k < n && state === "play"; k++) {
-      if (k % 4 === 0) AG.samples.push({ x: Math.round(p.x), y: Math.round(p.y), hx: p.hook ? Math.round(p.hook.x) : null, hy: p.hook ? Math.round(p.hook.y) : null, a: p.alive });
+      if (k % 4 === 0) AG.samples.push({ t: +raceT.toFixed(2), x: Math.round(p.x), y: Math.round(p.y), hx: p.hook ? Math.round(p.hook.x) : null, hy: p.hook ? Math.round(p.hook.y) : null, a: p.alive });
       if (hold && !p.holding) press(0); else if (!hold && p.holding) release(0);
       update(1 / 60); if (window.__adv) window.__adv(1000 / 60);
     }
