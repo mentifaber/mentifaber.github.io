@@ -33,7 +33,7 @@ const VERIFIERS = {
     adrianna: "2d9ea0c1375a9447704e64a88c06b977f9aa73c4dcb2b487a3b2555abbe16eac",
   },
 };
-const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways", "/tether": "tether", "/angels": "angels" };
+const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways", "/angels": "angels" };
 const SAVES = new Set(["flutterbloom"]);
 const SESSION_DAYS = 180;
 const MAX_SAVE = 512 * 1024;
