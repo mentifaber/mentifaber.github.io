@@ -36,6 +36,10 @@ const VERIFIERS = {
 };
 const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways", "/angels": "angels" };
 const SAVES = new Set(["flutterbloom"]);
+// Apps with extra accounts beside the main login (e.g. a developer account with its own garden).
+// Each extra account has a login verifier and the page key wrapped under its own login.
+const ACCT_APPS = new Set(["flutterbloom"]);
+const slot = (app, user) => (user ? app + ":" + user : app);
 const SESSION_DAYS = 180;
 const MAX_SAVE = 512 * 1024;
 const MAX_PHOTO = 1.5 * 1024 * 1024, MAX_PHOTOS = 60;
@@ -53,6 +57,8 @@ export class Store extends DurableObject {
     await this.ctx.storage.put("s:" + token, { app, user: user || null, exp: Date.now() + SESSION_DAYS * 864e5 });
   }
   async dropSession(token) { await this.ctx.storage.delete("s:" + token); }
+  async accts(app) { return (await this.ctx.storage.get("accts:" + app)) || {}; }
+  async putAccts(app, a) { await this.ctx.storage.put("accts:" + app, a); }
   // Fixed-window counter; true while under the limit.
   async hit(key, limit, windowMs) {
     const now = Date.now(), k = "r:" + key;
@@ -186,7 +192,12 @@ async function login(req, env) {
   const given = hex(await crypto.subtle.digest("SHA-256", Uint8Array.from(proof.match(/../g), (h) => parseInt(h, 16))));
   const v = VERIFIERS[app];
   let user = null;
-  if (typeof v === "string") { if (!sameHex(given, v)) return json({ error: "wrong" }, 401); }
+  if (typeof v === "string") {
+    if (!sameHex(given, v)) {
+      if (ACCT_APPS.has(app)) for (const [name, a] of Object.entries(await store(env).accts(app))) if (sameHex(given, a.v)) user = name;
+      if (!user) return json({ error: "wrong" }, 401);
+    }
+  }
   else {
     for (const [name, h] of Object.entries(v)) if (sameHex(given, h)) user = name;
     if (!user) return json({ error: "wrong" }, 401);
@@ -198,16 +209,38 @@ async function login(req, env) {
   });
 }
 
+// Extra accounts: only the main login (a session with no user) may list, add or remove them.
+async function accounts(req, env, app) {
+  if (!ACCT_APPS.has(app)) return json({ error: "not found" }, 404);
+  const me = await sessionRec(req, env, app);
+  if (!me) return json({ error: "signed out" }, 401);
+  const s = store(env), all = await s.accts(app);
+  if (req.method === "GET") return json({ me: me.user, accounts: me.user ? [] : Object.entries(all).map(([name, a]) => ({ name, at: a.at })) });
+  if (me.user) return json({ error: "main account only" }, 403);
+  let b; try { b = await req.json(); } catch { return json({ error: "bad json" }, 400); }
+  const name = String((b && b.user) || "").trim().toLowerCase();
+  if (!/^[a-z0-9._-]{2,24}$/.test(name)) return json({ error: "names are 2-24 letters, numbers, dot, dash or underscore" }, 400);
+  if (req.method === "POST") {
+    if (!/^[a-f0-9]{64}$/.test(b.verifier || "") || !/^[A-Za-z0-9+/=]{40,200}$/.test(b.wrap || "")) return json({ error: "bad account" }, 400);
+    if (!all[name] && Object.keys(all).length >= 6) return json({ error: "too many accounts" }, 400);
+    all[name] = { v: b.verifier, wrap: b.wrap, at: Date.now() }; await s.putAccts(app, all);
+    return json({ ok: true });
+  }
+  if (req.method === "DELETE") { delete all[name]; await s.putAccts(app, all); return json({ ok: true }); }
+  return json({ error: "method" }, 405);
+}
+
 async function logout(req, env, app) {
   const token = VERIFIERS[app] && cookie(req, "mf_" + app);
   if (token) await store(env).dropSession(token);
   return json({ ok: true }, 200, { "set-cookie": `mf_${app}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` });
 }
 
-async function cloudSave(req, env, app) {
-  if (!SAVES.has(app)) return json({ error: "not found" }, 404);
-  if (!(await session(req, env, app))) return json({ error: "signed out" }, 401);
-  const s = store(env);
+async function cloudSave(req, env, app0) {
+  if (!SAVES.has(app0)) return json({ error: "not found" }, 404);
+  const me = await sessionRec(req, env, app0);
+  if (!me) return json({ error: "signed out" }, 401);
+  const s = store(env), app = slot(app0, me.user);
   if (req.method === "GET") {
     const rec = await s.getSave(app);
     return rec ? json(rec) : json(null, 204);
@@ -224,10 +257,11 @@ async function cloudSave(req, env, app) {
   return json({ error: "method" }, 405);
 }
 
-async function photos(req, env, app, t) {
-  if (!SAVES.has(app)) return json({ error: "not found" }, 404);
-  if (!(await session(req, env, app))) return json({ error: "signed out" }, 401);
-  const s = store(env);
+async function photos(req, env, app0, t) {
+  if (!SAVES.has(app0)) return json({ error: "not found" }, 404);
+  const me = await sessionRec(req, env, app0);
+  if (!me) return json({ error: "signed out" }, 401);
+  const s = store(env), app = slot(app0, me.user);
   if (!t) return req.method === "GET" ? json(await s.album(app)) : json({ error: "method" }, 405);
   if (!/^\d{1,15}$/.test(t)) return json({ error: "bad photo" }, 400);
   const id = Number(t);
@@ -397,7 +431,8 @@ const PUSH_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(push\.apple\.com|fcm\.googleapis\
 async function push(req, env, action) {
   const s = store(env);
   if (action === "key" && req.method === "GET") return json({ key: (await s.vapid()).pub });
-  if (!(await session(req, env, "flutterbloom"))) return json({ error: "signed out" }, 401);
+  const me = await sessionRec(req, env, "flutterbloom");
+  if (!me) return json({ error: "signed out" }, 401);
   let body;
   try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
   if (action === "subscribe" && req.method === "POST") {
@@ -406,7 +441,7 @@ async function push(req, env, action) {
     const num = (x, d) => (Number.isFinite(+x) && x !== null && x !== "" ? +x : d);
     const hour = Math.max(0, Math.min(23, Math.round(num(body.hour, 19)))), tz = Math.max(-840, Math.min(840, Math.round(num(body.tz, 0))));
     const id = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sub.endpoint))).slice(0, 32);
-    await s.putSub(id, { endpoint: sub.endpoint, hour, tz, last: "" });
+    await s.putSub(id, { endpoint: sub.endpoint, hour, tz, last: "", user: me.user || null });
     return json({ ok: true });
   }
   if (action === "unsubscribe" && req.method === "POST") {
@@ -420,8 +455,9 @@ async function push(req, env, action) {
 // reminder a day, and skip it if she has already opened the garden today.
 async function dailyReminders(env) {
   const s = store(env), v = await s.vapid(), now = Date.now();
-  const save = await s.getSave("flutterbloom");
+  const saves = {};
   for (const sub of await s.subs()) {
+    const k = slot("flutterbloom", sub.user), save = k in saves ? saves[k] : (saves[k] = await s.getSave(k));
     const local = new Date(now - sub.tz * 60e3), day = local.toISOString().slice(0, 10);
     if (local.getUTCHours() !== sub.hour || sub.last === day) continue;
     const seen = save && save.data && save.data.lastSeen && new Date(save.data.lastSeen - sub.tz * 60e3).toISOString().slice(0, 10) === day;
@@ -429,7 +465,7 @@ async function dailyReminders(env) {
       const status = await sendPush(sub, v).catch(() => 0);
       if (status === 404 || status === 410) { await s.dropSub(sub.id); continue; }
     }
-    await s.putSub(sub.id, { endpoint: sub.endpoint, hour: sub.hour, tz: sub.tz, last: day });
+    await s.putSub(sub.id, { endpoint: sub.endpoint, hour: sub.hour, tz: sub.tz, last: day, user: sub.user || null });
   }
 }
 
@@ -443,7 +479,12 @@ async function sealedPage(req, env, app) {
   headers.set("cache-control", "no-store");
   headers.append("vary", "cookie");
   const out = new Response(res.body, { status: res.status, headers });
-  if (await session(req, env, app)) return out;
+  const me = await sessionRec(req, env, app);
+  if (me) {
+    const a = me.user && ACCT_APPS.has(app) && (await store(env).accts(app))[me.user];
+    if (!a) return out;
+    return new HTMLRewriter().on("script#mf-blob", { element(el) { el.after('<script type="application/octet-stream" id="mf-wrap">' + a.wrap + "</script>", { html: true }); } }).transform(out);
+  }
   return new HTMLRewriter().on("script#mf-blob", { element(el) { el.setInnerContent(""); } }).transform(out);
 }
 
@@ -457,6 +498,7 @@ export default {
       if (route === "tf-ws") return env.LOBBY.get(env.LOBBY.idFromName("thoughtform")).fetch(req); // Thoughtform co-op: same lobby logic, its own room
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
+      if (route === "accts" && app) return accounts(req, env, app);
       if (route === "save" && app) return cloudSave(req, env, app);
       if (route === "photos" && app) return photos(req, env, app, sub);
       if (route === "notes" && app) return notes(req, env, app);
