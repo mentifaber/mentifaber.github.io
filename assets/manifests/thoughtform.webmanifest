@@ -1,0 +1,17 @@
+{
+  "name": "Thoughtform",
+  "short_name": "Thoughtform",
+  "description": "A mind under siege. An original first-person shooter built from nothing but maths.",
+  "start_url": "/thoughtform",
+  "scope": "/thoughtform",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#07040f",
+  "theme_color": "#07040f",
+  "categories": ["games"],
+  "icons": [
+    { "src": "../icons/thoughtform.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "../icons/thoughtform-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
