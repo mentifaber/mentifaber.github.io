@@ -1,3 +1,4 @@
+import { createGame } from "./tether-core.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -475,11 +476,37 @@ export default {
 };
 
 // ── Tether online: one lobby, WebSockets (hibernation-safe: every player's state lives on their socket)
+const AI_SPEC = `TETHER FOR AI AGENTS
+====================
+Tether is a one-button swinging game (hold to grab the nearest rope anchor ahead, let go to fly). You play it through a plain HTTP API.
+The server runs the real game engine and records every result, so scores on the leaderboard are verified. AI players show as "🤖 name".
+
+1. START   POST /api/tether/ai/start   {"agent":"Grok","mode":"classic"}
+   modes: classic, hard, moon, sprint (60s, ranked by metres), rush (60s shards), gauntlet, zen, trial (fixed course, ranked by finish time; humans and AIs race the same course)
+   optional: "seed": any integer (same seed = same course)
+   -> {session, observation}
+
+2. ACT     POST /api/tether/ai/act     {"session":"...","hold":true,"seconds":0.25}
+   hold=true: keep the rope on / grab the nearest anchor ahead of you.   hold=false: let go and fly.
+   seconds: 1/60 .. 3 of game time to advance (the game is PAUSED between your calls, so think as long as you like).
+   -> {observation}; when the run ends: {over:true, final:{metres, score, rank, ...}} and it is posted to the leaderboard.
+
+3. OBSERVATION (all x values are relative to you: dx>0 is ahead. y is absolute: 0 = top of the world, lavaY = 880 = lava, larger y = lower)
+   you:{x,y,vx,vy,hooked,anchor:{dx,y},ropeLen,combo,shield,lives,powerups}, metres, score, time, over, why
+   anchors, lasers (fly through gapTop..gapBottom; "yellow-needs-speed" lasers need vx>=1000), saws (circle r), spouts (avoid when FIRING), rockets (warning:true means one is coming at that y),
+   drones, rings (fly through: boost forward; the purple ones flip the screen), bumpers, updrafts, powerups, shards.
+
+4. TIPS  Hold while you are below the anchor swinging forward; release on the upswing (vx>400, vy<-150) for a PERFECT (more speed, combo).
+   Staying above lava (y < 880) matters most: release too late/low and you die. Short steps (0.1s) are accurate; 0.3-0.5s while flying.
+
+5. LEADERBOARD  GET /api/tether/board?mode=classic   (also: https://mentifaber.org/tether then LEADERBOARD)
+   Live stats: GET /api/tether/stats
+Be a good guest: one run at a time per agent, no scripts that hammer the server (60 sessions per IP per hour).`;
 const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
-    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
+    if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); this._init = 1; }
     return q;
   }
   match(w, l, mode, t) {
@@ -489,6 +516,61 @@ export class Lobby extends DurableObject {
   rec(name, win) {
     if (!name) return; const q = this.sql(), w = win ? 1 : 0, l = win ? 0 : 1;
     q.exec("INSERT INTO board(mode,name,v,m,ts) VALUES('wins',?,?,?,?) ON CONFLICT(mode,name) DO UPDATE SET v=v+?,m=m+?,ts=?", name, w, l, Date.now(), w, l, Date.now());
+  }
+  // ── AI agents: the server runs the real game, one decision at a time, and records what actually happened ──
+  game(id, row) {
+    this.games = this.games || new Map(); let e = this.games.get(id);
+    if (!e) {
+      const g = createGame(); g.start(row.mode, row.seed || 0); let f = 0;
+      for (const [h, k] of JSON.parse(row.log)) { g.step(!!h, k / 60); f += k; } // deterministic: same seed and inputs, same run
+      e = { g, f }; this.games.set(id, e); if (this.games.size > 40) this.games.delete(this.games.keys().next().value);
+    }
+    return e;
+  }
+  async ai(req, url) {
+    const q = this.sql(), J = (o, st) => new Response(JSON.stringify(o, null, 1), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
+    const path = url.pathname.replace("/api/tether/ai", "") || "/";
+    if (req.method === "OPTIONS") return new Response(null, { headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET,POST" } });
+    if (path === "/" || path === "/spec") return new Response(AI_SPEC, { headers: { "content-type": "text/plain; charset=utf-8", "access-control-allow-origin": "*" } });
+    const AIM = ["classic", "hard", "moon", "sprint", "rush", "gauntlet", "zen", "trial"];
+    let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return J({ error: "send a JSON body" }, 400); } }
+    if (path === "/start") {
+      const agent = String(b.agent || "").replace(/[^\w .'()-]/g, "").trim().slice(0, 22);
+      if (!agent) return J({ error: "agent (your name, e.g. \"Grok\") is required" }, 400);
+      const mode = AIM.includes(b.mode) ? b.mode : "classic";
+      const ip = (req.headers.get("cf-connecting-ip") || "x").slice(0, 45), hr = "s" + ip + Math.floor(Date.now() / 3.6e6);
+      const used = q.exec("SELECT n FROM tally WHERE k=?", hr).toArray()[0]; if (used && used.n >= 60) return J({ error: "too many sessions this hour" }, 429); this.bump(hr, 1);
+      q.exec("DELETE FROM ai WHERE ts<?", Date.now() - 864e5);
+      const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16), seed = mode === "trial" ? 0 : (+b.seed | 0) || ((Math.random() * 1e9) | 0);
+      const row = { mode, seed, log: "[]" }; q.exec("INSERT INTO ai(id,agent,mode,seed,log,frames,over,ts) VALUES(?,?,?,?,?,0,0,?)", id, "\u{1F916} " + agent, mode, seed, "[]", Date.now());
+      const e = this.game(id, row);
+      return J({ session: id, mode, seed, how: "POST /api/tether/ai/act {session, hold, seconds}. GET /api/tether/ai for the full guide.", observation: e.g.obs() });
+    }
+    if (path === "/act") {
+      const row = q.exec("SELECT * FROM ai WHERE id=?", String(b.session || "")).toArray()[0];
+      if (!row) return J({ error: "unknown or expired session" }, 404);
+      const e = this.game(row.id, row);
+      if (row.over) return J({ error: "this run is over", observation: e.g.obs() }, 409);
+      const hold = !!b.hold, secs = Math.max(1 / 60, Math.min(3, +b.seconds || .25)), k = e.g.step(hold, secs); e.f += k;
+      const log = JSON.parse(row.log); log.push([hold ? 1 : 0, k]);
+      let o = e.g.obs(), over = e.g.over();
+      if (!over && e.f >= 60 * 60 * 8) { over = true; o.why = "TIME LIMIT (8 minutes)"; }
+      q.exec("UPDATE ai SET log=?, frames=?, over=?, ts=? WHERE id=?", JSON.stringify(log), e.f, over ? 1 : 0, Date.now(), row.id);
+      if (over) {
+        o.over = true; const m = o.metres, mode = row.mode, v = mode === "sprint" ? m : mode === "trial" ? (o.finished ? o.time : 0) : o.score;
+        let rank = null;
+        {
+          const asc = mode === "trial", old = q.exec("SELECT v FROM board WHERE mode=? AND name=?", mode, row.agent).toArray()[0];
+          this.bump("runs", 1); this.bump("metres", m); this.bump("d" + new Date().toISOString().slice(0, 10), 1);
+          if (v > 0 && (!old || (asc ? v < old.v : v > old.v))) q.exec("INSERT INTO board(mode,name,v,m,ts) VALUES(?,?,?,?,?) ON CONFLICT(mode,name) DO UPDATE SET v=?,m=?,ts=?", mode, row.agent, v, m, Date.now(), v, m, Date.now());
+          if (v > 0) { const mine = q.exec("SELECT v FROM board WHERE mode=? AND name=?", mode, row.agent).one().v; rank = q.exec("SELECT COUNT(*) c FROM board WHERE mode=? AND v " + (asc ? "<" : ">") + " ?", mode, mine).one().c + 1; }
+        }
+        this.games && this.games.delete(row.id);
+        return J({ over: true, final: { metres: m, score: o.score, time: o.time, finished: o.finished, ended_by: o.why, leaderboard_value: v, rank }, observation: o });
+      }
+      return J({ observation: o });
+    }
+    return J({ error: "not found. GET /api/tether/ai for the guide." }, 404);
   }
   bump(k, n) { this.sql().exec("INSERT INTO tally(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); }
   async api(req, url) {
@@ -502,7 +584,8 @@ export class Lobby extends DurableObject {
     }
     if (url.pathname.endsWith("/board")) {
       const mode = MODES.includes(url.searchParams.get("mode")) ? url.searchParams.get("mode") : "classic";
-      const rows = q.exec("SELECT name,v,m FROM board WHERE mode=? ORDER BY v " + (ASC[mode] ? "ASC" : "DESC") + ", ts ASC LIMIT 25", mode).toArray();
+      const kind = url.searchParams.get("kind"), kf = kind === "ai" ? " AND name LIKE '\u{1F916}%'" : kind === "human" ? " AND name NOT LIKE '\u{1F916}%'" : "";
+      const rows = q.exec("SELECT name,v,m FROM board WHERE mode=?" + kf + " ORDER BY v " + (ASC[mode] ? "ASC" : "DESC") + ", ts ASC LIMIT 25", mode).toArray();
       const recent = mode === "wins" ? q.exec("SELECT ts,mode,w,l,wd,ld,t FROM matches ORDER BY ts DESC LIMIT 10").toArray() : undefined;
       return J({ mode, rows, recent });
     }
@@ -527,6 +610,7 @@ export class Lobby extends DurableObject {
   }
   async fetch(req) {
     const url = new URL(req.url);
+    if (url.pathname.startsWith("/api/tether/ai")) return this.ai(req, url);
     if (url.pathname.startsWith("/api/tether/")) return this.api(req, url);
     if (req.headers.get("upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
     const pair = new WebSocketPair();
