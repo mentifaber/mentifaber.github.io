@@ -57,7 +57,7 @@ function jsonOf(out) {
   for (const [o, c] of [["{", "}"], ["[", "]"]]) { const i = t.indexOf(o), j = t.lastIndexOf(c); if (i >= 0 && j > i) try { return JSON.parse(t.slice(i, j + 1)); } catch (e) {} }
   return null;
 }
-const MAX_CALLS = 400, PARALLEL = 16, TICK = 1500;
+const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 16, TICK = 1500;
 
 export class Hive extends DurableObject {
   sql() {
@@ -66,6 +66,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS proj(id TEXT PRIMARY KEY, title TEXT, brief TEXT, status TEXT, final TEXT, calls INTEGER, tok TEXT, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS task(id INTEGER PRIMARY KEY AUTOINCREMENT, pid TEXT, role TEXT, title TEXT, detail TEXT, deps TEXT, status TEXT, agent TEXT, output TEXT, note TEXT, tries INTEGER, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
+      q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       this._init = 1;
     }
@@ -106,29 +107,38 @@ export class Hive extends DurableObject {
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path === "/new") {
-      if (!owner) return J({ error: "sign in as the owner (Vigil) to start a project" }, 401);
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
-      if (q.exec("SELECT COUNT(*) c FROM proj WHERE status NOT IN ('done','stopped','failed')").one().c >= 3) return J({ error: "three projects are already running; stop one first" }, 429);
-      const id = crypto.randomUUID().slice(0, 8), tok = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-      q.exec("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts) VALUES(?,?,?,?,?,0,?,?)", id, brief.split(/[.\n]/)[0].slice(0, 80), brief, "planning", null, tok, Date.now());
+      const running = q.exec("SELECT COUNT(*) c FROM proj WHERE status NOT IN ('done','stopped','failed')").one().c;
+      if (running >= (owner ? 6 : 4)) return J({ error: "the hive is busy with " + running + " projects; try again in a few minutes" }, 429);
+      if (!owner) { // public: everyone gets a go, within what the free allowance can carry
+        const day = new Date().toISOString().slice(0, 10), ip = (req.headers.get("cf-connecting-ip") || "x").slice(0, 45), ki = "ip:" + day + ":" + ip, kd = "day:" + day;
+        const n = (k) => (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n;
+        if (n(ki) >= PER_IP_DAY) return J({ error: "you've started " + PER_IP_DAY + " projects today; come back tomorrow" }, 429);
+        if (n(kd) >= PUBLIC_DAY) return J({ error: "the hive has run its " + PUBLIC_DAY + " public projects for today; come back tomorrow" }, 429);
+        for (const k of [ki, kd]) q.exec("INSERT INTO limits(k,n) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET n=n+1", k);
+        q.exec("DELETE FROM limits WHERE k NOT LIKE ? AND k NOT LIKE ?", "ip:" + day + "%", "day:" + day);
+      }
+      const id = crypto.randomUUID().slice(0, 8), tok = crypto.randomUUID().replace(/-/g, "").slice(0, 16), ctok = crypto.randomUUID().replace(/-/g, "");
+      q.exec("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok) VALUES(?,?,?,?,?,0,?,?,?,?)", id, brief.split(/[.\n]/)[0].slice(0, 80), brief, "planning", null, tok, Date.now(), owner ? MAX_CALLS : PUBLIC_CALLS, ctok);
       this.say(id, "you", "brief", brief);
       for (const a of await this.roster()) q.exec("INSERT OR REPLACE INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, id, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now());
       this.say(id, "hive", "info", q.exec("SELECT COUNT(*) c FROM agent WHERE pid=?", id).one().c + " agents joined" + (this.env.AI ? "" : " (Workers AI is not bound on this deployment)") + ". Visiting AIs can join with the project link.");
       await this.ctx.storage.setAlarm(Date.now() + 200);
-      return J({ id });
+      return J({ id, ctok });
     }
     const p = b.id || b.project ? q.exec("SELECT * FROM proj WHERE id=?", String(b.id || b.project)).toArray()[0] : null;
     if (!p) return J({ error: "no such project" }, 404);
+    const ctl = owner || (b.ctok && p.ctok && b.ctok === p.ctok), cap = p.cap || MAX_CALLS;
     if (path === "/state") {
       const since = +b.since || 0;
-      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, calls: p.calls, max: MAX_CALLS, final: p.final, join: owner ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
+      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, calls: p.calls, max: cap, final: p.final, mine: !!ctl, join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
         agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last FROM agent WHERE pid=? ORDER BY done DESC, name", p.id).toArray(),
         feed: q.exec("SELECT ts,who,kind,text FROM feed WHERE pid=? AND ts>? ORDER BY ts DESC LIMIT 80", p.id, since).toArray() });
     }
     if (path === "/output") { const t = q.exec("SELECT output FROM task WHERE pid=? AND id=?", p.id, +b.task).toArray()[0]; return J({ output: t ? t.output : null }); }
-    if (path === "/say") { if (!owner) return J({ error: "owner only" }, 401); const text = String(b.text || "").trim().slice(0, 3000); if (text) { this.say(p.id, "you", "chat", text); q.exec("UPDATE proj SET status='replanning' WHERE id=? AND status!='failed'", p.id); await this.ctx.storage.setAlarm(Date.now() + 200); } return J({ ok: true }); }
-    if (path === "/stop") { if (!owner) return J({ error: "owner only" }, 401); q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "stopped by you"); return J({ ok: true }); }
+    if (path === "/say") { if (!ctl) return J({ error: "only whoever started this project can steer it" }, 401); const text = String(b.text || "").trim().slice(0, 3000); if (text) { this.say(p.id, "you", "chat", text); q.exec("UPDATE proj SET status='replanning' WHERE id=? AND status!='failed'", p.id); await this.ctx.storage.setAlarm(Date.now() + 200); } return J({ ok: true }); }
+    if (path === "/stop") { if (!ctl) return J({ error: "only whoever started this project can stop it" }, 401); q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "stopped by you"); return J({ ok: true }); }
     // visiting AIs: claim a task by link, read its context, submit by GET (short) or POST (long)
     if (path === "/join" || path === "/submit") {
       if (b.key !== p.tok) return J({ error: "this project's join link is needed" }, 403);
@@ -168,7 +178,7 @@ export class Hive extends DurableObject {
   async alarm() {
     const q = this.sql(); let busy = false;
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning')").toArray()) {
-      busy = true; if (p.calls >= MAX_CALLS) { q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "call budget used up (" + MAX_CALLS + "); stopped"); continue; }
+      busy = true; const cap = p.cap || MAX_CALLS; if (p.calls >= cap) { q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "call budget used up (" + cap + "); stopped"); continue; }
       try { await this.advance(p); } catch (e) { this.say(p.id, "hive", "error", String(e && e.message || e)); }
     }
     if (busy) await this.ctx.storage.setAlarm(Date.now() + TICK);
