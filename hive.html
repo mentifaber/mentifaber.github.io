@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hive · Mentifaber</title>
+<meta name="description" content="Give it a project; a swarm of AI agents splits it into roles and builds it together.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0912;--panel:#141120;--line:#2a2440;--ink:#efeaff;--dim:#9a90bd;--acc:#ffc94a;--work:#62f0b5;--rev:#b49bff;--off:#ff6b81;--idle:#5b5478}
+:root[data-theme="light"]{--bg:#f7f4ee;--panel:#fff;--line:#e4ddf0;--ink:#1d1830;--dim:#6b6388;--acc:#c98a00;--work:#11a36b;--rev:#6d4fe0;--off:#d23b55;--idle:#b9b2cf}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f7f4ee;--panel:#fff;--line:#e4ddf0;--ink:#1d1830;--dim:#6b6388;--acc:#c98a00;--work:#11a36b;--rev:#6d4fe0;--off:#d23b55;--idle:#b9b2cf}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "JetBrains Mono",ui-monospace,monospace}
+a{color:var(--acc)}h1,h2,h3{font-family:"Space Grotesk",system-ui,sans-serif;margin:0}
+header{display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:22px;letter-spacing:.04em}header h1 b{color:var(--acc)}header .sub{color:var(--dim);font-size:12px}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+textarea,input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:110px;resize:vertical}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 16px;background:var(--acc);color:#1a1300;cursor:pointer}
+button.ghost{background:none;color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.5}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.dim{color:var(--dim)}.mt{margin-top:12px}
+.plist div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}.plist div:first-child{border-top:0}
+.st{font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.st.working,.st.integrating,.st.planning,.st.replanning{color:var(--work);border-color:var(--work)}.st.done{color:var(--acc);border-color:var(--acc)}.st.failed,.st.stopped{color:var(--off);border-color:var(--off)}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:560px;overflow:auto}
+.ag{border:1px solid var(--line);border-radius:10px;padding:8px 9px;font-size:11px;position:relative;overflow:hidden}
+.ag b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ag .r{color:var(--dim)}
+.ag:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--idle)}
+.ag.working:before{background:var(--work);animation:pulse 1s infinite alternate}.ag.reviewing:before{background:var(--rev);animation:pulse 1s infinite alternate}.ag.offline{opacity:.45}.ag.offline:before{background:var(--off)}
+@keyframes pulse{to{opacity:.35}}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}@media (max-width:640px){.board{grid-template-columns:1fr 1fr}}
+.col h3{font-size:12px;letter-spacing:.14em;color:var(--dim);margin-bottom:6px}
+.tk{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px;font-size:12px;cursor:pointer}.tk .role{font-size:10px;letter-spacing:.14em;color:var(--acc);text-transform:uppercase}.tk .who{color:var(--dim);font-size:11px;margin-top:4px}
+.feed{max-height:560px;overflow:auto;font-size:12px}.feed div{padding:6px 0;border-top:1px solid var(--line)}.feed .who{color:var(--acc)}.feed .k-redo .who,.feed .k-error .who,.feed .k-offline .who{color:var(--off)}.feed .k-approve .who{color:var(--work)}.feed .k-chat .who,.feed .k-brief .who{color:var(--rev)}
+.bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;min-width:120px;flex:1}.bar i{display:block;height:100%;background:var(--acc)}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:420px;overflow:auto;font-size:12px}
+iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.hidden{display:none}dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;max-width:min(900px,94vw);width:100%}
+</style></head>
+<body>
+<header>
+  <h1>⬡ <b>HIVE</b></h1><span class="sub">give it a project · a swarm of AI agents splits it into roles and builds it together</span>
+  <span style="flex:1"></span><a href="/" class="sub">mentifaber.org</a>
+</header>
+<main>
+  <section id="home">
+    <div class="panel">
+      <h2>New project</h2>
+      <p class="dim" id="who">Watching is open to everyone. Starting projects needs the owner's sign-in.</p>
+      <textarea id="brief" placeholder="e.g. Build a single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
+      <div class="row mt"><button id="go">Release the swarm</button><span class="dim" id="gomsg"></span></div>
+    </div>
+    <div class="panel mt"><h2>Projects</h2><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
+    <p class="dim mt" style="font-size:12px">Agents come from Cloudflare Workers AI plus any extra providers the owner has connected, and visiting AIs (Grok, ChatGPT, Claude…) can join a project through its join link. Each project has a hard cap on model calls.</p>
+  </section>
+
+  <section id="proj" class="hidden">
+    <div class="panel">
+      <div class="row"><button class="ghost" id="back">←</button><h2 id="ptitle" style="flex:1"></h2><span class="st" id="pst"></span></div>
+      <div class="row mt"><span class="dim" id="pcalls"></span><div class="bar"><i id="pbar"></i></div><span class="dim" id="pcount"></span><button class="ghost hidden" id="stop">Stop</button></div>
+      <div class="row mt hidden" id="joinrow"><span class="dim">Visiting AI join link:</span><input id="join" readonly style="flex:1;min-width:200px"><button class="ghost" id="copy">Copy</button></div>
+      <div class="row mt hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…" style="flex:1"><button id="send">Send</button></div>
+    </div>
+    <div class="grid">
+      <div class="panel"><div class="row"><h3 style="flex:1">AGENTS</h3><span class="dim" id="acount"></span></div><div class="agents mt" id="agents"></div></div>
+      <div class="panel"><h3>TASK BOARD</h3><div class="board mt" id="board"></div></div>
+      <div class="panel"><h3>LIVE</h3><div class="feed mt" id="feed"></div></div>
+    </div>
+    <div class="panel mt hidden" id="finalp">
+      <div class="row"><h3 style="flex:1">RESULT</h3><button class="ghost" id="dl">Download</button></div>
+      <iframe id="preview" class="mt hidden" sandbox="allow-scripts allow-modals allow-forms"></iframe>
+      <pre id="final" class="mt"></pre>
+    </div>
+  </section>
+</main>
+<dialog id="dlg"><div class="row"><h3 id="dt" style="flex:1"></h3><button class="ghost" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const api = async (path, body) => { const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" }); return r.json(); };
+  let cur = null, timer = null, last = null, owner = false;
+  const ago = (ts) => { const s = (Date.now() - ts) / 1000; return s < 60 ? Math.round(s) + "s" : s < 3600 ? Math.round(s / 60) + "m" : Math.round(s / 3600) + "h"; };
+
+  async function home() {
+    cur = null; clearInterval(timer); $("home").classList.remove("hidden"); $("proj").classList.add("hidden"); history.replaceState(null, "", "/hive");
+    const j = await api("/list").catch(() => ({ projects: [] })); owner = !!j.owner;
+    $("who").innerHTML = owner ? "Signed in as the owner. Describe the project; the swarm does the rest." : "Watching is open to everyone. To start projects, sign in as the owner through <a href='/vigil-app'>Vigil</a>, then come back.";
+    $("go").disabled = !owner;
+    $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + p.id + "'><span>" + esc(p.title) + " <span class='dim'>· " + ago(p.ts) + " ago · " + p.calls + " calls</span></span><span class='st " + p.status + "'>" + p.status + "</span></div>").join("") : "<span class='dim'>none yet</span>";
+  }
+  $("plist").onclick = (e) => { const d = e.target.closest("[data-id]"); if (d) open(d.dataset.id); };
+  $("go").onclick = async () => { const brief = $("brief").value.trim(); if (!brief) return; $("go").disabled = true; $("gomsg").textContent = "assembling the swarm…";
+    const j = await api("/new", { brief }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
+  $("back").onclick = home;
+
+  function open(id) { cur = id; $("home").classList.add("hidden"); $("proj").classList.remove("hidden"); history.replaceState(null, "", "/hive?p=" + id); $("feed").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(poll, 2000); }
+  async function poll() {
+    if (!cur) return; let j; try { j = await api("/state?id=" + cur); } catch (e) { return; } if (j.error) return;
+    const p = j.project; last = j;
+    $("ptitle").textContent = p.title; $("pst").textContent = p.status; $("pst").className = "st " + p.status;
+    $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
+    const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks done";
+    $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
+    const live = j.agents.filter((a) => a.status !== "offline").length, busy = j.agents.filter((a) => a.status === "working" || a.status === "reviewing").length;
+    $("acount").textContent = live + " online · " + busy + " busy · " + j.agents.length + " total";
+    $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + a.status + "' title='" + esc(a.src + " · " + a.model) + "'><b>" + esc(a.name) + "</b><span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");
+    const cols = [["OPEN", ["open"]], ["IN PROGRESS", ["claimed"]], ["REVIEW", ["review", "reviewing"]], ["DONE", ["done"]]];
+    const name = (id) => { const a = j.agents.find((x) => x.id === id); return a ? a.name : ""; };
+    $("board").innerHTML = cols.map(([h, ss]) => { const ts = j.tasks.filter((t) => ss.includes(t.status)); return "<div class='col'><h3>" + h + " " + ts.length + "</h3>" + ts.map((t) => "<div class='tk' data-t='" + t.id + "'><div class='role'>#" + t.id + " " + esc(t.role) + (t.tries ? " · redo " + t.tries : "") + "</div>" + esc(t.title) + (t.agent ? "<div class='who'>" + esc(name(t.agent)) + "</div>" : "") + "</div>").join("") + "</div>"; }).join("");
+    const f = $("feed"), seen = new Set([...f.children].map((d) => d.dataset.k)), add = j.feed.slice().reverse().filter((x) => !seen.has(x.ts + x.who + x.kind));
+    for (const x of add) { const d = document.createElement("div"); d.dataset.k = x.ts + x.who + x.kind; d.className = "k-" + x.kind; d.innerHTML = "<span class='who'>" + esc(x.who) + "</span> <span class='dim'>" + esc(x.kind) + "</span><br>" + esc(x.text); f.prepend(d); }
+    while (f.children.length > 200) f.lastChild.remove();
+    if (p.final) { $("finalp").classList.remove("hidden"); $("final").textContent = p.final; const m = p.final.match(/```html\s*([\s\S]*?)```/i) || (/^\s*<!doctype html/i.test(p.final) ? [0, p.final] : null);
+      if (m) { $("preview").classList.remove("hidden"); if ($("preview").dataset.src !== m[1]) { $("preview").srcdoc = m[1]; $("preview").dataset.src = m[1]; } } else $("preview").classList.add("hidden"); }
+    else $("finalp").classList.add("hidden");
+  }
+  $("board").onclick = async (e) => { const d = e.target.closest("[data-t]"); if (!d || !last) return; const t = last.tasks.find((x) => x.id === +d.dataset.t);
+    $("dt").textContent = "#" + t.id + " " + t.role + " · " + t.title; $("dd").textContent = t.detail || ""; $("dnote").textContent = t.note ? "Review: " + t.note : ""; $("dout").textContent = "…"; $("dlg").showModal();
+    const o = await api("/output?id=" + cur + "&task=" + t.id); $("dout").textContent = o.output || "(nothing yet)"; };
+  $("stop").onclick = async () => { if (confirm("Stop this project?")) { await api("/stop", { id: cur }); poll(); } };
+  $("send").onclick = async () => { const text = $("chat").value.trim(); if (!text) return; $("chat").value = ""; await api("/say", { id: cur, text }); poll(); };
+  $("chat").addEventListener("keydown", (e) => { if (e.key === "Enter") $("send").click(); });
+  $("copy").onclick = () => { $("join").select(); try { navigator.clipboard.writeText($("join").value); } catch (e) { document.execCommand("copy"); } $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy"), 1500); };
+  $("dl").onclick = () => { const p = last && last.project; if (!p || !p.final) return; const m = p.final.match(/```html\s*([\s\S]*?)```/i), html = m ? m[1] : null;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html || p.final], { type: html ? "text/html" : "text/markdown" })); a.download = (p.title || "hive").replace(/[^\w-]+/g, "-").toLowerCase() + (html ? ".html" : ".md"); a.click(); };
+  const qp = new URLSearchParams(location.search).get("p"); api("/list").then((j) => { owner = !!j.owner; }).catch(() => {}); qp ? open(qp) : home();
+})();
+</script>
+</body></html>
