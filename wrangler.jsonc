@@ -22,9 +22,12 @@
     ]
   },
   "durable_objects": {
-    "bindings": [{ "name": "STORE", "class_name": "Store" }, { "name": "LOBBY", "class_name": "Lobby" }]
+    "bindings": [{ "name": "STORE", "class_name": "Store" }, { "name": "LOBBY", "class_name": "Lobby" }, { "name": "HIVE", "class_name": "Hive" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }, { "tag": "v3", "new_sqlite_classes": ["Hive"] }],
+  // Workers AI: the Hive's swarm (src/hive.js). Optional extra providers are Worker secrets:
+  // OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY (wrangler secret put …).
+  "ai": { "binding": "AI" },
   // Hourly check for Flutterbloom's daily reminder (src/worker.js dailyReminders).
   "triggers": { "crons": ["7 * * * *"] }
 }

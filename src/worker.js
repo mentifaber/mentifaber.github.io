@@ -1,5 +1,6 @@
 import { createGame } from "./tether-core.js";
 import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
+export { Hive } from "./hive.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -496,6 +497,10 @@ export default {
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
+      if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
+        const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");
+        return env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(req, { headers: h }));
+      }
       if (route === "thoughtform") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req); // Thoughtform for AI agents (boards live with Tether's)
       if (route === "tf-ws") return env.LOBBY.get(env.LOBBY.idFromName("thoughtform")).fetch(req); // Thoughtform co-op: same lobby logic, its own room
       if (route === "login" && req.method === "POST") return login(req, env);
