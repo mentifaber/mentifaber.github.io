@@ -58,6 +58,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);overflow:hidden;font
 #dmgs{position:fixed;inset:0;pointer-events:none;overflow:hidden}
 .dmg{position:absolute;font-size:13px;font-weight:700;letter-spacing:.05em;transform:translate(-50%,-50%);transition:transform .65s ease-out,opacity .65s;text-shadow:0 0 8px rgba(0,0,0,.9)}
 .dmg.go{transform:translate(-50%,-210%);opacity:0}
+#threat{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2}
 #radar{position:fixed;left:max(14px,env(safe-area-inset-left));top:max(14px,env(safe-area-inset-top));width:120px;height:120px;border-radius:50%;background:rgba(10,4,24,.55);border:1px solid rgba(157,139,255,.35)}
 .wep{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));text-align:right;font-size:10px;letter-spacing:.2em;color:var(--dim)}
 .wep b{display:block;font-size:20px;color:var(--ink);letter-spacing:.12em;margin:4px 0 2px}
@@ -70,6 +71,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);overflow:hidden;font
 @media (pointer:coarse){.wep{bottom:auto;top:150px}.ab{display:none}}
 .perk{pointer-events:auto;display:block;width:min(420px,88vw);text-align:left;font:inherit;color:var(--ink);background:rgba(255,255,255,.05);border:1px solid rgba(157,139,255,.4);border-radius:14px;padding:16px 18px 16px 58px;margin:8px auto;cursor:pointer;position:relative}
 .perk:hover{background:rgba(125,255,216,.1);border-color:var(--acc)}
+.perk .cat{display:block;font-style:normal;font-size:10px;letter-spacing:.22em;color:var(--cat,#9d8bff);margin-bottom:3px}.perk{border-left:4px solid var(--cat,#9d8bff)}.perk.unlock{background:rgba(255,211,107,.08);box-shadow:0 0 22px rgba(255,211,107,.15)}
 .perk em{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-style:normal;font-size:22px;color:var(--acc)}
 .perk b{display:block;letter-spacing:.18em;font-size:14px}.perk span{display:block;font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:.04em}
 #bossbar{width:min(460px,70vw);margin:8px auto 0;font-size:10px;letter-spacing:.3em;color:#fff1c9}
@@ -96,7 +98,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   .scr{gap:8px;padding:12px}.logo{font-size:clamp(30px,9vh,64px)}.btn{padding:11px 26px;font-size:13px}.lore{font-size:11px;line-height:1.6}
   .perk{padding:10px 14px 10px 50px;margin:4px auto}
 }
-@media (pointer:coarse){#xh{width:30px;height:30px;margin:-15px 0 0 -15px}#feed{display:none}.keys{display:none}
+@media (pointer:coarse){#radar{width:120px!important;height:120px!important;opacity:.9}#xh{width:30px;height:30px;margin:-15px 0 0 -15px}#feed{display:none}.keys{display:none}
   .wep{top:calc(64px + env(safe-area-inset-top));bottom:auto}#ws,.ab{display:none}.wep b{font-size:13px;margin:2px 0 0}
   #slots i{pointer-events:auto;width:30px;height:30px;line-height:30px}
   #touch #tpause{left:auto;right:calc(110px + env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top));transform:none}
@@ -157,6 +159,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div id="rw">FOCUS FULL · PRESS E TO REWRITE</div>
 </div>
 
+<canvas id="threat"></canvas>
 <div id="touch" class="hidden">
   <div id="stick"><i></i></div>
   <div class="tc" id="tfire">FIRE</div><div class="tc" id="talt">SURGE</div><div class="tc" id="tjump">JUMP</div><div class="tc" id="tdash">DASH</div><div class="tc" id="trw">REWRITE</div><div class="tc" id="tswap">SWAP</div><div class="tc" id="tshock">WAVE</div><div class="tc" id="tbar">SHIELD</div>
@@ -297,8 +300,11 @@ vec2 world(vec3 p){
   if (da < d.x) d = vec2(da, 4.);
   vec3 s = p - vec3(0., 7.+sin(T*.8)*.4, 0.);
   s.xz *= rot(T*.4); s.xy *= rot(T*.27);
-  float sd = sdOct(s, 2.1+.12*sin(T*3.));
-  float ring = sdTorus(vec3(s.x, s.y, s.z).yxz, vec2(3.4, .06));
+  vec3 s0 = p - vec3(0., 7.+sin(T*.8)*.4, 0.);
+  float sd = length(s0) - 1.35 - .05*sin(T*3.);                                     // the Seed: smooth, round, calm
+  float ring = sdTorus(s.yxz, vec2(3.1, .05));
+  vec3 s2 = s0; s2.yz *= rot(T*.31+1.); s2.xy *= rot(T*.17); ring = min(ring, sdTorus(s2, vec2(2.6, .045)));
+  vec3 s3 = s0; s3.xz *= rot(-T*.23); s3.xy *= rot(1.57+T*.11); ring = min(ring, sdTorus(s3, vec2(2.15, .04)));
   sd = min(sd, ring);
   if (sd < d.x) d = vec2(sd, 5.);
   if (REG == 1){                                   // MEMORY HALLS: frames of remembered moments hang overhead
@@ -589,16 +595,27 @@ function audio() {
     }
   }, 60);
 }
+// positional sound: pan by where the thought is relative to where you look, quieter with distance
+let OUT = null;
+function at3(x, z, fn, loud) {
+  if (!AC || !P) return; const dx = x - P.x, dz = z - P.z, d = Math.hypot(dx, dz) || 1;
+  const fx = Math.sin(P.yaw), fz = Math.cos(P.yaw), side = (dx * Math.cos(P.yaw) - dz * Math.sin(P.yaw)) / d, ahead = (dx * fx + dz * fz) / d;
+  const g = AC.createGain(); g.gain.value = Math.min(1.4, (loud || 1) * 9 / (d + 5)) * (ahead < -.2 ? .85 : 1);
+  const node = AC.createStereoPanner ? AC.createStereoPanner() : null; let tail = g;
+  if (node) { node.pan.value = Math.max(-1, Math.min(1, side)); g.connect(node); tail = node; }
+  if (ahead < -.2) { const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400; tail.connect(lp); tail = lp; }   // behind you sounds muffled
+  tail.connect(master); OUT = g; try { fn(); } finally { OUT = null; }
+}
 function tone(freq, dur, type, vol, slide, at) {
   if (!AC) return; const t = (at || AC.currentTime), o = AC.createOscillator(), g = AC.createGain();
   o.type = type || "sine"; o.frequency.setValueAtTime(freq, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, slide), t + dur);
-  g.gain.setValueAtTime(vol || .2, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .02);
+  g.gain.setValueAtTime(vol || .2, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(OUT || master); o.start(t); o.stop(t + dur + .02);
 }
 function hiss(dur, vol, fr, q) {
   if (!AC) return; const t = AC.currentTime, n = AC.createBufferSource(), b = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate), d = b.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
   n.buffer = b; const f = AC.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = fr || 2000; f.Q.value = q || 1; const g = AC.createGain(); g.gain.value = vol || .2;
-  n.connect(f); f.connect(g); g.connect(master); n.start(t);
+  n.connect(f); f.connect(g); g.connect(OUT || master); n.start(t);
 }
 const SFX = {
   shot() { tone(1400 + Math.random() * 200, .07, "triangle", .07, 380); hiss(.05, .08, 5200, 2); },
@@ -767,11 +784,12 @@ async function worldLoad() {
   $("w-me").innerHTML = me ? Object.entries(MLABEL).map(([k, n]) => { const x = j.modes[k] && j.modes[k].me; return '<button class="card' + (k === worldTab ? " on" : "") + '" data-w="' + k + '"><b>' + n + "</b><span>" + (x ? "YOU · #" + x.rank + " of " + j.modes[k].n : "not on this board yet") + "</span>" + (x ? "<em>" + Math.round(x.v) + "</em>" : "") + "</button>"; }).join("") : '<div class="stat">POST A SCORE OR MAKE A PLAYER FILE TO SEE WHERE YOU STAND</div>';
 }
 $("sens").value = save.sens;
-let sparks = [], slam = null, shakeT = 0, flashT = 0, boltT = 6, clearT = 0, bossE = null, pshots = [], shock = null, state = "title", T = 0, P, enemies, orbs, picks, tracers, boom, wave, waveLeft, toSpawn, spawnT, breathT, score, combo, comboT, kills, shots, hits, slowT, hurtT, feedT;
+let warnT = 0, sparks = [], slam = null, shakeT = 0, flashT = 0, boltT = 6, clearT = 0, bossE = null, pshots = [], shock = null, state = "title", T = 0, P, enemies, orbs, picks, tracers, boom, wave, waveLeft, toSpawn, spawnT, breathT, score, combo, comboT, kills, shots, hits, slowT, hurtT, feedT;
 const keys = new Set(); let mouseDown = false, altDown = false, look = { x: 0, y: 0 }, mv = { x: 0, y: 0 };
 function reset() {
   P = { x: 0, y: DAIS_H, z: 4, vx: 0, vy: 0, vz: 0, yaw: Math.PI, pitch: 0, hp: 100, focus: 0, heat: 0, over: false, overT: 0, cd: 0, air: 1, ground: true, dashT: 0, dashCd: 0, inv: 0, bob: 0, muz: 0, charge: 0, surgeCd: 0, w: 0, shockCd: 0, barCd: 0, barT: 0, hpMax: 100, perks: {}, cleared: false, picked: false,
-    m: { dmg: 1, heat: 1, leech: 0, chain: 0, dashCd: 1, air: 1, focus: 1, rwT: 7, volatile: 0, magnet: 1, drop: 1, pellets: 8, blast: 1, surgeCd: 1, armor: 1, abil: 1, crit: 0, thorns: 0, rate: 1 } };
+    kit: mode === "boss" ? { surge: 1, shock: 1, bar: 1, rw: 1, w1: 1, w2: 1, w3: 1 } : {},
+    m: { shockR: 1, dashHit: 0, stomp: 0, mirror: 0, dmg: 1, heat: 1, leech: 0, chain: 0, dashCd: 1, air: 1, focus: 1, rwT: 7, volatile: 0, magnet: 1, drop: 1, pellets: 8, blast: 1, surgeCd: 1, armor: 1, abil: 1, crit: 0, thorns: 0, rate: 1 } };
   pshots = []; shock = null; sparks = []; slam = null; bossE = null; setRegion(mode === "daily" ? today() % 4 : mode === "boss" ? 0 : mapStart); $("bossbar").classList.add("hidden");
   const up = save.prof.up; P.m.dmg = 1 + up.dmg * .04; P.m.heat = 1 - up.cool * .05; P.hpMax = mode === "glass" ? 1 : (mode === "hard" ? 60 : 100) + up.hp * 8; P.hp = P.hpMax; if (mode === "glass") P.m.dmg *= 3; P.clock = mode === "blitz" ? 180 : 0; P.focus = Math.min(100, up.focus * 12);
   rand = mode === "daily" ? mulberry(today()) : Math.random;
@@ -801,8 +819,11 @@ const TIPS = ["DOUBLE-JUMP, THEN DASH, TO CLEAR A SWARM", "LANCES LOCK ON: STEP 
 function tip() { if (save.tips === false) return; const el = $("tip"); el.textContent = TIPS[(tip.i = ((tip.i || 0) + 1)) % TIPS.length]; el.classList.add("show"); clearTimeout(tip.t); tip.t = setTimeout(() => el.classList.remove("show"), 4500); }
 function showPerks() {
   if (state !== "play") return; state = "perk"; keys.clear(); mouseDown = false; lockGrace = performance.now() + 900; document.exitPointerLock && document.exitPointerLock();
-  const pool = PERKS.slice(); const pick = []; while (pick.length < 3 && pool.length) pick.push(pool.splice(rand() * pool.length | 0, 1)[0]);
-  $("perks").innerHTML = pick.map((k, i) => '<button class="perk" data-i="' + i + '"><em>' + (i + 1) + '</em><b>' + k.n + (P.perks[k.id] ? " " + "I".repeat(P.perks[k.id] + 1) : "") + "</b><span>" + k.d + "</span></button>").join("");
+  const locked = UNLOCKS.filter((u) => !P.kit[u.k]), pool = PERKS.filter((k) => !k.req || P.kit[k.req]), pick = [];
+  const nU = !locked.length ? 0 : wave === 1 ? 2 : rand() < .55 ? 1 : 0;   // early waves hand you new tools; later ones mostly sharpen them
+  for (let i = 0; i < nU && locked.length; i++) pick.push(locked.splice(rand() * locked.length | 0, 1)[0]);
+  while (pick.length < 3 && pool.length) pick.push(pool.splice(rand() * pool.length | 0, 1)[0]);
+  $("perks").innerHTML = pick.map((k, i) => '<button class="perk' + (k.unlock ? " unlock" : "") + '" data-i="' + i + '" style="--cat:' + CATS[k.cat] + '"><em>' + (i + 1) + '</em><i class="cat">' + (k.unlock ? "UNLOCK · " : "") + k.cat + "</i><b>" + k.n + (P.perks[k.id] ? " " + "I".repeat(P.perks[k.id] + 1) : "") + "</b><span>" + k.d + "</span></button>").join("");
   showPerks.pick = pick; show("s-perk"); SFX.wave(); clearTimeout(banner.t); $("banner").style.opacity = 0;
 }
 function takePerk(i) {
@@ -836,25 +857,40 @@ const KIND = [
 ];
 const KCOL = ["#ff6f8f", "#ffd36b", "#b49bff", "#6fffb0", "#bff3ff", "#ff9a3d", "#fff1c9", "#73ffe6", "#6fa0ff", "#f070f0"], KSPARK = [1, 2, 3, 4, 5, 6, 2, 5, 5, 3];
 // insights: one is offered from three after every wave, and they stack
+const CATS = { QUILL: "#7dffd8", INSTRUMENT: "#ffd36b", SURGE: "#b49bff", WAVE: "#6fffb0", SHIELD: "#9fd8ff", DASH: "#ff9a3d", JUMP: "#ff7aa8", MIND: "#ffe9a8", BODY: "#ff6f8f" };
+const UNLOCKS = [
+  { id: "u_scat", cat: "INSTRUMENT", n: "IDEA SCATTER", d: "NEW INSTRUMENT · 8 sparks at close range · key 2", k: "w1" },
+  { id: "u_can", cat: "INSTRUMENT", n: "LOGIC CANNON", d: "NEW INSTRUMENT · a slow proof that bursts · key 3", k: "w2" },
+  { id: "u_beam", cat: "INSTRUMENT", n: "CLARITY BEAM", d: "NEW INSTRUMENT · hold to pierce a whole line · key 4", k: "w3" },
+  { id: "u_surge", cat: "SURGE", n: "SURGE", d: "NEW ABILITY · a charged blast · right click / SURGE", k: "surge" },
+  { id: "u_shock", cat: "WAVE", n: "SHOCKWAVE", d: "NEW ABILITY · blast everything near you away · Q / WAVE", k: "shock" },
+  { id: "u_bar", cat: "SHIELD", n: "BARRIER", d: "NEW ABILITY · 5s shield that eats orbs · F / SHIELD", k: "bar" },
+  { id: "u_rw", cat: "MIND", n: "REWRITE", d: "NEW ABILITY · fill focus, then bend time · E / REWRITE", k: "rw" },
+].map((u) => ({ ...u, unlock: true, f: (m, p) => { p.kit[u.k] = 1; kitUI(); } }));
 const PERKS = [
-  { id: "sharp", n: "SHARPER QUILL", d: "+20% damage with every instrument", f: (m) => (m.dmg *= 1.2) },
-  { id: "cool", n: "COOL HEAD", d: "weapons build 25% less heat", f: (m) => (m.heat *= .75) },
-  { id: "wind", n: "SECOND WIND", d: "+25 max resolve, healed in full", f: (m, p) => { p.hpMax += 25; p.hp = p.hpMax; } },
-  { id: "leech", n: "LEECH THOUGHTS", d: "every erased thought heals 3 resolve", f: (m) => (m.leech += 3) },
-  { id: "chain", n: "CHAIN OF THOUGHT", d: "Quill hits arc on to a second enemy", f: (m) => (m.chain += .6) },
-  { id: "step", n: "QUICK STEP", d: "dash recharges 35% faster and +1 air jump", f: (m) => { m.dashCd *= .65; m.air += 1; } },
-  { id: "focus", n: "DEEP FOCUS", d: "+40% focus from every kill", f: (m) => (m.focus *= 1.4) },
-  { id: "long", n: "LONGER REWRITE", d: "rewrite lasts three seconds longer", f: (m) => (m.rwT += 3) },
-  { id: "vol", n: "VOLATILE IDEAS", d: "erased thoughts burst and hurt what is near", f: (m) => (m.volatile += 30) },
-  { id: "mag", n: "MAGNET MIND", d: "more pickups, pulled in from further away", f: (m) => { m.magnet *= 1.8; m.drop *= 1.5; } },
-  { id: "wide", n: "WIDE SCATTER", d: "+4 sparks in every Idea Scatter blast", f: (m) => (m.pellets += 4) },
-  { id: "proof", n: "HEAVY PROOF", d: "Logic Cannon bursts 30% wider and harder", f: (m) => (m.blast *= 1.3) },
-  { id: "surge", n: "SURGE OVERLOAD", d: "right-click surge recharges almost twice as fast", f: (m) => (m.surgeCd *= .55) },
-  { id: "skin", n: "THICK SKIN", d: "take 15% less damage", f: (m) => (m.armor *= .85) },
-  { id: "keen", n: "KEEN EYE", d: "+8% chance to crit, crits hit for double", f: (m) => (m.crit += .08) },
-  { id: "thorn", n: "THORNED THOUGHTS", d: "whatever touches you takes 30 damage", f: (m) => (m.thorns += 30) },
-  { id: "over", n: "OVERCLOCK", d: "every instrument fires 15% faster", f: (m) => (m.rate *= .85) },
-  { id: "quick", n: "QUICK MIND", d: "shockwave and barrier recharge 30% faster", f: (m) => (m.abil *= .7) },
+  { id: "sharp", cat: "QUILL", req: "", n: "SHARPER QUILL", d: "+20% damage with every instrument", f: (m) => (m.dmg *= 1.2) },
+  { id: "cool", cat: "QUILL", req: "", n: "COOL HEAD", d: "weapons build 25% less heat", f: (m) => (m.heat *= .75) },
+  { id: "wind", cat: "BODY", req: "", n: "SECOND WIND", d: "+25 max resolve, healed in full", f: (m, p) => { p.hpMax += 25; p.hp = p.hpMax; } },
+  { id: "leech", cat: "BODY", req: "", n: "LEECH THOUGHTS", d: "every erased thought heals 3 resolve", f: (m) => (m.leech += 3) },
+  { id: "chain", cat: "QUILL", req: "", n: "CHAIN OF THOUGHT", d: "Quill hits arc on to a second enemy", f: (m) => (m.chain += .6) },
+  { id: "step", cat: "DASH", req: "", n: "QUICK STEP", d: "dash recharges 35% faster", f: (m) => { m.dashCd *= .65; } },
+  { id: "after", cat: "DASH", req: "", n: "AFTERIMAGE", d: "dashing hits everything beside you for 30", f: (m) => (m.dashHit += 30) },
+  { id: "updraft", cat: "JUMP", req: "", n: "UPDRAFT", d: "+1 jump in the air", f: (m) => (m.air += 1) },
+  { id: "stomp", cat: "JUMP", req: "", n: "STOMP", d: "land from a double jump to slam the floor for 40", f: (m) => (m.stomp += 40) },
+  { id: "widewave", cat: "WAVE", req: "shock", n: "WIDE WAVE", d: "shockwave reaches 40% further", f: (m) => (m.shockR *= 1.4) },
+  { id: "mirror", cat: "SHIELD", req: "bar", n: "MIRROR MIND", d: "orbs your barrier eats are thrown back for 25", f: (m) => (m.mirror += 25) },
+  { id: "focus", cat: "MIND", req: "rw", n: "DEEP FOCUS", d: "+40% focus from every kill", f: (m) => (m.focus *= 1.4) },
+  { id: "long", cat: "MIND", req: "rw", n: "LONGER REWRITE", d: "rewrite lasts three seconds longer", f: (m) => (m.rwT += 3) },
+  { id: "vol", cat: "BODY", req: "", n: "VOLATILE IDEAS", d: "erased thoughts burst and hurt what is near", f: (m) => (m.volatile += 30) },
+  { id: "mag", cat: "BODY", req: "", n: "MAGNET MIND", d: "more pickups, pulled in from further away", f: (m) => { m.magnet *= 1.8; m.drop *= 1.5; } },
+  { id: "wide", cat: "INSTRUMENT", req: "w1", n: "WIDE SCATTER", d: "+4 sparks in every Idea Scatter blast", f: (m) => (m.pellets += 4) },
+  { id: "proof", cat: "INSTRUMENT", req: "w2", n: "HEAVY PROOF", d: "Logic Cannon bursts 30% wider and harder", f: (m) => (m.blast *= 1.3) },
+  { id: "surge", cat: "SURGE", req: "surge", n: "SURGE OVERLOAD", d: "right-click surge recharges almost twice as fast", f: (m) => (m.surgeCd *= .55) },
+  { id: "skin", cat: "SHIELD", req: "", n: "THICK SKIN", d: "take 15% less damage", f: (m) => (m.armor *= .85) },
+  { id: "keen", cat: "QUILL", req: "", n: "KEEN EYE", d: "+8% chance to crit, crits hit for double", f: (m) => (m.crit += .08) },
+  { id: "thorn", cat: "SHIELD", req: "", n: "THORNED THOUGHTS", d: "whatever touches you takes 30 damage", f: (m) => (m.thorns += 30) },
+  { id: "over", cat: "QUILL", req: "", n: "OVERCLOCK", d: "every instrument fires 15% faster", f: (m) => (m.rate *= .85) },
+  { id: "quick", cat: "WAVE", req: "shock", n: "QUICK MIND", d: "shockwave and barrier recharge 30% faster", f: (m) => (m.abil *= .7) },
 ];
 // three instruments of intent: the Quill writes, the Scatter brainstorms, the Cannon proves
 const WEAP = [
@@ -867,7 +903,7 @@ function spawn(kind, at) {
   if (enemies.length >= MAXE) return false;
   const K = KIND[kind], a = rand() * Math.PI * 2, R = 30;
   const e = { k: kind, x: at ? at.x : Math.cos(a) * R, z: at ? at.z : Math.sin(a) * R, y: kind === 1 ? 3.5 + Math.random() * 2 : kind === 2 ? 2.2 : kind === 3 ? 1.6 : kind === 4 ? 2.6 : kind === 6 ? 6 : 1.2, vx: 0, vz: 0, vy: 0,
-    id: spawn.n = (spawn.n || 0) + 1, hp: K.hp * (1 + wave * .06) * (mode === "hard" ? 1.35 : mode === "horde" ? .65 : 1), max: K.hp * (1 + wave * .06), r: K.r, flash: 0, ph: Math.random() * 9, fire: 1.5 + Math.random() * 1.5, grow: at ? 1 : 0, touch: 0, orbit: Math.random() < .5 ? 1 : -1, charge: 0, atk: 0 };
+    id: spawn.n = (spawn.n || 0) + 1, hp: K.hp * (1 + wave * .06) * (mode === "hard" ? 1.35 : mode === "horde" ? .65 : 1), max: K.hp * (1 + wave * .06), r: K.r, flash: 0, ph: Math.random() * 9, fire: 1.5 + Math.random() * 1.5, grow: at ? 1 : 0, touch: 0, orbit: Math.random() < .5 ? 1 : -1, charge: 0, atk: 0, tele: at ? 0 : 1.1 };
   if (kind < 6 && wave >= 3 && !at && rand() < Math.min(.06 + wave * .01, .18)) { e.elite = true; e.hp *= 2.5; e.max = e.hp; e.r *= 1.3; }
   enemies.push(e); return true;
 }
@@ -958,15 +994,15 @@ function explode(at, dmg, rad) {
   SFX.surge();
 }
 function shockwave() {
-  if (P.down) return;
+  if (P.down || !P.kit.shock) return;
   if (P.shockCd > 0) return; P.shockCd = 8 * P.m.abil; shakeT = .5; shock = { x: P.x, y: P.y, z: P.z, life: 1 };
-  for (const e of enemies) { if (e.dead) continue; const dx = e.x - P.x, dz = e.z - P.z, d = Math.hypot(dx, dz); if (d < 9) { damage(e, 55 * (1 - d / 11)); e.vx += dx / (d || 1) * 30; e.vz += dz / (d || 1) * 30; } }
+  for (const e of enemies) { if (e.dead) continue; const dx = e.x - P.x, dz = e.z - P.z, d = Math.hypot(dx, dz); if (d < 9 * P.m.shockR) { damage(e, 55 * (1 - d / (11 * P.m.shockR))); e.vx += dx / (d || 1) * 30; e.vz += dz / (d || 1) * 30; } }
   orbs = orbs.filter((o) => Math.hypot(o.x - P.x, o.z - P.z) > 9);
   SFX.shock(); feed("SHOCKWAVE", "#7dffd8");
 }
-function barrier() { if (P.down || P.barCd > 0) return; P.barCd = 15 * P.m.abil; P.barT = 5; SFX.barrier(); feed("BARRIER RAISED", "#7dd8ff"); }
+function barrier() { if (P.down || !P.kit.bar || P.barCd > 0) return; P.barCd = 15 * P.m.abil; P.barT = 5; SFX.barrier(); feed("BARRIER RAISED", "#7dd8ff"); }
 function surge() {
-  if (P.down) return;
+  if (P.down || !P.kit.surge) return;
   if (P.over || P.surgeCd > 0) return;
   P.surgeCd = 1.1 * P.m.surgeCd; P.heat += .45 * P.m.heat; P.muz = 1.5; if (P.heat >= 1) { P.over = true; P.overT = 1.6; SFX.heat(); }
   const d = dirOf(P.yaw, P.pitch), o = { x: P.x, y: P.y + EYE, z: P.z }, wt = worldRay(o, d, 60), hit = rayEnemy(o, d, wt);
@@ -976,7 +1012,7 @@ function surge() {
   SFX.surge(); look.y += 30;
 }
 function rewrite() {
-  if (P.down) return;
+  if (P.down || !P.kit.rw) return;
   if (P.focus < 100 || slowT > 0) return;
   P.focus = 0; slowT = P.m.rwT; P.rewrites = (P.rewrites || 0) + 1; P.heat = 0; P.over = false; SFX.rewrite(); banner("REWRITE", "TIME BENDS TO YOU");
 }
@@ -1020,6 +1056,27 @@ function floatText(e, txt, color) {
   $("dmgs").appendChild(el); requestAnimationFrame(() => el.classList.add("go")); setTimeout(() => el.remove(), 700);
 }
 const rc = $("radar").getContext("2d");
+// arrows around the crosshair for every thought you can't see, bigger the closer it is; spawns pulse as dashed rings
+const tc = $("threat").getContext("2d");
+function threats() {
+  const cw = innerWidth, ch = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (tc.canvas.width !== Math.round(cw * dpr)) { tc.canvas.width = Math.round(cw * dpr); tc.canvas.height = Math.round(ch * dpr); }
+  tc.setTransform(dpr, 0, 0, dpr, 0, 0); tc.clearRect(0, 0, cw, ch);
+  if (state !== "play" || !P) return;
+  const cx = cw / 2, cy = ch / 2, Rr = Math.min(cw, ch) * .3, fx = Math.sin(P.yaw), fz = Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw), half = Math.atan(cw / ch * .5 / (save.fov || 1.25)) * .85;
+  const arrow = (rel, d, col, dashed) => {
+    const near = Math.max(0, 1 - d / 30), sz = 9 + near * 16, a = .35 + near * .65, x = cx + Math.sin(rel) * Rr, y = cy - Math.cos(rel) * Rr;
+    tc.save(); tc.translate(x, y); tc.rotate(rel); tc.globalAlpha = a; tc.fillStyle = col; tc.strokeStyle = col; tc.lineWidth = 2;
+    if (dashed) { tc.setLineDash([3, 3]); tc.beginPath(); tc.arc(0, 0, sz * .6 * (1 + .25 * Math.sin(T * 12)), 0, 7); tc.stroke(); }
+    else { tc.beginPath(); tc.moveTo(0, -sz); tc.lineTo(sz * .62, sz * .35); tc.lineTo(0, sz * .05); tc.lineTo(-sz * .62, sz * .35); tc.closePath(); tc.fill(); }
+    tc.restore(); };
+  for (const e of enemies) {
+    if (e.dead) continue; const dx = e.x - P.x, dz = e.z - P.z, d = Math.hypot(dx, dz); if (d > 34) continue;
+    const rel = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz);
+    if (Math.abs(rel) > half || e.tele > 0) arrow(rel, d, e.k === 4 && e.charge > 0 ? "#ff3355" : KCOL[e.k], e.tele > 0);
+  }
+  for (const o of orbs) { const dx = o.x - P.x, dz = o.z - P.z, d = Math.hypot(dx, dz); if (d > 9) continue; const rel = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz); if (Math.abs(rel) > half) arrow(rel, d * 2, "#ff9a3d"); }
+}
 function radar() {
   const S = 120, c = S / 2, k = c / 36; rc.clearRect(0, 0, S, S);
   rc.save(); rc.translate(c, c); rc.rotate(Math.PI - P.yaw);
@@ -1034,7 +1091,13 @@ function radar() {
 }
 document.getElementById("slots").addEventListener("touchstart", (e) => { const t = e.target.closest("i"); if (t) { e.preventDefault(); e.stopPropagation(); setWeapon([...t.parentNode.children].indexOf(t)); } }, { passive: false });
 document.getElementById("slots").addEventListener("click", (e) => { const t = e.target.closest("i"); if (t) setWeapon([...t.parentNode.children].indexOf(t)); });
-function setWeapon(i) { if (!P || i === P.w || i < 0 || i > 3) return; P.w = i; P.cd = Math.max(P.cd, .18); SFX.swap(); $("wn").textContent = WEAP[i].name; $("ws").textContent = WEAP[i].sub; [...document.querySelectorAll("#slots i")].forEach((el, k) => el.classList.toggle("on", k === i)); }
+function kitUI() {
+  if (!P) return; const K = P.kit;
+  for (const [id, k] of [["talt", "surge"], ["tshock", "shock"], ["tbar", "bar"], ["trw", "rw"]]) $(id).style.display = K[k] ? "" : "none";
+  $("tswap").style.visibility = K.w1 || K.w2 || K.w3 ? "" : "hidden";
+  [...document.querySelectorAll("#slots i")].forEach((el, i) => el.style.opacity = !i || K["w" + i] ? "" : ".2");
+}
+function setWeapon(i) { if (!P || i === P.w || i < 0 || i > 3 || (i && !P.kit["w" + i])) return; P.w = i; P.cd = Math.max(P.cd, .18); SFX.swap(); $("wn").textContent = WEAP[i].name; $("ws").textContent = WEAP[i].sub; [...document.querySelectorAll("#slots i")].forEach((el, k) => el.classList.toggle("on", k === i)); }
 
 /* ───────────────────────── simulation ───────────────────────── */
 function update(dt) {
@@ -1061,7 +1124,7 @@ function update(dt) {
   P.vy -= 24 * dt; P.x += P.vx * dt; P.z += P.vz * dt; P.y += P.vy * dt;
   pushOut(P, .45);
   const g = groundAt(P.x, P.z);
-  if (P.y <= g) { if (g - P.y < .7 || P.vy < 0) { P.y = g; P.vy = 0; P.ground = true; P.air = P.m.air; } }
+  if (P.y <= g) { if (g - P.y < .7 || P.vy < 0) { if (P.stompArm && P.m.stomp && !P.ground) { P.stompArm = false; shock = { x: P.x, y: P.y, z: P.z, life: .6 }; shakeT = Math.max(shakeT, .3); for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.5) damage(e, P.m.stomp); SFX.shock(); } P.stompArm = false; P.y = g; P.vy = 0; P.ground = true; P.air = P.m.air; } }
   else if (P.y > g + .05) P.ground = false;
   P.bob += Math.hypot(P.vx, P.vz) * dt * (P.ground ? 1 : 0);
   P.shockCd = Math.max(0, P.shockCd - dt); P.barCd = Math.max(0, P.barCd - dt); P.barT = Math.max(0, P.barT - dt);
@@ -1108,6 +1171,8 @@ function update(dt) {
     if (e.dead) continue;
     let tg = TG[0]; for (const q of TG) if (Math.hypot(q.x - e.x, q.z - e.z) < Math.hypot(tg.x - e.x, tg.z - e.z)) tg = q;
     const ex = tg.x, ez = tg.z;
+    if (e.tele > 0) { e.tele -= edt; if ((T * 30 | 0) % 2 === 0 && sparks.length < MAXS - 2) burst(e.x + (Math.random() - .5) * 1.4, .2, e.z + (Math.random() - .5) * 1.4, 1, KSPARK[e.k], 3);
+      if (!e.heard) { e.heard = 1; at3(e.x, e.z, () => { tone(110, .9, "sine", .16, 330); hiss(.5, .06, 900, 2); }, 1.5); } continue; }
     e.grow = Math.min(1, e.grow + edt * 1.4); e.flash = Math.max(0, e.flash - dt * 6); e.ph += edt;
     const dx = ex - e.x, dz = ez - e.z, dist = Math.hypot(dx, dz) || 1, K = KIND[e.k];
     let tx = dx / dist, tz = dz / dist;
@@ -1134,15 +1199,15 @@ function update(dt) {
           const o = { x: e.x, y: e.y, z: e.z }, ax = e.aim.x - o.x, ay = e.aim.y - o.y, az = e.aim.z - o.z, al = Math.hypot(ax, ay, az), d = { x: ax / al, y: ay / al, z: az / al }, wt = worldRay(o, d, 70);
           for (const q of TG) { const px = q.x - o.x, py = q.y + 1.1 - o.y, pz = q.z - o.z, t = px * d.x + py * d.y + pz * d.z, miss = Math.hypot(px - d.x * t, py - d.y * t, pz - d.z * t);
           if (t > 0 && t < wt && miss < .85) hitT(q, 20); }
-          addTracer(o, { x: o.x + d.x * wt, y: o.y + d.y * wt, z: o.z + d.z * wt }, 2); SFX.lance(); e.fire = 3.4 + Math.random() * 1.5;
+          addTracer(o, { x: o.x + d.x * wt, y: o.y + d.y * wt, z: o.z + d.z * wt }, 2); at3(e.x, e.z, () => SFX.lance(), 1.4); e.fire = 3.4 + Math.random() * 1.5;
         }
-      } else { e.fire -= edt; if (e.fire <= 0) { e.charge = 1.35; e.aim = { x: tg.x, y: tg.y + 1.2, z: tg.z }; SFX.charge(); } }
+      } else { e.fire -= edt; if (e.fire <= 0) { e.charge = 1.35; e.aim = { x: tg.x, y: tg.y + 1.2, z: tg.z }; at3(e.x, e.z, () => SFX.charge(), 1.5); } }
     }
     if (e.k === 6 && e.grow >= 1) {                           // THE CRITIC: spiral volleys, floor rings, summoned fears
       e.fire -= edt; if (e.fire <= 0) {
         e.fire = e.hp < e.max * .5 ? 2.4 : 3.4; e.atk = (e.atk + 1) % 3;
-        if (e.atk === 0) { for (let i = 0; i < 12 && orbs.length < MAXB; i++) { const a = i / 12 * Math.PI * 2 + e.ph; orbs.push({ x: e.x, y: e.y, z: e.z, vx: Math.cos(a) * 9, vy: -1.9, vz: Math.sin(a) * 9, r: .4, t: 6 }); } SFX.orb(); }
-        if (e.atk === 1) { slam = { x: e.x, z: e.z, t: -1.15, hit: false }; SFX.charge(); }
+        if (e.atk === 0) { for (let i = 0; i < 12 && orbs.length < MAXB; i++) { const a = i / 12 * Math.PI * 2 + e.ph; orbs.push({ x: e.x, y: e.y, z: e.z, vx: Math.cos(a) * 9, vy: -1.9, vz: Math.sin(a) * 9, r: .4, t: 6 }); } at3(e.x, e.z, () => SFX.orb(), 1.6); }
+        if (e.atk === 1) { slam = { x: e.x, z: e.z, t: -1.15, hit: false }; at3(e.x, e.z, () => SFX.charge(), 2); }
         if (e.atk === 2) { for (let i = 0; i < 3; i++) if (spawn(5, { x: e.x + Math.cos(i * 2.1) * 3, z: e.z + Math.sin(i * 2.1) * 3 })) waveLeft++; feed("THE CRITIC CALLS ITS FEARS", "#ff9a3d"); }
       }
     }
@@ -1152,23 +1217,25 @@ function update(dt) {
     }
     if (e.k === 9 && e.grow >= 1) {                           // DENIAL: keeps the others from ever really dying
       e.fire -= edt; if (e.fire <= 0) { e.fire = 2.2; let w = null; for (const o of enemies) if (o !== e && !o.dead && o.k !== 9 && o.hp < o.max && Math.hypot(o.x - e.x, o.z - e.z) < 14 && (!w || o.hp / o.max < w.hp / w.max)) w = o;
-        if (w) { w.hp = Math.min(w.max, w.hp + w.max * .25); w.flash = .6; addTracer({ x: e.x, y: e.y, z: e.z }, { x: w.x, y: w.y, z: w.z }, 1); SFX.orb(); } }
+        if (w) { w.hp = Math.min(w.max, w.hp + w.max * .25); w.flash = .6; addTracer({ x: e.x, y: e.y, z: e.z }, { x: w.x, y: w.y, z: w.z }, 1); at3(e.x, e.z, () => SFX.orb()); } }
     }
     if (e.k === 1 && e.grow >= 1) {
       e.fire -= edt; if (e.fire <= 0) {
         e.fire = Math.max(1.1, 2.6 - wave * .08) * (.8 + Math.random() * .4);
         const lead = Math.min(dist / 13, 1.4), aimx = tg.x + tg.vx * lead * .6, aimy = tg.y + 1.2, aimz = tg.z + tg.vz * lead * .6;
         const ax = aimx - e.x, ay = aimy - e.y, az = aimz - e.z, al = Math.hypot(ax, ay, az);
-        if (orbs.length < MAXB) { orbs.push({ x: e.x, y: e.y, z: e.z, vx: ax / al * 13, vy: ay / al * 13, vz: az / al * 13, r: .32, t: 6 }); SFX.orb(); }
+        if (orbs.length < MAXB) { orbs.push({ x: e.x, y: e.y, z: e.z, vx: ax / al * 13, vy: ay / al * 13, vz: az / al * 13, r: .32, t: 6 }); at3(e.x, e.z, () => SFX.orb(), 1.3); }
       }
     }
   }
+  if (!coop || coop.host) { warnT -= dt; if (warnT <= 0) { warnT = .55; const fx = Math.sin(P.yaw), fz = Math.cos(P.yaw);
+    for (const e of enemies) { if (e.dead || e.grow < .9) continue; const dx = e.x - P.x, dz = e.z - P.z, d = Math.hypot(dx, dz); if (d < 8 && (dx * fx + dz * fz) / d < .45) { at3(e.x, e.z, () => { hiss(.22, .09, 2400, 3); tone(e.k === 5 ? 900 : 300, .18, "triangle", .05, e.k === 5 ? 1300 : 180); }, 1.6); break; } } } }
   if (!G) enemies = enemies.filter((e) => !e.dead);
   // orbs
   for (const o of orbs) {
     o.x += o.vx * edt; o.y += o.vy * edt; o.z += o.vz * edt; o.t -= edt;
     if (!G) for (const q of TG) { const od = Math.hypot(o.x - q.x, o.y - (q.y + 1.1), o.z - q.z);
-      if (q.bar && od < 2.2) { o.t = 0; if (q.me) P.focus = Math.min(100, P.focus + 4); break; }
+      if (q.bar && od < 2.2) { o.t = 0; if (q.me) { P.focus = Math.min(100, P.focus + 4); if (P.m.mirror) { let nb = null, nd = 40; for (const e of enemies) { const dd = Math.hypot(e.x - o.x, e.z - o.z); if (!e.dead && dd < nd) { nd = dd; nb = e; } } if (nb) { damage(nb, P.m.mirror, true); addTracer({ x: o.x, y: o.y, z: o.z }, { x: nb.x, y: nb.y, z: nb.z }, 1); } } } break; }
       if (od < o.r + .55) { hitT(q, 9); o.t = 0; break; } }
     if (o.y < 0 || Math.hypot(o.x, o.z) > 34) o.t = 0;
     for (const [px, pz] of PILLARS) if (Math.hypot(o.x - px, o.z - pz) < PILLAR_HIT) o.t = 0;
@@ -1192,10 +1259,10 @@ function hud() {
   if (bossE) $("bossbar").lastChild.firstChild.style.width = Math.max(0, bossE.hp / bossE.max * 100) + "%";
   $("fo").firstChild.style.width = P.focus + "%"; $("fon").textContent = slowT > 0 ? "REWRITING " + slowT.toFixed(1) : Math.floor(P.focus);
   $("he").firstChild.style.width = Math.min(100, P.heat * 100) + "%"; $("hen").textContent = P.over ? "OVERHEATED" : "";
-  $("cdq").textContent = P.shockCd > 0 ? P.shockCd.toFixed(1) : "READY"; $("cdf").textContent = P.barT > 0 ? "ACTIVE " + P.barT.toFixed(1) : P.barCd > 0 ? P.barCd.toFixed(1) : "READY";
-  radar();
+  $("cdq").textContent = !P.kit.shock ? "LOCKED" : P.shockCd > 0 ? P.shockCd.toFixed(1) : "READY"; $("cdf").textContent = !P.kit.bar ? "LOCKED" : P.barT > 0 ? "ACTIVE " + P.barT.toFixed(1) : P.barCd > 0 ? P.barCd.toFixed(1) : "READY";
+  radar(); threats();
   $("left").textContent = P.clock ? "⏱ " + Math.floor(P.clock / 60) + ":" + String(Math.floor(P.clock % 60)).padStart(2, "0") + " · " + Math.max(0, waveLeft) + " REMAIN" : (waveLeft > 0 ? waveLeft : 0) + " THOUGHTS REMAIN";
-  $("rw").style.opacity = P.focus >= 100 && slowT <= 0 ? 1 : 0; $("rw").textContent = touchMode ? "FOCUS FULL · TAP REWRITE" : "FOCUS FULL · PRESS E TO REWRITE";
+  $("rw").style.opacity = P.kit.rw && P.focus >= 100 && slowT <= 0 ? 1 : 0; $("rw").textContent = touchMode ? "FOCUS FULL · TAP REWRITE" : "FOCUS FULL · PRESS E TO REWRITE";
 }
 
 /* ───────────────────────── frame ───────────────────────── */
@@ -1360,11 +1427,11 @@ function startCoop() {
 const touchMode = matchMedia("(pointer:coarse)").matches;
 function show(id) { ["s-title", "s-pause", "s-dead", "s-perk", "s-modes", "s-shop", "s-coop", "s-world", "s-acct"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 function start() {
-  goFull(); audio(); reset(); setTimeout(orient, 50); state = "play"; show(null); P.w = -1; setWeapon(0); $("hud").classList.remove("hidden");
+  goFull(); audio(); reset(); setTimeout(orient, 50); state = "play"; show(null); P.w = -1; setWeapon(0); $("hud").classList.remove("hidden"); kitUI();
   if (touchMode) $("touch").classList.remove("hidden"); else cv.requestPointerLock && cv.requestPointerLock();
 }
 function pause() { if (state !== "play") return; state = "paused"; show("s-pause"); keys.clear(); mouseDown = false;
-  $("p-stats").innerHTML = "WAVE <b>" + wave + "</b> · SCORE <b>" + score + "</b> · ERASED <b>" + kills + "</b><br>ACCURACY <b>" + (shots ? Math.round(Math.min(1, hits / shots) * 100) : 0) + "%</b> · BEST FLOW <b>×" + (P.maxCombo || 0) + "</b> · ALIVE <b>" + Math.floor(P.alive || 0) + "s</b><br>INSIGHTS <b>" + (Object.entries(P.perks).map(([k, v]) => PERKS.find((x) => x.id === k).n + (v > 1 ? " ×" + v : "")).join(", ") || "none yet") + "</b>"; }
+  $("p-stats").innerHTML = "WAVE <b>" + wave + "</b> · SCORE <b>" + score + "</b> · ERASED <b>" + kills + "</b><br>ACCURACY <b>" + (shots ? Math.round(Math.min(1, hits / shots) * 100) : 0) + "%</b> · BEST FLOW <b>×" + (P.maxCombo || 0) + "</b> · ALIVE <b>" + Math.floor(P.alive || 0) + "s</b><br>INSIGHTS <b>" + (Object.entries(P.perks).map(([k, v]) => (PERKS.concat(UNLOCKS).find((x) => x.id === k) || { n: k }).n + (v > 1 ? " ×" + v : "")).join(", ") || "none yet") + "</b>"; }
 function resume() { state = "play"; show(null); if (!touchMode && cv.requestPointerLock) cv.requestPointerLock(); last = performance.now(); }
 $("b-play").onclick = () => { audio(); openModes(); };
 $("b-go").onclick = () => { const m = MODES.find((x) => x.id === mode); if (save.prof.lvl < m.lvl) return; start(); };
@@ -1437,19 +1504,20 @@ addEventListener("keydown", (e) => {
   if (e.code === "Escape" || e.code === "KeyP") pause();
 });
 addEventListener("keyup", (e) => keys.delete(e.code));
-addEventListener("wheel", (e) => { if (state === "play" && P) setWeapon((P.w + (e.deltaY > 0 ? 1 : 3)) % 4); }, { passive: true });
+const cycleWeapon = (dir) => { for (let k = 1; k < 4; k++) { const i = (P.w + dir * k + 8) % 4; if (!i || P.kit["w" + i]) return setWeapon(i); } };
+addEventListener("wheel", (e) => { if (state === "play" && P) cycleWeapon(e.deltaY > 0 ? 1 : -1); }, { passive: true });
 addEventListener("blur", () => { keys.clear(); mouseDown = false; pause(); });
-function jump() { if (P.down) return; if (P.ground) { P.vy = 8.8; P.ground = false; SFX.jump(); } else if (P.air > 0) { P.air--; P.vy = 8; SFX.jump(); } }
+function jump() { if (P.down) return; if (P.ground) { P.vy = 8.8; P.ground = false; SFX.jump(); } else if (P.air > 0) { P.air--; P.vy = 8; P.stompArm = true; SFX.jump(); } }
 function dash() {
   if (P.down || P.dashCd > 0) return; let ix = mv.x, iz = mv.y;
   if (keys.has("KeyW")) iz += 1; if (keys.has("KeyS")) iz -= 1; if (keys.has("KeyA")) ix -= 1; if (keys.has("KeyD")) ix += 1;
   if (!ix && !iz) iz = 1; const l = Math.hypot(ix, iz); ix /= l; iz /= l;
   const fx = Math.sin(P.yaw), fz = Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
-  P.vx = (fx * iz + rx * ix) * 26; P.vz = (fz * iz + rz * ix) * 26; P.dashT = .16; P.dashCd = .9 * P.m.dashCd; P.inv = .25; SFX.dash();
+  P.vx = (fx * iz + rx * ix) * 26; P.vz = (fz * iz + rz * ix) * 26; P.dashT = .16; P.dashCd = .9 * P.m.dashCd; P.inv = .25; SFX.dash(); if (P.m.dashHit) for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 3.5) damage(e, P.m.dashHit);
 }
 // touch: left half moves, right half looks, buttons act
 if (touchMode) {
-  $("keys").innerHTML = "<b>LEFT THUMB</b> move · <b>RIGHT THUMB</b> look · <b>FIRE</b> · <b>SURGE</b> charged burst · <b>SWAP</b> weapon<br><b>JUMP</b> twice for a double jump · <b>DASH</b> · <b>WAVE</b> shockwave · <b>SHIELD</b> barrier · <b>REWRITE</b> when focus is full";
+  $("keys").innerHTML = "<b>LEFT THUMB</b> move · <b>RIGHT THUMB</b> look · <b>FIRE</b> (drag it to aim while firing) · <b>SURGE</b> charged burst · <b>SWAP</b> weapon<br><b>JUMP</b> twice for a double jump · <b>DASH</b> · <b>WAVE</b> shockwave · <b>SHIELD</b> barrier · <b>REWRITE</b> when focus is full";
   let stickId = null, sx = 0, sy = 0, lookId = null, lx = 0, ly = 0;
   const stick = $("stick"), knob = stick.firstChild;
   cv.addEventListener("touchstart", (e) => { for (const t of e.changedTouches) {
@@ -1461,7 +1529,11 @@ if (touchMode) {
   const end = (e) => { for (const t of e.changedTouches) { if (t.identifier === stickId) { stickId = null; mv.x = mv.y = 0; stick.style.display = "none"; knob.style.transform = ""; } if (t.identifier === lookId) lookId = null; } };
   cv.addEventListener("touchend", end); cv.addEventListener("touchcancel", end);
   const btn = (id, down, up) => { const el = $(id); el.addEventListener("touchstart", (e) => { e.preventDefault(); e.stopPropagation(); audio(); if (state === "play") down(); }, { passive: false }); if (up) el.addEventListener("touchend", (e) => { e.preventDefault(); up(); }); };
-  btn("tfire", () => (mouseDown = true), () => (mouseDown = false)); btn("talt", surge); btn("tjump", jump); btn("tdash", dash); btn("trw", rewrite); btn("tpause", pause); btn("tswap", () => setWeapon((P.w + 1) % 4)); btn("tshock", shockwave); btn("tbar", barrier);
+  btn("tfire", () => (mouseDown = true), () => (mouseDown = false));
+  { const fb = $("tfire"); let fx0 = 0, fy0 = 0;
+    fb.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; fx0 = t.clientX; fy0 = t.clientY; }, { passive: false });
+    fb.addEventListener("touchmove", (e) => { e.preventDefault(); e.stopPropagation(); const t = e.changedTouches[0]; look.x += (t.clientX - fx0) * 2.2; look.y += (t.clientY - fy0) * 2.2; fx0 = t.clientX; fy0 = t.clientY; }, { passive: false });
+    fb.addEventListener("touchcancel", () => (mouseDown = false)); } btn("talt", surge); btn("tjump", jump); btn("tdash", dash); btn("trw", rewrite); btn("tpause", pause); btn("tswap", () => cycleWeapon(1)); btn("tshock", shockwave); btn("tbar", barrier);
 }
 let deferredInstall = null;
 const standalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone;
