@@ -11,8 +11,6 @@ const CF_MODELS = [
   ["@cf/openai/gpt-oss-20b", "GPT-OSS 20B", ["coder", "tester"]],
   ["@cf/qwen/qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", ["coder", "tester"]],
   ["@cf/qwen/qwen3-30b-a3b-fp8", "Qwen3 30B", ["coder", "researcher", "critic"]],
-  ["@cf/qwen/qwq-32b", "QwQ 32B", ["critic", "researcher", "tester"]],
-  ["@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", "DeepSeek R1 Distill 32B", ["critic", "architect"]],
   ["@cf/meta/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", ["designer", "writer", "coder"]],
   ["@cf/mistralai/mistral-small-3.1-24b-instruct", "Mistral Small 3.1", ["writer", "designer", "researcher"]],
   ["@cf/google/gemma-3-12b-it", "Gemma 3 12B", ["writer", "designer"]],
@@ -57,7 +55,7 @@ function jsonOf(out) {
   for (const [o, c] of [["{", "}"], ["[", "]"]]) { const i = t.indexOf(o), j = t.lastIndexOf(c); if (i >= 0 && j > i) try { return JSON.parse(t.slice(i, j + 1)); } catch (e) {} }
   return null;
 }
-const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 16, TICK = 1500;
+const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 8, TICK = 1500;
 
 export class Hive extends DurableObject {
   sql() {
@@ -66,7 +64,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS proj(id TEXT PRIMARY KEY, title TEXT, brief TEXT, status TEXT, final TEXT, calls INTEGER, tok TEXT, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS task(id INTEGER PRIMARY KEY AUTOINCREMENT, pid TEXT, role TEXT, title TEXT, detail TEXT, deps TEXT, status TEXT, agent TEXT, output TEXT, note TEXT, tries INTEGER, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
-      q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {}
+      q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       this._init = 1;
     }
@@ -131,13 +129,13 @@ export class Hive extends DurableObject {
     const ctl = owner || (b.ctok && p.ctok && b.ctok === p.ctok), cap = p.cap || MAX_CALLS;
     if (path === "/state") {
       const since = +b.since || 0;
-      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, calls: p.calls, max: cap, final: p.final, mine: !!ctl, join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
+      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
         agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last FROM agent WHERE pid=? ORDER BY done DESC, name", p.id).toArray(),
         feed: q.exec("SELECT ts,who,kind,text FROM feed WHERE pid=? AND ts>? ORDER BY ts DESC LIMIT 80", p.id, since).toArray() });
     }
     if (path === "/output") { const t = q.exec("SELECT output FROM task WHERE pid=? AND id=?", p.id, +b.task).toArray()[0]; return J({ output: t ? t.output : null }); }
-    if (path === "/say") { if (!ctl) return J({ error: "only whoever started this project can steer it" }, 401); const text = String(b.text || "").trim().slice(0, 3000); if (text) { this.say(p.id, "you", "chat", text); q.exec("UPDATE proj SET status='replanning' WHERE id=? AND status!='failed'", p.id); await this.ctx.storage.setAlarm(Date.now() + 200); } return J({ ok: true }); }
+    if (path === "/say") { if (!ctl) return J({ error: "only whoever started this project can steer it" }, 401); const text = String(b.text || "").trim().slice(0, 3000); if (text) { this.say(p.id, "you", "chat", text); q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND src='workers-ai' AND status='offline'", p.id); q.exec("UPDATE proj SET status='replanning' WHERE id=?", p.id); await this.ctx.storage.setAlarm(Date.now() + 200); } return J({ ok: true }); }
     if (path === "/stop") { if (!ctl) return J({ error: "only whoever started this project can stop it" }, 401); q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "stopped by you"); return J({ ok: true }); }
     // visiting AIs: claim a task by link, read its context, submit by GET (short) or POST (long)
     if (path === "/join" || path === "/submit") {
@@ -176,29 +174,51 @@ export class Hive extends DurableObject {
   }
 
   async alarm() {
-    const q = this.sql(); let busy = false;
-    for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning')").toArray()) {
+    const q = this.sql(); let busy = false, resting = false;
+    if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
+    const out = this.quota && Date.now() < this.quota;
+    for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
+      const others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
+      if (out && !others) { // only Workers AI here and it's resting: pause until the allowance resets
+        if (p.status !== "paused") { q.exec("UPDATE proj SET status='paused', note=? WHERE id=?", p.status, p.id); this.say(p.id, "hive", "quota", "Cloudflare's free AI allowance for today is used up. Paused; the swarm picks up again automatically after " + new Date(this.quota).toISOString().slice(11, 16) + " UTC."); }
+        resting = true; continue;
+      }
+      if (p.status === "paused") { // allowance back: wake everyone, including agents an earlier version marked offline for the quota
+        q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND src='workers-ai' AND status='offline'", p.id);
+        q.exec("UPDATE proj SET status=COALESCE(NULLIF(note,''),'working') WHERE id=?", p.id); this.say(p.id, "hive", "info", "the allowance has reset; the swarm is back at work"); p.status = q.exec("SELECT status FROM proj WHERE id=?", p.id).one().status;
+      }
       busy = true; const cap = p.cap || MAX_CALLS; if (p.calls >= cap) { q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "call budget used up (" + cap + "); stopped"); continue; }
       try { await this.advance(p); } catch (e) { this.say(p.id, "hive", "error", String(e && e.message || e)); }
     }
     if (busy) await this.ctx.storage.setAlarm(Date.now() + TICK);
+    else if (resting) await this.ctx.storage.setAlarm(this.quota + 1000);
   }
-  agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'", pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
+  // Workers AI's free plan has a daily allowance; when it runs out, its agents rest until it resets (00:00 UTC)
+  qx() { return this.quota && Date.now() < this.quota ? " AND src!='workers-ai'" : ""; }
+  agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
     try { const out = await this.ask(a, system, user, max); if (!out) throw new Error("empty reply"); return out; }
-    catch (e) { q.exec("UPDATE agent SET status='offline', task=NULL WHERE id=? AND pid=?", a.id, p.id); this.say(p.id, a.name, "offline", String(e && e.message || e).slice(0, 200)); return null; }
+    catch (e) {
+      const msg = String(e && e.message || e);
+      if (a.src === "workers-ai" && /4006|daily free allocation|neurons/i.test(msg)) { // out of today's allowance: rest, don't die
+        const d = new Date(); this.quota = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); await this.ctx.storage.put("quota", this.quota);
+        q.exec("UPDATE proj SET calls=MAX(0,calls-1) WHERE id=?", p.id); q.exec("UPDATE agent SET status='idle', task=NULL WHERE id=? AND pid=?", a.id, p.id);
+        return null;
+      }
+      q.exec("UPDATE agent SET status='offline', task=NULL WHERE id=? AND pid=?", a.id, p.id); this.say(p.id, a.name, "offline", msg.slice(0, 200)); return null;
+    }
   }
   async advance(p) {
     const q = this.sql(), SYS = (role) => "You are one agent in Mentifaber Hive, a swarm building a project together. Your role: " + role.toUpperCase() + ". " + ROLES[role] + " Stay inside your task; others handle the rest.";
     if (p.status === "planning" || p.status === "replanning") {
       this.fails = this.fails || {}; const nf = this.fails[p.id] || 0;
-      const cands = [...this.agentsFor(p.id, "coordinator"), ...this.agentsFor(p.id, "architect"), ...this.agentsFor(p.id, "integrator"), ...q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'", p.id).toArray()];
+      const cands = [...this.agentsFor(p.id, "coordinator"), ...this.agentsFor(p.id, "architect"), ...this.agentsFor(p.id, "integrator"), ...q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), p.id).toArray()];
       const coord = cands[nf % Math.max(1, cands.length)];
       if (!coord) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "no model is available to coordinate"); return; }
       const have = q.exec("SELECT id,role,title,status FROM task WHERE pid=?", p.id).toArray();
       const out = await this.call(p, coord, "You are the COORDINATOR of an AI swarm. Split the project into 6 to 16 concrete tasks, each for one role from: " + Object.keys(ROLES).filter((r) => r !== "integrator").join(", ") + ". Use deps to order them (ids of earlier tasks). Reply ONLY with JSON: {\"title\": short project name, \"tasks\": [{\"id\":1,\"role\":\"architect\",\"title\":\"...\",\"detail\":\"...\",\"deps\":[]}]}",
-        "PROJECT BRIEF:\n" + p.brief + (have.length ? "\n\nEXISTING TASKS (keep their ids, add new ones after them for the owner's latest notes):\n" + JSON.stringify(have) + "\n\nOWNER NOTES:\n" + q.exec("SELECT text FROM feed WHERE pid=? AND who='you' ORDER BY ts DESC LIMIT 4", p.id).toArray().map((r) => r.text).join("\n") : ""), 3000);
+        "PROJECT BRIEF:\n" + p.brief + (have.length ? "\n\nEXISTING TASKS (keep their ids, add new ones after them for the owner's latest notes):\n" + JSON.stringify(have) + "\n\nOWNER NOTES:\n" + q.exec("SELECT text FROM feed WHERE pid=? AND who='you' ORDER BY ts DESC LIMIT 4", p.id).toArray().map((r) => r.text).join("\n") : ""), 1500);
       let plan = out ? jsonOf(out) : null; if (Array.isArray(plan)) plan = { tasks: plan };
       if (!plan || !Array.isArray(plan.tasks) || !plan.tasks.length) {
         this.fails[p.id] = nf + 1;
@@ -233,7 +253,7 @@ export class Hive extends DurableObject {
       const c = this.agentsFor(p.id, "critic").find((a) => a.id !== t.agent) || this.agentsFor(p.id, "tester").find((a) => a.id !== t.agent); if (!c || jobs.length >= PARALLEL) break;
       q.exec("UPDATE agent SET status='reviewing', task=?, last=? WHERE id=? AND pid=?", t.id, Date.now(), c.id, p.id); q.exec("UPDATE task SET status='reviewing' WHERE id=?", t.id);
       jobs.push((async () => {
-        const out = await this.call(p, c, SYS("critic"), "BRIEF:\n" + p.brief + "\n\nTASK #" + t.id + " (" + t.role + "): " + t.title + "\n" + t.detail + "\n\nWORK SUBMITTED:\n" + (t.output || "").slice(0, 14000) + "\n\nReply with APPROVE or REDO on the first line, then one short paragraph.", 600);
+        const out = await this.call(p, c, SYS("critic"), "BRIEF:\n" + p.brief + "\n\nTASK #" + t.id + " (" + t.role + "): " + t.title + "\n" + t.detail + "\n\nWORK SUBMITTED:\n" + (t.output || "").slice(0, 14000) + "\n\nReply with APPROVE or REDO on the first line, then one short paragraph.", 300);
         q.exec("UPDATE agent SET status=CASE WHEN status='offline' THEN 'offline' ELSE 'idle' END, task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), c.id, p.id);
         if (!out) { q.exec("UPDATE task SET status='review' WHERE id=?", t.id); return; }
         const ok = /^\W*approve/i.test(out) || t.tries >= 2;
@@ -242,11 +262,11 @@ export class Hive extends DurableObject {
       })());
     }
     // idle agents claim open work for their roles
-    for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor' ORDER BY done", p.id).toArray()) {
+    for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY done", p.id).toArray()) {
       if (jobs.length >= PARALLEL) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
       jobs.push((async () => {
         const redo = t.note ? "\n\nA REVIEWER SENT THIS BACK:\n" + t.note + "\n\nPREVIOUS ATTEMPT:\n" + (t.output || "").slice(0, 6000) : "";
-        const out = await this.call(p, a, SYS(t.role), "PROJECT BRIEF:\n" + p.brief + "\n\nYOUR TASK #" + t.id + ": " + t.title + "\n" + t.detail + "\n\nWORK SO FAR:\n" + this.context(p.id, t) + redo, 3000);
+        const out = await this.call(p, a, SYS(t.role), "PROJECT BRIEF:\n" + p.brief + "\n\nYOUR TASK #" + t.id + ": " + t.title + "\n" + t.detail + "\n\nWORK SO FAR:\n" + this.context(p.id, t) + redo, 1600);
         if (!out) { q.exec("UPDATE task SET status='open', agent=NULL WHERE id=?", t.id); return; }
         q.exec("UPDATE task SET status='review', output=?, ts=? WHERE id=?", out.slice(0, 60000), Date.now(), t.id);
         q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), a.id, p.id);
@@ -260,16 +280,16 @@ export class Hive extends DurableObject {
       q.exec("UPDATE proj SET status='integrating' WHERE id=?", p.id);
       const ig = this.agentsFor(p.id, "integrator")[0] || this.agentsFor(p.id, "coder")[0]; if (!ig) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); return; }
       const all = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.role + ": " + r.title + "\n" + r.output.slice(0, 9000)).join("\n\n").slice(0, 60000);
-      const out = await this.call(p, ig, SYS("integrator") + " If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown.", "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all, 8000);
+      const out = await this.call(p, ig, SYS("integrator") + " If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown.", "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all, 4096);
       if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; }
       q.exec("UPDATE proj SET status='done', final=? WHERE id=?", out.slice(0, 200000), p.id); this.say(p.id, ig.name, "done", "assembled the final deliverable (" + out.length + " chars)");
       return;
     }
     // stuck: nobody can take what's open (no idle agent with that role) → let any idle agent take it next tick
     const stuck = q.exec("SELECT * FROM task WHERE pid=? AND status='open'", p.id).toArray();
-    if (stuck.length) for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'", p.id).toArray()) {
+    if (stuck.length) for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), p.id).toArray()) {
       const roles = JSON.parse(a.roles); for (const t of stuck) if (!roles.includes(t.role)) roles.push(t.role); q.exec("UPDATE agent SET roles=? WHERE id=? AND pid=?", JSON.stringify(roles), a.id, p.id);
     }
-    if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline'", p.id).one().c) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
+    if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline'", p.id).one().c && !(this.quota && Date.now() < this.quota)) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
   }
 }
