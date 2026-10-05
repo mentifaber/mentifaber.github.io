@@ -1,0 +1,16 @@
+{
+  "name": "Barycenter",
+  "short_name": "Barycenter",
+  "description": "A private place for two.",
+  "start_url": "/barycenter",
+  "scope": "/barycenter",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05060f",
+  "theme_color": "#05060f",
+  "categories": ["social", "lifestyle"],
+  "icons": [
+    { "src": "../icons/barycenter.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "../icons/barycenter-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

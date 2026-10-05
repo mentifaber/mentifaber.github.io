@@ -1,5 +1,6 @@
 import { createGame } from "./tether-core.js";
 import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
+import { usHandle, usAlarm } from "./us.js";
 export { Hive } from "./hive.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
@@ -59,6 +60,12 @@ export class Store extends DurableObject {
     await this.ctx.storage.put("s:" + token, { app, user: user || null, exp: Date.now() + SESSION_DAYS * 864e5 });
   }
   async dropSession(token) { await this.ctx.storage.delete("s:" + token); }
+  async kvGet(k) { return (await this.ctx.storage.get(k)) ?? null; }
+  async kvPut(k, v) { await this.ctx.storage.put(k, v); }
+  async kvDel(k) { await this.ctx.storage.delete(k); }
+  async kvList(prefix, o) { return [...(await this.ctx.storage.list({ prefix, ...(o || {}) })).entries()]; }
+  async usAt(t) { const cur = await this.ctx.storage.getAlarm(); if (!cur || t < cur) await this.ctx.storage.setAlarm(Math.max(t, Date.now() + 300)); }
+  async alarm() { await usAlarm(this, { sendPush, PUSH_HOSTS }); }
   async accts(app) { return (await this.ctx.storage.get("accts:" + app)) || {}; }
   async putAccts(app, a) { await this.ctx.storage.put("accts:" + app, a); }
   // Fixed-window counter; true while under the limit.
@@ -188,13 +195,17 @@ async function login(req, env) {
   let body;
   try { body = await req.json(); } catch { return json({ error: "bad request" }, 400); }
   const app = body && body.app, proof = body && body.proof;
-  if (!VERIFIERS[app] || typeof proof !== "string" || !/^[a-f0-9]{64}$/.test(proof)) return json({ error: "bad request" }, 400);
+  if (!(VERIFIERS[app] || app === "us") || typeof proof !== "string" || !/^[a-f0-9]{64}$/.test(proof)) return json({ error: "bad request" }, 400);
   const ip = req.headers.get("cf-connecting-ip") || "unknown";
   if (!(await store(env).hit("login:" + app + ":" + ip, LOGIN_LIMIT, LOGIN_WINDOW))) return json({ error: "slow down" }, 429);
   const given = hex(await crypto.subtle.digest("SHA-256", Uint8Array.from(proof.match(/../g), (h) => parseInt(h, 16))));
   const v = VERIFIERS[app];
   let user = null;
-  if (typeof v === "string") {
+  if (app === "us") { // Barycenter: both accounts live in the Store, set up by the people who use it
+    for (const [k, rec] of await store(env).kvList("us:acct:")) if (sameHex(given, rec.v)) user = k.slice(8);
+    if (!user) { await new Promise((r) => setTimeout(r, 300)); return json({ error: "wrong" }, 401); }
+  }
+  else if (typeof v === "string") {
     if (!sameHex(given, v)) {
       if (ACCT_APPS.has(app)) for (const [name, a] of Object.entries(await store(env).accts(app))) if (sameHex(given, a.v)) user = name;
       if (!user) return json({ error: "wrong" }, 401);
@@ -233,7 +244,7 @@ async function accounts(req, env, app) {
 }
 
 async function logout(req, env, app) {
-  const token = VERIFIERS[app] && cookie(req, "mf_" + app);
+  const token = (VERIFIERS[app] || app === "us") && cookie(req, "mf_" + app);
   if (token) await store(env).dropSession(token);
   return json({ ok: true }, 200, { "set-cookie": `mf_${app}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` });
 }
@@ -506,6 +517,10 @@ export default {
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "accts" && app) return accounts(req, env, app);
+      if (route === "us") { // Barycenter: members sign in with their own account; setting the space up needs the owner (Vigil) session
+        const me = await sessionRec(req, env, "us"), owner = !!(await session(req, env, "vigil"));
+        return usHandle(req, env, { s: store(env), me, owner, deps: { json, sendPush, PUSH_HOSTS, vapid: () => store(env).vapid() } });
+      }
       if (route === "save" && app) return cloudSave(req, env, app);
       if (route === "photos" && app) return photos(req, env, app, sub);
       if (route === "notes" && app) return notes(req, env, app);
