@@ -1,6 +1,6 @@
 import { createGame } from "./tether-core.js";
 import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
-import { usHandle, usAlarm } from "./us.js";
+import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } from "./us.js";
 export { Hive } from "./hive.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
@@ -66,6 +66,12 @@ export class Store extends DurableObject {
   async kvList(prefix, o) { return [...(await this.ctx.storage.list({ prefix, ...(o || {}) })).entries()]; }
   async usAt(t) { const cur = await this.ctx.storage.getAlarm(); if (!cur || t < cur) await this.ctx.storage.setAlarm(Math.max(t, Date.now() + 300)); }
   async alarm() { await usAlarm(this, { sendPush, PUSH_HOSTS }); }
+  constructor(ctx, env) { super(ctx, env); if (typeof WebSocketRequestResponsePair !== "undefined") ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong")); }
+  async fetch(req) { return usLiveUpgrade(this, req); }
+  async webSocketMessage(ws, msg) { usLiveMessage(this, ws, msg); }
+  async webSocketClose(ws) { usLiveClose(this, ws); }
+  async webSocketError(ws) { usLiveClose(this, ws); }
+  async usPoke(user, frame) { return usPoke(this, user, frame); }
   async accts(app) { return (await this.ctx.storage.get("accts:" + app)) || {}; }
   async putAccts(app, a) { await this.ctx.storage.put("accts:" + app, a); }
   // Fixed-window counter; true while under the limit.

@@ -102,7 +102,7 @@ export async function usHandle(req, env, a) {
         const m = await kv.get(P + "m:" + ev.id); if (!m || !showTo(m, mine, now)) continue;
         if (m.from !== mine && !m.dl) { m.dl = now; await kv.put(P + "m:" + ev.id, m); await emit(kv, { t: "dl", id: ev.id, to: m.from }); }
         events.push({ k: cur, t: "new", m: { id: ev.id, ...m } });
-      } else events.push({ k: cur, t: ev.t, id: ev.id, at: ev.at });
+      } else events.push({ k: cur, t: ev.t, id: ev.id, at: ev.at, ...(ev.rx ? { rx: ev.rx } : {}) });
     }
     if (Math.random() < .03) { const all = await kv.list(P + "ev:"); if (all.length > KEEP_EV * 1.4) for (const [k] of all.slice(0, all.length - KEEP_EV)) await kv.del(k); }
     return J({ events, ev: cur, seen: partnerSeen, now });
@@ -116,16 +116,16 @@ export async function usHandle(req, env, a) {
   if (op === "send" && req.method === "POST") {
     if (!(await s.hit("ussend:" + mine, 200, 60e3))) return J({ error: "slow down" }, 429);
     const b = await body(); if (!b || typeof b.ct !== "string" || b.ct.length > MAX_CT || !B64.test(b.ct) || typeof b.iv !== "string" || b.iv.length !== 16 || !B64.test(b.iv)) return J({ error: "bad message" }, 400);
-    const lvl = [0, 1, 2].includes(b.lvl) ? b.lvl : 0, unlock = +b.unlock > now + 10e3 && +b.unlock < now + 5 * 365 * 864e5 ? Math.floor(+b.unlock) : 0;
+    const quiet = !!b.q, lvl = quiet ? 0 : [0, 1, 2].includes(b.lvl) ? b.lvl : 0, unlock = +b.unlock > now + 10e3 && +b.unlock < now + 5 * 365 * 864e5 ? Math.floor(+b.unlock) : 0;
     let blob = null; if (b.blob) { if (!/^[a-f0-9]{16}$/.test(b.blob) || !(await kv.get(P + "b:" + b.blob))) return J({ error: "attachment missing" }, 400); blob = b.blob; }
-    const id = pad(now) + "-" + rnd(2), m = { from: mine, ts: now, lvl, unlock, ct: b.ct, iv: b.iv, blob, dl: 0, rd: 0, ak: 0 };
+    const id = pad(now) + "-" + rnd(2), m = { from: mine, ts: now, lvl, q: quiet ? 1 : 0, unlock, ct: b.ct, iv: b.iv, blob, dl: 0, rd: 0, ak: 0 };
     await kv.put(P + "m:" + id, m);
     if (unlock) {
       await kv.put(P + "due:" + pad(unlock) + ":" + id, { id, to: them });
       await emit(kv, { t: "new", id, to: mine }); await s.usAt(unlock);
     } else {
       await emit(kv, { t: "new", id });
-      const pushed = await notify(kv, deps, them, lvl ? "high" : "normal").catch(() => 0);
+      const live = await s.usPoke(them, { t: "poke" }).catch(() => 0), pushed = quiet || live ? 0 : await notify(kv, deps, them, lvl ? "high" : "normal").catch(() => 0);
       if (lvl >= 1) { const e = { id, to: them, lvl, n: 0, next: now + ESC[lvl].every }; await kv.put(P + "esc:" + id, e); await s.usAt(e.next); }
       return J({ id, ts: now, pushed });
     }
@@ -137,15 +137,27 @@ export async function usHandle(req, env, a) {
       const m = await kv.get(P + "m:" + id); if (!m || m.from === mine) continue;
       let ch = false; if (!m.rd) { m.rd = now; ch = true; await emit(kv, { t: "rd", id, to: m.from }); }
       if (b.ak && !m.ak) { m.ak = now; ch = true; await emit(kv, { t: "ak", id, to: m.from }); }
-      if (ch) await kv.put(P + "m:" + id, m);
+      if (ch) { await kv.put(P + "m:" + id, m); await s.usPoke(m.from, { t: "poke" }).catch(() => 0); }
     }
     return J({ ok: true });
+  }
+  if (op === "react" && req.method === "POST") { // an emoji on a message; stored on the message, shown to both
+    const b = await body(), id = b && String(b.id || ""), e = b && String(b.e || "").slice(0, 8), m = id && await kv.get(P + "m:" + id);
+    if (!m || !showTo(m, mine, now)) return J({ error: "gone" }, 404);
+    m.rx = { ...(m.rx || {}) }; if (e) m.rx[mine] = e; else delete m.rx[mine];
+    await kv.put(P + "m:" + id, m); await emit(kv, { t: "rx", id, rx: m.rx, to: them }); await s.usPoke(them, { t: "poke" }).catch(() => 0);
+    return J({ ok: true, rx: m.rx });
+  }
+  if (op === "live") { // upgrade to the encrypted live line (see usLive* below)
+    if (req.headers.get("upgrade") !== "websocket") return J({ error: "websocket only" }, 426);
+    const h = new Headers(req.headers); h.set("x-us-user", mine);
+    return s.fetch(new Request(req.url, { headers: h }));
   }
   if (op === "message" && req.method === "DELETE" && arg) {
     const m = await kv.get(P + "m:" + arg); if (!m || m.from !== mine) return J({ error: "not yours" }, 403);
     await kv.del(P + "m:" + arg); await kv.del(P + "esc:" + arg); if (m.blob) await kv.del(P + "b:" + m.blob);
     if (m.unlock) await kv.del(P + "due:" + pad(m.unlock) + ":" + arg);
-    await emit(kv, { t: "del", id: arg });
+    await emit(kv, { t: "del", id: arg }); await s.usPoke(them, { t: "poke" }).catch(() => 0);
     return J({ ok: true });
   }
   if (op === "blob") {
@@ -182,7 +194,7 @@ export async function usAlarm(st, deps) {
     if (t > now) { next = Math.min(next, t); break; }
     const m = await kv.get(P + "m:" + due.id);
     if (m) {
-      await emit(kv, { t: "new", id: due.id, to: due.to }); await notify(kv, d2, due.to, m.lvl ? "high" : "normal").catch(() => 0);
+      await emit(kv, { t: "new", id: due.id, to: due.to }); await st.usPoke(due.to, { t: "poke" }).catch(() => 0); await notify(kv, d2, due.to, m.lvl ? "high" : "normal").catch(() => 0);
       if (m.lvl >= 1) await kv.put(P + "esc:" + due.id, { id: due.id, to: due.to, lvl: m.lvl, n: 0, next: now + ESC[m.lvl].every });
     }
     await kv.del(k);
@@ -194,4 +206,35 @@ export async function usAlarm(st, deps) {
     await notify(kv, d2, e.to, "high").catch(() => 0); e.n++; e.next = now + ESC[e.lvl].every; await kv.put(k, e); next = Math.min(next, e.next);
   }
   if (next < Infinity) await stg.setAlarm(Math.max(next, now + 500));
+}
+
+// ── the live line: a hibernatable WebSocket per device. The server is a blind relay: it forwards opaque frames to the
+// other person's devices (typing, touch, voice-call signalling, all sealed in the browser with the space key) and only
+// ever reads the two fields it needs, who is sending and the frame size. Presence is "is any device of theirs connected".
+const FRAME_MAX = 16 * 1024;
+export function usLiveUpgrade(st, req) {
+  const user = req.headers.get("x-us-user"); if (!user) return new Response("no", { status: 400 });
+  if (typeof WebSocketPair === "undefined") return new Response("no sockets here", { status: 501 });
+  const pair = new WebSocketPair(), [client, server] = [pair[0], pair[1]];
+  st.ctx.acceptWebSocket(server, [user]); server.serializeAttachment({ user, at: Date.now() });
+  const others = st.ctx.getWebSockets().filter((w) => !w.deserializeAttachment() || w.deserializeAttachment().user !== user);
+  try { server.send(JSON.stringify({ t: "hi", pres: others.length > 0 })); } catch {}
+  for (const w of others) try { w.send(JSON.stringify({ t: "pres", on: true })); } catch {}
+  return new Response(null, { status: 101, webSocket: client });
+}
+export function usLiveMessage(st, ws, msg) {
+  const a = ws.deserializeAttachment(); if (!a || typeof msg !== "string" || msg.length > FRAME_MAX) return;
+  const now = Date.now(); a.w = a.w && now - a.w[0] < 1000 ? [a.w[0], a.w[1] + 1] : [now, 1]; if (a.w[1] > 40) return; ws.serializeAttachment(a); // 40 frames a second is plenty
+  for (const w of st.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (b && b.user !== a.user) try { w.send(msg); } catch {} }
+}
+export function usLiveClose(st, ws) {
+  const a = ws.deserializeAttachment(); try { ws.close(1000, "bye"); } catch {}
+  if (!a) return;
+  const rest = st.ctx.getWebSockets().filter((w) => w !== ws), mine = rest.some((w) => (w.deserializeAttachment() || {}).user === a.user);
+  if (!mine) for (const w of rest) try { w.send(JSON.stringify({ t: "pres", on: false })); } catch {}
+}
+// Tell a person's open devices something happened. Returns how many heard it (so a push can be skipped when they're looking).
+export function usPoke(st, user, frame) {
+  let n = 0; for (const w of st.ctx.getWebSockets(user)) try { w.send(JSON.stringify(frame)); n++; } catch {}
+  return n;
 }
