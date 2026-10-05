@@ -16,62 +16,78 @@
 <meta name="apple-mobile-web-app-title" content="Barycenter">
 <link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 @font-face{font-family:"Mentifaber Display";src:url("assets/fonts/MentifaberDisplay-Regular.woff2") format("woff2");font-display:swap}
-:root{--bg:#05060f;--bg2:#0b0d1c;--panel:#10132a;--panel2:#171b38;--line:#252a4d;--ink:#e9ebff;--dim:#9aa0c8;--faint:#5e6490;--me:#7fd8ff;--her:#ffc66b;--sos:#ff4d5e;--ok:#7be0a6;color-scheme:dark}
-:root[data-theme="dawn"]{--bg:#140f1c;--bg2:#1c1428;--panel:#251a33;--panel2:#2f2140;--line:#44305c;--ink:#fff1ea;--dim:#d0b4c4;--faint:#8c6f86}
-:root[data-theme="ember"]{--bg:#0d0807;--bg2:#160e0b;--panel:#201410;--panel2:#2b1b15;--line:#4a2f24;--ink:#ffeedd;--dim:#c9a98f;--faint:#80604d}
+:root{--bg:#05060f;--bg2:#0b0d1c;--panel:#10132a;--panel2:#171b38;--line:#252a4d;--ink:#e9ebff;--dim:#9aa0c8;--faint:#6a709c;--me:#7fd8ff;--her:#ffc66b;--sos:#ff4d5e;--ok:#7be0a6;--f-body:"Space Grotesk",system-ui,sans-serif;--f-head:"Space Grotesk",system-ui,sans-serif;--fs:17px;--glass:blur(14px);color-scheme:dark}
+:root[data-theme="aurora"]{--bg:#041412;--bg2:#08201c;--panel:#0c2a26;--panel2:#123733;--line:#1f4f48;--ink:#e6fff6;--dim:#8fc9b8;--faint:#5d9486}
+:root[data-theme="solar"]{--bg:#0e0705;--bg2:#190d09;--panel:#241410;--panel2:#31201a;--line:#573627;--ink:#fff0e0;--dim:#d0a98c;--faint:#8c6a55}
+:root[data-theme="hologram"]{--bg:#03030f;--bg2:#070720;--panel:#0a0a2c;--panel2:#10104a;--line:#2a2a8a;--ink:#e8f4ff;--dim:#8fb8e8;--faint:#5a78b0}
+:root[data-theme="terminal"]{--bg:#010a03;--bg2:#03140a;--panel:#052010;--panel2:#08301a;--line:#0f5a2c;--ink:#b8ffc8;--dim:#6fd88c;--faint:#3d9a5a;--f-body:"JetBrains Mono",ui-monospace,monospace;--f-head:"JetBrains Mono",ui-monospace,monospace}
+:root[data-theme="glass"]{--bg:#e8eefb;--bg2:#f4f7ff;--panel:#ffffffcc;--panel2:#ffffff;--line:#c6d2ee;--ink:#10173a;--dim:#4a5788;--faint:#7c88b5;--sos:#d4203a;--ok:#1b9e5e;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "EB Garamond",Georgia,serif;overflow:hidden}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:var(--fs)/1.5 var(--f-body);overflow:hidden}
+#void{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
 .mono{font-family:"JetBrains Mono",ui-monospace,monospace;letter-spacing:.03em}
-.disp{font-family:"Mentifaber Display",Georgia,serif;font-weight:400;letter-spacing:.04em}
+.disp{font-family:var(--f-head);font-weight:600;letter-spacing:.06em}
 button{font:inherit;color:inherit;cursor:pointer}
-a{color:var(--her)}
-.hidden{display:none!important}
+a{color:var(--her)}.hidden{display:none!important}
+:root[data-theme="hologram"] body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(80,200,255,.05) 0 1px,transparent 1px 3px);mix-blend-mode:screen}
+:root[data-theme="terminal"] .disp,:root[data-theme="terminal"] .top .nm{text-transform:uppercase}
+:root[data-theme="terminal"] .en .t::before{content:"> ";color:var(--faint)}
 
-/* ── gate: setup · invite · sign in ── */
-#gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(120% 90% at 50% 0%,#141842 0%,var(--bg) 60%);overflow:auto}
-.gc{width:min(440px,100%);padding:26px 22px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--panel) 86%,transparent);backdrop-filter:blur(10px)}
+/* gate */
+#gate{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.gc{width:min(440px,100%);padding:26px 22px;border:1px solid var(--line);border-radius:22px;background:color-mix(in srgb,var(--panel) 78%,transparent);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
 .gc h1{margin:0 0 4px;font-size:34px;text-transform:uppercase}.gc p{color:var(--dim);margin:6px 0 14px}
-.gc label{display:block;margin:12px 0 4px;font:11px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.gc input,.sheet input,.sheet textarea,.dock textarea{width:100%;font:inherit;font-size:17px;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;outline:0}
-.gc input:focus,.sheet input:focus,.sheet textarea:focus{border-color:var(--me)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);font:600 13px "JetBrains Mono",monospace;letter-spacing:.06em}
-.btn{white-space:nowrap}.btn.pri{background:var(--me);border-color:var(--me);color:#04101a}.btn:disabled{opacity:.55}.btn.full{width:100%;margin-top:16px}
+.gc label,.sheet label{display:block;margin:12px 0 4px;font:11px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.gc input,.sheet input[type=text],.sheet input:not([type]),.sheet input[type=datetime-local],.sheet input[type=file],.sheet textarea,.dock textarea,#pq{width:100%;font:inherit;font-size:var(--fs);color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;outline:0}
+.gc input:focus,.sheet input:focus,.sheet textarea:focus,#pq:focus{border-color:var(--me)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);font:600 13px "JetBrains Mono",monospace;letter-spacing:.06em;white-space:nowrap}
+.btn.pri{background:var(--me);border-color:var(--me);color:#04101a}.btn:disabled{opacity:.55}.btn.full{width:100%;margin-top:16px}
 .msg{min-height:1.4em;margin-top:10px;font-size:14px;color:var(--dim)}.msg.bad{color:#ff8b98}
 .linkbox{word-break:break-all;font:12px/1.5 "JetBrains Mono",monospace;padding:12px;border:1px dashed var(--line);border-radius:12px;background:var(--bg2);color:var(--her)}
 .mark{display:flex;gap:6px;align-items:center;margin-bottom:12px}.mark i{width:12px;height:12px;border-radius:50%}.mark i:first-child{background:var(--me);box-shadow:0 0 14px var(--me)}.mark i:last-child{background:var(--her);box-shadow:0 0 14px var(--her)}
 
-/* ── the app ── */
-#app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:760px;margin:0 auto;background:var(--bg)}
-@media (min-width:780px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
-.top{flex:none;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 6px}
-.top .nm{flex:1;font-size:18px;letter-spacing:.14em;text-transform:uppercase}.top .nm small{display:block;font:10px "JetBrains Mono",monospace;letter-spacing:.14em;color:var(--faint);text-transform:none}
-.ib{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-size:18px}
-.ib.dot::after{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:var(--sos);transform:translate(13px,-13px)}
-#skyw{flex:none;position:relative;height:clamp(190px,34vh,300px);overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:radial-gradient(80% 120% at 50% 40%,#141a4a 0%,var(--bg) 70%)}
-#sky{position:absolute;inset:0;width:100%;height:100%}
-#skycap{position:absolute;left:0;right:0;bottom:6px;text-align:center;font:10.5px "JetBrains Mono",monospace;letter-spacing:.08em;color:var(--dim);text-shadow:0 0 8px #000;padding:0 12px;pointer-events:none}
-#log{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:10px 14px 18px;-webkit-overflow-scrolling:touch}
-.day{position:sticky;top:-11px;z-index:2;text-align:center;margin:14px -14px 8px;padding:10px 0 6px;background:linear-gradient(var(--bg) 62%,transparent);font:10.5px "JetBrains Mono",monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
-.day span{padding:2px 10px}
-.en{position:relative;margin:10px 0;padding:2px 0 2px 14px;max-width:92%}
-.en::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:2px;border-radius:2px;background:var(--c,var(--me))}
-.en.me{--c:var(--me)}.en.her{--c:var(--her);margin-left:auto;padding:2px 14px 2px 0;text-align:right}
-.en.her::before{left:auto;right:0}
-.en .h{font:10.5px "JetBrains Mono",monospace;letter-spacing:.08em;color:var(--faint)}
-.en .t{margin:2px 0;white-space:pre-wrap;word-wrap:break-word;font-size:18px}
-.en .rc{font:10px "JetBrains Mono",monospace;letter-spacing:.08em;color:var(--faint)}.en .rc.seen{color:var(--ok)}
+/* app */
+#app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;max-width:760px;margin:0 auto}
+.top{flex:none;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 12px 4px}
+.top .nm{flex:1;font-size:17px;letter-spacing:.16em;text-transform:uppercase;min-width:0}.top .nm small{display:flex;align-items:center;gap:6px;font:10px "JetBrains Mono",monospace;letter-spacing:.08em;color:var(--faint);text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ld{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}.ld.live{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.ib{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--panel) 70%,transparent);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);font-size:17px;flex:none}
+#hero{flex:none;position:relative;height:clamp(180px,31vh,290px);touch-action:none;cursor:crosshair;transition:height .3s}
+#herocap{position:absolute;left:0;right:0;bottom:4px;text-align:center;font:10.5px "JetBrains Mono",monospace;letter-spacing:.08em;color:var(--dim);text-shadow:0 0 8px var(--bg),0 0 3px var(--bg);padding:0 12px;pointer-events:none}
+#herohint{position:absolute;left:0;right:0;top:12px;text-align:center;font:12px "JetBrains Mono",monospace;color:var(--dim);pointer-events:none;padding:0 20px}
+#stagebar{display:none;position:absolute;left:0;right:0;bottom:calc(36px + env(safe-area-inset-bottom));justify-content:center;gap:10px}#stagebar button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 70%,transparent);font-size:22px}
+#stage-x{display:none;position:absolute;right:10px;top:8px}
+#app.stage #hero{flex:1;height:auto}#app.stage #log,#app.stage .dock,#app.stage #ghost{display:none}#app.stage #stagebar,#app.stage #stage-x{display:flex}
+#log{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px 14px 18px;-webkit-overflow-scrolling:touch;background:linear-gradient(transparent,color-mix(in srgb,var(--bg) 70%,transparent) 26px);perspective:900px;perspective-origin:50% 100%}
+.day{position:sticky;top:-15px;z-index:2;text-align:center;margin:14px -14px 8px;padding:12px 0 6px;background:linear-gradient(color-mix(in srgb,var(--bg) 88%,transparent) 62%,transparent);font:10.5px "JetBrains Mono",monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}.day span{padding:2px 10px}
+.en{position:relative;margin:10px 0;padding:6px 12px;max-width:90%;border-radius:14px;background:color-mix(in srgb,var(--panel) 52%,transparent);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);transform:translateZ(calc(var(--k,0) * -70px));opacity:calc(1 - var(--k,0) * .5);transform-origin:50% 100%;will-change:transform,opacity}
+:root[data-density="compact"] .en{margin:5px 0;padding:3px 10px}
+.en::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--c,var(--me));box-shadow:0 0 10px var(--c,var(--me))}
+.en.me{--c:var(--me)}.en.her{--c:var(--her);margin-left:auto;text-align:right}.en.her::before{left:auto;right:0}
+.en.in{animation:arrive .6s cubic-bezier(.2,.9,.2,1)}@keyframes arrive{from{opacity:0;transform:translateY(24px) scale(.94);filter:blur(6px)}}
+.en.sos{border-color:var(--sos)}
+.en .h{font:10.5px "JetBrains Mono",monospace;letter-spacing:.06em;color:var(--faint)}.en .h .back{color:var(--her)}
+.en .t{margin:2px 0;white-space:pre-wrap;word-wrap:break-word;font-size:1.05em}
+.en .rc{font:10px "JetBrains Mono",monospace;letter-spacing:.06em;color:var(--faint)}.en .rc.seen{color:var(--ok)}
+.rxs{display:flex;gap:4px;margin-top:3px;justify-content:inherit}.rx{padding:1px 7px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);font-size:14px}.rx.mine{border-color:var(--me)}
+.en.her .rxs{justify-content:flex-end}
+/* an unobserved message is a superposition: blurred and shimmering until someone looks */
+.en.q .bd{filter:blur(7px) saturate(1.6);animation:shim 2.2s ease-in-out infinite;transition:filter .6s;cursor:pointer;user-select:none}
+.en.q.collapsing .bd{filter:blur(0);animation:none}.en.q{border-color:var(--c);box-shadow:0 0 18px color-mix(in srgb,var(--c) 40%,transparent)}
+.en.q.collapsing{animation:snap .6s}@keyframes snap{40%{transform:scale(1.04);box-shadow:0 0 40px var(--c)}}
+@keyframes shim{50%{filter:blur(9px) saturate(2) hue-rotate(25deg)}}
+.qhint{font:10px "JetBrains Mono",monospace;letter-spacing:.1em;color:var(--c);text-transform:uppercase;margin-top:2px}.en.q.collapsing .qhint{display:none}
+.en.flash{animation:fl 1.6s}@keyframes fl{20%,60%{box-shadow:0 0 0 2px var(--me),0 0 30px var(--me)}}
 .card{display:inline-block;text-align:left;margin:4px 0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);max-width:100%}
 .pulse{display:inline-flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;border-radius:99px;border:1px solid color-mix(in srgb,var(--pc) 50%,transparent);background:color-mix(in srgb,var(--pc) 12%,var(--bg2))}
-.pulse i{width:22px;height:22px;border-radius:50%;background:var(--pc);box-shadow:0 0 18px var(--pc);animation:glow 3s ease-in-out infinite}.pulse span{font-style:italic;font-size:17px}
+.pulse i{width:22px;height:22px;border-radius:50%;background:var(--pc);box-shadow:0 0 18px var(--pc);animation:glow 3s ease-in-out infinite}.pulse span{font-size:1em}
 @keyframes glow{50%{box-shadow:0 0 6px var(--pc);transform:scale(.88)}}
-.env{cursor:pointer;display:inline-flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,var(--panel2),var(--panel))}
-.env b{font-family:"Mentifaber Display";font-weight:400;letter-spacing:.06em;font-size:19px;display:block}.env small{font:10.5px "JetBrains Mono",monospace;color:var(--dim);letter-spacing:.08em}
-.env .wax{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8b98,#b0243a);box-shadow:0 2px 10px rgba(255,77,94,.4);flex:none}
-.env.read .wax{background:radial-gradient(circle at 35% 30%,#8a90c0,#3f4577);box-shadow:none}
-.cap{display:inline-flex;gap:12px;align-items:center;padding:12px 16px;border:1px dashed var(--faint);border-radius:14px;color:var(--dim)}.cap .orb{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle,#fff,var(--her));box-shadow:0 0 16px var(--her);animation:glow 2.4s infinite;--pc:var(--her)}
+.env{cursor:pointer;display:inline-flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,var(--panel2),var(--panel));text-align:left}
+.env b{font-family:var(--f-head);font-weight:600;letter-spacing:.04em;font-size:1.1em;display:block}.env small{font:10.5px "JetBrains Mono",monospace;color:var(--dim);letter-spacing:.06em}
+.env .wax{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8b98,#b0243a);box-shadow:0 2px 10px rgba(255,77,94,.4);flex:none}.env.read .wax{background:radial-gradient(circle at 35% 30%,#8a90c0,#3f4577);box-shadow:none}
+.cap{display:inline-flex;gap:12px;align-items:center;padding:12px 16px;border:1px dashed var(--faint);border-radius:14px;color:var(--dim);text-align:left}.cap .orb{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle,#fff,var(--her));box-shadow:0 0 16px var(--her);animation:glow 2.4s infinite;--pc:var(--her)}
 .ck{display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}.ck.sos{border-color:var(--sos);background:color-mix(in srgb,var(--sos) 16%,var(--bg2))}
 .drop img{display:block;max-width:min(300px,70vw);max-height:340px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
 .drop .ph{width:min(260px,60vw);height:160px;border-radius:12px;background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--faint);font:11px "JetBrains Mono",monospace}
@@ -79,57 +95,74 @@ a{color:var(--her)}
 .voice .bars{display:flex;gap:2px;align-items:center;height:22px}.voice .bars i{width:3px;background:var(--faint);border-radius:2px}
 .more{display:block;margin:6px auto;background:none;border:0;color:var(--faint);font:11px "JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase}
 .empty{text-align:center;color:var(--faint);padding:30px 10px;font-style:italic}
-
-/* question of the day */
-.qd{margin:2px 0 10px;padding:14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(160deg,var(--panel2),var(--panel))}
-.qd .k{font:10.5px "JetBrains Mono",monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--her)}.qd h3{margin:4px 0 8px;font-weight:500;font-style:italic;font-size:20px}
-.qd textarea{width:100%;min-height:64px;resize:vertical;font:inherit;font-size:17px;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;outline:0}.qd textarea:focus{border-color:var(--me)}.qd .both{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qd .both div{padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);white-space:pre-wrap;font-size:16px}.qd .both b{display:block;font:10px "JetBrains Mono",monospace;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;margin-bottom:4px}
+.qd{margin:2px 0 10px;padding:14px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--panel) 70%,transparent)}
+.qd .k{font:10.5px "JetBrains Mono",monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--her)}.qd h3{margin:4px 0 8px;font-weight:500;font-size:1.15em}
+.qd textarea{width:100%;min-height:64px;resize:vertical;font:inherit;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;outline:0}.qd textarea:focus{border-color:var(--me)}
+.qd .both{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qd .both div{padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);white-space:pre-wrap}.qd .both b{display:block;font:10px "JetBrains Mono",monospace;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;margin-bottom:4px}
 .qd.fold .body{display:none}.qd .tg{background:none;border:0;color:var(--faint);float:right;font:11px "JetBrains Mono",monospace}
-
-/* composer dock */
-.dock{flex:none;display:flex;align-items:flex-end;gap:8px;padding:8px 10px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg2) 94%,transparent)}
-.dock textarea{flex:1;min-height:44px;max-height:132px;resize:none;border-radius:22px;padding:10px 16px;line-height:1.35}
-.dock .ib{border-radius:50%;width:44px;height:44px;flex:none}.dock .go{background:var(--me);color:#04101a;border-color:var(--me)}
-.dock .ib.on{border-color:var(--sos);color:var(--sos);box-shadow:0 0 12px color-mix(in srgb,var(--sos) 50%,transparent)}
-.tray{position:absolute;left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:10}
-.tray button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);font:10.5px "JetBrains Mono",monospace;letter-spacing:.06em}.tray button b{font-size:22px;font-weight:400}
-
+#ghost{flex:none;display:none;margin:0 14px 4px;padding:6px 12px;border-radius:99px;border:1px dashed var(--her);color:var(--her);font:12px "JetBrains Mono",monospace;max-width:92%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:flex-start}#ghost.on{display:block;animation:shim 1.6s infinite}
+/* dock */
+.dock{flex:none;display:flex;align-items:flex-end;gap:8px;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,color-mix(in srgb,var(--bg) 82%,transparent) 30%)}
+.dock textarea{flex:1;min-height:44px;max-height:132px;resize:none;border-radius:22px;padding:10px 16px;line-height:1.35;background:color-mix(in srgb,var(--bg2) 80%,transparent);backdrop-filter:var(--glass)}
+.dock .ib{border-radius:50%;width:44px;height:44px}.dock .go{background:var(--me);color:#04101a;border-color:var(--me)}.dock .ib.on{border-color:var(--her);box-shadow:0 0 12px color-mix(in srgb,var(--her) 50%,transparent)}
+.tray{position:absolute;left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:var(--glass);box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:10}
+.tray button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);font:10.5px "JetBrains Mono",monospace;letter-spacing:.04em}.tray button b{font-size:22px;font-weight:400}
+/* call bar */
+#call{display:none;position:absolute;left:10px;right:10px;top:calc(58px + env(safe-area-inset-top));z-index:20;padding:10px 12px;border:1px solid var(--me);border-radius:18px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:var(--glass);align-items:center;gap:8px;box-shadow:0 0 30px color-mix(in srgb,var(--me) 30%,transparent)}
+#call.on{display:flex}#call-t{flex:1;font:12px "JetBrains Mono",monospace;letter-spacing:.05em}.cb{height:38px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);font:600 12px "JetBrains Mono",monospace}.cb.go{background:var(--ok);color:#03150b;border-color:var(--ok)}.cb.end{background:var(--sos);color:#fff;border-color:var(--sos)}.cb.on{border-color:var(--sos);color:var(--sos)}
+#call.incoming{animation:ringb 1s infinite alternate}@keyframes ringb{to{box-shadow:0 0 44px var(--ok);border-color:var(--ok)}}
 /* sheets */
-.scrim{position:fixed;inset:0;z-index:30;background:rgba(2,3,10,.62);opacity:0;pointer-events:none;transition:opacity .2s}.scrim.on{opacity:1;pointer-events:auto}
-.sheet{position:fixed;z-index:31;left:50%;bottom:0;width:min(560px,100%);max-height:90vh;overflow:auto;transform:translate(-50%,105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
+.scrim{position:fixed;inset:0;z-index:30;background:rgba(2,3,10,.55);opacity:0;pointer-events:none;transition:opacity .2s}.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:31;left:50%;bottom:0;width:min(580px,100%);max-height:90vh;overflow:auto;transform:translate(-50%,105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:var(--glass);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
 .sheet.on{transform:translate(-50%,0)}
-.sheet h2{margin:0 0 4px;font-size:24px;text-transform:uppercase}.sheet p{color:var(--dim);margin:4px 0 12px}
-.sheet label{display:block;margin:10px 0 4px;font:11px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.sheet textarea{min-height:140px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.sheet h2{margin:0 0 4px;font-size:22px;text-transform:uppercase}.sheet p{color:var(--dim);margin:4px 0 12px}.sheet textarea{min-height:140px;resize:vertical}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .opt{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg2);text-align:left}.opt b{font-size:22px;font-weight:400}.opt.s{border-color:var(--sos)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row.mt{margin-top:12px}
-.setrow .btn{min-height:40px;padding:0 13px}.setrow .row{justify-content:flex-end}.setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.setrow:first-of-type{border-top:0}.setrow small{display:block;color:var(--faint);font-size:14px;line-height:1.3}
-/* letter reader */
-#reader{position:fixed;inset:0;z-index:40;background:radial-gradient(100% 70% at 50% 0%,#1a1f55,var(--bg));overflow:auto;padding:calc(30px + env(safe-area-inset-top)) 22px 40px;display:none}
-#reader.on{display:block}.paper{max-width:560px;margin:0 auto}.paper h2{font-family:"Mentifaber Display";font-weight:400;font-size:30px;letter-spacing:.05em;margin:6px 0 16px}.paper .body{white-space:pre-wrap;font-size:21px;line-height:1.7;font-style:italic}.paper .by{margin-top:26px;font:11px "JetBrains Mono",monospace;letter-spacing:.12em;color:var(--faint)}
-/* SOS */
-#sos{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;text-align:center;padding:30px;background:radial-gradient(circle,#4a0b17,#12030a);animation:sosb 1.2s infinite alternate}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.setrow small{display:block;color:var(--faint);font-size:.82em;line-height:1.3;max-width:30ch}.setrow .btn{min-height:40px;padding:0 13px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:8px 0 12px;padding-bottom:4px}.tabs button{flex:none;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);font:11px "JetBrains Mono",monospace;letter-spacing:.06em}.tabs button.on{background:var(--me);color:#04101a;border-color:var(--me)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}.tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:1px solid var(--line);background:var(--bg2);font:10.5px "JetBrains Mono",monospace}.tile.on{border-color:var(--me);box-shadow:0 0 14px color-mix(in srgb,var(--me) 40%,transparent)}.tile i{display:inline-block;width:18px;height:18px;border-radius:50%;margin:0 2px}
+.seg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.seg button{padding:7px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);font-size:.82em}.seg button.on{background:var(--me);color:#04101a;border-color:var(--me)}
+.tg2{width:50px;height:28px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);position:relative;flex:none}.tg2 i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--faint);transition:.2s}.tg2.on{background:color-mix(in srgb,var(--me) 35%,var(--bg2));border-color:var(--me)}.tg2.on i{left:25px;background:var(--me)}
+input[type=range]{width:140px;accent-color:var(--me)}
+.note{font-size:.85em;color:var(--dim)}
+.sys div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font:12px "JetBrains Mono",monospace}.sys span{color:var(--faint)}.sys b{font-weight:400;text-align:right}
+.fp{text-align:center;margin-bottom:10px}.fp canvas{width:100%;max-width:320px;border-radius:14px;border:1px solid var(--line)}.fp .mono{font-size:15px;margin:8px 0 2px;color:var(--her)}.fp small{display:block;color:var(--faint);font-size:.8em}
+/* reader, SOS, toast, palette, reaction bar */
+#reader{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:var(--glass);overflow:auto;padding:calc(30px + env(safe-area-inset-top)) 22px 40px;display:none}
+#reader.on{display:block}.paper{max-width:560px;margin:0 auto}.paper h2{font-family:var(--f-head);font-size:30px;margin:6px 0 16px}.paper .body{white-space:pre-wrap;font-size:1.25em;line-height:1.7}.paper .by{margin-top:26px;font:11px "JetBrains Mono",monospace;letter-spacing:.12em;color:var(--faint)}
+#sos{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;text-align:center;padding:30px;background:radial-gradient(circle,#4a0b17,#12030a);animation:sosb 1.2s infinite alternate;color:#fff}
 #sos.on{display:flex}@keyframes sosb{to{background:radial-gradient(circle,#7a0f22,#1a0309)}}#sos h1{margin:0;font-size:clamp(34px,9vw,60px);text-transform:uppercase}#sos p{font-size:20px;color:#ffd0d6;max-width:480px;white-space:pre-wrap}
 #sos .btn{background:#fff;color:#4a0b17;border:0;font-size:18px;min-height:64px;padding:0 40px;border-radius:32px}
 #toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:70;padding:10px 16px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);font:12px "JetBrains Mono",monospace;opacity:0;pointer-events:none;transition:.25s;max-width:92vw;text-align:center}#toast.on{opacity:1;transform:translate(-50%,0)}
+#pal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-start;justify-content:center;padding:calc(70px + env(safe-area-inset-top)) 12px 0;background:rgba(2,3,10,.55);backdrop-filter:blur(4px)}
+#pal.on{display:flex}.palc{width:min(560px,100%);border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--panel) 96%,transparent);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#pq{border-radius:0;border:0;border-bottom:1px solid var(--line);padding:16px}#pl{max-height:50vh;overflow:auto}.pi{display:block;width:100%;text-align:left;padding:11px 16px;border:0;background:none;font-size:.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pi.s,.pi:hover{background:color-mix(in srgb,var(--me) 18%,transparent)}.pi.m{color:var(--dim)}
+#pall{display:block;width:100%;padding:10px;border:0;border-top:1px solid var(--line);background:none;color:var(--faint);font:11px "JetBrains Mono",monospace}
+#rxbar{position:fixed;z-index:45;display:none;gap:2px;padding:6px;border-radius:99px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 96%,transparent);backdrop-filter:var(--glass);box-shadow:0 8px 30px rgba(0,0,0,.5)}#rxbar.on{display:flex}#rxbar button{width:38px;height:38px;border:0;background:none;font-size:21px;border-radius:50%}
+@media (prefers-reduced-motion:reduce){.en.q .bd,.pulse i,#ghost.on,#sos{animation:none}.en.in{animation:none}}
 </style>
 </head>
 <body>
+<canvas id="void" aria-hidden="true"></canvas>
 
 <div id="gate"><div class="gc" id="gc"><div class="mark" aria-hidden="true"><i></i><i></i></div><h1 class="disp">Barycenter</h1><p>…</p></div></div>
 
 <div id="app" class="hidden">
   <div class="top">
     <div class="nm disp" id="pn">Barycenter<small id="pst"></small></div>
+    <button class="ib" id="b-pal" aria-label="Search and commands" title="Search & commands (Ctrl/⌘ K)">⌕</button>
+    <button class="ib" id="b-stage" aria-label="Touch the void together" title="Stage: touch together">◎</button>
     <button class="ib" id="b-set" aria-label="Settings">⚙</button>
   </div>
-  <div id="skyw"><canvas id="sky" aria-hidden="true"></canvas><div id="skycap" aria-live="polite"></div></div>
+  <div id="call"><span id="call-t"></span><span id="call-a" class="row"><button class="cb go" id="call-yes">Answer</button><button class="cb" id="call-no">Decline</button></span><button class="cb" id="call-mute">Mute</button><button class="cb end" id="call-end">End</button></div>
+  <div id="hero" aria-label="The void between you. Touch it."><div id="herohint"></div><div id="herocap" aria-live="polite"></div><button class="ib" id="stage-x" aria-label="Leave the stage">✕</button><div id="stagebar"></div></div>
   <div id="log" aria-live="polite"></div>
+  <div id="ghost" aria-live="polite"></div>
   <div class="tray hidden" id="tray"></div>
   <div class="dock">
     <button class="ib" id="b-plus" aria-label="More kinds of message">＋</button>
     <textarea id="txt" rows="1" placeholder="Say something…" aria-label="Message"></textarea>
-    <button class="ib" id="b-loud" title="Loud: alerts her more firmly until she has seen it" aria-pressed="false" aria-label="Loud">🔔</button>
+    <button class="ib" id="b-loud" aria-pressed="false" aria-label="Alert mode">🔔</button>
     <button class="ib go" id="b-send" aria-label="Send">➤</button>
   </div>
 </div>
@@ -138,408 +171,16 @@ a{color:var(--her)}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 <div id="reader"><div class="paper" id="paper"></div></div>
 <div id="sos"><div style="font-size:64px">🚨</div><h1 class="disp" id="sos-h"></h1><p id="sos-p"></p><button class="btn" id="sos-ok">I'm here</button></div>
+<div id="pal"><div class="palc"><input id="pq" placeholder="Search everything, or type a command…" autocomplete="off" aria-label="Search"><div id="pl"></div><button id="pall" class="hidden">Search everything we've ever said</button></div></div>
+<div id="rxbar"></div>
 <div id="toast" role="status"></div>
+<audio id="callaudio" autoplay playsinline></audio>
 
 <script src="assets/seal.js"></script>
-<script>
-(() => {
-"use strict";
-const $ = (id) => document.getElementById(id), enc = new TextEncoder(), dec = new TextDecoder();
-const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const store = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
-const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
-const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-const b64u = (u8) => b64(u8).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-const unb64u = (s) => unb64(s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (s.length % 4)) % 4));
-const hex = (u8) => [...u8].map((b) => b.toString(16).padStart(2, "0")).join("");
-const unhex = (h) => Uint8Array.from(h.match(/../g), (x) => parseInt(x, 16));
-const sha256hex = async (u8) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", u8)));
-const slug = (n) => String(n || "").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 16);
-const ITER = 600000;
-
-// ─── keys: one space key, wrapped under each person's password ──────────────────────────────
-async function pbk(secret, salt) { const base = await crypto.subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveKey"]); return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); }
-async function wrapKey(raw, secret) { const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), k = await pbk(secret, salt), ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k, raw)), out = new Uint8Array(28 + ct.length); out.set(salt); out.set(iv, 16); out.set(ct, 28); return b64(out); }
-async function unwrapKey(w, secret) { const u = unb64(w), k = await pbk(secret, u.subarray(0, 16)); return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.subarray(16, 28) }, k, u.subarray(28))); }
-const importKey = (raw) => crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
-const loginProof = (user, pass) => MFSeal.proof("us", user + "\0" + pass);
-const verifierOf = async (user, pass) => sha256hex(unhex(await loginProof(user, pass)));
-let KEY = null;
-async function seal(obj) { const iv = crypto.getRandomValues(new Uint8Array(12)); return { ct: b64(new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, KEY, enc.encode(JSON.stringify(obj))))), iv: b64(iv) }; }
-async function open(m) { try { return JSON.parse(dec.decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(m.iv) }, KEY, unb64(m.ct)))); } catch (e) { return { k: "lost" }; } }
-async function sealBytes(u8) { const iv = crypto.getRandomValues(new Uint8Array(12)), ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, KEY, u8)), out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return out; }
-async function openBytes(buf) { const u = new Uint8Array(buf); return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.subarray(0, 12) }, KEY, u.subarray(12))); }
-
-// ─── talking to the server ──────────────────────────────────────────────────────────────────
-async function api(path, o) {
-  let r; try { r = await fetch("/api/us/" + path, { credentials: "same-origin", cache: "no-store", ...(o || {}) }); } catch (e) { throw { offline: true }; }
-  if (r.status === 401) throw { auth: true };
-  const j = await r.json().catch(() => ({})); if (!r.ok) throw { err: j.error || "something went wrong (" + r.status + ")", status: r.status };
-  return j;
-}
-const post = (path, body) => api(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) });
-async function signIn(user, pass) {
-  const proof = await loginProof(user, pass);
-  const r = await fetch("/api/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ app: "us", proof }) });
-  if (r.status === 429) throw { err: "Too many tries. Wait a few minutes." }; if (r.status === 401) throw { err: "That isn't right." }; if (!r.ok) throw { err: "Couldn't reach the server." };
-  store.set("us-user", user);
-  const me = await api("me"), raw = await unwrapKey(me.wrap, user + "\0" + pass);
-  store.set("us-key", b64(raw)); KEY = await importKey(raw); return me; // the key stays on this device so tomorrow it opens straight away
-}
-
-// ─── the gate: set up, accept an invite, sign in ────────────────────────────────────────────
-const gc = $("gc");
-const gate = (html) => { gc.innerHTML = '<div class="mark" aria-hidden="true"><i></i><i></i></div><h1 class="disp">Barycenter</h1>' + html; };
-const busy = (btn, msg, on) => { if (btn) btn.disabled = on; if (msg) $("gm").textContent = on ? msg : ""; $("gm") && $("gm").classList.remove("bad"); };
-const fail = (e) => { const g = $("gm"); if (g) { g.textContent = e.err || e.message || "Something went wrong."; g.classList.add("bad"); } };
-function showLogin(name) {
-  gate('<p>Welcome back.</p><label for="gu">Your name</label><input id="gu" autocomplete="username" autocapitalize="off" value="' + esc(name || store.get("us-user") || "") + '"><label for="gp">Password</label><input id="gp" type="password" autocomplete="current-password"><button class="btn pri full" id="gb">Open our sky</button><div class="msg" id="gm"></div>');
-  const go = async () => { const u = slug($("gu").value), p = $("gp").value; if (!u || !p) return fail({ err: "Name and password, please." }); busy($("gb"), "Unlocking… (a few seconds)", true);
-    try { await signIn(u, p); startApp(); } catch (e) { busy($("gb"), "", false); fail(e); $("gp").value = ""; } };
-  $("gb").onclick = go; $("gp").addEventListener("keydown", (e) => e.key === "Enter" && go()); ($("gu").value ? $("gp") : $("gu")).focus();
-}
-function showSetup() {
-  gate('<p>Make a private place for the two of you. Everything said here is sealed with a key only you two will ever hold.</p><label for="s1">Your name</label><input id="s1" autocapitalize="words"><label for="s2">Her name</label><input id="s2" autocapitalize="words"><label for="s3">Your password</label><input id="s3" type="password" autocomplete="new-password"><label for="s4">Again</label><input id="s4" type="password" autocomplete="new-password"><button class="btn pri full" id="gb">Create our space</button><div class="msg" id="gm"></div>');
-  $("gb").onclick = async () => {
-    const n1 = $("s1").value.trim(), n2 = $("s2").value.trim(), p = $("s3").value, u1 = slug(n1), u2 = slug(n2);
-    if (!u1 || !u2 || u1 === u2) return fail({ err: "Two different names, using letters or numbers." }); if (p.length < 8) return fail({ err: "At least 8 characters for the password." }); if (p !== $("s4").value) return fail({ err: "The passwords don't match." });
-    busy($("gb"), "Making our key… (a few seconds)", true);
-    try {
-      const raw = crypto.getRandomValues(new Uint8Array(32)), code = hex(crypto.getRandomValues(new Uint8Array(16)));
-      const body = { me: { name: n1, verifier: await verifierOf(u1, p), wrap: await wrapKey(raw, u1 + "\0" + p) }, partner: { name: n2 }, invite: await sha256hex(enc.encode(code)) };
-      await post("setup", body); await signIn(u1, p);
-      showInvite(location.origin + "/barycenter#join=" + code + "." + b64u(raw), n2);
-    } catch (e) { busy($("gb"), "", false); fail(e); }
-  };
-}
-function showInvite(link, name) {
-  gate('<p>Now bring ' + esc(name) + ' in. This link holds the key to your space. Open it on her phone yourself, or send it by a channel you trust. It works once, and only for 14 days.</p><div class="linkbox" id="lk">' + esc(link) + '</div><div class="row mt"><button class="btn pri" id="cp">Copy link</button><button class="btn" id="sh">Share…</button><button class="btn" id="dn">Go to our sky</button></div><div class="msg" id="gm"></div>');
-  $("cp").onclick = async () => { try { await navigator.clipboard.writeText(link); $("gm").textContent = "Copied."; } catch (e) { const r = document.createRange(); r.selectNode($("lk")); getSelection().removeAllRanges(); getSelection().addRange(r); $("gm").textContent = "Selected: copy it."; } };
-  if (navigator.share) $("sh").onclick = () => navigator.share({ title: "Barycenter", text: "Our private place", url: link }).catch(() => {}); else $("sh").classList.add("hidden");
-  $("dn").onclick = startApp;
-}
-async function showClaim(code, keyB64) {
-  let inv; try { inv = await api("invite?code=" + encodeURIComponent(code)); } catch (e) { return gate('<p>This invite is not valid any more. Ask for a new one.</p>'); }
-  gate('<p>' + esc(inv.from) + ' invited you, ' + esc(inv.name) + '. Choose a password for yourself. Only you will know it.</p><label for="c1">Password</label><input id="c1" type="password" autocomplete="new-password"><label for="c2">Again</label><input id="c2" type="password" autocomplete="new-password"><button class="btn pri full" id="gb">Join ' + esc(inv.from) + '</button><div class="msg" id="gm"></div>');
-  $("gb").onclick = async () => {
-    const p = $("c1").value; if (p.length < 8) return fail({ err: "At least 8 characters." }); if (p !== $("c2").value) return fail({ err: "The passwords don't match." });
-    busy($("gb"), "Sealing your key… (a few seconds)", true);
-    try {
-      const raw = unb64u(keyB64);
-      await post("claim", { code, verifier: await verifierOf(inv.user, p), wrap: await wrapKey(raw, inv.user + "\0" + p) });
-      await signIn(inv.user, p); history.replaceState(null, "", location.pathname); startApp();
-    } catch (e) { busy($("gb"), "", false); fail(e); }
-  };
-}
-
-// ─── state ──────────────────────────────────────────────────────────────────────────────────
-let ME = null, THEM = null, FIRST = true, evCursor = "0", M = new Map(), OUT = [], more = false, oldest = null, loud = false, pollT = 0, flushing = false, blobURL = new Map(), seenAt = 0;
-const SETTINGS = (() => { try { return JSON.parse(store.get("us-set") || "{}"); } catch (e) { return {}; } })();
-const saveSet = () => store.set("us-set", JSON.stringify(SETTINGS));
-const PULSES = [
-  { k: "love", e: "❤️", w: "I love you", c: "#ff6b8a" }, { k: "miss", e: "🌙", w: "I miss you", c: "#8ea8ff" }, { k: "think", e: "✨", w: "Thinking of you", c: "#ffe07a" }, { k: "hug", e: "🫂", w: "Sending a hug", c: "#ffb072" },
-  { k: "kiss", e: "😘", w: "A kiss", c: "#ff8fb8" }, { k: "proud", e: "🌟", w: "So proud of you", c: "#9dff9d" }, { k: "good", e: "☀️", w: "Good morning", c: "#ffd36b" }, { k: "night", e: "🌌", w: "Goodnight", c: "#9b8cff" },
-  { k: "hard", e: "🫶", w: "Rough day. I'm here", c: "#7fdcc8" }, { k: "laugh", e: "😂", w: "You made me laugh", c: "#ffc15e" },
-];
-const CHECKS = [{ k: "ok", e: "💚", w: "I'm okay" }, { k: "home", e: "🚗", w: "Heading home" }, { k: "arrived", e: "📍", w: "I've arrived safe" }, { k: "call", e: "📞", w: "Call me when you can" }, { k: "sos", e: "🚨", w: "I need you now", lvl: 2 }];
-const QUESTIONS = ["What's one small thing I did recently that you noticed and loved?", "What's a memory of us you could live inside for an hour?", "What are you looking forward to this week?", "What's something you've been worrying about that you haven't said?", "If we had a free day with no plans and no phones, what would we do?", "What song feels like us right now?", "What's something you want us to try this year?", "What made you smile today, even briefly?", "What's a tiny ritual of ours you hope we never lose?", "When did you last feel really proud of yourself?", "What do you need more of from me lately?", "What's the best meal we've shared?", "What's a fear you'd like me to help carry?", "What's something about me that still surprises you?", "Where would you want to wake up tomorrow?", "What did you want to be when you were little?", "What's one thing you'd tell us five years ago?", "What's something I do that makes you feel safe?", "What would you like to learn together?", "What's your favourite thing about our mornings?", "What's a place you want to take me?", "What are you grateful for right now?", "What's the funniest thing that's happened to us?", "What helps you most when you're having a hard day?", "What's something you want to say more often?", "What do you miss most when we're apart?", "What's a dream you haven't told many people?", "What's a small luxury you'd love this week?", "What's a moment you realised you loved me?", "What would our perfect lazy Sunday look like?", "What's something you're curious about lately?", "What do you hope our home feels like?", "What's a compliment you'd love to hear?", "What's the kindest thing someone did for you recently?", "What's something we've gotten through that you're proud of?", "What do you want to remember about this season of life?", "What's a habit you want us to build?", "If you could pause time for a day, how would you spend it?", "What was the best part of your day?", "What's one thing I could do tomorrow that would mean a lot?", "What's a story from your childhood I should hear again?", "What makes you feel most like yourself?", "What's something beautiful you saw recently?", "Which of our traditions is your favourite?", "What's a way I can support you better right now?", "What's a trip, real or imagined, you'd take with me?", "What are you most excited to share with me?", "What did we do together that you'd happily repeat?", "What are three words for how today felt?", "What's one thing you'd like us to say yes to more?", "What's your favourite photo of us, and why?", "What would you want to tell me if we only had a minute?", "What's something silly you love about me?", "How can we make the next hard week lighter?", "What's a smell, sound or taste that takes you somewhere good?", "What do you hope we're doing in ten years?", "What's one thing that makes you feel closer to me?", "What's a plan you're quietly excited about?", "What would you like me to ask you more often?", "What's something you'd like to forgive yourself for?"];
-const dayKey = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-const todaysQ = () => { const d = new Date(), n = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); return QUESTIONS[n % QUESTIONS.length]; };
-
-// ─── time ───────────────────────────────────────────────────────────────────────────────────
-const ago = (ts) => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 45 ? "just now" : s < 3600 ? Math.round(s / 60) + "m ago" : s < 86400 ? Math.round(s / 3600) + "h ago" : Math.round(s / 86400) + "d ago"; };
-const hm = (ts) => new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-const dayLabel = (ts) => { const d = new Date(ts), t = new Date(); if (dayKey(d) === dayKey(t)) return "Today"; const y = new Date(t.getTime() - 864e5); if (dayKey(d) === dayKey(y)) return "Yesterday"; return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric", year: d.getFullYear() === t.getFullYear() ? undefined : "numeric" }); };
-const when = (ts) => new Date(ts).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2600); }
-
-// ─── messages ───────────────────────────────────────────────────────────────────────────────
-async function take(m) { // decrypt one server record into our local shape
-  const old = M.get(m.id); if (old && !old.tmp) { Object.assign(old, { dl: m.dl, rd: m.rd, ak: m.ak }); return old; }
-  const x = { id: m.id, from: m.from, ts: m.ts, lvl: m.lvl, unlock: m.unlock, blob: m.blob, dl: m.dl, rd: m.rd, ak: m.ak, p: await open(m) };
-  M.set(m.id, x); return x;
-}
-const sorted = () => [...M.values()].sort((a, b) => (a.ts - b.ts) || (a.id < b.id ? -1 : 1));
-async function loadHistory(before) {
-  const j = await api("history?limit=60" + (before ? "&before=" + encodeURIComponent(before) : ""));
-  for (const m of j.msgs) await take(m);
-  more = j.more && j.msgs.length > 0; if (j.msgs.length) oldest = j.msgs[0].id; if (!before) evCursor = j.ev;
-}
-async function sync() {
-  let j; try { j = await api("sync?ev=" + encodeURIComponent(evCursor)); } catch (e) { if (e.auth) return showLogin(); return; }
-  seenAt = j.seen || seenAt; let changed = false, incoming = 0;
-  for (const ev of j.events) {
-    if (ev.t === "new") { const had = M.has(ev.m.id), x = await take(ev.m); if (!had) { changed = true; if (x.from !== ME.user) { incoming++; Sky.arrive(x); } } }
-    else { const m = M.get(ev.id); if (ev.t === "del") { if (m) M.delete(ev.id); changed = true; } else if (m) { m[ev.t] = ev.at || Date.now(); changed = true; if (ev.t === "dl") Sky.delivered(m); } }
-  }
-  evCursor = j.ev || evCursor;
-  if (changed) { renderLog(); } else renderCap();
-  if (incoming && document.visibilityState === "visible") { try { navigator.vibrate && navigator.vibrate(30); } catch (e) {} }
-  if (j.events.length >= 100) sync();
-}
-function schedulePoll() { clearTimeout(pollT); pollT = setTimeout(async () => { await sync(); flush(); schedulePoll(); }, document.visibilityState === "visible" ? 3500 : 20000); }
-async function ackSeen() {
-  if (document.visibilityState !== "visible") return;
-  const ids = sorted().filter((m) => m.from !== ME.user && !m.tmp && !m.rd && !(m.unlock && m.p && m.p.k === "capsule" && Date.now() < m.unlock) && m.p.k !== "letter" && m.lvl < 2).map((m) => m.id);
-  if (!ids.length) return; ids.forEach((id) => (M.get(id).rd = Date.now())); try { await post("ack", { ids }); } catch (e) { ids.forEach((id) => (M.get(id).rd = 0)); }
-}
-async function sendMsg(p, o = {}) {
-  const sl = await seal(p), tmp = "tmp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6), ts = Date.now();
-  OUT.push({ tmp, ct: sl.ct, iv: sl.iv, lvl: o.lvl || 0, unlock: o.unlock || 0, blob: o.blob || null, ts }); store.set("us-out", JSON.stringify(OUT));
-  M.set(tmp, { id: tmp, from: ME.user, ts, lvl: o.lvl || 0, unlock: o.unlock || 0, blob: o.blob, p, tmp: true, dl: 0, rd: 0, ak: 0 });
-  Sky.launch(p, o); renderLog(true); flush();
-}
-async function flush() {
-  if (flushing || !OUT.length) return; flushing = true;
-  try {
-    while (OUT.length) {
-      const e = OUT[0];
-      try {
-        const r = await post("send", { ct: e.ct, iv: e.iv, lvl: e.lvl, unlock: e.unlock, blob: e.blob });
-        const m = M.get(e.tmp); M.delete(e.tmp); if (m) { m.id = r.id; m.tmp = false; M.set(r.id, m); }
-        OUT.shift(); store.set("us-out", JSON.stringify(OUT));
-      } catch (err) { if (err.auth) { showLogin(); break; } if (err.status === 400) { M.delete(e.tmp); OUT.shift(); store.set("us-out", JSON.stringify(OUT)); toast("One message couldn't be sent."); continue; } break; }
-    }
-  } finally { flushing = false; renderLog(); }
-}
-addEventListener("online", () => { flush(); sync(); });
-
-// ─── the log ────────────────────────────────────────────────────────────────────────────────
-function recState(m) { if (m.from !== ME.user) return ""; if (m.tmp) return '<span class="rc">⌁ waiting for signal</span>'; if (m.unlock && Date.now() < m.unlock) return '<span class="rc">⏳ sealed until ' + esc(when(m.unlock)) + "</span>"; if (m.ak) return '<span class="rc seen">✦ answered</span>'; if (m.rd) return '<span class="rc seen">✦ seen ' + esc(ago(m.rd)) + "</span>"; if (m.dl) return '<span class="rc">◉ arrived</span>'; return '<span class="rc">◌ in flight</span>'; }
-function entry(m) {
-  const mine = m.from === ME.user, who = mine ? "You" : THEM.name, p = m.p || { k: "lost" }; let b = "";
-  if (p.k === "note") b = '<div class="t">' + esc(p.t) + "</div>";
-  else if (p.k === "pulse") { const x = PULSES.find((q) => q.k === p.e) || PULSES[2]; b = '<div class="pulse" style="--pc:' + x.c + '"><i></i><span>' + x.e + " " + esc(x.w) + "</span></div>" + (p.t ? '<div class="t">' + esc(p.t) + "</div>" : ""); }
-  else if (p.k === "letter") b = '<div class="env ' + (mine || m.rd ? "read" : "") + '" data-open="' + esc(m.id) + '"><span class="wax"></span><span><b>' + esc(p.s || "A letter") + "</b><small>" + (mine ? "a letter you wrote · tap to read" : m.rd ? "opened · tap to read again" : "sealed · tap to open") + "</small></span></div>";
-  else if (p.k === "capsule") { const locked = m.unlock && Date.now() < m.unlock; b = locked ? '<div class="cap"><span class="orb"></span><span>A time capsule, sealed until<br>' + esc(when(m.unlock)) + "</span></div>" : '<div class="card"><div class="h">TIME CAPSULE · written ' + esc(when(m.ts)) + '</div><div class="t">' + esc(p.t) + "</div></div>"; }
-  else if (p.k === "drop") b = '<div class="drop"><div class="ph" data-img="' + esc(m.id) + '">' + (blobURL.has(m.id) ? "" : "opening…") + "</div>" + (p.t ? '<div class="t">' + esc(p.t) + "</div>" : "") + "</div>";
-  else if (p.k === "voice") b = '<div class="voice"><button data-play="' + esc(m.id) + '" aria-label="Play">▶</button><span class="bars">' + Array.from({ length: 18 }, (_, i) => '<i style="height:' + (6 + ((i * 7 + 3) % 15)) + 'px"></i>').join("") + '</span><span class="mono" style="font-size:11px;color:var(--dim)">' + Math.round(p.d || 0) + "s</span></div>";
-  else if (p.k === "checkin") { const c = CHECKS.find((q) => q.k === p.c) || CHECKS[0]; b = '<div class="ck ' + (p.c === "sos" ? "sos" : "") + '"><b style="font-weight:400;font-size:20px">' + c.e + "</b><span>" + esc(c.w) + "</span></div>"; }
-  else if (p.k === "dq") b = '<div class="rc" style="margin:2px 0">answered today\'s question ✦</div>';
-  else b = '<div class="t" style="color:var(--faint);font-style:italic">(sealed with a key this device doesn\'t have)</div>';
-  return '<article class="en ' + (mine ? "me" : "her") + '" data-id="' + esc(m.id) + '"><div class="h">' + esc(who) + " · " + esc(hm(m.ts)) + "</div>" + b + (recState(m) ? "<div>" + recState(m) + "</div>" : "") + "</article>";
-}
-function qHTML() {
-  const d = dayKey(), mine = sorted().find((m) => m.p && m.p.k === "dq" && m.p.d === d && m.from === ME.user), theirs = sorted().find((m) => m.p && m.p.k === "dq" && m.p.d === d && m.from !== ME.user), fold = SETTINGS.qfold === d;
-  let body; if (mine && theirs) body = '<div class="both"><div><b>You</b>' + esc(mine.p.a) + "</div><div><b>" + esc(THEM.name) + "</b>" + esc(theirs.p.a) + "</div></div>";
-  else if (mine) body = '<p style="color:var(--dim);margin:0">Your answer is sealed until ' + esc(THEM.name) + " answers too." + (theirs ? "" : "") + "</p>";
-  else body = '<textarea id="qa" placeholder="' + (theirs ? esc(THEM.name) + " has answered. Yours opens theirs." : "Your answer…") + '"></textarea><div class="row mt"><button class="btn pri" id="qs">Answer</button></div>';
-  return '<section class="qd ' + (fold ? "fold" : "") + '"><button class="tg" id="qt">' + (fold ? "show" : "hide") + '</button><div class="k">Question of the day</div><h3>' + esc(todaysQ()) + '</h3><div class="body">' + body + "</div></section>";
-}
-let renderQ = 0;
-function renderLog(stick) {
-  cancelAnimationFrame(renderQ); renderQ = requestAnimationFrame(() => {
-    const log = $("log"), near = stick || log.scrollHeight - log.scrollTop - log.clientHeight < 140, prevTop = log.scrollTop, prevH = log.scrollHeight, typing = document.activeElement && document.activeElement.id === "qa" ? $("qa").value : null;
-    let h = (more ? '<button class="more" id="older">Load earlier</button>' : "") + qHTML(), lastDay = "", n = 0;
-    for (const m of sorted()) { const dl = dayLabel(m.ts); if (dl !== lastDay) { h += '<div class="day"><span>' + esc(dl) + "</span></div>"; lastDay = dl; } h += entry(m); n++; }
-    if (!n) h += '<div class="empty">Nothing here yet. Say anything. Even one light is enough.</div>';
-    log.innerHTML = h; if (typing != null && $("qa")) { $("qa").value = typing; $("qa").focus(); }
-    if (near) log.scrollTop = log.scrollHeight; else if (more) log.scrollTop = prevTop + (log.scrollHeight - prevH);
-    hydrate(); renderCap(); ackSeen(); checkSOS(); Sky.sync();
-  });
-}
-async function hydrate() { // photos open as they're seen
-  for (const el of document.querySelectorAll("[data-img]")) {
-    const id = el.dataset.img, m = M.get(id); if (!m || !m.blob) continue;
-    const put = (u) => { el.outerHTML = '<img src="' + u + '" alt="A photo" data-big="' + esc(id) + '">'; };
-    if (blobURL.has(id)) { put(blobURL.get(id)); continue; }
-    if (m.tmp) continue;
-    try { const r = await fetch("/api/us/blob/" + m.blob, { credentials: "same-origin" }); if (!r.ok) throw 0; const u = URL.createObjectURL(new Blob([await openBytes(await r.arrayBuffer())], { type: m.p.m || "image/jpeg" })); blobURL.set(id, u); document.querySelector('[data-img="' + CSS.escape(id) + '"]') && put(u); } catch (e) { el.textContent = "couldn't open"; }
-  }
-}
-function renderCap() {
-  const gap = lastTalk(), t = [];
-  if (THEM) { const s = seenAt ? Date.now() - seenAt : Infinity; t.push(s < 120e3 ? THEM.name + " is here now" : seenAt ? THEM.name + " was here " + ago(seenAt) : THEM.name + " hasn't opened it yet"); }
-  if (gap) t.push("last words " + ago(gap)); $("skycap").textContent = t.join(" · ");
-  $("pst").textContent = THEM ? "you & " + THEM.name : "";
-}
-const lastTalk = () => { let t = 0; for (const m of M.values()) if (!m.tmp && !(m.unlock && Date.now() < m.unlock) && m.p && m.p.k !== "dq") t = Math.max(t, m.ts); return t; };
-
-// ─── interactions on the log ────────────────────────────────────────────────────────────────
-$("log").addEventListener("click", async (e) => {
-  const t = e.target;
-  if (t.closest("#older")) { await loadHistory(oldest); renderLog(); return; }
-  if (t.closest("#qt")) { SETTINGS.qfold = SETTINGS.qfold === dayKey() ? "" : dayKey(); saveSet(); renderLog(); return; }
-  if (t.closest("#qs")) { const a = ($("qa").value || "").trim(); if (a) { await sendMsg({ k: "dq", d: dayKey(), a }); } return; }
-  const en = t.closest("[data-open]"); if (en) return openLetter(en.dataset.open);
-  const pl = t.closest("[data-play]"); if (pl) return playVoice(pl.dataset.play, pl);
-  const big = t.closest("[data-big]"); if (big) { const u = blobURL.get(big.dataset.big); if (u) window.open(u, "_blank"); }
-});
-function openLetter(id) {
-  const m = M.get(id); if (!m || !m.p) return; const mine = m.from === ME.user;
-  $("paper").innerHTML = '<button class="btn" id="rx">← Back</button><h2>' + esc(m.p.s || "A letter") + '</h2><div class="body">' + esc(m.p.t) + '</div><div class="by">' + (mine ? "from you" : "from " + esc(THEM.name)) + " · " + esc(when(m.ts)) + "</div>";
-  $("reader").classList.add("on"); $("rx").onclick = () => $("reader").classList.remove("on");
-  if (!mine && !m.rd && !m.tmp) { m.rd = Date.now(); post("ack", { ids: [m.id] }).catch(() => {}); renderLog(); }
-}
-let player = null;
-async function playVoice(id, btn) {
-  const m = M.get(id); if (!m || !m.blob) return; if (player) { player.pause(); player = null; document.querySelectorAll("[data-play]").forEach((b) => (b.textContent = "▶")); if (btn.dataset.on === id) { btn.dataset.on = ""; return; } }
-  try {
-    let u = blobURL.get(id); if (!u) { const r = await fetch("/api/us/blob/" + m.blob, { credentials: "same-origin" }); u = URL.createObjectURL(new Blob([await openBytes(await r.arrayBuffer())], { type: m.p.m || "audio/webm" })); blobURL.set(id, u); }
-    player = new Audio(u); btn.textContent = "❚❚"; btn.dataset.on = id; player.onended = () => { btn.textContent = "▶"; btn.dataset.on = ""; player = null; }; await player.play();
-    if (m.from !== ME.user && !m.rd) { m.rd = Date.now(); post("ack", { ids: [id] }).catch(() => {}); }
-  } catch (e) { toast("Couldn't play that."); btn.textContent = "▶"; }
-}
-
-// ─── SOS ────────────────────────────────────────────────────────────────────────────────────
-let sosT = 0;
-function checkSOS() {
-  const s = sorted().find((m) => m.from !== ME.user && m.lvl >= 2 && !m.ak && !m.tmp && m.p);
-  if (!s) { $("sos").classList.remove("on"); clearInterval(sosT); sosT = 0; return; }
-  $("sos-h").textContent = THEM.name + " needs you"; $("sos-p").textContent = s.p.k === "checkin" ? (CHECKS.find((c) => c.k === s.p.c) || {}).w || "" : s.p.t || ""; $("sos").classList.add("on"); $("sos-ok").dataset.id = s.id;
-  if (!sosT) sosT = setInterval(() => { try { navigator.vibrate && navigator.vibrate([400, 150, 400]); } catch (e) {} }, 2500);
-}
-$("sos-ok").onclick = async (e) => { const id = e.currentTarget.dataset.id, m = M.get(id); if (m) { m.ak = m.rd = Date.now(); } $("sos").classList.remove("on"); clearInterval(sosT); sosT = 0; renderLog(); try { await post("ack", { ids: [id], ak: true }); await sendMsg({ k: "checkin", c: "ok" }); } catch (err) { toast("I'm here didn't reach the server. Trying again…"); setTimeout(() => post("ack", { ids: [id], ak: true }).catch(() => {}), 3000); } };
-
-// ─── composer ───────────────────────────────────────────────────────────────────────────────
-const txt = $("txt");
-txt.addEventListener("input", () => { txt.style.height = "auto"; txt.style.height = Math.min(132, txt.scrollHeight) + "px"; });
-txt.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !matchMedia("(pointer:coarse)").matches) { e.preventDefault(); sendText(); } });
-$("b-send").onclick = sendText; $("b-loud").onclick = () => { loud = !loud; $("b-loud").classList.toggle("on", loud); $("b-loud").setAttribute("aria-pressed", loud); toast(loud ? "Loud: " + THEM.name + " gets a firm alert until she's seen it" : "Normal"); };
-function sendText() { const t = txt.value.trim(); if (!t) return; txt.value = ""; txt.style.height = "auto"; sendMsg({ k: "note", t }, { lvl: loud ? 1 : 0 }); if (loud) { loud = false; $("b-loud").classList.remove("on"); } }
-const KINDS = [["pulse", "✨", "Pulse"], ["letter", "💌", "Letter"], ["capsule", "⏳", "Capsule"], ["drop", "📷", "Photo"], ["voice", "🎙️", "Voice"], ["checkin", "📍", "Check-in"]];
-$("tray").innerHTML = KINDS.map(([k, e, w]) => '<button data-k="' + k + '"><b>' + e + "</b>" + w + "</button>").join("");
-$("b-plus").onclick = (e) => { e.stopPropagation(); $("tray").classList.toggle("hidden"); };
-document.addEventListener("click", (e) => { if (!e.target.closest("#tray,#b-plus")) $("tray").classList.add("hidden"); });
-$("tray").onclick = (e) => { const b = e.target.closest("[data-k]"); if (!b) return; $("tray").classList.add("hidden"); sheets[b.dataset.k](); };
-
-const sheet = $("sheet"), scrim = $("scrim");
-const showSheet = (html) => { sheet.innerHTML = html; sheet.classList.add("on"); scrim.classList.add("on"); }, hideSheet = () => { sheet.classList.remove("on"); scrim.classList.remove("on"); if (rec && rec.state !== "inactive") try { rec.stop(); } catch (e) {} };
-scrim.onclick = hideSheet; addEventListener("keydown", (e) => e.key === "Escape" && (hideSheet(), $("reader").classList.remove("on")));
-let rec = null;
-const sheets = {
-  pulse() { showSheet('<h2 class="disp">Pulse</h2><p>One tap. She sees it glow.</p><div class="grid">' + PULSES.map((x) => '<button class="opt" data-p="' + x.k + '"><b>' + x.e + "</b>" + esc(x.w) + "</button>").join("") + "</div>"); sheet.onclick = (e) => { const b = e.target.closest("[data-p]"); if (b) { sendMsg({ k: "pulse", e: b.dataset.p }); hideSheet(); } }; },
-  letter() { showSheet('<h2 class="disp">A letter</h2><p>Words that deserve to be opened on purpose.</p><label for="ls">Title</label><input id="ls" maxlength="60" placeholder="For when you need it"><label for="lb">Letter</label><textarea id="lb" placeholder="Dear…"></textarea><div class="row mt"><button class="btn pri" id="lg">Seal and send</button></div>'); sheet.onclick = null; $("lg").onclick = () => { const t = $("lb").value.trim(); if (!t) return toast("Write something first."); sendMsg({ k: "letter", s: $("ls").value.trim() || "A letter", t }, { lvl: 0 }); hideSheet(); }; },
-  capsule() {
-    const d = (n, h) => { const x = new Date(); x.setDate(x.getDate() + n); x.setHours(h, 0, 0, 0); return x; }, fmt = (x) => new Date(x.getTime() - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-    showSheet('<h2 class="disp">Time capsule</h2><p>Sealed now. It opens for ' + esc(THEM.name) + " only when its time comes, even if you can't be there.</p><label for='cb'>Message</label><textarea id='cb' placeholder='Open this when…'></textarea><label for='cd'>Opens</label><input id='cd' type='datetime-local' value='" + fmt(d(1, 8)) + "'><div class='row mt'>" + [["Tomorrow morning", d(1, 8)], ["In a week", d(7, 9)], ["In a month", d(30, 9)], ["In a year", d(365, 9)]].map(([w, x]) => "<button class='btn' data-d='" + fmt(x) + "'>" + w + "</button>").join("") + "</div><div class='row mt'><button class='btn pri' id='cg'>Seal it</button></div>");
-    sheet.onclick = (e) => { const b = e.target.closest("[data-d]"); if (b) $("cd").value = b.dataset.d; }; $("cg").onclick = () => { const t = $("cb").value.trim(), u = new Date($("cd").value).getTime(); if (!t) return toast("Write something first."); if (!(u > Date.now() + 60e3)) return toast("Pick a time at least a minute from now."); sendMsg({ k: "capsule", t, u }, { unlock: u }); hideSheet(); };
-  },
-  drop() {
-    showSheet('<h2 class="disp">Photo</h2><p>Encrypted here before it leaves your phone.</p><input id="pf" type="file" accept="image/*"><div id="pv" style="margin:10px 0"></div><label for="pc">Caption</label><input id="pc" maxlength="200"><div class="row mt"><button class="btn pri" id="pg" disabled>Send</button></div>'); sheet.onclick = null; let jpg = null, dim = null;
-    $("pf").onchange = async () => { const f = $("pf").files[0]; if (!f) return; try { const bmp = await createImageBitmap(f), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-        let q = .82, blob; do { blob = await new Promise((r) => c.toBlob(r, "image/jpeg", q)); q -= .1; } while (blob.size > 1.4 * 1024 * 1024 && q > .2); jpg = new Uint8Array(await blob.arrayBuffer()); dim = [c.width, c.height]; $("pv").innerHTML = '<img src="' + URL.createObjectURL(blob) + '" style="max-width:100%;max-height:260px;border-radius:12px">'; $("pg").disabled = false; } catch (e) { toast("Couldn't read that photo."); } };
-    $("pg").onclick = async () => { $("pg").disabled = true; try { const up = await fetch("/api/us/blob", { method: "POST", credentials: "same-origin", body: await sealBytes(jpg) }); if (!up.ok) throw 0; const { id } = await up.json(); await sendMsg({ k: "drop", m: "image/jpeg", w: dim[0], h: dim[1], t: $("pc").value.trim() }, { blob: id }); const last = [...M.values()].filter((m) => m.tmp).pop(); if (last) blobURL.set(last.id, URL.createObjectURL(new Blob([jpg], { type: "image/jpeg" }))); hideSheet(); } catch (e) { $("pg").disabled = false; toast("Photos need a signal. Try again in a moment."); } };
-  },
-  voice() {
-    showSheet('<h2 class="disp">Voice</h2><p>Say it out loud. Up to 90 seconds.</p><div class="row"><button class="btn pri" id="vr">● Record</button><span class="mono" id="vt">0:00</span></div><audio id="vp" controls class="hidden" style="width:100%;margin-top:12px"></audio><div class="row mt"><button class="btn pri" id="vs" disabled>Send</button></div>'); sheet.onclick = null; let chunks = [], t0 = 0, tick = 0, bytes = null, mime = "";
-    $("vr").onclick = async () => {
-      if (rec && rec.state === "recording") { rec.stop(); return; }
-      try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); rec = new MediaRecorder(st, { audioBitsPerSecond: 24000 }); chunks = []; mime = rec.mimeType || "audio/webm"; rec.ondataavailable = (e) => chunks.push(e.data);
-        rec.onstop = async () => { clearInterval(tick); st.getTracks().forEach((t) => t.stop()); $("vr").textContent = "● Again"; const blob = new Blob(chunks, { type: mime }); bytes = new Uint8Array(await blob.arrayBuffer()); $("vp").src = URL.createObjectURL(blob); $("vp").classList.remove("hidden"); $("vs").disabled = bytes.length > 1.5 * 1024 * 1024; if ($("vs").disabled) toast("That one's too long. Try a shorter one."); };
-        rec.start(); t0 = Date.now(); $("vr").textContent = "■ Stop"; tick = setInterval(() => { const s = (Date.now() - t0) / 1000; $("vt").textContent = Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); if (s >= 90) rec.stop(); }, 250); } catch (e) { toast("I need microphone access for that."); } };
-    $("vs").onclick = async () => { $("vs").disabled = true; try { const up = await fetch("/api/us/blob", { method: "POST", credentials: "same-origin", body: await sealBytes(bytes) }); if (!up.ok) throw 0; const { id } = await up.json(); await sendMsg({ k: "voice", m: mime, d: (Date.now() - t0) / 1000 }, { blob: id }); hideSheet(); } catch (e) { $("vs").disabled = false; toast("Voice notes need a signal. Try again in a moment."); } };
-  },
-  checkin() { showSheet('<h2 class="disp">Check-in</h2><p>Let ' + esc(THEM.name) + ' know where you are, in one tap.</p><div class="grid">' + CHECKS.map((c) => '<button class="opt ' + (c.lvl ? "s" : "") + '" data-c="' + c.k + '"><b>' + c.e + "</b>" + esc(c.w) + "</button>").join("") + '</div><p style="font-size:14px;margin-top:12px">"I need you now" keeps alerting her, louder each time, until she taps <i>I\'m here</i>.</p>'); sheet.onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; const c = CHECKS.find((x) => x.k === b.dataset.c); if (c.lvl && !confirm("Send an SOS to " + THEM.name + "? It will keep alerting her until she answers.")) return; sendMsg({ k: "checkin", c: c.k }, { lvl: c.lvl || 0 }); hideSheet(); }; },
-  settings() {
-    const pushOK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-    showSheet('<h2 class="disp">Settings</h2>' +
-      '<div class="setrow"><div>Alerts<small>' + (pushOK ? "A quiet nudge when " + esc(THEM.name) + " sends something. Alerts never include what was said." : "Install this app to your home screen to get alerts on iPhone.") + '</small></div><button class="btn" id="st-push">…</button></div>' +
-      '<div class="setrow"><div>Sky<small>Night, dawn or ember</small></div><div class="row">' + ["night", "dawn", "ember"].map((t) => '<button class="btn" data-th="' + t + '">' + t + "</button>").join("") + "</div></div>" +
-      '<div class="setrow"><div>Bring ' + esc(THEM.name) + ' back in<small>A new device, or a forgotten password. Makes a one-time link.</small></div><button class="btn" id="st-inv">Link</button></div>' +
-      '<div class="setrow"><div>Change my password<small>Your key stays the same.</small></div><button class="btn" id="st-pw">Change</button></div>' +
-      '<div class="setrow"><div>Keep our history<small>Download everything, decrypted, as one page. Yours forever.</small></div><button class="btn" id="st-ex">Export</button></div>' +
-      '<div class="setrow"><div>Sign out of this device<small>The key is removed from this device.</small></div><button class="btn" id="st-out">Sign out</button></div><div class="msg" id="sm"></div>');
-    sheet.onclick = (e) => { const b = e.target.closest("[data-th]"); if (b) { SETTINGS.theme = b.dataset.th; saveSet(); applyTheme(); } };
-    pushState(); $("st-push").onclick = togglePush; $("st-inv").onclick = reinvite; $("st-pw").onclick = changePw; $("st-ex").onclick = exportAll; $("st-out").onclick = signOut;
-  },
-};
-$("b-set").onclick = () => sheets.settings();
-const applyTheme = () => { document.documentElement.dataset.theme = SETTINGS.theme === "night" ? "" : SETTINGS.theme || ""; };
-
-// settings actions
-async function swReg() { try { return await navigator.serviceWorker.register("/barycenter-sw.js", { scope: "/barycenter" }); } catch (e) { return null; } }
-async function pushState() { const b = $("st-push"); if (!b) return; if (!("PushManager" in window)) { b.disabled = true; b.textContent = "n/a"; return; } const r = await navigator.serviceWorker.getRegistration("/barycenter"), s = r && (await r.pushManager.getSubscription()); b.textContent = s ? "On" : "Turn on"; b.dataset.on = s ? "1" : ""; }
-async function togglePush() {
-  const r = (await navigator.serviceWorker.getRegistration("/barycenter")) || (await swReg()); if (!r) return ($("sm").textContent = "This browser can't do alerts.");
-  const cur = await r.pushManager.getSubscription();
-  if (cur) { await post("push/unsubscribe", { endpoint: cur.endpoint }).catch(() => {}); await cur.unsubscribe(); return pushState(); }
-  if ((await Notification.requestPermission()) !== "granted") return ($("sm").textContent = "Alerts are blocked in this browser's settings.");
-  try { const { key } = await api("push/key"), sub = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64u(key) }); await post("push/subscribe", { sub }); } catch (e) { $("sm").textContent = "Couldn't turn alerts on."; }
-  pushState();
-}
-async function reinvite() {
-  const raw = unb64(store.get("us-key") || ""); if (raw.length !== 32) return ($("sm").textContent = "This device doesn't hold the key. Sign in again first.");
-  const code = hex(crypto.getRandomValues(new Uint8Array(16))); await post("invite", { hash: await sha256hex(enc.encode(code)) });
-  const link = location.origin + "/barycenter#join=" + code + "." + b64u(raw); showSheet('<h2 class="disp">One-time link</h2><p>Open it on ' + esc(THEM.name) + "'s device. It sets a new password for her and works once, for 14 days.</p><div class='linkbox'>" + esc(link) + "</div><div class='row mt'><button class='btn pri' id='ic'>Copy</button></div>"); $("ic").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Copied"); } catch (e) { toast("Select and copy it"); } };
-}
-async function changePw() {
-  const np = prompt("New password (at least 8 characters):"); if (!np) return; if (np.length < 8) return toast("At least 8 characters."); if (np !== prompt("Once more:")) return toast("They didn't match.");
-  const raw = unb64(store.get("us-key") || ""); $("sm").textContent = "Working… (a few seconds)"; try { await post("password", { verifier: await verifierOf(ME.user, np), wrap: await wrapKey(raw, ME.user + "\0" + np) }); $("sm").textContent = "Password changed."; } catch (e) { $("sm").textContent = e.err || "Couldn't change it."; }
-}
-async function signOut() { if (!confirm("Sign out of Barycenter on this device?")) return; try { await fetch("/api/logout/us", { method: "POST", credentials: "same-origin" }); } catch (e) {} store.set("us-key", null); store.set("us-out", null); location.href = "/barycenter"; }
-async function exportAll() {
-  $("sm").textContent = "Gathering everything…"; const all = new Map(M); let before = oldest, mm = more;
-  try { while (mm) { const j = await api("history?limit=100&before=" + encodeURIComponent(before)); for (const m of j.msgs) if (!all.has(m.id)) all.set(m.id, { id: m.id, from: m.from, ts: m.ts, lvl: m.lvl, unlock: m.unlock, blob: m.blob, p: await open(m) }); mm = j.more && j.msgs.length; if (j.msgs.length) before = j.msgs[0].id; } } catch (e) { $("sm").textContent = "Couldn't reach everything."; return; }
-  const list = [...all.values()].filter((m) => !m.tmp && m.p).sort((a, b) => a.ts - b.ts), rows = [];
-  for (const m of list) { const who = m.from === ME.user ? ME.name : THEM.name, p = m.p; let b = ""; if (p.k === "note") b = esc(p.t); else if (p.k === "pulse") { const x = PULSES.find((q) => q.k === p.e) || PULSES[2]; b = x.e + " " + esc(x.w); } else if (p.k === "letter") b = "<b>" + esc(p.s) + "</b><br>" + esc(p.t); else if (p.k === "capsule") b = "⏳ capsule: " + esc(p.t); else if (p.k === "checkin") b = ((CHECKS.find((c) => c.k === p.c) || {}).e || "") + " " + esc((CHECKS.find((c) => c.k === p.c) || {}).w || ""); else if (p.k === "dq") b = "Q: " + esc(todaysQ()) + " A: " + esc(p.a); else if (p.k === "drop" && m.blob) { try { const r = await fetch("/api/us/blob/" + m.blob, { credentials: "same-origin" }), u = await openBytes(await r.arrayBuffer()); b = '<img style="max-width:420px;border-radius:8px" src="data:' + (p.m || "image/jpeg") + ";base64," + b64(u) + '">' + (p.t ? "<br>" + esc(p.t) : ""); } catch (e) { b = "(photo)"; } } else if (p.k === "voice") b = "🎙️ voice note"; else continue;
-    rows.push('<div class="m"><small>' + esc(who) + " · " + esc(when(m.ts)) + "</small><div>" + b.replace(/\n/g, "<br>") + "</div></div>"); }
-  const html = '<!doctype html><meta charset="utf-8"><title>Our history</title><style>body{font:17px/1.55 Georgia,serif;max-width:640px;margin:40px auto;padding:0 18px;background:#0b0d1c;color:#e9ebff}.m{margin:14px 0;padding-left:12px;border-left:2px solid #7fd8ff}small{font:11px monospace;color:#8c92ba}</style><h1>' + esc(ME.name) + " &amp; " + esc(THEM.name) + "</h1><p style='color:#8c92ba'>Exported " + esc(when(Date.now())) + " · " + rows.length + " things said</p>" + rows.join("");
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = "our-history-" + dayKey() + ".html"; a.click(); $("sm").textContent = "Saved " + rows.length + " entries.";
-}
-
-// ─── the sky ────────────────────────────────────────────────────────────────────────────────
-const Sky = (() => {
-  const cv = $("sky"), cx = cv.getContext("2d"); let W = 0, H = 0, dpr = 1, raf = 0, t0 = performance.now(), d = 0, stars = [], motes = [], rings = [], capsules = 0, flight = 0, visible = true;
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const col = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#fff";
-  function size() { dpr = Math.min(2, devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; stars = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.2 + .2, p: Math.random() * 6.28, s: .3 + Math.random() * .9 })); if (!d) d = W * .3; }
-  const smooth = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
-  function pos(t) { const gapH = lastTalk() ? (Date.now() - lastTalk()) / 36e5 : 36, target = W * (.2 + .42 * smooth(gapH / 36)); d += (target - d) * .03; const a = Math.sin(t * .00021) * .32, cxx = W / 2, cyy = H * .5, ox = Math.cos(a) * d / 2, oy = Math.sin(a) * d / 2 * .8 + Math.sin(t * .0007) * 3; return { c: [cxx, cyy], me: [cxx - ox, cyy - oy], her: [cxx + ox, cyy + oy] }; }
-  function star(x, y, color, b, r, t, label) { const pulse = .88 + .12 * Math.sin(t * .003 + x), R = r * (.7 + .5 * b) * pulse, g = cx.createRadialGradient(x, y, 0, x, y, R * 5); g.addColorStop(0, color); g.addColorStop(.12, color); g.addColorStop(.35, color + "55"); g.addColorStop(1, "transparent"); cx.globalAlpha = .35 + .65 * b; cx.fillStyle = g; cx.fillRect(x - R * 5, y - R * 5, R * 10, R * 10);
-    cx.globalAlpha = .5 + .5 * b; cx.strokeStyle = "#fff"; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x - R * 1.9, y); cx.lineTo(x + R * 1.9, y); cx.moveTo(x, y - R * 1.9); cx.lineTo(x, y + R * 1.9); cx.stroke(); cx.fillStyle = "#fff"; cx.beginPath(); cx.arc(x, y, R * .38, 0, 7); cx.fill();
-    cx.globalAlpha = .75; cx.fillStyle = col("--dim"); cx.font = "10px 'JetBrains Mono',monospace"; cx.textAlign = "center"; cx.fillText(label, x, y + R * 3.1); cx.globalAlpha = 1; }
-  function frame(now) {
-    if (!visible) { raf = 0; return; } const t = now - t0; cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
-    for (const s of stars) { cx.globalAlpha = .25 + .55 * (.5 + .5 * Math.sin(t * .001 * s.s + s.p)); cx.fillStyle = "#cfd6ff"; cx.fillRect((s.x * W + t * .002 * s.r) % W, s.y * H, s.r, s.r); } cx.globalAlpha = 1;
-    const P = pos(t), me = col("--me"), her = col("--her"), seen = seenAt ? Date.now() - seenAt : Infinity, bh = seen < 120e3 ? 1 : seen < 36e5 ? .8 : seen < 864e5 ? .55 : .32;
-    // the orbit they share, the thread between them, the point between us
-    cx.strokeStyle = col("--faint"); cx.globalAlpha = .35; cx.lineWidth = 1; cx.setLineDash([2, 6]); cx.beginPath(); cx.ellipse(P.c[0], P.c[1], d / 2, d / 2 * .3, 0, 0, 7); cx.stroke(); cx.setLineDash([4, 5]); cx.beginPath(); cx.moveTo(...P.me); cx.lineTo(...P.her); cx.stroke(); cx.setLineDash([]);
-    cx.globalAlpha = .7; cx.beginPath(); cx.moveTo(P.c[0] - 5, P.c[1]); cx.lineTo(P.c[0] + 5, P.c[1]); cx.moveTo(P.c[0], P.c[1] - 5); cx.lineTo(P.c[0], P.c[1] + 5); cx.stroke(); cx.globalAlpha = 1;
-    // capsules wait at the barycenter
-    for (let i = 0; i < Math.min(capsules, 5); i++) { const a = t * .0009 + i * 1.3, x = P.c[0] + Math.cos(a) * 16, y = P.c[1] + Math.sin(a) * 7 - 14; cx.fillStyle = her; cx.globalAlpha = .9; cx.beginPath(); cx.arc(x, y, 2.4, 0, 7); cx.fill(); cx.globalAlpha = .3; cx.beginPath(); cx.arc(x, y, 6, 0, 7); cx.fill(); cx.globalAlpha = 1; }
-    // light in transit
-    if (flight && !reduce && (!motes.some((m) => m.keep) || t - (frame.last || 0) > 1700)) { motes.push({ from: "me", t0: t, dur: 1500, color: me, keep: 1 }); frame.last = t; }
-    motes = motes.filter((m) => t - m.t0 < m.dur); for (const m of motes) { const k = (t - m.t0) / m.dur, a = m.from === "me" ? P.me : P.her, b = m.from === "me" ? P.her : P.me, x = a[0] + (b[0] - a[0]) * k, y = a[1] + (b[1] - a[1]) * k - Math.sin(k * Math.PI) * 14; for (let i = 0; i < 6; i++) { const kk = Math.max(0, k - i * .02), xx = a[0] + (b[0] - a[0]) * kk, yy = a[1] + (b[1] - a[1]) * kk - Math.sin(kk * Math.PI) * 14; cx.globalAlpha = (1 - i / 6) * .7; cx.fillStyle = m.color; cx.beginPath(); cx.arc(xx, yy, 3.2 - i * .4, 0, 7); cx.fill(); } cx.globalAlpha = 1; cx.fillStyle = "#fff"; cx.beginPath(); cx.arc(x, y, 2.4, 0, 7); cx.fill(); }
-    rings = rings.filter((r) => t - r.t0 < r.dur); for (const r of rings) { const k = (t - r.t0) / r.dur; if (k < 0) continue; const p = r.at === "me" ? P.me : P.her; cx.strokeStyle = r.color; cx.globalAlpha = (1 - k) * .8; cx.lineWidth = 2; cx.beginPath(); cx.arc(p[0], p[1], 8 + k * 56, 0, 7); cx.stroke(); cx.globalAlpha = 1; }
-    star(P.me[0], P.me[1], me, 1, 9, t, "you"); star(P.her[0], P.her[1], her, bh, 9, t, THEM ? THEM.name : "");
-    raf = reduce ? 0 : requestAnimationFrame(frame);
-  }
-  const go = () => { if (!raf && visible) raf = requestAnimationFrame(frame); };
-  addEventListener("resize", () => { size(); go(); }); document.addEventListener("visibilitychange", () => { visible = document.visibilityState === "visible"; go(); });
-  return {
-    start() { size(); go(); },
-    sync() { capsules = [...M.values()].filter((m) => m.from === ME.user && m.unlock && Date.now() < m.unlock).length; flight = [...M.values()].some((m) => m.from === ME.user && !m.dl && !m.tmp && !(m.unlock && Date.now() < m.unlock)) || [...M.values()].some((m) => m.tmp && !m.unlock); go(); },
-    launch(p, o) { const c = p.k === "pulse" ? (PULSES.find((x) => x.k === p.e) || {}).c : col("--me"); motes.push({ from: "me", t0: performance.now() - t0, dur: 1100, color: c || col("--me") }); go(); },
-    arrive(m) { const c = m.p && m.p.k === "pulse" ? (PULSES.find((x) => x.k === m.p.e) || {}).c : col("--her"); motes.push({ from: "her", t0: performance.now() - t0, dur: 1100, color: c || col("--her") }); rings.push({ at: "me", t0: performance.now() - t0 + 1000, dur: 900, color: c || col("--her") }); go(); },
-    delivered(m) { rings.push({ at: "her", t0: performance.now() - t0, dur: 900, color: col("--me") }); go(); },
-  };
-})();
-
-// ─── start ──────────────────────────────────────────────────────────────────────────────────
-async function startApp() {
-  try { ME = await api("me"); } catch (e) { return showLogin(); }
-  if (!KEY) { const raw = store.get("us-key"); if (!raw) return showLogin(ME.name); KEY = await importKey(unb64(raw)); }
-  THEM = ME.partner; FIRST = ME.first; seenAt = THEM.seen;
-  document.documentElement.style.setProperty("--me", FIRST ? "#7fd8ff" : "#ffc66b"); document.documentElement.style.setProperty("--her", FIRST ? "#ffc66b" : "#7fd8ff"); applyTheme();
-  $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("pn").firstChild.nodeValue = "Barycenter";
-  try { OUT = JSON.parse(store.get("us-out") || "[]"); } catch (e) { OUT = []; }
-  M = new Map(); for (const e of OUT) M.set(e.tmp, { id: e.tmp, from: ME.user, ts: e.ts, lvl: e.lvl, unlock: e.unlock, blob: e.blob, p: await open(e), tmp: true, dl: 0, rd: 0, ak: 0 });
-  try { await loadHistory(); } catch (e) { if (e.auth) return showLogin(); toast("Offline. Showing what I can."); }
-  renderLog(true); Sky.start(); schedulePoll(); flush(); swReg();
-  if (!THEM.joined) toast(THEM.name + " hasn't joined yet. Use Settings → link to invite her.");
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { sync(); ackSeen(); schedulePoll(); } });
-}
-async function boot() {
-  const h = location.hash.match(/^#join=([a-f0-9]{32})\.([A-Za-z0-9_-]{43})$/);
-  let st; try { st = await api("status"); } catch (e) { gate("<p>Can't reach the server. Check your connection and reload.</p>"); return; }
-  if (h) { return showClaim(h[1], h[2]); }
-  if (!st.configured) return st.owner ? showSetup() : gate('<p>This space hasn\'t been created yet.</p><p>Sign in as the owner through <a href="/vigil-app">Vigil</a>, then come back here to set it up.</p>');
-  startApp();
-}
-boot();
-})();
-</script>
+<script src="assets/bary/base.js"></script>
+<script src="assets/bary/void.js"></script>
+<script src="assets/bary/live.js"></script>
+<script src="assets/bary/app.js"></script>
 <script src="/assets/install.js" defer></script>
 </body>
 </html>
