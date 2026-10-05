@@ -38,6 +38,25 @@ const ROLES = {
   critic: "Review the work against the brief. Reply APPROVE, or REDO with the exact problems.",
   integrator: "Combine all approved work into the single final deliverable.",
 };
+// Workers AI replies come in several shapes: {response: "text"}, {response: {parsed JSON}}, OpenAI-style
+// {choices}, or Responses-style {output: [{content: [{text}]}]} (GPT-OSS). Turn any of them into text.
+function textOf(r) {
+  if (r == null) return "";
+  if (typeof r === "string") return r.trim();
+  const v = r.response;
+  if (typeof v === "string" && v.trim()) return v.trim();
+  if (v && typeof v === "object") return JSON.stringify(v);
+  const c = r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (typeof c === "string" && c.trim()) return c.trim();
+  if (typeof r.output_text === "string" && r.output_text.trim()) return r.output_text.trim();
+  if (Array.isArray(r.output)) { const t = r.output.flatMap((o) => (Array.isArray(o.content) ? o.content : [o])).map((x) => (typeof x === "string" ? x : x && (x.text || x.output_text) || "")).filter(Boolean).join("\n").trim(); if (t) return t; }
+  return "";
+}
+// Pull the first JSON value out of a model reply (code fences, chatter and <think> blocks around it are fine).
+function jsonOf(out) {
+  const t = String(out).replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/```(?:json)?/gi, "");
+  for (const [o, c] of [["{", "}"], ["[", "]"]]) { const i = t.indexOf(o), j = t.lastIndexOf(c); if (i >= 0 && j > i) try { return JSON.parse(t.slice(i, j + 1)); } catch (e) {} }
+  return null;
+}
 const MAX_CALLS = 400, PARALLEL = 16, TICK = 1500;
 
 export class Hive extends DurableObject {
@@ -72,7 +91,7 @@ export class Hive extends DurableObject {
   async ask(agent, system, user, max) { // one model call, any provider
     if (agent.src === "workers-ai") {
       const r = await this.env.AI.run(agent.model, { messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: max || 2048 });
-      return String(r.response ?? (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) ?? r.output_text ?? (typeof r === "string" ? r : JSON.stringify(r))).trim();
+      return textOf(r);
     }
     const k = KEYED.find((x) => x.id === agent.src); if (!k) throw new Error("no provider");
     const res = await fetch(k.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + this.env[k.env], "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Hive" },
@@ -163,13 +182,29 @@ export class Hive extends DurableObject {
   async advance(p) {
     const q = this.sql(), SYS = (role) => "You are one agent in Mentifaber Hive, a swarm building a project together. Your role: " + role.toUpperCase() + ". " + ROLES[role] + " Stay inside your task; others handle the rest.";
     if (p.status === "planning" || p.status === "replanning") {
-      const coord = this.agentsFor(p.id, "coordinator")[0] || this.agentsFor(p.id, "architect")[0] || q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'", p.id).toArray()[0];
+      this.fails = this.fails || {}; const nf = this.fails[p.id] || 0;
+      const cands = [...this.agentsFor(p.id, "coordinator"), ...this.agentsFor(p.id, "architect"), ...this.agentsFor(p.id, "integrator"), ...q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'", p.id).toArray()];
+      const coord = cands[nf % Math.max(1, cands.length)];
       if (!coord) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "no model is available to coordinate"); return; }
       const have = q.exec("SELECT id,role,title,status FROM task WHERE pid=?", p.id).toArray();
       const out = await this.call(p, coord, "You are the COORDINATOR of an AI swarm. Split the project into 6 to 16 concrete tasks, each for one role from: " + Object.keys(ROLES).filter((r) => r !== "integrator").join(", ") + ". Use deps to order them (ids of earlier tasks). Reply ONLY with JSON: {\"title\": short project name, \"tasks\": [{\"id\":1,\"role\":\"architect\",\"title\":\"...\",\"detail\":\"...\",\"deps\":[]}]}",
         "PROJECT BRIEF:\n" + p.brief + (have.length ? "\n\nEXISTING TASKS (keep their ids, add new ones after them for the owner's latest notes):\n" + JSON.stringify(have) + "\n\nOWNER NOTES:\n" + q.exec("SELECT text FROM feed WHERE pid=? AND who='you' ORDER BY ts DESC LIMIT 4", p.id).toArray().map((r) => r.text).join("\n") : ""), 3000);
-      if (!out) return;
-      let plan; try { plan = JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1)); } catch (e) { this.say(p.id, coord.name, "error", "plan was not valid JSON; retrying"); return; }
+      let plan = out ? jsonOf(out) : null; if (Array.isArray(plan)) plan = { tasks: plan };
+      if (!plan || !Array.isArray(plan.tasks) || !plan.tasks.length) {
+        this.fails[p.id] = nf + 1;
+        if (out) this.say(p.id, coord.name, "error", "plan unreadable, handing to another coordinator. It said: " + out.slice(0, 160));
+        if (nf + 1 < 3 || have.length) return;
+        // three coordinators failed: fall back to a plan every project can use
+        plan = { tasks: [
+          { id: 1, role: "architect", title: "Plan the build", detail: "Decide the structure, parts and approach for the brief.", deps: [] },
+          { id: 2, role: "researcher", title: "Gather what is needed", detail: "Facts, content, options and constraints the brief depends on.", deps: [] },
+          { id: 3, role: "designer", title: "Design the look", detail: "Layout, colours, type and interactions, as concrete CSS or specs.", deps: [1] },
+          { id: 4, role: "writer", title: "Write the words", detail: "All text, labels and copy the result needs.", deps: [1, 2] },
+          { id: 5, role: "coder", title: "Build it", detail: "The complete working implementation of the plan.", deps: [1, 3, 4] },
+          { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
+        ] };
+        this.say(p.id, "hive", "info", "using the built-in plan");
+      }
       const idmap = {}, base = q.exec("SELECT COALESCE(MAX(id),0) m FROM task").one().m;
       for (const t of (plan.tasks || []).slice(0, 16)) {
         if (have.some((h) => h.id === t.id)) continue; const role = ROLES[t.role] && t.role !== "integrator" ? t.role : "coder";
