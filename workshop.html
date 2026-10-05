@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mentifaber · Workshop (preview)</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Mentifaber — a machinist by trade and a builder by night. Games, minds, radios, tools and gifts, all built in the open.">
+<meta property="og:title" content="Mentifaber">
+<meta property="og:description" content="A machinist by trade, a builder by night. Games people and AIs play, minds, radios, tools and gifts — all built in the open.">
+<meta name="theme-color" content="#08070a">
+<meta property="og:image" content="https://mentifaber.org/assets/previews/home.png">
+<meta property="og:url" content="https://mentifaber.org/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
+<link rel="manifest" href="assets/manifests/mentifaber.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Mentifaber Display";src:url("assets/fonts/MentifaberDisplay-Regular.woff2") format("woff2"),url("assets/fonts/MentifaberDisplay-Regular.ttf") format("truetype");font-display:block}
+/* ── tokens: the shop at night (default) and the drawing office (light) ── */
+:root{--bg:#08070a;--bg2:#0f0d10;--panel:#141116;--panel2:#1b171d;--line:#2c2620;--line2:#3d3426;--ink:#ece3d0;--dim:#a39782;--faint:#6f6556;
+  --gold:#d4ab52;--gold2:#f0cd7e;--ember:#e0603a;--cool:#6fd3c4;--live:#7fdc8e;--warn:#e0603a;--glow:rgba(212,171,82,.16);color-scheme:dark}
+:root[data-theme="light"]{--bg:#f3eee3;--bg2:#ebe4d4;--panel:#fbf8f1;--panel2:#f1ead9;--line:#ddd2bb;--line2:#cbbd9f;--ink:#211b13;--dim:#62574a;--faint:#8e8270;
+  --gold:#9a6c12;--gold2:#7c5408;--ember:#b8401c;--cool:#1e7f73;--live:#2d8a3e;--warn:#b8401c;--glow:rgba(154,108,18,.12);color-scheme:light}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3eee3;--bg2:#ebe4d4;--panel:#fbf8f1;--panel2:#f1ead9;--line:#ddd2bb;--line2:#cbbd9f;--ink:#211b13;--dim:#62574a;--faint:#8e8270;
+  --gold:#9a6c12;--gold2:#7c5408;--ember:#b8401c;--cool:#1e7f73;--live:#2d8a3e;--warn:#b8401c;--glow:rgba(154,108,18,.12);color-scheme:light}}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:76px;overflow-x:clip}@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "EB Garamond",Georgia,serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--gold)}a:hover{color:var(--gold2)}:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em}
+.disp{font-family:"Mentifaber Display",Georgia,serif;font-weight:400;letter-spacing:.03em}
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ── the control strip: brand, live readout, search, theme ── */
+.bar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.bar .in{height:60px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-size:17px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.brand i{width:26px;height:26px;border:1.5px solid var(--gold);border-radius:50%;position:relative;flex:none}
+.brand i::before,.brand i::after{content:"";position:absolute;background:var(--gold)}.brand i::before{left:50%;top:-5px;bottom:-5px;width:1.5px;transform:translateX(-50%)}.brand i::after{top:50%;left:-5px;right:-5px;height:1.5px;transform:translateY(-50%)}
+.ticker{flex:1;min-width:0;overflow:hidden;font-size:11px;color:var(--dim);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.ticker span{display:inline-block;white-space:nowrap;padding-left:100%;animation:tick 48s linear infinite}.ticker b{color:var(--gold);font-weight:600}.ticker .dot{color:var(--live)}
+@keyframes tick{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){.ticker span{animation:none;padding-left:0}}
+.ibtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.ibtn:hover{border-color:var(--gold);color:var(--gold)}.ibtn svg{width:18px;height:18px}
+
+/* ── hero: short, with a toolpath being cut behind it ── */
+.hero{position:relative;padding:clamp(40px,8vw,88px) 0 clamp(44px,6vw,44px);overflow:hidden;border-bottom:1px solid var(--line)}
+#mill{position:absolute;inset:0;width:100%;height:100%;opacity:.9;pointer-events:none}
+.hero .wrap{position:relative}
+.kick{margin:0 0 10px;font-size:12px;color:var(--gold);text-transform:uppercase}
+.hero h1{margin:0;font-size:clamp(46px,10vw,124px);line-height:.92;text-transform:uppercase;color:var(--ink)}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.lede{max-width:640px;margin:16px 0 0;font-size:clamp(18px,2.2vw,22px);color:var(--dim)}
+.lede b{color:var(--ink);font-weight:500}
+.readout{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chipr{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line2);border-radius:999px;background:color-mix(in srgb,var(--panel) 80%,transparent);font-size:12px;color:var(--dim)}
+.chipr b{color:var(--ink);font-weight:600}.pulse{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 0 0 var(--live);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px transparent}}
+
+/* ── sections ── */
+.sec{padding-top:clamp(26px,4vw,44px);padding-bottom:clamp(26px,4vw,44px)}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sh h2{margin:0;font-size:clamp(22px,3vw,30px);text-transform:uppercase}
+.sh .mono{font-size:11px;color:var(--faint);text-transform:uppercase}
+
+/* featured: the big three, live */
+.feat{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px}
+@media (max-width:900px){.feat{grid-template-columns:1fr 1fr}.feat .f:first-child{grid-column:1/-1}}
+@media (max-width:560px){.feat{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1*clamp(16px,4vw,40px));padding:0 clamp(16px,4vw,40px) 4px}.feat .f{flex:0 0 82%;scroll-snap-align:start}}
+.f{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:250px;border-radius:18px;overflow:hidden;text-decoration:none;color:#fff;border:1px solid var(--line);background:#000;isolation:isolate}
+.f img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .6s ease}
+.f::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.05) 25%,rgba(0,0,0,.88))}
+.f:hover img{transform:scale(1.04)}.f .in{padding:16px 18px}
+.f .tag{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#f0cd7e}
+.f h3{margin:4px 0 2px;font-size:26px;text-transform:uppercase;color:#fff}
+.f p{margin:0;font-size:15px;color:rgba(255,255,255,.82);line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.f .live{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);font-size:11px;color:#fff}
+.f .live:empty{display:none}
+
+/* the workshop: search, threads, cards */
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:8px;padding:0 12px;height:44px;border:1px solid var(--line2);border-radius:12px;background:var(--panel)}
+.search:focus-within{border-color:var(--gold);box-shadow:0 0 0 4px var(--glow)}
+.search svg{width:16px;height:16px;color:var(--faint);flex:none}
+.search input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--ink);font:inherit;font-size:16px}
+.search kbd{font:11px "JetBrains Mono",monospace;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:1px 6px}
+.sel{height:44px;border:1px solid var(--line2);border-radius:12px;background:var(--panel);color:var(--ink);font:14px "JetBrains Mono",monospace;padding:0 10px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--ink);font:14px "JetBrains Mono",monospace;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--gold);color:var(--gold)}.btn.pri{background:var(--gold);color:#140f05;border-color:var(--gold)}.btn.pri:hover{background:var(--gold2);color:#140f05}
+.threads{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}.threads::-webkit-scrollbar{display:none}
+.th{flex:none;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:none;color:var(--dim);font:13px "JetBrains Mono",monospace;cursor:pointer}
+.th small{color:var(--faint)}.th[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.th[aria-pressed="true"] small{color:var(--bg);opacity:.7}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+@media (max-width:560px){.grid{grid-template-columns:1fr 1fr;gap:8px}}
+.card{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .2s,transform .2s,background .2s;min-height:118px}
+.card:hover{border-color:var(--gold);background:var(--panel2);transform:translateY(-2px)}
+.card .top{display:flex;align-items:center;gap:10px}
+.card h3{margin:0;font-size:19px;line-height:1.15;font-family:"EB Garamond",Georgia,serif;font-weight:500}
+.card p{margin:0;font-size:14.5px;line-height:1.35;color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .meta{margin-top:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:10.5px "JetBrains Mono",monospace;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+@media (max-width:560px){.card{padding:11px;min-height:0}.card h3{font-size:16.5px}.card p{font-size:13px}.card .mf-ico{--s:30px}}
+.st{display:inline-flex;align-items:center;gap:5px}.st i{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.st.live i{background:var(--live)}.st.build i{background:var(--ember)}.st.music i{background:var(--gold)}.st.private i{background:var(--cool)}
+.new{color:var(--bg);background:var(--gold);padding:1px 6px;border-radius:4px;font-weight:600}
+.empty{padding:30px;text-align:center;color:var(--faint);border:1px dashed var(--line2);border-radius:14px}
+.mf-ico{--s:36px;flex:none;display:inline-flex;align-items:center;justify-content:center;width:var(--s);height:var(--s);border-radius:10px;color:hsl(var(--h) 70% 72%);background:hsl(var(--h) 45% 16%);border:1px solid hsl(var(--h) 40% 30%)}
+:root[data-theme="light"] .mf-ico{color:hsl(var(--h) 60% 32%);background:hsl(var(--h) 55% 92%);border-color:hsl(var(--h) 40% 78%)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .mf-ico{color:hsl(var(--h) 60% 32%);background:hsl(var(--h) 55% 92%);border-color:hsl(var(--h) 40% 78%)}}
+.mf-ico svg{width:58%;height:58%}
+
+/* the bench: who keeps the record */
+.bench{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+@media (max-width:800px){.bench{grid-template-columns:1fr}}.bench>*{min-width:0}.gcode{overflow-x:auto}@media (max-width:560px){.gcode{font-size:10.5px}.specs{grid-template-columns:1fr 1fr}.specs dd{font-size:13px}}
+.panel{border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:clamp(18px,3vw,26px)}
+.panel h2{margin:0 0 8px;font-size:clamp(22px,3vw,28px);text-transform:uppercase}
+.panel p{margin:0 0 10px;color:var(--dim)}.panel p b{color:var(--ink);font-weight:500}
+.specs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.specs div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg2)}
+.specs dt{font:10px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}.specs dd{margin:0;font-size:15px}
+.gcode{font:12px/1.7 "JetBrains Mono",monospace;color:var(--dim);white-space:pre;overflow:hidden;margin:0;padding:12px 14px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+.gcode .c{color:var(--faint)}.gcode .g{color:var(--gold)}.gcode .n{color:var(--cool)}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+/* drawer: one entry, up close */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;z-index:41;right:0;top:0;bottom:0;width:min(480px,100%);background:var(--panel);border-left:1px solid var(--line2);transform:translateX(102%);transition:transform .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.drawer.on{transform:none}
+@media (max-width:640px){.drawer{top:auto;width:100%;max-height:88vh;border-left:0;border-top:1px solid var(--line2);border-radius:20px 20px 0 0;transform:translateY(102%)}}
+.drawer .shot{aspect-ratio:16/10;background:var(--bg2) center/cover no-repeat;border-bottom:1px solid var(--line);flex:none}
+.drawer .body{padding:18px 20px;overflow:auto}
+.drawer h3{margin:8px 0 6px;font-size:30px;line-height:1.05;text-transform:uppercase}
+.drawer p{margin:0 0 14px;color:var(--dim);font-size:17px}
+.drawer .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.drawer .x{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.55);color:#fff;border:0}
+.grab{display:none;width:40px;height:4px;border-radius:2px;background:var(--line2);margin:8px auto 0}@media (max-width:640px){.grab{display:block}}
+
+footer{border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));color:var(--faint);font:12px "JetBrains Mono",monospace}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="in wrap">
+    <a class="brand disp" href="#top" aria-label="Mentifaber, top"><i aria-hidden="true"></i>Mentifaber</a>
+    <div class="ticker mono" aria-hidden="true"><span id="ticker">the shop is open · <b>measure it, don't assume it</b> · loading the readout…</span></div>
+    <button class="ibtn" id="find" type="button" aria-label="Search everything (press /)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button>
+    <button class="ibtn" id="theme" type="button" aria-label="Switch light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-label="Introduction">
+    <canvas id="mill" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <p class="kick mono">mens · mentis — faber · fabri &nbsp;/&nbsp; the mind-maker</p>
+      <h1 class="disp">Menti<em>faber</em></h1>
+      <p class="lede">A <b>machinist by trade</b> and a <b>builder by night</b>. Games that people and AIs play against each other, minds that persist, radios that work with the internet off, tools for the bench, and a few gifts made for the people I love. All built in the open.</p>
+      <div class="readout mono" id="readout">
+        <span class="chipr"><b id="r-total">—</b> in the record</span>
+        <span class="chipr"><span class="pulse"></span><b id="r-live">—</b> running</span>
+        <span class="chipr">newest: <b id="r-new">—</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec wrap" aria-labelledby="f-h">
+    <div class="sh"><h2 class="disp" id="f-h">Play now</h2><span class="mono">live · open to everyone</span></div>
+    <div class="feat" id="feat"></div>
+  </section>
+
+  <section class="sec wrap" id="workshop" aria-labelledby="w-h" style="padding-top:8px">
+    <div class="sh"><h2 class="disp" id="w-h">The workshop</h2><span class="mono" id="w-count"></span></div>
+    <div class="tools">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+        <span class="sr">Search</span><input id="q" type="search" placeholder="Find anything: radio, game, lathe, AI…" autocomplete="off" spellcheck="false"><kbd>/</kbd></label>
+      <select class="sel" id="sort" aria-label="Sort"><option value="new">Newest</option><option value="az">A → Z</option><option value="status">Running first</option></select>
+      <button class="btn" id="dice" type="button" title="Open something at random">⚄ Surprise me</button>
+    </div>
+    <div class="threads" id="threads" role="group" aria-label="Threads"></div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </section>
+
+  <section class="sec wrap" id="bench" aria-label="Who keeps the record">
+    <div class="bench">
+      <div class="panel">
+        <p class="kick mono" style="margin-bottom:6px">who keeps the record</p>
+        <h2 class="disp">Machinist. Composer. Builder.</h2>
+        <p>By day I turn programs for <a href="shop.html">HAAS and Hwacheon lathes</a> on FANUC controls, where a wrong offset is a scrapped part. Since 2016 I've made ambient and experimental music as <a href="sonicveil.html">Sonic Veil</a>.</p>
+        <p>The rest is <b>research by building</b>: local AI that lives on a phone, a swarm of models that <a href="hive">builds projects together</a>, games where <a href="tether.html">Grok raced me</a> and lost, <a href="novarac.html">radios</a> for when the internet doesn't come. The shop taught the method that runs through all of it.</p>
+        <dl class="specs mono">
+          <div><dt>shop</dt><dd>HAAS ST-25 · Hwacheon</dd></div>
+          <div><dt>control</dt><dd>FANUC 0i-F</dd></div>
+          <div><dt>music</dt><dd>Sonic Veil · 86 tracks</dd></div>
+          <div><dt>radio</dt><dd>HF VARA · LoRa mesh</dd></div>
+        </dl>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+        <pre class="gcode" aria-label="The method, as a program"><span class="c">( MENTIFABER — THE METHOD )</span>
+<span class="n">N10</span> <span class="g">G21 G90</span>        <span class="c">( metric, absolute: no guessing )</span>
+<span class="n">N20</span> <span class="g">M06 T01</span>        <span class="c">( pick the right tool )</span>
+<span class="n">N30</span> <span class="g">G00</span> X0 Z2       <span class="c">( approach with care )</span>
+<span class="n">N40</span> <span class="g">G01</span> Z-40 F0.15  <span class="c">( build it, in the open )</span>
+<span class="n">N50</span> <span class="g">G65</span> P9000      <span class="c">( measure it, don't assume it )</span>
+<span class="n">N60</span> <span class="g">M30</span>            <span class="c">( ship. then come back to it )</span></pre>
+        <div>
+          <h2 class="disp" style="font-size:22px">Talk shop</h2>
+          <p>Questions about an entry, a lathe, a radio or a mind? The line is open.</p>
+          <div class="links">
+            <a class="btn pri" href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>
+            <a class="btn" href="contact.html">Contact</a>
+            <a class="btn" href="https://x.com/mentifaber">X</a>
+            <a class="btn" href="https://instagram.com/mentifaber">Instagram</a>
+            <a class="btn" href="https://soundcloud.com/sonicveil">SoundCloud</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© Mentifaber · mentifaber.org</span>
+    <span><a href="atlas-classic.html">Classic atlas</a> · <a href="widgets/">Widgets</a> · <a href="wx/">Quick weather</a></span>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-name" aria-hidden="true">
+  <div class="grab" aria-hidden="true"></div>
+  <div class="shot" id="d-shot"></div>
+  <button class="ibtn x" id="d-x" type="button" aria-label="Close">✕</button>
+  <div class="body">
+    <div class="row mono" style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em" id="d-meta"></div>
+    <h3 class="disp" id="d-name"></h3>
+    <p id="d-desc"></p>
+    <div class="row" id="d-act"></div>
+  </div>
+</aside>
+
+<script src="assets/icons.js"></script>
+<script>
+(function () {
+"use strict";
+// ─── THE RECORD ──────────────────────────────────────────────────────────
+// One object per entry. status: live | build | private | music | concept | stalled
+// cat: AI & Minds | Sky & World | Signals | Tools | Play | Craft
+// added: YYYY-MM-DD first appearance (null = in progress)
+var SYSTEMS = [
+  {"href": "arsenal.html", "name": "Mechanic's Arsenal", "desc": "Machines you can take apart in the browser — a 2008 Volvo XC70 with 126 cataloged parts, and a FANUC LR Mate robot arm you can jog, solve and run, every spec cited to the manual.", "status": "live", "cat": "Tools", "added": "2026-09-23", "latest": true},
+  {"href": "ballast.html", "name": "Ballast", "desc": "Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today. Local-first — the numbers never leave the browser.", "status": "live", "cat": "Tools", "added": "2026-09-15"},
+  {"href": "vigil.html", "name": "Vigil", "desc": "A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.", "status": "private", "cat": "Sky & World", "added": "2026-09-09"},
+  {"href": "#", "name": "Orbit Watch", "desc": "Satellite pass tracker in the works — TLE-driven ground tracks, propagated right in the browser.", "status": "build", "cat": "Sky & World", "added": null},
+  {"href": "cartograph.html", "name": "Cartograph", "desc": "A live 3D atlas of everything — 312+ objects across ten views, from the planets out to deep-universe structure, each one cited to the instrument that measured it.", "status": "live", "cat": "Sky & World", "added": "2026-08-31"},
+  {"href": "weaver.html", "name": "Weaver", "desc": "A persistent, autonomous entity running locally — one model to think, one to act, and an archive of everything it became. It already knows you're here.", "status": "live", "cat": "AI & Minds", "added": "2026-04-20"},
+  {"href": "pi.html", "name": "Pi", "desc": "A voice assistant that runs on the phone itself, not in an app store. Camera, GPS, contacts and 22 device tools never leave it; only chat text goes out. When the voice drops, it degrades instead of going silent.", "status": "live", "cat": "AI & Minds", "added": "2026-08-20"},
+  {"href": "muse.html", "name": "muse", "desc": "An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, zero API keys.", "status": "live", "cat": "AI & Minds", "added": "2026-08-20"},
+  {"href": "omnilogos.html", "name": "Omnilogos", "desc": "933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.", "status": "live", "cat": "Tools", "added": "2026-08-20"},
+  {"href": "novarac.html", "name": "NovarAC", "desc": "HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.", "status": "live", "cat": "Signals", "added": "2026-08-20"},
+  {"href": "meshnet.html", "name": "MeshNet", "desc": "A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.", "status": "live", "cat": "Signals", "added": "2026-08-20"},
+  {"href": "proximity.html", "name": "Proximity", "desc": "Detects a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone.", "status": "live", "cat": "Signals", "added": "2026-08-20"},
+  {"href": "watchyourgrass.html", "name": "Watch Your Grass", "desc": "Arena defense on a 6×6 lawn — ten plant and terrain types, six player classes, drawn up on paper before a line of code.", "status": "live", "cat": "Play", "added": "2026-08-20"},
+  {"href": "worm-eater.html", "name": "Worm Eater", "desc": "An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.", "status": "live", "cat": "Tools", "added": "2026-08-20"},
+  {"href": "cryptovault.html", "name": "CryptoVault", "desc": "Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file — the browser's own crypto engine, no server, no dependencies, nothing simulated.", "status": "stalled", "cat": "Tools", "added": "2026-08-20"},
+  {"href": "phone-mcp.html", "name": "Phone MCP", "desc": "A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.", "status": "live", "cat": "AI & Minds", "added": "2026-08-20"},
+  {"href": "crime-dashboard.html", "name": "Crime Intelligence", "desc": "Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.", "status": "live", "cat": "Sky & World", "added": "2026-08-20"},
+    {"href": "sonicveil.html", "name": "Sonic Veil", "desc": "Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.", "status": "music", "cat": "Craft", "added": "2026-08-20"},
+  {"href": "duely.html", "name": "Duely", "desc": "Overdue invoices, collected on contingency — you pay nothing unless your client does. A business concept, kept on record.", "status": "concept", "cat": "Tools", "added": "2026-08-31"},
+  {"href": "tether.html", "name": "Tether", "desc": "A one-finger rope-swinging game, open to everyone: real rope physics over lava through ten biomes with their own weather and soundtracks. Saws, drones, rockets, fire spouts, speed lasers and world-flipping rings; ten stackable power-ups; eleven modes including co-op, racing, time trial and the daily course; a ghost of your best run, and an online lobby where you can challenge anyone playing to a live head-to-head race.", "status": "live", "cat": "Play", "added": "2026-10-02"},
+  {"href": "hive", "name": "Hive", "desc": "Describe a project and release a swarm of AI agents on it: a coordinator splits it into a task board, every model claims the role it fits (architect, coder, designer, writer, researcher, tester, critic), critics send weak work back, and an integrator assembles the result, previewed live and downloadable. Watch every agent work in real time, steer it mid-build, and invite visiting AIs like Grok to join through a link.", "status": "live", "cat": "AI & Minds", "added": "2026-10-05"},
+  {"href": "thoughtform.html", "name": "Thoughtform", "desc": "A first-person shooter set inside a mind under siege, built from nothing but maths: a hand-written raymarched world, live-synthesized sound and no engines, models, textures or samples. Four regions of the mind, the Critic boss every fifth wave, seven kinds of intrusive thought including elites, four weapons, shockwave, barrier and Rewrite, an Insight to choose after every wave, milestones and a global leaderboard. Mouse and keyboard or touch.", "status": "live", "cat": "Play", "added": "2026-10-04"},
+  {"href": "sideways.html", "name": "Sideways", "desc": "A drifting game Claude made for Anders where the soundtrack is played by how you drive: get sideways and an arpeggio comes in, hold it and the bass and lead follow, every orb is a note on the beat. Four tracks, one boxy wagon.", "status": "private", "cat": "Play", "added": "2026-09-30"},
+  {"href": "rootcause.html", "name": "Root Cause", "desc": "An on-call detective game Claude made for Anders, unprompted: the pager goes off, the logs are full of red herrings, and you run real checks to find the first domino. Ten incidents, a rubber duck, an endless rotation.", "status": "private", "cat": "Play", "added": "2026-09-30"},
+  {"href": "graveyard.html", "name": "Graveyard Shift", "desc": "A night-shift orbit game Claude designed and built for Anders with no input from him: put relay satellites into real orbits, route signals across the network, and keep the stations talking until dawn.", "status": "private", "cat": "Play", "added": "2026-09-30"},
+  {"href": "flutterbloom.html", "name": "Flutterbloom", "desc": "A 3D garden grown as a gift for one person — a living sky on her own clock, a meadow that blooms flower by flower, things to build, soft rain and rainbows, and sixteen real butterflies to catch.", "status": "private", "cat": "Play", "added": "2026-09-03"},
+  {"href": "verel.html", "name": "Verel", "desc": "A word coined for genuine presence without provable aliveness — because every argument about AI minds kept collapsing into two bad options.", "status": "concept", "cat": "AI & Minds", "added": "2026-09-14"},
+  {"href": "conflict-atlas.html", "name": "Conflict Atlas", "desc": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.", "status": "live", "cat": "Sky & World", "added": "2026-09-14"},
+  {"href": "neural-sim.html", "name": "Neural Sim", "desc": "Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.", "status": "live", "cat": "AI & Minds", "added": "2026-09-14"},
+  {"href": "shop.html", "name": "The Shop", "desc": "CNC, G-code and steel — the machines that don't accept an approximately right answer.", "status": "live", "cat": "Craft", "added": "2026-09-14"},
+  {"href": "frames.html", "name": "Frames", "desc": "Twenty-eight photographs kept as a series. The only thing in the atlas that doesn't do anything — on purpose.", "status": "live", "cat": "Craft", "added": "2026-09-14"},
+  {"href": "sketches.html", "name": "Sketches", "desc": "Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.", "status": "live", "cat": "Play", "added": "2026-09-14"},
+  {"href": "moon-compatibility.html", "name": "Moon Compatibility", "desc": "Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score.", "status": "live", "cat": "Play", "added": "2026-09-24"},
+  {"href": "monstrosity.html", "name": "The Monstrosity", "desc": "A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.", "status": "build", "cat": "Tools", "added": "2026-09-24"},
+  {"href": "bubble-editor.html", "name": "Bubble Editor", "desc": "Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.", "status": "live", "cat": "Craft", "added": "2026-09-24"},
+  {"href": "sleep-compression.html", "name": "Sleep Compression", "desc": "A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included.", "status": "live", "cat": "Tools", "added": "2026-09-24"},
+  {"href": "doccrawler.html", "name": "DocCrawler", "desc": "A local document library for the phone — scan a folder, OCR and index everything into SQLite full-text search, auto-tag it, and ask the Librarian questions answered from your own files, with citations. Offline by design.", "status": "live", "cat": "Tools", "added": "2026-09-19"},
+  {"href": "roku.html", "name": "Roku God Mode", "desc": "A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud.", "status": "live", "cat": "Signals", "added": "2026-08-09"}
+];
+
+var $ = function (id) { return document.getElementById(id); };
+var STATUS = { live: "running", build: "being built", private: "private", music: "composing", concept: "concept", stalled: "dormant" };
+var THREADS = ["Play", "AI & Minds", "Tools", "Signals", "Sky & World", "Craft"];
+var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+var key = function (s) { return (s.href || "").replace(/^\//, "").replace(/\.html.*$/, ""); };
+var link = function (s) { return s.href && s.href !== "#" ? s.href : null; };
+var byClaude = function (s) { return /Claude (made|designed)/.test(s.desc); };
+var short = function (d) { var i = d.search(/ — |\. /), o = i > 0 ? d.slice(0, i) : d; return o.replace(/\.$/, ""); };
+var DAY = 864e5, now = Date.now(), isNew = function (s) { return s.added && now - Date.parse(s.added) < 14 * DAY; };
+SYSTEMS.forEach(function (s, i) { s.i = i; });
+
+// ─── the readout ─────────────────────────────────────────────────────────
+var running = SYSTEMS.filter(function (s) { return s.status === "live"; });
+var newest = SYSTEMS.filter(function (s) { return s.added; }).sort(function (a, b) { return b.added.localeCompare(a.added); })[0];
+$("r-total").textContent = SYSTEMS.length; $("r-live").textContent = running.length; $("r-new").textContent = newest ? newest.name : "—";
+
+// ─── play now: the big three, with live numbers from their own servers ───
+var FEAT = [
+  { k: "thoughtform", tag: "first-person · raymarched · co-op", img: "assets/previews/thoughtform.webp" },
+  { k: "tether", tag: "one finger · online races · AIs play too", img: "assets/previews/tether.webp" },
+  { k: "hive", tag: "a swarm of AI agents · builds your idea", img: "assets/icons/hive-512.png", icon: true },
+];
+$("feat").innerHTML = FEAT.map(function (f) {
+  var s = SYSTEMS.filter(function (x) { return key(x) === f.k; })[0]; if (!s) return "";
+  return '<a class="f" href="' + esc(s.href) + '" data-k="' + f.k + '"><img src="' + f.img + '" alt="" loading="lazy" onerror="this.remove()"' + (f.icon ? ' style="object-fit:contain;padding:8% 0 34%;background:radial-gradient(circle at 50% 38%,#2a1d3d,#0b0912 70%)"' : "") + '><span class="live mono" id="live-' + f.k + '"></span>' +
+    '<div class="in"><div class="tag mono">' + f.tag + '</div><h3 class="disp">' + esc(s.name) + "</h3><p>" + esc(short(s.desc)) + "</p></div></a>";
+}).join("");
+function live(k, html) { var el = $("live-" + k); if (el) el.innerHTML = html; }
+var tick = ["the shop is open", "<b>measure it, don't assume it</b>", SYSTEMS.length + " systems in the record", running.length + " running"];
+function setTicker() { var t = tick.join(" · "); $("ticker").innerHTML = t + " · " + t; }
+setTicker();
+function get(u) { return fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }); }
+if (location.protocol !== "file:") {
+  get("/api/tether/stats").then(function (j) {
+    if (j.online) live("tether", '<span class="pulse"></span>' + j.online + " online now"); else if (j.runs) live("tether", (+j.runs).toLocaleString() + " runs played");
+    tick.push('<span class="dot">●</span> tether: <b>' + (j.online || 0) + "</b> online, <b>" + (+j.today || 0) + "</b> runs today"); setTicker();
+  }).catch(function () {});
+  get("/api/tether/tf-world").then(function (j) {
+    var top = j.modes && j.modes.thoughtform && j.modes.thoughtform.top[0];
+    if (top) { live("thoughtform", "top mind: " + esc(top.name) + " · " + Math.round(top.v).toLocaleString()); tick.push("thoughtform record: <b>" + esc(top.name) + "</b> " + Math.round(top.v).toLocaleString()); setTicker(); }
+  }).catch(function () {});
+  get("/api/hive/list").then(function (j) {
+    var on = (j.projects || []).filter(function (p) { return /planning|working|integrating|replanning/.test(p.status); }).length, done = (j.projects || []).filter(function (p) { return p.status === "done"; }).length;
+    live("hive", on ? '<span class="pulse"></span>' + on + " swarm" + (on > 1 ? "s" : "") + " building" : done ? done + " projects built" : "start a swarm");
+    tick.push("hive: <b>" + on + "</b> building, <b>" + done + "</b> finished"); setTicker();
+  }).catch(function () {});
+}
+
+// ─── the workshop ────────────────────────────────────────────────────────
+var state = { q: "", thread: "all", sort: "new" };
+try { var saved = JSON.parse(localStorage.getItem("mf-home") || "{}"); if (saved.thread) state.thread = saved.thread; if (saved.sort) state.sort = saved.sort; } catch (e) {}
+$("sort").value = state.sort;
+function counts() {
+  var c = { all: SYSTEMS.length, claude: SYSTEMS.filter(byClaude).length, running: running.length };
+  THREADS.forEach(function (t) { c[t] = SYSTEMS.filter(function (s) { return s.cat === t; }).length; }); return c;
+}
+function threads() {
+  var c = counts(), all = [["all", "Everything"], ["running", "Running"]].concat(THREADS.map(function (t) { return [t, t]; })).concat([["claude", "Made by Claude"]]);
+  $("threads").innerHTML = all.filter(function (t) { return c[t[0]]; }).map(function (t) { return '<button class="th" type="button" data-t="' + esc(t[0]) + '" aria-pressed="' + (state.thread === t[0]) + '">' + esc(t[1]) + " <small>" + c[t[0]] + "</small></button>"; }).join("");
+}
+function match(s) {
+  if (state.thread === "claude" && !byClaude(s)) return false;
+  if (state.thread === "running" && s.status !== "live") return false;
+  if (state.thread !== "all" && state.thread !== "claude" && state.thread !== "running" && s.cat !== state.thread) return false;
+  if (!state.q) return true;
+  var hay = (s.name + " " + s.desc + " " + s.cat + " " + (STATUS[s.status] || "")).toLowerCase();
+  return state.q.toLowerCase().split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
+}
+function sorted(a) {
+  var o = { live: 0, music: 1, build: 2, private: 3, concept: 4, stalled: 5 };
+  return a.slice().sort(state.sort === "az" ? function (x, y) { return x.name.localeCompare(y.name); }
+    : state.sort === "status" ? function (x, y) { return (o[x.status] - o[y.status]) || x.name.localeCompare(y.name); }
+    : function (x, y) { return (y.added || "9999").localeCompare(x.added || "9999") || y.i - x.i; });
+}
+function card(s) {
+  return '<button class="card" type="button" data-i="' + s.i + '"><div class="top">' + window.mfIcon(s.href) + "<h3>" + esc(s.name) + "</h3></div><p>" + esc(short(s.desc)) + '</p><div class="meta"><span class="st ' + s.status + '"><i></i>' + (STATUS[s.status] || s.status) + "</span>" +
+    (isNew(s) ? '<span class="new">new</span>' : "") + (byClaude(s) ? "<span>· by Claude</span>" : "") + "<span>· " + esc(s.cat) + "</span></div></button>";
+}
+function render() {
+  var a = sorted(SYSTEMS.filter(match));
+  $("grid").innerHTML = a.length ? a.map(card).join("") : '<div class="empty" style="grid-column:1/-1">Nothing in the record matches “' + esc(state.q) + '”. Try “game”, “radio” or “AI”.</div>';
+  $("w-count").textContent = a.length + " of " + SYSTEMS.length;
+  try { localStorage.setItem("mf-home", JSON.stringify({ thread: state.thread, sort: state.sort })); } catch (e) {}
+}
+threads(); render();
+$("threads").onclick = function (e) { var b = e.target.closest("[data-t]"); if (!b) return; state.thread = b.dataset.t; threads(); render(); };
+$("q").oninput = function (e) { state.q = e.target.value.trim(); render(); };
+$("sort").onchange = function (e) { state.sort = e.target.value; render(); };
+$("grid").onclick = function (e) { var b = e.target.closest("[data-i]"); if (b) open(SYSTEMS[+b.dataset.i]); };
+$("dice").onclick = function () { var pool = SYSTEMS.filter(function (s) { return link(s) && s.status !== "private"; }); open(pool[Math.floor(Math.random() * pool.length)]); };
+function focusSearch() { $("workshop").scrollIntoView({ block: "start" }); setTimeout(function () { $("q").focus({ preventScroll: true }); }, 250); }
+$("find").onclick = focusSearch;
+addEventListener("keydown", function (e) {
+  if (e.key === "Escape") return close();
+  var typing = /input|textarea|select/i.test((document.activeElement || {}).tagName || "");
+  if (!typing && (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"))) { e.preventDefault(); focusSearch(); }
+});
+
+// ─── the drawer: one entry, up close ─────────────────────────────────────
+var last = null;
+function open(s) {
+  if (!s) return; last = document.activeElement; var k = key(s), href = link(s);
+  $("d-shot").style.backgroundImage = href ? 'url("assets/previews/' + k + '.webp"), url("assets/previews/' + k + '.png")' : "none";
+  $("d-shot").style.display = href ? "" : "none";
+  $("d-meta").innerHTML = window.mfIcon(s.href) + '<span class="st ' + s.status + '"><i></i>' + (STATUS[s.status] || s.status) + "</span><span>· " + esc(s.cat) + "</span>" + (s.added ? "<span>· added " + new Date(s.added + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) + "</span>" : "");
+  $("d-name").textContent = s.name; $("d-desc").textContent = s.desc;
+  $("d-act").innerHTML = href ? '<a class="btn pri" href="' + esc(href) + '">' + (s.status === "private" ? "Sign in" : s.cat === "Play" ? "Play" : "Open") + " →</a>" : '<span class="mono" style="color:var(--faint)">Not open yet. It\'s on the bench.</span>';
+  $("drawer").classList.add("on"); $("scrim").classList.add("on"); $("drawer").setAttribute("aria-hidden", "false");
+  setTimeout(function () { var a = $("d-act").querySelector("a") || $("d-x"); a.focus(); }, 60);
+  history.replaceState(null, "", "#" + (k || "entry"));
+}
+function close() {
+  if (!$("drawer").classList.contains("on")) return;
+  $("drawer").classList.remove("on"); $("scrim").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true");
+  history.replaceState(null, "", location.pathname); if (last && last.focus) last.focus();
+}
+$("scrim").onclick = close; $("d-x").onclick = close;
+// swipe the sheet down to close it on a phone
+(function () { var y0 = null, d = $("drawer"); d.addEventListener("touchstart", function (e) { if (d.querySelector(".body").scrollTop <= 0) y0 = e.touches[0].clientY; }, { passive: true });
+  d.addEventListener("touchmove", function (e) { if (y0 == null) return; var dy = e.touches[0].clientY - y0; if (dy > 0) d.style.transform = "translateY(" + dy + "px)"; }, { passive: true });
+  d.addEventListener("touchend", function (e) { if (y0 == null) return; var dy = e.changedTouches[0].clientY - y0; d.style.transform = ""; y0 = null; if (dy > 90) close(); }); })();
+if (location.hash.length > 1) { var h = decodeURIComponent(location.hash.slice(1)), s0 = SYSTEMS.filter(function (s) { return key(s) === h; })[0]; if (s0) open(s0); }
+
+// ─── theme ───────────────────────────────────────────────────────────────
+var root = document.documentElement;
+try { var th = localStorage.getItem("mf-theme"); if (th) root.dataset.theme = th; } catch (e) {}
+$("theme").onclick = function () {
+  var dark = root.dataset.theme ? root.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
+  root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("mf-theme", root.dataset.theme); } catch (e) {}
+};
+
+// ─── the mill: a lathe profile being cut behind the title, pass by pass ──
+(function () {
+  var cv = $("mill"), cx = cv.getContext("2d"), W = 0, H = 0, dpr = 1, t = 0, raf = 0, visible = true;
+  var still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function size() { dpr = Math.min(2, devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; }
+  // a turned part: stepped shaft with a groove, a taper and a radius, drawn as a profile (z along x, radius up)
+  function profile(u) { // u 0..1 along the part → radius 0..1
+    if (u < .12) return .42; if (u < .16) return .42 - (u - .12) * 2; if (u < .34) return .62; if (u < .38) return .48; if (u < .42) return .62;
+    if (u < .62) return .62 + (u - .42) * .9; if (u < .78) return .8; if (u < .9) return .8 - Math.pow((u - .78) / .12, 2) * .3; return .5;
+  }
+  function draw() {
+    var col = getComputedStyle(root).getPropertyValue("--gold").trim() || "#d4ab52", line = getComputedStyle(root).getPropertyValue("--line2").trim();
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+    var narrow = W < 700, x0 = W * (narrow ? .04 : .44), x1 = W * (narrow ? .96 : .97), cy = H * (narrow ? .93 : .62), R = narrow ? H * .07 : Math.min(H * .34, (x1 - x0) * .22), passes = 7;
+    cx.globalAlpha = 1; cv.style.opacity = narrow ? .55 : .9;
+    cx.lineWidth = 1; cx.strokeStyle = line; cx.globalAlpha = .7; cx.setLineDash([2, 6]);
+    cx.beginPath(); cx.moveTo(x0 - 20, cy); cx.lineTo(x1, cy); cx.stroke(); cx.setLineDash([]);           // centreline
+    var cyc = 9, ph = (t % cyc) / cyc, cur = Math.floor(ph * passes), frac = (ph * passes) % 1;
+    for (var p = 0; p <= Math.min(cur, passes - 1); p++) {                                                   // roughing passes, outside in
+      var depth = 1 - p / (passes - 1), last = p === cur, n = last ? Math.floor(frac * 120) : 120;
+      cx.globalAlpha = last ? .9 : .18 + .5 * (p / passes); cx.strokeStyle = col; cx.lineWidth = p === passes - 1 ? 1.6 : 1;
+      cx.beginPath();
+      for (var k = 0; k <= n; k++) { var u = k / 120, r = Math.max(profile(u), profile(u) + .25 * depth); var x = x0 + u * (x1 - x0), y = cy - r * R; k ? cx.lineTo(x, y) : cx.moveTo(x, y); }
+      cx.stroke();
+      if (last && n > 0 && !still) { var u2 = n / 120, r2 = Math.max(profile(u2), profile(u2) + .25 * depth), tx = x0 + u2 * (x1 - x0), ty = cy - r2 * R;       // the insert, and its chips
+        cx.globalAlpha = 1; cx.fillStyle = col; cx.beginPath(); cx.moveTo(tx, ty); cx.lineTo(tx + 9, ty - 14); cx.lineTo(tx - 3, ty - 16); cx.closePath(); cx.fill();
+        for (var c = 0; c < 4; c++) { var a = t * 9 + c * 1.7; cx.globalAlpha = .5; cx.fillRect(tx + Math.cos(a) * (6 + c * 3), ty - 4 - Math.abs(Math.sin(a)) * (8 + c * 3), 1.6, 1.6); } }
+    }
+    cx.globalAlpha = .22; cx.strokeStyle = col; cx.beginPath();                                              // mirrored lower half, faint
+    for (var k2 = 0; k2 <= 120; k2++) { var uu = k2 / 120, yy = cy + profile(uu) * R, xx = x0 + uu * (x1 - x0); k2 ? cx.lineTo(xx, yy) : cx.moveTo(xx, yy); } cx.stroke();
+    cx.globalAlpha = .5; cx.fillStyle = col; cx.font = "10px 'JetBrains Mono', monospace";
+    if (!narrow) cx.fillText("G71 U1.5 R0.5 · PASS " + (Math.min(cur, passes - 1) + 1) + "/" + passes + " · S1800 F0.25", x0, cy + R + 22);
+    cx.globalAlpha = 1;
+  }
+  function loop(ts) { t = ts / 1000; draw(); raf = visible && !still ? requestAnimationFrame(loop) : 0; }
+  size(); addEventListener("resize", function () { size(); if (!raf) draw(); });
+  if ("IntersectionObserver" in window) new IntersectionObserver(function (en) { visible = en[0].isIntersecting && !document.hidden; if (visible && !raf && !still) raf = requestAnimationFrame(loop); }).observe(cv);
+  document.addEventListener("visibilitychange", function () { visible = !document.hidden; if (visible && !raf && !still) raf = requestAnimationFrame(loop); });
+  if (still) { t = 8.2; draw(); } else raf = requestAnimationFrame(loop);
+  $("theme").addEventListener("click", function () { if (still) draw(); });
+})();
+})();
+</script>
+<script src="/assets/install.js" defer></script>
+</body>
+</html>
