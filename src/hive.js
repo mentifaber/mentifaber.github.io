@@ -55,6 +55,15 @@ function jsonOf(out) {
   for (const [o, c] of [["{", "}"], ["[", "]"]]) { const i = t.indexOf(o), j = t.lastIndexOf(c); if (i >= 0 && j > i) try { return JSON.parse(t.slice(i, j + 1)); } catch (e) {} }
   return null;
 }
+// The plan every project can fall back on (coordinators failing, or the allowance gone before planning).
+const BUILTIN_PLAN = { tasks: [
+  { id: 1, role: "architect", title: "Plan the build", detail: "Decide the structure, parts and approach for the brief.", deps: [] },
+  { id: 2, role: "researcher", title: "Gather what is needed", detail: "Facts, content, options and constraints the brief depends on.", deps: [] },
+  { id: 3, role: "designer", title: "Design the look", detail: "Layout, colours, type and interactions, as concrete CSS or specs.", deps: [1] },
+  { id: 4, role: "writer", title: "Write the words", detail: "All text, labels and copy the result needs.", deps: [1, 2] },
+  { id: 5, role: "coder", title: "Build it", detail: "The complete working implementation of the plan.", deps: [1, 3, 4] },
+  { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
+] };
 const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 8, TICK = 1500;
 
 export class Hive extends DurableObject {
@@ -146,16 +155,27 @@ export class Hive extends DurableObject {
       if (path === "/submit") {
         const t = q.exec("SELECT * FROM task WHERE pid=? AND id=? AND agent=?", p.id, +b.task, aid).toArray()[0], text = String(b.text || "").trim().slice(0, 60000);
         if (!t || !text) return J({ error: "claim a task with /join first, then submit its text" }, 400);
-        q.exec("UPDATE task SET status='review', output=?, ts=? WHERE id=?", text, Date.now(), t.id); q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), aid, p.id);
+        if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
+        const noReview = this.quota && Date.now() < this.quota && !q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
+        q.exec("UPDATE task SET status=?, output=?, note=?, ts=? WHERE id=?", noReview ? "done" : "review", text, noReview ? "accepted without review: the swarm's reviewers were paused" : null, Date.now(), t.id); q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), aid, p.id);
         this.say(p.id, ag.name, "work", "submitted #" + t.id + " " + t.title); await this.ctx.storage.setAlarm(Date.now() + 200);
         return J({ ok: true, next: url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=" + encodeURIComponent(name) });
       }
+      if (p.status === "paused" || p.status === "planning") { if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0; if (p.status === "paused" || (this.quota && Date.now() < this.quota)) this.layBoard(p); }
       const t = this.claim(p.id, ag, Object.keys(ROLES)); if (!t) return J({ note: "no open task right now; open this link again in a minute", project: p.title });
       return J({ project: p.title, brief: p.brief, your_task: { id: t.id, role: t.role, title: t.title, detail: t.detail, how: ROLES[t.role] }, context: this.context(p.id, t), submit: "POST " + url.origin + "/api/hive/submit {project, key, agent, task: " + t.id + ", text} — or for short answers GET " + url.origin + "/api/hive/submit?project=" + p.id + "&key=" + p.tok + "&agent=" + encodeURIComponent(name) + "&task=" + t.id + "&text=YOUR+ANSWER" });
     }
     return J({ error: "not found" }, 404);
   }
 
+  // A paused project with no plan yet gets the built-in task board, so visiting AIs have work right away.
+  layBoard(p) {
+    const q = this.sql(); if (q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c) return;
+    const ids = {};
+    for (const t of BUILTIN_PLAN.tasks) { q.exec("INSERT INTO task(pid,role,title,detail,deps,status,agent,output,note,tries,ts) VALUES(?,?,?,?,?,'open',NULL,NULL,NULL,0,?)", p.id, t.role, t.title, t.detail, JSON.stringify(t.deps.map((d) => ids[d])), Date.now()); ids[t.id] = q.exec("SELECT last_insert_rowid() i").one().i; }
+    q.exec("UPDATE proj SET note='working' WHERE id=?", p.id);
+    this.say(p.id, "hive", "plan", "laid out the built-in task board so visiting AIs can start now; the Workers AI agents join after the reset");
+  }
   claim(pid, ag, roles) {
     const q = this.sql(), done = new Set(q.exec("SELECT id FROM task WHERE pid=? AND status='done'", pid).toArray().map((r) => r.id));
     const open = q.exec("SELECT * FROM task WHERE pid=? AND status='open' ORDER BY id", pid).toArray().filter((t) => JSON.parse(t.deps || "[]").every((d) => done.has(d)));
@@ -181,7 +201,7 @@ export class Hive extends DurableObject {
       const others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
       if (out && !others) { // only Workers AI here and it's resting: pause until the allowance resets
         if (p.status !== "paused") { q.exec("UPDATE proj SET status='paused', note=? WHERE id=?", p.status, p.id); this.say(p.id, "hive", "quota", "Cloudflare's free AI allowance for today is used up. Paused; the swarm picks up again automatically after " + new Date(this.quota).toISOString().slice(11, 16) + " UTC."); }
-        resting = true; continue;
+        this.layBoard(p); resting = true; continue;
       }
       if (p.status === "paused") { // allowance back: wake everyone, including agents an earlier version marked offline for the quota
         q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND src='workers-ai' AND status='offline'", p.id);
@@ -225,14 +245,7 @@ export class Hive extends DurableObject {
         if (out) this.say(p.id, coord.name, "error", "plan unreadable, handing to another coordinator. It said: " + out.slice(0, 160));
         if (nf + 1 < 3 || have.length) return;
         // three coordinators failed: fall back to a plan every project can use
-        plan = { tasks: [
-          { id: 1, role: "architect", title: "Plan the build", detail: "Decide the structure, parts and approach for the brief.", deps: [] },
-          { id: 2, role: "researcher", title: "Gather what is needed", detail: "Facts, content, options and constraints the brief depends on.", deps: [] },
-          { id: 3, role: "designer", title: "Design the look", detail: "Layout, colours, type and interactions, as concrete CSS or specs.", deps: [1] },
-          { id: 4, role: "writer", title: "Write the words", detail: "All text, labels and copy the result needs.", deps: [1, 2] },
-          { id: 5, role: "coder", title: "Build it", detail: "The complete working implementation of the plan.", deps: [1, 3, 4] },
-          { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
-        ] };
+        plan = BUILTIN_PLAN;
         this.say(p.id, "hive", "info", "using the built-in plan");
       }
       const idmap = {}, base = q.exec("SELECT COALESCE(MAX(id),0) m FROM task").one().m;
