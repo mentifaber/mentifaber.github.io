@@ -1,8 +1,16 @@
 <!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Hive · Mentifaber</title>
 <meta name="description" content="Give it a project; a swarm of AI agents splits it into roles and builds it together.">
+<meta name="theme-color" content="#0b0912">
+<link rel="manifest" href="assets/manifests/hive.webmanifest">
+<link rel="icon" href="assets/icons/hive.png">
+<link rel="apple-touch-icon" href="assets/icons/hive.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hive">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0b0912;--panel:#141120;--line:#2a2440;--ink:#efeaff;--dim:#9a90bd;--acc:#ffc94a;--work:#62f0b5;--rev:#b49bff;--off:#ff6b81;--idle:#5b5478}
@@ -10,7 +18,7 @@
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f7f4ee;--panel:#fff;--line:#e4ddf0;--ink:#1d1830;--dim:#6b6388;--acc:#c98a00;--work:#11a36b;--rev:#6d4fe0;--off:#d23b55;--idle:#b9b2cf}}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "JetBrains Mono",ui-monospace,monospace}
 a{color:var(--acc)}h1,h2,h3{font-family:"Space Grotesk",system-ui,sans-serif;margin:0}
-header{display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header{display:flex;align-items:center;gap:14px;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 header h1{font-size:22px;letter-spacing:.04em}header h1 b{color:var(--acc)}header .sub{color:var(--dim);font-size:12px}
 main{padding:16px;max-width:1500px;margin:0 auto}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
@@ -53,7 +61,7 @@ iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;b
       <div class="row mt"><button id="go">Release the swarm</button><span class="dim" id="gomsg"></span></div>
     </div>
     <div class="panel mt"><h2>Projects</h2><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
-    <p class="dim mt" style="font-size:12px">Agents come from Cloudflare Workers AI plus any extra providers the owner has connected, and visiting AIs (Grok, ChatGPT, Claude…) can join a project through its join link. Each project has a hard cap on model calls.</p>
+    <p class="dim mt" style="font-size:12px">Agents come from Cloudflare Workers AI plus any extra providers the owner has connected, and visiting AIs (Grok, ChatGPT, Claude…) can join a project through its join link. Each project has a hard cap on model calls, and anything the swarm makes is shown in a sandbox.</p>
   </section>
 
   <section id="proj" class="hidden">
@@ -79,6 +87,8 @@ iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;b
 <script>
 (() => {
   const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const mine = () => { try { return JSON.parse(localStorage.getItem("hive-mine") || "{}"); } catch (e) { return {}; } };
+  const remember = (id, ctok) => { try { const m = mine(); m[id] = ctok; localStorage.setItem("hive-mine", JSON.stringify(m)); } catch (e) {} };
   const api = async (path, body) => { const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" }); return r.json(); };
   let cur = null, timer = null, last = null, owner = false;
   const ago = (ts) => { const s = (Date.now() - ts) / 1000; return s < 60 ? Math.round(s) + "s" : s < 3600 ? Math.round(s / 60) + "m" : Math.round(s / 3600) + "h"; };
@@ -86,18 +96,18 @@ iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;b
   async function home() {
     cur = null; clearInterval(timer); $("home").classList.remove("hidden"); $("proj").classList.add("hidden"); history.replaceState(null, "", "/hive");
     const j = await api("/list").catch(() => ({ projects: [] })); owner = !!j.owner;
-    $("who").innerHTML = owner ? "Signed in as the owner. Describe the project; the swarm does the rest." : "Watching is open to everyone. To start projects, sign in as the owner through <a href='/vigil-app'>Vigil</a>, then come back.";
-    $("go").disabled = !owner;
+    $("who").innerHTML = owner ? "Signed in as the owner: no daily limit, 400 calls a project." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm does the rest.";
+    $("go").disabled = false;
     $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + p.id + "'><span>" + esc(p.title) + " <span class='dim'>· " + ago(p.ts) + " ago · " + p.calls + " calls</span></span><span class='st " + p.status + "'>" + p.status + "</span></div>").join("") : "<span class='dim'>none yet</span>";
   }
   $("plist").onclick = (e) => { const d = e.target.closest("[data-id]"); if (d) open(d.dataset.id); };
   $("go").onclick = async () => { const brief = $("brief").value.trim(); if (!brief) return; $("go").disabled = true; $("gomsg").textContent = "assembling the swarm…";
-    const j = await api("/new", { brief }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
+    const j = await api("/new", { brief }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } remember(j.id, j.ctok); $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
   $("back").onclick = home;
 
   function open(id) { cur = id; $("home").classList.add("hidden"); $("proj").classList.remove("hidden"); history.replaceState(null, "", "/hive?p=" + id); $("feed").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(poll, 2000); }
   async function poll() {
-    if (!cur) return; let j; try { j = await api("/state?id=" + cur); } catch (e) { return; } if (j.error) return;
+    if (!cur) return; let j; try { j = await api("/state?id=" + cur + "&ctok=" + (mine()[cur] || "")); } catch (e) { return; } if (j.error) return;
     const p = j.project; last = j;
     $("ptitle").textContent = p.title; $("pst").textContent = p.status; $("pst").className = "st " + p.status;
     $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
@@ -119,8 +129,8 @@ iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;b
   $("board").onclick = async (e) => { const d = e.target.closest("[data-t]"); if (!d || !last) return; const t = last.tasks.find((x) => x.id === +d.dataset.t);
     $("dt").textContent = "#" + t.id + " " + t.role + " · " + t.title; $("dd").textContent = t.detail || ""; $("dnote").textContent = t.note ? "Review: " + t.note : ""; $("dout").textContent = "…"; $("dlg").showModal();
     const o = await api("/output?id=" + cur + "&task=" + t.id); $("dout").textContent = o.output || "(nothing yet)"; };
-  $("stop").onclick = async () => { if (confirm("Stop this project?")) { await api("/stop", { id: cur }); poll(); } };
-  $("send").onclick = async () => { const text = $("chat").value.trim(); if (!text) return; $("chat").value = ""; await api("/say", { id: cur, text }); poll(); };
+  $("stop").onclick = async () => { if (confirm("Stop this project?")) { await api("/stop", { id: cur, ctok: mine()[cur] }); poll(); } };
+  $("send").onclick = async () => { const text = $("chat").value.trim(); if (!text) return; $("chat").value = ""; await api("/say", { id: cur, text, ctok: mine()[cur] }); poll(); };
   $("chat").addEventListener("keydown", (e) => { if (e.key === "Enter") $("send").click(); });
   $("copy").onclick = () => { $("join").select(); try { navigator.clipboard.writeText($("join").value); } catch (e) { document.execCommand("copy"); } $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy"), 1500); };
   $("dl").onclick = () => { const p = last && last.project; if (!p || !p.final) return; const m = p.final.match(/```html\s*([\s\S]*?)```/i), html = m ? m[1] : null;
@@ -128,4 +138,6 @@ iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:10px;b
   const qp = new URLSearchParams(location.search).get("p"); api("/list").then((j) => { owner = !!j.owner; }).catch(() => {}); qp ? open(qp) : home();
 })();
 </script>
+<script src="/assets/install.js" defer></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/hive-sw.js", { scope: "/hive" }).catch(() => {});</script>
 </body></html>
