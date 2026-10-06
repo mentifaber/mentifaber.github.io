@@ -33,7 +33,7 @@ async function notify(kv, deps, to, urgency) {
   }
   return n;
 }
-const showTo = (m, user, now) => m.from === user || !(m.unlock && m.unlock > now);
+const showTo = (m, user, now) => !(m.exp && m.exp <= now) && (m.from === user || !(m.unlock && m.unlock > now)); // vanished messages are gone even if the alarm is a moment late
 
 export async function usHandle(req, env, a) {
   const { s, me, owner, deps } = a, kv = kvOf(s), J = deps.json, url = new URL(req.url);
@@ -102,7 +102,7 @@ export async function usHandle(req, env, a) {
         const m = await kv.get(P + "m:" + ev.id); if (!m || !showTo(m, mine, now)) continue;
         if (m.from !== mine && !m.dl) { m.dl = now; await kv.put(P + "m:" + ev.id, m); await emit(kv, { t: "dl", id: ev.id, to: m.from }); }
         events.push({ k: cur, t: "new", m: { id: ev.id, ...m } });
-      } else events.push({ k: cur, t: ev.t, id: ev.id, at: ev.at, ...(ev.rx ? { rx: ev.rx } : {}) });
+      } else events.push({ k: cur, t: ev.t, id: ev.id, at: ev.at, ...(ev.rx ? { rx: ev.rx } : {}), ...(ev.exp ? { exp: ev.exp } : {}) });
     }
     if (Math.random() < .03) { const all = await kv.list(P + "ev:"); if (all.length > KEEP_EV * 1.4) for (const [k] of all.slice(0, all.length - KEEP_EV)) await kv.del(k); }
     return J({ events, ev: cur, seen: partnerSeen, now });
@@ -117,9 +117,11 @@ export async function usHandle(req, env, a) {
     if (!(await s.hit("ussend:" + mine, 200, 60e3))) return J({ error: "slow down" }, 429);
     const b = await body(); if (!b || typeof b.ct !== "string" || b.ct.length > MAX_CT || !B64.test(b.ct) || typeof b.iv !== "string" || b.iv.length !== 16 || !B64.test(b.iv)) return J({ error: "bad message" }, 400);
     const quiet = !!b.q, lvl = quiet ? 0 : [0, 1, 2].includes(b.lvl) ? b.lvl : 0, unlock = +b.unlock > now + 10e3 && +b.unlock < now + 5 * 365 * 864e5 ? Math.floor(+b.unlock) : 0;
+    const van = Number.isInteger(b.van) && b.van >= 3 && b.van <= 604800 ? b.van : 0, exp = +b.exp > now + 10e3 && +b.exp <= now + 7 * 864e5 ? Math.floor(+b.exp) : 0; // van: vanishes N seconds after they look · exp: vanishes at a fixed time (stories)
     let blob = null; if (b.blob) { if (!/^[a-f0-9]{16}$/.test(b.blob) || !(await kv.get(P + "b:" + b.blob))) return J({ error: "attachment missing" }, 400); blob = b.blob; }
-    const id = pad(now) + "-" + rnd(2), m = { from: mine, ts: now, lvl, q: quiet ? 1 : 0, unlock, ct: b.ct, iv: b.iv, blob, dl: 0, rd: 0, ak: 0 };
+    const id = pad(now) + "-" + rnd(2), m = { from: mine, ts: now, lvl, q: quiet ? 1 : 0, unlock, van, exp, ct: b.ct, iv: b.iv, blob, dl: 0, rd: 0, ak: 0 };
     await kv.put(P + "m:" + id, m);
+    if (exp) { await kv.put(P + "xp:" + pad(exp) + ":" + id, { id }); await s.usAt(exp); }
     if (unlock) {
       await kv.put(P + "due:" + pad(unlock) + ":" + id, { id, to: them });
       await emit(kv, { t: "new", id, to: mine }); await s.usAt(unlock);
@@ -135,7 +137,7 @@ export async function usHandle(req, env, a) {
     const b = await body(), ids = Array.isArray(b && b.ids) ? b.ids.slice(0, 100) : [];
     for (const id of ids) {
       const m = await kv.get(P + "m:" + id); if (!m || m.from === mine) continue;
-      let ch = false; if (!m.rd) { m.rd = now; ch = true; await emit(kv, { t: "rd", id, to: m.from }); }
+      let ch = false; if (!m.rd) { m.rd = now; ch = true; if (m.van && !m.exp) { m.exp = now + m.van * 1000; await kv.put(P + "xp:" + pad(m.exp) + ":" + id, { id }); await s.usAt(m.exp); } await emit(kv, { t: "rd", id, to: m.from, ...(m.exp ? { exp: m.exp } : {}) }); await s.usPoke(m.from, { t: "poke" }).catch(() => 0); }
       if (b.ak && !m.ak) { m.ak = now; ch = true; await emit(kv, { t: "ak", id, to: m.from }); }
       if (ch) { await kv.put(P + "m:" + id, m); await s.usPoke(m.from, { t: "poke" }).catch(() => 0); }
     }
@@ -156,7 +158,7 @@ export async function usHandle(req, env, a) {
   if (op === "message" && req.method === "DELETE" && arg) {
     const m = await kv.get(P + "m:" + arg); if (!m || m.from !== mine) return J({ error: "not yours" }, 403);
     await kv.del(P + "m:" + arg); await kv.del(P + "esc:" + arg); if (m.blob) await kv.del(P + "b:" + m.blob);
-    if (m.unlock) await kv.del(P + "due:" + pad(m.unlock) + ":" + arg);
+    if (m.unlock) await kv.del(P + "due:" + pad(m.unlock) + ":" + arg); if (m.exp) await kv.del(P + "xp:" + pad(m.exp) + ":" + arg);
     await emit(kv, { t: "del", id: arg }); await s.usPoke(them, { t: "poke" }).catch(() => 0);
     return J({ ok: true });
   }
@@ -197,6 +199,12 @@ export async function usAlarm(st, deps) {
       await emit(kv, { t: "new", id: due.id, to: due.to }); await st.usPoke(due.to, { t: "poke" }).catch(() => 0); await notify(kv, d2, due.to, m.lvl ? "high" : "normal").catch(() => 0);
       if (m.lvl >= 1) await kv.put(P + "esc:" + due.id, { id: due.id, to: due.to, lvl: m.lvl, n: 0, next: now + ESC[m.lvl].every });
     }
+    await kv.del(k);
+  }
+  for (const [k, x] of await kv.list(P + "xp:", { limit: 60 })) { // vanishing messages: gone for both of you
+    const t = +k.slice(P.length + 3, P.length + 16); if (t > now) { next = Math.min(next, t); break; }
+    const m = await kv.get(P + "m:" + x.id);
+    if (m) { await kv.del(P + "m:" + x.id); await kv.del(P + "esc:" + x.id); if (m.blob) await kv.del(P + "b:" + m.blob); if (m.unlock) await kv.del(P + "due:" + pad(m.unlock) + ":" + x.id); await emit(kv, { t: "del", id: x.id }); const cfg = await kv.get(P + "cfg"); for (const u of (cfg && cfg.users) || []) await st.usPoke(u, { t: "poke" }).catch(() => 0); }
     await kv.del(k);
   }
   for (const [k, e] of await kv.list(P + "esc:")) {
