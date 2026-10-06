@@ -1,0 +1,16 @@
+{
+  "name": "NULLSPACE",
+  "short_name": "NULLSPACE",
+  "description": "Encrypted comms over the internet and LoRa mesh radio.",
+  "start_url": "/nullspace",
+  "scope": "/nullspace",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05040a",
+  "theme_color": "#05040a",
+  "categories": ["social", "utilities"],
+  "icons": [
+    { "src": "../icons/nullspace.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "../icons/nullspace-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

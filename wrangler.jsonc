@@ -22,9 +22,9 @@
     ]
   },
   "durable_objects": {
-    "bindings": [{ "name": "STORE", "class_name": "Store" }, { "name": "LOBBY", "class_name": "Lobby" }, { "name": "HIVE", "class_name": "Hive" }]
+    "bindings": [{ "name": "STORE", "class_name": "Store" }, { "name": "LOBBY", "class_name": "Lobby" }, { "name": "HIVE", "class_name": "Hive" }, { "name": "NULLSPACE", "class_name": "Nullspace" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }, { "tag": "v3", "new_sqlite_classes": ["Hive"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }, { "tag": "v3", "new_sqlite_classes": ["Hive"] }, { "tag": "v4", "new_sqlite_classes": ["Nullspace"] }],
   // Workers AI: the Hive's swarm (src/hive.js). Optional extra providers are Worker secrets:
   // OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY (wrangler secret put …).
   "ai": { "binding": "AI" },

@@ -1,6 +1,7 @@
 import { createGame } from "./tether-core.js";
 import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
 import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } from "./us.js";
+import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
@@ -488,6 +489,18 @@ async function dailyReminders(env) {
   }
 }
 
+// NULLSPACE (the encrypted mesh/internet comms deck) relays sealed transmissions from its own Durable Object; see nullspace.js.
+export class Nullspace extends DurableObject {
+  constructor(ctx, env) { super(ctx, env); if (typeof WebSocketRequestResponsePair !== "undefined") ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong")); }
+  deps() { return { sendPush, PUSH_HOSTS, vapid: () => store(this.env).vapid() }; }
+  async at(t) { const cur = await this.ctx.storage.getAlarm(); if (!cur || t < cur) await this.ctx.storage.setAlarm(Math.max(t, Date.now() + 300)); }
+  async fetch(req) { return nsFetch(this, req, this.deps()); }
+  async alarm() { const next = await nsAlarm(this); if (next < Infinity) await this.ctx.storage.setAlarm(Math.max(next, Date.now() + 500)); }
+  async webSocketMessage(ws, msg) { nsMessage(this, ws, msg); }
+  async webSocketClose(ws) { nsClose(this, ws); }
+  async webSocketError(ws) { nsClose(this, ws); }
+}
+
 // A sealed page without a session is sent with its ciphertext removed, so the
 // lock screen shows but there is nothing to attack offline.
 async function sealedPage(req, env, app) {
@@ -523,6 +536,10 @@ export default {
       if (route === "login" && req.method === "POST") return login(req, env);
       if (route === "logout" && req.method === "POST") return logout(req, env, app);
       if (route === "accts" && app) return accounts(req, env, app);
+      if (route === "ns") { // NULLSPACE: no accounts; the Nullspace object relays sealed transmissions by frequency tag
+        const h = new Headers(req.headers); h.set("x-ns-ip", req.headers.get("cf-connecting-ip") || "unknown");
+        return env.NULLSPACE.get(env.NULLSPACE.idFromName("main")).fetch(new Request(req, { headers: h }));
+      }
       if (route === "us") { // Barycenter: members sign in with their own account; setting the space up needs the owner (Vigil) session
         const me = await sessionRec(req, env, "us"), owner = !!(await session(req, env, "vigil"));
         return usHandle(req, env, { s: store(env), me, owner, deps: { json, sendPush, PUSH_HOSTS, vapid: () => store(env).vapid() } });

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="noir" data-fx="med">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>NULLSPACE</title>
+<meta name="description" content="An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic and MeshCore). No accounts.">
+<meta name="theme-color" content="#05040a">
+<link rel="manifest" href="assets/manifests/nullspace.webmanifest">
+<link rel="icon" href="assets/icons/nullspace.png">
+<link rel="apple-touch-icon" href="assets/icons/nullspace.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="NULLSPACE">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/ns/ns.css">
+</head>
+<body>
+<div id="boot" aria-hidden="true"></div>
+<div id="jack"><div class="jc"><div class="logo big" data-t="NULL//SPACE">NULL//SPACE</div><p>Encrypted comms over the net and over the mesh.<br>No account. No number. Pick a handle.</p><div class="cl"><span>▸</span><input id="jh" maxlength="16" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false"></div><button class="nb pri" id="jg">JACK IN</button><div id="jm" class="err"></div></div></div>
+
+<div id="app" class="hidden">
+  <header id="hud">
+    <button class="ic" id="b-menu" aria-label="Frequencies">☰</button>
+    <div class="logo" data-t="NULL//SPACE">NULL//SPACE</div>
+    <button class="hb" id="h-net"></button><button class="hb" id="h-rf"></button><button class="hb" id="h-br"></button>
+    <span id="h-clock" class="hclock"></span>
+    <button id="h-op" class="hop" aria-label="Operator"></button>
+    <button class="ic" id="b-side" aria-label="Scope and mesh">◈</button>
+  </header>
+  <nav id="rail">
+    <div id="tuner"></div>
+    <div class="railb"><button class="nb" id="b-new">＋ NEW / TUNE</button><button class="nb" id="b-key">⌘ KEY</button><button class="nb" id="b-radio">⌁ RADIO</button><button class="nb" id="b-sys">⚙ SYSTEM</button><button class="nb" id="b-help">? HELP</button></div>
+  </nav>
+  <main id="main">
+    <div id="fhead"><b id="fname">—</b><small id="fsub"></small></div>
+    <div id="stream" role="log" aria-live="polite"></div>
+    <div id="typing"></div>
+    <div id="hint"></div>
+    <div id="tools"><button data-tool="cmds">/ CMD</button><button data-tool="img">▣ IMG</button><button data-tool="loc">⌖ LOC</button><button data-tool="burn" id="burnb">☠ OFF</button><button data-tool="route" id="route">⇄ AUTO</button><span id="count"></span></div>
+    <div id="cl"><span class="pr">▸</span><textarea id="cmd" rows="1" placeholder="transmit… or /help" autocomplete="off" autocapitalize="sentences" spellcheck="false" aria-label="Command line"></textarea><button id="send" aria-label="Transmit">TX</button></div>
+  </main>
+  <aside id="side" data-tab="ops">
+    <div class="lbl">// SCOPE</div><canvas id="scope" width="300" height="90"></canvas>
+    <div class="stabs"><button data-st="ops" class="on">OPS</button><button data-st="mesh">MESH</button></div>
+    <div id="sidebody"></div>
+  </aside>
+</div>
+<div id="pnl" role="dialog" aria-modal="true"></div>
+<div id="toast" role="status"></div>
+<input type="file" id="file" accept="image/*" hidden>
+<script src="assets/ns/core.js"></script>
+<script src="assets/ns/radio.js"></script>
+<script src="assets/ns/net.js"></script>
+<script src="assets/ns/deck.js"></script>
+</body>
+</html>
