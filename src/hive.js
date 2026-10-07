@@ -122,7 +122,7 @@ export class Hive extends DurableObject {
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
-    if (path === "/models") return J({ owner, models: this.models(owner), search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI });
+    if (path === "/models") return J({ owner, models: [...this.models(owner), ...(owner ? await this.envModels() : [])], resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI });
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
@@ -322,6 +322,7 @@ export class Hive extends DurableObject {
   // ── the key vault: unlimited keys, any provider, sealed at rest, owner only ──
   async vk() { return (this._vk = this._vk || (await vaultKey(this.env, this.ctx.storage))); }
   async vaultGet(id) {
+    if (id.startsWith("env-")) { const k = KEYED.find((x) => "env-" + x.id === id && this.env[x.env]); if (!k) throw new Error("that provider's secret isn't set"); return { v: { id, provider: k.id, kind: "compat", base: k.url.replace(/\/chat\/completions$/, "") }, key: this.env[k.env] }; }
     const v = this.sql().exec("SELECT * FROM vault WHERE id=?", id).toArray()[0]; if (!v || !v.live) throw new Error("that key is gone or switched off");
     this.sql().exec("UPDATE vault SET used=COALESCE(used,0)+1 WHERE id=?", id); return { v, key: await unseal(await this.vk(), v.sealed) };
   }
@@ -353,6 +354,22 @@ export class Hive extends DurableObject {
     if (path === "/keys/set") { if (b.live !== undefined) q.exec("UPDATE vault SET live=? WHERE id=?", b.live ? 1 : 0, v.id); if (b.label !== undefined) q.exec("UPDATE vault SET label=? WHERE id=?", String(b.label).slice(0, 40), v.id); if (b.pick !== undefined) q.exec("UPDATE vault SET pick=? WHERE id=?", String(b.pick).slice(0, 2000), v.id); return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
     if (path === "/keys/test") { let err = null, models = JSON.parse(v.models || "[]"); try { models = await probe(v, await unseal(await this.vk(), v.sealed)); } catch (e) { err = String(e.message || e).slice(0, 200); } q.exec("UPDATE vault SET err=?, models=? WHERE id=?", err, JSON.stringify(models), v.id); return J({ ok: !err, error: err, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
     return J({ error: "not found" }, 404);
+  }
+  async envModels() { // providers set as Worker secrets (OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY): their lists, refreshed hourly
+    if (this._envM && Date.now() - this._envM.at < 3600e3) return this._envM.list;
+    const list = [];
+    for (const k of KEYED) { const key = this.env[k.env]; if (!key) continue; let ids = k.models || [];
+      if (k.list) try { const j = await (await fetch(k.list, { headers: { authorization: "Bearer " + key } })).json(); ids = (j.data || []).map((m) => m.id).filter((id) => !/whisper|tts|guard|embed|image|audio|moderation/i.test(id)); if (k.free) ids = [...ids.filter((i) => /:free$/.test(i)), ...ids.filter((i) => !/:free$/.test(i))]; } catch (e) {}
+      for (const m of ids.slice(0, 3000)) list.push({ id: "k:env-" + k.id + "|" + m, name: m, group: k.id[0].toUpperCase() + k.id.slice(1) + " (site secret)", vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|-vl/i.test(m) }); }
+    this._envM = { at: Date.now(), list }; return list;
+  }
+  async resting() { if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0; return this.quota && Date.now() < this.quota ? this.quota : 0; }
+  async rest() { const d = new Date(); this.quota = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); await this.ctx.storage.put("quota", this.quota); }
+  // When Cloudflare's free allowance is out, the owner's own keys answer instead: a sensible everyday model first.
+  async standIn(not) {
+    const ms = [...this.models(true).filter((m) => m.id.startsWith("k:")), ...(await this.envModels())].filter((m) => m.id !== not);
+    const pref = /gpt-5-mini|gpt-4\.1-mini|gpt-4o-mini|claude.*(sonnet|haiku)|gemini-2\.5-flash|deepseek-chat|llama-3\.3-70b|gpt-oss-120b|qwen3|:free$/i;
+    return (ms.find((m) => pref.test(m.id)) || ms[0] || {}).id || null;
   }
   models(owner) { // what the Studio can talk to
     const out = this.env.AI ? CF_MODELS.map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
@@ -388,8 +405,9 @@ export class Hive extends DurableObject {
       return J({ audio: "data:audio/mpeg;base64," + (await speak(this.env, t)) });
     }
     // chat
-    const [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
+    let [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
     if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
+    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Keys and Hive will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
     const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-24).map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text || "").slice(0, 16000), images: Array.isArray(m.images) ? m.images.filter((u) => typeof u === "string" && u.startsWith("data:image/") && u.length < 4e6).slice(0, 8) : [] }));
@@ -402,7 +420,9 @@ export class Hive extends DurableObject {
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
-    let v = null, key = null; if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
+    let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
+    if (src === "workers-ai" && (await this.resting()) && !(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
+    if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
     if (last.images.length && (!v || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
@@ -413,7 +433,8 @@ export class Hive extends DurableObject {
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
       let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
-      if (!crew.length) crew = [...(owner ? this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id).filter((id, i, a) => a.findIndex((x) => x.split("|")[0] === id.split("|")[0]) === i).slice(0, 3) : []), ...free.map((m) => "workers-ai|" + m)].filter((c) => c !== b.model).slice(0, owner ? 6 : 4);
+      if (await this.resting()) crew = crew.filter((c) => !c.startsWith("workers-ai|"));
+      if (!crew.length) crew = [...(owner ? this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id).filter((id, i, a) => a.findIndex((x) => x.split("|")[0] === id.split("|")[0]) === i).slice(0, 3) : []), ...((await this.resting()) ? (owner ? (await this.envModels()).map((m) => m.id).filter((id) => id !== used).slice(0, 4) : []) : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used).slice(0, owner ? 6 : 4);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const drafts = await Promise.all(crew.map(async (c) => { const [cs, cm] = c.split("|"), t1 = Date.now(); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
         try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system, msgs, 1800); return { model: c, text: String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(), ms: Date.now() - t1 }; }
@@ -421,12 +442,15 @@ export class Hive extends DurableObject {
       const good = drafts.filter((d) => d && d.text);
       tools.push("council of " + good.length + (good.length < crew.length ? " (" + (crew.length - good.length) + " absent)" : ""));
       const brief = good.map((d, k) => "DRAFT " + String.fromCharCode(65 + k) + " (" + d.model.split("|").pop().split("/").pop() + "):\n" + d.text.slice(0, 7000)).join("\n\n");
+      if (!v && (await this.resting()) && owner) await tryIn();
       text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of a council of AI models. They each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
       if (!text) text = await complete(this.env, v, key, model, system, msgs, 3000);
-      return J({ text: text || "(the model returned nothing)", sources, tools, drafts: drafts.filter(Boolean), ms: Date.now() - t0 });
+      return J({ text: text || "(the model returned nothing)", sources, tools, drafts: drafts.filter(Boolean), ms: Date.now() - t0, model: used });
     }
     try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); }
-    catch (e) { if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
-    return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0 });
+    catch (e) {
+      if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used }); }
+      if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
+    return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used });
   }
 }
