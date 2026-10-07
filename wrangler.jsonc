@@ -26,7 +26,8 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }, { "tag": "v3", "new_sqlite_classes": ["Hive"] }, { "tag": "v4", "new_sqlite_classes": ["Nullspace"] }],
   // Workers AI: the Hive's swarm (src/hive.js). Optional extra providers are Worker secrets:
-  // OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY (wrangler secret put …).
+  // OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY (wrangler secret put …). Owner keys added at /hive#keys are sealed in the
+  // Hive DO; set HIVE_VAULT_SECRET to seal them with a key that lives outside the DO.
   "ai": { "binding": "AI" },
   // Hourly check for Flutterbloom's daily reminder (src/worker.js dailyReminders).
   "triggers": { "crons": ["7 * * * *"] }
