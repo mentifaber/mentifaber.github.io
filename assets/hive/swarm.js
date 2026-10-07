@@ -28,7 +28,7 @@
     $("ptitle").textContent = p.title; $("pst").textContent = p.status; $("pst").className = "st " + p.status;
     $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
     const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks done";
-    $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning|paused/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
+    $("recruit").classList.toggle("hidden", !owner || !/planning|working|integrating|replanning|paused/.test(p.status)); $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning|paused/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
     const live = j.agents.filter((a) => a.status !== "offline").length, busy = j.agents.filter((a) => a.status === "working" || a.status === "reviewing").length;
     $("acount").textContent = live + " online · " + busy + " busy · " + j.agents.length + " total";
     $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + a.status + "' title='" + esc(a.src + " · " + a.model + " · reputation " + (a.score || 0)) + "'>" + (a.score ? "<span class='sc'>" + (a.score > 0 ? "+" : "") + a.score + "</span>" : "") + "<b>" + esc(a.name) + "</b><span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");
@@ -45,11 +45,12 @@
   $("board").onclick = async (e) => { const d = e.target.closest("[data-t]"); if (!d || !last) return; const t = last.tasks.find((x) => x.id === +d.dataset.t);
     $("dt").textContent = "#" + t.id + " " + t.role + " · " + t.title; $("dd").textContent = t.detail || ""; $("dnote").textContent = t.note ? "Review: " + t.note : ""; $("dout").textContent = "…"; $("dlg").showModal();
     const o = await api("/output?id=" + cur + "&task=" + t.id); $("dout").textContent = o.output || "(nothing yet)"; };
+  $("recruit").onclick = async () => { $("recruit").disabled = true; const j = await api("/recruit", { id: cur }); $("recruit").disabled = false; if (j.error) alert(j.error); poll(); };
   $("stop").onclick = async () => { if (confirm("Stop this project?")) { await api("/stop", { id: cur, ctok: mine()[cur] }); poll(); } };
   $("send").onclick = async () => { const text = $("chat").value.trim(); if (!text) return; $("chat").value = ""; await api("/say", { id: cur, text, ctok: mine()[cur] }); poll(); };
   $("chat").addEventListener("keydown", (e) => { if (e.key === "Enter") $("send").click(); });
   $("copy").onclick = () => { $("join").select(); try { navigator.clipboard.writeText($("join").value); } catch (e) { document.execCommand("copy"); } $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy"), 1500); };
   $("dl").onclick = () => { const p = last && last.project; if (!p || !p.final) return; const m = p.final.match(/```html\s*([\s\S]*?)```/i), html = m ? m[1] : null;
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html || p.final], { type: html ? "text/html" : "text/markdown" })); a.download = (p.title || "hive").replace(/[^\w-]+/g, "-").toLowerCase() + (html ? ".html" : ".md"); a.click(); };
-  window.HiveSwarm = { show() { const qp = new URLSearchParams(location.search).get("p"); qp ? open(qp) : home(); }, hide() { cur = null; clearInterval(timer); } };
+  window.HiveSwarm = { show() { api("/list").then((j) => { owner = !!j.owner; }).catch(() => {}); const qp = new URLSearchParams(location.search).get("p"); qp ? open(qp) : home(); }, hide() { cur = null; clearInterval(timer); } };
 })();
