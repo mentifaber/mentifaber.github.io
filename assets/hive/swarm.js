@@ -10,13 +10,13 @@
   async function home() {
     cur = null; clearInterval(timer); $("home").classList.remove("hidden"); $("proj").classList.add("hidden"); history.replaceState(null, "", "/hive#swarm");
     const j = await api("/list").catch(() => ({ projects: [] })); owner = !!j.owner;
-    $("swho").innerHTML = owner ? "Signed in as the owner: no daily limit, 400 calls a project." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm does the rest.";
-    $("go").disabled = false;
+    $("swho").innerHTML = owner ? "Signed in as the owner: no daily limit, set the budget, and every key in your vault joins in." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm does the rest.";
+    $("go").disabled = false; $("caprow").classList.toggle("hidden", !owner);
     $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + p.id + "'><span>" + esc(p.title) + " <span class='dim'>· " + ago(p.ts) + " ago · " + p.calls + " calls</span></span><span class='st " + p.status + "'>" + p.status + "</span></div>").join("") : "<span class='dim'>none yet</span>";
   }
   $("plist").onclick = (e) => { const d = e.target.closest("[data-id]"); if (d) open(d.dataset.id); };
   $("go").onclick = async () => { const brief = $("brief").value.trim(); if (!brief) return; $("go").disabled = true; $("gomsg").textContent = "assembling the swarm…";
-    const j = await api("/new", { brief }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } remember(j.id, j.ctok); $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
+    const j = await api("/new", { brief, cap: +$("cap").value || undefined }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } remember(j.id, j.ctok); $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
   $("back").onclick = home;
 
   function open(id) { cur = id; $("home").classList.add("hidden"); $("proj").classList.remove("hidden"); history.replaceState(null, "", "/hive?p=" + id + "#swarm"); $("feed").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(poll, 2000); }
@@ -31,7 +31,7 @@
     $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning|paused/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
     const live = j.agents.filter((a) => a.status !== "offline").length, busy = j.agents.filter((a) => a.status === "working" || a.status === "reviewing").length;
     $("acount").textContent = live + " online · " + busy + " busy · " + j.agents.length + " total";
-    $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + a.status + "' title='" + esc(a.src + " · " + a.model) + "'><b>" + esc(a.name) + "</b><span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");
+    $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + a.status + "' title='" + esc(a.src + " · " + a.model + " · reputation " + (a.score || 0)) + "'>" + (a.score ? "<span class='sc'>" + (a.score > 0 ? "+" : "") + a.score + "</span>" : "") + "<b>" + esc(a.name) + "</b><span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");
     const cols = [["OPEN", ["open"]], ["IN PROGRESS", ["claimed"]], ["REVIEW", ["review", "reviewing"]], ["DONE", ["done"]]];
     const name = (id) => { const a = j.agents.find((x) => x.id === id); return a ? a.name : ""; };
     $("board").innerHTML = cols.map(([h, ss]) => { const ts = j.tasks.filter((t) => ss.includes(t.status)); return "<div class='col'><h3>" + h + " " + ts.length + "</h3>" + ts.map((t) => "<div class='tk' data-t='" + t.id + "'><div class='role'>#" + t.id + " " + esc(t.role) + (t.tries ? " · redo " + t.tries : "") + "</div>" + esc(t.title) + (t.agent ? "<div class='who'>" + esc(name(t.agent)) + "</div>" : "") + "</div>").join("") + "</div>"; }).join("");

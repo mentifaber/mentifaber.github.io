@@ -7,6 +7,8 @@ export const PRESETS = {
   openai: { name: "OpenAI", kind: "compat", base: "https://api.openai.com/v1" },
   anthropic: { name: "Anthropic", kind: "anthropic", base: "https://api.anthropic.com/v1" },
   gemini: { name: "Google Gemini", kind: "compat", base: "https://generativelanguage.googleapis.com/v1beta/openai" },
+  huggingface: { name: "Hugging Face (Inference Providers)", kind: "compat", base: "https://router.huggingface.co/v1" },
+  ollama: { name: "Ollama (your server or Ollama Cloud)", kind: "compat", base: "https://ollama.com/v1", editBase: true, keyless: true, pull: true },
   openrouter: { name: "OpenRouter", kind: "compat", base: "https://openrouter.ai/api/v1" },
   groq: { name: "Groq", kind: "compat", base: "https://api.groq.com/openai/v1" },
   mistral: { name: "Mistral", kind: "compat", base: "https://api.mistral.ai/v1" },
@@ -15,8 +17,18 @@ export const PRESETS = {
   together: { name: "Together", kind: "compat", base: "https://api.together.xyz/v1" },
   fireworks: { name: "Fireworks", kind: "compat", base: "https://api.fireworks.ai/inference/v1" },
   cerebras: { name: "Cerebras", kind: "compat", base: "https://api.cerebras.ai/v1" },
+  sambanova: { name: "SambaNova", kind: "compat", base: "https://api.sambanova.ai/v1" },
+  nvidia: { name: "NVIDIA NIM", kind: "compat", base: "https://integrate.api.nvidia.com/v1" },
+  deepinfra: { name: "DeepInfra", kind: "compat", base: "https://api.deepinfra.com/v1/openai" },
+  novita: { name: "Novita", kind: "compat", base: "https://api.novita.ai/v3/openai" },
+  hyperbolic: { name: "Hyperbolic", kind: "compat", base: "https://api.hyperbolic.xyz/v1" },
+  nebius: { name: "Nebius AI Studio", kind: "compat", base: "https://api.studio.nebius.com/v1" },
+  moonshot: { name: "Moonshot (Kimi)", kind: "compat", base: "https://api.moonshot.ai/v1" },
+  qwen: { name: "Alibaba Qwen (DashScope)", kind: "compat", base: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1" },
+  cohere: { name: "Cohere", kind: "compat", base: "https://api.cohere.ai/compatibility/v1" },
+  github: { name: "GitHub Models", kind: "compat", base: "https://models.github.ai/inference", models: ["openai/gpt-4.1", "openai/gpt-4.1-mini", "openai/gpt-4o", "meta/Llama-4-Maverick-17B-128E-Instruct-FP8", "deepseek/DeepSeek-R1", "mistral-ai/mistral-medium-2505", "microsoft/Phi-4", "xai/grok-3"] },
   perplexity: { name: "Perplexity", kind: "compat", base: "https://api.perplexity.ai", models: ["sonar", "sonar-pro", "sonar-reasoning-pro", "sonar-deep-research"] },
-  custom: { name: "Custom (OpenAI-compatible)", kind: "compat", base: "" },
+  custom: { name: "Custom (OpenAI-compatible: LM Studio, vLLM, LiteLLM…)", kind: "compat", base: "", editBase: true, keyless: true },
   tavily: { name: "Tavily search", kind: "search" },
   brave: { name: "Brave search", kind: "search" },
   serper: { name: "Serper (Google) search", kind: "search" },
@@ -42,16 +54,17 @@ async function jfetch(url, o, ms) {
   if (!r.ok) { const m = j && (j.error && (j.error.message || j.error) || j.message || j.detail); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
   return j == null ? t : j;
 }
-const hdr = (v, key) => v.kind === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" } : { authorization: "Bearer " + key, "content-type": "application/json", "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Hive" };
+const hdr = (v, key) => v.kind === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" } : { ...(key ? { authorization: "Bearer " + key } : {}), "content-type": "application/json", "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Hive" };
 
 // What a key can run. Chat keys list their provider's models; search keys run one test query.
 export async function probe(v, key) {
   if (v.kind === "search") { const r = await search({ ...v }, key, "cloudflare workers durable objects"); if (!r.length) throw new Error("the search came back empty"); return []; }
   const pre = PRESETS[v.provider]; if (pre && pre.models) return pre.models;
-  const j = await jfetch(v.base.replace(/\/$/, "") + "/models", { headers: hdr(v, key) }, 20000);
+  let j; try { j = await jfetch(v.base.replace(/\/$/, "") + "/models", { headers: hdr(v, key) }, 20000); }
+  catch (e) { if (v.provider !== "ollama") throw e; j = await jfetch(root(v.base) + "/api/tags", { headers: hdr(v, key) }, 20000); } // older Ollama: its own list
   const ids = (j.data || j.models || []).map((m) => (typeof m === "string" ? m : m.id || m.name || "").replace(/^models\//, "")).filter((id) => id && !NOT_CHAT.test(id));
-  if (v.provider === "openrouter") { const free = (j.data || []).filter((m) => /:free$/.test(m.id)).map((m) => m.id); return [...new Set([...ids.filter((i) => !/:free$/.test(i)), ...free])].slice(0, 400); }
-  return [...new Set(ids)].slice(0, 400);
+  if (v.provider === "openrouter") { const free = (j.data || []).filter((m) => /:free$/.test(m.id)).map((m) => m.id); return [...new Set([...ids.filter((i) => !/:free$/.test(i)), ...free])].slice(0, 3000); }
+  return [...new Set(ids)].slice(0, 3000);
 }
 
 // ── one call shape for every model ──
@@ -98,6 +111,13 @@ export async function search(v, key, q, n) {
   if (v && v.provider === "exa") { const j = await jfetch("https://api.exa.ai/search", { method: "POST", headers: { "content-type": "application/json", "x-api-key": key }, body: JSON.stringify({ query: q, numResults: n, contents: { text: { maxCharacters: 1200 } } }) }, 20000); return (j.results || []).map((r) => ({ title: r.title, url: r.url, text: r.text })); }
   const j = await jfetch("https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=" + Math.min(n, 5) + "&prop=extracts|info&inprop=url&exintro=1&explaintext=1&exchars=1200&gsrsearch=" + enc, { headers: { "user-agent": "MentifaberHive/2 (https://mentifaber.org/hive)" } }, 15000);
   return Object.values((j.query && j.query.pages) || {}).sort((a, b) => a.index - b.index).map((p) => ({ title: p.title + " (Wikipedia)", url: p.fullurl, text: p.extract }));
+}
+const root = (base) => base.replace(/\/+$/, "").replace(/\/v1$/, ""); // Ollama's native API sits beside /v1
+// Ollama: download a model onto the server (big ones take minutes; Ollama keeps going if we stop waiting).
+export async function pullModel(v, key, model) {
+  let r; try { r = await fetch(root(v.base) + "/api/pull", { method: "POST", headers: hdr(v, key), body: JSON.stringify({ model, stream: false }), signal: T(25000) }); }
+  catch (e) { if (e.name === "TimeoutError") return "downloading; big models take a while, press Test later to see it"; throw e; }
+  const j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || "HTTP " + r.status); return j.status || "success";
 }
 // Read a public web page as plain text (links the user pastes).
 export async function readPage(u) {

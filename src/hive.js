@@ -5,23 +5,30 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { PRESETS, vaultKey, seal, unseal, probe, complete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { PRESETS, pullModel, vaultKey, seal, unseal, probe, complete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
+  ["@cf/openai/gpt-oss-120b", "GPT-OSS 120B", ["coordinator", "architect", "coder", "integrator", "critic"]],
   ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "Llama 3.3 70B", ["coordinator", "architect", "integrator", "critic"]],
-  ["@cf/openai/gpt-oss-120b", "GPT-OSS 120B", ["architect", "coder", "integrator"]],
-  ["@cf/openai/gpt-oss-20b", "GPT-OSS 20B", ["coder", "tester"]],
-  ["@cf/qwen/qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", ["coder", "tester"]],
-  ["@cf/qwen/qwen3-30b-a3b-fp8", "Qwen3 30B", ["coder", "researcher", "critic"]],
-  ["@cf/meta/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", ["designer", "writer", "coder"]],
+  ["@cf/meta/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", ["designer", "writer", "coder", "critic"]],
+  ["@cf/qwen/qwen3-30b-a3b-fp8", "Qwen3 30B", ["coder", "researcher", "critic", "security"]],
+  ["@cf/qwen/qwq-32b", "QwQ 32B (reasoning)", ["architect", "tester", "security", "critic"]],
+  ["@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", "DeepSeek R1 Distill 32B", ["architect", "tester", "researcher"]],
+  ["@cf/qwen/qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", ["coder", "tester", "optimizer"]],
+  ["@cf/openai/gpt-oss-20b", "GPT-OSS 20B", ["coder", "tester", "optimizer"]],
   ["@cf/mistralai/mistral-small-3.1-24b-instruct", "Mistral Small 3.1", ["writer", "designer", "researcher"]],
   ["@cf/google/gemma-3-12b-it", "Gemma 3 12B", ["writer", "designer"]],
+  ["@cf/aisingapore/gemma-sea-lion-v4-27b-it", "SEA-LION 27B", ["writer", "researcher"]],
+  ["@cf/meta/llama-3.1-70b-instruct", "Llama 3.1 70B", ["architect", "writer", "critic"]],
   ["@cf/ibm-granite/granite-4.0-h-micro", "Granite 4.0 Micro", ["tester", "writer"]],
   ["@cf/meta/llama-3.1-8b-instruct-fast", "Llama 3.1 8B", ["writer", "tester", "researcher"]],
   ["@cf/meta/llama-3.2-3b-instruct", "Llama 3.2 3B", ["researcher", "writer"]],
+  ["@cf/meta/llama-3.2-1b-instruct", "Llama 3.2 1B", ["writer"]],
   ["@hf/nousresearch/hermes-2-pro-mistral-7b", "Hermes 2 Pro 7B", ["writer", "researcher"]],
-  ["@cf/mistral/mistral-7b-instruct-v0.2-lora", "Mistral 7B", ["writer"]],
+  ["@cf/deepseek-ai/deepseek-math-7b-instruct", "DeepSeek Math 7B", ["tester", "researcher"]],
+  ["@hf/google/gemma-7b-it", "Gemma 7B", ["writer"]],
+  ["@cf/mistral/mistral-7b-instruct-v0.1", "Mistral 7B", ["writer"]],
 ];
 // Keyed providers: OpenAI-compatible chat endpoints, used only when their secret is set.
 const KEYED = [
@@ -36,6 +43,8 @@ const ROLES = {
   writer: "Write the words: copy, docs, labels, instructions. Clear and finished.",
   researcher: "Gather the facts, options and constraints the team needs. Be specific.",
   tester: "Find bugs and missing cases in the work given; list concrete fixes, or the corrected code.",
+  security: "Audit the work for security and privacy problems (injection, secrets, unsafe input, auth); give the exact fixes.",
+  optimizer: "Make the finished work faster, smaller and cleaner without changing what it does; return the improved version.",
   critic: "Review the work against the brief. Reply APPROVE, or REDO with the exact problems.",
   integrator: "Combine all approved work into the single final deliverable.",
 };
@@ -55,7 +64,7 @@ const BUILTIN_PLAN = { tasks: [
   { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
 ] };
 const STUDIO_DAY = 60, IMAGINE_DAY = 8, MAX_KEYS = 500;
-const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 8, TICK = 1500;
+const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, TICK = 1500;
 
 export class Hive extends DurableObject {
   sql() {
@@ -67,7 +76,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
-      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {}
+      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {}
       this._init = 1;
     }
     return q;
@@ -78,8 +87,8 @@ export class Hive extends DurableObject {
     const out = CF_MODELS.filter(() => this.env.AI).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
     const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
     if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
-      const pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = pick.length ? pick : JSON.parse(v.models || "[]").slice(0, 4);
-      ids.slice(0, 12).forEach((id, i) => out.push({ src: "k:" + v.id, model: id, name: (v.label || PRESETS[v.provider].name) + " · " + id.split("/").pop(), roles: i === 0 ? ["coordinator", "architect", "integrator", "critic", "coder"] : [rr[i % rr.length], rr[(i + 3) % rr.length], "critic"] }));
+      const all = JSON.parse(v.models || "[]"), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = v.pick === "*" ? all.slice(0, 40) : pick.length ? pick : all.slice(0, 4);
+      ids.slice(0, 40).forEach((id, i) => out.push({ src: "k:" + v.id, model: id, name: (v.label || PRESETS[v.provider].name) + " · " + id.split("/").pop(), roles: i === 0 ? ["coordinator", "architect", "integrator", "critic", "coder"] : [rr[i % rr.length], rr[(i + 3) % rr.length], "critic"] }));
     }
     for (const k of KEYED) {
       const key = this.env[k.env]; if (!key) continue;
@@ -128,7 +137,7 @@ export class Hive extends DurableObject {
         q.exec("DELETE FROM limits WHERE k NOT LIKE ?", "%" + day + "%");
       }
       const id = crypto.randomUUID().slice(0, 8), tok = crypto.randomUUID().replace(/-/g, "").slice(0, 16), ctok = crypto.randomUUID().replace(/-/g, "");
-      q.exec("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,?,?,?,?,?)", id, brief.split(/[.\n]/)[0].slice(0, 80), brief, "planning", null, tok, Date.now(), owner ? MAX_CALLS : PUBLIC_CALLS, ctok, owner ? 1 : 0);
+      q.exec("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,?,?,?,?,?)", id, brief.split(/[.\n]/)[0].slice(0, 80), brief, "planning", null, tok, Date.now(), owner ? Math.max(50, Math.min(3000, +b.cap || MAX_CALLS)) : PUBLIC_CALLS, ctok, owner ? 1 : 0);
       this.say(id, "you", "brief", brief);
       for (const a of await this.roster(owner)) q.exec("INSERT OR REPLACE INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, id, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now());
       this.say(id, "hive", "info", q.exec("SELECT COUNT(*) c FROM agent WHERE pid=?", id).one().c + " agents joined" + (this.env.AI ? "" : " (Workers AI is not bound on this deployment)") + ". Visiting AIs can join with the project link.");
@@ -142,7 +151,7 @@ export class Hive extends DurableObject {
       const since = +b.since || 0;
       return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
-        agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last FROM agent WHERE pid=? ORDER BY done DESC, name", p.id).toArray(),
+        agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last,COALESCE(score,0) score FROM agent WHERE pid=? ORDER BY COALESCE(score,0) DESC, done DESC, name", p.id).toArray(),
         feed: q.exec("SELECT ts,who,kind,text FROM feed WHERE pid=? AND ts>? ORDER BY ts DESC LIMIT 80", p.id, since).toArray() });
     }
     if (path === "/output") { const t = q.exec("SELECT output FROM task WHERE pid=? AND id=?", p.id, +b.task).toArray()[0]; return J({ output: t ? t.output : null }); }
@@ -217,7 +226,7 @@ export class Hive extends DurableObject {
   }
   // Workers AI's free plan has a daily allowance; when it runs out, its agents rest until it resets (00:00 UTC)
   qx() { return this.quota && Date.now() < this.quota ? " AND src!='workers-ai'" : ""; }
-  agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
+  agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
     try { const out = await this.ask(a, system, user, max); if (!out) throw new Error("empty reply"); return out; }
@@ -272,12 +281,13 @@ export class Hive extends DurableObject {
         q.exec("UPDATE agent SET status=CASE WHEN status='offline' THEN 'offline' ELSE 'idle' END, task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), c.id, p.id);
         if (!out) { q.exec("UPDATE task SET status='review' WHERE id=?", t.id); return; }
         const ok = /^\W*approve/i.test(out) || t.tries >= 2;
+        if (t.agent) q.exec("UPDATE agent SET score=COALESCE(score,0)+? WHERE id=? AND pid=?", /^\W*approve/i.test(out) ? 2 : -1, t.agent, p.id); // agents earn their place
         q.exec("UPDATE task SET status=?, note=?, tries=tries+?, agent=CASE WHEN ? THEN agent ELSE NULL END WHERE id=?", ok ? "done" : "open", out.slice(0, 1200), ok ? 0 : 1, ok ? 1 : 0, t.id);
         this.say(p.id, c.name, ok ? "approve" : "redo", "#" + t.id + " " + t.title + ": " + out.split("\n").slice(0, 3).join(" ").slice(0, 300));
       })());
     }
     // idle agents claim open work for their roles
-    for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY done", p.id).toArray()) {
+    for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", p.id).toArray()) {
       if (jobs.length >= PARALLEL) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
       jobs.push((async () => {
         const web = t.role === "researcher" ? await this.webContext(t.title + " " + (t.detail || "").slice(0, 120), !!p.own) : "";
@@ -315,23 +325,30 @@ export class Hive extends DurableObject {
     const v = this.sql().exec("SELECT * FROM vault WHERE id=?", id).toArray()[0]; if (!v || !v.live) throw new Error("that key is gone or switched off");
     this.sql().exec("UPDATE vault SET used=COALESCE(used,0)+1 WHERE id=?", id); return { v, key: await unseal(await this.vk(), v.sealed) };
   }
-  pub(v) { return { id: v.id, provider: v.provider, name: (PRESETS[v.provider] || {}).name || v.provider, kind: v.kind, label: v.label, base: v.provider === "custom" ? v.base : undefined, tail: v.tail, models: JSON.parse(v.models || "[]").length, list: JSON.parse(v.models || "[]"), pick: v.pick || "", live: !!v.live, err: v.err, used: v.used || 0, ts: v.ts }; }
+  pub(v) { return { id: v.id, provider: v.provider, name: (PRESETS[v.provider] || {}).name || v.provider, kind: v.kind, label: v.label, base: (PRESETS[v.provider] || {}).editBase ? v.base : undefined, pull: !!(PRESETS[v.provider] || {}).pull, tail: v.tail, models: JSON.parse(v.models || "[]").length, list: JSON.parse(v.models || "[]"), pick: v.pick || "", live: !!v.live, err: v.err, used: v.used || 0, ts: v.ts }; }
   async keys(path, b, owner, J) {
     if (!owner) return J({ error: "the key vault is the owner's: sign in on Vigil first" }, 401);
     const q = this.sql();
-    if (path === "/keys") return J({ presets: Object.fromEntries(Object.entries(PRESETS).map(([k, p]) => [k, { name: p.name, kind: p.kind, base: p.base }])), keys: q.exec("SELECT * FROM vault ORDER BY ts").toArray().map((v) => this.pub(v)) });
+    if (path === "/keys") return J({ presets: Object.fromEntries(Object.entries(PRESETS).map(([k, p]) => [k, { name: p.name, kind: p.kind, base: p.base, editBase: !!p.editBase, keyless: !!p.keyless }])), keys: q.exec("SELECT * FROM vault ORDER BY ts").toArray().map((v) => this.pub(v)) });
     if (path === "/keys/add") {
       const pre = PRESETS[b.provider]; if (!pre) return J({ error: "pick a provider" }, 400);
-      const key = String(b.key || "").trim(); if (key.length < 8 || key.length > 4000 || /\s/.test(key)) return J({ error: "that doesn't look like an API key" }, 400);
+      const key = String(b.key || "").trim(); if (!(pre.keyless && !key) && (key.length < 8 || key.length > 4000 || /\s/.test(key))) return J({ error: "that doesn't look like an API key" }, 400);
       if (q.exec("SELECT COUNT(*) c FROM vault").one().c >= MAX_KEYS) return J({ error: "the vault holds " + MAX_KEYS + " keys; remove some first" }, 400);
-      let base = pre.base || ""; if (b.provider === "custom") { base = String(b.base || "").trim().replace(/\/+$/, ""); if (!/^https:\/\/[^/\s]+/.test(base)) return J({ error: "a custom provider needs its https base URL (the part before /chat/completions)" }, 400); }
-      const v = { id: crypto.randomUUID().slice(0, 12), provider: b.provider, kind: pre.kind, label: String(b.label || "").slice(0, 40), base, tail: key.slice(-4) };
+      let base = pre.base || ""; if (pre.editBase && (b.base || !base)) { base = String(b.base || "").trim().replace(/\/+$/, ""); if (!/^https:\/\/[^/\s]+/.test(base)) return J({ error: "a custom provider needs its https base URL (the part before /chat/completions)" }, 400); }
+      const v = { id: crypto.randomUUID().slice(0, 12), provider: b.provider, kind: pre.kind, label: String(b.label || "").slice(0, 40), base, tail: key ? key.slice(-4) : "none" };
       let models = [], err = null; try { models = await probe(v, key); } catch (e) { err = String(e.message || e).slice(0, 200); }
       if (err && !b.force) return J({ error: "the provider refused it: " + err, canForce: true }, 400);
       q.exec("INSERT INTO vault(id,provider,kind,label,base,sealed,tail,models,pick,live,err,used,ts) VALUES(?,?,?,?,?,?,?,?,?,1,?,0,?)", v.id, v.provider, v.kind, v.label, base, await seal(await this.vk(), key), v.tail, JSON.stringify(models), String(b.pick || "").slice(0, 2000), err, Date.now());
       return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) });
     }
     const v = q.exec("SELECT * FROM vault WHERE id=?", String(b.kid || "")).toArray()[0]; if (!v) return J({ error: "no such key" }, 404);
+    if (path === "/keys/pull") { // Ollama: fetch a model onto the server, then refresh the list
+      if (!(PRESETS[v.provider] || {}).pull) return J({ error: "only Ollama servers pull models" }, 400);
+      const name = String(b.model || "").trim(); if (!/^[\w.\-\/:]{2,120}$/.test(name)) return J({ error: "name a model, e.g. llama3.2 or qwen3:8b" }, 400);
+      const key = await unseal(await this.vk(), v.sealed); let status; try { status = await pullModel(v, key, name); } catch (e) { return J({ error: "Ollama said: " + e.message }, 502); }
+      try { q.exec("UPDATE vault SET models=?, err=NULL WHERE id=?", JSON.stringify(await probe(v, key)), v.id); } catch (e) {}
+      return J({ ok: true, status, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) });
+    }
     if (path === "/keys/del") { q.exec("DELETE FROM vault WHERE id=?", v.id); return J({ ok: true }); }
     if (path === "/keys/set") { if (b.live !== undefined) q.exec("UPDATE vault SET live=? WHERE id=?", b.live ? 1 : 0, v.id); if (b.label !== undefined) q.exec("UPDATE vault SET label=? WHERE id=?", String(b.label).slice(0, 40), v.id); if (b.pick !== undefined) q.exec("UPDATE vault SET pick=? WHERE id=?", String(b.pick).slice(0, 2000), v.id); return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
     if (path === "/keys/test") { let err = null, models = JSON.parse(v.models || "[]"); try { models = await probe(v, await unseal(await this.vk(), v.sealed)); } catch (e) { err = String(e.message || e).slice(0, 200); } q.exec("UPDATE vault SET err=?, models=? WHERE id=?", err, JSON.stringify(models), v.id); return J({ ok: !err, error: err, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
@@ -387,12 +404,27 @@ export class Hive extends DurableObject {
     // eyes: Workers AI and models without vision get descriptions instead of pixels
     let v = null, key = null; if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
-    if (last.images.length && !v) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
+    if (last.images.length && (!v || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
     const system = "You are Hive, a thoughtful AI assistant on mentifaber.org. Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a spoken conversation: answer in a few natural sentences, no Markdown, no lists." : "") +
       (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
     let text;
+    if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
+      const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
+      let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
+      if (!crew.length) crew = [...(owner ? this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id).filter((id, i, a) => a.findIndex((x) => x.split("|")[0] === id.split("|")[0]) === i).slice(0, 3) : []), ...free.map((m) => "workers-ai|" + m)].filter((c) => c !== b.model).slice(0, owner ? 6 : 4);
+      if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
+      const drafts = await Promise.all(crew.map(async (c) => { const [cs, cm] = c.split("|"), t1 = Date.now(); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
+        try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system, msgs, 1800); return { model: c, text: String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(), ms: Date.now() - t1 }; }
+        catch (e) { return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } }));
+      const good = drafts.filter((d) => d && d.text);
+      tools.push("council of " + good.length + (good.length < crew.length ? " (" + (crew.length - good.length) + " absent)" : ""));
+      const brief = good.map((d, k) => "DRAFT " + String.fromCharCode(65 + k) + " (" + d.model.split("|").pop().split("/").pop() + "):\n" + d.text.slice(0, 7000)).join("\n\n");
+      text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of a council of AI models. They each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
+      if (!text) text = await complete(this.env, v, key, model, system, msgs, 3000);
+      return J({ text: text || "(the model returned nothing)", sources, tools, drafts: drafts.filter(Boolean), ms: Date.now() - t0 });
+    }
     try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); }
     catch (e) { if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
     return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0 });
