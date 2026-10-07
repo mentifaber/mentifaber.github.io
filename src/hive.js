@@ -1,8 +1,11 @@
 // Hive: you give it a project; a swarm of AI agents splits it into a task board, each agent claims the work
 // its role fits, critics review, an integrator assembles the result. Agents come only from sources this
 // site is allowed to use: Cloudflare Workers AI (env.AI), optional keyed providers (OpenRouter, Groq,
-// Gemini: Worker secrets), and visiting AIs (Grok, ChatGPT, …) that join a project by following links.
+// Gemini: Worker secrets), any number of keys the owner adds to the vault (src/hive-kit.js), and visiting AIs
+// (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
+// model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
+import { PRESETS, vaultKey, seal, unseal, probe, complete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -36,19 +39,6 @@ const ROLES = {
   critic: "Review the work against the brief. Reply APPROVE, or REDO with the exact problems.",
   integrator: "Combine all approved work into the single final deliverable.",
 };
-// Workers AI replies come in several shapes: {response: "text"}, {response: {parsed JSON}}, OpenAI-style
-// {choices}, or Responses-style {output: [{content: [{text}]}]} (GPT-OSS). Turn any of them into text.
-function textOf(r) {
-  if (r == null) return "";
-  if (typeof r === "string") return r.trim();
-  const v = r.response;
-  if (typeof v === "string" && v.trim()) return v.trim();
-  if (v && typeof v === "object") return JSON.stringify(v);
-  const c = r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (typeof c === "string" && c.trim()) return c.trim();
-  if (typeof r.output_text === "string" && r.output_text.trim()) return r.output_text.trim();
-  if (Array.isArray(r.output)) { const t = r.output.flatMap((o) => (Array.isArray(o.content) ? o.content : [o])).map((x) => (typeof x === "string" ? x : x && (x.text || x.output_text) || "")).filter(Boolean).join("\n").trim(); if (t) return t; }
-  return "";
-}
 // Pull the first JSON value out of a model reply (code fences, chatter and <think> blocks around it are fine).
 function jsonOf(out) {
   const t = String(out).replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/```(?:json)?/gi, "");
@@ -64,6 +54,7 @@ const BUILTIN_PLAN = { tasks: [
   { id: 5, role: "coder", title: "Build it", detail: "The complete working implementation of the plan.", deps: [1, 3, 4] },
   { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
 ] };
+const STUDIO_DAY = 60, IMAGINE_DAY = 8, MAX_KEYS = 500;
 const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 8, TICK = 1500;
 
 export class Hive extends DurableObject {
@@ -75,14 +66,21 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
       q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
+      q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
+      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {}
       this._init = 1;
     }
     return q;
   }
   say(pid, who, kind, text) { const q = this.sql(); q.exec("INSERT INTO feed(pid,ts,who,kind,text) VALUES(?,?,?,?,?)", pid, Date.now(), who, kind, String(text).slice(0, 4000)); }
 
-  async roster() { // every model the swarm may use right now
+  async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
     const out = CF_MODELS.filter(() => this.env.AI).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
+    const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
+    if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
+      const pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = pick.length ? pick : JSON.parse(v.models || "[]").slice(0, 4);
+      ids.slice(0, 12).forEach((id, i) => out.push({ src: "k:" + v.id, model: id, name: (v.label || PRESETS[v.provider].name) + " · " + id.split("/").pop(), roles: i === 0 ? ["coordinator", "architect", "integrator", "critic", "coder"] : [rr[i % rr.length], rr[(i + 3) % rr.length], "critic"] }));
+    }
     for (const k of KEYED) {
       const key = this.env[k.env]; if (!key) continue;
       let ids = k.models || [];
@@ -97,6 +95,7 @@ export class Hive extends DurableObject {
     return out;
   }
   async ask(agent, system, user, max) { // one model call, any provider
+    if (agent.src.startsWith("k:")) { const { v, key } = await this.vaultGet(agent.src.slice(2)); return complete(this.env, v, key, agent.model, system, [{ role: "user", text: user }], max); }
     if (agent.src === "workers-ai") {
       const r = await this.env.AI.run(agent.model, { messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: max || 2048 });
       return textOf(r);
@@ -113,6 +112,9 @@ export class Hive extends DurableObject {
     const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
+    if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
+    if (path === "/models") return J({ owner, models: this.models(owner), search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI });
+    if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
       const running = q.exec("SELECT COUNT(*) c FROM proj WHERE status NOT IN ('done','stopped','failed')").one().c;
@@ -123,12 +125,12 @@ export class Hive extends DurableObject {
         if (n(ki) >= PER_IP_DAY) return J({ error: "you've started " + PER_IP_DAY + " projects today; come back tomorrow" }, 429);
         if (n(kd) >= PUBLIC_DAY) return J({ error: "the hive has run its " + PUBLIC_DAY + " public projects for today; come back tomorrow" }, 429);
         for (const k of [ki, kd]) q.exec("INSERT INTO limits(k,n) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET n=n+1", k);
-        q.exec("DELETE FROM limits WHERE k NOT LIKE ? AND k NOT LIKE ?", "ip:" + day + "%", "day:" + day);
+        q.exec("DELETE FROM limits WHERE k NOT LIKE ?", "%" + day + "%");
       }
       const id = crypto.randomUUID().slice(0, 8), tok = crypto.randomUUID().replace(/-/g, "").slice(0, 16), ctok = crypto.randomUUID().replace(/-/g, "");
-      q.exec("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok) VALUES(?,?,?,?,?,0,?,?,?,?)", id, brief.split(/[.\n]/)[0].slice(0, 80), brief, "planning", null, tok, Date.now(), owner ? MAX_CALLS : PUBLIC_CALLS, ctok);
+      q.exec("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,?,?,?,?,?)", id, brief.split(/[.\n]/)[0].slice(0, 80), brief, "planning", null, tok, Date.now(), owner ? MAX_CALLS : PUBLIC_CALLS, ctok, owner ? 1 : 0);
       this.say(id, "you", "brief", brief);
-      for (const a of await this.roster()) q.exec("INSERT OR REPLACE INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, id, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now());
+      for (const a of await this.roster(owner)) q.exec("INSERT OR REPLACE INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, id, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now());
       this.say(id, "hive", "info", q.exec("SELECT COUNT(*) c FROM agent WHERE pid=?", id).one().c + " agents joined" + (this.env.AI ? "" : " (Workers AI is not bound on this deployment)") + ". Visiting AIs can join with the project link.");
       await this.ctx.storage.setAlarm(Date.now() + 200);
       return J({ id, ctok });
@@ -278,8 +280,9 @@ export class Hive extends DurableObject {
     for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY done", p.id).toArray()) {
       if (jobs.length >= PARALLEL) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
       jobs.push((async () => {
+        const web = t.role === "researcher" ? await this.webContext(t.title + " " + (t.detail || "").slice(0, 120), !!p.own) : "";
         const redo = t.note ? "\n\nA REVIEWER SENT THIS BACK:\n" + t.note + "\n\nPREVIOUS ATTEMPT:\n" + (t.output || "").slice(0, 6000) : "";
-        const out = await this.call(p, a, SYS(t.role), "PROJECT BRIEF:\n" + p.brief + "\n\nYOUR TASK #" + t.id + ": " + t.title + "\n" + t.detail + "\n\nWORK SO FAR:\n" + this.context(p.id, t) + redo, 1600);
+        const out = await this.call(p, a, SYS(t.role), "PROJECT BRIEF:\n" + p.brief + "\n\nYOUR TASK #" + t.id + ": " + t.title + "\n" + t.detail + "\n\nWORK SO FAR:\n" + this.context(p.id, t) + web + redo, 1600);
         if (!out) { q.exec("UPDATE task SET status='open', agent=NULL WHERE id=?", t.id); return; }
         q.exec("UPDATE task SET status='review', output=?, ts=? WHERE id=?", out.slice(0, 60000), Date.now(), t.id);
         q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), a.id, p.id);
@@ -304,5 +307,94 @@ export class Hive extends DurableObject {
       const roles = JSON.parse(a.roles); for (const t of stuck) if (!roles.includes(t.role)) roles.push(t.role); q.exec("UPDATE agent SET roles=? WHERE id=? AND pid=?", JSON.stringify(roles), a.id, p.id);
     }
     if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline'", p.id).one().c && !(this.quota && Date.now() < this.quota)) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
+  }
+
+  // ── the key vault: unlimited keys, any provider, sealed at rest, owner only ──
+  async vk() { return (this._vk = this._vk || (await vaultKey(this.env, this.ctx.storage))); }
+  async vaultGet(id) {
+    const v = this.sql().exec("SELECT * FROM vault WHERE id=?", id).toArray()[0]; if (!v || !v.live) throw new Error("that key is gone or switched off");
+    this.sql().exec("UPDATE vault SET used=COALESCE(used,0)+1 WHERE id=?", id); return { v, key: await unseal(await this.vk(), v.sealed) };
+  }
+  pub(v) { return { id: v.id, provider: v.provider, name: (PRESETS[v.provider] || {}).name || v.provider, kind: v.kind, label: v.label, base: v.provider === "custom" ? v.base : undefined, tail: v.tail, models: JSON.parse(v.models || "[]").length, list: JSON.parse(v.models || "[]"), pick: v.pick || "", live: !!v.live, err: v.err, used: v.used || 0, ts: v.ts }; }
+  async keys(path, b, owner, J) {
+    if (!owner) return J({ error: "the key vault is the owner's: sign in on Vigil first" }, 401);
+    const q = this.sql();
+    if (path === "/keys") return J({ presets: Object.fromEntries(Object.entries(PRESETS).map(([k, p]) => [k, { name: p.name, kind: p.kind, base: p.base }])), keys: q.exec("SELECT * FROM vault ORDER BY ts").toArray().map((v) => this.pub(v)) });
+    if (path === "/keys/add") {
+      const pre = PRESETS[b.provider]; if (!pre) return J({ error: "pick a provider" }, 400);
+      const key = String(b.key || "").trim(); if (key.length < 8 || key.length > 4000 || /\s/.test(key)) return J({ error: "that doesn't look like an API key" }, 400);
+      if (q.exec("SELECT COUNT(*) c FROM vault").one().c >= MAX_KEYS) return J({ error: "the vault holds " + MAX_KEYS + " keys; remove some first" }, 400);
+      let base = pre.base || ""; if (b.provider === "custom") { base = String(b.base || "").trim().replace(/\/+$/, ""); if (!/^https:\/\/[^/\s]+/.test(base)) return J({ error: "a custom provider needs its https base URL (the part before /chat/completions)" }, 400); }
+      const v = { id: crypto.randomUUID().slice(0, 12), provider: b.provider, kind: pre.kind, label: String(b.label || "").slice(0, 40), base, tail: key.slice(-4) };
+      let models = [], err = null; try { models = await probe(v, key); } catch (e) { err = String(e.message || e).slice(0, 200); }
+      if (err && !b.force) return J({ error: "the provider refused it: " + err, canForce: true }, 400);
+      q.exec("INSERT INTO vault(id,provider,kind,label,base,sealed,tail,models,pick,live,err,used,ts) VALUES(?,?,?,?,?,?,?,?,?,1,?,0,?)", v.id, v.provider, v.kind, v.label, base, await seal(await this.vk(), key), v.tail, JSON.stringify(models), String(b.pick || "").slice(0, 2000), err, Date.now());
+      return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) });
+    }
+    const v = q.exec("SELECT * FROM vault WHERE id=?", String(b.kid || "")).toArray()[0]; if (!v) return J({ error: "no such key" }, 404);
+    if (path === "/keys/del") { q.exec("DELETE FROM vault WHERE id=?", v.id); return J({ ok: true }); }
+    if (path === "/keys/set") { if (b.live !== undefined) q.exec("UPDATE vault SET live=? WHERE id=?", b.live ? 1 : 0, v.id); if (b.label !== undefined) q.exec("UPDATE vault SET label=? WHERE id=?", String(b.label).slice(0, 40), v.id); if (b.pick !== undefined) q.exec("UPDATE vault SET pick=? WHERE id=?", String(b.pick).slice(0, 2000), v.id); return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
+    if (path === "/keys/test") { let err = null, models = JSON.parse(v.models || "[]"); try { models = await probe(v, await unseal(await this.vk(), v.sealed)); } catch (e) { err = String(e.message || e).slice(0, 200); } q.exec("UPDATE vault SET err=?, models=? WHERE id=?", err, JSON.stringify(models), v.id); return J({ ok: !err, error: err, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
+    return J({ error: "not found" }, 404);
+  }
+  models(owner) { // what the Studio can talk to
+    const out = this.env.AI ? CF_MODELS.map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
+    if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
+      const g = (v.label ? v.label + " · " : "") + ((PRESETS[v.provider] || {}).name || v.provider) + " ••" + v.tail, pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
+      for (const m of [...new Set([...pick, ...JSON.parse(v.models || "[]")])]) out.push({ id: "k:" + v.id + "|" + m, name: m, group: g, vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|grok-(2-vision|4)|qwen.*vl|-vl/i.test(m) });
+    }
+    return out;
+  }
+  async searchKey(own) { if (!own) return null; const v = this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind='search' ORDER BY COALESCE(used,0) LIMIT 1").toArray()[0]; return v ? this.vaultGet(v.id) : null; }
+  async web(q, own) { const k = await this.searchKey(own).catch(() => null); try { return await search(k && k.v, k && k.key, q); } catch (e) { if (k) return search(null, null, q); throw e; } }
+  async webContext(q, own) { try { const r = await this.web(q.slice(0, 300), own); return r.length ? "\n\nWEB SEARCH RESULTS:\n" + r.map((x, i) => "[" + (i + 1) + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 900)).join("\n\n") : ""; } catch (e) { return ""; } }
+  meter(req, kind, max) { // the public's daily allowance per visitor; the owner has none
+    const q = this.sql(), day = new Date().toISOString().slice(0, 10), k = kind + ":" + day + ":" + (req.headers.get("cf-connecting-ip") || "x").slice(0, 45);
+    const n = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n; if (n >= max) return false;
+    q.exec("INSERT INTO limits(k,n) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET n=n+1", k); return true;
+  }
+  async studio(path, b, owner, req, J) {
+    if (!this.env.AI && path !== "/chat") return J({ error: "Workers AI is not bound on this deployment" }, 503);
+    if (path === "/imagine") {
+      const prompt = String(b.prompt || "").trim(); if (!prompt) return J({ error: "describe the picture" }, 400);
+      if (!owner && !this.meter(req, "img", IMAGINE_DAY)) return J({ error: "that's today's " + IMAGINE_DAY + " pictures; come back tomorrow" }, 429);
+      return J({ image: "data:image/jpeg;base64," + (await imagine(this.env, prompt)) });
+    }
+    if (path === "/stt") {
+      const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
+      if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
+      return J({ text: await transcribe(this.env, a) });
+    }
+    if (path === "/tts") {
+      const t = String(b.text || "").trim(); if (!t) return J({ error: "nothing to say" }, 400);
+      if (!owner && !this.meter(req, "tts", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
+      return J({ audio: "data:audio/mpeg;base64," + (await speak(this.env, t)) });
+    }
+    // chat
+    const [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
+    if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
+    if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
+    if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
+    const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-24).map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text || "").slice(0, 16000), images: Array.isArray(m.images) ? m.images.filter((u) => typeof u === "string" && u.startsWith("data:image/") && u.length < 4e6).slice(0, 8) : [] }));
+    const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
+    msgs.forEach((m) => m !== last && (m.images = []));
+    const t0 = Date.now(), sources = [], notes = [], tools = [];
+    // pasted links get read
+    const urls = [...new Set((last.text.match(/https?:\/\/[^\s<>"')\]]+/g) || []))].slice(0, 3);
+    for (const u of urls) try { const pg = await readPage(u); sources.push({ title: pg.title, url: pg.url }); notes.push("[" + sources.length + "] PAGE " + pg.title + " — " + pg.url + "\n" + pg.text); tools.push("read " + new URL(pg.url).hostname); } catch (e) { notes.push("(could not read " + u + ": " + e.message + ")"); }
+    // the web
+    if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
+    // eyes: Workers AI and models without vision get descriptions instead of pixels
+    let v = null, key = null; if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
+    const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
+    if (last.images.length && !v) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
+    const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
+    const system = "You are Hive, a thoughtful AI assistant on mentifaber.org. Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
+      (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a spoken conversation: answer in a few natural sentences, no Markdown, no lists." : "") +
+      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
+    let text;
+    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); }
+    catch (e) { if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
+    return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0 });
   }
 }
