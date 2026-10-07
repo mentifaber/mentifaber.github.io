@@ -156,6 +156,11 @@ export class Hive extends DurableObject {
     }
     if (path === "/output") { const t = q.exec("SELECT output FROM task WHERE pid=? AND id=?", p.id, +b.task).toArray()[0]; return J({ output: t ? t.output : null }); }
     if (path === "/say") { if (!ctl) return J({ error: "only whoever started this project can steer it" }, 401); const text = String(b.text || "").trim().slice(0, 3000); if (text) { this.say(p.id, "you", "chat", text); q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND src='workers-ai' AND status='offline'", p.id); q.exec("UPDATE proj SET status='replanning' WHERE id=?", p.id); await this.ctx.storage.setAlarm(Date.now() + 200); } return J({ ok: true }); }
+    if (path === "/recruit") { // bring every model from the owner's keys into this project, e.g. one started before the keys were added
+      if (!owner) return J({ error: "only the owner's keys can be brought in" }, 401);
+      q.exec("UPDATE proj SET own=1 WHERE id=?", p.id); const n = await this.recruit(p.id, true); await this.ctx.storage.setAlarm(Date.now() + 200);
+      return J({ ok: true, joined: n });
+    }
     if (path === "/stop") { if (!ctl) return J({ error: "only whoever started this project can stop it" }, 401); q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "stopped by you"); return J({ ok: true }); }
     // visiting AIs: claim a task by link, read its context, submit by GET (short) or POST (long)
     if (path === "/join" || path === "/submit") {
@@ -179,6 +184,13 @@ export class Hive extends DurableObject {
     return J({ error: "not found" }, 404);
   }
 
+  async recruit(pid, loud) { // add any roster agents this project doesn't have yet
+    const q = this.sql(); let n = 0;
+    for (const a of await this.roster(true)) { if (a.src === "workers-ai" || q.exec("SELECT 1 FROM agent WHERE id=? AND pid=?", a.src + ":" + a.model, pid).toArray().length) continue;
+      q.exec("INSERT INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, pid, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now()); n++; }
+    if (n || loud) this.say(pid, "hive", "join", n ? n + " agents from your keys joined the swarm" : "no new agents: add keys under Keys first");
+    return n;
+  }
   // A paused project with no plan yet gets the built-in task board, so visiting AIs have work right away.
   layBoard(p) {
     const q = this.sql(); if (q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c) return;
@@ -209,7 +221,9 @@ export class Hive extends DurableObject {
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const out = this.quota && Date.now() < this.quota;
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
-      const others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
+      let others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
+      this._rec = this._rec || {}; // the owner's projects pick up keys added after they started (checked every few minutes)
+      if (p.own && Date.now() - (this._rec[p.id] || 0) > 180e3) { this._rec[p.id] = Date.now(); if (await this.recruit(p.id)) others = 1; }
       if (out && !others) { // only Workers AI here and it's resting: pause until the allowance resets
         if (p.status !== "paused") { q.exec("UPDATE proj SET status='paused', note=? WHERE id=?", p.status, p.id); this.say(p.id, "hive", "quota", "Cloudflare's free AI allowance for today is used up. Paused; the swarm picks up again automatically after " + new Date(this.quota).toISOString().slice(11, 16) + " UTC."); }
         this.layBoard(p); resting = true; continue;
