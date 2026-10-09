@@ -76,7 +76,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
-      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {}
+      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
       this._init = 1;
     }
     return q;
@@ -151,7 +151,7 @@ export class Hive extends DurableObject {
       const since = +b.since || 0;
       return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
-        agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last,COALESCE(score,0) score FROM agent WHERE pid=? ORDER BY COALESCE(score,0) DESC, done DESC, name", p.id).toArray(),
+        agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last,COALESCE(score,0) score,err FROM agent WHERE pid=? ORDER BY COALESCE(score,0) DESC, done DESC, name", p.id).toArray(),
         feed: q.exec("SELECT ts,who,kind,text FROM feed WHERE pid=? AND ts>? ORDER BY ts DESC LIMIT 80", p.id, since).toArray() });
     }
     if (path === "/output") { const t = q.exec("SELECT output FROM task WHERE pid=? AND id=?", p.id, +b.task).toArray()[0]; return J({ output: t ? t.output : null }); }
@@ -186,6 +186,7 @@ export class Hive extends DurableObject {
 
   async recruit(pid, loud) { // add any roster agents this project doesn't have yet
     const q = this.sql(); let n = 0;
+    if (loud) { const back = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor')", pid).one().c; if (back) { q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor')", pid); this.say(pid, "hive", "info", back + " offline key agents are trying again"); n += back; } }
     for (const a of await this.roster(true)) { if (a.src === "workers-ai" || q.exec("SELECT 1 FROM agent WHERE id=? AND pid=?", a.src + ":" + a.model, pid).toArray().length) continue;
       q.exec("INSERT INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, pid, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now()); n++; }
     if (n || loud) this.say(pid, "hive", "join", n ? n + " agents from your keys joined the swarm" : "no new agents: add keys under Keys first");
@@ -244,7 +245,7 @@ export class Hive extends DurableObject {
   agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
-    try { const out = await this.ask(a, system, user, max); if (!out) throw new Error("empty reply"); return out; }
+    try { const out = await this.ask(a, system, user, max); if (!out) throw new Error("empty reply"); if (a.err) q.exec("UPDATE agent SET err=NULL WHERE id=? AND pid=?", a.id, p.id); return out; }
     catch (e) {
       const msg = String(e && e.message || e);
       if (a.src === "workers-ai" && /4006|daily free allocation|neurons/i.test(msg)) { // out of today's allowance: rest, don't die
@@ -252,7 +253,8 @@ export class Hive extends DurableObject {
         q.exec("UPDATE proj SET calls=MAX(0,calls-1) WHERE id=?", p.id); q.exec("UPDATE agent SET status='idle', task=NULL WHERE id=? AND pid=?", a.id, p.id);
         return null;
       }
-      q.exec("UPDATE agent SET status='offline', task=NULL, last=? WHERE id=? AND pid=?", Date.now(), a.id, p.id); this.say(p.id, a.name, "offline", msg.slice(0, 200) + " (retrying in 10 minutes)"); return null;
+      const busy = /429|rate.?limit|too many|overloaded|capacity|timeout|timed out|503|502/i.test(msg); // busy: back in a minute; anything else: ten
+      q.exec("UPDATE agent SET status='offline', task=NULL, last=?, err=? WHERE id=? AND pid=?", Date.now() - (busy ? 540e3 : 0), msg.slice(0, 200), a.id, p.id); this.say(p.id, a.name, "offline", msg.slice(0, 200) + (busy ? " (busy; retrying in a minute)" : " (retrying in 10 minutes)")); return null;
     }
   }
   async advance(p) {
@@ -382,7 +384,12 @@ export class Hive extends DurableObject {
     const m = String(id).split("|").pop(), R = [/claude.*(opus|sonnet)/i, /gpt-5(?!.*nano)|o3(?!-mini)|o4/i, /gemini-(2\.5-pro|3)/i, /grok-4/i, /deepseek-(r1|v3|chat|reasoner)/i, /gpt-4\.1(?!-nano)|gpt-4o(?!-mini)|mistral-(large|medium)/i, /llama-4|llama-3\.[13]-(70|405)b|qwen3|kimi|gpt-oss-120b|qwq/i, /claude.*haiku|gemini.*flash|gpt-.*mini|command-a/i];
     const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
   }
-  sick(c) { this._bad = this._bad || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3; } // keys that just failed (no credit, bad key) sit out an hour
+  sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3; }
+  blame(c, e) { // remember why a model failed: the whole key (billing, bad key) or just this model (not allowed, not found)
+    const em = String(e && e.message || e); this._bad = this._bad || {}; this._badM = this._badM || {};
+    if (/billing|credit|insufficient|payment|invalid.*(api|x-api)?.?key|incorrect api key|unauthori[sz]ed/i.test(em) || [401, 402].includes(e && e.status)) this._bad[c.split("|")[0]] = Date.now();
+    else if (/not.?found|does not exist|not allowed|no access|permission|unsupported|invalid model|model_not|decommission|deprecated/i.test(em) || [400, 403, 404].includes(e && e.status)) this._badM[c] = Date.now();
+  } // keys that just failed (no credit, bad key) sit out an hour
   async resting() { if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0; return this.quota && Date.now() < this.quota ? this.quota : 0; }
   async rest() { const d = new Date(); this.quota = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); await this.ctx.storage.put("quota", this.quota); }
   // When Cloudflare's free allowance is out, the owner's own keys answer instead: a sensible everyday model first.
@@ -456,19 +463,26 @@ export class Hive extends DurableObject {
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
       let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
       if (await this.resting()) crew = crew.filter((c) => !c.startsWith("workers-ai|"));
-      const best = (ids) => { const by = {}; for (const id of ids) { if (this.sick(id)) continue; const k = id.split("|")[0]; if (!by[k] || this.rank(id) < this.rank(by[k])) by[k] = id; } return Object.values(by).sort((a, b) => this.rank(a) - this.rank(b)); };
-      if (!crew.length) crew = [...(owner ? best([...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)]).slice(0, 4) : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used).slice(0, owner ? 6 : 4);
+      const pool = [...(owner ? [...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)] : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used);
+      const ranked = () => { const by = {}; for (const id of pool) { if (this.sick(id) || tried.has(id) || (id.startsWith("workers-ai|") && this.quota && Date.now() < this.quota)) continue; (by[id.split("|")[0]] = by[id.split("|")[0]] || []).push(id); } const lists = Object.values(by).map((l) => l.sort((a, b) => this.rank(a) - this.rank(b))).sort((a, b) => this.rank(a[0]) - this.rank(b[0])); const out = []; for (let r = 0; lists.some((l) => l[r]); r++) for (const l of lists) if (l[r]) out.push(l[r]); return out; }; // best of each key first, then their seconds
+      const tried = new Set(), want = owner ? 5 : 4;
+      if (!crew.length) crew = ranked().slice(0, want);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
-      const drafts = await Promise.all(crew.map(async (c) => { const [cs, cm] = c.split("|"), t1 = Date.now(); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
-        try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + crew.length + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); return { model: c, text: String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(), ms: Date.now() - t1 }; }
-        catch (e) { const em = String(e.message || e); if (cs.startsWith("k:") && (/40[1-3]|billing|credit|quota|insufficient|invalid.*key|payment/i.test(em) || [401, 402, 403].includes(e.status))) { this._bad = this._bad || {}; this._bad[cs] = Date.now(); } return { model: c, error: em.slice(0, 160), ms: Date.now() - t1 }; } }));
+      const draft = async (c, n) => { const [cs, cm] = c.split("|"), t1 = Date.now(); tried.add(c); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
+        try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
+        catch (e) { if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
+      let drafts = (await Promise.all(crew.map((c) => draft(c, crew.length)))).filter(Boolean);
+      for (let wave = 0; wave < 2 && !b.crew && drafts.filter((d) => d.text).length < Math.min(3, want); wave++) { // members failed: call in the next-best models
+        const more = ranked().slice(0, Math.min(3, want) - drafts.filter((d) => d.text).length + 1); if (!more.length) break;
+        drafts = drafts.concat((await Promise.all(more.map((c) => draft(c, crew.length + more.length)))).filter(Boolean));
+      }
       const good = drafts.filter((d) => d && d.text);
-      tools.push("council of " + good.length + (good.length < crew.length ? " (" + (crew.length - good.length) + " absent)" : ""));
+      const failed = drafts.filter((d) => d.error); tools.push("council of " + good.length + (failed.length ? " · " + failed.length + " couldn't answer" : ""));
       const brief = good.map((d, k) => "DRAFT " + String.fromCharCode(65 + k) + " (" + d.model.split("|").pop().split("/").pop() + "):\n" + d.text.slice(0, 7000)).join("\n\n");
       if (!v && (await this.resting()) && owner) await tryIn();
       text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
-      if (!text) text = await complete(this.env, v, key, model, system, msgs, 3000);
-      return J({ text: text || "(the model returned nothing)", sources, tools, drafts: drafts.filter(Boolean), ms: Date.now() - t0, model: used });
+      if (!text) text = await complete(this.env, v, key, model, system + (failed.length ? "\n\nNOTE: the user asked for Hive's council, but none of the " + failed.length + " models called could answer right now (" + failed.map((d) => d.model.split("|").pop().split("/").pop() + ": " + d.error.slice(0, 80)).join("; ") + "). Say so in one sentence, then answer yourself." : ""), msgs, 3000);
+      return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used });
     }
     try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); }
     catch (e) {
