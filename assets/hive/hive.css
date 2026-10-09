@@ -138,3 +138,4 @@ details.drafts{margin-top:10px;font-size:13.5px;border:1px solid var(--line);bor
 #mcount{padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
 .ag .sc{float:right;font-weight:600;color:var(--acc)}
 .top{position:relative}
+#mtot{white-space:nowrap}#mpick span{min-width:0}@media (max-width:600px){#mtot{display:none}}

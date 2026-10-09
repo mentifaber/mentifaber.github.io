@@ -221,6 +221,7 @@ export class Hive extends DurableObject {
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const out = this.quota && Date.now() < this.quota;
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
+      q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor') AND COALESCE(last,0)<?", p.id, Date.now() - 600e3); // a key that failed gets another try every 10 minutes
       let others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
       this._rec = this._rec || {}; // the owner's projects pick up keys added after they started (checked every few minutes)
       if (p.own && Date.now() - (this._rec[p.id] || 0) > 180e3) { this._rec[p.id] = Date.now(); if (await this.recruit(p.id)) others = 1; }
@@ -251,7 +252,7 @@ export class Hive extends DurableObject {
         q.exec("UPDATE proj SET calls=MAX(0,calls-1) WHERE id=?", p.id); q.exec("UPDATE agent SET status='idle', task=NULL WHERE id=? AND pid=?", a.id, p.id);
         return null;
       }
-      q.exec("UPDATE agent SET status='offline', task=NULL WHERE id=? AND pid=?", a.id, p.id); this.say(p.id, a.name, "offline", msg.slice(0, 200)); return null;
+      q.exec("UPDATE agent SET status='offline', task=NULL, last=? WHERE id=? AND pid=?", Date.now(), a.id, p.id); this.say(p.id, a.name, "offline", msg.slice(0, 200) + " (retrying in 10 minutes)"); return null;
     }
   }
   async advance(p) {
@@ -377,13 +378,18 @@ export class Hive extends DurableObject {
       for (const m of ids.slice(0, 3000)) list.push({ id: "k:env-" + k.id + "|" + m, name: m, group: k.id[0].toUpperCase() + k.id.slice(1) + " (site secret)", vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|-vl/i.test(m) }); }
     this._envM = { at: Date.now(), list }; return list;
   }
+  rank(id) { // rough strength of a model, by name: lower is stronger
+    const m = String(id).split("|").pop(), R = [/claude.*(opus|sonnet)/i, /gpt-5(?!.*nano)|o3(?!-mini)|o4/i, /gemini-(2\.5-pro|3)/i, /grok-4/i, /deepseek-(r1|v3|chat|reasoner)/i, /gpt-4\.1(?!-nano)|gpt-4o(?!-mini)|mistral-(large|medium)/i, /llama-4|llama-3\.[13]-(70|405)b|qwen3|kimi|gpt-oss-120b|qwq/i, /claude.*haiku|gemini.*flash|gpt-.*mini|command-a/i];
+    const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
+  }
+  sick(c) { this._bad = this._bad || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3; } // keys that just failed (no credit, bad key) sit out an hour
   async resting() { if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0; return this.quota && Date.now() < this.quota ? this.quota : 0; }
   async rest() { const d = new Date(); this.quota = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); await this.ctx.storage.put("quota", this.quota); }
   // When Cloudflare's free allowance is out, the owner's own keys answer instead: a sensible everyday model first.
   async standIn(not) {
     const ms = [...this.models(true).filter((m) => m.id.startsWith("k:")), ...(await this.envModels())].filter((m) => m.id !== not);
-    const pref = /gpt-5-mini|gpt-4\.1-mini|gpt-4o-mini|claude.*(sonnet|haiku)|gemini-2\.5-flash|deepseek-chat|llama-3\.3-70b|gpt-oss-120b|qwen3|:free$/i;
-    return (ms.find((m) => pref.test(m.id)) || ms[0] || {}).id || null;
+    const ok = ms.filter((m) => !this.sick(m.id)).sort((a, b) => this.rank(a.id) - this.rank(b.id) || (/:free$/.test(b.id) ? 1 : 0) - (/:free$/.test(a.id) ? 1 : 0));
+    return (ok[0] || ms[0] || {}).id || null;
   }
   models(owner) { // what the Studio can talk to
     const out = this.env.AI ? CF_MODELS.map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
@@ -440,7 +446,9 @@ export class Hive extends DurableObject {
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
     if (last.images.length && (!v || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
-    const system = "You are Hive, a thoughtful AI assistant on mentifaber.org. Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
+    const system = "You are Hive, the assistant of Hive on mentifaber.org, answering through the model " + model.split("/").pop() + ". " +
+      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
+      "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a spoken conversation: answer in a few natural sentences, no Markdown, no lists." : "") +
       (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
     let text;
@@ -448,16 +456,17 @@ export class Hive extends DurableObject {
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
       let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
       if (await this.resting()) crew = crew.filter((c) => !c.startsWith("workers-ai|"));
-      if (!crew.length) crew = [...(owner ? this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id).filter((id, i, a) => a.findIndex((x) => x.split("|")[0] === id.split("|")[0]) === i).slice(0, 3) : []), ...((await this.resting()) ? (owner ? (await this.envModels()).map((m) => m.id).filter((id) => id !== used).slice(0, 4) : []) : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used).slice(0, owner ? 6 : 4);
+      const best = (ids) => { const by = {}; for (const id of ids) { if (this.sick(id)) continue; const k = id.split("|")[0]; if (!by[k] || this.rank(id) < this.rank(by[k])) by[k] = id; } return Object.values(by).sort((a, b) => this.rank(a) - this.rank(b)); };
+      if (!crew.length) crew = [...(owner ? best([...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)]).slice(0, 4) : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used).slice(0, owner ? 6 : 4);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const drafts = await Promise.all(crew.map(async (c) => { const [cs, cm] = c.split("|"), t1 = Date.now(); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
-        try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system, msgs, 1800); return { model: c, text: String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(), ms: Date.now() - t1 }; }
-        catch (e) { return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } }));
+        try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + crew.length + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); return { model: c, text: String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(), ms: Date.now() - t1 }; }
+        catch (e) { const em = String(e.message || e); if (cs.startsWith("k:") && (/40[1-3]|billing|credit|quota|insufficient|invalid.*key|payment/i.test(em) || [401, 402, 403].includes(e.status))) { this._bad = this._bad || {}; this._bad[cs] = Date.now(); } return { model: c, error: em.slice(0, 160), ms: Date.now() - t1 }; } }));
       const good = drafts.filter((d) => d && d.text);
       tools.push("council of " + good.length + (good.length < crew.length ? " (" + (crew.length - good.length) + " absent)" : ""));
       const brief = good.map((d, k) => "DRAFT " + String.fromCharCode(65 + k) + " (" + d.model.split("|").pop().split("/").pop() + "):\n" + d.text.slice(0, 7000)).join("\n\n");
       if (!v && (await this.resting()) && owner) await tryIn();
-      text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of a council of AI models. They each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
+      text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
       if (!text) text = await complete(this.env, v, key, model, system, msgs, 3000);
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts: drafts.filter(Boolean), ms: Date.now() - t0, model: used });
     }
