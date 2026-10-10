@@ -188,7 +188,7 @@ async function run(image, opts) {
   const t0 = Date.now(); let j;
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
-    else j = await api("/chat", { model: $("model").value, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
+    else j = await api("/chat", { lang: navigator.language || "en", model: $("model").value, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
       messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) }, busy.signal);
   } catch (e) { j = { error: e.name === "AbortError" ? "Stopped." : "Couldn't reach the Hive. Check your connection." }; }
   busy = null; $("sendb").classList.remove("stop"); $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><path d='M12 19V5M5.5 11.5 12 5l6.5 6.5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"; sync();
@@ -227,7 +227,7 @@ async function record(opt) {
   rec.start(); tick();
   return { stop: () => rec.state === "recording" && rec.stop(), finished };
 }
-async function stt(blob) { const j = await api("/stt", { audio: await toWav(blob) }); if (j.error) throw new Error(j.error); return j.text; }
+async function stt(blob) { const j = await api("/stt", { audio: await toWav(blob), lang: (navigator.language || "en").slice(0, 2) }); if (j.error) throw new Error(j.error); return j.text; }
 
 // dictation: live browser recognition when there is one, otherwise record → Whisper
 let dict = null;
