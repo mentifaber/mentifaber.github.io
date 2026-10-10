@@ -25,6 +25,7 @@
       <a href="#studio" data-v="studio"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Studio<em>chat · council</em></a>
       <a href="#swarm" data-v="swarm"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v8l-7 4-7-4V7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.2" fill="currentColor"/></svg>Swarm<em>agents build</em></a>
       <a href="#keys" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l8-8M16 6l2 2M14 8l2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Uplinks<em>keys · models</em></a>
+      <a href="#mind" data-v="mind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 18.2a6.5 6.5 0 0111 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Mind<em>you, analyzed</em></a>
     </nav>
     <div class="hist-h">SESSIONS</div>
     <input id="hsearch" placeholder="search sessions…" aria-label="Search sessions" autocomplete="off">
@@ -146,6 +147,30 @@
           </div>
           <div id="k-list" class="mt"></div>
           <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Hive searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── MIND ───────── -->
+    <section id="v-mind" class="view hidden">
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>MIND</h2><span class="dim sm mono">owner only</span><span class="flex"></span><span class="dim sm mono" id="m-at"></span></header>
+      <div class="pad narrow">
+        <div id="m-locked" class="card hud hidden"><h3>MIND SEALED</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
+        <div id="m-open" class="hidden">
+          <div class="card hud mindp">
+            <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
+              <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
+            <div class="facts" id="m-facts"></div>
+            <div class="hours" id="m-hours" aria-label="When you use Hive (your local time)"></div>
+            <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button></div>
+            <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted here (visitors' never are). Your profile, memories and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0, so they know you. Owner mode is on: no hedging, no lectures, straight answers.</p>
+          </div>
+          <div class="card hud mt"><h3>PROFILE</h3><div id="m-profile" class="b mt"></div></div>
+          <div class="card hud mt"><h3>MEMORIES</h3>
+            <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><button class="ghost" id="m-add">Remember</button></div>
+            <div id="m-mem" class="mlist mt"></div></div>
+          <div class="card hud mt"><h3>ACTIVITY</h3><div id="m-act" class="mlist mt"></div>
+            <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
         </div>
       </div>
     </section>
