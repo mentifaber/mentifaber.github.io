@@ -29,6 +29,7 @@ export const PRESETS = {
   github: { name: "GitHub Models", kind: "compat", base: "https://models.github.ai/inference", models: ["openai/gpt-4.1", "openai/gpt-4.1-mini", "openai/gpt-4o", "meta/Llama-4-Maverick-17B-128E-Instruct-FP8", "deepseek/DeepSeek-R1", "mistral-ai/mistral-medium-2505", "microsoft/Phi-4", "xai/grok-3"] },
   perplexity: { name: "Perplexity", kind: "compat", base: "https://api.perplexity.ai", models: ["sonar", "sonar-pro", "sonar-reasoning-pro", "sonar-deep-research"] },
   custom: { name: "Custom (OpenAI-compatible: LM Studio, vLLM, LiteLLM…)", kind: "compat", base: "", editBase: true, keyless: true },
+  elevenlabs: { name: "ElevenLabs voices", kind: "voice" },
   tavily: { name: "Tavily search", kind: "search" },
   brave: { name: "Brave search", kind: "search" },
   serper: { name: "Serper (Google) search", kind: "search" },
@@ -59,6 +60,7 @@ const hdr = (v, key) => v.kind === "anthropic" ? { "x-api-key": key, "anthropic-
 
 // What a key can run. Chat keys list their provider's models; search keys run one test query.
 export async function probe(v, key) {
+  if (v.kind === "voice") { const j = await jfetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": key } }, 20000); const vs = (j.voices || []).map((x) => x.name + "|" + x.voice_id); if (!vs.length) throw new Error("no voices on this account"); return vs; }
   if (v.kind === "search") { const r = await search({ ...v }, key, "cloudflare workers durable objects"); if (!r.length) throw new Error("the search came back empty"); return []; }
   const pre = PRESETS[v.provider]; if (pre && pre.models) return pre.models;
   let j; try { j = await jfetch(v.base.replace(/\/$/, "") + "/models", { headers: hdr(v, key) }, 20000); }
@@ -137,5 +139,65 @@ export async function describe(env, dataUrl, ask) {
   return String((r && (r.description || r.response)) || "").trim();
 }
 export async function transcribe(env, audioB64, lang) { const r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio: audioB64, ...(/^[a-z]{2}$/.test(lang || "") ? { language: lang } : {}) }); return String((r && r.text) || "").trim(); } // a language hint stops short clips being heard as Russian or Icelandic
+// ── voices, most human first: ElevenLabs → OpenAI's expressive voices → Deepgram Aura-2 (Workers AI) → Aura-1 → MeloTTS ──
+export const AURA2 = ["thalia", "andromeda", "helena", "apollo", "arcas", "aries", "asteria", "athena", "luna", "orion", "orpheus", "hermes", "harmonia", "draco", "electra", "zeus"];
+const AURA1 = ["asteria", "luna", "stella", "athena", "hera", "orion", "arcas", "perseus", "angus", "orpheus", "helios", "zeus"];
+export const OPENAI_VOICES = ["sage", "coral", "ballad", "verse", "alloy", "ash", "echo", "fable", "nova", "onyx", "shimmer"];
+async function bytes64(x) { // Workers AI hands audio back as a stream, bytes or base64, depending on the model
+  if (!x) return ""; if (typeof x === "string") return x; if (x.audio) return typeof x.audio === "string" ? x.audio : bytes64(x.audio);
+  let u8; if (typeof x.getReader === "function") u8 = new Uint8Array(await new Response(x).arrayBuffer()); else if (x instanceof ArrayBuffer) u8 = new Uint8Array(x); else if (ArrayBuffer.isView(x)) u8 = new Uint8Array(x.buffer, x.byteOffset, x.byteLength); else return "";
+  return b64(u8);
+}
+export async function voiceOut(env, text, spec, keyFor) { // spec: "el:<kid>:<voiceId>" | "oa:<kid>:<voice>" | "a2:<speaker>" | "melo"; returns { audio (base64 mp3), used }
+  text = text.slice(0, 2400); const [kind, a, b2] = String(spec || "").split(":"); const tried = [];
+  if (kind === "el" && keyFor) try { const key = await keyFor(a); const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(b2 || "21m00Tcm4TlvDq8ikWAM") + "?output_format=mp3_44100_128", { method: "POST", headers: { "xi-api-key": key, "content-type": "application/json", accept: "audio/mpeg" }, body: JSON.stringify({ text, model_id: "eleven_flash_v2_5", voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.25, use_speaker_boost: true } }), signal: T(30000) });
+    if (!r.ok) throw new Error("ElevenLabs " + r.status + " " + (await r.text()).slice(0, 120)); return { audio: b64(new Uint8Array(await r.arrayBuffer())), used: "ElevenLabs" }; } catch (e) { tried.push(e.message); }
+  if (kind === "oa" && keyFor) try { const { v, key } = await keyFor(a, true); const r = await fetch(v.base.replace(/\/$/, "") + "/audio/speech", { method: "POST", headers: hdr(v, key), body: JSON.stringify({ model: "gpt-4o-mini-tts", voice: b2 || "sage", input: text, response_format: "mp3", instructions: "Speak like a real person in a relaxed conversation: warm, natural pacing, light expression, no announcer voice." }), signal: T(30000) });
+    if (!r.ok) throw new Error("OpenAI voice " + r.status + " " + (await r.text()).slice(0, 120)); return { audio: b64(new Uint8Array(await r.arrayBuffer())), used: "OpenAI " + (b2 || "sage") }; } catch (e) { tried.push(e.message); }
+  if (!env.AI) throw new Error(tried.join("; ") || "no voice available");
+  const sp = kind === "a2" && AURA2.includes(a) ? a : "thalia";
+  try { const r = await env.AI.run("@cf/deepgram/aura-2-en", { text, speaker: sp, encoding: "mp3" }); const au = await bytes64(r); if (au) return { audio: au, used: "Aura-2 " + sp }; } catch (e) { tried.push(e.message); }
+  try { const r = await env.AI.run("@cf/deepgram/aura-1", { text, speaker: AURA1.includes(sp) ? sp : "asteria", encoding: "mp3" }); const au = await bytes64(r); if (au) return { audio: au, used: "Aura-1" }; } catch (e) { tried.push(e.message); }
+  return { audio: await speak(env, text), used: "MeloTTS" };
+}
 export async function speak(env, text) { const r = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text.slice(0, 2000), lang: "en" }); return r && r.audio; }
 export async function imagine(env, prompt) { const r = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: prompt.slice(0, 2000), steps: 6 }); return r && r.image; }
+
+// ── streaming: the same call shape, but words arrive as they're written ──
+async function sse(body, onData) { // read a server-sent-event stream, hand each data payload over
+  const rd = body.getReader(), dec = new TextDecoder(); let buf = "";
+  for (;;) {
+    const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
+    let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line.startsWith("data:")) { const d = line.slice(5).trim(); if (d && d !== "[DONE]") try { onData(JSON.parse(d)); } catch (e) {} } }
+  }
+}
+const piece = (j) => { // the new text in one streamed event, whichever provider sent it
+  if (!j) return "";
+  if (typeof j.response === "string") return j.response;
+  const c = j.choices && j.choices[0]; if (c && c.delta && typeof c.delta.content === "string") return c.delta.content;
+  if (j.type === "content_block_delta" && j.delta && j.delta.type === "text_delta") return j.delta.text || "";
+  if (j.type === "response.output_text.delta") return j.delta || "";
+  return "";
+};
+export async function streamComplete(env, v, key, model, system, msgs, max, onDelta) {
+  max = max || 2048; let text = "";
+  const take = (j) => { const t = piece(j); if (t) { text += t; onDelta(t); } };
+  if (!v) {
+    const s = await env.AI.run(model, { messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text || "" }))], max_tokens: max, stream: true });
+    if (s && typeof s.getReader === "function") await sse(s, take); else { const t = textOf(s); if (t) { text = t; onDelta(t); } }
+    return text;
+  }
+  let url, body;
+  if (v.kind === "anthropic") {
+    url = v.base.replace(/\/$/, "") + "/messages";
+    body = { model, max_tokens: max, system, stream: true, messages: msgs.map((m) => ({ role: m.role, content: [...(m.images || []).map(parts).filter(Boolean).map((p) => ({ type: "image", source: { type: "base64", media_type: p.type, data: p.data } })), { type: "text", text: m.text || "…" }] })) };
+  } else {
+    url = v.base.replace(/\/$/, "") + "/chat/completions";
+    body = { model, max_tokens: max, stream: true, messages: [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))] };
+  }
+  const r = await fetch(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: T(180000) });
+  if (!r.ok) { const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} const m = j && (j.error && (j.error.message || j.error) || j.message); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
+  if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => null); const t = j ? (j.content ? (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("") : String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "")) : ""; if (t) { text = t; onDelta(t); } return text; }
+  await sse(r.body, take);
+  return text;
+}
