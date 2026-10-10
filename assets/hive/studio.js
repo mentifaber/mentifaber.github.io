@@ -237,7 +237,7 @@ async function stream(body, m, i, signal) {
     let k; while ((k = buf.indexOf("\n\n")) >= 0) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
       if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
-      else if (ev === "delta") { m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); }
+      else if (ev === "delta") { m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
       else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
@@ -323,24 +323,47 @@ const Voice = (window.HiveVoice = {
       Voice.h = null; $("orb").style.setProperty("--lv", 0); if (!Voice.on || Voice.paused) return; if (!blob) continue;
       Voice.set("Thinking…"); let text; try { text = await stt(blob); } catch (e) { Voice.set("Couldn't hear that", e.message); await new Promise((r) => setTimeout(r, 1500)); continue; }
       if (!text || text.length < 2) continue; $("vtext").textContent = "“" + text + "”";
-      const m = await send(text, { voice: true }); if (!Voice.on) return;
+      Voice.hush(); Voice.spoken = 0; Voice.live = true;
+      const m = await send(text, { voice: true }); Voice.live = false; if (!Voice.on) return;
       if (!m || m.error) { Voice.set("Something went wrong", m && m.error); await new Promise((r) => setTimeout(r, 2000)); continue; }
-      Voice.set("Speaking…", plain(m.text).slice(0, 280)); await Voice.say(plain(m.text));
+      Voice.feed(m.text || "", true); Voice.set("Speaking…", plain(m.text).slice(0, 280)); await Voice.drained();
     }
   },
-  say(text) {
-    Voice.hush(); if (!text) return Promise.resolve();
-    if (LS.get("natural", false)) return api("/tts", { text: text.slice(0, 1800) }).then((j) => new Promise((ok) => { if (j.error) { toast(j.error); return ok(); } const a = (Voice.audio = new Audio(j.audio)); a.onended = a.onerror = ok; a.play().catch(ok); }));
-    if (!window.speechSynthesis) return Promise.resolve();
-    return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03; u.onend = u.onerror = ok; speechSynthesis.speak(u); });
+  // speech: sentences are voiced in order, each fetched while the one before plays, so long answers start at once
+  q: [], playing: false, gen: 0, spoken: 0,
+  pick() { return LS.get("voice", "") || (Voice.list && Voice.list[0] && Voice.list[0].id) || "device"; },
+  clip(text) { const g = Voice.gen; if (Voice.pick() === "device") return Promise.resolve({ device: text, g });
+    return api("/tts", { text, voice: Voice.pick() }).then((j) => (j.error ? { device: text, g, err: j.error } : { url: j.audio, g, used: j.used })).catch(() => ({ device: text, g })); },
+  queue(text) { text = plain(text); if (!text) return; Voice.q.push(Voice.clip(text)); if (!Voice.playing) Voice.play(); },
+  async play() {
+    Voice.playing = true; if (Voice.on) $("orb").className = "orb talk";
+    while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue; if (c.used) $("vstate").title = c.used;
+      await new Promise((ok) => { if (c.url) { const a = (Voice.audio = new Audio(c.url)); a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
+    Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f());
   },
-  hush() { try { speechSynthesis.cancel(); } catch (e) {} if (Voice.audio) { Voice.audio.pause(); Voice.audio = null; } },
+  device(text) { if (!window.speechSynthesis) return Promise.resolve(); return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03; u.onend = u.onerror = ok; speechSynthesis.speak(u); }); },
+  drained() { return Voice.playing || Voice.q.length ? new Promise((ok) => (Voice.idle = Voice.idle || []).push(ok)) : Promise.resolve(); },
+  // feed a growing reply: whole sentences are spoken as soon as they exist
+  feed(text, final) {
+    const rest = text.slice(Voice.spoken), re = /[\s\S]*?[.!?…](?=\s|$)|[\s\S]*?\n/g; let m, cut = 0, chunk = "";
+    while ((m = re.exec(rest)) && m[0]) { chunk += m[0]; cut = re.lastIndex; if (chunk.trim().length >= 60) { Voice.queue(chunk); chunk = ""; Voice.spoken += cut; return Voice.feed(text, final); } }
+    if (final && rest.trim()) { Voice.queue(rest); Voice.spoken = text.length; }
+  },
+  say(text) { Voice.hush(); Voice.spoken = 0; Voice.feed(String(text || ""), true); return Voice.drained(); },
+  hush() { Voice.gen++; Voice.q = []; try { speechSynthesis.cancel(); } catch (e) {} if (Voice.audio) { Voice.audio.pause(); Voice.audio = null; } Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f()); },
   end() { Voice.on = false; Voice.hush(); if (Voice.h) Voice.h.stop(); $("voiceo").classList.add("hidden"); },
 });
 $("voice").onclick = () => Voice.start(); $("vend").onclick = () => Voice.end();
 $("vmute").onclick = () => { Voice.paused = !Voice.paused; $("vmute").textContent = Voice.paused ? "Resume" : "Pause"; if (Voice.paused) { Voice.hush(); if (Voice.h) Voice.h.stop(); Voice.set("Paused", ""); } else Voice.loop(); };
-const natBtn = () => { const n = LS.get("natural", false); $("vnat").textContent = "Natural voice: " + (n ? "on" : "off"); $("vnat").setAttribute("aria-pressed", n); };
-$("vnat").onclick = () => { LS.set("natural", !LS.get("natural", false)); natBtn(); }; natBtn();
+async function loadVoices() {
+  const j = await api("/voices").catch(() => ({ voices: [] })); Voice.list = j.voices || []; const groups = {}; for (const v of Voice.list) (groups[v.group] = groups[v.group] || []).push(v);
+  $("vvoice").innerHTML = Object.entries(groups).map(([g, vs]) => "<optgroup label='" + esc(g) + "'>" + vs.map((v) => "<option value='" + esc(v.id) + "'>" + esc(v.name) + "</option>").join("") + "</optgroup>").join("") + "<optgroup label='This device'><option value='device'>Device voice (works offline)</option></optgroup>";
+  $("vvoice").value = Voice.pick(); if (!$("vvoice").value) $("vvoice").value = "device";
+}
+$("vvoice").onchange = () => { LS.set("voice", $("vvoice").value); Voice.say("Hi, this is how I sound now."); };
+$("vtest").onclick = () => Voice.say("Hey. Voice link is live. Ask me anything, and I'll answer as soon as I have the first sentence ready.");
+$("orb").onclick = () => { if (Voice.playing) { Voice.hush(); Voice.set("Listening…", ""); } }; // interrupt
+loadVoices();
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && Voice.on) Voice.end(); });
 
 // ── key vault ──
@@ -349,24 +372,24 @@ const Keys = {
   async load() {
     const j = await api("/keys"); $("k-locked").classList.toggle("hidden", !j.error); $("k-open").classList.toggle("hidden", !!j.error); if (j.error) return;
     Keys.presets = j.presets; const sel = $("k-prov");
-    if (!sel.options.length) { const g = { compat: "Models", anthropic: "Models", search: "Web search" }, by = {}; for (const [k, p] of Object.entries(j.presets)) (by[g[p.kind]] = by[g[p.kind]] || []).push("<option value='" + k + "'>" + esc(p.name) + "</option>"); sel.innerHTML = Object.entries(by).map(([n, o]) => "<optgroup label='" + n + "'>" + o.join("") + "</optgroup>").join(""); sel.onchange(); }
+    if (!sel.options.length) { const g = { compat: "Models", anthropic: "Models", search: "Web search", voice: "Voices" }, by = {}; for (const [k, p] of Object.entries(j.presets)) (by[g[p.kind]] = by[g[p.kind]] || []).push("<option value='" + k + "'>" + esc(p.name) + "</option>"); sel.innerHTML = Object.entries(by).map(([n, o]) => "<optgroup label='" + n + "'>" + o.join("") + "</optgroup>").join(""); sel.onchange(); }
     Keys.draw(j.keys);
   },
   draw(keys) {
     Keys.keys = keys; $("kcount").textContent = keys.length + " key" + (keys.length === 1 ? "" : "s");
     $("k-list").innerHTML = keys.length ? keys.map((k) => "<div class='key" + (k.live ? "" : " off") + "' data-k='" + k.id + "'><div class='badge'>" + esc(k.name[0]) + "</div><div class='nm'>" + esc(k.label || k.name) + " <span class='dim' style='font-weight:400'>" + (k.label ? esc(k.name) + " · " : "") + "••••" + esc(k.tail) + "</span></div>" +
       "<div class='bt'><button class='sw' role='switch' aria-checked='" + k.live + "' data-kact='live' title='On / off'></button><button class='ghost sm' data-kact='test'>Test</button><button class='ghost sm' data-kact='del'>Remove</button></div>" +
-      "<div class='meta" + (k.err ? " err" : "") + "'>" + (k.err ? "⚠ " + esc(k.err) : k.kind === "search" ? "powers web search" : k.models + " models") + " · used " + k.used + "×" + (k.base ? " · " + esc(k.base) : "") + "</div>" +
-      (k.pull ? "<div class='row mt' style='grid-column:2/-1'><input data-pullname placeholder='pull a model, e.g. qwen3:8b, llama3.2, gpt-oss:20b' style='flex:1'><button class='ghost sm' data-kact='pull'>Pull</button></div>" : "") + (k.kind !== "search" && k.list.length ? "<details><summary>" + k.models + " models · swarm uses " + esc(k.pick === "*" ? "up to 40" : k.pick || "its strongest few") + "</summary><div class='row mt'><input data-pick placeholder='models for the swarm, comma separated, or * for up to 40' value='" + esc(k.pick) + "'><button class='ghost sm' data-kact='pick'>Save</button></div><div class='mods'>" + k.list.map((m) => "<code>" + esc(m) + "</code>").join("") + "</div></details>" : "") + "</div>").join("")
+      "<div class='meta" + (k.err ? " err" : "") + "'>" + (k.err ? "⚠ " + esc(k.err) : k.kind === "search" ? "powers web search" : k.kind === "voice" ? k.models + " voices · pick one in Voice link" : k.models + " models") + " · used " + k.used + "×" + (k.base ? " · " + esc(k.base) : "") + "</div>" +
+      (k.pull ? "<div class='row mt' style='grid-column:2/-1'><input data-pullname placeholder='pull a model, e.g. qwen3:8b, llama3.2, gpt-oss:20b' style='flex:1'><button class='ghost sm' data-kact='pull'>Pull</button></div>" : "") + (k.kind !== "search" && k.kind !== "voice" && k.list.length ? "<details><summary>" + k.models + " models · swarm uses " + esc(k.pick === "*" ? "up to 40" : k.pick || "its strongest few") + "</summary><div class='row mt'><input data-pick placeholder='models for the swarm, comma separated, or * for up to 40' value='" + esc(k.pick) + "'><button class='ghost sm' data-kact='pick'>Save</button></div><div class='mods'>" + k.list.map((m) => "<code>" + esc(m) + "</code>").join("") + "</div></details>" : "") + "</div>").join("")
       : "<div class='card'><p class='dim' style='margin:0'>No keys yet. The free Workers AI models work without any.</p></div>";
   },
 };
-$("k-prov").onchange = () => { const p = Keys.presets[$("k-prov").value] || {}; $("k-baseL").classList.toggle("hidden", !p.editBase); $("k-base").placeholder = p.base || "https://your-server.example/v1"; $("k-key").placeholder = p.keyless ? "optional (your own server may not need one)" : "paste it here"; $("k-pickL").classList.toggle("hidden", p.kind === "search"); };
+$("k-prov").onchange = () => { const p = Keys.presets[$("k-prov").value] || {}; $("k-baseL").classList.toggle("hidden", !p.editBase); $("k-base").placeholder = p.base || "https://your-server.example/v1"; $("k-key").placeholder = p.keyless ? "optional (your own server may not need one)" : "paste it here"; $("k-pickL").classList.toggle("hidden", p.kind === "search" || p.kind === "voice"); };
 const addKey = async (force) => {
   $("k-add").disabled = true; $("k-msg").textContent = "checking with the provider…"; $("k-force").classList.add("hidden");
   const j = await api("/keys/add", { provider: $("k-prov").value, label: $("k-label").value, base: $("k-base").value, key: $("k-key").value, pick: $("k-pick").value, force }); $("k-add").disabled = false;
   if (j.error) { $("k-msg").textContent = j.error; $("k-force").classList.toggle("hidden", !j.canForce); return; }
-  $("k-msg").textContent = "Added " + (j.key.kind === "search" ? "a search key" : j.key.models + " models") + "."; $("k-key").value = $("k-label").value = $("k-pick").value = ""; Keys.load(); loadModels();
+  $("k-msg").textContent = "Added " + (j.key.kind === "search" ? "a search key" : j.key.kind === "voice" ? j.key.models + " voices" : j.key.models + " models") + "."; loadVoices(); $("k-key").value = $("k-label").value = $("k-pick").value = ""; Keys.load(); loadModels();
 };
 $("k-add").onclick = () => addKey(false); $("k-force").onclick = () => addKey(true);
 $("k-list").onclick = async (e) => {

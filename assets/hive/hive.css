@@ -176,9 +176,11 @@ dialog{color:var(--ink);border-radius:16px;max-width:min(900px,94vw);width:100%;
   body.side #side{transform:none}body.side #scrim{display:block;position:fixed;inset:0;z-index:39;background:rgba(2,4,10,.55)}
   .only-m{display:inline-grid!important}
   .tele,#who,#mtot{display:none}
-  .tog{padding:6px 7px;letter-spacing:.03em;font-size:10px;gap:5px}#voice{display:none}#plus{width:30px}.ctl{gap:4px}
+  .tog{padding:6px 7px;letter-spacing:.03em;font-size:10px;gap:5px}#mic{display:none}#plus{width:30px}.ctl{gap:4px}
   .m.ai .av{display:none}
   #empty{margin-top:2vh}
   .protocols{grid-template-columns:1fr 1fr}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#vvoice{width:auto;min-width:220px;max-width:80vw;font:13px "JetBrains Mono",monospace}#orb{cursor:pointer}
+.plist div .x{width:28px;height:28px;color:var(--mute);flex:none}.plist div .x:hover{color:var(--bad);background:rgba(255,77,109,.1)}.plist div>span:first-child{flex:1;min-width:0}#pdel:hover{color:var(--bad);box-shadow:0 0 0 1px var(--bad)}

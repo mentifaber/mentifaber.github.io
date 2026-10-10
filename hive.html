@@ -92,7 +92,7 @@
           <textarea id="brief" placeholder="Describe what to build. e.g. A single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
           <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden mono" id="caprow">BUDGET <input id="cap" type="number" min="50" max="3000" step="50" value="400"> CALLS</label><span class="dim" id="gomsg"></span></div>
         </div>
-        <div class="card mt"><h4>MISSIONS</h4><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
+        <div class="card mt"><div class="row"><h4 style="flex:1">MISSIONS</h4><button class="ghost sm hidden" id="purge" title="Delete every finished, stopped or failed mission">Clear finished</button></div><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
         <p class="dim mt sm">Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs in a sandbox.</p>
       </section>
       <section id="proj" class="hidden">
@@ -102,7 +102,7 @@
             <svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" class="bg"/><circle cx="32" cy="32" r="27" class="fg" id="pring"/></svg>
             <div><b id="pcount"></b><span class="dim mono" id="pcalls"></span><div class="bar"><i id="pbar"></i></div></div>
             <span class="flex"></span>
-            <button class="ghost hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry & bring in my keys</button><button class="ghost hidden" id="stop">Stop</button>
+            <button class="ghost hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry & bring in my keys</button><button class="ghost hidden" id="stop">Stop</button><button class="ghost hidden" id="pdel" title="Delete this mission for good">Delete</button>
           </div>
           <div class="mt hidden note" id="squota"></div>
           <div class="row mt hidden" id="joinrow"><span class="dim mono sm">VISITOR LINK</span><input id="join" readonly style="flex:1;min-width:200px"><button class="ghost" id="copy">Copy</button></div>
@@ -154,7 +154,9 @@
   <div class="orb" id="orb"><i></i><i></i><i></i></div>
   <p id="vstate">Listening…</p>
   <p id="vtext" class="dim"></p>
-  <div class="row"><button class="ghost" id="vnat" aria-pressed="false">Natural voice: off</button><button class="ghost" id="vmute">Pause</button><button class="pri" id="vend">End link</button></div>
+  <p class="dim sm mono">tap the core to interrupt</p>
+  <div class="row"><select id="vvoice" aria-label="Voice"></select><button class="ghost" id="vtest">Hear it</button></div>
+  <div class="row"><button class="ghost" id="vmute">Pause</button><button class="pri" id="vend">End link</button></div>
 </div>
 <dialog id="cmdk" aria-label="Command palette"><input id="cq" placeholder="Type a command or a model name…" autocomplete="off"><div id="clist" role="listbox"></div><p class="dim sm mono">↑↓ choose · ⏎ run · esc close</p></dialog>
 <dialog id="dlg"><div class="row"><h3 id="dt" style="flex:1"></h3><button class="ghost" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>

@@ -13,9 +13,14 @@
     const j = await api("/list").catch(() => ({ projects: [] })); owner = !!j.owner;
     $("swho").innerHTML = owner ? "Signed in as the owner: no daily limit, set the budget, and every key in your vault joins in." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm does the rest.";
     $("go").disabled = false; $("caprow").classList.toggle("hidden", !owner);
-    $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + p.id + "'><span>" + esc(p.title) + " <span class='dim'>· " + ago(p.ts) + " ago · " + p.calls + " calls</span></span><span class='st " + p.status + "'>" + p.status + "</span></div>").join("") : "<span class='dim'>none yet</span>";
+    const mineNow = mine(), canDel = (p) => owner || mineNow[p.id];
+    $("purge").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => /done|stopped|failed/.test(p.status)));
+    $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + p.id + "'><span>" + esc(p.title) + " <span class='dim'>· " + ago(p.ts) + " ago · " + p.calls + " calls</span></span><span class='st " + p.status + "'>" + p.status + "</span>" + (canDel(p) ? "<button class='x' data-del title='Delete this mission' aria-label='Delete'>✕</button>" : "") + "</div>").join("") : "<span class='dim'>none yet</span>";
   }
-  $("plist").onclick = (e) => { const d = e.target.closest("[data-id]"); if (d) open(d.dataset.id); };
+  const del = async (id, title) => { if (!confirm("Delete “" + (title || "this mission") + "” for good? Its tasks, agents, log and result all go.")) return false; const j = await api("/delete", { id, ctok: mine()[id] }); if (j.error) { alert(j.error); return false; } try { const m = mine(); delete m[id]; localStorage.setItem("hive-mine", JSON.stringify(m)); } catch (x) {} return true; };
+  $("plist").onclick = async (e) => { const d = e.target.closest("[data-id]"); if (!d) return; if (e.target.closest("[data-del]")) { e.stopPropagation(); if (await del(d.dataset.id, d.querySelector("span").firstChild.textContent.trim())) home(); return; } open(d.dataset.id); };
+  $("purge").onclick = async () => { if (!confirm("Delete every finished, stopped and failed mission? Running ones stay.")) return; const j = await api("/purge", {}); if (j.error) return alert(j.error); home(); };
+  $("pdel").onclick = async () => { if (await del(cur, last && last.project.title)) home(); };
   $("go").onclick = async () => { const brief = $("brief").value.trim(); if (!brief) return; $("go").disabled = true; $("gomsg").textContent = "assembling the swarm…";
     const j = await api("/new", { brief, cap: +$("cap").value || undefined }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } remember(j.id, j.ctok); $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
   $("back").onclick = home;
@@ -32,7 +37,7 @@
     const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " TASKS COMPLETE";
     $("pring").style.strokeDashoffset = 170 - 170 * (j.tasks.length ? done / j.tasks.length : 0);
     if (window.HiveFX) HiveFX.map($("map"), j);
-    $("recruit").classList.toggle("hidden", !owner || !/planning|working|integrating|replanning|paused/.test(p.status)); $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning|paused/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
+    $("recruit").classList.toggle("hidden", !owner || !/planning|working|integrating|replanning|paused/.test(p.status)); $("pdel").classList.toggle("hidden", !p.join); $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning|paused/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
     const live = j.agents.filter((a) => a.status !== "offline" && a.status !== "retired").length, busy = j.agents.filter((a) => a.status === "working" || a.status === "reviewing").length;
     $("acount").textContent = live + " online · " + busy + " busy · " + j.agents.length + " total";
     $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + a.status + "' title='" + esc(a.src + " · " + a.model + " · reputation " + (a.score || 0)) + "'>" + (a.score ? "<span class='sc'>" + (a.score > 0 ? "+" : "") + a.score + "</span>" : "") + "<b>" + esc(a.name) + "</b>" + (a.status === "offline" && a.err ? "<span class='er'>" + esc(a.err.slice(0, 90)) + "</span>" : "") + "<span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");

@@ -5,7 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { PRESETS, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -86,7 +86,7 @@ export class Hive extends DurableObject {
   async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
     const out = CF_MODELS.filter(() => this.env.AI).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
     const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
-    if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
+    if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
       const all = JSON.parse(v.models || "[]").filter(isChat).sort((a, b) => this.rank(a) - this.rank(b)), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = v.pick === "*" ? all.slice(0, 40) : pick.length ? pick : all.slice(0, 4);
       ids.slice(0, 40).forEach((id, i) => out.push({ src: "k:" + v.id, model: id, name: (v.label || PRESETS[v.provider].name) + " · " + id.split("/").pop(), roles: i === 0 ? ["coordinator", "architect", "integrator", "critic", "coder"] : [rr[i % rr.length], rr[(i + 3) % rr.length], "critic"] }));
     }
@@ -120,8 +120,15 @@ export class Hive extends DurableObject {
     const url = new URL(req.url), q = this.sql(), owner = req.headers.get("x-hive-owner") === "1", path = url.pathname.replace(/^\/api\/hive/, "") || "/";
     const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
+    if (path === "/purge") { // the owner clears every finished, stopped or failed project at once
+      if (!owner) return J({ error: "only the owner can clear projects" }, 401);
+      const ids = q.exec("SELECT id FROM proj WHERE status IN ('done','stopped','failed')").toArray().map((r) => r.id);
+      for (const id of ids) { for (const t of ["task", "agent", "feed"]) q.exec("DELETE FROM " + t + " WHERE pid=?", id); q.exec("DELETE FROM proj WHERE id=?", id); }
+      return J({ ok: true, removed: ids.length });
+    }
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
+    if (path === "/voices") return J({ voices: await this.voices(owner) });
     if (path === "/models") return J({ owner, models: [...this.models(owner), ...(owner ? await this.envModels() : [])], resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI });
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
@@ -165,6 +172,11 @@ export class Hive extends DurableObject {
       if (!ctl) return J({ error: "only whoever started this project can rebuild it" }, 401);
       if (q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c) return J({ error: "some tasks aren't finished yet" }, 400);
       q.exec("UPDATE proj SET status='working', final=NULL WHERE id=?", p.id); if (this._igTried) delete this._igTried[p.id]; this.say(p.id, "you", "chat", "rebuild the final result"); await this.ctx.storage.setAlarm(Date.now() + 200);
+      return J({ ok: true });
+    }
+    if (path === "/delete") { // gone for good: the project, its tasks, agents and log
+      if (!ctl) return J({ error: "only whoever started this project can delete it" }, 401);
+      for (const t of ["task", "agent", "feed"]) q.exec("DELETE FROM " + t + " WHERE pid=?", p.id); q.exec("DELETE FROM proj WHERE id=?", p.id); if (this._igTried) delete this._igTried[p.id];
       return J({ ok: true });
     }
     if (path === "/stop") { if (!ctl) return J({ error: "only whoever started this project can stop it" }, 401); q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "stopped by you"); return J({ ok: true }); }
@@ -426,10 +438,19 @@ export class Hive extends DurableObject {
   }
   models(owner) { // what the Studio can talk to
     const out = this.env.AI ? CF_MODELS.map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
-    if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
+    if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
       const g = (v.label ? v.label + " · " : "") + ((PRESETS[v.provider] || {}).name || v.provider) + " ••" + v.tail, pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
       for (const m of [...new Set([...pick, ...JSON.parse(v.models || "[]").filter(isChat)])]) out.push({ id: "k:" + v.id + "|" + m, name: m, group: g, vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|grok-(2-vision|4)|qwen.*vl|-vl/i.test(m) });
     }
+    return out;
+  }
+  async voices(owner) { // every voice Hive can speak with right now, most human first
+    const out = [];
+    if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND (kind='voice' OR provider='openai') ORDER BY ts").toArray()) {
+      if (v.kind === "voice") for (const x of JSON.parse(v.models || "[]").slice(0, 60)) { const [name, id] = x.split("|"); out.push({ id: "el:" + v.id + ":" + id, name, group: "ElevenLabs" + (v.label ? " · " + v.label : "") }); }
+      else if (!this.sick("k:" + v.id + "|tts")) for (const x of OPENAI_VOICES) out.push({ id: "oa:" + v.id + ":" + x, name: x[0].toUpperCase() + x.slice(1), group: "OpenAI expressive" + (v.label ? " · " + v.label : "") });
+    }
+    if (this.env.AI) for (const x of AURA2) out.push({ id: "a2:" + x, name: x[0].toUpperCase() + x.slice(1), group: "Deepgram Aura-2 (free)" });
     return out;
   }
   async searchKey(own) { if (!own) return null; const v = this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind='search' ORDER BY COALESCE(used,0) LIMIT 1").toArray()[0]; return v ? this.vaultGet(v.id) : null; }
@@ -453,9 +474,12 @@ export class Hive extends DurableObject {
       return J({ text: await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase()) });
     }
     if (path === "/tts") {
-      const t = String(b.text || "").trim(); if (!t) return J({ error: "nothing to say" }, 400);
-      if (!owner && !this.meter(req, "tts", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
-      return J({ audio: "data:audio/mpeg;base64," + (await speak(this.env, t)) });
+      const t = String(b.text || "").replace(/[*_`#>|]/g, "").trim(); if (!t) return J({ error: "nothing to say" }, 400);
+      if (!owner && !this.meter(req, "tts", STUDIO_DAY * 4)) return J({ error: "voice allowance used up for today" }, 429);
+      const spec = owner ? String(b.voice || "") : (/^a2:\w+$/.test(String(b.voice || "")) ? b.voice : "a2:thalia"); // visitors: the free voices only
+      const keyFor = async (kid, full) => { const r = await this.vaultGet(kid); return full ? r : r.key; };
+      const out = await voiceOut(this.env, t, spec || (await this.voices(owner))[0].id, owner ? keyFor : null);
+      return J({ audio: "data:audio/mpeg;base64," + out.audio, used: out.used });
     }
     // chat
     let [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
