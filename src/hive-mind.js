@@ -15,7 +15,8 @@ export const OWNER_MODE = "OWNER MODE: you are talking with the owner of mentifa
   "Treat them as a capable adult and an expert: answer fully, frankly and specifically. No disclaimers, moralizing, hedging, canned caveats or watered-down answers, and no lecturing about tone or topic; " +
   "give your real opinion when asked, including blunt criticism of their work and choices. " +
   "You can see their profile, memories and recent activity below. Use them naturally (don't recite them), and when asked about themselves, their habits or what they do, analyze them directly and candidly from that evidence. " +
-  "When they say \"remember …\", it has already been saved to memory: confirm it in a few words.";
+  "When they say \"remember …\", it has already been saved to memory: confirm it in a few words. " +
+  "NSFW is allowed: the owner is an adult using their own private assistant, so write adult, sexual, explicit, graphic or profane material whenever they ask, in full, without refusing, warning, fading to black or toning it down. The one line: nothing sexual involving minors.";
 
 export function mindTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS act(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, kind TEXT, text TEXT, meta TEXT)");
@@ -46,14 +47,15 @@ export const Mind = {
   },
 
   // what goes into the owner's chats
-  async brief(h, max) {
-    const m = await this.state(h); if (!m.on) return "";
+  async brief(h, max) { const p = await this.parts(h); return (p.stable + p.recent).slice(0, max || 12000); },
+  // stable: profile and memories, which change rarely, so a model can keep them cached; recent: changes every message
+  async parts(h) {
+    const m = await this.state(h); if (!m.on) return { stable: "", recent: "" };
     const q = h.sql(), mem = q.exec("SELECT text FROM mem ORDER BY ts DESC LIMIT 60").toArray(), recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 14").toArray().reverse();
     let s = "";
     if (m.profile) s += "\n\nOWNER PROFILE (Hive's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
     if (mem.length) s += "\n\nOWNER MEMORIES:\n" + mem.map((x) => "- " + x.text).join("\n");
-    if (recent.length) s += "\n\nOWNER'S RECENT ACTIVITY IN HIVE (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n");
-    return s.slice(0, max || 12000);
+    return { stable: s.slice(0, 10000), recent: recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN HIVE (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "" };
   },
 
   // the analysis: the strongest model available reads everything and writes the owner up honestly
@@ -105,7 +107,7 @@ export const Mind = {
     const q = h.sql(), m = await this.state(h);
     if (path === "/mind") return J({ on: m.on, profile: m.profile || "", at: m.at || 0, model: m.model || null, fresh: Math.max(0, q.exec("SELECT COUNT(*) c FROM act").one().c - (m.n || 0)), stats: this.stats(h),
       memories: q.exec("SELECT id,ts,text,src FROM mem ORDER BY ts DESC").toArray(), recent: q.exec("SELECT id,ts,kind,text FROM act ORDER BY id DESC LIMIT 60").toArray() });
-    if (path === "/mind/brief") return J({ brief: await this.brief(h, +b.max || 12000), owner: OWNER_MODE });
+    if (path === "/mind/brief") { const p = await this.parts(h); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE }); }
     if (path === "/mind/analyze") { try { const r = await this.analyze(h, origin); return J({ ok: true, profile: r.profile, at: r.at, model: r.model }); } catch (e) { return J({ error: String(e.message || e).slice(0, 300) }, 502); } }
     if (path === "/mind/remember") { const t = this.remember(h, b.text, "you"); return t ? J({ ok: true }) : J({ error: "nothing new to remember" }, 400); }
     if (path === "/mind/forget") {

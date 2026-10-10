@@ -545,7 +545,10 @@ export default {
         if (own && sub === "/v1/chat/completions" && env.HIVE && body) try { // the owner's apps get Hive's owner mode and memory too
           const j = JSON.parse(new TextDecoder().decode(body)), hh = new Headers({ "x-hive-owner": "1" });
           const m = await (await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/mind/brief", { headers: hh }))).json();
-          if (Array.isArray(j.messages) && j.mind !== false && (m.brief || m.owner)) { j.messages.unshift({ role: "system", content: m.owner + m.brief }); body = new TextEncoder().encode(JSON.stringify(j)); }
+          if (Array.isArray(j.messages) && j.mind !== false && m.owner) { // one system message (Qwen's template allows only one, first); only what rarely changes, so it stays cached
+            const add = m.owner + (m.stable || ""), s0 = j.messages[0]; if (s0 && s0.role === "system" && typeof s0.content === "string") s0.content = s0.content + "\n\n" + add; else j.messages.unshift({ role: "system", content: add });
+            body = new TextEncoder().encode(JSON.stringify(j));
+          }
         } catch (e) {}
         return stub.fetch(new Request("http://agent" + sub + url.search, { method: req.method, headers: h, body }));
       }

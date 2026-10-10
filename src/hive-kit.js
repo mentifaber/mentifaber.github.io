@@ -85,7 +85,7 @@ export async function complete(env, v, key, model, system, msgs, max) {
     return (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("").trim();
   }
   const messages = [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))];
-  const j = await jfetch(v.base.replace(/\/$/, "") + "/chat/completions", { fetcher: v.fetcher, method: "POST", headers: hdr(v, key), body: JSON.stringify({ model, max_tokens: max, messages }) });
+  const j = await jfetch(v.base.replace(/\/$/, "") + "/chat/completions", { fetcher: v.fetcher, method: "POST", headers: hdr(v, key), body: JSON.stringify({ model, max_tokens: max, messages }) }, v.ms); // v.ms: a slow local model (MENTIFABER AGENT) gets longer
   const c = j.choices && j.choices[0] && j.choices[0].message; let out = String((c && c.content) || "").trim();
   if (j.citations && j.citations.length) out += "\n\n" + j.citations.map((u, i) => "[" + (i + 1) + "] " + u).join("\n"); // Perplexity cites its sources
   return out;
@@ -164,10 +164,10 @@ export async function speak(env, text) { const r = await env.AI.run("@cf/myshell
 export async function imagine(env, prompt) { const r = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: prompt.slice(0, 2000), steps: 6 }); return r && r.image; }
 
 // ── streaming: the same call shape, but words arrive as they're written ──
-async function sse(body, onData) { // read a server-sent-event stream, hand each data payload over
+async function sse(body, onData, onBytes) { // read a server-sent-event stream, hand each data payload over
   const rd = body.getReader(), dec = new TextDecoder(); let buf = "";
   for (;;) {
-    const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
+    const { value, done } = await rd.read(); if (done) break; if (onBytes) onBytes(); buf += dec.decode(value, { stream: true });
     let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line.startsWith("data:")) { const d = line.slice(5).trim(); if (d && d !== "[DONE]") try { onData(JSON.parse(d)); } catch (e) {} } }
   }
 }
@@ -180,8 +180,9 @@ const piece = (j) => { // the new text in one streamed event, whichever provider
   return "";
 };
 export async function streamComplete(env, v, key, model, system, msgs, max, onDelta) {
-  max = max || 2048; let text = "";
-  const take = (j) => { const t = piece(j); if (t) { text += t; onDelta(t); } };
+  max = max || 2048; let text = "", serr = null;
+  const take = (j) => { if (j && j.error && !text) { serr = j.error; return; } const t = piece(j); if (t) { text += t; onDelta(t); } }; // an error can arrive inside a stream that had already begun
+
   if (!v) {
     const s = await env.AI.run(model, { messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text || "" }))], max_tokens: max, stream: true });
     if (s && typeof s.getReader === "function") await sse(s, take); else { const t = textOf(s); if (t) { text = t; onDelta(t); } }
@@ -195,9 +196,15 @@ export async function streamComplete(env, v, key, model, system, msgs, max, onDe
     url = v.base.replace(/\/$/, "") + "/chat/completions";
     body = { model, max_tokens: max, stream: true, messages: [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))] };
   }
-  const r = await (v.fetcher || fetch)(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: T(180000) });
+  // no limit on how long a reply may run: only silence ends it (first word: 3 min, or 30 for a CPU model reading a long prompt)
+  const ac = new AbortController(); let quiet; const wait = (ms) => { clearTimeout(quiet); quiet = setTimeout(() => ac.abort(new Error("the model went silent for " + Math.round(ms / 1000) + "s")), ms); };
+  wait(v.first || 180000);
+  try {
+  const r = await (v.fetcher || fetch)(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: ac.signal });
   if (!r.ok) { const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} const m = j && (j.error && (j.error.message || j.error) || j.message); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
   if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => null); const t = j ? (j.content ? (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("") : String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "")) : ""; if (t) { text = t; onDelta(t); } return text; }
-  await sse(r.body, take);
+  await sse(r.body, take, () => wait(v.idle || 120000));
+  if (serr && !text) { const e = new Error(String(serr.message || serr)); e.status = serr.status; throw e; }
   return text;
+  } finally { clearTimeout(quiet); }
 }
