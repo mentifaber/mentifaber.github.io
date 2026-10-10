@@ -20,4 +20,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
+          # MENTIFABER AGENT's model bucket must exist before deploy; creating it again is a harmless no-op.
+          preCommands: npx wrangler r2 bucket create mentifaber-models || true
           command: deploy

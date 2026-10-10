@@ -22,13 +22,17 @@
     ]
   },
   "durable_objects": {
-    "bindings": [{ "name": "STORE", "class_name": "Store" }, { "name": "LOBBY", "class_name": "Lobby" }, { "name": "HIVE", "class_name": "Hive" }, { "name": "NULLSPACE", "class_name": "Nullspace" }]
+    "bindings": [{ "name": "STORE", "class_name": "Store" }, { "name": "LOBBY", "class_name": "Lobby" }, { "name": "HIVE", "class_name": "Hive" }, { "name": "NULLSPACE", "class_name": "Nullspace" }, { "name": "AGENT", "class_name": "Agent" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }, { "tag": "v3", "new_sqlite_classes": ["Hive"] }, { "tag": "v4", "new_sqlite_classes": ["Nullspace"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Store"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }, { "tag": "v3", "new_sqlite_classes": ["Hive"] }, { "tag": "v4", "new_sqlite_classes": ["Nullspace"] }, { "tag": "v5", "new_sqlite_classes": ["Agent"] }],
   // Workers AI: the Hive's swarm (src/hive.js). Optional extra providers are Worker secrets:
   // OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY (wrangler secret put …). Owner keys added at /hive#keys are sealed in the
   // Hive DO; set HIVE_VAULT_SECRET to seal them with a key that lives outside the DO.
   "ai": { "binding": "AI" },
+  // MENTIFABER AGENT 1.0 (src/agent.js): the model file lives in this R2 bucket and runs in one container
+  // (llama.cpp, agent/Dockerfile) that sleeps after 20 idle minutes. The bucket must exist before deploying.
+  "r2_buckets": [{ "binding": "MODELS", "bucket_name": "mentifaber-models" }],
+  "containers": [{ "class_name": "Agent", "image": "./agent/Dockerfile", "instance_type": "standard-4", "max_instances": 1 }],
   // Hourly check for Flutterbloom's daily reminder (src/worker.js dailyReminders).
   "triggers": { "crons": ["7 * * * *"] }
 }

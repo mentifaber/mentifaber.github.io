@@ -3,6 +3,7 @@ import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
 import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } from "./us.js";
 import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
+export { Agent } from "./agent.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -527,6 +528,21 @@ export default {
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
+      if (route === "agent") { // MENTIFABER AGENT 1.0: the owner loads/wakes/sleeps it; apps chat with it; its container pulls weights
+        if (!env.AGENT) return json({ error: "the agent isn't deployed" }, 503);
+        const stub = env.AGENT.get(env.AGENT.idFromName("agent")), sub = url.pathname.replace(/^\/api\/agent/, "") || "/";
+        if (sub === "/weights") { // the container's download, by token, with resume (Range) support
+          const chk = await (await stub.fetch(new Request("http://agent/check?t=" + encodeURIComponent(url.searchParams.get("t") || "")))).json();
+          if (!chk.ok || !chk.key || !env.MODELS) return new Response("no", { status: 403 });
+          const m = /bytes=(\d+)-(\d*)/.exec(req.headers.get("range") || ""), off = m ? +m[1] : 0;
+          const obj = await env.MODELS.get(chk.key, m ? { range: m[2] ? { offset: off, length: +m[2] - off + 1 } : { offset: off } } : {});
+          if (!obj) return new Response("missing", { status: off ? 416 : 404 });
+          const len = m && m[2] ? +m[2] - off + 1 : obj.size - off;
+          return new Response(obj.body, { status: m ? 206 : 200, headers: { "content-type": "application/octet-stream", "content-length": String(len), "accept-ranges": "bytes", ...(m ? { "content-range": "bytes " + off + "-" + (off + len - 1) + "/" + obj.size } : {}) } });
+        }
+        const h = new Headers(req.headers); h.delete("x-agent-owner"); h.set("x-origin", url.origin); if (await session(req, env, "vigil")) h.set("x-agent-owner", "1");
+        return stub.fetch(new Request("http://agent" + sub + url.search, { method: req.method, headers: h, body: req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer() }));
+      }
       if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");
         return env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(req, { headers: h }));

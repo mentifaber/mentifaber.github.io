@@ -52,7 +52,7 @@ export async function unseal(k, s) { const [iv, ct] = s.split("."); return new T
 
 const T = (ms) => AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined;
 async function jfetch(url, o, ms) {
-  const r = await fetch(url, { ...o, signal: T(ms || 90000) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  const { fetcher, ...init } = o || {}; const r = await (fetcher || fetch)(url, { ...init, signal: T(ms || 90000) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} // fetcher: a Durable Object's fetch (MENTIFABER AGENT)
   if (!r.ok) { const m = j && (j.error && (j.error.message || j.error) || j.message || j.detail); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
   return j == null ? t : j;
 }
@@ -85,7 +85,7 @@ export async function complete(env, v, key, model, system, msgs, max) {
     return (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("").trim();
   }
   const messages = [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))];
-  const j = await jfetch(v.base.replace(/\/$/, "") + "/chat/completions", { method: "POST", headers: hdr(v, key), body: JSON.stringify({ model, max_tokens: max, messages }) });
+  const j = await jfetch(v.base.replace(/\/$/, "") + "/chat/completions", { fetcher: v.fetcher, method: "POST", headers: hdr(v, key), body: JSON.stringify({ model, max_tokens: max, messages }) });
   const c = j.choices && j.choices[0] && j.choices[0].message; let out = String((c && c.content) || "").trim();
   if (j.citations && j.citations.length) out += "\n\n" + j.citations.map((u, i) => "[" + (i + 1) + "] " + u).join("\n"); // Perplexity cites its sources
   return out;
@@ -195,7 +195,7 @@ export async function streamComplete(env, v, key, model, system, msgs, max, onDe
     url = v.base.replace(/\/$/, "") + "/chat/completions";
     body = { model, max_tokens: max, stream: true, messages: [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))] };
   }
-  const r = await fetch(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: T(180000) });
+  const r = await (v.fetcher || fetch)(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: T(180000) });
   if (!r.ok) { const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} const m = j && (j.error && (j.error.message || j.error) || j.message); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
   if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => null); const t = j ? (j.content ? (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("") : String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "")) : ""; if (t) { text = t; onDelta(t); } return text; }
   await sse(r.body, take);
