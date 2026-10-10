@@ -29,7 +29,7 @@
     $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
     const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks done";
     $("recruit").classList.toggle("hidden", !owner || !/planning|working|integrating|replanning|paused/.test(p.status)); $("stop").classList.toggle("hidden", !p.join || !/planning|working|integrating|replanning|paused/.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join); $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
-    const live = j.agents.filter((a) => a.status !== "offline").length, busy = j.agents.filter((a) => a.status === "working" || a.status === "reviewing").length;
+    const live = j.agents.filter((a) => a.status !== "offline" && a.status !== "retired").length, busy = j.agents.filter((a) => a.status === "working" || a.status === "reviewing").length;
     $("acount").textContent = live + " online · " + busy + " busy · " + j.agents.length + " total";
     $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + a.status + "' title='" + esc(a.src + " · " + a.model + " · reputation " + (a.score || 0)) + "'>" + (a.score ? "<span class='sc'>" + (a.score > 0 ? "+" : "") + a.score + "</span>" : "") + "<b>" + esc(a.name) + "</b>" + (a.status === "offline" && a.err ? "<span class='er'>" + esc(a.err.slice(0, 90)) + "</span>" : "") + "<span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");
     const cols = [["OPEN", ["open"]], ["IN PROGRESS", ["claimed"]], ["REVIEW", ["review", "reviewing"]], ["DONE", ["done"]]];
@@ -38,6 +38,7 @@
     const f = $("feed"), seen = new Set([...f.children].map((d) => d.dataset.k)), add = j.feed.slice().reverse().filter((x) => !seen.has(x.ts + x.who + x.kind));
     for (const x of add) { const d = document.createElement("div"); d.dataset.k = x.ts + x.who + x.kind; d.className = "k-" + x.kind; d.innerHTML = "<span class='who'>" + esc(x.who) + "</span> <span class='dim'>" + esc(x.kind) + "</span><br>" + esc(x.text); f.prepend(d); }
     while (f.children.length > 200) f.lastChild.remove();
+    $("rebuild").classList.toggle("hidden", !(p.join && p.status === "done"));
     if (p.final) { $("finalp").classList.remove("hidden"); $("final").textContent = p.final; const m = p.final.match(/```html\s*([\s\S]*?)```/i) || (/^\s*<!doctype html/i.test(p.final) ? [0, p.final] : null);
       if (m) { $("preview").classList.remove("hidden"); if ($("preview").dataset.src !== m[1]) { $("preview").srcdoc = m[1]; $("preview").dataset.src = m[1]; } } else $("preview").classList.add("hidden"); }
     else $("finalp").classList.add("hidden");
@@ -46,6 +47,7 @@
     $("dt").textContent = "#" + t.id + " " + t.role + " · " + t.title; $("dd").textContent = t.detail || ""; $("dnote").textContent = t.note ? "Review: " + t.note : ""; $("dout").textContent = "…"; $("dlg").showModal();
     const o = await api("/output?id=" + cur + "&task=" + t.id); $("dout").textContent = o.output || "(nothing yet)"; };
   $("recruit").onclick = async () => { $("recruit").disabled = true; const j = await api("/recruit", { id: cur }); $("recruit").disabled = false; if (j.error) alert(j.error); poll(); };
+  $("rebuild").onclick = async () => { if (!confirm("Assemble the final result again from the approved work?")) return; const j = await api("/rebuild", { id: cur, ctok: mine()[cur] }); if (j.error) alert(j.error); poll(); };
   $("stop").onclick = async () => { if (confirm("Stop this project?")) { await api("/stop", { id: cur, ctok: mine()[cur] }); poll(); } };
   $("send").onclick = async () => { const text = $("chat").value.trim(); if (!text) return; $("chat").value = ""; await api("/say", { id: cur, text, ctok: mine()[cur] }); poll(); };
   $("chat").addEventListener("keydown", (e) => { if (e.key === "Enter") $("send").click(); });

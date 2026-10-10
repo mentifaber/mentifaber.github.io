@@ -34,7 +34,8 @@ export const PRESETS = {
   serper: { name: "Serper (Google) search", kind: "search" },
   exa: { name: "Exa search", kind: "search" },
 };
-const NOT_CHAT = /embed|whisper|tts|transcri|moderation|dall-e|gpt-image|imagen|veo|rerank|guard|audio|realtime|search-preview|babbage|davinci|-image|computer-use|text-to|speech/i;
+const NOT_CHAT = /embed|whisper|tts|transcri|moderation|dall-e|gpt-image|imagen|veo|rerank|guard|audio|realtime|search-preview|babbage|davinci|-image|image-|computer-use|text-to|speech|orpheus|playai|:batch|banana|lyria|sora|flux|stable-diffusion|allam|compound|-1b-|-1b$|prompt-guard/i;
+export const isChat = (id) => !NOT_CHAT.test(String(id).split("|").pop()); // voices, image makers, batch-only and tiny models can't take part in a conversation
 
 // ── the vault's seal ──
 const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
@@ -135,6 +136,6 @@ export async function describe(env, dataUrl, ask) {
   const r = await env.AI.run("@cf/llava-hf/llava-1.5-7b-hf", { image: [...unb64(p.data)], prompt: ask || "Describe this image in detail: subjects, any text, layout, colours.", max_tokens: 400 });
   return String((r && (r.description || r.response)) || "").trim();
 }
-export async function transcribe(env, audioB64) { const r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio: audioB64 }); return String((r && r.text) || "").trim(); }
+export async function transcribe(env, audioB64, lang) { const r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio: audioB64, ...(/^[a-z]{2}$/.test(lang || "") ? { language: lang } : {}) }); return String((r && r.text) || "").trim(); } // a language hint stops short clips being heard as Russian or Icelandic
 export async function speak(env, text) { const r = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text.slice(0, 2000), lang: "en" }); return r && r.audio; }
 export async function imagine(env, prompt) { const r = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: prompt.slice(0, 2000), steps: 6 }); return r && r.image; }

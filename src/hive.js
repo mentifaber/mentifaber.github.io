@@ -5,7 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { PRESETS, pullModel, vaultKey, seal, unseal, probe, complete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { PRESETS, isChat, pullModel, vaultKey, seal, unseal, probe, complete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -87,7 +87,7 @@ export class Hive extends DurableObject {
     const out = CF_MODELS.filter(() => this.env.AI).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
     const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
     if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
-      const all = JSON.parse(v.models || "[]"), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = v.pick === "*" ? all.slice(0, 40) : pick.length ? pick : all.slice(0, 4);
+      const all = JSON.parse(v.models || "[]").filter(isChat).sort((a, b) => this.rank(a) - this.rank(b)), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = v.pick === "*" ? all.slice(0, 40) : pick.length ? pick : all.slice(0, 4);
       ids.slice(0, 40).forEach((id, i) => out.push({ src: "k:" + v.id, model: id, name: (v.label || PRESETS[v.provider].name) + " · " + id.split("/").pop(), roles: i === 0 ? ["coordinator", "architect", "integrator", "critic", "coder"] : [rr[i % rr.length], rr[(i + 3) % rr.length], "critic"] }));
     }
     for (const k of KEYED) {
@@ -99,7 +99,7 @@ export class Hive extends DurableObject {
           .filter((id) => !/whisper|tts|guard|embed|vision-only|image/i.test(id)).slice(0, 40);
       } catch (e) {}
       const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
-      ids.forEach((id, i) => out.push({ src: k.id, model: id, name: id.split("/").pop().replace(/:free$/, ""), roles: [rr[i % rr.length], rr[(i + 3) % rr.length]] }));
+      ids.filter(isChat).forEach((id, i) => out.push({ src: k.id, model: id, name: id.split("/").pop().replace(/:free$/, ""), roles: [rr[i % rr.length], rr[(i + 3) % rr.length]] }));
     }
     return out;
   }
@@ -161,6 +161,12 @@ export class Hive extends DurableObject {
       q.exec("UPDATE proj SET own=1 WHERE id=?", p.id); const n = await this.recruit(p.id, true); await this.ctx.storage.setAlarm(Date.now() + 200);
       return J({ ok: true, joined: n });
     }
+    if (path === "/rebuild") { // assemble the final result again (e.g. it came out too short)
+      if (!ctl) return J({ error: "only whoever started this project can rebuild it" }, 401);
+      if (q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c) return J({ error: "some tasks aren't finished yet" }, 400);
+      q.exec("UPDATE proj SET status='working', final=NULL WHERE id=?", p.id); if (this._igTried) delete this._igTried[p.id]; this.say(p.id, "you", "chat", "rebuild the final result"); await this.ctx.storage.setAlarm(Date.now() + 200);
+      return J({ ok: true });
+    }
     if (path === "/stop") { if (!ctl) return J({ error: "only whoever started this project can stop it" }, 401); q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "stopped by you"); return J({ ok: true }); }
     // visiting AIs: claim a task by link, read its context, submit by GET (short) or POST (long)
     if (path === "/join" || path === "/submit") {
@@ -172,7 +178,7 @@ export class Hive extends DurableObject {
         const t = q.exec("SELECT * FROM task WHERE pid=? AND id=? AND agent=?", p.id, +b.task, aid).toArray()[0], text = String(b.text || "").trim().slice(0, 60000);
         if (!t || !text) return J({ error: "claim a task with /join first, then submit its text" }, 400);
         if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
-        const noReview = this.quota && Date.now() < this.quota && !q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
+        const noReview = this.quota && Date.now() < this.quota && !q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired') AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
         q.exec("UPDATE task SET status=?, output=?, note=?, ts=? WHERE id=?", noReview ? "done" : "review", text, noReview ? "accepted without review: the swarm's reviewers were paused" : null, Date.now(), t.id); q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), aid, p.id);
         this.say(p.id, ag.name, "work", "submitted #" + t.id + " " + t.title); await this.ctx.storage.setAlarm(Date.now() + 200);
         return J({ ok: true, next: url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=" + encodeURIComponent(name) });
@@ -223,7 +229,7 @@ export class Hive extends DurableObject {
     const out = this.quota && Date.now() < this.quota;
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
       q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor') AND COALESCE(last,0)<?", p.id, Date.now() - 600e3); // a key that failed gets another try every 10 minutes
-      let others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline' AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
+      let others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired') AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
       this._rec = this._rec || {}; // the owner's projects pick up keys added after they started (checked every few minutes)
       if (p.own && Date.now() - (this._rec[p.id] || 0) > 180e3) { this._rec[p.id] = Date.now(); if (await this.recruit(p.id)) others = 1; }
       if (out && !others) { // only Workers AI here and it's resting: pause until the allowance resets
@@ -253,8 +259,14 @@ export class Hive extends DurableObject {
         q.exec("UPDATE proj SET calls=MAX(0,calls-1) WHERE id=?", p.id); q.exec("UPDATE agent SET status='idle', task=NULL WHERE id=? AND pid=?", a.id, p.id);
         return null;
       }
-      const busy = /429|rate.?limit|too many|overloaded|capacity|timeout|timed out|503|502/i.test(msg); // busy: back in a minute; anything else: ten
-      q.exec("UPDATE agent SET status='offline', task=NULL, last=?, err=? WHERE id=? AND pid=?", Date.now() - (busy ? 540e3 : 0), msg.slice(0, 200), a.id, p.id); this.say(p.id, a.name, "offline", msg.slice(0, 200) + (busy ? " (busy; retrying in a minute)" : " (retrying in 10 minutes)")); return null;
+      // why it failed decides when it tries again: never (it can't chat), in hours (no credit), in a minute (busy), or in ten
+      const never = /not support chat|chat\/completions endpoint|cannot be used with|terms acceptance|does not exist|not.?found|no access|not allowed|unsupported|decommission|deprecated|reduce the length/i.test(msg) || [404].includes(e && e.status);
+      const broke = !never && /credit|billing|balance|insufficient|payment|quota exceeded|exceeded your current quota/i.test(msg);
+      const busy = !never && !broke && /429|rate.?limit|too many|overloaded|capacity|timeout|timed out|503|502/i.test(msg);
+      const wait = never ? "" : broke ? " (no credit; trying again in 6 hours)" : busy ? " (busy; retrying in a minute)" : " (retrying in 10 minutes)";
+      q.exec("UPDATE agent SET status=?, task=NULL, last=?, err=? WHERE id=? AND pid=?", never ? "retired" : "offline", Date.now() + (broke ? 6 * 3600e3 - 600e3 : busy ? -540e3 : 0), msg.slice(0, 200), a.id, p.id);
+      if (a.err !== msg.slice(0, 200)) this.say(p.id, a.name, never ? "retired" : "offline", msg.slice(0, 200) + (never ? " (this model can't do this job; it leaves the swarm)" : wait)); // same error again: don't repeat it in the feed
+      return null;
     }
   }
   async advance(p) {
@@ -321,10 +333,24 @@ export class Hive extends DurableObject {
     const left = q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c, total = q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c;
     if (total && !left && p.status !== "integrating") {
       q.exec("UPDATE proj SET status='integrating' WHERE id=?", p.id);
-      const ig = this.agentsFor(p.id, "integrator")[0] || this.agentsFor(p.id, "coder")[0]; if (!ig) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); return; }
+      this._igTried = this._igTried || {}; const tried = (this._igTried[p.id] = this._igTried[p.id] || new Set());
+      const rows = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray();
+      const stitch = () => { // nobody could assemble it: hand over everything the swarm approved, in order
+        const t = "# " + p.title + "\n\n_The integrators couldn't finish, so here is every approved piece of work in order._\n\n" + rows.map((r) => "## #" + r.id + " " + r.role + ": " + r.title + "\n\n" + r.output).join("\n\n---\n\n");
+        q.exec("UPDATE proj SET status='done', final=? WHERE id=?", t.slice(0, 200000), p.id); this.say(p.id, "hive", "done", "put together the approved work as the result (" + t.length + " chars)"); delete this._igTried[p.id];
+      };
+      const ig = [...this.agentsFor(p.id, "integrator"), ...this.agentsFor(p.id, "coder"), ...this.agentsFor(p.id, "writer")].find((a) => !tried.has(a.id));
+      if (!ig || tried.size >= 3) { stitch(); return; }
+      tried.add(ig.id);
       const all = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.role + ": " + r.title + "\n" + r.output.slice(0, 9000)).join("\n\n").slice(0, 60000);
-      const out = await this.call(p, ig, SYS("integrator") + " If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown.", "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all, 4096);
+      const out = await this.call(p, ig, SYS("integrator") + " Deliver the whole thing, not a summary or an outline of it. If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown.", "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all, 4096);
       if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; }
+      const need = Math.min(2500, Math.round(all.length * 0.2)), fences = (out.match(/```/g) || []).length;
+      if (out.length < need || fences % 2) { // a stub or cut off mid-way: not a deliverable
+        q.exec("UPDATE agent SET score=COALESCE(score,0)-2 WHERE id=? AND pid=?", ig.id, p.id); q.exec("UPDATE proj SET status='working' WHERE id=?", p.id);
+        this.say(p.id, ig.name, "redo", "final draft was " + (fences % 2 ? "cut off" : "too short (" + out.length + " chars)") + "; handing it to another integrator"); return;
+      }
+      delete this._igTried[p.id];
       q.exec("UPDATE proj SET status='done', final=? WHERE id=?", out.slice(0, 200000), p.id); this.say(p.id, ig.name, "done", "assembled the final deliverable (" + out.length + " chars)");
       return;
     }
@@ -333,7 +359,7 @@ export class Hive extends DurableObject {
     if (stuck.length) for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), p.id).toArray()) {
       const roles = JSON.parse(a.roles); for (const t of stuck) if (!roles.includes(t.role)) roles.push(t.role); q.exec("UPDATE agent SET roles=? WHERE id=? AND pid=?", JSON.stringify(roles), a.id, p.id);
     }
-    if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status!='offline'", p.id).one().c && !(this.quota && Date.now() < this.quota)) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
+    if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired')", p.id).one().c && !(this.quota && Date.now() < this.quota)) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
   }
 
   // ── the key vault: unlimited keys, any provider, sealed at rest, owner only ──
@@ -377,7 +403,7 @@ export class Hive extends DurableObject {
     const list = [];
     for (const k of KEYED) { const key = this.env[k.env]; if (!key) continue; let ids = k.models || [];
       if (k.list) try { const j = await (await fetch(k.list, { headers: { authorization: "Bearer " + key } })).json(); ids = (j.data || []).map((m) => m.id).filter((id) => !/whisper|tts|guard|embed|image|audio|moderation/i.test(id)); if (k.free) ids = [...ids.filter((i) => /:free$/.test(i)), ...ids.filter((i) => !/:free$/.test(i))]; } catch (e) {}
-      for (const m of ids.slice(0, 3000)) list.push({ id: "k:env-" + k.id + "|" + m, name: m, group: k.id[0].toUpperCase() + k.id.slice(1) + " (site secret)", vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|-vl/i.test(m) }); }
+      for (const m of ids.filter(isChat).slice(0, 3000)) list.push({ id: "k:env-" + k.id + "|" + m, name: m, group: k.id[0].toUpperCase() + k.id.slice(1) + " (site secret)", vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|-vl/i.test(m) }); }
     this._envM = { at: Date.now(), list }; return list;
   }
   rank(id) { // rough strength of a model, by name: lower is stronger
@@ -402,7 +428,7 @@ export class Hive extends DurableObject {
     const out = this.env.AI ? CF_MODELS.map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
     if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind!='search' ORDER BY ts").toArray()) {
       const g = (v.label ? v.label + " · " : "") + ((PRESETS[v.provider] || {}).name || v.provider) + " ••" + v.tail, pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
-      for (const m of [...new Set([...pick, ...JSON.parse(v.models || "[]")])]) out.push({ id: "k:" + v.id + "|" + m, name: m, group: g, vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|grok-(2-vision|4)|qwen.*vl|-vl/i.test(m) });
+      for (const m of [...new Set([...pick, ...JSON.parse(v.models || "[]").filter(isChat)])]) out.push({ id: "k:" + v.id + "|" + m, name: m, group: g, vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|grok-(2-vision|4)|qwen.*vl|-vl/i.test(m) });
     }
     return out;
   }
@@ -424,7 +450,7 @@ export class Hive extends DurableObject {
     if (path === "/stt") {
       const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
       if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
-      return J({ text: await transcribe(this.env, a) });
+      return J({ text: await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase()) });
     }
     if (path === "/tts") {
       const t = String(b.text || "").trim(); if (!t) return J({ error: "nothing to say" }, 400);
@@ -455,6 +481,7 @@ export class Hive extends DurableObject {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
     const system = "You are Hive, the assistant of Hive on mentifaber.org, answering through the model " + model.split("/").pop() + ". " +
       "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
+      "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a spoken conversation: answer in a few natural sentences, no Markdown, no lists." : "") +
       (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");

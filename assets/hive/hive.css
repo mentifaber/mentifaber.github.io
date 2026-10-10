@@ -140,3 +140,4 @@ details.drafts{margin-top:10px;font-size:13.5px;border:1px solid var(--line);bor
 .top{position:relative}
 #mtot{white-space:nowrap}#mpick span{min-width:0}@media (max-width:600px){#mtot{display:none}}
 .ag .er{display:block;color:var(--bad);font-size:10.5px;line-height:1.3;margin:3px 0;word-break:break-word}
+.ag.retired{opacity:.35}.ag.retired:before{background:var(--line)}
