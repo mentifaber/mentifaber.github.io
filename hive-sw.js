@@ -1,13 +1,17 @@
-// Hive service worker (scope /hive): the page opens instantly and offline; the swarm itself is always live.
-const CACHE = "hive-v7", SHELL = ["/hive", "/assets/hive/hive.css", "/assets/hive/studio.js", "/assets/hive/swarm.js", "/assets/hive/field.js", "/assets/icons/hive.png", "/assets/icons/hive-512.png", "/assets/manifests/hive.webmanifest"];
+// Hive service worker (scope /hive): the page opens fast and offline; the swarm itself is always live.
+// Page files come fresh from the network, but if it takes longer than a moment the cached copy answers instead
+// (and the fresh one still lands in the cache for next time).
+const CACHE = "hive-v8", SHELL = ["/hive", "/assets/hive/hive.css", "/assets/hive/studio.js", "/assets/hive/swarm.js", "/assets/hive/field.js", "/assets/icons/hive.png", "/assets/icons/hive-512.png", "/assets/manifests/hive.webmanifest"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", (e) => e.waitUntil((async () => { for (const k of await caches.keys()) if (k.startsWith("hive-") && k !== CACHE) await caches.delete(k); await self.clients.claim(); })()));
+function fresh(req, key, e) {
+  const net = fetch(req).then((res) => { if (res.ok) { const c = res.clone(); e.waitUntil(caches.open(CACHE).then((k) => k.put(key, c))); } return res; });
+  const slow = new Promise((ok) => setTimeout(ok, 2500)).then(() => caches.match(key)).then((r) => r || net);
+  return Promise.race([net.catch(() => caches.match(key)), slow]);
+}
 self.addEventListener("fetch", (e) => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return; // live data never comes from cache
-  if (req.mode === "navigate" && /^\/hive(\.html)?\/?$/.test(url.pathname)) {
-    e.respondWith(fetch(req).then((res) => { if (res.ok) caches.open(CACHE).then((c) => c.put("/hive", res.clone())); return res; }).catch(() => caches.match("/hive")));
-    return;
-  }
-  if (SHELL.includes(url.pathname)) e.respondWith(fetch(req).then((res) => { if (res.ok) { const c = res.clone(); caches.open(CACHE).then((k) => k.put(req, c)); } return res; }).catch(() => caches.match(req))); // fresh when online, cached when not
+  if (req.mode === "navigate" && /^\/hive(\.html)?\/?$/.test(url.pathname)) { e.respondWith(fresh(req, "/hive", e)); return; }
+  if (SHELL.includes(url.pathname)) e.respondWith(fresh(req, url.pathname, e));
 });
