@@ -139,3 +139,42 @@ export async function describe(env, dataUrl, ask) {
 export async function transcribe(env, audioB64, lang) { const r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio: audioB64, ...(/^[a-z]{2}$/.test(lang || "") ? { language: lang } : {}) }); return String((r && r.text) || "").trim(); } // a language hint stops short clips being heard as Russian or Icelandic
 export async function speak(env, text) { const r = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text.slice(0, 2000), lang: "en" }); return r && r.audio; }
 export async function imagine(env, prompt) { const r = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: prompt.slice(0, 2000), steps: 6 }); return r && r.image; }
+
+// ── streaming: the same call shape, but words arrive as they're written ──
+async function sse(body, onData) { // read a server-sent-event stream, hand each data payload over
+  const rd = body.getReader(), dec = new TextDecoder(); let buf = "";
+  for (;;) {
+    const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
+    let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line.startsWith("data:")) { const d = line.slice(5).trim(); if (d && d !== "[DONE]") try { onData(JSON.parse(d)); } catch (e) {} } }
+  }
+}
+const piece = (j) => { // the new text in one streamed event, whichever provider sent it
+  if (!j) return "";
+  if (typeof j.response === "string") return j.response;
+  const c = j.choices && j.choices[0]; if (c && c.delta && typeof c.delta.content === "string") return c.delta.content;
+  if (j.type === "content_block_delta" && j.delta && j.delta.type === "text_delta") return j.delta.text || "";
+  if (j.type === "response.output_text.delta") return j.delta || "";
+  return "";
+};
+export async function streamComplete(env, v, key, model, system, msgs, max, onDelta) {
+  max = max || 2048; let text = "";
+  const take = (j) => { const t = piece(j); if (t) { text += t; onDelta(t); } };
+  if (!v) {
+    const s = await env.AI.run(model, { messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text || "" }))], max_tokens: max, stream: true });
+    if (s && typeof s.getReader === "function") await sse(s, take); else { const t = textOf(s); if (t) { text = t; onDelta(t); } }
+    return text;
+  }
+  let url, body;
+  if (v.kind === "anthropic") {
+    url = v.base.replace(/\/$/, "") + "/messages";
+    body = { model, max_tokens: max, system, stream: true, messages: msgs.map((m) => ({ role: m.role, content: [...(m.images || []).map(parts).filter(Boolean).map((p) => ({ type: "image", source: { type: "base64", media_type: p.type, data: p.data } })), { type: "text", text: m.text || "…" }] })) };
+  } else {
+    url = v.base.replace(/\/$/, "") + "/chat/completions";
+    body = { model, max_tokens: max, stream: true, messages: [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))] };
+  }
+  const r = await fetch(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: T(180000) });
+  if (!r.ok) { const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} const m = j && (j.error && (j.error.message || j.error) || j.message); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
+  if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => null); const t = j ? (j.content ? (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("") : String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "")) : ""; if (t) { text = t; onDelta(t); } return text; }
+  await sse(r.body, take);
+  return text;
+}

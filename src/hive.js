@@ -5,7 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { PRESETS, isChat, pullModel, vaultKey, seal, unseal, probe, complete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { PRESETS, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -510,6 +510,30 @@ export class Hive extends DurableObject {
       text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
       if (!text) text = await complete(this.env, v, key, model, system + (failed.length ? "\n\nNOTE: the user asked for Hive's council, but none of the " + failed.length + " models called could answer right now (" + failed.map((d) => d.model.split("|").pop().split("/").pop() + ": " + d.error.slice(0, 80)).join("; ") + "). Say so in one sentence, then answer yourself." : ""), msgs, 3000);
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used });
+    }
+    if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
+      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || 3000);
+      const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
+      (async () => {
+        let got = 0; const onDelta = (t) => { got++; emit("delta", { t }); };
+        try {
+          emit("meta", { sources, tools, model: used });
+          let out;
+          try { out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta); }
+          catch (e) {
+            if (got) throw e;
+            if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) throw new Error(outMsg(this.quota)); }
+            else if (last.images.length) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); }
+            else throw e;
+            emit("meta", { sources, tools, model: used });
+            out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta);
+          }
+          if (!got) { const t = await complete(this.env, v, key, model, system, msgs, max); if (t) onDelta(t); else onDelta("(the model returned nothing)"); } // a provider that streams nothing still answers
+          emit("done", { ms: Date.now() - t0, model: used, tools });
+        } catch (e) { emit("error", { error: String(e && e.message || e).slice(0, 300) }); }
+        w.close().catch(() => {});
+      })();
+      return new Response(readable, { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
     }
     try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); }
     catch (e) {

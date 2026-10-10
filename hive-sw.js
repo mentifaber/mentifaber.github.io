@@ -1,5 +1,5 @@
 // Hive service worker (scope /hive): the page opens instantly and offline; the swarm itself is always live.
-const CACHE = "hive-v5", SHELL = ["/hive", "/assets/hive/hive.css", "/assets/hive/studio.js", "/assets/hive/swarm.js", "/assets/icons/hive.png", "/assets/icons/hive-512.png", "/assets/manifests/hive.webmanifest"];
+const CACHE = "hive-v6", SHELL = ["/hive", "/assets/hive/hive.css", "/assets/hive/studio.js", "/assets/hive/swarm.js", "/assets/hive/field.js", "/assets/icons/hive.png", "/assets/icons/hive-512.png", "/assets/manifests/hive.webmanifest"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", (e) => e.waitUntil((async () => { for (const k of await caches.keys()) if (k.startsWith("hive-") && k !== CACHE) await caches.delete(k); await self.clients.claim(); })()));
 self.addEventListener("fetch", (e) => {

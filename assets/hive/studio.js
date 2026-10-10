@@ -6,12 +6,13 @@ const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "
 const LS = { get(k, d) { try { const v = localStorage.getItem("hive:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("hive:" + k, JSON.stringify(v)); return true; } catch (e) { return false; } } };
 const api = async (path, body, signal) => { const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal } : { cache: "no-store", signal }); const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; };
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hidden"), ms || 2600); };
-const ICON = '<svg viewBox="0 0 32 32"><path d="M10 3.5l6 3.5v7l-6 3.5L4 14V7z" fill="currentColor"/><path d="M22 3.5l6 3.5v7l-6 3.5L16 14V7z" fill="currentColor" opacity=".55"/><path d="M16 14l6 3.5v7L16 28l-6-3.5v-7z" fill="currentColor" opacity=".8"/></svg>';
+const ICON = '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 5" opacity=".6"/><path d="M20 6l12 7v14l-12 7-12-7V13z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 13l6 3.5v7L20 27l-6-3.5v-7z" fill="currentColor"/></svg>';
+const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "#"); // only real web links leave the page
 const SV = { swarm: '<svg viewBox="0 0 24 24"><path d="M8 3l4 2.3v4.6L8 12.2 4 9.9V5.3zM16 3l4 2.3v4.6l-4 2.3-4-2.3V5.3zM12 11.8l4 2.3v4.6L12 21l-4-2.3v-4.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', copy: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>', say: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', redo: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.3-5.6M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', dl: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
 
 // ── theme ──
-const applyTheme = () => { const t = LS.get("theme", "auto"); if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; };
-applyTheme(); $("theme").onclick = () => { const o = ["auto", "light", "dark"], t = o[(o.indexOf(LS.get("theme", "auto")) + 1) % 3]; LS.set("theme", t); applyTheme(); toast("Theme: " + t); };
+const applyTheme = () => { document.documentElement.dataset.theme = LS.get("theme", "dark") === "light" ? "light" : "dark"; }; // dark by default: it's a command deck
+applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") === "light" ? "dark" : "light"; LS.set("theme", t); applyTheme(); toast(t === "light" ? "Daylight mode" : "Night mode"); };
 
 // ── views ──
 let owner = false;
@@ -38,10 +39,22 @@ async function loadModels() {
   const want = (chat && chat.model) || LS.get("model", ""); if (models.some((m) => m.id === want)) sel.value = want; else { const d = models.find((m) => /gpt-oss-120b/.test(m.id)) || models[0]; if (d) sel.value = d.id; }
   if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so Hive switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
+  const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, "").replace(/^.*· /, ""), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
+  const gl = Object.values(pg); $("esub").textContent = "> " + models.length + " models · " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + " linked · council ready";
+  $("t-models").textContent = models.length + " / " + gl.length + " prov"; $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
+  if (window.HiveFX) HiveFX.core($("core"), gl); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
   $("quota").textContent = owner ? "" : "Visitors get the free models and a daily allowance.";
 }
 let models = [];
+// live telemetry in the header and the side panel
+let lastMs = 0; window.tele = () => tele();
+function tele() {
+  const modes = [on("web") && "SEARCH", on("council") && "COUNCIL", on("draw") && "IMAGINE"].filter(Boolean);
+  $("tele").innerHTML = "MODE <b>" + (modes.join("+") || "DIRECT") + "</b>" + (lastMs ? " LAT <b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "") + " SESSION <b>" + (chat ? chat.msgs.length : 0) + "</b>";
+}
+const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = ok ? "online" : "offline"; $("led-link").className = "led " + (ok ? "ok" : "bad"); };
+addEventListener("online", link); addEventListener("offline", link); link();
 // the picker: thousands of models, searchable
 const nameOf = (id) => { const m = models.find((x) => x.id === id); return m ? m.name : "Choose a model"; };
 const showPick = () => { $("mname").textContent = nameOf($("model").value); };
@@ -69,9 +82,9 @@ function newChat() { chat = null; $("log").innerHTML = ""; $("empty").classList.
 function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) $("model").value = chat.model; $("empty").classList.add("hidden"); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i)); drawHist(); if (location.hash !== "#studio") location.hash = "studio"; else route(); scrollEnd(true); }
 $("newchat").onclick = newChat;
 function greet() {
-  const ideas = [["⬡ Ask the council", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["🔎 This week in AI", "What are the most important AI developments this week?", true], ["🖼 Paint a bee city", "A glowing honeycomb city at night, bees as tiny airships, cinematic", false, true], ["🧩 Build a tiny game", "Write a tiny snake game in one HTML file."], ["🎙 Talk it through", null, false, false, true]];
-  $("starters").innerHTML = ideas.map((x, i) => "<button data-i='" + i + "'>" + esc(x[0]) + "</button>").join("");
-  $("starters").onclick = (e) => { const b = e.target.closest("[data-i]"); if (!b) return; const x = ideas[+b.dataset.i]; if (x[4]) return Voice.start(); setTog("web", !!x[2]); setTog("draw", !!x[3]); setTog("council", !!x[5]); $("inp").value = x[1]; send(); }; }
+  const ideas = [["COUNCIL", "Five models debate, one merges", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["RECON", "Live web, cited sources", "What are the most important AI developments this week?", true], ["IMAGINE", "Render an image from words", "A glowing honeycomb city at night, bees as tiny airships, cinematic", false, true], ["BUILD", "Code a working thing", "Write a tiny snake game in one HTML file."], ["SWARM", "Agents build a whole project", null, false, false, false, false, true], ["VOICE LINK", "Talk, hands-free", null, false, false, true]];
+  $("starters").innerHTML = ideas.map((x, i) => "<button data-i='" + i + "'><b>" + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></button>").join("");
+  $("starters").onclick = (e) => { const b = e.target.closest("[data-i]"); if (!b) return; const x = ideas[+b.dataset.i]; if (x[7]) { location.hash = "swarm"; return; } if (x[5]) return Voice.start(); setTog("web", !!x[3]); setTog("draw", !!x[4]); setTog("council", !!x[6]); $("inp").value = x[2]; send(); }; }
 
 // ── markdown (small, safe: everything is escaped first) ──
 function md(src, sources) {
@@ -79,9 +92,9 @@ function md(src, sources) {
   let s = String(src || "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g, (_, lang, body) => { code.push([lang, body.replace(/\n$/, "")]); return "\u0000C" + (code.length - 1) + "\u0000"; });
   s = esc(s);
   const inline = (t) => t.replace(/`([^`\n]+)`/g, (_, c) => "<code>" + c + "</code>").replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<i>$2</i>").replace(/~~([^~\n]+)~~/g, "<s>$1</s>")
-    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, a, u) => "<a href='" + u + "' target='_blank' rel='noopener'>" + a + "</a>")
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, a, u) => "<a href='" + u + "' target='_blank' rel='noopener noreferrer'>" + a + "</a>")
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_, p, u) => p + "<a href='" + u + "' target='_blank' rel='noopener'>" + u + "</a>")
-    .replace(/\[(\d{1,2})\]/g, (m, n) => { const x = sources && sources[n - 1]; return x ? "<a class='cite' href='" + esc(x.url) + "' target='_blank' rel='noopener' title='" + esc(x.title) + "'>" + n + "</a>" : m; });
+    .replace(/\[(\d{1,2})\]/g, (m, n) => { const x = sources && sources[n - 1]; return x ? "<a class='cite' href='" + esc(safeUrl(x.url)) + "' target='_blank' rel='noopener' title='" + esc(x.title) + "'>" + n + "</a>" : m; });
   const lines = s.split("\n"); let i = 0, out = "";
   while (i < lines.length) {
     const l = lines[i];
@@ -104,11 +117,13 @@ function drawMsg(m, i) {
   const d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
   if (m.role === "user") d.innerHTML = "<div>" + (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools' style='justify-content:flex-end'>" + m.files.map((f) => "<span>📄 " + esc(f) + "</span>").join("") + "</div>" : "") + (m.show || m.text ? "<div class='b'>" + esc(m.show || m.text) + "</div>" : "") + "</div>";
   else {
-    const body = m.pending ? "<div class='dots'><i></i><i></i><i></i></div>" + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
+    const who = "<div class='who-line'>HIVE // <b>" + esc(String(m.model || $("model").value || "").split("|").pop().split("/").pop()) + "</b>" + (m.council ? " · COUNCIL" : "") + (m.streaming ? " · STREAMING" : "") + "</div>";
+    const body = m.pending && !m.text ? who + (m.council ? "<div class='const'><svg><line x1='26' y1='16' x2='92' y2='62'/><line x1='156' y1='20' x2='92' y2='62'/><line x1='16' y1='96' x2='92' y2='62'/><line x1='162' y1='98' x2='92' y2='62'/><line x1='94' y1='8' x2='92' y2='62'/></svg><i class='lead'></i><i></i><i></i><i></i><i></i><i></i></div>" : "<div class='dots'><i></i><i></i><i></i></div>") + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
+      : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1")
       : m.error ? "<p class='err'>" + esc(m.error) + "</p>"
-      : (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:6px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) +
-        (m.drafts && m.drafts.length ? "<details class='drafts'><summary>⬡ " + m.drafts.filter((x) => x.text).length + " council drafts" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (tap to see why)" : "") + "</summary>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</details>" : "") +
-        (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(s.url) + "' target='_blank' rel='noopener'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
+      : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:6px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) +
+        (m.drafts && m.drafts.length ? "<details class='drafts'><summary>⬡ " + m.drafts.filter((x) => x.text).length + " COUNCIL DRAFTS" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (tap to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
+        (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
     d.innerHTML = "<div class='av" + (m.pending ? " think" : "") + "'>" + ICON + "</div><div style='flex:1;min-width:0'><div class='b'>" + body + "</div>" + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl' title='Download'>" + SV.dl + "</button>" : "<button data-act='copy' title='Copy'>" + SV.copy + "</button><button data-act='say' title='Read aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Try again'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (m.model ? "<span class='meta'>" + esc(m.model.split("|").pop().split("/").pop()) + (m.ms ? " · " + (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>") + "</div>";
   }
   const old = $("log").querySelector(".m[data-i='" + i + "']"); if (old) old.replaceWith(d); else $("log").appendChild(d);
@@ -162,16 +177,25 @@ const inp = $("inp"), grow = () => { inp.style.height = "auto"; inp.style.height
 const sync = () => { $("sendb").disabled = !busy && !inp.value.trim() && !att.length; };
 inp.addEventListener("input", () => { grow(); sync(); });
 inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !(matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
-const setTog = (id, on) => { $(id).setAttribute("aria-pressed", on ? "true" : "false"); if (id === "draw") inp.placeholder = on ? "Describe a picture…" : "Ask anything, or summon the council…"; };
+const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") inp.placeholder = v ? "Describe an image to render…" : "Transmit…  ( / for commands )"; if (window.tele) tele(); };
 $("web").onclick = () => { setTog("web", $("web").getAttribute("aria-pressed") !== "true"); if ($("web").getAttribute("aria-pressed") === "true") setTog("draw", false); };
 $("council").onclick = () => { setTog("council", $("council").getAttribute("aria-pressed") !== "true"); if (on("council")) setTog("draw", false); };
 $("draw").onclick = () => { setTog("draw", $("draw").getAttribute("aria-pressed") !== "true"); if ($("draw").getAttribute("aria-pressed") === "true") setTog("web", false); };
 const on = (id) => $(id).getAttribute("aria-pressed") === "true";
+["web", "council", "draw"].forEach((id) => $(id).addEventListener("click", () => setTimeout(tele)));
 let busy = null; // AbortController while a reply is coming
 $("sendb").onclick = () => (busy ? busy.abort() : send());
 
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
+  const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /council /imagine /swarm /model /new
+  if (sl) { const [, c, rest] = sl;
+    if (c === "new") { inp.value = ""; return newChat(); }
+    if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
+    if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive?p=" + j.id + "#swarm"); route(); }); }
+    const map = { search: "web", web: "web", council: "council", imagine: "draw", draw: "draw" };
+    if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); text = rest; }
+  }
   if (!$("model").value && !on("draw")) return toast("No model is available right now");
   if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now() }; chats.unshift(chat); $("empty").classList.add("hidden"); }
   const files = att.filter((a) => a.kind === "file"), imgs = att.filter((a) => a.kind === "image"), vid = att.find((a) => a.kind === "video");
@@ -185,19 +209,62 @@ function send(text, opts) {
 async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><rect x='7' y='7' width='10' height='10' rx='2' fill='currentColor'/></svg>";
-  const t0 = Date.now(); let j;
+  const t0 = Date.now(); let j; m.council = !!u.council; m.model = $("model").value;
+  const body = { lang: navigator.language || "en", model: $("model").value, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
+    messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
-    else j = await api("/chat", { lang: navigator.language || "en", model: $("model").value, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
-      messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) }, busy.signal);
-  } catch (e) { j = { error: e.name === "AbortError" ? "Stopped." : "Couldn't reach the Hive. Check your connection." }; }
+    else if (u.council) j = await api("/chat", body, busy.signal);
+    else j = await stream(body, m, i, busy.signal);
+  } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : "Couldn't reach the Hive. Check your connection.", text: m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; } }
   busy = null; $("sendb").classList.remove("stop"); $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><path d='M12 19V5M5.5 11.5 12 5l6.5 6.5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"; sync();
   delete m.pending; delete m.status;
-  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: $("model").value });
-  m.ms = Date.now() - t0;
+  delete m.streaming;
+  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || $("model").value });
+  m.ms = Date.now() - t0; lastMs = m.ms; tele();
   if (chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } delete u._images; save();
   return m;
 }
+// streamed replies: server-sent events meta → delta… → done; the message redraws at most once a frame
+async function stream(body, m, i, signal) {
+  const r = await fetch("/api/hive/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, stream: true }), signal });
+  if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; }
+  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", out = { text: "" }, raf = 0;
+  m.text = ""; m.streaming = true;
+  const paint = () => { raf = 0; if (chat && chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } };
+  for (;;) {
+    const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
+    let k; while ((k = buf.indexOf("\n\n")) >= 0) {
+      const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
+      if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
+      else if (ev === "delta") { m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); }
+      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; }
+      else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
+    }
+  }
+  return out;
+}
+// ── command palette (⌘K) ──
+const CMDS = () => [
+  ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")],
+  ["Toggle search", "mode", () => $("web").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
+  ["Voice link", "voice", () => Voice.start()], ["Export session", "md", () => $("export").click()], ["Directives", "settings", () => $("settings").click()], ["Cycle theme", "theme", () => $("theme").click()],
+  ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
+];
+let csel = 0, chits = [];
+function drawCmds() {
+  const q = $("cq").value.trim().toLowerCase(), ws = q.split(/\s+/).filter(Boolean); chits = CMDS().filter((c) => ws.every((w) => (c[0] + " " + c[1]).toLowerCase().includes(w))).slice(0, q ? 60 : 12); csel = Math.min(csel, Math.max(0, chits.length - 1));
+  $("clist").innerHTML = chits.map((c, k) => "<button data-k='" + k + "' class='" + (k === csel ? "on" : "") + "'>" + esc(c[0]) + "<small>" + esc(c[1]) + "</small></button>").join("") || "<p class='dim sm' style='padding:10px'>Nothing matches.</p>";
+}
+const openCmd = () => { $("cq").value = ""; csel = 0; drawCmds(); if (!$("cmdk").open) $("cmdk").showModal(); $("cq").focus(); };
+const runCmd = (k) => { const c = chits[k]; if (!c) return; $("cmdk").close(); c[2](); };
+$("cq").oninput = () => { csel = 0; drawCmds(); };
+$("cq").onkeydown = (e) => { if (e.key === "ArrowDown") { csel = Math.min(chits.length - 1, csel + 1); drawCmds(); e.preventDefault(); } if (e.key === "ArrowUp") { csel = Math.max(0, csel - 1); drawCmds(); e.preventDefault(); } if (e.key === "Enter") { e.preventDefault(); runCmd(csel); } };
+$("clist").onclick = (e) => { const b = e.target.closest("[data-k]"); if (b) runCmd(+b.dataset.k); };
+$("cmdk").onclick = (e) => { if (e.target === $("cmdk")) $("cmdk").close(); };
+$("cmdk-btn").onclick = $("cmdk-top").onclick = openCmd;
+document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openCmd(); } });
+window.HiveMD = md;
 $("export").onclick = () => { if (!chat) return toast("Nothing to export yet"); const t = "# " + chat.title + "\n\n" + chat.msgs.map((m) => (m.role === "user" ? "**You:** " : "**Hive:** ") + (m.image ? "![image](generated)" : m.text || m.error || "") + (m.sources && m.sources.length ? "\n\n" + m.sources.map((s, k) => "[" + (k + 1) + "] " + s.url).join("\n") : "")).join("\n\n---\n\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([t], { type: "text/markdown" })); a.download = chat.title.replace(/[^\w-]+/g, "-").toLowerCase().slice(0, 50) + ".md"; a.click(); };
 $("settings").onclick = () => { $("sys").value = LS.get("sys", ""); $("sdlg").showModal(); };
@@ -290,7 +357,7 @@ const Keys = {
     $("k-list").innerHTML = keys.length ? keys.map((k) => "<div class='key" + (k.live ? "" : " off") + "' data-k='" + k.id + "'><div class='badge'>" + esc(k.name[0]) + "</div><div class='nm'>" + esc(k.label || k.name) + " <span class='dim' style='font-weight:400'>" + (k.label ? esc(k.name) + " · " : "") + "••••" + esc(k.tail) + "</span></div>" +
       "<div class='bt'><button class='sw' role='switch' aria-checked='" + k.live + "' data-kact='live' title='On / off'></button><button class='ghost sm' data-kact='test'>Test</button><button class='ghost sm' data-kact='del'>Remove</button></div>" +
       "<div class='meta" + (k.err ? " err" : "") + "'>" + (k.err ? "⚠ " + esc(k.err) : k.kind === "search" ? "powers web search" : k.models + " models") + " · used " + k.used + "×" + (k.base ? " · " + esc(k.base) : "") + "</div>" +
-      (k.pull ? "<div class='row mt' style='grid-column:2/-1'><input data-pullname placeholder='pull a model, e.g. qwen3:8b, llama3.2, gpt-oss:20b' style='flex:1'><button class='ghost sm' data-kact='pull'>Pull</button></div>" : "") + (k.kind !== "search" && k.list.length ? "<details><summary>" + k.models + " models · swarm uses " + esc(k.pick === "*" ? "up to 40" : k.pick || "the first few") + "</summary><div class='row mt'><input data-pick placeholder='models for the swarm, comma separated, or * for up to 40' value='" + esc(k.pick) + "'><button class='ghost sm' data-kact='pick'>Save</button></div><div class='mods'>" + k.list.map((m) => "<code>" + esc(m) + "</code>").join("") + "</div></details>" : "") + "</div>").join("")
+      (k.pull ? "<div class='row mt' style='grid-column:2/-1'><input data-pullname placeholder='pull a model, e.g. qwen3:8b, llama3.2, gpt-oss:20b' style='flex:1'><button class='ghost sm' data-kact='pull'>Pull</button></div>" : "") + (k.kind !== "search" && k.list.length ? "<details><summary>" + k.models + " models · swarm uses " + esc(k.pick === "*" ? "up to 40" : k.pick || "its strongest few") + "</summary><div class='row mt'><input data-pick placeholder='models for the swarm, comma separated, or * for up to 40' value='" + esc(k.pick) + "'><button class='ghost sm' data-kact='pick'>Save</button></div><div class='mods'>" + k.list.map((m) => "<code>" + esc(m) + "</code>").join("") + "</div></details>" : "") + "</div>").join("")
       : "<div class='card'><p class='dim' style='margin:0'>No keys yet. The free Workers AI models work without any.</p></div>";
   },
 };
