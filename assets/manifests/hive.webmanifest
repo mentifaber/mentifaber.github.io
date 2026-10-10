@@ -5,11 +5,38 @@
   "start_url": "/hive",
   "scope": "/hive",
   "display": "standalone",
-  "background_color": "#0b0912",
-  "theme_color": "#0b0912",
-  "categories": ["productivity", "developer", "utilities"],
+  "background_color": "#13181e",
+  "theme_color": "#13181e",
+  "categories": [
+    "productivity",
+    "developer",
+    "utilities"
+  ],
   "icons": [
-    { "src": "../icons/hive.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "../icons/hive-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    {
+      "src": "../icons/hive-bee-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/hive-bee-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/hive-bee-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "../icons/hive-bee-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/hive"
 }

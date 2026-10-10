@@ -315,7 +315,7 @@ $("r-total").textContent = SYSTEMS.length; $("r-live").textContent = running.len
 var FEAT = [
   { k: "thoughtform", tag: "first-person · raymarched · co-op", img: "assets/previews/thoughtform.webp" },
   { k: "tether", tag: "one finger · online races · AIs play too", img: "assets/previews/tether.webp" },
-  { k: "hive", tag: "a swarm of AI agents · builds your idea", img: "assets/icons/hive-512.png", icon: true },
+  { k: "hive", tag: "a swarm of AI agents · builds your idea", img: "assets/icons/hive-bee-512.png", icon: true },
 ];
 $("feat").innerHTML = FEAT.map(function (f) {
   var s = SYSTEMS.filter(function (x) { return key(x) === f.k; })[0]; if (!s) return "";
