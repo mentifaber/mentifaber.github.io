@@ -6,6 +6,7 @@
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
 import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { Mind, mindTables, OWNER_MODE } from "./hive-mind.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -77,7 +78,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
-      this._init = 1;
+      mindTables(q); this._init = 1;
     }
     return q;
   }
@@ -136,6 +137,7 @@ export class Hive extends DurableObject {
       for (const id of ids) { for (const t of ["task", "agent", "feed"]) q.exec("DELETE FROM " + t + " WHERE pid=?", id); q.exec("DELETE FROM proj WHERE id=?", id); }
       return J({ ok: true, removed: ids.length });
     }
+    if (path.startsWith("/mind")) { if (!owner) return J({ error: "Hive's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
@@ -143,6 +145,7 @@ export class Hive extends DurableObject {
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
+      if (owner && (await Mind.state(this)).on) Mind.log(this, "project", brief);
       const running = q.exec("SELECT COUNT(*) c FROM proj WHERE status NOT IN ('done','stopped','failed')").one().c;
       if (running >= (owner ? 6 : 4)) return J({ error: "the hive is busy with " + running + " projects; try again in a few minutes" }, 429);
       if (!owner) { // public: everyone gets a go, within what the free allowance can carry
@@ -454,14 +457,14 @@ export class Hive extends DurableObject {
     }
     return out;
   }
-  async voices(owner) { // every voice Hive can speak with right now, most human first
-    const out = [];
+  async voices(owner) { // every voice Hive can speak with right now, most human first: ElevenLabs, then the free Aura-2, then OpenAI
+    const el = [], oa = [], a2 = [];
     if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND (kind='voice' OR provider='openai') ORDER BY ts").toArray()) {
-      if (v.kind === "voice") for (const x of JSON.parse(v.models || "[]").slice(0, 60)) { const [name, id] = x.split("|"); out.push({ id: "el:" + v.id + ":" + id, name, group: "ElevenLabs" + (v.label ? " · " + v.label : "") }); }
-      else if (!this.sick("k:" + v.id + "|tts")) for (const x of OPENAI_VOICES) out.push({ id: "oa:" + v.id + ":" + x, name: x[0].toUpperCase() + x.slice(1), group: "OpenAI expressive" + (v.label ? " · " + v.label : "") });
+      if (v.kind === "voice") for (const x of JSON.parse(v.models || "[]").slice(0, 60)) { const [name, id] = x.split("|"); el.push({ id: "el:" + v.id + ":" + id, name, group: "ElevenLabs" + (v.label ? " · " + v.label : "") }); }
+      else if (!this.sick("k:" + v.id + "|tts")) for (const x of OPENAI_VOICES) oa.push({ id: "oa:" + v.id + ":" + x, name: x[0].toUpperCase() + x.slice(1), group: "OpenAI expressive" + (v.label ? " · " + v.label : "") });
     }
-    if (this.env.AI) for (const x of AURA2) out.push({ id: "a2:" + x, name: x[0].toUpperCase() + x.slice(1), group: "Deepgram Aura-2 (free)" });
-    return out;
+    if (this.env.AI) for (const x of AURA2) a2.push({ id: "a2:" + x, name: x[0].toUpperCase() + x.slice(1), group: "Deepgram Aura-2 (free)" });
+    return [...el, ...a2, ...oa];
   }
   async searchKey(own) { if (!own) return null; const v = this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind='search' ORDER BY COALESCE(used,0) LIMIT 1").toArray()[0]; return v ? this.vaultGet(v.id) : null; }
   async web(q, own) { const k = await this.searchKey(own).catch(() => null); try { return await search(k && k.v, k && k.key, q); } catch (e) { if (k) return search(null, null, q); throw e; } }
@@ -476,6 +479,7 @@ export class Hive extends DurableObject {
     if (path === "/imagine") {
       const prompt = String(b.prompt || "").trim(); if (!prompt) return J({ error: "describe the picture" }, 400);
       if (!owner && !this.meter(req, "img", IMAGINE_DAY)) return J({ error: "that's today's " + IMAGINE_DAY + " pictures; come back tomorrow" }, 429);
+      if (owner && (await Mind.state(this)).on) Mind.log(this, "image", prompt);
       return J({ image: "data:image/jpeg;base64," + (await imagine(this.env, prompt)) });
     }
     if (path === "/stt") {
@@ -502,6 +506,12 @@ export class Hive extends DurableObject {
     const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
     msgs.forEach((m) => m !== last && (m.images = []));
     const t0 = Date.now(), sources = [], notes = [], tools = [];
+    let mind = ""; // the owner's profile, memories and recent activity ride along with every owner chat
+    if (owner && b.mind !== false && (await Mind.state(this)).on) {
+      const r = Mind.heard(last.text); if (r && Mind.remember(this, r, "you")) tools.push("saved to memory");
+      Mind.log(this, b.voice ? "voice" : b.swarm ? "council" : "chat", last.text + (last.images.length ? " [+" + last.images.length + (b.frames ? " video frames" : b.live ? " live camera/screen frame" : " image(s)") + "]" : ""), { model: b.model, web: b.web ? 1 : undefined });
+      mind = await Mind.brief(this); Mind.maybeAnalyze(this, new URL(req.url).origin);
+    }
     // pasted links get read
     const urls = [...new Set((last.text.match(/https?:\/\/[^\s<>"')\]]+/g) || []))].slice(0, 3);
     for (const u of urls) try { const pg = await readPage(u); sources.push({ title: pg.title, url: pg.url }); notes.push("[" + sources.length + "] PAGE " + pg.title + " — " + pg.url + "\n" + pg.text); tools.push("read " + new URL(pg.url).hostname); } catch (e) { notes.push("(could not read " + u + ": " + e.message + ")"); }
@@ -520,6 +530,7 @@ export class Hive extends DurableObject {
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
+      (owner ? "\n\n" + OWNER_MODE + mind : "") +
       (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer

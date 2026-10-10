@@ -540,8 +540,14 @@ export default {
           const len = m && m[2] ? +m[2] - off + 1 : obj.size - off;
           return new Response(obj.body, { status: m ? 206 : 200, headers: { "content-type": "application/octet-stream", "content-length": String(len), "accept-ranges": "bytes", ...(m ? { "content-range": "bytes " + off + "-" + (off + len - 1) + "/" + obj.size } : {}) } });
         }
-        const h = new Headers(req.headers); h.delete("x-agent-owner"); h.set("x-origin", url.origin); if (await session(req, env, "vigil")) h.set("x-agent-owner", "1");
-        return stub.fetch(new Request("http://agent" + sub + url.search, { method: req.method, headers: h, body: req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer() }));
+        const h = new Headers(req.headers); h.delete("x-agent-owner"); h.set("x-origin", url.origin); const own = !!(await session(req, env, "vigil")); if (own) h.set("x-agent-owner", "1");
+        let body = req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer();
+        if (own && sub === "/v1/chat/completions" && env.HIVE && body) try { // the owner's apps get Hive's owner mode and memory too
+          const j = JSON.parse(new TextDecoder().decode(body)), hh = new Headers({ "x-hive-owner": "1" });
+          const m = await (await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/mind/brief", { headers: hh }))).json();
+          if (Array.isArray(j.messages) && j.mind !== false && (m.brief || m.owner)) { j.messages.unshift({ role: "system", content: m.owner + m.brief }); body = new TextEncoder().encode(JSON.stringify(j)); }
+        } catch (e) {}
+        return stub.fetch(new Request("http://agent" + sub + url.search, { method: req.method, headers: h, body }));
       }
       if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");

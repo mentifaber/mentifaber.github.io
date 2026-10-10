@@ -18,12 +18,13 @@ applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") ===
 let owner = false;
 function route() {
   const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0];
-  const view = ["studio", "swarm", "keys"].includes(v) ? v : "studio";
-  for (const s of ["studio", "swarm", "keys"]) $("v-" + s).classList.toggle("hidden", s !== view);
+  const view = ["studio", "swarm", "keys", "mind"].includes(v) ? v : "studio";
+  for (const s of ["studio", "swarm", "keys", "mind"]) $("v-" + s).classList.toggle("hidden", s !== view);
   document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("on", a.dataset.v === view));
   document.body.classList.remove("side");
   if (view === "swarm") window.HiveSwarm.show(); else window.HiveSwarm.hide();
   if (view === "keys") Keys.load();
+  if (view === "mind") MindV.load();
   if (view === "studio") setTimeout(() => $("inp").focus({ preventScroll: true }), 50);
 }
 addEventListener("hashchange", route);
@@ -195,6 +196,8 @@ function send(text, opts) {
   const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /council /imagine /swarm /model /new
   if (sl) { const [, c, rest] = sl;
     if (c === "new") { inp.value = ""; return newChat(); }
+    if (c === "me" || c === "mind") { inp.value = ""; grow(); location.hash = "mind"; return; }
+    if (c === "remember" && rest) { inp.value = ""; grow(); return api("/mind/remember", { text: rest }).then((j) => toast(j.error || "Remembered", 2500)); }
     if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
     if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive?p=" + j.id + "#swarm"); route(); }); }
     const map = { search: "web", web: "web", council: "council", imagine: "draw", draw: "draw" };
@@ -254,7 +257,7 @@ async function stream(body, m, i, signal) {
 }
 // ── command palette (⌘K) ──
 const CMDS = () => [
-  ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")],
+  ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what Hive knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
   ["Toggle search", "mode", () => $("web").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
   ["Voice link", "voice", () => Voice.start()], ["Export session", "md", () => $("export").click()], ["Settings", "voice · theme · data", () => openSettings()], ["Cycle theme", "theme", () => $("theme").click()],
   ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
@@ -393,7 +396,7 @@ const Voice = (window.HiveVoice = {
   async frame() { const v = $("cam"); if (!Voice.vs || !v.videoWidth) return null; const k = Math.min(1, 960 / Math.max(v.videoWidth, v.videoHeight)), c = document.createElement("canvas"); c.width = v.videoWidth * k; c.height = v.videoHeight * k; c.getContext("2d").drawImage(v, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", .82); },
   // ── speech: sentences are voiced in order, each fetched while the one before plays ──
   q: [], playing: false, gen: 0, spoken: 0,
-  pick() { return LS.get("voice", "") || (Voice.list && Voice.list[0] && Voice.list[0].id) || "device"; },
+  pick() { const s = LS.get("voice", ""); if (s && (s === "device" || !Voice.list || Voice.list.some((v) => v.id === s))) return s; return (Voice.list && Voice.list[0] && Voice.list[0].id) || "device"; }, // unchosen: ElevenLabs if you have it, else free Aura-2
   clip(text) { const g = Voice.gen; if (Voice.pick() === "device") return Promise.resolve({ device: text, g });
     return api("/tts", { text, voice: Voice.pick() }).then((j) => (j.error ? { device: text, g, err: j.error } : { url: j.audio, g, used: j.used })).catch(() => ({ device: text, g })); },
   queue(text) { text = plain(text); if (!text) return; Voice.q.push(Voice.clip(text)); if (!Voice.playing) Voice.play(); },
@@ -445,6 +448,7 @@ $("vptt").addEventListener("pointerdown", pttDown); ["pointerup", "pointerleave"
 $("vcam").onclick = () => Voice.cam(!(Voice.vs && Voice.src === "cam")); $("vflip").onclick = () => Voice.cam(true, Voice.facing === "user" ? "environment" : "user"); $("vscreen").onclick = () => (Voice.src === "screen" ? Voice.stopVideo() : Voice.screen());
 $("vset").onclick = () => openSettings();
 async function loadVoices() {
+  if (!LS.get("voice-v2", 0)) { if (/^oa:/.test(LS.get("voice", ""))) LS.set("voice", ""); LS.set("voice-v2", 1); } // OpenAI was the default by accident once: forget that
   const j = await api("/voices").catch(() => ({ voices: [] })); Voice.list = j.voices || []; const groups = {}; for (const v of Voice.list) (groups[v.group] = groups[v.group] || []).push(v);
   const html = Object.entries(groups).map(([g, vs]) => "<optgroup label='" + esc(g) + "'>" + vs.map((v) => "<option value='" + esc(v.id) + "'>" + esc(v.name) + "</option>").join("") + "</optgroup>").join("") + "<optgroup label='This device'><option value='device'>Device voice (works offline)</option></optgroup>";
   for (const id of ["vvoice", "s-voice"]) { $(id).innerHTML = html; $(id).value = Voice.pick(); if (!$(id).value) $(id).value = "device"; }
@@ -541,6 +545,43 @@ $("agentp").onclick = async (e) => {
   Agent.draw(); loadModels();
 };
 
+// ── MIND: what Hive knows about the owner ──
+const MindV = {
+  async load() {
+    const j = await api("/mind"); $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); if (j.error) return; MindV.j = j;
+    const st = j.stats || {}, k = st.kinds || {}, ago = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
+    $("m-on").checked = !!j.on; $("m-led").className = "led " + (j.on ? "ok" : "");
+    $("m-sub").textContent = j.on ? (j.at ? "profile from " + ago(j.at) + (j.model ? " · " + j.model.split("|").pop().split("/").pop() : "") + (j.fresh ? " · " + j.fresh + " new since" : "") : "no profile yet: analyze to build one") : "memory is off: nothing is noted or shared";
+    $("m-at").textContent = st.total ? st.total + " notes" : "";
+    const off = -new Date().getTimezoneOffset() / 60, hrs = Array(24).fill(0); (st.hoursUTC || []).forEach((n, h) => { hrs[(((h + off) % 24) + 24) % 24 | 0] += n; });
+    const top = hrs.indexOf(Math.max(...hrs)), fmt = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");
+    const f = [["LAST 90 DAYS", (st.last90 || 0) + " actions"], ["ACTIVE DAYS", st.activeDays || 0], ["CHAT · VOICE", (k.chat || 0) + " · " + (k.voice || 0)], ["COUNCILS · PICTURES", (k.council || 0) + " · " + (k.image || 0)], ["SWARM PROJECTS", Object.values(st.projects || {}).reduce((a, b) => a + b, 0)], ["PEAK HOUR", Math.max(...hrs) ? fmt(top) : "—"], ["FAVOURITE MODEL", (st.models && st.models[0] && st.models[0][0]) || "—"], ["MEMORIES", st.memories || 0]];
+    $("m-facts").innerHTML = f.map(([a, b]) => "<div>" + a + "<b title='" + esc(b) + "'>" + esc(b) + "</b></div>").join("");
+    const mx = Math.max(1, ...hrs); $("m-hours").innerHTML = hrs.map((n, h) => "<i style='height:" + Math.max(3, (100 * n) / mx) + "%' title='" + fmt(h) + ": " + n + "'></i>").join("") + [0, 6, 12, 18].map((h) => "<span style='left:" + (h / 24) * 100 + "%'>" + fmt(h) + "</span>").join("");
+    $("m-profile").innerHTML = j.profile ? md(j.profile) : "<p class='dim'>No analysis yet. Hit <b>Analyze me now</b>: the strongest model you have reads your activity, projects and memories and writes you up, frankly. It refreshes on its own as you keep using Hive.</p>";
+    $("m-mem").innerHTML = (j.memories || []).map((m) => "<div class='mi'><p><small>" + (m.src === "analysis" ? "from analysis" : "you") + " · " + ago(m.ts) + "</small>" + esc(m.text) + "</p><button data-mem='" + m.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet.</p>";
+    $("m-act").innerHTML = (j.recent || []).map((a) => "<div class='mi'><p><small>" + esc(a.kind) + " · " + ago(a.ts) + "</small>" + esc(String(a.text).slice(0, 400)) + "</p><button data-act='" + a.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet. Use Hive and it shows up here.</p>";
+  },
+  async analyze() {
+    const b = $("m-analyze"); b.disabled = true; b.textContent = "Analyzing…"; $("m-profile").innerHTML = "<p class='dim'>Reading everything you've done in Hive… this takes up to a minute.</p>";
+    const j = await api("/mind/analyze", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Analyze me now";
+    if (j.error) toast(j.error, 6000); else toast("Profile updated"); MindV.load();
+  },
+  async importLocal(quiet) {
+    const sessions = chats.map((c) => ({ id: c.id, title: c.title, ts: c.ts, model: c.model, said: c.msgs.filter((m) => m.role === "user").map((m) => m.show || m.text || "").filter(Boolean) })).filter((c) => c.said.length);
+    if (!sessions.length) return quiet || toast("No sessions on this device");
+    const j = await api("/mind/import", { sessions }); if (!quiet) toast(j.error || "Imported " + j.imported + " sessions", 3000); LS.set("mind-sync", Date.now()); MindV.load();
+  },
+};
+$("m-analyze").onclick = () => MindV.analyze();
+$("m-import").onclick = () => MindV.importLocal();
+$("m-ask").onclick = () => { location.hash = "studio"; newChat(); send("Analyze me and what I do, from everything you know about me. Be frank: what stands out, what I'm good at, where I'm stuck, and what I should do next."); };
+$("m-on").onchange = async () => { await api("/mind/set", { on: $("m-on").checked }); toast($("m-on").checked ? "Memory on" : "Memory off: nothing is noted or shared"); MindV.load(); };
+$("m-add").onclick = async () => { const t = $("m-new").value.trim(); if (!t) return; const j = await api("/mind/remember", { text: t }); if (j.error) return toast(j.error); $("m-new").value = ""; MindV.load(); };
+$("m-new").onkeydown = (e) => { if (e.key === "Enter") $("m-add").click(); };
+$("m-wipe").onclick = async () => { if (!confirm("Forget everything Hive knows about you: the profile, every memory and the whole activity log? This can't be undone.")) return; await api("/mind/forget", { all: true }); toast("Forgotten"); MindV.load(); };
+$("v-mind").onclick = async (e) => { const b = e.target.closest("[data-mem],[data-act]"); if (!b) return; await api("/mind/forget", b.dataset.mem ? { mem: b.dataset.mem } : { act: b.dataset.act }); b.closest(".mi").remove(); };
+
 // ── start ──
-greet(); drawHist(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); }); route(); sync();
+greet(); drawHist(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); if (owner && !LS.get("mind-sync", 0)) MindV.importLocal(true); }); route(); sync();
 })();
