@@ -485,7 +485,7 @@ const Keys = {
   presets: {},
   async load() {
     const j = await api("/keys"); $("k-locked").classList.toggle("hidden", !j.error); $("k-open").classList.toggle("hidden", !!j.error); if (j.error) return;
-    Keys.presets = j.presets; const sel = $("k-prov");
+    Agent.draw(); Keys.presets = j.presets; const sel = $("k-prov");
     if (!sel.options.length) { const g = { compat: "Models", anthropic: "Models", search: "Web search", voice: "Voices" }, by = {}; for (const [k, p] of Object.entries(j.presets)) (by[g[p.kind]] = by[g[p.kind]] || []).push("<option value='" + k + "'>" + esc(p.name) + "</option>"); sel.innerHTML = Object.entries(by).map(([n, o]) => "<optgroup label='" + n + "'>" + o.join("") + "</optgroup>").join(""); sel.onchange(); }
     Keys.draw(j.keys);
   },
@@ -512,6 +512,33 @@ $("k-list").onclick = async (e) => {
   b.disabled = true; const j = act === "del" ? await api("/keys/del", { kid }) : act === "test" ? await api("/keys/test", { kid }) : act === "pull" ? (toast("Pulling… this can take a while", 25000), await api("/keys/pull", { kid, model: card.querySelector("[data-pullname]").value })) : act === "live" ? await api("/keys/set", { kid, live: !k.live }) : await api("/keys/set", { kid, pick: card.querySelector("[data-pick]").value }); b.disabled = false;
   if (act === "pull") toast(j.error || "Ollama: " + j.status, 5000); else if (act === "test") toast(j.ok ? "Works: " + (j.key.kind === "search" ? "search answered" : j.key.models + " models") : "Failed: " + j.error, 4000); else if (j.error) toast(j.error);
   Keys.load(); loadModels();
+};
+
+// ── MENTIFABER AGENT 1.0 panel (Uplinks) ──
+const gb = (n) => (n / 1024 ** 3).toFixed(1) + " GB";
+const Agent = {
+  timer: 0,
+  async draw() {
+    let st; try { st = await (await fetch("/api/agent/status", { cache: "no-store" })).json(); } catch (e) { st = null; }
+    const el = $("agentp"); if (!st || st.error === "the agent isn't deployed") { el.innerHTML = "<div class='ah'><h3>MENTIFABER AGENT 1.0<small>not deployed on this site yet</small></h3></div>"; return; }
+    const led = { online: "ok", waking: "warn", asleep: "", empty: "" }[st.state] || "", seed = st.seed;
+    el.innerHTML = "<div class='ah'><i class='led " + led + "'></i><h3>MENTIFABER AGENT 1.0<small>" + (st.model ? esc(st.model.label) + " · " + gb(st.model.size) + " in R2" : "no model in R2 yet") + "</small></h3><span class='st " + (st.state === "online" ? "working" : st.state === "waking" ? "paused" : "") + "'>" + esc(st.state === "empty" ? "no model" : st.state) + "</span></div>" +
+      (seed ? "<div class='prog'><div class='bar'><i style='width:" + (100 * seed.done / seed.size).toFixed(1) + "%'></i></div><p>" + (seed.error ? "⚠ " + esc(seed.error) : "copying " + esc(seed.label) + " into your R2 · " + gb(seed.done) + " of " + gb(seed.size)) + "</p></div>" : "") +
+      "<div class='facts'><div>RUNS ON<b>your domain</b></div><div>STORED IN<b>R2 · mentifaber-models</b></div><div>CONTAINER<b>4 vCPU · 12 GiB</b></div><div>SLEEPS AFTER<b>20 idle min</b></div></div>" +
+      "<div class='ab'>" + (st.model ? (st.state === "asleep" ? "<button class='pri' data-ag='wake'>Wake</button>" : st.state !== "empty" ? "<button class='ghost' data-ag='sleep'>Sleep now</button>" : "") : "") +
+      (!seed || seed.error ? "<button class='" + (st.model ? "ghost" : "pri") + "' data-ag='seed' data-m='14b'>Load Qwen3 14B · 9.0 GB (largest that fits)</button><button class='ghost' data-ag='seed' data-m='8b'>Load Qwen3 8B · 5.0 GB (faster)</button>" : "") + "</div>" +
+      (!seed || seed.error ? "<div class='own'><input id='ag-url' placeholder='or your own model: https://…/model.gguf (up to 11 GB)'><button class='ghost' data-ag='seed-url'>Load</button></div>" : "") +
+      (st.error ? "<p class='dim sm' style='color:var(--bad)'>" + esc(st.error) + "</p>" : "") +
+      "<p class='dim sm'>It appears as the first model in the Studio picker, joins your councils and swarms, works in voice, and any page can use it: <code>&lt;script src=\"/assets/agent.js\"&gt;</code> then <code>MentifaberAgent.chat(…)</code>.</p>";
+    clearTimeout(Agent.timer); if ((seed && !seed.error) || st.state === "waking") Agent.timer = setTimeout(() => !$("v-keys").classList.contains("hidden") && Agent.draw(), 3000);
+  },
+};
+$("agentp").onclick = async (e) => {
+  const b = e.target.closest("[data-ag]"); if (!b) return; const a = b.dataset.ag; b.disabled = true;
+  const post = (p, body) => fetch("/api/agent/" + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }).then((r) => r.json());
+  const j = a === "seed" ? await post("seed", { model: b.dataset.m }) : a === "seed-url" ? await post("seed", { url: $("ag-url").value.trim() }) : await post(a);
+  if (j.error) toast(j.error, 5000); else if (a === "wake") toast("Waking: the model loads from R2 in a minute or two", 5000); else if (a.startsWith("seed")) toast("Copying the model into your R2…", 4000);
+  Agent.draw(); loadModels();
 };
 
 // ── start ──

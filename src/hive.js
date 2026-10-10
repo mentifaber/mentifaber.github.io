@@ -83,8 +83,17 @@ export class Hive extends DurableObject {
   }
   say(pid, who, kind, text) { const q = this.sql(); q.exec("INSERT INTO feed(pid,ts,who,kind,text) VALUES(?,?,?,?,?)", pid, Date.now(), who, kind, String(text).slice(0, 4000)); }
 
+  // ── MENTIFABER AGENT 1.0: the model in this site's R2, run in its own container (src/agent.js) ──
+  agentV() { const stub = this.env.AGENT.get(this.env.AGENT.idFromName("agent")); return { kind: "compat", base: "http://agent/v1", noVision: true, fetcher: (u, init) => { const h = new Headers(init.headers); h.set("x-agent-owner", "1"); return stub.fetch(new Request(u, { ...init, headers: h })); } }; }
+  async agentInfo() { // is there a model to run? (asked at most once a minute)
+    if (!this.env.AGENT) return null; if (this._ag && Date.now() - this._ag.at < 60e3) return this._ag.st;
+    let st = null; try { st = await (await this.env.AGENT.get(this.env.AGENT.idFromName("agent")).fetch(new Request("http://agent/status"))).json(); } catch (e) {}
+    this._ag = { at: Date.now(), st }; return st;
+  }
+  agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
   async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
     const out = CF_MODELS.filter(() => this.env.AI).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
+    const ag = own && this.agentModel(await this.agentInfo()); if (ag) out.unshift({ src: "agent", model: "mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", roles: ["writer", "researcher", "coder", "critic"] });
     const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
     if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
       const all = JSON.parse(v.models || "[]").filter(isChat).sort((a, b) => this.rank(a) - this.rank(b)), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = v.pick === "*" ? all.slice(0, 40) : pick.length ? pick : all.slice(0, 4);
@@ -104,6 +113,7 @@ export class Hive extends DurableObject {
     return out;
   }
   async ask(agent, system, user, max) { // one model call, any provider
+    if (agent.src === "agent") return complete(this.env, this.agentV(), null, agent.model, system, [{ role: "user", text: user }], max);
     if (agent.src.startsWith("k:")) { const { v, key } = await this.vaultGet(agent.src.slice(2)); return complete(this.env, v, key, agent.model, system, [{ role: "user", text: user }], max); }
     if (agent.src === "workers-ai") {
       const r = await this.env.AI.run(agent.model, { messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: max || 2048 });
@@ -129,7 +139,7 @@ export class Hive extends DurableObject {
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
-    if (path === "/models") return J({ owner, models: [...this.models(owner), ...(owner ? await this.envModels() : [])], resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI });
+    if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
@@ -420,7 +430,7 @@ export class Hive extends DurableObject {
   }
   rank(id) { // rough strength of a model, by name: lower is stronger
     const m = String(id).split("|").pop(), R = [/claude.*(opus|sonnet)/i, /gpt-5(?!.*nano)|o3(?!-mini)|o4/i, /gemini-(2\.5-pro|3)/i, /grok-4/i, /deepseek-(r1|v3|chat|reasoner)/i, /gpt-4\.1(?!-nano)|gpt-4o(?!-mini)|mistral-(large|medium)/i, /llama-4|llama-3\.[13]-(70|405)b|qwen3|kimi|gpt-oss-120b|qwq/i, /claude.*haiku|gemini.*flash|gpt-.*mini|command-a/i];
-    const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
+    if (m === "mentifaber-agent-1.0") return 5; const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
   }
   sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3; }
   blame(c, e) { // remember why a model failed: the whole key (billing, bad key) or just this model (not allowed, not found)
@@ -486,6 +496,7 @@ export class Hive extends DurableObject {
     if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
     const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Keys and Hive will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
+    if (src === "agent") { const ag = await this.agentInfo(); if (!ag || !ag.model) return J({ error: "MENTIFABER AGENT 1.0 has no model loaded yet" }, 400); if (!owner && !ag.public) return J({ error: "MENTIFABER AGENT 1.0 is private" }, 401); }
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
     const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-24).map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text || "").slice(0, 16000), images: Array.isArray(m.images) ? m.images.filter((u) => typeof u === "string" && u.startsWith("data:image/") && u.length < 4e6).slice(0, 8) : [] }));
     const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
@@ -500,8 +511,9 @@ export class Hive extends DurableObject {
     let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
     if (src === "workers-ai" && (await this.resting()) && !(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
     if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
+    if (src === "agent") v = this.agentV();
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
-    if (last.images.length && (!v || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
+    if (last.images.length && (!v || v.noVision || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
     const system = "You are Hive, the assistant of Hive on mentifaber.org, answering through the model " + model.split("/").pop() + ". " +
       "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
@@ -514,13 +526,14 @@ export class Hive extends DurableObject {
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
       let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
       if (await this.resting()) crew = crew.filter((c) => !c.startsWith("workers-ai|"));
-      const pool = [...(owner ? [...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)] : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used);
+      const agm = owner && this.agentModel(await this.agentInfo());
+      const pool = [...(agm ? [agm.id] : []), ...(owner ? [...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)] : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used);
       const ranked = () => { const by = {}; for (const id of pool) { if (this.sick(id) || tried.has(id) || (id.startsWith("workers-ai|") && this.quota && Date.now() < this.quota)) continue; (by[id.split("|")[0]] = by[id.split("|")[0]] || []).push(id); } const lists = Object.values(by).map((l) => l.sort((a, b) => this.rank(a) - this.rank(b))).sort((a, b) => this.rank(a[0]) - this.rank(b[0])); const out = []; for (let r = 0; lists.some((l) => l[r]); r++) for (const l of lists) if (l[r]) out.push(l[r]); return out; }; // best of each key first, then their seconds
       const tried = new Set(), want = owner ? 5 : 4;
       if (!crew.length) crew = ranked().slice(0, want);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const draft = async (c, n) => { const [cs, cm] = c.split("|"), t1 = Date.now(); tried.add(c); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
-        try { const kv = cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
+        try { const kv = cs === "agent" ? { v: this.agentV(), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
         catch (e) { if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
       let drafts = (await Promise.all(crew.map((c) => draft(c, crew.length)))).filter(Boolean);
       for (let wave = 0; wave < 2 && !b.crew && drafts.filter((d) => d.text).length < Math.min(3, want); wave++) { // members failed: call in the next-best models
