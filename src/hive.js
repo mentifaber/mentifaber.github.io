@@ -85,7 +85,8 @@ export class Hive extends DurableObject {
   say(pid, who, kind, text) { const q = this.sql(); q.exec("INSERT INTO feed(pid,ts,who,kind,text) VALUES(?,?,?,?,?)", pid, Date.now(), who, kind, String(text).slice(0, 4000)); }
 
   // ── MENTIFABER AGENT 1.0: the model in this site's R2, run in its own container (src/agent.js) ──
-  agentV() { const stub = this.env.AGENT.get(this.env.AGENT.idFromName("agent")); return { kind: "compat", base: "http://agent/v1", noVision: true, fetcher: (u, init) => { const h = new Headers(init.headers); h.set("x-agent-owner", "1"); return stub.fetch(new Request(u, { ...init, headers: h })); } }; }
+  // MENTIFABER AGENT runs on CPU: reading a long prompt can take minutes, so it gets patience instead of the usual limits
+  agentV(ms) { const stub = this.env.AGENT.get(this.env.AGENT.idFromName("agent")); return { kind: "compat", base: "http://agent/v1", noVision: true, ms: ms || 45 * 60e3, first: 30 * 60e3, idle: 5 * 60e3, fetcher: (u, init) => { const h = new Headers(init.headers); h.set("x-agent-owner", "1"); return stub.fetch(new Request(u, { ...init, headers: h })); } }; }
   async agentInfo() { // is there a model to run? (asked at most once a minute)
     if (!this.env.AGENT) return null; if (this._ag && Date.now() - this._ag.at < 60e3) return this._ag.st;
     let st = null; try { st = await (await this.env.AGENT.get(this.env.AGENT.idFromName("agent")).fetch(new Request("http://agent/status"))).json(); } catch (e) {}
@@ -114,7 +115,7 @@ export class Hive extends DurableObject {
     return out;
   }
   async ask(agent, system, user, max) { // one model call, any provider
-    if (agent.src === "agent") return complete(this.env, this.agentV(), null, agent.model, system, [{ role: "user", text: user }], max);
+    if (agent.src === "agent") return complete(this.env, this.agentV(6 * 60e3), null, agent.model, system, [{ role: "user", text: user }], max);
     if (agent.src.startsWith("k:")) { const { v, key } = await this.vaultGet(agent.src.slice(2)); return complete(this.env, v, key, agent.model, system, [{ role: "user", text: user }], max); }
     if (agent.src === "workers-ai") {
       const r = await this.env.AI.run(agent.model, { messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: max || 2048 });
@@ -525,13 +526,18 @@ export class Hive extends DurableObject {
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
     if (last.images.length && (!v || v.noVision || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
+    // MENTIFABER AGENT keeps the start of the conversation cached between messages, so for it everything that changes
+    // every message (the time, recent activity, gathered material) rides at the end of the newest message instead
+    const local = src === "agent", mp = owner && mind ? await Mind.parts(this) : { stable: "", recent: "" };
+    const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
+    if (local) last.text = "[CONTEXT FOR THIS MESSAGE]\n" + live + "\n[END CONTEXT]\n\n" + last.text;
     const system = "You are Hive, the assistant of Hive on mentifaber.org, answering through the model " + model.split("/").pop() + ". " +
       "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
-      "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
+      "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." + (local ? "" : " Now: " + now + ".") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
-      (owner ? "\n\n" + OWNER_MODE + mind : "") +
-      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
+      (owner ? "\n\n" + OWNER_MODE + (local ? mp.stable : mind) : "") + (local ? "" :
+      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
@@ -544,7 +550,7 @@ export class Hive extends DurableObject {
       if (!crew.length) crew = ranked().slice(0, want);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const draft = async (c, n) => { const [cs, cm] = c.split("|"), t1 = Date.now(); tried.add(c); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
-        try { const kv = cs === "agent" ? { v: this.agentV(), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
+        try { const kv = cs === "agent" ? { v: this.agentV(6 * 60e3), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
         catch (e) { if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
       let drafts = (await Promise.all(crew.map((c) => draft(c, crew.length)))).filter(Boolean);
       for (let wave = 0; wave < 2 && !b.crew && drafts.filter((d) => d.text).length < Math.min(3, want); wave++) { // members failed: call in the next-best models
@@ -560,8 +566,9 @@ export class Hive extends DurableObject {
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used });
     }
     if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
-      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : 3000));
+      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 3000)); // the agent gets every token its memory leaves free
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
+      const ping = setInterval(() => w.write(enc.encode(": still thinking\n\n")).catch(() => {}), 15000); // keeps the line open while a slow model reads
       (async () => {
         let got = 0; const onDelta = (t) => { got++; emit("delta", { t }); };
         try {
@@ -579,11 +586,11 @@ export class Hive extends DurableObject {
           if (!got) { const t = await complete(this.env, v, key, model, system, msgs, max); if (t) onDelta(t); else onDelta("(the model returned nothing)"); } // a provider that streams nothing still answers
           emit("done", { ms: Date.now() - t0, model: used, tools });
         } catch (e) { emit("error", { error: String(e && e.message || e).slice(0, 300) }); }
-        w.close().catch(() => {});
+        clearInterval(ping); w.close().catch(() => {});
       })();
       return new Response(readable, { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
     }
-    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : 3000))); }
+    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 3000))); }
     catch (e) {
       if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
