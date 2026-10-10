@@ -507,7 +507,7 @@ export class Hive extends DurableObject {
       "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language). Now: " + now + "." +
-      (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a spoken conversation: answer in a few natural sentences, no Markdown, no lists." : "") +
+      (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
       (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "") + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
@@ -536,7 +536,7 @@ export class Hive extends DurableObject {
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used });
     }
     if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
-      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || 3000);
+      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : 3000));
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
       (async () => {
         let got = 0; const onDelta = (t) => { got++; emit("delta", { t }); };
@@ -559,7 +559,7 @@ export class Hive extends DurableObject {
       })();
       return new Response(readable, { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
     }
-    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); }
+    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : 3000))); }
     catch (e) {
       if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }

@@ -39,8 +39,8 @@ async function loadModels() {
   const want = (chat && chat.model) || LS.get("model", ""); if (models.some((m) => m.id === want)) sel.value = want; else { const d = models.find((m) => /gpt-oss-120b/.test(m.id)) || models[0]; if (d) sel.value = d.id; }
   if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so Hive switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
-  const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, "").replace(/^.*· /, ""), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
-  const gl = Object.values(pg); $("esub").textContent = "> " + models.length + " models · " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + " linked · council ready";
+  const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: (() => { let x = k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, ""); if (x.includes(" · ")) x = x.split(" · ").pop(); x = x.replace(/^Cloudflare /, ""); return x.charAt(0).toUpperCase() + x.slice(1); })(), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
+  const gl = Object.values(pg); $("esub").textContent = "> " + models.length + " models · " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + (innerWidth > 600 ? " linked · council ready" : "");
   $("t-models").textContent = models.length + " / " + gl.length + " prov"; $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
   if (window.HiveFX) HiveFX.core($("core"), gl); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
@@ -48,10 +48,10 @@ async function loadModels() {
 }
 let models = [];
 // live telemetry in the header and the side panel
-let lastMs = 0; window.tele = () => tele();
+let lastMs = 0, lastTtft = 0, lastCps = 0; window.tele = () => tele();
 function tele() {
   const modes = [on("web") && "SEARCH", on("council") && "COUNCIL", on("draw") && "IMAGINE"].filter(Boolean);
-  $("tele").innerHTML = "MODE <b>" + (modes.join("+") || "DIRECT") + "</b>" + (lastMs ? " LAT <b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "") + " SESSION <b>" + (chat ? chat.msgs.length : 0) + "</b>";
+  $("tele").innerHTML = "MODE <b>" + (modes.join("+") || "DIRECT") + "</b>" + (lastTtft ? " FIRST WORD <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? " LAT <b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "") + (lastCps ? " RATE <b>" + lastCps + " ch/s</b>" : "") + " SESSION <b>" + (chat ? chat.msgs.length : 0) + "</b>";
 }
 const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = ok ? "online" : "offline"; $("led-link").className = "led " + (ok ? "ok" : "bad"); };
 addEventListener("online", link); addEventListener("offline", link); link();
@@ -75,12 +75,13 @@ $("model").onchange = () => { showPick(); LS.set("model", $("model").value); if 
 let chats = LS.get("chats", []), chat = null;
 const save = () => { chats.sort((a, b) => b.ts - a.ts); chats = chats.slice(0, 80); if (!LS.set("chats", chats)) { for (const c of chats.slice(10)) for (const m of c.msgs) { delete m.image; m.thumbs = []; } LS.set("chats", chats); } drawHist(); };
 function drawHist() {
-  $("hist").innerHTML = chats.map((c) => "<div data-c='" + c.id + "' class='" + (chat && chat.id === c.id ? "on" : "") + "'><span>" + esc(c.title || "New chat") + "</span><button data-del title='Delete'>✕</button></div>").join("") || "<p class='dim sm' style='padding:0 10px'>Your chats appear here.</p>";
+  const q = ($("hsearch").value || "").trim().toLowerCase(), list = q ? chats.filter((c) => (c.title + " " + c.msgs.map((m) => m.text || "").join(" ")).toLowerCase().includes(q)) : chats;
+  $("hist").innerHTML = list.map((c) => "<div data-c='" + c.id + "' class='" + (chat && chat.id === c.id ? "on" : "") + "'><span>" + esc(c.title || "New chat") + "</span><button data-del title='Delete'>✕</button></div>").join("") || "<p class='dim sm' style='padding:0 10px'>Your chats appear here.</p>";
 }
 $("hist").onclick = (e) => { const d = e.target.closest("[data-c]"); if (!d) return; if (e.target.closest("[data-del]")) { chats = chats.filter((c) => c.id !== d.dataset.c); if (chat && chat.id === d.dataset.c) newChat(); save(); return; } openChat(d.dataset.c); };
 function newChat() { chat = null; $("log").innerHTML = ""; $("empty").classList.remove("hidden"); greet(); drawHist(); if (location.hash !== "#studio") location.hash = "studio"; else route(); }
 function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) $("model").value = chat.model; $("empty").classList.add("hidden"); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i)); drawHist(); if (location.hash !== "#studio") location.hash = "studio"; else route(); scrollEnd(true); }
-$("newchat").onclick = newChat;
+$("newchat").onclick = newChat; $("hsearch").oninput = drawHist;
 function greet() {
   const ideas = [["COUNCIL", "Five models debate, one merges", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["RECON", "Live web, cited sources", "What are the most important AI developments this week?", true], ["IMAGINE", "Render an image from words", "A glowing honeycomb city at night, bees as tiny airships, cinematic", false, true], ["BUILD", "Code a working thing", "Write a tiny snake game in one HTML file."], ["SWARM", "Agents build a whole project", null, false, false, false, false, true], ["VOICE LINK", "Talk, hands-free", null, false, false, true]];
   $("starters").innerHTML = ideas.map((x, i) => "<button data-i='" + i + "'><b>" + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></button>").join("");
@@ -115,7 +116,7 @@ const codeOf = (el, n) => { const m = chat && chat.msgs[+el.closest(".m").datase
 // ── drawing messages ──
 function drawMsg(m, i) {
   const d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
-  if (m.role === "user") d.innerHTML = "<div>" + (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools' style='justify-content:flex-end'>" + m.files.map((f) => "<span>📄 " + esc(f) + "</span>").join("") + "</div>" : "") + (m.show || m.text ? "<div class='b'>" + esc(m.show || m.text) + "</div>" : "") + "</div>";
+  if (m.role === "user") d.innerHTML = "<div>" + (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools' style='justify-content:flex-end'>" + m.files.map((f) => "<span>📄 " + esc(f) + "</span>").join("") + "</div>" : "") + (m.show || m.text ? "<div class='b'>" + esc(m.show || m.text) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and resend' aria-label='Edit and resend'>✎</button><button data-uact='copy' title='Copy' aria-label='Copy'>⧉</button></div></div>";
   else {
     const who = "<div class='who-line'>HIVE // <b>" + esc(String(m.model || $("model").value || "").split("|").pop().split("/").pop()) + "</b>" + (m.council ? " · COUNCIL" : "") + (m.streaming ? " · STREAMING" : "") + "</div>";
     const body = m.pending && !m.text ? who + (m.council ? "<div class='const'><svg><line x1='26' y1='16' x2='92' y2='62'/><line x1='156' y1='20' x2='92' y2='62'/><line x1='16' y1='96' x2='92' y2='62'/><line x1='162' y1='98' x2='92' y2='62'/><line x1='94' y1='8' x2='92' y2='62'/></svg><i class='lead'></i><i></i><i></i><i></i><i></i><i></i></div>" : "<div class='dots'><i></i><i></i><i></i></div>") + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
@@ -124,7 +125,7 @@ function drawMsg(m, i) {
       : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:6px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) +
         (m.drafts && m.drafts.length ? "<details class='drafts'><summary>⬡ " + m.drafts.filter((x) => x.text).length + " COUNCIL DRAFTS" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (tap to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
         (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
-    d.innerHTML = "<div class='av" + (m.pending ? " think" : "") + "'>" + ICON + "</div><div style='flex:1;min-width:0'><div class='b'>" + body + "</div>" + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl' title='Download'>" + SV.dl + "</button>" : "<button data-act='copy' title='Copy'>" + SV.copy + "</button><button data-act='say' title='Read aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Try again'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (m.model ? "<span class='meta'>" + esc(m.model.split("|").pop().split("/").pop()) + (m.ms ? " · " + (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>") + "</div>";
+    d.innerHTML = "<div class='av" + (m.pending ? " think" : "") + "'>" + ICON + "</div><div style='flex:1;min-width:0'><div class='b'>" + body + "</div>" + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl' title='Download'>" + SV.dl + "</button>" : "<button data-act='copy' title='Copy'>" + SV.copy + "</button><button data-act='say' title='Read aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Try again'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (m.model ? "<span class='meta'>" + esc(m.model.split("|").pop().split("/").pop()) + (m.ttft ? " · first word " + (m.ttft / 1000).toFixed(2) + "s" : "") + (m.ms ? " · " + (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>") + "</div>";
   }
   const old = $("log").querySelector(".m[data-i='" + i + "']"); if (old) old.replaceWith(d); else $("log").appendChild(d);
   return d;
@@ -134,6 +135,9 @@ $("log").onclick = async (e) => {
   const c = e.target.closest("[data-copy]"), r = e.target.closest("[data-run]"), a = e.target.closest("[data-act]");
   if (c) { navigator.clipboard.writeText(codeOf(c, +c.dataset.copy)).then(() => { c.textContent = "Copied"; setTimeout(() => (c.textContent = "Copy"), 1400); }); return; }
   if (r) { const w = window.open("", "_blank"); if (w) { w.document.open(); w.document.write(codeOf(r, +r.dataset.run)); w.document.close(); } return; }
+  const ua = e.target.closest("[data-uact]");
+  if (ua && chat) { const k = +ua.closest(".m").dataset.i, um = chat.msgs[k]; if (ua.dataset.uact === "copy") { navigator.clipboard.writeText(um.show || um.text || ""); return toast("Copied"); }
+    if (busy) return toast("Wait for the reply to finish"); inp.value = um.show || um.text || ""; grow(); sync(); chat.msgs.splice(k); [...$("log").children].forEach((n) => +n.dataset.i >= k && n.remove()); save(); inp.focus(); return toast("Edit and send again"); }
   if (!a || !chat) return; const i = +a.closest(".m").dataset.i, m = chat.msgs[i];
   if (a.dataset.act === "copy") { navigator.clipboard.writeText(m.text || ""); toast("Copied"); }
   if (a.dataset.act === "say") Voice.say(plain(m.text));
@@ -176,7 +180,7 @@ const cmp = $("composer"); ["dragenter", "dragover"].forEach((t) => document.add
 const inp = $("inp"), grow = () => { inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, innerHeight * .4) + "px"; };
 const sync = () => { $("sendb").disabled = !busy && !inp.value.trim() && !att.length; };
 inp.addEventListener("input", () => { grow(); sync(); });
-inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !(matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
+inp.addEventListener("keydown", (e) => { if (e.key !== "Enter" || e.shiftKey || e.isComposing) return; const mod = e.metaKey || e.ctrlKey; if (mod || (S("enter") && !matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
 const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") inp.placeholder = v ? "Describe an image to render…" : "Transmit…  ( / for commands )"; if (window.tele) tele(); };
 $("web").onclick = () => { setTog("web", $("web").getAttribute("aria-pressed") !== "true"); if ($("web").getAttribute("aria-pressed") === "true") setTog("draw", false); };
 $("council").onclick = () => { setTog("council", $("council").getAttribute("aria-pressed") !== "true"); if (on("council")) setTog("draw", false); };
@@ -201,7 +205,8 @@ function send(text, opts) {
   const files = att.filter((a) => a.kind === "file"), imgs = att.filter((a) => a.kind === "image"), vid = att.find((a) => a.kind === "video");
   const full = text + files.map((f) => "\n\n" + f.name + ":\n```\n" + f.text.slice(0, 100000) + "\n```").join("");
   const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), voice: !!opts.voice };
-  u._images = vid ? vid.frames.map((f) => f.data) : imgs.map((a) => a.data); u._frames = vid ? vid.frames.map((f) => f.t) : null;
+  u._images = opts.images || (vid ? vid.frames.map((f) => f.data) : imgs.map((a) => a.data)); u._frames = vid ? vid.frames.map((f) => f.t) : null;
+  if (opts.images) { u.thumbs = opts.images.slice(); u.live = true; }
   chat.msgs.push(u); drawMsg(u, chat.msgs.length - 1); chat.ts = Date.now();
   inp.value = ""; att = []; drawAtt(); grow(); save(); scrollEnd(true);
   return run(u.mode === "image", opts);
@@ -209,8 +214,8 @@ function send(text, opts) {
 async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><rect x='7' y='7' width='10' height='10' rx='2' fill='currentColor'/></svg>";
-  const t0 = Date.now(); let j; m.council = !!u.council; m.model = $("model").value;
-  const body = { lang: navigator.language || "en", model: $("model").value, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
+  const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
+  const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
     messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
@@ -220,16 +225,19 @@ async function run(image, opts) {
   busy = null; $("sendb").classList.remove("stop"); $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><path d='M12 19V5M5.5 11.5 12 5l6.5 6.5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
-  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || $("model").value });
-  m.ms = Date.now() - t0; lastMs = m.ms; tele();
+  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value });
+  m.ms = Date.now() - t0; lastMs = m.ms; lastTtft = m.ttft || 0; lastCps = m.text && m.ttft && m.ms > m.ttft ? Math.round(m.text.length / ((m.ms - m.ttft) / 1000)) : 0; tele();
   if (chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } delete u._images; save();
   return m;
 }
+// Esc stops a reply that's still coming
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && busy && !Voice.on && !$("cmdk").open && !$("sdlg").open) busy.abort(); });
 // streamed replies: server-sent events meta → delta… → done; the message redraws at most once a frame
 async function stream(body, m, i, signal) {
+  const tReq = performance.now();
   const r = await fetch("/api/hive/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, stream: true }), signal });
   if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; }
-  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", out = { text: "" }, raf = 0;
+  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", out = { text: "" }, raf = 0; const tStart = Date.now() - (performance.now() - tReq);
   m.text = ""; m.streaming = true;
   const paint = () => { raf = 0; if (chat && chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } };
   for (;;) {
@@ -237,7 +245,7 @@ async function stream(body, m, i, signal) {
     let k; while ((k = buf.indexOf("\n\n")) >= 0) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
       if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
-      else if (ev === "delta") { m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
+      else if (ev === "delta") { if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
       else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
@@ -248,7 +256,7 @@ async function stream(body, m, i, signal) {
 const CMDS = () => [
   ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")],
   ["Toggle search", "mode", () => $("web").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
-  ["Voice link", "voice", () => Voice.start()], ["Export session", "md", () => $("export").click()], ["Directives", "settings", () => $("settings").click()], ["Cycle theme", "theme", () => $("theme").click()],
+  ["Voice link", "voice", () => Voice.start()], ["Export session", "md", () => $("export").click()], ["Settings", "voice · theme · data", () => openSettings()], ["Cycle theme", "theme", () => $("theme").click()],
   ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
 ];
 let csel = 0, chits = [];
@@ -267,8 +275,8 @@ document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.
 window.HiveMD = md;
 $("export").onclick = () => { if (!chat) return toast("Nothing to export yet"); const t = "# " + chat.title + "\n\n" + chat.msgs.map((m) => (m.role === "user" ? "**You:** " : "**Hive:** ") + (m.image ? "![image](generated)" : m.text || m.error || "") + (m.sources && m.sources.length ? "\n\n" + m.sources.map((s, k) => "[" + (k + 1) + "] " + s.url).join("\n") : "")).join("\n\n---\n\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([t], { type: "text/markdown" })); a.download = chat.title.replace(/[^\w-]+/g, "-").toLowerCase().slice(0, 50) + ".md"; a.click(); };
-$("settings").onclick = () => { $("sys").value = LS.get("sys", ""); $("sdlg").showModal(); };
-$("ssave").onclick = () => { LS.set("sys", $("sys").value.trim()); $("sdlg").close(); toast("Saved"); };
+$("settings").onclick = () => openSettings();
+$("ssave").onclick = () => { LS.set("sys", $("sys").value.trim()); $("sdlg").close(); };
 document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "o") { e.preventDefault(); newChat(); } if (e.key === "/" && document.activeElement === document.body) { e.preventDefault(); inp.focus(); } });
 
 // ── voice: recording, transcription, speech ──
@@ -280,18 +288,26 @@ const toWav = async (blob) => { // any recording → 16 kHz mono WAV, which Whis
   for (let k = 0; k < pcm.length; k++) dv.setInt16(44 + k * 2, Math.max(-1, Math.min(1, pcm[k])) * 0x7fff, true);
   return readAs(new Blob([dv], { type: "audio/wav" }), "readAsDataURL");
 };
-// Records until stop() — or, with vad, until the speaker has been quiet a moment. Reports level for the orb.
+// ── settings (this device) ──
+const SET = { rate: 1, sil: 800, hands: "1", barge: false, recog: "cloud", vmodel: "", motion: true, enter: true };
+const S = (k) => LS.get("set:" + k, SET[k]), setS = (k, v) => LS.set("set:" + k, v);
+const motion = () => document.body.classList.toggle("still", !S("motion")); motion();
+
+// Records until stop(), or with vad until the speaker has been quiet a moment. One microphone stream is kept open for a
+// whole voice session (no permission round-trip per turn); dictation opens its own.
+const AC = window.AudioContext || window.webkitAudioContext;
 async function record(opt) {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-  const rec = new MediaRecorder(stream), chunks = [], ac = new (window.AudioContext || window.webkitAudioContext)(), an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(stream).connect(an);
-  const data = new Uint8Array(an.fftSize); let spoke = false, quiet = 0, raf = 0, t0 = performance.now(), done;
+  const own = !opt.stream, stream = opt.stream || (await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }));
+  let an = opt.an, ac = null; if (!an) { ac = new AC(); an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(stream).connect(an); }
+  const rec = new MediaRecorder(stream), chunks = [], data = new Uint8Array(an.fftSize); let spoke = false, quietSince = 0, raf = 0, t0 = performance.now(), done;
   const finished = new Promise((ok) => (done = ok));
   rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-  rec.onstop = () => { cancelAnimationFrame(raf); stream.getTracks().forEach((t) => t.stop()); ac.close(); done(spoke || !opt.vad ? new Blob(chunks, { type: rec.mimeType }) : null); };
-  const tick = () => { an.getByteTimeDomainData(data); let s = 0; for (const v of data) s += (v - 128) ** 2; const lv = Math.min(1, Math.sqrt(s / data.length) / 30); opt.level && opt.level(lv);
-    if (opt.vad) { if (lv > .18) { spoke = true; quiet = 0; } else if (spoke) quiet += 16; if ((spoke && quiet > 1300) || performance.now() - t0 > 60000 || (!spoke && performance.now() - t0 > 15000)) return rec.state === "recording" && rec.stop(); }
+  rec.onstop = () => { cancelAnimationFrame(raf); if (own) stream.getTracks().forEach((t) => t.stop()); if (ac) ac.close(); done(spoke || !opt.vad ? new Blob(chunks, { type: rec.mimeType }) : null); };
+  const tick = () => { an.getByteTimeDomainData(data); let s = 0; for (const v of data) s += (v - 128) ** 2; const lv = Math.min(1, Math.sqrt(s / data.length) / 30), now = performance.now(); opt.level && opt.level(lv);
+    if (opt.vad) { if (lv > .16) { spoke = true; quietSince = 0; } else if (spoke && !quietSince) quietSince = now;
+      if ((spoke && quietSince && now - quietSince > (opt.silence || 900)) || now - t0 > 60000 || (!spoke && now - t0 > 20000)) return rec.state === "recording" && rec.stop(); }
     raf = requestAnimationFrame(tick); };
-  rec.start(); tick();
+  rec.start(100); tick();
   return { stop: () => rec.state === "recording" && rec.stop(), finished };
 }
 async function stt(blob) { const j = await api("/stt", { audio: await toWav(blob), lang: (navigator.language || "en").slice(0, 2) }); if (j.error) throw new Error(j.error); return j.text; }
@@ -302,69 +318,167 @@ $("mic").onclick = async () => {
   if (dict) return dict.stop();
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition, base = inp.value ? inp.value.replace(/\s*$/, " ") : "";
   $("mic").classList.add("rec");
-  if (SR) { const r = new SR(); r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US"; r.onresult = (e) => { inp.value = base + [...e.results].map((x) => x[0].transcript).join(""); grow(); sync(); }; r.onend = () => { dict = null; $("mic").classList.remove("rec"); inp.focus(); }; r.onerror = (e) => e.error !== "no-speech" && toast("Mic: " + e.error); dict = { stop: () => r.stop() }; r.start(); return; }
+  if (SR && !navigator.brave) { const r = new SR(); r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US"; r.onresult = (e) => { inp.value = base + [...e.results].map((x) => x[0].transcript).join(""); grow(); sync(); }; r.onend = () => { dict = null; $("mic").classList.remove("rec"); inp.focus(); }; r.onerror = (e) => e.error !== "no-speech" && toast("Mic: " + e.error); dict = { stop: () => r.stop() }; r.start(); return; }
   try { const h = await record({}); dict = h; const blob = await h.finished; dict = null; $("mic").classList.remove("rec"); toast("Transcribing…"); inp.value = base + (await stt(blob)); grow(); sync(); inp.focus(); }
   catch (e) { dict = null; $("mic").classList.remove("rec"); toast(e.message || "No microphone"); }
 };
 
-// voice conversation: listen → transcribe → answer → speak → listen again
+// ── voice link: listen → transcribe → answer (streamed) → speak sentence by sentence → listen again ──
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const Voice = (window.HiveVoice = {
-  on: false, h: null, audio: null,
-  set(state, text) { $("vstate").textContent = state; if (text != null) $("vtext").textContent = text; $("orb").className = "orb " + (/Thinking/.test(state) ? "think" : /Speaking/.test(state) ? "talk" : ""); },
+  on: false, h: null, audio: null, mode: "idle", lv: 0,
+  set(state, text) { $("vstate").textContent = state; if (text != null) $("vtext").textContent = text; Voice.mode = /Thinking|Transcrib/.test(state) ? "think" : /Speaking/.test(state) ? "talk" : /Listening|Hold/.test(state) ? "listen" : "idle"; },
   async start() {
     if (!navigator.mediaDevices || !window.MediaRecorder) return toast("This browser can't record audio");
     if (location.hash !== "#studio") location.hash = "studio";
-    Voice.on = true; Voice.paused = false; $("voiceo").classList.remove("hidden"); $("vmute").textContent = "Pause"; Voice.loop();
+    Voice.ac = Voice.ac || new AC(); Voice.ac.resume && Voice.ac.resume(); // unlocked by this tap, so replies can play
+    if (!Voice.outAn) { Voice.outAn = Voice.ac.createAnalyser(); Voice.outAn.fftSize = 256; Voice.outAn.connect(Voice.ac.destination); }
+    try { Voice.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    catch (e) { return toast("Microphone blocked: allow it for this site"); }
+    Voice.micAn = Voice.ac.createAnalyser(); Voice.micAn.fftSize = 256; Voice.ac.createMediaStreamSource(Voice.mic).connect(Voice.micAn);
+    Voice.on = true; Voice.paused = false; $("voiceo").classList.remove("hidden"); Voice.ui(); viz.start(); Voice.loop();
+  },
+  ui() {
+    const ptt = S("hands") === "0"; $("vptt").classList.toggle("hidden", !ptt); $("vmute").classList.toggle("hidden", ptt);
+    $("vmute").setAttribute("aria-pressed", Voice.paused ? "true" : "false"); $("vmutel").textContent = Voice.paused ? "PAUSED" : "LIVE";
+    $("vmodel").textContent = (voiceModel() || $("model").value || "").split("|").pop().split("/").pop() || "VOICE LINK";
+    $("vhint").textContent = ptt ? "hold the button while you talk" : S("barge") ? "talk over it to interrupt" : "tap the core to interrupt";
+    $("vscreen").classList.toggle("hidden", !(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) || matchMedia("(pointer:coarse)").matches);
+  },
+  async listen() { // one turn of the user speaking → text (or null)
+    if (S("recog") === "device" && (window.SpeechRecognition || window.webkitSpeechRecognition) && !navigator.brave) return Voice.listenDevice();
+    if (S("hands") === "0") { Voice.set("Hold to talk", ""); await new Promise((ok) => (Voice.pttGo = ok)); if (!Voice.on) return null; }
+    Voice.set("Listening…", "");
+    let blob; try { Voice.h = await record({ vad: S("hands") !== "0", stream: Voice.mic, an: Voice.micAn, silence: S("sil"), level: (lv) => (Voice.lv = lv) }); if (S("hands") === "0") Voice.pttStop = () => Voice.h && Voice.h.stop(); blob = await Voice.h.finished; }
+    catch (e) { Voice.set("Microphone error", e.message); return null; }
+    Voice.h = null; if (!Voice.on || Voice.paused || !blob) return null;
+    Voice.set("Transcribing…"); const t0 = performance.now();
+    try { const text = await stt(blob); Voice.sttMs = performance.now() - t0; return text; } catch (e) { Voice.set("Couldn't hear that", e.message); await sleep(1200); return null; }
+  },
+  listenDevice() { // browser recognition: live captions while you talk
+    return new Promise((ok) => { const SR = window.SpeechRecognition || window.webkitSpeechRecognition, r = new SR(); r.lang = navigator.language || "en-US"; r.interimResults = true; r.continuous = false; let fin = "";
+      Voice.set("Listening…", ""); r.onresult = (e) => { const t = [...e.results].map((x) => x[0].transcript).join(""); fin = t; $("vtext").textContent = t; Voice.lv = .4 + Math.random() * .3; };
+      r.onerror = () => {}; r.onend = () => { Voice.lv = 0; Voice.sttMs = 0; ok(fin.trim() || null); }; Voice.h = { stop: () => r.stop() }; r.start(); });
   },
   async loop() {
     while (Voice.on && !Voice.paused) {
-      Voice.set("Listening…", "");
-      let blob; try { Voice.h = await record({ vad: true, level: (lv) => $("orb").style.setProperty("--lv", lv) }); blob = await Voice.h.finished; } catch (e) { Voice.set("No microphone", e.message); return; }
-      Voice.h = null; $("orb").style.setProperty("--lv", 0); if (!Voice.on || Voice.paused) return; if (!blob) continue;
-      Voice.set("Thinking…"); let text; try { text = await stt(blob); } catch (e) { Voice.set("Couldn't hear that", e.message); await new Promise((r) => setTimeout(r, 1500)); continue; }
-      if (!text || text.length < 2) continue; $("vtext").textContent = "“" + text + "”";
-      Voice.hush(); Voice.spoken = 0; Voice.live = true;
-      const m = await send(text, { voice: true }); Voice.live = false; if (!Voice.on) return;
-      if (!m || m.error) { Voice.set("Something went wrong", m && m.error); await new Promise((r) => setTimeout(r, 2000)); continue; }
-      Voice.feed(m.text || "", true); Voice.set("Speaking…", plain(m.text).slice(0, 280)); await Voice.drained();
+      const text = await Voice.listen(); if (!Voice.on || Voice.paused) return; if (!text || text.trim().length < 2) continue;
+      $("vtext").textContent = "“" + text + "”"; Voice.set("Thinking…");
+      const frame = await Voice.frame(); Voice.hush(); Voice.spoken = 0; Voice.live = true; Voice.t0 = performance.now(); Voice.first = 0;
+      const m = await send(text, { voice: true, model: voiceModel(), images: frame ? [frame] : null, live: !!frame }); Voice.live = false; if (!Voice.on) return;
+      if (!m || m.error) { Voice.set("Something went wrong", m && m.error); await sleep(1800); continue; }
+      Voice.feed(m.text || "", true); if (Voice.q.length || Voice.playing) Voice.set("Speaking…");
+      if (S("barge") && S("hands") !== "0") Voice.watchBarge();
+      await Voice.drained();
     }
   },
-  // speech: sentences are voiced in order, each fetched while the one before plays, so long answers start at once
+  watchBarge() { // talking over the reply cuts it off and starts the next turn
+    let loud = 0; const d = new Uint8Array(Voice.micAn.fftSize);
+    const t = setInterval(() => { if (!Voice.playing) return clearInterval(t); Voice.micAn.getByteTimeDomainData(d); let s = 0; for (const v of d) s += (v - 128) ** 2; const lv = Math.sqrt(s / d.length) / 30; loud = lv > .32 ? loud + 50 : 0; if (loud >= 350) { clearInterval(t); Voice.hush(); } }, 50);
+  },
+  // ── eyes: the camera or a shared screen; one frame goes with each turn ──
+  async cam(on, facing) {
+    Voice.stopVideo(); if (!on) return;
+    try { Voice.vs = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing || Voice.facing || "user", width: { ideal: 1280 } }, audio: false }); }
+    catch (e) { toast("Camera blocked: allow it for this site"); return; }
+    Voice.facing = facing || Voice.facing || "user"; Voice.src = "cam"; const v = $("cam"); v.srcObject = Voice.vs; v.classList.remove("hidden"); v.classList.toggle("mirror", Voice.facing === "user"); await v.play().catch(() => {});
+    $("vcam").setAttribute("aria-pressed", "true"); $("vflip").classList.remove("hidden");
+  },
+  async screen() {
+    Voice.stopVideo(); try { Voice.vs = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }); } catch (e) { return; }
+    Voice.src = "screen"; const v = $("cam"); v.srcObject = Voice.vs; v.classList.remove("hidden", "mirror"); await v.play().catch(() => {}); $("vscreen").setAttribute("aria-pressed", "true");
+    Voice.vs.getVideoTracks()[0].onended = () => Voice.stopVideo();
+  },
+  stopVideo() { if (Voice.vs) Voice.vs.getTracks().forEach((t) => t.stop()); Voice.vs = null; Voice.src = null; $("cam").classList.add("hidden"); $("cam").srcObject = null; ["vcam", "vscreen"].forEach((id) => $(id).setAttribute("aria-pressed", "false")); $("vflip").classList.add("hidden"); },
+  async frame() { const v = $("cam"); if (!Voice.vs || !v.videoWidth) return null; const k = Math.min(1, 960 / Math.max(v.videoWidth, v.videoHeight)), c = document.createElement("canvas"); c.width = v.videoWidth * k; c.height = v.videoHeight * k; c.getContext("2d").drawImage(v, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", .82); },
+  // ── speech: sentences are voiced in order, each fetched while the one before plays ──
   q: [], playing: false, gen: 0, spoken: 0,
   pick() { return LS.get("voice", "") || (Voice.list && Voice.list[0] && Voice.list[0].id) || "device"; },
   clip(text) { const g = Voice.gen; if (Voice.pick() === "device") return Promise.resolve({ device: text, g });
     return api("/tts", { text, voice: Voice.pick() }).then((j) => (j.error ? { device: text, g, err: j.error } : { url: j.audio, g, used: j.used })).catch(() => ({ device: text, g })); },
   queue(text) { text = plain(text); if (!text) return; Voice.q.push(Voice.clip(text)); if (!Voice.playing) Voice.play(); },
   async play() {
-    Voice.playing = true; if (Voice.on) $("orb").className = "orb talk";
-    while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue; if (c.used) $("vstate").title = c.used;
-      await new Promise((ok) => { if (c.url) { const a = (Voice.audio = new Audio(c.url)); a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
+    Voice.playing = true; if (Voice.on) Voice.set("Speaking…");
+    while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue;
+      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "VOICE IN " + (Voice.first / 1000).toFixed(1) + "s" + (Voice.sttMs ? " · HEARD " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used.toUpperCase() : ""); }
+      await new Promise((ok) => { if (c.url) { const a = (Voice.audio = new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
     Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f());
   },
-  device(text) { if (!window.speechSynthesis) return Promise.resolve(); return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03; u.onend = u.onerror = ok; speechSynthesis.speak(u); }); },
+  device(text) { if (!window.speechSynthesis) return Promise.resolve(); return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03 * (+S("rate") || 1); u.onend = u.onerror = ok; speechSynthesis.speak(u); }); },
   drained() { return Voice.playing || Voice.q.length ? new Promise((ok) => (Voice.idle = Voice.idle || []).push(ok)) : Promise.resolve(); },
-  // feed a growing reply: whole sentences are spoken as soon as they exist
+  // a growing reply: the first short sentence goes out at once, then fuller chunks
   feed(text, final) {
-    const rest = text.slice(Voice.spoken), re = /[\s\S]*?[.!?…](?=\s|$)|[\s\S]*?\n/g; let m, cut = 0, chunk = "";
-    while ((m = re.exec(rest)) && m[0]) { chunk += m[0]; cut = re.lastIndex; if (chunk.trim().length >= 60) { Voice.queue(chunk); chunk = ""; Voice.spoken += cut; return Voice.feed(text, final); } }
+    const rest = text.slice(Voice.spoken), re = /[\s\S]*?[.!?…:;](?=\s|$)|[\s\S]*?\n/g, need = Voice.spoken ? 70 : 18; let m, cut = 0, chunk = "";
+    while ((m = re.exec(rest)) && m[0]) { chunk += m[0]; cut = re.lastIndex; if (chunk.trim().length >= need) { Voice.queue(chunk); Voice.spoken += cut; return Voice.feed(text, final); } }
     if (final && rest.trim()) { Voice.queue(rest); Voice.spoken = text.length; }
   },
   say(text) { Voice.hush(); Voice.spoken = 0; Voice.feed(String(text || ""), true); return Voice.drained(); },
   hush() { Voice.gen++; Voice.q = []; try { speechSynthesis.cancel(); } catch (e) {} if (Voice.audio) { Voice.audio.pause(); Voice.audio = null; } Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f()); },
-  end() { Voice.on = false; Voice.hush(); if (Voice.h) Voice.h.stop(); $("voiceo").classList.add("hidden"); },
+  end() { Voice.on = false; Voice.hush(); if (Voice.h) Voice.h.stop(); if (Voice.pttGo) Voice.pttGo(); Voice.stopVideo(); if (Voice.mic) Voice.mic.getTracks().forEach((t) => t.stop()); Voice.mic = null; viz.stop(); $("voiceo").classList.add("hidden"); },
 });
-$("voice").onclick = () => Voice.start(); $("vend").onclick = () => Voice.end();
-$("vmute").onclick = () => { Voice.paused = !Voice.paused; $("vmute").textContent = Voice.paused ? "Resume" : "Pause"; if (Voice.paused) { Voice.hush(); if (Voice.h) Voice.h.stop(); Voice.set("Paused", ""); } else Voice.loop(); };
+const voiceModel = () => { const v = S("vmodel"); if (!v) return ""; if (v !== "fast") return models.some((m) => m.id === v) ? v : "";
+  const fast = /(groq|cerebras|sambanova)/i, good = /gpt-oss-120b|llama-3\.3-70b|llama-4|qwen3|kimi|gpt-oss-20b/i; // fastest inference hosts, decent models
+  const f = models.find((m) => fast.test(m.group) && good.test(m.id)) || models.find((m) => fast.test(m.group)) || models.find((m) => /llama-3\.1-8b-instruct-fast|gpt-oss-20b/.test(m.id)); return f ? f.id : ""; };
+
+// ── the live visual: a hexagon core in a ring of frequency bars, cyan while you talk, violet while it speaks ──
+const viz = { raf: 0, start() { cancelAnimationFrame(viz.raf); const c = $("viz"), g = c.getContext("2d"), fd = new Uint8Array(128); let t0 = performance.now(), sm = 0;
+  const draw = (t) => { if (!Voice.on) return; viz.raf = requestAnimationFrame(draw); if (document.hidden) return;
+    const d = Math.min(2, devicePixelRatio || 1), W = (c.width = c.clientWidth * d), H = (c.height = c.clientHeight * d), cx = W / 2, cy = H * .4, R = Math.min(W, H) * .16, time = (t - t0) / 1000, st = getComputedStyle(document.documentElement);
+    const cyc = st.getPropertyValue("--cy").trim(), vic = st.getPropertyValue("--vi").trim(), hnc = st.getPropertyValue("--hn").trim(), col = Voice.mode === "talk" ? vic : Voice.mode === "think" ? hnc : cyc;
+    const an = Voice.mode === "talk" ? Voice.outAn : Voice.micAn; let lv = 0; if (an && (Voice.mode === "talk" || Voice.mode === "listen")) { an.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) lv += fd[i]; lv /= 64 * 255; } else fd.fill(0);
+    if (Voice.mode === "listen" && Voice.lv) lv = Math.max(lv, Voice.lv * .6); sm += (lv - sm) * .25;
+    const glow = g.createRadialGradient(cx, cy, R * .2, cx, cy, R * 3.2); glow.addColorStop(0, col + "55"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    const bars = 72; for (let i = 0; i < bars; i++) { const a = (i / bars) * Math.PI * 2 + time * .15, v = (fd[i % 64] || 0) / 255, len = R * (.12 + v * 1.1 + (Voice.mode === "think" ? .25 * (1 + Math.sin(time * 6 + i * .5)) / 2 : 0));
+      g.strokeStyle = col; g.globalAlpha = .35 + v * .65; g.lineWidth = 2.2 * d; g.lineCap = "round"; g.beginPath(); g.moveTo(cx + Math.cos(a) * R * 1.25, cy + Math.sin(a) * R * 1.25); g.lineTo(cx + Math.cos(a) * (R * 1.25 + len), cy + Math.sin(a) * (R * 1.25 + len)); g.stroke(); }
+    g.globalAlpha = 1; g.setLineDash([3 * d, 9 * d]); g.lineDashOffset = -time * 20; g.strokeStyle = col + "88"; g.lineWidth = d; g.beginPath(); g.arc(cx, cy, R * 2.55, 0, 7); g.stroke(); g.setLineDash([]);
+    const hx = (r, rot) => { g.beginPath(); for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k - Math.PI / 2 + rot; g[k ? "lineTo" : "moveTo"](cx + r * Math.cos(a), cy + r * Math.sin(a)); } g.closePath(); };
+    const r0 = R * (.78 + sm * .6 + (Voice.mode === "think" ? Math.sin(time * 4) * .05 : 0)), grd = g.createLinearGradient(cx - r0, cy - r0, cx + r0, cy + r0); grd.addColorStop(0, cyc); grd.addColorStop(1, vic);
+    g.shadowColor = col; g.shadowBlur = 40 * d; hx(r0, 0); g.fillStyle = grd; g.fill(); g.shadowBlur = 0;
+    g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1.2 * d; hx(r0 * 1.18, time * .2); g.stroke(); hx(r0 * .55, -time * .4); g.strokeStyle = "rgba(255,255,255,.5)"; g.stroke();
+  }; viz.raf = requestAnimationFrame(draw); }, stop() { cancelAnimationFrame(viz.raf); } };
+
+$("voice").onclick = () => Voice.start(); $("vend").onclick = $("vx").onclick = () => Voice.end();
+$("vmute").onclick = () => { Voice.paused = !Voice.paused; Voice.ui(); if (Voice.paused) { Voice.hush(); if (Voice.h) Voice.h.stop(); Voice.set("Paused", ""); } else Voice.loop(); };
+const pttDown = (e) => { e.preventDefault(); Voice.hush(); $("vptt").classList.add("held"); if (Voice.pttGo) { const f = Voice.pttGo; Voice.pttGo = null; f(); } };
+const pttUp = () => { $("vptt").classList.remove("held"); setTimeout(() => Voice.pttStop && Voice.pttStop(), 150); };
+$("vptt").addEventListener("pointerdown", pttDown); ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => $("vptt").addEventListener(ev, pttUp));
+$("vcam").onclick = () => Voice.cam(!(Voice.vs && Voice.src === "cam")); $("vflip").onclick = () => Voice.cam(true, Voice.facing === "user" ? "environment" : "user"); $("vscreen").onclick = () => (Voice.src === "screen" ? Voice.stopVideo() : Voice.screen());
+$("vset").onclick = () => openSettings();
 async function loadVoices() {
   const j = await api("/voices").catch(() => ({ voices: [] })); Voice.list = j.voices || []; const groups = {}; for (const v of Voice.list) (groups[v.group] = groups[v.group] || []).push(v);
-  $("vvoice").innerHTML = Object.entries(groups).map(([g, vs]) => "<optgroup label='" + esc(g) + "'>" + vs.map((v) => "<option value='" + esc(v.id) + "'>" + esc(v.name) + "</option>").join("") + "</optgroup>").join("") + "<optgroup label='This device'><option value='device'>Device voice (works offline)</option></optgroup>";
-  $("vvoice").value = Voice.pick(); if (!$("vvoice").value) $("vvoice").value = "device";
+  const html = Object.entries(groups).map(([g, vs]) => "<optgroup label='" + esc(g) + "'>" + vs.map((v) => "<option value='" + esc(v.id) + "'>" + esc(v.name) + "</option>").join("") + "</optgroup>").join("") + "<optgroup label='This device'><option value='device'>Device voice (works offline)</option></optgroup>";
+  for (const id of ["vvoice", "s-voice"]) { $(id).innerHTML = html; $(id).value = Voice.pick(); if (!$(id).value) $(id).value = "device"; }
 }
-$("vvoice").onchange = () => { LS.set("voice", $("vvoice").value); Voice.say("Hi, this is how I sound now."); };
-$("vtest").onclick = () => Voice.say("Hey. Voice link is live. Ask me anything, and I'll answer as soon as I have the first sentence ready.");
+const pickVoice = (v) => { LS.set("voice", v); $("vvoice").value = $("s-voice").value = v; Voice.say("Hi. This is how I sound now."); };
+$("vvoice").onchange = () => pickVoice($("vvoice").value); $("s-voice").onchange = () => pickVoice($("s-voice").value);
+$("vtest").onclick = () => Voice.say("Hey. Voice link is live. Ask me anything, and I'll start talking as soon as I have the first sentence.");
 $("orb").onclick = () => { if (Voice.playing) { Voice.hush(); Voice.set("Listening…", ""); } }; // interrupt
 loadVoices();
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && Voice.on) Voice.end(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && Voice.on) Voice.end(); if (e.key === " " && Voice.on && S("hands") === "0" && !e.repeat && document.activeElement === document.body) pttDown(e); });
+document.addEventListener("keyup", (e) => { if (e.key === " " && Voice.on && S("hands") === "0") pttUp(); });
+
+// ── settings panel ──
+function openSettings() {
+  $("s-theme").value = LS.get("theme", "dark") === "light" ? "light" : "dark"; $("s-motion").checked = !!S("motion"); $("s-enter").checked = !!S("enter");
+  $("s-rate").value = S("rate"); $("s-rate-v").textContent = (+S("rate")).toFixed(2) + "×"; $("s-hands").value = S("hands"); $("s-sil").value = S("sil"); $("s-sil-v").textContent = (S("sil") / 1000).toFixed(1) + " s";
+  $("s-barge").checked = !!S("barge"); $("s-recog").value = S("recog");
+  const vm = S("vmodel"), cur = $("s-vmodel"); [...cur.querySelectorAll("option.pin")].forEach((o) => o.remove());
+  const add = (id) => { const m = models.find((x) => x.id === id); if (!m) return; const o = document.createElement("option"); o.className = "pin"; o.value = id; o.textContent = "Pin: " + m.name; cur.appendChild(o); };
+  add($("model").value); if (vm && vm !== "fast" && vm !== $("model").value) add(vm); cur.value = vm; if (cur.value !== vm) cur.value = "";
+  $("sys").value = LS.get("sys", ""); if (!$("sdlg").open) $("sdlg").showModal();
+}
+$("s-theme").onchange = () => { LS.set("theme", $("s-theme").value); applyTheme(); };
+$("s-motion").onchange = () => { setS("motion", $("s-motion").checked); motion(); };
+$("s-enter").onchange = () => setS("enter", $("s-enter").checked);
+$("s-rate").oninput = () => { setS("rate", +$("s-rate").value); $("s-rate-v").textContent = (+$("s-rate").value).toFixed(2) + "×"; if (Voice.audio) Voice.audio.playbackRate = +$("s-rate").value; };
+$("s-hands").onchange = () => { setS("hands", $("s-hands").value); if (Voice.on) { Voice.ui(); if (Voice.h) Voice.h.stop(); } };
+$("s-sil").oninput = () => { setS("sil", +$("s-sil").value); $("s-sil-v").textContent = ($("s-sil").value / 1000).toFixed(1) + " s"; };
+$("s-barge").onchange = () => { setS("barge", $("s-barge").checked); if (Voice.on) Voice.ui(); };
+$("s-recog").onchange = () => setS("recog", $("s-recog").value);
+$("s-vmodel").onchange = () => { setS("vmodel", $("s-vmodel").value); if (Voice.on) Voice.ui(); };
+$("sys").onchange = () => LS.set("sys", $("sys").value.trim());
+$("s-export").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(chats, null, 1)], { type: "application/json" })); a.download = "hive-sessions-" + new Date().toISOString().slice(0, 10) + ".json"; a.click(); };
+$("s-clear").onclick = () => { if (!confirm("Delete every session on this device? This can't be undone.")) return; chats = []; LS.set("chats", chats); newChat(); toast("Sessions cleared"); };
 
 // ── key vault ──
 const Keys = {
