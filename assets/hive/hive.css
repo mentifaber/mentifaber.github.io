@@ -36,7 +36,7 @@ textarea{resize:vertical}
 #shell{position:relative;z-index:1;display:flex;height:100dvh}
 #side{width:280px;flex:none;border-width:0 1px 0 0;display:flex;flex-direction:column;padding:12px 10px calc(10px + env(safe-area-inset-bottom));gap:4px}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px;padding-top:calc(6px + env(safe-area-inset-top));color:var(--cy)}
-.core-mark{width:34px;height:34px;filter:drop-shadow(0 0 10px rgba(34,228,255,.5))}.core-mark .ring{transform-origin:20px 20px;animation:spin 14s linear infinite}
+.core-mark{width:44px;height:44px;border-radius:12px;flex:none;object-fit:cover;box-shadow:0 0 0 1px rgba(255,184,28,.35),0 0 18px rgba(255,184,28,.25)}
 .word{flex:1;font:700 22px/1 "Chakra Petch",sans-serif;letter-spacing:.22em;color:var(--ink);display:flex;flex-direction:column;gap:4px}.word small{font:500 9px "JetBrains Mono",monospace;letter-spacing:.2em;color:var(--dim)}
 .newchat{display:flex;gap:10px;align-items:center;padding:9px 10px;font-weight:600;color:var(--cy);border:1px dashed var(--line2)}.newchat span{display:grid;place-items:center;width:22px;height:24px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:linear-gradient(var(--cy),var(--vi));color:var(--accInk);font-size:14px}.newchat:hover{box-shadow:var(--glow)}
 nav{margin-top:8px}
