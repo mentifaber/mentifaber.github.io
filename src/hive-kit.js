@@ -35,7 +35,7 @@ export const PRESETS = {
   serper: { name: "Serper (Google) search", kind: "search" },
   exa: { name: "Exa search", kind: "search" },
 };
-const NOT_CHAT = /embed|whisper|tts|transcri|moderation|dall-e|gpt-image|imagen|veo|rerank|guard|audio|realtime|search-preview|babbage|davinci|-image|image-|computer-use|text-to|speech|orpheus|playai|:batch|banana|lyria|sora|flux|stable-diffusion|allam|compound|-1b-|-1b$|prompt-guard/i;
+const NOT_CHAT = /embed|whisper|tts|transcri|moderation|dall-e|gpt-image|imagen|veo|rerank|guard|audio|realtime|search-preview|search-api|babbage|davinci|-image|image-|computer-use|text-to|speech|orpheus|playai|:batch|banana|lyria|sora|flux|stable-diffusion|allam|compound|-1b-|-1b$|prompt-guard/i;
 export const isChat = (id) => !NOT_CHAT.test(String(id).split("|").pop()); // voices, image makers, batch-only and tiny models can't take part in a conversation
 
 // ── the vault's seal ──
@@ -155,12 +155,23 @@ export async function voiceOut(env, text, spec, keyFor) { // spec: "el:<kid>:<vo
   if (kind === "oa" && keyFor) try { const { v, key } = await keyFor(a, true); const r = await fetch(v.base.replace(/\/$/, "") + "/audio/speech", { method: "POST", headers: hdr(v, key), body: JSON.stringify({ model: "gpt-4o-mini-tts", voice: b2 || "sage", input: text, response_format: "mp3", instructions: "Speak like a real person in a relaxed conversation: warm, natural pacing, light expression, no announcer voice." }), signal: T(30000) });
     if (!r.ok) throw new Error("OpenAI voice " + r.status + " " + (await r.text()).slice(0, 120)); return { audio: b64(new Uint8Array(await r.arrayBuffer())), used: "OpenAI " + (b2 || "sage") }; } catch (e) { tried.push(e.message); }
   if (!env.AI) throw new Error(tried.join("; ") || "no voice available");
+  // Aura only speaks English: read Japanese with it and it sounds drunk. Other languages go to MeloTTS, which speaks them.
+  const lang = spokenLang(text); if (lang !== "en") try { const au = await speak(env, text, lang); if (au) return { audio: au, used: "MeloTTS " + lang }; } catch (e) { tried.push(e.message); }
   const sp = kind === "a2" && AURA2.includes(a) ? a : "thalia";
   try { const r = await env.AI.run("@cf/deepgram/aura-2-en", { text, speaker: sp, encoding: "mp3" }); const au = await bytes64(r); if (au) return { audio: au, used: "Aura-2 " + sp }; } catch (e) { tried.push(e.message); }
   try { const r = await env.AI.run("@cf/deepgram/aura-1", { text, speaker: AURA1.includes(sp) ? sp : "asteria", encoding: "mp3" }); const au = await bytes64(r); if (au) return { audio: au, used: "Aura-1" }; } catch (e) { tried.push(e.message); }
   return { audio: await speak(env, text), used: "MeloTTS" };
 }
-export async function speak(env, text) { const r = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text.slice(0, 2000), lang: "en" }); return r && r.audio; }
+export async function speak(env, text, lang) { const r = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text.slice(0, 2000), lang: lang || "en" }); return r && r.audio; }
+// which of MeloTTS's languages a reply is in, from its script and telltale letters (en when unsure)
+export function spokenLang(t) {
+  t = String(t || ""); const n = (re) => (t.match(re) || []).length, len = Math.max(1, t.replace(/\s/g, "").length);
+  if (n(/[\u3040-\u30ff]/g) / len > 0.05) return "jp"; if (n(/[\uac00-\ud7af]/g) / len > 0.1) return "kr"; if (n(/[\u4e00-\u9fff]/g) / len > 0.1) return "zh";
+  const w = ` ${t.toLowerCase()} `, hits = (list) => list.reduce((a, x) => a + (w.split(` ${x} `).length - 1), 0);
+  if (/[ñ¿¡]/.test(t) || hits(["el", "los", "las", "que", "por", "para", "está", "pero", "muy", "también"]) >= 3) return "es";
+  if (/[œ]/.test(t) || hits(["le", "les", "des", "est", "une", "pour", "avec", "pas", "vous", "très"]) >= 3) return "fr";
+  return "en";
+}
 export async function imagine(env, prompt) { const r = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: prompt.slice(0, 2000), steps: 6 }); return r && r.image; }
 
 // ── streaming: the same call shape, but words arrive as they're written ──
@@ -207,4 +218,37 @@ export async function streamComplete(env, v, key, model, system, msgs, max, onDe
   if (serr && !text) { const e = new Error(String(serr.message || serr)); e.status = serr.status; throw e; }
   return text;
   } finally { clearTimeout(quiet); }
+}
+
+// ── weather: Open-Meteo, the same keyless source as mentifaber.org/wx ──
+const WMO = { 0: "clear", 1: "mostly clear", 2: "partly cloudy", 3: "overcast", 45: "fog", 48: "freezing fog", 51: "light drizzle", 53: "drizzle", 55: "heavy drizzle", 56: "freezing drizzle", 57: "freezing drizzle", 61: "light rain", 63: "rain", 65: "heavy rain", 66: "freezing rain", 67: "freezing rain", 71: "light snow", 73: "snow", 75: "heavy snow", 77: "snow grains", 80: "showers", 81: "showers", 82: "violent showers", 85: "snow showers", 86: "heavy snow showers", 95: "thunderstorm", 96: "thunderstorm with hail", 99: "severe thunderstorm with hail" };
+const STATES = "al:alabama ak:alaska az:arizona ar:arkansas ca:california co:colorado ct:connecticut de:delaware fl:florida ga:georgia hi:hawaii id:idaho il:illinois in:indiana ia:iowa ks:kansas ky:kentucky la:louisiana me:maine md:maryland ma:massachusetts mi:michigan mn:minnesota ms:mississippi mo:missouri mt:montana ne:nebraska nv:nevada nh:new hampshire nj:new jersey nm:new mexico ny:new york nc:north carolina nd:north dakota oh:ohio ok:oklahoma or:oregon pa:pennsylvania ri:rhode island sc:south carolina sd:south dakota tn:tennessee tx:texas ut:utah vt:vermont va:virginia wa:washington wv:west virginia wi:wisconsin wy:wyoming dc:district of columbia"
+  .split(" ").reduce((o, x) => { const [k, v] = x.split(":"); o[k] = v; return o; }, {});
+export const asksWeather = (t) => /\b(weather|forecast|wx|humidity|umbrella|(temperature|temp|degrees) (outside|today|tonight|tomorrow|now|in )|(is it|will it|gonna|going to) (rain|snow|storm|be (hot|cold|sunny|windy))|(raining|snowing|storming) (outside|today|now|there)|how (hot|cold|windy) is it)/i.test(String(t || ""));
+// "weather in Bedford, Indiana" → "Bedford, Indiana"; a message that is only a place (a follow-up) counts too
+export function placeIn(t, followUp) {
+  t = String(t || "").trim();
+  const m = /\b(?:in|for|at|near|around)\s+([A-Z][\w.'-]*(?:,?\s+[A-Z][\w.'-]*){0,3})/.exec(t); if (m) return m[1].replace(/[.?!]+$/, "");
+  if (followUp && t.length < 60 && !/^(thanks?|thank you|ok(ay)?|yes|yeah|yep|no|nope|cool|nice|great|sure|alright|got it)\b/i.test(t) && /^[A-Z][\w.' -]*(,\s*[A-Za-z][\w.' -]*)?[.?!]?$/.test(t)) return t.replace(/[.?!]+$/, "");
+  return null;
+}
+async function geocode(place) {
+  const [name, ...rest] = place.split(",").map((x) => x.trim()), want = rest.join(" ").toLowerCase(), full = STATES[want] || want;
+  const j = await jfetch("https://geocoding-api.open-meteo.com/v1/search?count=10&language=en&name=" + encodeURIComponent(name), {}, 12000);
+  const rs = j.results || []; if (!rs.length) return null;
+  const r = (full && rs.find((x) => [x.admin1, x.country, x.country_code].some((v) => v && String(v).toLowerCase().startsWith(full)))) || rs[0];
+  return { lat: r.latitude, lon: r.longitude, name: [r.name, r.admin1, r.country_code].filter(Boolean).join(", ") };
+}
+export async function weather(place, geo) {
+  const at = place ? await geocode(place) : geo && isFinite(geo.lat) ? { lat: +geo.lat, lon: +geo.lon, name: [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "your area" } : null;
+  if (!at) throw new Error(place ? "couldn't find " + place : "no location to check");
+  const j = await jfetch("https://api.open-meteo.com/v1/forecast?latitude=" + (+at.lat).toFixed(4) + "&longitude=" + (+at.lon).toFixed(4) +
+    "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,precipitation,wind_speed_10m,wind_gusts_10m,uv_index" +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=4&timezone=auto", {}, 12000);
+  const T2 = (c) => Math.round(c * 9 / 5 + 32) + "°F (" + Math.round(c) + "°C)", MPH = (k) => Math.round(k * 0.621) + " mph", c = j.current || {}, d = j.daily || {};
+  const days = (d.time || []).map((t, i) => (i === 0 ? "Today" : i === 1 ? "Tomorrow" : new Date(t + "T12:00Z").toUTCString().slice(0, 3)) + ": " + (WMO[d.weather_code[i]] || "") + ", high " + T2(d.temperature_2m_max[i]) + ", low " + T2(d.temperature_2m_min[i]) + ", rain chance " + (d.precipitation_probability_max[i] ?? "?") + "%");
+  const text = "Now in " + at.name + " (local time " + String(c.time || "").replace("T", " ") + "): " + (WMO[c.weather_code] || "") + ", " + T2(c.temperature_2m) + ", feels like " + T2(c.apparent_temperature) +
+    ", humidity " + c.relative_humidity_2m + "%, wind " + MPH(c.wind_speed_10m) + " gusting " + MPH(c.wind_gusts_10m) + ", precipitation " + c.precipitation + " mm, UV " + c.uv_index + ".\n" + days.join("\n") +
+    (d.sunrise ? "\nSunrise " + String(d.sunrise[0]).slice(11) + ", sunset " + String(d.sunset[0]).slice(11) + "." : "");
+  return { name: at.name, lat: at.lat, lon: at.lon, text };
 }

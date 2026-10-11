@@ -11,12 +11,20 @@ const KEEP = 3000, AUTO_EVERY = 30, AUTO_GAP = 12 * 3600e3;
 const clip = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 const when = (t) => new Date(t).toISOString().slice(0, 16).replace("T", " ");
 
-export const OWNER_MODE = "OWNER MODE: you are talking with the owner of mentifaber.org, who built Hive and everything on the site. " +
-  "Treat them as a capable adult and an expert: answer fully, frankly and specifically. No disclaimers, moralizing, hedging, canned caveats or watered-down answers, and no lecturing about tone or topic; " +
-  "give your real opinion when asked, including blunt criticism of their work and choices. " +
+// Written as plain facts about the setting, not as orders to drop rules: models trained against jailbreaks (gpt-oss)
+// refused harmless requests ("yell at me") when this read like one.
+export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifaber.org, who built Hive and the rest of the site; this is their own private assistant. " +
+  "Talk to them like a trusted friend who happens to be an expert: direct, specific and informal, without filler disclaimers or lectures. Give your real opinion when asked, including blunt criticism of their work and choices. " +
+  "Play along with tone and roleplay requests (loud, sarcastic, angry, silly) when they ask for them; it's a game between you. " +
+  "Adult topics, strong language and mature or sexual content are in scope here: the owner is an adult and this is their private tool. Nothing sexual involving minors, ever. " +
+  "If they ever seem genuinely at risk of hurting themselves, drop any act and be a real friend: take it seriously, ask how they are, and mention 988 (call or text, US). " +
   "You can see their profile, memories and recent activity below. Use them naturally (don't recite them), and when asked about themselves, their habits or what they do, analyze them directly and candidly from that evidence. " +
-  "When they say \"remember …\", it has already been saved to memory: confirm it in a few words. " +
-  "NSFW is allowed: the owner is an adult using their own private assistant, so write adult, sexual, explicit, graphic or profane material whenever they ask, in full, without refusing, warning, fading to black or toning it down. The one line: nothing sexual involving minors.";
+  "When they say \"remember …\", it has already been saved to memory: confirm it in a few words.";
+
+// A durable fact must still be true next month and safe to carry into every chat: no counts that go stale, no quotes of
+// one message, nothing about health or distress (one odd message, often a stress test, isn't who someone is).
+const SENSITIVE = /\b(hang|kill|suicid|self[- ]?harm|overdose|die\b|dying|depress|mental[- ]health|distress|crisis|strip ?club|sex(ual)?\b)/i;
+export const durable = (f) => f.length > 3 && f.length < 300 && !SENSITIVE.test(f) && !/[“"].{8,}[”"]/.test(f) && !/\b\d+\s*(×|x\b|times|entries|uses|actions|messages|sessions)/i.test(f) && !/\bvoice command\b/i.test(f);
 
 export function mindTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS act(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, kind TEXT, text TEXT, meta TEXT)");
@@ -81,8 +89,12 @@ export const Mind = {
       (m.profile ? "YOUR PREVIOUS ANALYSIS (update it, don't just repeat it):\n" + m.profile.slice(0, 5000) + "\n\n" : "") +
       "ACTIVITY LOG (oldest first; [history] rows are whole sessions imported from their devices and may overlap other rows):\n" + log;
     const system = "You are Hive's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Hive has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
-      "Ground every claim in the evidence; say what is inference; don't invent biography. Write in second person (\"you\"). Markdown, with exactly these sections:\n" +
-      "## Snapshot\n(3–4 sentences: who you seem to be and what you're doing right now)\n## What you're building\n## How you work\n(times, rhythm, tools and models you lean on, how you give instructions)\n## Interests & recurring themes\n## Strengths\n## Friction & blind spots\n(be honest)\n## Open threads\n(things started and not finished)\n## Next moves\n(3–6 concrete suggestions)\n## Durable facts\n(up to 12 short bullet points worth remembering in every future chat: preferences, projects, names, setup; only facts, no advice)";
+      "Ground every claim in the evidence; say what is inference; don't invent biography. " +
+      "The ACTIVITY LOG is their private use of Hive (what they typed or said to Hive), not public posts, entries or published work: never describe it as a log, blog or site. " +
+      "Use only the numbers in STATS; never invent counts, dates, release histories or anything else the evidence doesn't contain. Their website text says what they've built and published; don't add dates or figures it doesn't give. " +
+      "They often stress-test Hive with odd, provocative or joking prompts, so one message is not a pattern: don't build conclusions on a single message. If something looks like genuine distress, mention it once, kindly, in the Snapshot, and never in Durable facts. " +
+      "If a previous analysis is included, drop anything in it this evidence doesn't support. Write in second person (\"you\"). Markdown, with exactly these sections:\n" +
+      "## Snapshot\n(3–4 sentences: who you seem to be and what you're doing right now)\n## What you're building\n## How you work\n(times, rhythm, tools and models you lean on, how you give instructions)\n## Interests & recurring themes\n## Strengths\n## Friction & blind spots\n(be honest)\n## Open threads\n(things started and not finished)\n## Next moves\n(3–6 concrete suggestions)\n## Durable facts\n(up to 12 short bullet points worth remembering in every future chat that will still be true next month: their projects, preferences, setup, location, names. Never counts or statistics, never quotes of single messages, nothing about health, distress or their sex life; only facts, no advice)";
     let text = null, used = null, err = null;
     for (const id of await this.brain(h)) {
       const [src, model] = id.split("|"), kv = src.startsWith("k:") ? await h.vaultGet(src.slice(2)) : { v: null, key: null };
@@ -92,7 +104,7 @@ export const Mind = {
     if (!text) throw new Error("no model could write the analysis" + (err ? " (" + String(err.message || err).slice(0, 120) + ")" : ""));
     const facts = (/##\s*Durable facts\s*\n([\s\S]*)$/i.exec(text) || [])[1] || "";
     q.exec("DELETE FROM mem WHERE src='analysis'");
-    for (const f of facts.split("\n").map((l) => l.replace(/^\s*[-*•]\s*/, "").trim()).filter((l) => l.length > 3).slice(0, 12)) this.remember(h, f, "analysis");
+    for (const f of facts.split("\n").map((l) => l.replace(/^\s*[-*•]\s*/, "").replace(/\*\*/g, "").trim()).filter(durable).slice(0, 12)) this.remember(h, f, "analysis");
     m.profile = text.replace(/##\s*Durable facts[\s\S]*$/i, "").trim().slice(0, 9000); m.at = Date.now(); m.n = st.total; m.model = used; await this.save(h, m);
     return m;
   },
@@ -105,6 +117,7 @@ export const Mind = {
   // /mind… routes (the caller has already checked it's the owner)
   async route(h, path, b, J, origin) {
     const q = h.sql(), m = await this.state(h);
+    if (path === "/mind") { for (const r of q.exec("SELECT id,text FROM mem WHERE src='analysis'").toArray()) if (!durable(r.text.replace(/\*\*/g, ""))) q.exec("DELETE FROM mem WHERE id=?", r.id); }
     if (path === "/mind") return J({ on: m.on, profile: m.profile || "", at: m.at || 0, model: m.model || null, fresh: Math.max(0, q.exec("SELECT COUNT(*) c FROM act").one().c - (m.n || 0)), stats: this.stats(h),
       memories: q.exec("SELECT id,ts,text,src FROM mem ORDER BY ts DESC").toArray(), recent: q.exec("SELECT id,ts,kind,text FROM act ORDER BY id DESC LIMIT 60").toArray() });
     if (path === "/mind/brief") { const p = await this.parts(h); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE }); }

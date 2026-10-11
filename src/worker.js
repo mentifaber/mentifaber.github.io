@@ -554,6 +554,7 @@ export default {
       }
       if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");
+        const cf = req.cf || {}; h.set("x-geo", JSON.stringify({ city: cf.city, region: cf.region, country: cf.country, lat: cf.latitude, lon: cf.longitude })); // where the visitor is, for "what's the weather?"
         return env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(req, { headers: h }));
       }
       if (route === "thoughtform") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req); // Thoughtform for AI agents (boards live with Tether's)

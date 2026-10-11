@@ -7,6 +7,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE } from "./hive-mind.js";
+import { asksWeather, placeIn, weather } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -19,17 +20,15 @@ const CF_MODELS = [
   ["@cf/qwen/qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", ["coder", "tester", "optimizer"]],
   ["@cf/openai/gpt-oss-20b", "GPT-OSS 20B", ["coder", "tester", "optimizer"]],
   ["@cf/mistralai/mistral-small-3.1-24b-instruct", "Mistral Small 3.1", ["writer", "designer", "researcher"]],
-  ["@cf/google/gemma-3-12b-it", "Gemma 3 12B", ["writer", "designer"]],
   ["@cf/aisingapore/gemma-sea-lion-v4-27b-it", "SEA-LION 27B", ["writer", "researcher"]],
   ["@cf/meta/llama-3.1-70b-instruct", "Llama 3.1 70B", ["architect", "writer", "critic"]],
-  ["@cf/ibm-granite/granite-4.0-h-micro", "Granite 4.0 Micro", ["tester", "writer"]],
+  ["@cf/ibm-granite/granite-4.0-h-micro", "Granite 4.0 Micro", []], // [] = chat only: too small to hold up a swarm task
   ["@cf/meta/llama-3.1-8b-instruct-fast", "Llama 3.1 8B", ["writer", "tester", "researcher"]],
-  ["@cf/meta/llama-3.2-3b-instruct", "Llama 3.2 3B", ["researcher", "writer"]],
-  ["@cf/meta/llama-3.2-1b-instruct", "Llama 3.2 1B", ["writer"]],
-  ["@hf/nousresearch/hermes-2-pro-mistral-7b", "Hermes 2 Pro 7B", ["writer", "researcher"]],
-  ["@cf/deepseek-ai/deepseek-math-7b-instruct", "DeepSeek Math 7B", ["tester", "researcher"]],
-  ["@hf/google/gemma-7b-it", "Gemma 7B", ["writer"]],
-  ["@cf/mistral/mistral-7b-instruct-v0.1", "Mistral 7B", ["writer"]],
+  ["@cf/meta/llama-3.2-3b-instruct", "Llama 3.2 3B", []],
+  ["@cf/meta/llama-3.2-1b-instruct", "Llama 3.2 1B", []],
+  ["@hf/nousresearch/hermes-2-pro-mistral-7b", "Hermes 2 Pro 7B", []],
+  ["@hf/google/gemma-7b-it", "Gemma 7B", []],
+  ["@cf/mistral/mistral-7b-instruct-v0.1", "Mistral 7B", []],
 ];
 // Keyed providers: OpenAI-compatible chat endpoints, used only when their secret is set.
 const KEYED = [
@@ -46,7 +45,7 @@ const ROLES = {
   tester: "Find bugs and missing cases in the work given; list concrete fixes, or the corrected code.",
   security: "Audit the work for security and privacy problems (injection, secrets, unsafe input, auth); give the exact fixes.",
   optimizer: "Make the finished work faster, smaller and cleaner without changing what it does; return the improved version.",
-  critic: "Review the work against the brief. Reply APPROVE, or REDO with the exact problems.",
+  critic: "Review one task's work. Reply APPROVE, or REDO with the exact problems.",
   integrator: "Combine all approved work into the single final deliverable.",
 };
 // Pull the first JSON value out of a model reply (code fences, chatter and <think> blocks around it are fine).
@@ -65,7 +64,10 @@ const BUILTIN_PLAN = { tasks: [
   { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
 ] };
 const STUDIO_DAY = 60, IMAGINE_DAY = 8, MAX_KEYS = 500;
-const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, TICK = 1500;
+const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, TICK = 1500, SLOW_TICK = 75e3;
+// models that think before they answer: they need room for both, or the answer comes back empty or cut off
+const THINKS = /qwq|deepseek-r1|-r1-|gpt-oss|qwen3(?!.*instruct)|\bo[134](-|$)|thinking|reason/i;
+const clean = (t) => String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*<\/think>/i, "").trim(); // its thinking isn't the work
 
 export class Hive extends DurableObject {
   sql() {
@@ -94,8 +96,8 @@ export class Hive extends DurableObject {
   }
   agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
   async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
-    const out = CF_MODELS.filter(() => this.env.AI).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
-    const ag = own && this.agentModel(await this.agentInfo()); if (ag) out.unshift({ src: "agent", model: "mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", roles: ["writer", "researcher", "coder", "critic"] });
+    const out = CF_MODELS.filter(([, , roles]) => this.env.AI && roles.length).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
+    // MENTIFABER AGENT isn't on the swarm: on CPU a task takes it minutes, and the swarm moves at the pace of its slowest member
     const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
     if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
       const all = JSON.parse(v.models || "[]").filter(isChat).sort((a, b) => this.rank(a) - this.rank(b)), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean), ids = v.pick === "*" ? all.slice(0, 40) : pick.length ? pick : all.slice(0, 4);
@@ -274,10 +276,18 @@ export class Hive extends DurableObject {
   }
   // Workers AI's free plan has a daily allowance; when it runs out, its agents rest until it resets (00:00 UTC)
   qx() { return this.quota && Date.now() < this.quota ? " AND src!='workers-ai'" : ""; }
-  agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
+  agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
+  // jobs run alongside the alarm: a slow model holds up only its own task, never the whole swarm
+  fly(pid, job) { this._fly = this._fly || {}; this._fly[pid] = (this._fly[pid] || 0) + 1; return job().catch((e) => this.say(pid, "hive", "error", String(e && e.message || e).slice(0, 200))).finally(() => { this._fly[pid]--; }); }
+  flying(pid) { return (this._fly && this._fly[pid]) || 0; }
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
-    try { const out = await this.ask(a, system, user, max); if (!out) throw new Error("empty reply"); if (a.err) q.exec("UPDATE agent SET err=NULL WHERE id=? AND pid=?", a.id, p.id); return out; }
+    let room = THINKS.test(a.model) ? Math.min(8000, Math.max(max * 3, 4000)) : max;
+    try {
+      let out = clean(await this.ask(a, system, user, room));
+      if (!out && room < 8000) { room = Math.min(8000, room * 2); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id); out = clean(await this.ask(a, system, user, room)); } // it spent everything thinking: once more with room to answer
+      if (!out) throw new Error("empty reply"); if (a.err) q.exec("UPDATE agent SET err=NULL WHERE id=? AND pid=?", a.id, p.id); return out;
+    }
     catch (e) {
       const msg = String(e && e.message || e);
       if (a.src === "workers-ai" && /4006|daily free allocation|neurons/i.test(msg)) { // out of today's allowance: rest, don't die
@@ -299,11 +309,11 @@ export class Hive extends DurableObject {
     const q = this.sql(), SYS = (role) => "You are one agent in Mentifaber Hive, a swarm building a project together. Your role: " + role.toUpperCase() + ". " + ROLES[role] + " Stay inside your task; others handle the rest.";
     if (p.status === "planning" || p.status === "replanning") {
       this.fails = this.fails || {}; const nf = this.fails[p.id] || 0;
-      const cands = [...this.agentsFor(p.id, "coordinator"), ...this.agentsFor(p.id, "architect"), ...this.agentsFor(p.id, "integrator"), ...q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), p.id).toArray()];
+      const cands = [...this.agentsFor(p.id, "coordinator"), ...this.agentsFor(p.id, "architect"), ...this.agentsFor(p.id, "integrator"), ...q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx(), p.id).toArray()];
       const coord = cands[nf % Math.max(1, cands.length)];
       if (!coord) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "no model is available to coordinate"); return; }
       const have = q.exec("SELECT id,role,title,status FROM task WHERE pid=?", p.id).toArray();
-      const out = await this.call(p, coord, "You are the COORDINATOR of an AI swarm. Split the project into 6 to 16 concrete tasks, each for one role from: " + Object.keys(ROLES).filter((r) => r !== "integrator").join(", ") + ". Use deps to order them (ids of earlier tasks). Reply ONLY with JSON: {\"title\": short project name, \"tasks\": [{\"id\":1,\"role\":\"architect\",\"title\":\"...\",\"detail\":\"...\",\"deps\":[]}]}",
+      const out = await this.call(p, coord, "You are the COORDINATOR of an AI swarm. Split the project into 6 to 16 concrete tasks, each for one role from: " + Object.keys(ROLES).filter((r) => r !== "integrator").join(", ") + ". Use deps to order them (ids of earlier tasks). If the project is a physical design (a building, floor plan, room, site, product, machine, circuit), include a designer task that draws the plans as SVG to a stated scale with labelled dimensions, and a tester task that checks every dimension, area and part count adds up and fits. Reply ONLY with JSON: {\"title\": short project name, \"tasks\": [{\"id\":1,\"role\":\"architect\",\"title\":\"...\",\"detail\":\"...\",\"deps\":[]}]}",
         "PROJECT BRIEF:\n" + p.brief + (have.length ? "\n\nEXISTING TASKS (keep their ids, add new ones after them for the owner's latest notes):\n" + JSON.stringify(have) + "\n\nOWNER NOTES:\n" + q.exec("SELECT text FROM feed WHERE pid=? AND who='you' ORDER BY ts DESC LIMIT 4", p.id).toArray().map((r) => r.text).join("\n") : ""), 1500);
       let plan = out ? jsonOf(out) : null; if (Array.isArray(plan)) plan = { tasks: plan };
       if (!plan || !Array.isArray(plan.tasks) || !plan.tasks.length) {
@@ -326,35 +336,42 @@ export class Hive extends DurableObject {
       return;
     }
     q.exec("UPDATE task SET status='open', agent=NULL WHERE pid=? AND status='claimed' AND agent LIKE 'visitor:%' AND ts<?", p.id, Date.now() - 6e5); // a visitor that never came back
+    if (!this.flying(p.id)) { // nothing is running here, so anything marked as running was lost to a restart: put it back
+      q.exec("UPDATE task SET status='open', agent=NULL WHERE pid=? AND status='claimed' AND (agent IS NULL OR agent NOT LIKE 'visitor:%')", p.id);
+      q.exec("UPDATE task SET status='review' WHERE pid=? AND status='reviewing'", p.id);
+      q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status IN ('working','reviewing') AND src!='visitor'", p.id);
+    }
     const jobs = [];
     // critics review work in review
     for (const t of q.exec("SELECT * FROM task WHERE pid=? AND status='review' ORDER BY id", p.id).toArray()) {
-      const c = this.agentsFor(p.id, "critic").find((a) => a.id !== t.agent) || this.agentsFor(p.id, "tester").find((a) => a.id !== t.agent); if (!c || jobs.length >= PARALLEL) break;
+      const c = this.agentsFor(p.id, "critic").find((a) => a.id !== t.agent) || this.agentsFor(p.id, "tester").find((a) => a.id !== t.agent); if (!c || this.flying(p.id) >= PARALLEL) break;
       q.exec("UPDATE agent SET status='reviewing', task=?, last=? WHERE id=? AND pid=?", t.id, Date.now(), c.id, p.id); q.exec("UPDATE task SET status='reviewing' WHERE id=?", t.id);
-      jobs.push((async () => {
-        const out = await this.call(p, c, SYS("critic"), "BRIEF:\n" + p.brief + "\n\nTASK #" + t.id + " (" + t.role + "): " + t.title + "\n" + t.detail + "\n\nWORK SUBMITTED:\n" + (t.output || "").slice(0, 14000) + "\n\nReply with APPROVE or REDO on the first line, then one short paragraph.", 300);
+      jobs.push(this.fly(p.id, async () => {
+        const out = await this.call(p, c, SYS("critic"), "PROJECT BRIEF (context only):\n" + p.brief + "\n\nTHE TASK UNDER REVIEW, #" + t.id + " (" + t.role + "): " + t.title + "\n" + t.detail + "\n\nWORK SUBMITTED:\n" + (t.output || "").slice(0, 14000) +
+          "\n\nJudge only this task: does the work do what THIS task asks, correctly and completely? Other tasks cover the rest of the brief, so never ask one task for the whole project. REDO only for real faults: wrong facts, numbers that don't add up or parts that don't fit, broken or unfinished code, text cut off, a contradiction of the brief, or part of this task left out. Reply with APPROVE or REDO on the first line, then one short paragraph (for REDO: the exact fixes).", 500);
         q.exec("UPDATE agent SET status=CASE WHEN status='offline' THEN 'offline' ELSE 'idle' END, task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), c.id, p.id);
         if (!out) { q.exec("UPDATE task SET status='review' WHERE id=?", t.id); return; }
-        const ok = /^\W*approve/i.test(out) || t.tries >= 2;
-        if (t.agent) q.exec("UPDATE agent SET score=COALESCE(score,0)+? WHERE id=? AND pid=?", /^\W*approve/i.test(out) ? 2 : -1, t.agent, p.id); // agents earn their place
-        q.exec("UPDATE task SET status=?, note=?, tries=tries+?, agent=CASE WHEN ? THEN agent ELSE NULL END WHERE id=?", ok ? "done" : "open", out.slice(0, 1200), ok ? 0 : 1, ok ? 1 : 0, t.id);
-        this.say(p.id, c.name, ok ? "approve" : "redo", "#" + t.id + " " + t.title + ": " + out.split("\n").slice(0, 3).join(" ").slice(0, 300));
-      })());
+        const yes = /^\W*approve/i.test(out), ok = yes || t.tries >= 2; // after two redos it moves on, and the open points go to the final pass
+        if (t.agent) q.exec("UPDATE agent SET score=COALESCE(score,0)+? WHERE id=? AND pid=?", yes ? 2 : -1, t.agent, p.id); // agents earn their place
+        q.exec("UPDATE task SET status=?, note=?, tries=tries+?, agent=CASE WHEN ? THEN agent ELSE NULL END WHERE id=?", ok ? "done" : "open", (ok && !yes ? "UNRESOLVED: " : "") + out.slice(0, 1200), ok ? 0 : 1, ok ? 1 : 0, t.id);
+        this.say(p.id, c.name, yes ? "approve" : ok ? "accept" : "redo", "#" + t.id + " " + t.title + ": " + (ok && !yes ? "accepted after 2 redos; what the reviewer still wanted goes to the final pass. " : "") + out.split("\n").slice(0, 3).join(" ").slice(0, 300));
+      }));
     }
     // idle agents claim open work for their roles
-    for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", p.id).toArray()) {
-      if (jobs.length >= PARALLEL) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
-      jobs.push((async () => {
+    for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx(), p.id).toArray().sort((x, y) => (y.score || 0) - (x.score || 0) || this.rank(x.model) - this.rank(y.model) || x.done - y.done)) {
+      if (this.flying(p.id) >= PARALLEL) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
+      jobs.push(this.fly(p.id, async () => {
         const web = t.role === "researcher" ? await this.webContext(t.title + " " + (t.detail || "").slice(0, 120), !!p.own) : "";
         const redo = t.note ? "\n\nA REVIEWER SENT THIS BACK:\n" + t.note + "\n\nPREVIOUS ATTEMPT:\n" + (t.output || "").slice(0, 6000) : "";
-        const out = await this.call(p, a, SYS(t.role), "PROJECT BRIEF:\n" + p.brief + "\n\nYOUR TASK #" + t.id + ": " + t.title + "\n" + t.detail + "\n\nWORK SO FAR:\n" + this.context(p.id, t) + web + redo, 1600);
+        const out = await this.call(p, a, SYS(t.role), "PROJECT BRIEF:\n" + p.brief + "\n\nYOUR TASK #" + t.id + ": " + t.title + "\n" + t.detail + "\n\nWORK SO FAR:\n" + this.context(p.id, t) + web + redo + "\n\nDeliver the finished work for this task only, complete (never stop mid-way), with no preamble about what you're going to do.", 3500);
         if (!out) { q.exec("UPDATE task SET status='open', agent=NULL WHERE id=?", t.id); return; }
         q.exec("UPDATE task SET status='review', output=?, ts=? WHERE id=?", out.slice(0, 60000), Date.now(), t.id);
         q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), a.id, p.id);
         this.say(p.id, a.name, "work", "#" + t.id + " " + t.role + " · " + t.title + " (" + out.length + " chars)");
-      })());
+      }));
     }
-    if (jobs.length) { await Promise.all(jobs); return; }
+    if (jobs.length) { const all = Promise.all(jobs); if (this.ctx.waitUntil) this.ctx.waitUntil(all); await Promise.race([all, new Promise((r) => setTimeout(r, +this.env.HIVE_SLOW_TICK || SLOW_TICK))]); return; } // a slow job carries on; the next tick starts the rest
+    if (this.flying(p.id)) return; // still working: not the moment to assemble
     // all done? integrate
     const left = q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c, total = q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c;
     if (total && !left && p.status !== "integrating") {
@@ -365,12 +382,17 @@ export class Hive extends DurableObject {
         const t = "# " + p.title + "\n\n_The integrators couldn't finish, so here is every approved piece of work in order._\n\n" + rows.map((r) => "## #" + r.id + " " + r.role + ": " + r.title + "\n\n" + r.output).join("\n\n---\n\n");
         q.exec("UPDATE proj SET status='done', final=? WHERE id=?", t.slice(0, 200000), p.id); this.say(p.id, "hive", "done", "put together the approved work as the result (" + t.length + " chars)"); delete this._igTried[p.id];
       };
-      const ig = [...this.agentsFor(p.id, "integrator"), ...this.agentsFor(p.id, "coder"), ...this.agentsFor(p.id, "writer")].find((a) => !tried.has(a.id));
+      const ig = [...new Map([...this.agentsFor(p.id, "integrator"), ...this.agentsFor(p.id, "coder"), ...this.agentsFor(p.id, "writer"), ...this.agentsFor(p.id, "architect")].map((a) => [a.id, a])).values()]
+        .sort((x, y) => this.rank(x.model) - this.rank(y.model) || (y.score || 0) - (x.score || 0)).find((a) => !tried.has(a.id)); // the strongest available model assembles
       if (!ig || tried.size >= 3) { stitch(); return; }
       tried.add(ig.id);
       const all = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.role + ": " + r.title + "\n" + r.output.slice(0, 9000)).join("\n\n").slice(0, 60000);
-      const out = await this.call(p, ig, SYS("integrator") + " Deliver the whole thing, not a summary or an outline of it. If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown.", "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all, 4096);
+      const open = q.exec("SELECT id,title,note FROM task WHERE pid=? AND note LIKE 'UNRESOLVED:%' ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.title + ": " + r.note.slice(12, 700)).join("\n");
+      let out = await this.call(p, ig, SYS("integrator") + " Deliver the whole thing, not a summary or an outline of it. If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown." +
+        " If it is a physical design (a building, floor plan, room, site, product, machine, circuit), the deliverable must include the drawings as inline SVG (plans, elevations, diagrams) drawn to a stated scale with labelled dimensions, and every number must agree: areas equal length × width, parts fit inside the footprint, counts and totals add up; where the team's numbers conflict, pick consistent ones and say so. Fix the reviewers' open points below. Start with the deliverable itself: no preamble.",
+        "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all + (open ? "\n\nREVIEWERS' OPEN POINTS (fix these in the final):\n" + open.slice(0, 8000) : ""), 8000);
       if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; }
+      out = out.replace(/^\s*(here(?:'s| is| are)|below is|sure|okay|certainly)[^\n]{0,200}\n+(?=```)/i, ""); // "Here is the complete file:" adds nothing
       const need = Math.min(2500, Math.round(all.length * 0.2)), fences = (out.match(/```/g) || []).length;
       if (out.length < need || fences % 2) { // a stub or cut off mid-way: not a deliverable
         q.exec("UPDATE agent SET score=COALESCE(score,0)-2 WHERE id=? AND pid=?", ig.id, p.id); q.exec("UPDATE proj SET status='working' WHERE id=?", p.id);
@@ -382,10 +404,10 @@ export class Hive extends DurableObject {
     }
     // stuck: nobody can take what's open (no idle agent with that role) → let any idle agent take it next tick
     const stuck = q.exec("SELECT * FROM task WHERE pid=? AND status='open'", p.id).toArray();
-    if (stuck.length) for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src!='visitor'" + this.qx(), p.id).toArray()) {
+    if (stuck.length) for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx(), p.id).toArray()) {
       const roles = JSON.parse(a.roles); for (const t of stuck) if (!roles.includes(t.role)) roles.push(t.role); q.exec("UPDATE agent SET roles=? WHERE id=? AND pid=?", JSON.stringify(roles), a.id, p.id);
     }
-    if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired')", p.id).one().c && !(this.quota && Date.now() < this.quota)) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
+    if (!q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired') AND src!='agent'", p.id).one().c && !(this.quota && Date.now() < this.quota)) { q.exec("UPDATE proj SET status='failed' WHERE id=?", p.id); this.say(p.id, "hive", "error", "every agent went offline"); }
   }
 
   // ── the key vault: unlimited keys, any provider, sealed at rest, owner only ──
@@ -516,6 +538,16 @@ export class Hive extends DurableObject {
     // pasted links get read
     const urls = [...new Set((last.text.match(/https?:\/\/[^\s<>"')\]]+/g) || []))].slice(0, 3);
     for (const u of urls) try { const pg = await readPage(u); sources.push({ title: pg.title, url: pg.url }); notes.push("[" + sources.length + "] PAGE " + pg.title + " — " + pg.url + "\n" + pg.text); tools.push("read " + new URL(pg.url).hostname); } catch (e) { notes.push("(could not read " + u + ": " + e.message + ")"); }
+    // the weather, from the same source as mentifaber.org/wx: wherever they name, or where they are (a place said on its own
+    // right after a weather question counts, which is how it goes in voice)
+    const said = msgs.filter((m) => m.role === "user"), prevAsk = said.length > 1 && asksWeather(said[said.length - 2].text);
+    if (asksWeather(last.text) || (prevAsk && placeIn(last.text, true))) {
+      let geo = null; try { geo = JSON.parse(req.headers.get("x-geo") || "null"); } catch (e) {}
+      const place = placeIn(last.text, !asksWeather(last.text)) || (prevAsk ? placeIn(said[said.length - 2].text) : null);
+      try { const w = await weather(place, geo); const link = new URL(req.url).origin + "/wx/?lat=" + (+w.lat).toFixed(4) + "&lon=" + (+w.lon).toFixed(4) + "&name=" + encodeURIComponent(w.name);
+        sources.push({ title: "Quick Weather · " + w.name, url: link }); notes.push("[" + sources.length + "] LIVE WEATHER from Open-Meteo, the same source as the owner's Quick Weather app (" + link + "):\n" + w.text); tools.push("checked the weather for " + w.name); }
+      catch (e) { notes.push("(the weather lookup failed: " + e.message + "; say so and suggest naming the town)"); }
+    }
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
@@ -532,7 +564,7 @@ export class Hive extends DurableObject {
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[CONTEXT FOR THIS MESSAGE]\n" + live + "\n[END CONTEXT]\n\n" + last.text;
     const system = "You are Hive, the assistant of Hive on mentifaber.org, answering through the model " + model.split("/").pop() + ". " +
-      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
+      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." + (local ? "" : " Now: " + now + ".") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
@@ -543,14 +575,14 @@ export class Hive extends DurableObject {
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
       let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
       if (await this.resting()) crew = crew.filter((c) => !c.startsWith("workers-ai|"));
-      const agm = owner && this.agentModel(await this.agentInfo());
-      const pool = [...(agm ? [agm.id] : []), ...(owner ? [...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)] : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used);
+      // MENTIFABER AGENT leads a council when it's picked, but isn't called in as a member: the council waits for its slowest draft
+      const pool = [...(owner ? [...this.models(true).filter((m) => m.id.startsWith("k:")).map((m) => m.id), ...(await this.envModels()).map((m) => m.id)] : []), ...((await this.resting()) ? [] : free.map((m) => "workers-ai|" + m))].filter((c) => c !== used);
       const ranked = () => { const by = {}; for (const id of pool) { if (this.sick(id) || tried.has(id) || (id.startsWith("workers-ai|") && this.quota && Date.now() < this.quota)) continue; (by[id.split("|")[0]] = by[id.split("|")[0]] || []).push(id); } const lists = Object.values(by).map((l) => l.sort((a, b) => this.rank(a) - this.rank(b))).sort((a, b) => this.rank(a[0]) - this.rank(b[0])); const out = []; for (let r = 0; lists.some((l) => l[r]); r++) for (const l of lists) if (l[r]) out.push(l[r]); return out; }; // best of each key first, then their seconds
       const tried = new Set(), want = owner ? 5 : 4;
       if (!crew.length) crew = ranked().slice(0, want);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const draft = async (c, n) => { const [cs, cm] = c.split("|"), t1 = Date.now(); tried.add(c); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
-        try { const kv = cs === "agent" ? { v: this.agentV(6 * 60e3), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
+        try { const kv = cs === "agent" ? { v: this.agentV(150e3), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
         catch (e) { if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
       let drafts = (await Promise.all(crew.map((c) => draft(c, crew.length)))).filter(Boolean);
       for (let wave = 0; wave < 2 && !b.crew && drafts.filter((d) => d.text).length < Math.min(3, want); wave++) { // members failed: call in the next-best models
