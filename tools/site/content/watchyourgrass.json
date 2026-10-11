@@ -1,0 +1,61 @@
+{
+ "kicker": "play · a garden that fights back",
+ "tagline": "Arena defense on a six-by-six lawn. Plant ten kinds of garden, keep six kinds of visitor off the grass, and don't let anyone reach the house.",
+ "caps": [
+  "free · no login",
+  "10 plants & terrain",
+  "endless rounds"
+ ],
+ "launchSub": "Tap to plant · phones and computers · works offline once installed",
+ "titleTail": "a garden that fights back",
+ "ledeLabel": "how it plays",
+ "story": {
+  "label": "how it plays",
+  "title": "Plant a <em>maze with thorns</em>"
+ },
+ "lede": "<p>Visitors come through the gate and walk to the house by the shortest way they can find. Ground cover can be walked on; everything else is in the way, so every plant is also a wall. Make the walk long, make it hurt, and spend your sun wisely: roses for thorns, mushrooms for spores, mint and sunflowers for income, three trees at most, and boulders nobody can move.</p><p><b>Watch Your Grass</b> (also known as Arm A Garden, depending on how well the joke is landing) was designed on paper before any code. This version rebuilds it for the browser.</p>",
+ "featuresLabel": "on the lawn",
+ "features": [
+  {
+   "t": "Ten plants and terrain",
+   "d": "grass and rose vines underfoot, a pond to wade through, roses, mushrooms, mint, sunflowers, trees, honey locust and boulders."
+  },
+  {
+   "t": "Six kinds of visitor",
+   "d": "strollers, joggers, a kid chasing a ball, an off-leash dog that digs, a mower that flattens ground cover, and the Landscaper every fifth round."
+  },
+  {
+   "t": "Never a softlock",
+   "d": "wall someone in and they trample one plant (never a boulder) to force a way through, logged so you can see it. Boulders that would seal the lawn are refused."
+  },
+  {
+   "t": "Calm on purpose",
+   "d": "every animation runs at double the first build's duration, with 1×, 2× and 3× speed when you want it, and a log you can filter."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the fixes that shaped it",
+   "html": "<p><b>Softlocks:</b> a unit with no legal move used to stop forever, so the round could never end. The fallback forces a path. <b>Tree cap:</b> three, and the increment is zero, so it never grows. <b>Timing:</b> everything doubled; the board stopped feeling frantic. <b>Palette:</b> the first background was #060e0c and read as sickly; everything moved warmer and brighter.</p>"
+  },
+  {
+   "n": "built on",
+   "html": "<p>No engine, no bundler: a DOM grid with CSS transitions, a breadth-first path for every step, and one table that scales the waves. The original ran on a Cloudflare Quick Tunnel; this one installs as an app.</p>",
+   "stack": [
+    "Vanilla JS",
+    "CSS transitions",
+    "BFS pathing",
+    "PWA"
+   ]
+  }
+ ],
+ "closing": "Keep off the grass. Or don't, and see what happens.",
+ "manifest": {
+  "orientation": "any",
+  "categories": [
+   "games"
+  ],
+  "background_color": "#0b1510",
+  "theme_color": "#0b1510"
+ }
+}

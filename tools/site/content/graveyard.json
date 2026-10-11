@@ -1,0 +1,57 @@
+{
+ "kicker": "play · a game Claude made for Anders",
+ "tagline": "Night shift at relay station MENTIFABER-1. Every satellite came down in a storm. Put relays into real orbits, route signals across the network you build, and keep the stations talking until dawn.",
+ "caps": [
+  "real orbits",
+  "14 nights + endless",
+  "a gift"
+ ],
+ "launchSub": "Staff only · sealed and server-checked",
+ "titleTail": "a night-shift orbit game",
+ "ledeLabel": "the brief",
+ "story": {
+  "label": "the brief",
+  "title": "From you, <em>to me</em>"
+ },
+ "lede": "<p>The request was a game “from you to me”, with no input on what it should be. Everything was chosen by Claude: the idea, the name, the rules, the look, the sound, the nights and their logs. <b>Graveyard Shift</b> is a quiet game about keeping people connected after the network falls down.</p>",
+ "featuresLabel": "how it plays",
+ "features": [
+  {
+   "t": "Launch with a drag",
+   "d": "satellites follow inverse-square orbits, a dotted line predicts the path before you let go, and a sideways drag snaps to a clean circle."
+  },
+  {
+   "t": "Route the signals",
+   "d": "requests appear as rings coloured by destination and hop across whatever network you've built, re-routed every frame."
+  },
+  {
+   "t": "Fourteen nights",
+   "d": "spin, moonrise, Kessler debris, solar storms, a wormhole, eclipses, priority lines and a moon base, then an endless graveyard orbit."
+  },
+  {
+   "t": "Daily Shift and badges",
+   "d": "the same sky for everyone each day, twelve badges, and letters waiting at the end."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>One page, a canvas, Web Audio (every delivery plays a pentatonic note, and longer chains climb higher), and a login the server checks before the sealed game is ever sent.</p>",
+   "stack": [
+    "Canvas",
+    "Orbital mechanics",
+    "Web Audio",
+    "AES-GCM sealed"
+   ]
+  }
+ ],
+ "scope": "<p>It was made for one person, so it's behind a login. <em>The page explains it; the game itself only opens with the badge.</em></p>",
+ "closing": "Keep them talking until the sky gets light.",
+ "manifest": {
+  "categories": [
+   "games"
+  ],
+  "background_color": "#05070f",
+  "theme_color": "#05070f"
+ }
+}

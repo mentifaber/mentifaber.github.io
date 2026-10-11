@@ -1,25 +1,35 @@
 {
-  "name": "Sideways",
+  "id": "/sideways",
+  "name": "Sideways · Mentifaber",
   "short_name": "Sideways",
-  "description": "Drift, and the music follows.",
-  "start_url": "/sideways",
+  "description": "A drifting game Claude made for Anders where the soundtrack is played by how you drive: get sideways and an arpeggio comes in, hold it and the bass and lead follow, every orb is a note on the beat. Four tracks, one boxy wagon.",
+  "start_url": "/sideways-app.html",
   "scope": "/sideways",
   "display": "standalone",
   "background_color": "#2a1633",
   "theme_color": "#2a1633",
   "icons": [
     {
-      "src": "../icons/sideways.png",
+      "src": "../icons/v2/sideways-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/sideways-512.png",
+      "src": "../icons/v2/sideways-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/sideways-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
+  ],
+  "categories": [
+    "games"
   ],
   "orientation": "any"
 }

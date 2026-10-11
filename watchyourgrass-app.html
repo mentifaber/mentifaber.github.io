@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Watch Your Grass · play</title>
+<meta name="description" content="Arena defense on a 6×6 lawn: plant ten kinds of garden, and keep six kinds of visitor off the grass.">
+<meta name="theme-color" content="#0b1510">
+<link rel="manifest" href="assets/manifests/watchyourgrass.webmanifest">
+<link rel="icon" href="assets/icons/v2/watchyourgrass.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/watchyourgrass-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Watch Your Grass"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/wyg/wyg.css">
+</head>
+<body>
+<header class="hud">
+  <b class="logo">Watch Your <span>Grass</span></b>
+  <div class="stats"><span title="Sun">☀️ <b id="sun">0</b></span><span title="Round">🌀 <b id="round">1</b></span><span title="Lawn">🏡 <b id="lawn">10</b></span><span title="Trees (cap 3)">🌳 <b id="trees">0</b>/3</span><span title="Best round">🏆 <b id="best">0</b></span></div>
+  <div class="ctl"><button id="speed" title="Game speed">1×</button><button id="go" class="pri">Send the round</button></div>
+</header>
+<main>
+  <aside class="shop" id="shop" aria-label="Plants"></aside>
+  <section class="field"><div class="board" id="board" role="grid" aria-label="The lawn"></div><div class="tip" id="tip">Plant something. They come through the gate on the left and head for the house.</div></section>
+  <aside class="side"><div class="filters" id="filters"><button data-f="all" class="on">All</button><button data-f="fight">Fights</button><button data-f="mute">Mute spawns</button></div><div class="log" id="log" role="log" aria-live="polite"></div></aside>
+</main>
+<div class="over" id="over" hidden><div class="card"><h2 id="o-t">The lawn is lost</h2><p id="o-p"></p><button class="pri" id="again">Plant again</button></div></div>
+<script src="assets/wyg/wyg.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/watchyourgrass-sw.js", { scope: "/watchyourgrass" }).catch(() => {});</script>
+</body>
+</html>

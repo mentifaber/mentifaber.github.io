@@ -1,0 +1,35 @@
+{
+  "id": "/watchyourgrass",
+  "name": "Watch Your Grass",
+  "short_name": "Watch Your G",
+  "description": "Arena defense on a 6×6 lawn: ten plant and terrain types, six kinds of visitor, drawn up on paper before a line of code and now playable in the browser.",
+  "start_url": "/watchyourgrass-app.html",
+  "scope": "/watchyourgrass",
+  "display": "standalone",
+  "background_color": "#0b1510",
+  "theme_color": "#0b1510",
+  "icons": [
+    {
+      "src": "../icons/v2/watchyourgrass-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/watchyourgrass-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/watchyourgrass-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "orientation": "any",
+  "categories": [
+    "games"
+  ]
+}

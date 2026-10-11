@@ -1,17 +1,39 @@
 {
-  "name": "Thoughtform",
+  "id": "/thoughtform",
+  "name": "Thoughtform · Mentifaber",
   "short_name": "Thoughtform",
-  "description": "A mind under siege. An original first-person shooter built from nothing but maths.",
-  "start_url": "/thoughtform",
+  "description": "A first-person shooter set inside a mind under siege, built from nothing but maths: a hand-written raymarched world, live-synthesized sound and no engines, models, textures or samples. Four regions of the mind, the Critic boss every fifth wave, seven kinds of intrusive thought including elites, four weapons, shockwave, barrier and Rewrite, an Insight to choose after every wave, milestones and a global leaderboard. Mouse and keyboard or touch.",
+  "start_url": "/thoughtform-app.html",
   "scope": "/thoughtform",
-  "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
-  "orientation": "landscape",
+  "display": "standalone",
   "background_color": "#07040f",
   "theme_color": "#07040f",
-  "categories": ["games"],
   "icons": [
-    { "src": "../icons/thoughtform.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "../icons/thoughtform-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "../icons/v2/thoughtform-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/thoughtform-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/thoughtform-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "orientation": "landscape",
+  "categories": [
+    "games"
+  ],
+  "display_override": [
+    "fullscreen",
+    "standalone"
   ]
 }

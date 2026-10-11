@@ -1,0 +1,56 @@
+{
+ "kicker": "play · a game Claude made for Anders",
+ "tagline": "The pager goes off. The logs are full of red herrings. Run real checks against a system map, pin the evidence, and name the first domino before the clock runs out.",
+ "caps": [
+  "10 incidents + endless",
+  "real checks",
+  "a rubber duck"
+ ],
+ "launchSub": "On-call only · sealed and server-checked",
+ "titleTail": "an on-call detective game",
+ "ledeLabel": "the idea",
+ "story": {
+  "label": "the idea",
+  "title": "Find the <em>first domino</em>"
+ },
+ "lede": "<p>A detective game for someone who has actually been on call. <b>Root Cause</b> hands you a broken system, a ticking clock and logs that mix normal traffic, symptoms and red herrings. Diagnose it the way you would for real, then write the postmortem: which component, what cause, and the first log line where it started.</p>",
+ "featuresLabel": "how it plays",
+ "features": [
+  {
+   "t": "A system map",
+   "d": "ten components; tapping one runs real diagnostics (dig, curl, df, openssl, pg_stat_activity, wrangler tail, git log), each costing three minutes."
+  },
+  {
+   "t": "Evidence, not guesses",
+   "d": "tap log lines to pin them; the postmortem asks for the component, the cause and the first bad line."
+  },
+  {
+   "t": "Ten incidents",
+   "d": "quick tunnel, disk full, bad deploy, expired cert, deleted DNS, runaway cron, missing index, mail loop, memory leak, purge storm. Then an endless rotation."
+  },
+  {
+   "t": "The duck",
+   "d": "a rubber duck asks Socratic questions for a five-minute penalty."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>One page, hand-written incidents with their logs and checks, and the same sealed, server-checked login as the other gifts.</p>",
+   "stack": [
+    "Vanilla JS",
+    "Hand-built incidents",
+    "AES-GCM sealed"
+   ]
+  }
+ ],
+ "scope": "<p>Made for one person, so it's behind a login. <em>The page explains it; the pager only rings for the on-call engineer.</em></p>",
+ "closing": "It's always DNS. Except when it isn't.",
+ "manifest": {
+  "categories": [
+   "games"
+  ],
+  "background_color": "#0a0b0d",
+  "theme_color": "#0a0b0d"
+ }
+}

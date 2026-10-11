@@ -1,10 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><radialGradient id="b" cx="28%" cy="18%" r="105%"><stop offset="0" stop-color="hsl(4 72% 34%)"/><stop offset=".55" stop-color="hsl(22 78% 14%)"/><stop offset="1" stop-color="hsl(36 80% 6%)"/></radialGradient>
-<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<clipPath id="c"><rect width="512" height="512"/></clipPath></defs>
-<g clip-path="url(#c)"><rect width="512" height="512" fill="url(#b)"/><rect width="512" height="512" fill="url(#s)"/>
-<circle cx="256" cy="256" r="150" fill="hsl(4 95% 60%)" opacity=".10"/></g>
-<g transform="translate(256 256) scale(9.2) translate(-12 -12)" fill="none" stroke-linecap="round" stroke-linejoin="round" color="hsl(4 96% 76%)">
-<g stroke="hsl(4 100% 62%)" stroke-width="5.2" opacity=".10"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><path d="M7.5 10.5h1.5l1-2 1.5 4 1-2h1.5"/></g><g stroke="hsl(4 100% 66%)" stroke-width="3" opacity=".22"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><path d="M7.5 10.5h1.5l1-2 1.5 4 1-2h1.5"/></g><g stroke="hsl(4 96% 78%)" stroke-width="1.55"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><path d="M7.5 10.5h1.5l1-2 1.5 4 1-2h1.5"/></g></g>
-
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16181d"/><stop offset="1" stop-color="#07080a"/></linearGradient>
+<linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a6e"/><stop offset="1" stop-color="#d23a3a"/></linearGradient>
+<radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff5a4a" stop-opacity=".4"/><stop offset="1" stop-color="#ff5a4a" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<circle cx="236" cy="270" r="210" fill="url(#glow)"/>
+<rect x="96" y="150" width="280" height="230" rx="54" fill="url(#body)"/>
+<rect x="128" y="182" width="216" height="104" rx="18" fill="#140708"/>
+<text x="236" y="257" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="62" font-weight="700" fill="#ffb347" letter-spacing="2">03:14</text>
+<circle cx="168" cy="330" r="15" fill="#8cff8c"/><circle cx="236" cy="330" r="15" fill="#ffd34a"/><circle cx="304" cy="330" r="15" fill="#fff"/>
+<g fill="none" stroke="#ff7a6e" stroke-width="13" stroke-linecap="round"><path d="M404 196c20 22 20 66 0 88"/><path d="M436 166c38 40 38 108 0 148" opacity=".55"/></g>
 </svg>

@@ -1,0 +1,53 @@
+{
+ "kicker": "play · a game Claude made for Anders",
+ "tagline": "A drifting game at golden hour where the soundtrack is played by how you drive. Get sideways and an arpeggio comes in; hold it and the bass and lead follow; every orb is a note on the beat.",
+ "caps": [
+  "the drift plays the song",
+  "four tracks",
+  "a gift"
+ ],
+ "launchSub": "Wagon key required · sealed and server-checked",
+ "titleTail": "a drift game that plays the song",
+ "ledeLabel": "the idea",
+ "story": {
+  "label": "the idea",
+  "title": "Music you <em>drive</em>"
+ },
+ "lede": "<p>Cruising gets you a pad and drums. Drift and an arpeggio joins; at ×2 a bassline comes in; at ×4 an improvised lead takes off. Orbs on the track play as notes quantised to the next sixteenth, so a clean line through them is a melody. <b>Sideways</b> is a cozy game about one boxy wagon and a long, warm evening.</p>",
+ "featuresLabel": "what's in it",
+ "features": [
+  {
+   "t": "Adaptive music",
+   "d": "layers that arrive and leave with your drift multiplier, all synthesised live."
+  },
+  {
+   "t": "Four tracks",
+   "d": "each with its own key, tempo and palette, unlocking in order with star goals."
+  },
+  {
+   "t": "Six paint colours",
+   "d": "for the one car that matters."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>A canvas, a small drift-physics model, Web Audio scheduled on a musical clock, and a sealed, server-checked login.</p>",
+   "stack": [
+    "Canvas",
+    "Web Audio",
+    "AES-GCM sealed"
+   ]
+  }
+ ],
+ "scope": "<p>Made for one person, so it's behind a login. <em>The page explains it; the wagon needs its key.</em></p>",
+ "closing": "Slide into the light. The song follows.",
+ "manifest": {
+  "categories": [
+   "games"
+  ],
+  "background_color": "#2a1633",
+  "theme_color": "#2a1633",
+  "orientation": "any"
+ }
+}
