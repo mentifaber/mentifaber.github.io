@@ -30,6 +30,25 @@ export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifab
 const SENSITIVE = /\b(hang|kill|suicid|self[- ]?harm|overdose|die\b|dying|depress|mental[- ]health|distress|crisis|strip ?club|sex(ual)?\b)/i;
 export const durable = (f) => f.length > 3 && f.length < 300 && !SENSITIVE.test(f) && !/[“"].{8,}[”"]/.test(f) && !/\b\d+\s*(×|x\b|times|entries|uses|actions|messages|sessions)/i.test(f) && !/\bvoice command\b/i.test(f);
 
+// The site's own project index: every project on the front page with its real status, read from the JSON list the
+// page is built from. Models reading the page as text took the map's colour key ("private · concept · dormant") for the
+// site's state and invented the rest; this gives them the facts instead. Cached for an hour.
+const SITE_TTL = 3600e3;
+export async function siteIndex(h, origin) {
+  if (h._site && Date.now() - h._site.at < SITE_TTL) return h._site.list;
+  let html = "";
+  try { if (h.env.ASSETS) { const r = await h.env.ASSETS.fetch(new Request((origin || "https://mentifaber.org") + "/index.html")); if (r.ok) html = await r.text(); } } catch (e) {}
+  if (!html && origin) try { const r = await fetch(origin + "/", { signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined }); if (r.ok) html = await r.text(); } catch (e) {}
+  const list = [];
+  for (const m of html.matchAll(/\{"href": "[^"]*", "name": "[^"]*", "desc": "(?:[^"\\]|\\.)*", "status": "[^"]*"[^}]*\}/g)) try { const j = JSON.parse(m[0]); list.push({ name: j.name, status: j.status, desc: j.desc, href: j.href }); } catch (e) {}
+  if (list.length) h._site = { at: Date.now(), list };
+  return list;
+}
+export const siteText = (list) => !list.length ? "" : "THE OWNER'S SITE, mentifaber.org: every project on its front page, with its real status (live = public and working; build = being built; concept = an idea; private = owner-only; stalled = paused; music = the music catalogue). " +
+  "This is the full, current list: never invent a project's status, files, repos or progress beyond it and what the owner has said; if you don't know, say so. (The front page's map key \"private · concept · dormant\" is just a colour legend, not the site's state.)\n" +
+  ["live", "build", "concept", "private", "stalled", "music"].map((st) => { const ps = list.filter((p) => p.status === st); return ps.length ? st.toUpperCase() + " (" + ps.length + "):\n" + ps.map((p) => "- " + p.name + " (/" + p.href.replace(/^\/+/, "") + "): " + clip(p.desc, 140)).join("\n") : ""; }).filter(Boolean).join("\n");
+export const asksAboutWork = (t) => /\b(projects?|audit|my (site|website|work|portfolio|apps?)|mentifaber\.org|what (i|I) (do|build|built|make|made)|analy[sz]e me|status of|roadmap|what's (live|stuck|unfinished))\b/i.test(String(t || ""));
+
 export function mindTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS act(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, kind TEXT, text TEXT, meta TEXT)");
   q.exec("CREATE TABLE IF NOT EXISTS mem(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, text TEXT, src TEXT)");
@@ -82,14 +101,15 @@ export const Mind = {
     const acts = q.exec("SELECT ts,kind,text,meta FROM act ORDER BY id DESC LIMIT 400").toArray().reverse();
     const mem = q.exec("SELECT text,src FROM mem ORDER BY ts").toArray(), proj = q.exec("SELECT title,brief,status,ts FROM proj ORDER BY ts DESC LIMIT 40").toArray();
     if (!acts.length && !proj.length && !mem.length) throw new Error("there's nothing to analyze yet: use Hive for a while, or import your sessions");
-    let site = ""; if (origin) try { const pg = await Promise.race([readPage(origin + "/"), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]); site = clip(pg.text, 3500); } catch (e) {}
+    let site = ""; try { site = siteText(await siteIndex(h, origin)); } catch (e) {}
+    if (!site && origin) try { const pg = await Promise.race([readPage(origin + "/"), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]); site = "THEIR WEBSITE'S FRONT PAGE (as text):\n" + clip(pg.text, 3500); } catch (e) {}
     let log = "", room = 26000; for (const a of [...acts].reverse()) { const line = when(a.ts) + " [" + a.kind + "] " + clip(a.text, a.kind === "history" ? 700 : 260) + "\n"; if (line.length > room) break; log = line + log; room -= line.length; }
     const st = this.stats(h);
     const user = "Everything Hive has on its owner:\n\n" +
       "STATS (last 90 days): " + JSON.stringify({ entries: st.last90, kinds: st.kinds, activeDays: st.activeDays, busiestHoursUTC: st.hoursUTC.map((n, i) => [i, n]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0] + ":00"), favouriteModels: st.models, projects: st.projects }) + "\n\n" +
       (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + x.text + (x.src === "analysis" ? " (from the last analysis)" : "")).join("\n") + "\n\n" : "") +
       (proj.length ? "SWARM PROJECTS:\n" + proj.map((p) => "- " + when(p.ts) + " " + clip(p.title, 80) + " [" + p.status + "]: " + clip(p.brief, 300)).join("\n") + "\n\n" : "") +
-      (site ? "THEIR WEBSITE'S FRONT PAGE (mentifaber.org, which they built):\n" + site + "\n\n" : "") +
+      (site ? site + "\n\n" : "") +
       (current(m) ? "YOUR PREVIOUS ANALYSIS (update it, don't just repeat it):\n" + m.profile.slice(0, 5000) + "\n\n" : "") +
       "ACTIVITY LOG (oldest first; [history] rows are whole sessions imported from their devices and may overlap other rows):\n" + log;
     const system = "You are Hive's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Hive has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +

@@ -6,7 +6,7 @@
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
 import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
-import { Mind, mindTables, OWNER_MODE } from "./hive-mind.js";
+import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -548,6 +548,8 @@ export class Hive extends DurableObject {
         sources.push({ title: "Quick Weather · " + w.name, url: link }); notes.push("[" + sources.length + "] LIVE WEATHER from Open-Meteo, the same source as the owner's Quick Weather app (" + link + "):\n" + w.text); tools.push("checked the weather for " + w.name); }
       catch (e) { notes.push("(the weather lookup failed: " + e.message + "; say so and suggest naming the town)"); }
     }
+    // their projects as the site lists them, so audits and status questions start from facts
+    if (owner && asksAboutWork(last.text)) try { const st = siteText(await siteIndex(this, new URL(req.url).origin)); if (st) { notes.push(st); tools.push("read your site's project index"); } } catch (e) {}
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
@@ -593,12 +595,13 @@ export class Hive extends DurableObject {
       const failed = drafts.filter((d) => d.error); tools.push("council of " + good.length + (failed.length ? " · " + failed.length + " couldn't answer" : ""));
       const brief = good.map((d, k) => "DRAFT " + String.fromCharCode(65 + k) + " (" + d.model.split("|").pop().split("/").pop() + "):\n" + d.text.slice(0, 7000)).join("\n\n");
       if (!v && (await this.resting()) && owner) await tryIn();
-      text = good.length ? await complete(this.env, v, key, model, system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Do not mention drafts by letter unless it helps the user.", [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }], Math.min(8192, +b.max || 3000)) : null;
+      const leadSys = system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Drafts sometimes invent specifics (numbers, statuses, files, repos, settings): keep a specific only if the MATERIAL, the profile or the user's own words support it, otherwise drop it or mark it as a guess. Finish the whole answer; if it would be very long, tighten it rather than stopping mid-way. Do not mention drafts by letter unless it helps the user.", leadMsgs = [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }];
+      text = good.length ? await complete(this.env, v, key, model, leadSys, leadMsgs, Math.min(8192, +b.max || 6000)).catch(async (e) => { if (/max_tokens|max tokens|maximum|too large|context length/i.test(String(e.message || e))) return complete(this.env, v, key, model, leadSys, leadMsgs, 3000); throw e; }) : null; // some models cap a reply at 4096
       if (!text) text = await complete(this.env, v, key, model, system + (failed.length ? "\n\nNOTE: the user asked for Hive's council, but none of the " + failed.length + " models called could answer right now (" + failed.map((d) => d.model.split("|").pop().split("/").pop() + ": " + d.error.slice(0, 80)).join("; ") + "). Say so in one sentence, then answer yourself." : ""), msgs, 3000);
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used });
     }
     if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
-      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 3000)); // the agent gets every token its memory leaves free
+      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 4096)); // the agent gets every token its memory leaves free
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
       const ping = setInterval(() => w.write(enc.encode(": still thinking\n\n")).catch(() => {}), 15000); // keeps the line open while a slow model reads
       (async () => {
@@ -622,7 +625,7 @@ export class Hive extends DurableObject {
       })();
       return new Response(readable, { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
     }
-    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 3000))); }
+    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 4096))); }
     catch (e) {
       if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
