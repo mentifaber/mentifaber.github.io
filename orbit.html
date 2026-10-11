@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orbit Watch — live satellite passes, propagated in your browser · Mentifaber</title>
+<meta name="description" content="Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, the day-night line, and every pass over you, with the ones you can see by eye marked.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Orbit Watch — live satellite passes, propagated in your browser · Mentifaber"><meta property="og:description" content="Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, the day-night line, and every pass over you, with the ones you can see by eye marked."><meta property="og:image" content="https://mentifaber.org/assets/previews/orbit.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/orbit.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/orbit-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/orbit-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Orbit Watch"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/orbit.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=bd19383b">
+<style>:root{--h:205}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#world">Sky &amp; World</a> / Orbit Watch</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">sky &amp; world · live satellites</span>
+    <h1 class="long">Orbit Watch</h1>
+    <div class="who"><span class="tile" style="--h:205" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(-25 12 12)"/><circle cx="12" cy="12" r="2.6"/><circle cx="19.6" cy="8.3" r="1.4" fill="currentColor"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">SGP4 in the browser</span><span class="chip">passes over you</span><span class="chip">works offline</span></div></div>
+    <p class="tag" style="margin-top:22px">Where every satellite is right now, where it's going, and when it next crosses your sky, propagated with SGP4 right in your browser from CelesTrak's element sets.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Orbit Watch</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Live: the ISS by default, ten groups, any NORAD id</p>
+  </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/orbit.webp"><img src="assets/previews/orbit.png" alt="Orbit Watch, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
+
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">why this exists</span>
+  <h2>Look up at <em>the right minute</em></h2>
+  <div class="lede prose"><p>At its brightest the ISS outshines everything in the sky but the Sun and the Moon, and most people have never knowingly seen it, because nobody told them when to look. <b>Orbit Watch</b> takes the same element sets every tracker uses, runs the orbit model on your own device, and tells you the next time a satellite rises over you, where it comes from, how high it climbs, and whether you'll actually be able to see it.</p></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what it does</span>
+  <h2 class="reveal">Inside Orbit Watch</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Live map</h3><p>Every satellite in the group, the selected one's ground track (behind it dashed, ahead of it solid), its footprint (everywhere that can see it), and the day-night line with the point under the sun.</p></article><article class="card reveal"><span class="n">02</span><h3>Passes over you</h3><p>The next three days of passes: rise, highest point and set, with compass directions and times. Your location is a city-level guess from your connection until you share a better one or pick a point.</p></article><article class="card reveal"><span class="n">03</span><h3>Visible or not</h3><p>A pass is marked <em>visible</em> when the satellite is in sunlight while your sky is dark (sun below −6°), which is the only time you'll see it by eye. The others are marked as daylight or in Earth's shadow.</p></article><article class="card reveal"><span class="n">04</span><h3>Sky plot and time travel</h3><p>A polar plot of the pass across your sky, and a clock you can run at 60× or 600× or step an hour at a time. A reminder can fire two minutes before a pass while the page is open.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">how it works</span><div class="prose"><p>CelesTrak publishes two-line element sets: a satellite's orbit, fitted to radar and optical tracking at one moment (the epoch). SGP4, the standard model those elements are made for, turns them into a position at any time, accounting for Earth's oblateness and atmospheric drag. <code>satellite.js</code> runs it here; no tracking server is involved.</p><p>Element sets go through the site's own route, cached at the edge for two hours (CelesTrak asks that each set be pulled at most that often). This browser keeps the last copy, so the tracker still opens and predicts with no signal.</p></div><div class=stack><span>SGP4</span><span>satellite.js</span><span>CelesTrak</span><span>Leaflet</span><span>Cloudflare Worker</span></div></article><article class="card reveal"><span class="n">sibling to Cartograph</span><div class="prose"><p>Cartograph is the wide view of everything out there. Orbit Watch follows one object in real time. The same propagation will feed Cartograph's live-satellite layer.</p></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>SGP4 is good to about a kilometre near the epoch and drifts a few kilometres a day after it, so the elements' age is shown next to every position. Pass times are good to a few seconds for fresh elements. Visibility uses a cylindrical Earth shadow and a low-precision sun, which is plenty for "will I see it" but not for timing an eclipse entry to the second. Reminders only fire while the page stays open; there's no push server behind them.</p></div></article></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Something the size of a football pitch crosses your sky most nights. Now you'll know when.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in sky &amp; world</span>
+  <div class="related reveal"><a class="rel" href="vigil.html"><span class="tile md" style="--h:6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="15.6" cy="15.2" r="1.1" fill="currentColor"/></svg></span><span><b>Vigil</b><small>A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites…</small></span></a><a class="rel" href="cartograph.html"><span class="tile md" style="--h:228" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M2.8 16.3c1.6 1.6 7.4.4 12.4-3.1s7.4-7.6 6-8.4c-.8-.5-2.5-.1-4.4.8"/><path d="M5 5.5h.01M19.5 19h.01M8 20h.01"/></svg></span><span><b>Cartograph</b><small>A 3D atlas from the planets to the first galaxies: 140+ objects at their real positions…</small></span></a><a class="rel" href="conflict-atlas.html"><span class="tile md" style="--h:46" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.3 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.3-3.5-8.5s1-6 3.5-8.5z"/></svg></span><span><b>Conflict Atlas</b><small>Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get.…</small></span></a><a class="rel" href="crime-dashboard.html"><span class="tile md" style="--h:78" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.8-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.7-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span><span><b>Crime Intelligence</b><small>Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Orbit Watch, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Orbit Watch, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Orbit Watch"><div class="poster" style="background-image:url(assets/previews/orbit.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Orbit Watch</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "orbit", "name": "Orbit Watch", "app": "orbit-app.html", "h": 205}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
+</body>
+</html>

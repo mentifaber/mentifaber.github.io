@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orbit Watch · live</title>
+<meta name="description" content="Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, footprints, the day-night line, and the next passes over you with naked-eye visibility.">
+<meta name="theme-color" content="#060a10">
+<link rel="manifest" href="assets/manifests/orbit.webmanifest">
+<link rel="icon" href="assets/icons/v2/orbit.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/orbit-180.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="assets/orbit/ow.css">
+</head>
+<body>
+<header class="top"><b class="logo">Orbit <span>Watch</span></b><span class="pill" id="clock">—</span><span class="grow"></span>
+  <select id="group" aria-label="Satellite group"></select>
+  <input id="q" list="names" placeholder="Find a satellite or NORAD id" aria-label="Find a satellite" autocomplete="off"><datalist id="names"></datalist>
+</header>
+<main>
+  <section class="mapwrap"><div id="map"></div><div class="nomap" id="nomap" hidden>The map needs a connection; the numbers and passes on the right don't.</div>
+    <div class="tbar"><button class="btn" data-dt="-3600000" title="Back an hour">−1h</button><button class="btn now" id="now">Now</button><button class="btn" data-dt="3600000" title="Forward an hour">+1h</button><span class="sp"><button data-sp="1" class="on">1×</button><button data-sp="60">60×</button><button data-sp="600">600×</button></span></div>
+  </section>
+  <aside class="side">
+    <div class="card sel" id="sel"><p class="mute">Loading element sets…</p></div>
+    <div class="card"><div class="ch"><b>Over you</b><span class="obs" id="obs">—</span></div><div class="row2"><button class="btn sm" id="locate">Use my location</button><button class="btn sm" id="pin">Set on map</button></div><div id="next" class="next"></div></div>
+    <div class="card"><div class="ch"><b>Sky plot</b><small class="mute" id="skyl">next pass</small></div><canvas id="sky" width="300" height="300" aria-label="Sky plot of the pass"></canvas></div>
+    <div class="card"><b>Passes · next 3 days</b><ol class="passes" id="passes"></ol></div>
+    <p class="note" id="src"></p>
+  </aside>
+</main>
+<div class="toast" id="toast" hidden></div>
+<script src="assets/orbit/satellite.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="assets/orbit/land.js"></script>
+<script src="assets/orbit/ow.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/orbit-sw.js", { scope: "/orbit" }).catch(() => {});</script>
+</body>
+</html>

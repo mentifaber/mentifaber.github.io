@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Omnilogos · the lattice</title>
+<meta name="description" content="A working sample of the Omnilogos concordance: 24 verses in 15 public-domain texts, parallel, with live TF-IDF agreement and a Bayesian attestation score.">
+<meta name="theme-color" content="#0c0b08">
+<link rel="manifest" href="assets/manifests/omnilogos.webmanifest">
+<link rel="icon" href="assets/icons/v2/omnilogos.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/omnilogos-180.png">
+<link rel="stylesheet" href="assets/omni/om.css">
+</head>
+<body>
+<header class="top"><b class="logo">Omni<span>logos</span></b><span class="pill" title="The full corpus is 933,573 verses in thirty translations, local. This page carries a verbatim sample.">sample · 24 verses × 15 texts</span><span class="grow"></span>
+  <span class="pipe" aria-label="Pipeline stages"><i>fetch</i><b>normalise</b><i>ingest</i><b>tag</b><i>index</i><b>correlate</b><b>model</b><i>export</i></span>
+</header>
+<main>
+  <aside class="lat">
+    <div class="ctl">
+      <label><span>pair agreement τ <b id="tauv"></b></span><input type="range" id="tau" min="0.3" max="0.9" step="0.05" value="0.6"></label>
+      <label><span>minimum attestation <b id="minv"></b></span><input type="range" id="min" min="0.2" max="0.95" step="0.05" value="0.5"></label>
+      <p class="sum" id="sum"></p>
+      <div class="themes" id="themes"></div>
+    </div>
+    <nav class="list" id="list" aria-label="Verses"></nav>
+  </aside>
+  <section class="mid">
+    <div class="tabs" role="tablist"><button role="tab" class="on" data-tab="par">Parallel</button><button role="tab" data-tab="graph">Graph</button><span class="grow"></span><label class="tog"><input type="checkbox" id="normt"> normalised tokens</label></div>
+    <div id="par" class="par"></div>
+    <div id="graph" class="graph" hidden><canvas id="gc"></canvas><p class="gnote">Books, verses and the distinctive words they share. Tap a verse to read it.</p></div>
+  </section>
+  <aside class="agr">
+    <div class="card"><div class="ch"><b>Agreement</b><span class="seg"><button class="on" data-m="cos">TF-IDF cosine</button><button data-m="jac">Jaccard</button></span></div><div class="heat" id="heat"></div><div class="hov" id="hov">Hover a cell.</div></div>
+    <div class="card"><b>Attestation</b><div id="math" class="math"></div></div>
+    <div class="card" id="wordc"><b>Word</b><p class="mute">Tap any word in the parallel view to follow it through the sample.</p></div>
+  </aside>
+</main>
+<script src="assets/omni/data.js"></script>
+<script src="assets/omni/om.js"></script>
+</body>
+</html>

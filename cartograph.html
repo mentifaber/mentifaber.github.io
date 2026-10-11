@@ -1,288 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Cartograph — a live 3D atlas of the solar system, the stellar neighborhood, the galaxy, and the exotic."/>
-<meta property="og:title" content="Cartograph"/>
-<meta property="og:description" content="A 3D atlas of everything in orbit — planets, stars, galaxies, black holes — rendered live in the browser."/>
-<meta name="theme-color" content="#000000"/>
-<title>Cartograph</title>
-<link rel="icon" href="assets/icons/cartograph.png">
-<link rel="apple-touch-icon" href="assets/icons/cartograph.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/cartograph.png"/>
-<meta property="og:url" content="https://mentifaber.org/cartograph.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(4rem, 8vh, 6.5rem) clamp(1.5rem, 12vw, 14vw) clamp(2rem, 5vh, 3.5rem); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3.4rem, 12vw, 9rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.9; color: var(--ink); }
-.name span { color: var(--indigo); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 50ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--indigo), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo); }
-
-/* ── the stage — live 3D viewer ── */
-.stage-wrap { max-width: 900px; margin: 0 auto; padding: 0 clamp(1.5rem,6vw,6rem) 4vh; position: relative; z-index: 2; }
-.carto-stage { position: relative; width: 100%; aspect-ratio: 16/10; min-height: 380px; background: #04040a;
-  border: 1px solid var(--contour); overflow: hidden; font-family: 'IBM Plex Mono', monospace; }
-.carto-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-.cs-top { position: absolute; top: 0; left: 0; right: 0; padding: 10px 14px;
-  background: linear-gradient(180deg, rgba(4,4,10,.85) 0%, transparent 100%);
-  display: flex; align-items: center; justify-content: space-between; z-index: 5; pointer-events: none; }
-.cs-title { font-size: 10px; font-weight: 600; letter-spacing: .25em; color: #8fb0c2; text-transform: uppercase; }
-.cs-count { font-size: 10px; color: #5a6a78; }
-.cs-legend { position: absolute; top: 44px; right: 8px; background: rgba(4,4,10,.8); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 6px; padding: 8px 10px; z-index: 5; font-size: 9.5px; max-width: 152px; }
-.cs-legend h4 { font-size: 8px; color: #5a6a78; letter-spacing: .14em; margin-bottom: 6px; text-transform: uppercase; }
-.cs-li { display: flex; align-items: center; gap: 6px; color: #8a97a3; margin-bottom: 4px; }
-.cs-ld { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.cs-modes { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
-  z-index: 5; flex-wrap: wrap; justify-content: center; padding: 0 8px; width: 100%; }
-.cs-mbtn { padding: 6px 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.16); background: rgba(4,4,10,.72);
-  color: #8a97a3; font-size: 10px; letter-spacing: .03em; cursor: pointer; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
-.cs-mbtn.active { background: rgba(58,85,102,.6); border-color: #8a7050; color: #dce8ee; }
-.cs-panel { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(4,4,10,.97) 0%, rgba(4,4,10,.9) 100%);
-  border-top: 1px solid rgba(110,135,146,.3); padding: 14px 14px 18px; z-index: 8; transform: translateY(100%);
-  transition: transform .3s ease; max-height: 68%; overflow-y: auto; }
-.cs-panel.open { transform: translateY(0); }
-.cs-pname { font-size: 15px; font-weight: 600; color: #dce8ee; margin-bottom: 2px; font-family: 'Bricolage Grotesque', sans-serif; }
-.cs-ptype { font-size: 10px; color: #8fb0c2; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
-.cs-pdesc { font-size: 11.5px; color: #a9b4bd; line-height: 1.55; }
-.cs-pstats { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.cs-sbox { background: rgba(255,255,255,.05); padding: 6px 8px; border-radius: 5px; }
-.cs-slbl { font-size: 8.5px; color: #5a6a78; letter-spacing: .06em; text-transform: uppercase; }
-.cs-sval { font-size: 11px; color: #dce8ee; font-weight: 600; margin-top: 2px; }
-.cs-pclose { position: absolute; top: 12px; right: 14px; font-size: 18px; cursor: pointer; color: #5a6a78; line-height: 1; }
-.cs-hint { position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); font-size: 9.5px;
-  color: rgba(255,255,255,.28); pointer-events: none; white-space: nowrap; z-index: 4; }
-.stage-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .6rem .2rem 0; }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--indigo); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-/* ── DSC static preview ── */
-.dsc-topbar{position:absolute;top:0;left:0;right:0;height:44px;background:rgba(0,4,12,.98);
-  border-bottom:1px solid rgba(0,210,190,.14);display:flex;align-items:center;gap:8px;padding:0 10px;z-index:5;
-  font-family:'IBM Plex Mono',monospace;}
-.dsc-brand{font-size:8.5px;font-weight:600;letter-spacing:3.5px;color:#00d4c0;flex-shrink:0;line-height:1.2;
-  text-shadow:0 0 12px rgba(0,212,192,.4);}
-.dsc-sub{display:block;font-size:6px;font-weight:400;letter-spacing:2px;color:#1e4060;margin-top:2px;}
-.dsc-tabs{display:flex;gap:2px;margin-left:auto;}
-.dsc-tab{height:25px;padding:0 9px;border:1px solid rgba(0,210,190,.14);background:rgba(0,8,18,.8);
-  color:#1e4060;font-size:7px;letter-spacing:2px;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;}
-.dsc-tab.dsc-on{border-color:rgba(0,210,190,.55);color:#00d4c0;background:rgba(0,212,192,.10);}
-.dsc-objc{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#1e4060;flex-shrink:0;letter-spacing:1px;margin-left:8px;}
-.dsc-field{position:absolute;inset:44px 0 56px 0;overflow:hidden;background:radial-gradient(ellipse at 35% 55%,rgba(0,30,60,.3) 0%,transparent 65%);}
-.dsc-star{position:absolute;border-radius:50%;}
-.dsc-obj-pin{position:absolute;transform:translate(-50%,-50%);text-align:center;}
-.dsc-pin-ring{width:10px;height:10px;border-radius:50%;border:1.5px solid;margin:0 auto 3px;}
-.dsc-pin-lbl{font-family:'IBM Plex Mono',monospace;font-size:6px;letter-spacing:1.5px;color:#6ea8c8;white-space:nowrap;}
-.dsc-legend{position:absolute;top:52px;right:6px;background:rgba(0,6,16,.96);
-  border:1px solid rgba(0,210,190,.14);padding:7px 9px;font-size:7px;font-family:'IBM Plex Mono',monospace;}
-.dsc-lhd{font-size:6.5px;letter-spacing:2px;color:#1e4060;margin-bottom:6px;text-transform:uppercase;}
-.dsc-li{display:flex;align-items:center;gap:5px;color:#6ea8c8;margin-bottom:3.5px;font-size:7px;letter-spacing:.5px;}
-.dsc-ld{width:6px;height:6px;flex-shrink:0;}
-.dsc-hint-bar{position:absolute;bottom:58px;left:0;right:0;text-align:center;
-  font-family:'IBM Plex Mono',monospace;font-size:6.5px;letter-spacing:.8px;color:rgba(255,255,255,.18);}
-.dsc-modebar{position:absolute;bottom:0;left:0;right:0;height:54px;
-  background:rgba(0,2,8,.99);border-top:1px solid rgba(0,210,190,.14);
-  display:flex;align-items:center;padding:0 8px;gap:3px;overflow-x:auto;scrollbar-width:none;}
-.dsc-mbtn{flex-shrink:0;padding:6px 12px;border:1px solid rgba(0,210,190,.14);border-left:2px solid transparent;
-  background:rgba(0,4,12,.85);color:#1e4060;font-size:7px;font-family:'IBM Plex Mono',monospace;letter-spacing:2px;white-space:nowrap;}
-.dsc-mbtn.dsc-on{background:rgba(0,212,192,.07);border-color:rgba(0,210,190,.55);border-left-color:#00d4c0;color:#00d4c0;}
-
-@media (max-width: 600px) {
-  .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; }
-  .corner-tl { top: 3vh; left: 3vw; }
-  .carto-stage { aspect-ratio: 3/4; min-height: 460px; }
-  .dsc-legend { display: none; }
-  .dsc-hint-bar { display: none; }
-}
-</style>
-<style>:root{--mf-accent:hsl(228 90% 68%);--mf-glow:hsl(228 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cartograph — a 3D atlas of everything, at every scale · Mentifaber</title>
+<meta name="description" content="A 3D atlas from the planets to the first galaxies: 140+ objects at their real positions across ten views, each cited to the instrument that measured it, plus live satellites around Earth.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Cartograph — a 3D atlas of everything, at every scale · Mentifaber"><meta property="og:description" content="A 3D atlas from the planets to the first galaxies: 140+ objects at their real positions across ten views, each cited to the instrument that measured it, plus live satellites around Earth."><meta property="og:image" content="https://mentifaber.org/assets/previews/cartograph.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/cartograph.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/cartograph-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/cartograph-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartograph"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/cartograph.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=bd19383b">
+<style>:root{--h:228}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">orbital mechanics — rendered live</p>
-  <span class="mf-logo" style="--h:228" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M2.8 16.3c1.6 1.6 7.4.4 12.4-3.1s7.4-7.6 6-8.4c-.8-.5-2.5-.1-4.4.8"/><path d="M5 5.5h.01M19.5 19h.01M8 20h.01"/></svg></span>
-  <h1 class="name">Cartograph<span>.</span></h1>
-  <p class="tagline">A live 3D atlas of everything — 312+ objects across 10 data arrays, from the solar system to deep-universe structure, each with instrument-cited stats from JWST, Gaia, and EHT.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>live · Deep Space Command</span>
-</div>
-
-<div class="stage-wrap">
-  <div class="carto-stage" id="cartoStage">
-    <!-- Static preview of Deep Space Command v4.0 interface -->
-    <div class="dsc-topbar">
-      <div class="dsc-brand">STELLAR OBS<span class="dsc-sub">DEEP SPACE COMMAND // v4.0</span></div>
-      <div class="dsc-tabs">
-        <div class="dsc-tab dsc-on">BLOOM</div>
-        <div class="dsc-tab">CAPT</div>
-        <div class="dsc-tab">LYRS</div>
-        <div class="dsc-tab">KEYS</div>
-      </div>
-      <div class="dsc-objc">312 OBJECTS · 10k BG STARS</div>
-    </div>
-    <div class="dsc-field">
-      <span class="dsc-star" style="top:9%;left:7%;background:#ff8844;box-shadow:0 0 3px #ff8844;width:1.5px;height:1.5px;"></span>
-      <span class="dsc-star" style="top:14%;left:62%;background:#ff3300;width:1px;height:1px;opacity:.7;"></span>
-      <span class="dsc-star" style="top:20%;left:38%;background:#ffaa00;width:1.5px;height:1.5px;"></span>
-      <span class="dsc-star" style="top:32%;left:14%;background:#ff5500;width:1.5px;height:1.5px;"></span>
-      <span class="dsc-star" style="top:38%;left:50%;background:#ff4400;width:1px;height:1px;opacity:.6;"></span>
-      <span class="dsc-star" style="top:44%;left:26%;background:#aaaaff;box-shadow:0 0 3px #aaaaff;width:1.5px;height:1.5px;"></span>
-      <span class="dsc-star" style="top:55%;left:65%;background:#ff6600;width:1.5px;height:1.5px;"></span>
-      <span class="dsc-star" style="top:60%;left:10%;background:#ff3300;width:1px;height:1px;opacity:.5;"></span>
-      <span class="dsc-star" style="top:67%;left:78%;background:#ffee44;width:1px;height:1px;opacity:.6;"></span>
-      <span class="dsc-star" style="top:72%;left:42%;background:#ff5500;width:1.5px;height:1.5px;"></span>
-      <span class="dsc-star" style="top:80%;left:30%;background:#ff4400;width:1px;height:1px;opacity:.5;"></span>
-      <span class="dsc-star" style="top:85%;left:56%;background:#ffaa00;width:1.5px;height:1.5px;"></span>
-      <div class="dsc-obj-pin" style="top:22%;left:19%;">
-        <div class="dsc-pin-ring" style="border-color:#ffee44;box-shadow:0 0 7px #ffee44;"></div>
-        <div class="dsc-pin-lbl">SUN</div>
-      </div>
-      <div class="dsc-obj-pin" style="top:47%;left:67%;">
-        <div class="dsc-pin-ring" style="border-color:#ff7700;box-shadow:0 0 7px #ff7700;"></div>
-        <div class="dsc-pin-lbl">BETELGEUSE</div>
-      </div>
-      <div class="dsc-obj-pin" style="top:59%;left:23%;">
-        <div class="dsc-pin-ring" style="border-color:#cceeff;box-shadow:0 0 5px #cceeff;"></div>
-        <div class="dsc-pin-lbl">SIRIUS A</div>
-      </div>
-      <div class="dsc-obj-pin" style="top:34%;left:38%;">
-        <div class="dsc-pin-ring" style="border-color:#ff3300;box-shadow:0 0 4px #ff3300;width:7px;height:7px;"></div>
-        <div class="dsc-pin-lbl">PROXIMA Cen</div>
-      </div>
-    </div>
-    <div class="dsc-legend">
-      <div class="dsc-lhd">SPECTRAL KEY</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ffee44;"></span>G Yellow Dwarf</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ff9900;"></span>K Orange Dwarf</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ff3300;"></span>M Red Dwarf</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#cceeff;"></span>A/F White Star</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#aaddff;"></span>B Blue Giant</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ff7700;"></span>Supergiant</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#993300;"></span>Brown Dwarf</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#aaaaff;"></span>White Dwarf</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ff44bb;"></span>Pulsar / NS</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ff8800;"></span>Black Hole</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#44cc44;"></span>Planet</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#4488ff;"></span>Nebula</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#cc44ff;"></span>Cluster</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#7755ff;"></span>Galaxy</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#00ff88;"></span>Exoplanet</div>
-      <div class="dsc-li"><span class="dsc-ld" style="background:#ffaa44;"></span>SNR / Extreme</div>
-    </div>
-    <div class="dsc-hint-bar">◈ TAP OBJECT FOR DATA · DRAG TO ROTATE · SCROLL TO ZOOM · KEYS FOR SHORTCUTS</div>
-    <div class="dsc-modebar">
-      <div class="dsc-mbtn">SOL SYS</div>
-      <div class="dsc-mbtn dsc-on">STELLAR</div>
-      <div class="dsc-mbtn">EXOPLAN</div>
-      <div class="dsc-mbtn">REMNANTS</div>
-      <div class="dsc-mbtn">NEBULAE</div>
-      <div class="dsc-mbtn">GALAXY</div>
-    </div>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#world">Sky &amp; World</a> / Cartograph</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">sky &amp; world · a 3D atlas</span>
+    <h1 class="long">Cartograph</h1>
+    <div class="who"><span class="tile" style="--h:228" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M2.8 16.3c1.6 1.6 7.4.4 12.4-3.1s7.4-7.6 6-8.4c-.8-.5-2.5-.1-4.4.8"/><path d="M5 5.5h.01M19.5 19h.01M8 20h.01"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">ten views</span><span class="chip">true positions</span><span class="chip">every value sourced</span></div></div>
+    <p class="tag" style="margin-top:22px">From the planets to the first galaxies: every object at its real position, cited to the instrument that measured it, plus live satellites around Earth. Drag to turn it, pinch to zoom, tap anything.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Cartograph</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Ten views, from today&#x27;s planets to galaxies 13.5 billion light-years away</p>
   </div>
-  <div class="stage-cap"><span>312+ objects across 10 data arrays · instrument-cited stats</span><span>JWST · Gaia DR3 · EHT · Chandra</span></div>
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="https://mentifaber.org/Cartograph/space_map.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// sys.online · deep space command v4</span>
-    <span class="lb-title">Open Deep Space Command →</span>
-    <span class="lb-sub">Three.js · UnrealBloom · runs entirely in your browser</span>
-  </a>
-  <div class="mf-launch-cap"><span>drag to orbit · tap any object for its data</span><span>312+ objects · 10 views</span></div>
-</div>
-</div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/cartograph.webp"><img src="assets/previews/cartograph.png" alt="Cartograph, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/cartograph.webp"><img src="assets/previews/cartograph.png" alt="Cartograph — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the idea</span>
+  <h2>Everything, <em>where it actually is</em></h2>
+  <div class="lede prose"><p>Most space maps are posters: pretty, flat, and quietly wrong about where things are. <b>Cartograph</b> puts every object at its measured position (right ascension, declination and distance, turned into galactic coordinates) and lets you walk out from the planets to the first galaxies, one scale at a time. Each object carries a card with its numbers and where they came from: Gaia, Hubble, JWST, the Event Horizon Telescope, NICER.</p></div>
+</div></section>
 
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">the idea</p>
-    <h2 class="frag-title">Orbit, <em>drawn</em></h2>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">ten views</span>
+  <h2 class="reveal">Inside Cartograph</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Solar System</h3><p>The planets and dwarf planets where they are today, from JPL's mean orbital elements. Run time forward at a day, a month or a year a second, or switch to true scale to feel the emptiness.</p></article><article class="card reveal"><span class="n">02</span><h3>Neighbours, bright stars, exoplanets</h3><p>Every star system within 13 light-years at true scale, then the famous stars, then the planetary systems that changed the field: 51 Pegasi, TRAPPIST-1, WASP-39 and K2-18.</p></article><article class="card reveal"><span class="n">03</span><h3>Remnants, nebulae, the Milky Way</h3><p>Black holes from Gaia BH1 to Sagittarius A*, pulsars, magnetars, stellar nurseries and clusters, then the whole Galaxy from outside, with everything plotted at its true distance from the Sun.</p></article><article class="card reveal"><span class="n">04</span><h3>Local Group, deep space, Earth orbit</h3><p>Andromeda and the dwarfs, out to M87, the first quasar and JWST's most distant galaxies. Then back home: live satellites propagated with SGP4, the same engine Orbit Watch uses.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">how it&#x27;s drawn</span><div class="prose"><p>No WebGL and no library: a 2D canvas with a small perspective camera, glow sprites and a few thousand background stars. That keeps it light on a phone and lets it open offline. Positions are converted from J2000 equatorial coordinates with the standard galactic rotation matrix, so Sagittarius A* lands within a tenth of a degree of the Galactic Centre.</p><p>Views that span many powers of ten use a logarithmic radius and label their grid rings, so the scale is never hidden.</p></div><div class=stack><span>Canvas 2D</span><span>JPL mean elements</span><span>J2000 → galactic</span><span>SGP4</span></div></article><article class="card reveal"><span class="n">sibling to Orbit Watch</span><div class="prose"><p>Orbit Watch follows one satellite in real time. Cartograph is the wide view of everything else, and its Earth-orbit view shares Orbit Watch's propagation and element sets.</p></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>Values are rounded, and a contested distance (Betelgeuse, Deneb, Rigel) is given as a range rather than one confident number. Beyond about a billion light-years distances are light-travel time, not where those galaxies are now. The Milky Way's spiral arms are schematic; nobody has a clean photograph of them from outside. Dwarf-planet positions come from approximate elements and are good to a few degrees. <em>Rebuilt from scratch in this revamp: 140+ objects and ten views, with more to come as they're checked.</em></p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">what it is</span>
-    <p>A 3D cartograph of <b>everything, at every scale</b>. 109 real stars to 50,000 light-years, plotted from true RA/Dec/distance. 50 solar system bodies — every planet, every major dwarf planet, and 3I/ATLAS, the 2025 interstellar visitor. 27 confirmed exoplanets carrying JWST atmospheric data. 15+ black holes running stellar-mass to ultramassive, 20+ nebulae, 20+ clusters, 14 pulsars and neutron stars, 20+ galaxies, and deep-universe structure out to the edge of the observable cosmos.</p>
-    <p>Every object carries <b>8 instrument-cited data fields</b> sourced from Hubble, JWST, Gaia DR3, EHT, Chandra, NICER, and LIGO. <b>Sibling project to Orbit Watch</b> — where Orbit Watch is being built to follow a single satellite in real time, Cartograph is the wide view: everything else that's out there.</p>
-  </div>
-
-  <div class="frag">
-    <span class="tag">how it works</span>
-    <p>Ten modes, one renderer. <em>Sol Sys</em> places each planet by true orbital radius with Kepler mechanics; <em>Stellar</em> converts real RA/Dec/parallax into 3D positions for 109 stars; <em>Exoplanets</em> groups 27 confirmed worlds with JWST and Hubble observation notes; <em>Remnants</em>, <em>Nebulae</em>, <em>Clusters</em>, <em>Pulsars</em>, <em>Galaxy</em>, and <em>Deep Universe</em> each render their category at representative scale. Tap any object for its full data panel — spectral type, temperature, mass, luminosity, instrument source, and observation year. Three.js r134 with UnrealBloom post-processing, 10,000 statistically-classified background stars, GLSL twinkling shader. No plugin, no native app.</p>
-  </div>
-
-  <div class="frag">
-    <span class="tag">status</span>
-    <p>Live at <em>mentifaber.org/Cartograph</em>. All modes interactive — drag to orbit, pinch or scroll to zoom, tap any object for its data panel. Data sourced from <em>Gaia DR3 · Hubble/HST · JWST · Chandra · NICER · EHT · LIGO/Virgo · VLT ESPRESSO</em>. Next: SGP4 propagation for a live-satellite layer, shared with Orbit Watch. The groundwork already runs next door — <a href="vigil.html" style="color:inherit">Vigil</a> propagates live satellites across its world globe.</p>
-    <div class="stack-row">
-      <span>Three.js r134 / WebGL</span><span>Gaia DR3 parallax coords</span><span>JWST · Hubble · EHT</span><span>Chandra · NICER · LIGO</span>
-    </div>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>Ten views of the universe, one HTML file. Every object cited to an instrument. More added as discoveries come in.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Start at today's Earth and keep zooming out. It doesn't end where the poster did.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in sky &amp; world</span>
+  <div class="related reveal"><a class="rel" href="vigil.html"><span class="tile md" style="--h:6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="15.6" cy="15.2" r="1.1" fill="currentColor"/></svg></span><span><b>Vigil</b><small>A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites…</small></span></a><a class="rel" href="orbit.html"><span class="tile md" style="--h:205" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(-25 12 12)"/><circle cx="12" cy="12" r="2.6"/><circle cx="19.6" cy="8.3" r="1.4" fill="currentColor"/></svg></span><span><b>Orbit Watch</b><small>Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your…</small></span></a><a class="rel" href="conflict-atlas.html"><span class="tile md" style="--h:46" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.3 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.3-3.5-8.5s1-6 3.5-8.5z"/></svg></span><span><b>Conflict Atlas</b><small>Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get.…</small></span></a><a class="rel" href="crime-dashboard.html"><span class="tile md" style="--h:78" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.8-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.7-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span><span><b>Crime Intelligence</b><small>Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Cartograph, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Cartograph, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Cartograph"><div class="poster" style="background-image:url(assets/previews/cartograph.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Cartograph</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "cartograph", "name": "Cartograph", "app": "cartograph-app.html", "h": 228}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
 </body>
 </html>
