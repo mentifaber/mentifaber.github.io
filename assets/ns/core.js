@@ -54,7 +54,7 @@ NS.tagOf = async (key) => NS.hex((await NS.sha("nullspace-frequency:" + key)).su
 NS.mhz = (tag) => { const n = parseInt(tag.slice(0, 6), 16); return (100 + (n % 8000) / 100).toFixed(3); }; // a made-up dial position, just so frequencies have numbers
 NS.addFreq = async (key, name) => { const tag = await NS.tagOf(key); let f = NS.freqs.find((x) => x.tag === tag); if (!f) { f = { tag, key, name: String(name || "FREQ").slice(0, 24), rf: -1, at: Date.now() }; NS.freqs.push(f); NS.saveFreqs(); } return f; };
 NS.newKey = () => NS.b64u(crypto.getRandomValues(new Uint8Array(32)));
-NS.tuneLink = (f) => location.origin + "/nullspace#tune=" + f.key + "." + NS.b64u(enc.encode(f.name));
+NS.tuneLink = (f) => location.origin + "/nullspace-app#tune=" + f.key + "." + NS.b64u(enc.encode(f.name));
 NS.parseTune = (t) => { t = String(t || "").trim(); let m = t.match(/tune=([A-Za-z0-9_-]{43})(?:\.([A-Za-z0-9_-]*))?/) || t.match(/^NS-([A-Za-z0-9_-]{43})(?:\.([A-Za-z0-9_-]*))?$/); if (!m) return null; let name = "FREQ"; try { if (m[2]) name = dec.decode(NS.unb64u(m[2])); } catch (e) {} return { key: m[1], name }; };
 const keys = new Map();
 const keyOf = async (f) => { let k = keys.get(f.tag); if (!k) { k = await crypto.subtle.importKey("raw", NS.unb64u(f.key), "AES-GCM", false, ["encrypt", "decrypt"]); keys.set(f.tag, k); } return k; };

@@ -1,0 +1,68 @@
+{
+ "kicker": "signals · a private universe for two",
+ "tagline": "Two stars orbiting one centre of mass. Messages travel between them as light, the sky draws closer when you talk, and nobody else, not even the server, can read a word.",
+ "caps": [
+  "end-to-end encrypted",
+  "invite-only",
+  "works offline"
+ ],
+ "launchSub": "Sealed in your browser · one space · two people · installable",
+ "titleTail": "a private universe for two",
+ "ledeLabel": "why this exists",
+ "story": {
+  "label": "why this exists",
+  "title": "Not a chat window. <em>A shared sky.</em>"
+ },
+ "lede": "<p>Social apps and text messages were never built for the one person you talk to most. They're feeds, inboxes and ad surfaces with a conversation squeezed in. <b>Barycenter</b> starts from the other end: two people, one space, and a sky at the top of the screen that is the pulse of the relationship. The stars drift apart the longer it's quiet and pull together when you talk.</p><p>Everything is encrypted in the browser with a key only the two of you hold. The server keeps sealed bytes and the little it must know to deliver them: who sent it, when, how urgent.</p>",
+ "featuresLabel": "what you can send",
+ "features": [
+  {
+   "t": "Notes, letters, pulses",
+   "d": "quick notes; sealed letters that are opened on purpose; one-tap pulses that glow in the shared sky."
+  },
+  {
+   "t": "Time capsules",
+   "d": "messages that open for the other person only at a chosen moment. The server enforces the lock and opens them on time."
+  },
+  {
+   "t": "Voice, photos, video",
+   "d": "encrypted attachments, plus live voice calls and touch contact when you're both online."
+  },
+  {
+   "t": "Never miss the one that matters",
+   "d": "receipts from in-flight to answered, loud messages that re-alert until seen, and an SOS check-in that repeats until the other person taps “I'm here”."
+  },
+  {
+   "t": "Everything else you'd expect",
+   "d": "replies, edits, unsend, pins, reactions, polls, lists, countdowns, location, vanishing messages, games, a gallery and a studio."
+  },
+  {
+   "t": "Yours, on your devices",
+   "d": "history lives on the device and opens offline; an outbox sends when the signal returns; PIN lock, quiet hours, nine themes and a full decrypted export."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>AES-256-GCM in the browser with one space key, wrapped under each person's own password. A Cloudflare Durable Object relays sealed messages over WebSockets and Web Push, and opens capsules with an alarm.</p>",
+   "stack": [
+    "Web Crypto",
+    "Durable Objects",
+    "WebSockets",
+    "Web Push",
+    "WebRTC"
+   ]
+  }
+ ],
+ "scope": "<p>One space, for two people, set up once by its owner. It isn't a social network and there is no sign-up: <em>if you weren't invited, the login is all you'll see.</em> Push alerts say who and how urgent, never what was said.</p>",
+ "closing": "Two bodies, one centre of mass. The space between them is where everything happens.",
+ "manifest": {
+  "orientation": "portrait",
+  "categories": [
+   "social",
+   "lifestyle"
+  ],
+  "background_color": "#05060f",
+  "theme_color": "#05060f"
+ }
+}

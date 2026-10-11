@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NovarAC · operator console</title>
+<meta name="description" content="The NovarAC operator console: VFO, band presets, waterfall, push-to-talk and a VARA HF chat link, here in demo mode with a simulated modem.">
+<meta name="theme-color" content="#0b0703">
+<link rel="manifest" href="assets/manifests/novarac.webmanifest">
+<link rel="icon" href="assets/icons/v2/novarac.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/novarac-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="NovarAC"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/novarac/nv.css">
+</head>
+<body>
+<header class="top"><b class="logo">NOVAR<span>AC</span></b><span class="pill" id="link">NO LINK</span><span class="grow"></span><span class="pill demo" title="No modem is attached: the modem and the far station are simulated">DEMO MODEM</span><span class="utc" id="utc"></span></header>
+<main>
+  <section class="rig">
+    <div class="vfo" id="vfo" tabindex="0" aria-label="VFO frequency; drag, scroll or use arrow keys to tune"><small>VFO A</small><b id="freq">14.105.00</b><span>MHz</span><em id="mode">USB</em></div>
+    <div class="bands" id="bands"></div>
+    <div class="row"><div class="modes" id="modes"><button data-m="USB" class="on">USB</button><button data-m="LSB">LSB</button><button data-m="FM">FM</button></div><select id="rigsel" aria-label="Radio"></select></div>
+    <div class="meter"><small>S</small><div class="bar"><i id="smeter"></i></div><span id="sval">S3</span></div>
+    <canvas id="wf" aria-label="Waterfall"></canvas>
+    <button class="ptt" id="ptt">HOLD TO TRANSMIT</button>
+  </section>
+  <section class="term">
+    <form class="conn" id="conn"><input id="call" maxlength="10" placeholder="Callsign to link" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="b-link">LINK</button></form>
+    <div class="log" id="log" role="log" aria-live="polite"></div>
+    <form class="say" id="say"><span>&gt;</span><input id="txt" maxlength="400" placeholder="Type to the linked station…" autocomplete="off"><button>SEND</button></form>
+  </section>
+</main>
+<script src="assets/novarac/nv.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/novarac-sw.js", { scope: "/novarac" }).catch(() => {});</script>
+</body>
+</html>

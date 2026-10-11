@@ -41,6 +41,7 @@ APP_URL = {
   "ballast": "ballast-app.html", "vigil": "vigil-app.html", "arsenal": "arsenal-app.html", "moon-compatibility": "moon-compatibility-app.html",
   "bubble-editor": "bubble-editor-app.html", "sleep-compression": "sleep-compression-app.html", "cryptovault": "cryptovault-app.html",
   "crime-dashboard": "crime-dashboard-app.html", "muse": "muse-live.html", "weaver": "weaver-live.html",
+  "barycenter": "barycenter-app.html", "nullspace": "nullspace-app.html", "pilotfish": "pilotfish-app.html", "meshnet": "meshnet-app.html", "novarac": "novarac-app.html",
 }
 def _id(href):
     h = href.split("#")[0].split("?")[0].rstrip("/")

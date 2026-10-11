@@ -18,6 +18,8 @@ def ver(path):  # cache-busting stamp from the file's contents
     except OSError: return "0"
 
 def glyph(a, cls="tile"):
+    if os.path.exists(os.path.join(ROOT, "tools/site/icons", a["id"] + ".svg")):  # hand-drawn icon art
+        return f'<span class="{cls} pic" style="--h:{a["hue"]}" aria-hidden="true"><img src="assets/icons/v2/{a["id"]}-192.png" alt="" width="96" height="96" loading="lazy"></span>'
     return f'<span class="{cls}" style="--h:{a["hue"]}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{a["glyph"]}</svg></span>'
 
 STATUS = {"live": ("live", "Live"), "private": ("lock", "Private · login"), "build": ("build", "In the works"), "concept": ("build", "Concept"), "stalled": ("build", "Paused"), "music": ("live", "Music")}
@@ -141,6 +143,7 @@ def manifest(a, c):
          "icons": [{"src": f"../icons/v2/{a['id']}-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                    {"src": f"../icons/v2/{a['id']}-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
                    {"src": f"../icons/v2/{a['id']}-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}
+    m.update(c.get("manifest") or {})  # per-app extras: orientation, categories, colours
     json.dump(m, open(os.path.join(ROOT, f"assets/manifests/{a['id']}.webmanifest"), "w"), indent=2, ensure_ascii=False)
 
 def icon_svg(a, mask=False):  # 512 × 512 tile: the app's glyph lit in its own hue
@@ -157,12 +160,21 @@ def icon_svg(a, mask=False):  # 512 × 512 tile: the app's glyph lit in its own 
 {"" if mask else '<rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="hsl(' + str(h) + ' 85% 70%)" stroke-opacity=".28" stroke-width="3"/>'}
 </svg>"""
 
+def art_icon(i, mask=False):  # hand-drawn art (tools/site/icons/<id>.svg, a full-bleed 512 square) instead of the glyph tile
+    src = os.path.join(ROOT, "tools/site/icons", i + ".svg")
+    if not os.path.exists(src): return None
+    art = open(src, encoding="utf-8").read()
+    inner = re.sub(r"^\s*<svg[^>]*>|</svg>\s*$", "", art.strip())
+    if mask: return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">{inner}</svg>'
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><clipPath id="r"><rect width="512" height="512" rx="116"/></clipPath><g clip-path="url(#r)">{inner}</g>'
+            '<rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3"/></svg>')
+
 def icons(ids):
     d = os.path.join(ROOT, "assets/icons/v2"); os.makedirs(d, exist_ok=True)
     for i in ids:
         a = A[i]
-        open(os.path.join(d, i + ".svg"), "w").write(icon_svg(a))
-        open(os.path.join(d, i + "-mask.svg"), "w").write(icon_svg(a, True))
+        open(os.path.join(d, i + ".svg"), "w").write(art_icon(i) or icon_svg(a))
+        open(os.path.join(d, i + "-mask.svg"), "w").write(art_icon(i, True) or icon_svg(a, True))
 
 
 # ── the home page ─────────────────────────────────────────────────────────────────────────────────────────────────────

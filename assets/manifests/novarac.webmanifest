@@ -1,0 +1,35 @@
+{
+  "id": "/novarac",
+  "name": "NovarAC · Mentifaber",
+  "short_name": "NovarAC",
+  "description": "HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.",
+  "start_url": "/novarac-app.html",
+  "scope": "/novarac",
+  "display": "standalone",
+  "background_color": "#0b0703",
+  "theme_color": "#0b0703",
+  "icons": [
+    {
+      "src": "../icons/v2/novarac-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/novarac-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/novarac-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "orientation": "any",
+  "categories": [
+    "utilities"
+  ]
+}

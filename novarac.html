@@ -1,275 +1,79 @@
-<!DOCTYPE html>
-<html lang="en" class="mf-tint"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#000000">
-<title>NovarAC — HF chat with the internet switched off</title>
-<link rel="icon" href="assets/icons/novarac.png">
-<link rel="apple-touch-icon" href="assets/icons/novarac.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/novarac.png"/>
-<meta property="og:url" content="https://mentifaber.org/novarac.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<meta name="description" content="NovarAC — HF chat that works with the internet switched off. A browser-based VARA client, verified zero external URLs, air-gapped by design."/>
-<meta property="og:title" content="NovarAC"/>
-<meta property="og:description" content="HF chat with the internet switched off."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root{
-  --case:#000000;--case2:#120f0a;--panel:#120f0a;--line:rgba(242,230,207,.14);--line2:rgba(242,230,207,.30);
-  --lamp:#f2e6cf;--dim:#c4b09a;--amber:#b02a1a;--amber2:#d94030;--green:#c8a96e;--red:#b02a1a;
-  --disp:'Bricolage Grotesque',sans-serif;--mono:'IBM Plex Mono',monospace;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--case);color:var(--lamp);font-family:'Newsreader',serif;font-weight:400;font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
-::selection{background:var(--amber);color:var(--case)}
-.col{max-width:720px;margin:0 auto;padding:0 24px}.wide{max-width:940px;margin:0 auto;padding:0 24px}
-#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--green),var(--amber))}
-.gap{height:118px;position:relative}
-.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
-.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--case);transition:.5s}
-.gap.lit i{background:var(--amber);box-shadow:0 0 0 7px var(--case),0 0 16px var(--amber)}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
-h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(30px,5.6vw,52px);line-height:1.05;margin:14px auto 14px;max-width:16ch;letter-spacing:-.02em}
-h2 em{color:var(--amber);font-style:normal}
-.lede{color:var(--dim);max-width:50ch;margin:0 auto;font-size:16.5px;font-weight:300}
-.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
-.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
-h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(52px,12vw,116px);line-height:.9;letter-spacing:-.045em;margin:26px 0 16px}
-h1 em{color:var(--amber);font-style:normal}
-.tag{max-width:32ch;margin:0 auto;font-size:clamp(17px,2.3vw,21px)}
-.tag b{font-weight:600;color:var(--green)}
-.meta{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:26px}
-
-/* ------- the rig ------- */
-.rig{width:min(100%, 560px);background:linear-gradient(180deg,var(--case2),var(--panel));
-  border:1px solid var(--line2);border-radius:10px;padding:22px;box-shadow:0 22px 60px rgba(242,230,207,.35)}
-.vfd{background:#1c1710;border:1px solid var(--line);border-radius:6px;padding:18px 20px;text-align:left;
-  box-shadow:inset 0 0 34px rgba(255,176,0,.07)}
-.freq{font-family:var(--mono);font-size:clamp(34px,8vw,54px);color:var(--amber);
-  letter-spacing:.03em;text-shadow:0 0 18px rgba(255,176,0,.45);line-height:1;font-variant-numeric:tabular-nums}
-.freq small{font-size:.42em;color:var(--dim);text-shadow:none;margin-left:8px;letter-spacing:.2em}
-.vrow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;
-  font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.14em}
-.vrow b{color:var(--green);font-weight:400}
-.smeter{display:flex;gap:2px;align-items:flex-end;height:16px;margin-top:12px}
-.smeter span{width:6px;background:var(--line2);border-radius:1px;transition:background .18s}
-.smeter span.on{background:var(--amber)}
-.smeter span.pk{background:var(--red)}
-.knob{margin-top:20px}
-.knob label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:12px;text-align:left}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--line2);border-radius:3px;outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#4A3A25,#1A130C);border:1px solid var(--line2);cursor:grab;
-  box-shadow:0 3px 8px rgba(242,230,207,.35)}
-input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#2A2116;border:1px solid var(--line2);cursor:grab}
-.bands{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:18px}
-.band{font-family:var(--mono);font-size:11px;background:transparent;border:1px solid var(--line);
-  color:var(--dim);padding:8px 13px;border-radius:4px;cursor:pointer;transition:.2s}
-.band:hover{border-color:var(--amber);color:var(--amber)}
-.band.on{background:var(--amber);color:var(--case);border-color:var(--amber)}
-.ptt{margin-top:18px;width:100%;font-family:var(--mono);font-size:13px;letter-spacing:.24em;
-  text-transform:uppercase;background:var(--case2);border:1px solid var(--line2);color:var(--lamp);
-  padding:16px;border-radius:6px;cursor:pointer;transition:.12s;touch-action:manipulation;user-select:none}
-.ptt.tx{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 30px rgba(229,87,63,.45)}
-
-/* ------- chat ------- */
-.term{background:#1c1710;border:1px solid var(--line);border-radius:6px;padding:20px;
-  margin-top:30px;text-align:left;font-family:var(--mono);font-size:13px;line-height:2;min-height:190px}
-.term .rx{color:var(--green)}.term .tx{color:var(--amber)}.term .sys{color:var(--dim)}
-.term .cs{color:var(--lamp)}
-
-/* ------- generic ------- */
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-top:32px;text-align:left}
-.card{background:var(--case2);border:1px solid var(--line);border-radius:6px;padding:20px;transition:border-color .25s}
-.card:hover{border-color:var(--line2)}
-.card h4{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
-.card p{font-size:14.5px;line-height:1.55}
-.card p b{color:var(--amber);font-weight:600}
-.aside{margin:28px auto 0;max-width:52ch;color:var(--dim);font-size:15px}
-.aside b{color:var(--lamp);font-weight:600}
-footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:52ch;margin:14px auto 0}
-@media(max-width:680px){.gap{height:92px}}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
-
-/* ===== atlas brand chrome ===== */
-.contours{position:fixed;inset:0;z-index:-2;opacity:.55;pointer-events:none}
-.contours svg{width:100%;height:100%}
-.mf-grain{position:fixed;inset:0;z-index:-1;opacity:.05;mix-blend-mode:multiply;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:var(--amber);opacity:1}
-.mf-tl{top:3.2vh;left:4vw}
-.mf-return{bottom:3.2vh;left:4vw}
-.mf-return::before{content:"\2190 ";}
-.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
-@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
-</style><style>:root{--mf-accent:hsl(196 90% 68%);--mf-glow:hsl(196 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
-</head><body data-mf-terrain=".62">
-<div class="mf-grain"></div>
-<a href="index.html" class="mf-corner mf-tl">← Atlas</a>
-<a href="index.html" class="mf-corner mf-return">Return</a>
-<div class="mf-corner mf-year">MMXXVI</div>
-
-<div id="bar"></div>
-
-<header class="hero">
-  <div class="rig">
-    <div class="vfd">
-      <div class="freq" id="freq">14.105.00 <small>MHz</small></div>
-      <div class="vrow"><span>MODE <b id="mode">USB</b></span><span id="bandlbl">20 m · VARA HF</span></div>
-      <div class="smeter" id="sm"></div>
-    </div>
-    <div class="knob">
-      <label for="vfo">VFO — drag to tune</label>
-      <input type="range" id="vfo" min="1800" max="29700" value="14105" step="1" aria-label="Frequency">
-    </div>
-    <div class="bands" id="bands"></div>
-    <button class="ptt" id="ptt">Hold to transmit</button>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NovarAC — HF chat with the internet switched off · Mentifaber</title>
+<meta name="description" content="HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="NovarAC — HF chat with the internet switched off · Mentifaber"><meta property="og:description" content="HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design."><meta property="og:image" content="https://mentifaber.org/assets/previews/novarac.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/novarac.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/novarac-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/novarac-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="NovarAC"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/novarac.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=007dd7c9">
+<style>:root{--h:196}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#signals">Signals &amp; Comms</a> / NovarAC</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">signals · HF radio chat, air-gapped</span>
+    <h1>NovarAC</h1>
+    <div class="who"><span class="tile" style="--h:196" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11M9 21h6"/><circle cx="12" cy="9" r="1.6"/><path d="M8.2 5.5a5.5 5.5 0 0 0 0 7M15.8 5.5a5.5 5.5 0 0 1 0 7M5.4 3a9.5 9.5 0 0 0 0 12M18.6 3a9.5 9.5 0 0 1 0 12"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">VARA HF</span><span class="chip">283 radios via Hamlib</span><span class="chip">zero external calls</span></div></div>
+    <p class="tag" style="margin-top:22px">HF chat that works with the internet switched off. A tablet on a local hotspot drives a mini-PC that drives the radio, and every font and file is served from the box in front of you.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch NovarAC</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Operator console · demo modem in the browser · the real one runs on the box</p>
   </div>
-  <span class="mf-logo" style="--h:196" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11M9 21h6"/><circle cx="12" cy="9" r="1.6"/><path d="M8.2 5.5a5.5 5.5 0 0 0 0 7M15.8 5.5a5.5 5.5 0 0 1 0 7M5.4 3a9.5 9.5 0 0 0 0 12M18.6 3a9.5 9.5 0 0 1 0 12"/></svg></span>
-  <h1>Novar<em>AC</em></h1>
-  <p class="tag">HF chat that works with <b>the internet switched off</b>. Every font, every asset, served from the box in front of you.</p>
-  <div class="meta">formerly PyVarAC · FastAPI · VARA HF · Hamlib</div>
-</header>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/novarac.webp"><img src="assets/previews/novarac.png" alt="NovarAC, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-<div class="gap"><i></i></div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">why this exists</span>
+  <h2>Comms that survive the <em>infrastructure going away</em></h2>
+  <div class="lede prose"><p>Built for a friend who needs communications that keep working when the grid and the internet don't. HF radio reaches hundreds to thousands of miles off the ionosphere, and the VARA modem turns it into a data link. <b>NovarAC</b> (formerly PyVarAC) wraps all of it in one browser screen any ham can run from a tablet, with no Windows desktop to babysit and no assumption that the internet still exists.</p></div>
+</div></section>
 
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/novarac.webp"><img src="assets/previews/novarac.png" alt="NovarAC — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what it does</span>
+  <h2 class="reveal">Inside NovarAC</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Rig control</h3><p>A parsed Hamlib database of 283 radios from 62 manufacturers, driven through rigctld: frequency, mode, band presets and push-to-talk over CAT, DTR, RTS or VOX.</p></article><article class="card reveal"><span class="n">02</span><h3>Chat over VARA</h3><p>A WebSocket bridge to the VARA HF modem over TCP: link to a callsign and talk, with signal-to-noise and speed level on every link.</p></article><article class="card reveal"><span class="n">03</span><h3>Offline means offline</h3><p>The first build quietly pulled Google Fonts. It was stripped, five fonts are now served by the box, and the rendered page was checked for any outbound request.</p></article><article class="card reveal"><span class="n">04</span><h3>Demo mode</h3><p>With no modem attached, the server simulates one, and so does the console below: tune, key up and hold a pretend QSO.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">the stack</span><div class="prose"><p><b>Transport:</b> a tablet browser over a local WiFi hotspot to the mini-PC, with no router upstream and no DNS. <b>Radio link:</b> the VARA modem on the PC, with a Digirig or SignaLink to the rig; the audio never touches a network. <b>Fallback:</b> ardopcf is the documented open-source path and runs on a Pi if VARA's closed binary ever becomes a problem.</p></div><div class=stack><span>FastAPI</span><span>WebSocket</span><span>VARA HF</span><span>Hamlib rigctld</span><span>ardopcf</span></div></article><article class="card reveal"><span class="n">six files</span><div class="prose"><p><code>launch.py</code> starts it (with an optional tunnel when you do want it reachable). <code>server.py</code> bridges the browser to the modem. <code>rig_control.py</code> wraps rigctld, polls every two seconds and marks the rig lost after five straight failures. <code>rig_list.json</code>, <code>index.html</code> and the fonts are the rest. No build step.</p></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>HF needs a licence, a rig, an antenna and a PC running VARA. <em>The console on this page is a demo: the modem and the far station are simulated.</em> The real one is served by the box itself, so it works with no internet at all.</p></div></article></div>
+</div></section>
 
-<section class="col rv">
-  <div class="eyebrow">Rig control</div>
-  <h2>283 radios, <em>62 manufacturers</em></h2>
-  <p class="lede">A parsed Hamlib database wired to <code>rigctld</code> over TCP on port 4532. Pick a radio, set the COM port, baud and PTT method, and the sidebar drives it — frequency, mode, band quick-tune, and a touch-compatible hold button.</p>
-  <div class="term" id="term"></div>
-  <p class="aside">Tune the dial above or hold PTT and this log follows along. The band buttons jump straight to the VARA calling frequencies.</p>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="wide rv">
-  <div class="eyebrow">Offline means offline</div>
-  <h2>Zero external URLs, <em>verified</em></h2>
-  <p class="lede">The first build looked offline and wasn't — it pulled Google Fonts. Stripped and replaced with five TTF files served from a FastAPI static mount, then checked the rendered HTML for any remaining outbound request.</p>
-  <div class="grid">
-    <div class="card"><h4>Fonts</h4><p>Exo 2 at <b>300/400/600/700</b> plus Share Tech Mono, mounted at <code>/fonts/</code>.</p></div>
-    <div class="card"><h4>Transport</h4><p>Tablet browser over <b>local WiFi hotspot</b> to the mini-PC. No router upstream, no DNS.</p></div>
-    <div class="card"><h4>Radio link</h4><p>VARA modem on the PC, <b>Digirig or SignaLink</b> to the rig. Audio never touches a network.</p></div>
-    <div class="card"><h4>Fallback</h4><p><b>ardopcf</b> is documented as the open-source path — runs natively on a Pi if VARA's closed binary ever becomes a problem.</p></div>
-  </div>
-  <p class="aside">Built for a friend who needs communications that survive the infrastructure going away. That constraint drove every decision in the stack.</p>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="wide rv">
-  <div class="eyebrow">Files</div>
-  <h2>Six files, <em>no build step</em></h2>
-  <div class="grid">
-    <div class="card"><h4>launch.py</h4><p>Entry point. Optional Cloudflare Quick Tunnel when you actually do want it reachable.</p></div>
-    <div class="card"><h4>server.py</h4><p>FastAPI + WebSocket bridge to the VARA modem on TCP, with a demo mode when no modem is present.</p></div>
-    <div class="card"><h4>rig_control.py</h4><p>Hamlib <code>rigctld</code> wrapper — frequency, mode, PTT over CAT, DTR, RTS or VOX; launches <code>rigctld</code> itself, polls every two seconds, and marks the rig lost after five straight failures. <a class="mf-xref" href="assets/src/rig_control.py" target="_blank" rel="noopener">Read the source →</a></p></div>
-    <div class="card"><h4>rig_list.json</h4><p>283 radios, parsed once so the UI never shells out to enumerate.</p></div>
-    <div class="card"><h4>index.html</h4><p>The whole operator UI. Amber, deliberately — the first pass was too gloomy to read at 3am.</p></div>
-    <div class="card"><h4>fonts/</h4><p>Five TTFs. The difference between "offline" and offline.</p></div>
-    <div class="card"><h4>The rename</h4><p>PyVarAC became <b>NovarAC</b> — a module-by-module rename still working its way through the tree. Components: WebSocket server, VARA HF protocol engine, audio bridge, rig control, frequency scheduler.</p></div>
-  </div>
-  <p class="aside">Every file was syntax-checked, import-tested and run end-to-end against a live server before handoff. <b>Nothing shipped untested.</b></p>
-</section>
-
-<footer>
-  <div class="eyebrow">Prepper comms · air-gapped by design</div>
-  <p>A browser-based VARA client any ham can run from a tablet, with no Windows requirement and no assumption that the internet still exists.</p>
-</footer>
-
-<script>
-/* ---------- bands ---------- */
-const BANDS=[
-  {n:'80 m',f:3598,m:'LSB'},{n:'40 m',f:7048,m:'LSB'},{n:'30 m',f:10148,m:'USB'},
-  {n:'20 m',f:14105,m:'USB'},{n:'17 m',f:18108,m:'USB'},{n:'15 m',f:21108,m:'USB'},
-  {n:'10 m',f:28108,m:'USB'}
-];
-const vfo=document.getElementById('vfo'),freq=document.getElementById('freq'),
-      modeEl=document.getElementById('mode'),bandlbl=document.getElementById('bandlbl'),
-      bandsEl=document.getElementById('bands'),term=document.getElementById('term'),
-      sm=document.getElementById('sm'),ptt=document.getElementById('ptt');
-
-for(let i=0;i<13;i++){const s=document.createElement('span');s.style.height=(5+i*0.9)+'px';sm.appendChild(s)}
-
-BANDS.forEach(b=>{
-  const el=document.createElement('button');
-  el.className='band';el.textContent=b.n;
-  el.addEventListener('click',()=>{vfo.value=b.f;tune(true)});
-  bandsEl.appendChild(el);
-});
-
-function fmt(khz){
-  const mhz=Math.floor(khz/1000), rest=khz-mhz*1000;
-  return mhz+'.'+String(Math.floor(rest)).padStart(3,'0')+'.00';
-}
-function nearest(khz){
-  let best=BANDS[0],d=1e9;
-  BANDS.forEach(b=>{const x=Math.abs(b.f-khz);if(x<d){d=x;best=b}});
-  return {b:best,d};
-}
-function tune(fromBand){
-  const k=+vfo.value;
-  freq.innerHTML=fmt(k)+' <small>MHz</small>';
-  const {b,d}=nearest(k);
-  modeEl.textContent = k<10000?'LSB':'USB';
-  const onFreq=d<3;
-  bandlbl.textContent = onFreq ? b.n+' · VARA HF calling' : b.n+' · off calling freq';
-  [...bandsEl.children].forEach((c,i)=>c.classList.toggle('on',onFreq&&BANDS[i].f===b.f));
-  const s = onFreq? 11 : Math.max(2,11-Math.round(d/60));
-  meter(s);
-  if(fromBand)push('sys','QSY '+fmt(k)+' — '+b.n+' VARA calling');
-}
-function meter(n){
-  [...sm.children].forEach((s,i)=>{
-    s.classList.toggle('on',i<n);
-    s.classList.toggle('pk',i<n&&i>=10);
-  });
-}
-vfo.addEventListener('input',()=>tune(false));
-
-/* ---------- chat log ---------- */
-function push(kind,text,call){
-  const d=document.createElement('div');
-  d.className=kind;
-  d.textContent=(call?call+'  ':'')+text;
-  term.appendChild(d);
-  while(term.children.length>7)term.firstChild.remove();
-}
-push('sys','VARA HF modem connected · 8300');
-push('rx','de KD9XXX  QSL, copy 5x7 here in Bedford','◂');
-push('tx','KD9XXX de W9XYZ  RR, running 40 W to a doublet','▸');
-push('sys','link established · 4.2 kbps · BW 2300');
-
-let txing=false;
-function startTx(){ if(txing)return; txing=true; ptt.classList.add('tx');
-  ptt.textContent='Transmitting'; meter(13); }
-function stopTx(){ if(!txing)return; txing=false; ptt.classList.remove('tx');
-  ptt.textContent='Hold to transmit'; tune(false);
-  push('tx','...over','▸');
-}
-['mousedown','touchstart'].forEach(e=>ptt.addEventListener(e,ev=>{ev.preventDefault();startTx()}));
-['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>ptt.addEventListener(e,stopTx));
-ptt.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();startTx()}});
-ptt.addEventListener('keyup',stopTx);
-
-tune(false);
-
-/* ---------- scroll ---------- */
-addEventListener('scroll',()=>{
-  const h=document.documentElement.scrollHeight-innerHeight;
-  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
-},{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(e=>{
-  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
-}),{threshold:.15});
-document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
-</script>
-
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
-</body></html>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Amber, deliberately. The first pass was too gloomy to read at 3am.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in signals &amp; comms</span>
+  <div class="related reveal"><a class="rel" href="barycenter.html"><span class="tile md pic" style="--h:292" aria-hidden="true"><img src="assets/icons/v2/barycenter-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Barycenter</b><small>A private universe for two: messages, voice notes, touch and presence, encrypted end to…</small></span></a><a class="rel" href="nullspace.html"><span class="tile md pic" style="--h:268" aria-hidden="true"><img src="assets/icons/v2/nullspace-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>NULLSPACE</b><small>An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic…</small></span></a><a class="rel" href="pilotfish.html"><span class="tile md pic" style="--h:190" aria-hidden="true"><img src="assets/icons/v2/pilotfish-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Pilotfish</b><small>A shared list and a quiet signal line for two: what to grab, how you feel, what you need.…</small></span></a><a class="rel" href="meshnet.html"><span class="tile md" style="--h:333" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="7" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="13" r="2.2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="18.5" r="2"/><path d="M6.6 8.4l3.8 3.2M17.4 7.3l-3.8 4.2M10.5 14.6l-3 3M13.7 14.5l2.9 2.7M7 6.9l10-.8"/></svg></span><span><b>MeshNet</b><small>A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits…</small></span></a><a class="rel" href="proximity.html"><span class="tile md" style="--h:111" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="2.6"/><path d="M4 20c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5"/><path d="M16.5 6.5a4 4 0 0 1 0 6M19.3 4a8 8 0 0 1 0 11"/></svg></span><span><b>Proximity</b><small>Detects a person walking through a house from the shadow their body casts on ambient…</small></span></a><a class="rel" href="roku.html"><span class="tile md" style="--h:252" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20M10.5 8.3v4.4l3.8-2.2z"/></svg></span><span><b>Roku God Mode</b><small>A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="NovarAC, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>NovarAC, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open NovarAC"><div class="poster" style="background-image:url(assets/previews/novarac.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open NovarAC</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "novarac", "name": "NovarAC", "app": "novarac-app.html", "h": 196}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
+</body>
+</html>

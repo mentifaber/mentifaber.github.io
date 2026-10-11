@@ -47,7 +47,7 @@ function showSetup() {
       const raw = crypto.getRandomValues(new Uint8Array(32)), code = hex(crypto.getRandomValues(new Uint8Array(16)));
       const body = { me: { name: n1, verifier: await B.verifierOf(u1, p), wrap: await B.wrapKey(raw, u1 + "\0" + p) }, partner: { name: n2 }, invite: await sha256hex(B.enc.encode(code)) };
       await post("setup", body); await signIn(u1, p);
-      showInvite(location.origin + "/barycenter#join=" + code + "." + b64u(raw), n2);
+      showInvite(location.origin + "/barycenter-app#join=" + code + "." + b64u(raw), n2);
     } catch (e) { busy($("gb"), "", false); fail(e); }
   };
 }
@@ -561,7 +561,7 @@ async function togglePush() {
 async function reinvite() {
   const raw = unb64(store.get("us-key") || ""); if (raw.length !== 32) return ($("sm").textContent = "This device doesn't hold the key. Sign in again first.");
   const code = hex(crypto.getRandomValues(new Uint8Array(16))); await post("invite", { hash: await sha256hex(B.enc.encode(code)) });
-  const link = location.origin + "/barycenter#join=" + code + "." + b64u(raw); showSheet('<h2 class="disp">One-time link</h2><p>Open it on ' + esc(THEM.name) + "'s device. It sets a new password for them and works once, for 14 days.</p><div class='linkbox'>" + esc(link) + "</div><div class='row mt'><button class='btn pri' id='ic'>Copy</button></div>"); sheet.onclick = null; $("ic").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Copied"); } catch (e) { toast("Select and copy it"); } };
+  const link = location.origin + "/barycenter-app#join=" + code + "." + b64u(raw); showSheet('<h2 class="disp">One-time link</h2><p>Open it on ' + esc(THEM.name) + "'s device. It sets a new password for them and works once, for 14 days.</p><div class='linkbox'>" + esc(link) + "</div><div class='row mt'><button class='btn pri' id='ic'>Copy</button></div>"); sheet.onclick = null; $("ic").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Copied"); } catch (e) { toast("Select and copy it"); } };
 }
 async function changePw() {
   const np = prompt("New password (at least 8 characters):"); if (!np) return; if (np.length < 8) return toast("At least 8 characters."); if (np !== prompt("Once more:")) return toast("They didn't match.");
