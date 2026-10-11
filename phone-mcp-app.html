@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Phone MCP · the console</title>
+<meta name="description" content="Drive a (simulated) Android phone the way a model does over MCP: JSON-RPC tool calls through a tunnel, a server and ADB, and every link that can break.">
+<meta name="theme-color" content="#08090d">
+<link rel="manifest" href="assets/manifests/phone-mcp.webmanifest">
+<link rel="icon" href="assets/icons/v2/phone-mcp.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/phone-mcp-180.png">
+<link rel="stylesheet" href="assets/pmcp/pm.css">
+</head>
+<body>
+<header class="top"><b class="logo">Phone <span>MCP</span></b><span class="pill">simulated device</span><span class="grow"></span><span class="ep" id="ep"></span></header>
+<main>
+  <section class="chain" id="chain"></section>
+  <section class="console">
+    <div class="tools"><select id="tool" aria-label="Tool"></select><button class="btn pri" id="send">tools/call</button><button class="btn" id="list">tools/list</button></div>
+    <textarea id="args" spellcheck="false" aria-label="Arguments (JSON)"></textarea>
+    <div class="log" id="log"></div>
+  </section>
+  <section class="phone"><div class="dev" id="dev"><div class="bar"><span id="clock">9:41</span><span id="batt">54% ⚡</span></div><div class="screen" id="screen"></div><div class="nav">◁ ○ ▢</div></div><div class="gate" id="gate" hidden></div></section>
+</main>
+<script src="assets/pmcp/pm.js"></script>
+</body>
+</html>

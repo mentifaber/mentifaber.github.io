@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Roku God Mode · the remote</title>
+<meta name="description" content="The whole Roku remote in a browser, driving a demo TV over the same External Control Protocol the real one speaks: every button, inputs, channels and a real keyboard, with every request shown.">
+<meta name="theme-color" content="#0a0914">
+<link rel="manifest" href="assets/manifests/roku.webmanifest">
+<link rel="icon" href="assets/icons/v2/roku.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/roku-180.png">
+<link rel="stylesheet" href="assets/roku/rk.css">
+</head>
+<body>
+<header class="top"><b class="logo">Roku <span>God Mode</span></b><span class="pill" title="A stand-in TV that answers the same protocol. The real remote runs on your home network.">demo TV · simulated ECP</span><span class="grow"></span>
+  <label class="dev"><span class="sr">TV</span><select id="dev" aria-label="TV"></select></label><button class="btn" id="disc" title="SSDP discovery">Discover</button>
+</header>
+<main>
+  <section class="left">
+    <div class="tvwrap"><div class="tv" id="tv"><div class="scr" id="scr"></div><div class="osd" id="osd" hidden></div></div><i class="led" id="led"></i></div>
+    <div class="logwrap"><div class="loghead"><b>ECP traffic</b><small id="hops">page → relay → TV :8060</small><button class="mini" id="clr">clear</button></div><div class="log" id="log" aria-live="polite"></div></div>
+  </section>
+  <aside class="remote" id="remote">
+    <div class="row top3"><button class="k pw" data-k="Power" aria-label="Power">⏻</button><button class="k" data-k="Back" aria-label="Back">↩</button><button class="k" data-k="Home" aria-label="Home">⌂</button></div>
+    <div class="pad"><button class="k u" data-k="Up" aria-label="Up">▲</button><button class="k l" data-k="Left" aria-label="Left">◀</button><button class="k ok" data-k="Select" aria-label="OK">OK</button><button class="k r" data-k="Right" aria-label="Right">▶</button><button class="k d" data-k="Down" aria-label="Down">▼</button></div>
+    <div class="row"><button class="k" data-k="InstantReplay" aria-label="Instant replay">↺</button><button class="k" data-k="Info" aria-label="Options">✱</button><button class="k" data-k="Search" aria-label="Search">⌕</button></div>
+    <div class="row"><button class="k" data-k="Rev" aria-label="Rewind">⏪</button><button class="k" data-k="Play" aria-label="Play or pause">⏯</button><button class="k" data-k="Fwd" aria-label="Fast forward">⏩</button></div>
+    <div class="row"><button class="k" data-k="VolumeMute" aria-label="Mute">🔇</button><button class="k" data-k="VolumeDown" aria-label="Volume down">−</button><button class="k" data-k="VolumeUp" aria-label="Volume up">+</button></div>
+    <div class="sec"><small>keyboard · types into whatever field has focus on the TV</small><input id="kb" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Keyboard"></div>
+    <div class="sec"><small>inputs</small><div class="chips" id="inputs"></div></div>
+    <div class="sec"><small>channels · from <code>/query/apps</code></small><div class="apps" id="apps"></div></div>
+    <div class="sec add"><small>add a TV by IP</small><div class="addrow"><input id="ip" placeholder="192.168.1.60" inputmode="decimal" aria-label="IP address"><button class="btn" id="addip">Add</button></div></div>
+    <p class="note">Desktop: arrows, Enter (OK), Backspace (Back), Escape (Home). Hold a direction to repeat.</p>
+  </aside>
+</main>
+<script src="assets/roku/rk.js"></script>
+</body>
+</html>

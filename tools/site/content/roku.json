@@ -1,0 +1,63 @@
+{
+ "kicker": "signals · local network",
+ "tagline": "The whole remote in a browser: every button, every input, every channel, and a real keyboard for search boxes, talking straight to the TV. No Roku account, no cloud, no app store.",
+ "caps": [
+  "ECP on port 8060",
+  "SSDP discovery",
+  "nothing leaves the house"
+ ],
+ "launchSub": "A live remote, driving a demo TV over the same protocol, with every request shown",
+ "titleTail": "the whole remote in a browser",
+ "ledeLabel": "why this exists",
+ "story": {
+  "label": "why this exists",
+  "title": "The TV was <em>already listening</em>"
+ },
+ "lede": "<p>Every Roku runs a small web server on port 8060, the External Control Protocol, and it accepts button presses from anything on the same network: no pairing, no PIN. The official app wraps that in an account and a store listing. <b>Roku God Mode</b> just talks to it directly, and the remote below shows you every request it sends.</p>",
+ "featuresLabel": "what it does",
+ "features": [
+  {
+   "t": "Finds the TV",
+   "d": "SSDP discovery over UDP (an M-SEARCH for <code>roku:ecp</code>), or add one by IP. Several TVs are saved, and the last one used is remembered."
+  },
+  {
+   "t": "Every button",
+   "d": "d-pad and OK, Back, Home, Replay and Options, play, rewind and fast-forward, volume and mute. Hold a direction and it sends keydown, lets the TV repeat, then keyup."
+  },
+  {
+   "t": "Inputs and channels",
+   "d": "Antenna, HDMI 1–4 and AV, one tap each. The installed channels come from <code>/query/apps</code> as an icon grid; tap one to launch it."
+  },
+  {
+   "t": "A real keyboard",
+   "d": "type into whatever field has focus on the TV. Every character goes out as <code>Lit_</code>, so search boxes and sign-in forms stop being a d-pad ordeal."
+  }
+ ],
+ "cards": [
+  {
+   "n": "why a server",
+   "html": "<p>A browser can't open the raw UDP socket that SSDP discovery needs, and a TV doesn't send the headers a web page would need to talk to it cross-origin. So a tiny Node server sits on the same network and relays: the page talks to the server, the server talks to the TV, and nothing leaves the house.</p><p>The relay checks that every device address is a plain IPv4 address before it will reach for it, so it can't be pointed at hostnames, ports or URLs.</p>",
+   "stack": [
+    "Node",
+    "Express",
+    "SSDP",
+    "Roku ECP",
+    "vanilla JS"
+   ]
+  },
+  {
+   "n": "desktop shortcuts",
+   "html": "<p>Arrow keys move, Enter is OK, Backspace is Back, Escape is Home. With the keyboard field focused, typing goes to the TV instead.</p>"
+  }
+ ],
+ "scope": "<p>Power off works on every TV. Power on only works on Roku TVs with Fast TV Start enabled: a TV that's fully off has taken its network down with it, so nothing can wake it remotely. The demo has one TV of each kind so you can see the difference. The relay has no login: it's meant for a home network, and anyone on that network could use it, just as they could use the TV's own protocol. <em>The TV and relay on this page are simulated; the requests are the real ones, and the real proof is the living-room TV.</em></p>",
+ "closing": "The remote was always a web page. It just never had one.",
+ "manifest": {
+  "categories": [
+   "utilities",
+   "entertainment"
+  ],
+  "background_color": "#0a0914",
+  "theme_color": "#0a0914"
+ }
+}

@@ -1,0 +1,67 @@
+{
+ "kicker": "AI & minds · a model with hands",
+ "tagline": "A model on the internet driving a real Android phone: MCP over a Cloudflare tunnel, into ADB, onto the device. Four links, and every one of them can break in its own unhelpful way.",
+ "caps": [
+  "JSON-RPC 2.0 by hand",
+  "15 tools",
+  "own device only"
+ ],
+ "launchSub": "A live console: send the tool calls a model sends, break the links, watch the errors",
+ "titleTail": "handing a model the keys to an Android",
+ "ledeLabel": "the hop",
+ "story": {
+  "label": "the hop",
+  "title": "Four links, and <em>any one</em> can break"
+ },
+ "lede": "<p>Nothing here is a managed service. It's a tunnel to a server to ADB to a phone, and each junction fails differently. A stale tunnel hostname looks like a 404. A dozing phone looks like a network fault. A revoked ADB key looks like the server is down. <b>Phone MCP</b> exists to make all of it legible, and the console below lets you break each link on purpose and read the error a model would actually get.</p>",
+ "featuresLabel": "the chain",
+ "features": [
+  {
+   "t": "Tunnel",
+   "d": "a Cloudflare Quick Tunnel gives a throwaway https URL with no account. It's convenient, but the hostname changes on every restart, so the MCP config goes stale without warning."
+  },
+  {
+   "t": "MCP layer",
+   "d": "tool schemas wrap shell invocations, and the schema is the contract: a vague description gets a model confidently calling the wrong tool."
+  },
+  {
+   "t": "ADB",
+   "d": "authorisation is per host key and lives on the phone. Wireless debugging re-pairs after a reboot, and until someone taps \"allow\" every call is unauthorized."
+  },
+  {
+   "t": "The device",
+   "d": "Doze and battery optimisation kill background listeners without telling anyone. It looks like a network fault and isn't."
+  }
+ ],
+ "cards": [
+  {
+   "n": "server v1.0",
+   "html": "<p><b>The laptop left the chain.</b> The current server runs in Termux on the phone itself and talks to its own ADB over wireless debugging, so the tunnel, the server and the device are now one object in your pocket.</p><p><b>No SDK.</b> MCP is implemented by hand as JSON-RPC 2.0 over both transports: legacy HTTP+SSE and single-endpoint Streamable HTTP. The official Python SDK was out because its <code>cryptography</code> dependency ships a broken native wheel on Termux's Python 3.14.</p>",
+   "stack": [
+    "Termux",
+    "Python",
+    "JSON-RPC 2.0",
+    "cloudflared",
+    "adb"
+   ]
+  },
+  {
+   "n": "15 tools, two quirks",
+   "html": "<p>Screenshot, tap, swipe, type, key events, launch and list apps, the foreground app, SMS send and list, battery, GPS, clipboard read and write, notifications.</p><p><b>The SMS quirk:</b> <code>termux-sms-send</code> often hands the message off and then hangs. A timeout is reported as <em>likely sent</em>, never as failed, so the model doesn't retry and double-text someone.</p><p><b>Auth is a formality:</b> some clients refuse a server without OAuth discovery metadata, so there's a spec-shaped OAuth layer that approves everyone, and its header comment says so. The tunnel URL is the only real secret.</p>"
+  },
+  {
+   "n": "this is a lot of access",
+   "html": "<p>Screen capture, input injection, app launching, file transfer and log access. ADB was built for developers holding their own hardware, and all of that is now reachable from a chat window.</p><p>The phone, the tunnel and the endpoint are all mine; none of this generalises to a device you don't own. Inspection tools are safe to call freely. Anything that sends, injects or moves files gets a gate, the same way Pi gates SMS.</p>"
+  }
+ ],
+ "scope": "<p>The console is a simulation: the phone, the tunnel and the errors are scripted from the real command set, and every failure shown is one the real chain produced. An unauthenticated Quick Tunnel URL is a credential (anyone with the string has the phone), so the real answer is a named tunnel behind an access policy. The server holds no session state; killing the tunnel removes the whole capability, which is the intended off switch.</p>",
+ "closing": "Pi is a model living on the phone reaching outward. This is a model living outside, reaching in.",
+ "manifest": {
+  "categories": [
+   "utilities",
+   "developer"
+  ],
+  "background_color": "#08090d",
+  "theme_color": "#08090d"
+ }
+}
