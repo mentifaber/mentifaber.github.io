@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe3ea"/><stop offset=".52" stop-color="#2fb3c2"/><stop offset="1" stop-color="#0d5d73"/></linearGradient>
+<linearGradient id="fin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d7f4f7"/></linearGradient>
+<linearGradient id="w1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bff0f4"/><stop offset="1" stop-color="#7fd3dc"/></linearGradient>
+<linearGradient id="w2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7fbfc"/><stop offset="1" stop-color="#b6e9ee"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#sea)"/>
+<circle cx="392" cy="118" r="16" fill="#fff" opacity=".75"/><circle cx="424" cy="88" r="9" fill="#fff" opacity=".6"/><circle cx="366" cy="78" r="6" fill="#fff" opacity=".5"/>
+<path d="M150 318C214 290 268 214 296 112c14 76 46 150 104 206z" fill="url(#fin)"/>
+<path d="M0 320c50-26 92-26 138 0s92 26 138 0 92-26 138 0 70 22 98 10V512H0z" fill="url(#w1)"/>
+<path d="M0 372c46 22 90 22 134 0s92-22 136 0 92 22 136 0 74-18 106-6V512H0z" fill="url(#w2)"/>
+<g transform="translate(332 420)"><path d="M-46 0c16-15 40-20 62-10l18-12v44l-18-12c-22 10-46 5-62-10z" fill="#0d5d73" opacity=".85"/><circle cx="-26" cy="-2" r="4" fill="#e7fbfc"/></g>
+</svg>

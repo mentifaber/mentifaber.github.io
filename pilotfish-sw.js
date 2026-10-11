@@ -34,7 +34,7 @@ self.addEventListener("push", (e) => {
     } catch (err) {}
     await self.registration.showNotification(title, {
       body, tag: urgent ? "pilotfish-urgent" : "pilotfish", renotify: true, requireInteraction: urgent,
-      vibrate: urgent ? [300, 120, 300, 120, 600] : [120], icon: "/assets/pilotfish-icon-192.png", badge: "/assets/pilotfish-icon-192.png",
+      vibrate: urgent ? [300, 120, 300, 120, 600] : [120], icon: "/assets/icons/v2/pilotfish-192.png", badge: "/assets/pilotfish-icon-192.png",
     });
   })());
 });
@@ -43,6 +43,6 @@ self.addEventListener("notificationclick", (e) => {
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const c of all) if (/\/(pilotfish|listit)/.test(c.url)) { c.focus(); c.postMessage("talk"); return; }
-    await self.clients.openWindow("/pilotfish#talk");
+    await self.clients.openWindow("/pilotfish-app#talk");
   })());
 });

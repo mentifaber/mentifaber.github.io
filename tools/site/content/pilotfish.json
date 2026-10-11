@@ -1,0 +1,54 @@
+{
+ "kicker": "signals · a quiet line for two",
+ "tagline": "The pilotfish swims beside the shark its whole life. This is that, for two people: what to grab, how you feel, what you need, and a one-tap answer.",
+ "caps": [
+  "push alerts",
+  "shared list",
+  "shared calendar"
+ ],
+ "launchSub": "Private · two people · installable on both phones",
+ "titleTail": "a quiet line for two",
+ "ledeLabel": "why this exists",
+ "story": {
+  "label": "why this exists",
+  "title": "Small signals, <em>said simply</em>"
+ },
+ "lede": "<p>Most of what two people need to tell each other during a day is small: I'm tired, bring water, can you call, on my way. Texting turns each of those into a conversation. <b>Pilotfish</b> makes them taps. Pick how you feel and what you need, add a note if you like, and the other phone lights up with a one-tap answer.</p><p>Around that sits everything a household shares: one shopping list with real store windows, and one calendar where everything with a date lands by itself.</p>",
+ "featuresLabel": "what's inside",
+ "features": [
+  {
+   "t": "Talk",
+   "d": "eighteen feelings and eighteen needs, an optional note, and replies in one tap: on my way, got it, ten minutes, calling you, love you."
+  },
+  {
+   "t": "I need you now",
+   "d": "a high-urgency alert that stays on screen until it's seen, with a reminder to call emergency services when it's medical."
+  },
+  {
+   "t": "Shopping windows",
+   "d": "every store opens as aisles of picture tiles, restaurant presets come with menus, and each store learns your usuals."
+  },
+  {
+   "t": "Shared calendar",
+   "d": "events either person adds, plus every dated pickup, delivery and appointment from the rest of the app."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>One page, a Cloudflare Worker and Web Push. Pushes carry no content; the phone asks the server for the latest signal and turns it into words.</p>",
+   "stack": [
+    "Vanilla JS",
+    "Cloudflare Workers",
+    "Web Push",
+    "PWA"
+   ]
+  }
+ ],
+ "scope": "<p>Pilotfish is built for one pair of people and signs in with their own accounts. <em>It isn't open for sign-ups.</em></p>",
+ "closing": "Always swimming beside you.",
+ "manifest": {
+  "background_color": "#e9f8f9",
+  "theme_color": "#e9f8f9"
+ }
+}

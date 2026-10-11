@@ -1,0 +1,63 @@
+{
+ "kicker": "signals · LoRa mesh, no tower in the middle",
+ "tagline": "Every radio is a relay. A packet floods outward, gets rebroadcast by whoever hears it, and dies at a hop limit instead of at a routing table. Kill any node and the traffic takes a longer road.",
+ "caps": [
+  "Meshtastic + MeshCore",
+  "Bluetooth or USB",
+  "built-in simulator"
+ ],
+ "launchSub": "Runs in the browser · plug in a radio, or try the simulated valley",
+ "titleTail": "LoRa mesh with no tower in the middle",
+ "ledeLabel": "how a mesh routes",
+ "story": {
+  "label": "how a mesh routes",
+  "title": "No node is <em>load-bearing</em>"
+ },
+ "lede": "<p>A Meshtastic mesh has no router and no tower. Each radio rebroadcasts what it hears once, and a packet keeps spreading until its hop limit runs out. Hop count is the whole cost model: there's only a few hundred bits per second, so everything is built around text, position and telemetry.</p><p><b>MeshNet</b> started as a Python and Flask dashboard over an MQTT bridge. The live console below goes further: it talks to the radio straight from the browser, over Bluetooth or a USB cable, with no server in the path at all.</p>",
+ "featuresLabel": "in the console",
+ "features": [
+  {
+   "t": "Plug in a real radio",
+   "d": "Meshtastic over Bluetooth or USB, and MeshCore (beta), using the same driver as NULLSPACE. Your node reports the mesh it knows."
+  },
+  {
+   "t": "The mesh, drawn",
+   "d": "nodes on a map when they share positions, otherwise in rings by how many hops away they are, with every packet flashing in as it arrives."
+  },
+  {
+   "t": "Channel chat",
+   "d": "read and send on every channel your radio has, with hop count and signal-to-noise on each message and a byte counter for the 228-byte packet limit."
+  },
+  {
+   "t": "A valley to break",
+   "d": "no radio? Fourteen simulated nodes flood packets the way Meshtastic does. Kill relays and watch the route get longer until there isn't one."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the bug",
+   "html": "<p><b>Nodes that existed but would not appear.</b> The handhelds showed a healthy mesh; the web dashboard showed nothing. Two faults stacked in the MQTT path: the subscription never included <code>msh/US/2/json/e/#</code>, and packets that did arrive were unwrapped wrongly and dropped.</p><p><em>When the radios and the dashboard disagree, the radios are right. Debug the bridge, not the mesh.</em></p>"
+  },
+  {
+   "n": "built on",
+   "html": "<p>The original: Python, Flask, the Meshtastic library and an MQTT bridge, launched with a uv-managed install. The console here: Web Bluetooth, Web Serial and Meshtastic protobufs written from scratch.</p>",
+   "stack": [
+    "Meshtastic",
+    "LoRa 915 MHz",
+    "MQTT",
+    "Web Bluetooth",
+    "Web Serial"
+   ]
+  }
+ ],
+ "scope": "<p>LoRa reaches a few miles per hop, further with height, for about $30 a node with no licence. It's the short-range sibling of NovarAC's HF radio. Radio support in the browser follows the published protocols but <em>hasn't been tested on real hardware yet</em>. iPhone browsers can't reach radios, so the simulator is the way in there.</p>",
+ "closing": "Nothing in the path may require the internet to be up. MQTT is a convenience, never a dependency.",
+ "manifest": {
+  "orientation": "any",
+  "categories": [
+   "utilities"
+  ],
+  "background_color": "#07060b",
+  "theme_color": "#07060b"
+ }
+}

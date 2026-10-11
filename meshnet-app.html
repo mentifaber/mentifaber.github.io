@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>MeshNet · live console</title>
+<meta name="description" content="A browser console for a LoRa mesh: connect a Meshtastic or MeshCore radio over Bluetooth or USB, or run a simulated mesh, and watch every packet find its way.">
+<meta name="theme-color" content="#07060b">
+<link rel="manifest" href="assets/manifests/meshnet.webmanifest">
+<link rel="icon" href="assets/icons/v2/meshnet.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/meshnet-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MeshNet"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/meshnet/mn.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="13" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6.7 7.2l3.8 4.4M17.3 7.2l-3.8 4.4M10.6 14.4l-3.2 3.3M13.4 14.4l3.2 3.3M7 6h10"/></svg><b>MeshNet</b><span class="src" id="src">offline</span></div>
+  <div class="stats" id="stats"></div>
+  <button class="btn pri" id="b-conn">Connect</button>
+</header>
+<nav class="tabs" id="tabs" role="tablist"><button data-t="mesh" class="on">Mesh</button><button data-t="chat">Chat <i id="unread"></i></button><button data-t="nodes">Nodes</button><button data-t="log">Log</button></nav>
+<main id="main" data-t="mesh">
+  <section class="pane mesh" id="p-mesh">
+    <canvas id="cv"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="card" id="sel" hidden></div>
+    <div class="hint" id="hint"></div>
+  </section>
+  <section class="pane chat" id="p-chat">
+    <div class="chans" id="chans"></div>
+    <div class="msgs" id="msgs" role="log" aria-live="polite"></div>
+    <form class="say" id="say"><input id="txt" maxlength="228" placeholder="Send to the mesh…" autocomplete="off"><span class="left" id="left"></span><button class="btn pri" id="send">Send</button></form>
+  </section>
+  <section class="pane nodes" id="p-nodes"><table><thead><tr><th>Node</th><th>Hops</th><th>SNR</th><th>RSSI</th><th>Heard</th><th>Pos</th></tr></thead><tbody id="tb"></tbody></table></section>
+  <section class="pane log" id="p-log"><pre id="lg"></pre></section>
+</main>
+<div class="sheet" id="sheet" hidden><div class="pane2">
+  <h2>Connect a radio</h2>
+  <p>Talk to a LoRa node straight from this browser. Bluetooth works in Chrome on Android and on computers; USB needs Chrome or Edge on a computer. iPhone browsers can't reach radios, so use the simulator there.</p>
+  <div class="opts">
+    <button data-c="meshtastic:ble"><b>Meshtastic</b><small>Bluetooth</small></button>
+    <button data-c="meshtastic:serial"><b>Meshtastic</b><small>USB cable</small></button>
+    <button data-c="meshcore:ble"><b>MeshCore</b><small>Bluetooth · beta</small></button>
+    <button data-c="meshcore:serial"><b>MeshCore</b><small>USB cable · beta</small></button>
+    <button data-c="sim" class="wide"><b>Simulated mesh</b><small>fourteen pretend radios in a valley · no hardware</small></button>
+  </div>
+  <div class="row"><button class="btn" id="b-off">Disconnect</button><button class="btn" data-x>Close</button></div>
+</div></div>
+<script>window.NS = { enc: new TextEncoder(), dec: new TextDecoder(), hex: (u8) => [...u8].map((b) => b.toString(16).padStart(2, "0")).join(""), clock: (t) => new Date(t).toTimeString().slice(0, 8), rfRoom: (c) => c, me: { handle: "meshnet", node: "4d4e4554" }, store: { get: (k, d) => { try { const v = localStorage.getItem("mn:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set: (k, v) => { try { localStorage.setItem("mn:" + k, JSON.stringify(v)); } catch (e) {} } } };</script>
+<script src="assets/ns/radio.js"></script>
+<script src="assets/meshnet/mn.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/meshnet-sw.js", { scope: "/meshnet" }).catch(() => {});</script>
+</body>
+</html>

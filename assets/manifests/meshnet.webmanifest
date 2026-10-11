@@ -1,0 +1,35 @@
+{
+  "id": "/meshnet",
+  "name": "MeshNet · Mentifaber",
+  "short_name": "MeshNet",
+  "description": "A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.",
+  "start_url": "/meshnet-app.html",
+  "scope": "/meshnet",
+  "display": "standalone",
+  "background_color": "#07060b",
+  "theme_color": "#07060b",
+  "icons": [
+    {
+      "src": "../icons/v2/meshnet-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/meshnet-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/meshnet-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "orientation": "any",
+  "categories": [
+    "utilities"
+  ]
+}

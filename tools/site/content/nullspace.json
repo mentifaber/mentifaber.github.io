@@ -1,0 +1,69 @@
+{
+ "kicker": "signals · encrypted comms deck",
+ "tagline": "Talks over the internet and over LoRa mesh radio. No account, no phone number: pick a handle, tune a frequency, transmit. When the internet goes, the radio keeps going.",
+ "caps": [
+  "no account",
+  "internet + LoRa radio",
+  "end-to-end encrypted"
+ ],
+ "launchSub": "Open to anyone · Meshtastic & MeshCore · works offline",
+ "titleTail": "encrypted comms over net and mesh",
+ "ledeLabel": "why this exists",
+ "story": {
+  "label": "why this exists",
+  "title": "Comms that don't need <em>permission</em>"
+ },
+ "lede": "<p>Every mainstream messenger starts by asking who you are: a number, an email, an account. <b>NULLSPACE</b> asks for a handle and nothing else. A frequency is just a shared 256-bit key, passed on by link or tune code; the relay only ever sees a tag and sealed bytes.</p><p>And it doesn't assume the internet. Plug in a LoRa radio over Bluetooth or USB and the same deck talks across a mesh of cheap radios with no tower in the middle. A device with both acts as a bridge, carrying traffic between the radio side and the internet side.</p>",
+ "featuresLabel": "on the deck",
+ "features": [
+  {
+   "t": "Frequencies, not accounts",
+   "d": "create one, share its link or tune code, and anyone holding it is in. Nobody else, including the relay, can read it."
+  },
+  {
+   "t": "Radio from the browser",
+   "d": "Meshtastic over Bluetooth or USB, MeshCore (beta), and a two-tab simulator to try it without hardware."
+  },
+  {
+   "t": "Bridge mode",
+   "d": "one device with radio and internet relays both ways, de-duplicated, so a mesh in the hills and a phone in the city share one channel."
+  },
+  {
+   "t": "Open band",
+   "d": "plain mesh text from other people on the channel shows up too, and you can answer it in the clear."
+  },
+  {
+   "t": "Burn, ping, beacon",
+   "d": "burn timers, pings, location beacons and encrypted images (over the internet relay)."
+  },
+  {
+   "t": "A terminal, not a chat app",
+   "d": "command line with /commands, a live traffic scope, a mesh radar, six themes and adjustable effects. History stays on the device."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>Web Crypto for sealing, Web Bluetooth and Web Serial for the radio, Meshtastic protobufs and the MeshCore companion protocol written from scratch, and a Cloudflare Durable Object relay for the internet side.</p>",
+   "stack": [
+    "Web Crypto",
+    "Web Bluetooth",
+    "Web Serial",
+    "Meshtastic",
+    "MeshCore",
+    "Durable Objects"
+   ]
+  }
+ ],
+ "scope": "<p>Radio support is tested against a simulator and the published protocols, <em>not yet on real hardware</em>. LoRa is slow, so radio messages are text-sized; images travel over the internet relay only.</p>",
+ "closing": "No number, no account, no tower. Just a frequency and whoever is tuned to it.",
+ "manifest": {
+  "orientation": "any",
+  "categories": [
+   "social",
+   "utilities"
+  ],
+  "background_color": "#05040a",
+  "theme_color": "#05040a"
+ }
+}

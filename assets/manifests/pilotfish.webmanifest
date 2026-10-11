@@ -1,0 +1,31 @@
+{
+  "id": "/pilotfish",
+  "name": "Pilotfish · Mentifaber",
+  "short_name": "Pilotfish",
+  "description": "A shared list and a quiet signal line for two: what to grab, how you feel, what you need. Push alerts, photos, offline.",
+  "start_url": "/pilotfish-app.html",
+  "scope": "/pilotfish",
+  "display": "standalone",
+  "background_color": "#e9f8f9",
+  "theme_color": "#e9f8f9",
+  "icons": [
+    {
+      "src": "../icons/v2/pilotfish-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/pilotfish-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/pilotfish-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

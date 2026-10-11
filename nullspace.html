@@ -1,56 +1,79 @@
 <!doctype html>
-<html lang="en" data-theme="noir" data-fx="med">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<title>NULLSPACE</title>
-<meta name="description" content="An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic and MeshCore). No accounts.">
-<meta name="theme-color" content="#05040a">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NULLSPACE — encrypted comms over net and mesh · Mentifaber</title>
+<meta name="description" content="An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic and MeshCore). No account, no phone number: pick a handle, tune a frequency, transmit.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="NULLSPACE — encrypted comms over net and mesh · Mentifaber"><meta property="og:description" content="An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic and MeshCore). No account, no phone number: pick a handle, tune a frequency, transmit."><meta property="og:image" content="https://mentifaber.org/assets/previews/nullspace.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/nullspace.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/nullspace-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/nullspace-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="NULLSPACE"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="assets/manifests/nullspace.webmanifest">
-<link rel="icon" href="assets/icons/nullspace.png">
-<link rel="apple-touch-icon" href="assets/icons/nullspace.png">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="NULLSPACE">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/ns/ns.css">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=007dd7c9">
+<style>:root{--h:268}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
-<div id="boot" aria-hidden="true"></div>
-<div id="jack"><div class="jc"><div class="logo big" data-t="NULL//SPACE">NULL//SPACE</div><p>Encrypted comms over the net and over the mesh.<br>No account. No number. Pick a handle.</p><div class="cl"><span>▸</span><input id="jh" maxlength="16" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false"></div><button class="nb pri" id="jg">JACK IN</button><div id="jm" class="err"></div></div></div>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#signals">Signals &amp; Comms</a> / NULLSPACE</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">signals · encrypted comms deck</span>
+    <h1>NULLSPACE</h1>
+    <div class="who"><span class="tile pic" style="--h:268" aria-hidden="true"><img src="assets/icons/v2/nullspace-192.png" alt="" width="96" height="96" loading="lazy"></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">no account</span><span class="chip">internet + LoRa radio</span><span class="chip">end-to-end encrypted</span></div></div>
+    <p class="tag" style="margin-top:22px">Talks over the internet and over LoRa mesh radio. No account, no phone number: pick a handle, tune a frequency, transmit. When the internet goes, the radio keeps going.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch NULLSPACE</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Open to anyone · Meshtastic &amp; MeshCore · works offline</p>
+  </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/nullspace.webp"><img src="assets/previews/nullspace.png" alt="NULLSPACE, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-<div id="app" class="hidden">
-  <header id="hud">
-    <button class="ic" id="b-menu" aria-label="Frequencies">☰</button>
-    <div class="logo" data-t="NULL//SPACE">NULL//SPACE</div>
-    <button class="hb" id="h-net"></button><button class="hb" id="h-rf"></button><button class="hb" id="h-br"></button>
-    <span id="h-clock" class="hclock"></span>
-    <button id="h-op" class="hop" aria-label="Operator"></button>
-    <button class="ic" id="b-side" aria-label="Scope and mesh">◈</button>
-  </header>
-  <nav id="rail">
-    <div id="tuner"></div>
-    <div class="railb"><button class="nb" id="b-new">＋ NEW / TUNE</button><button class="nb" id="b-key">⌘ KEY</button><button class="nb" id="b-radio">⌁ RADIO</button><button class="nb" id="b-sys">⚙ SYSTEM</button><button class="nb" id="b-help">? HELP</button></div>
-  </nav>
-  <main id="main">
-    <div id="fhead"><b id="fname">—</b><small id="fsub"></small></div>
-    <div id="stream" role="log" aria-live="polite"></div>
-    <div id="typing"></div>
-    <div id="hint"></div>
-    <div id="tools"><button data-tool="cmds">/ CMD</button><button data-tool="img">▣ IMG</button><button data-tool="loc">⌖ LOC</button><button data-tool="burn" id="burnb">☠ OFF</button><button data-tool="route" id="route">⇄ AUTO</button><span id="count"></span></div>
-    <div id="cl"><span class="pr">▸</span><textarea id="cmd" rows="1" placeholder="transmit… or /help" autocomplete="off" autocapitalize="sentences" spellcheck="false" aria-label="Command line"></textarea><button id="send" aria-label="Transmit">TX</button></div>
-  </main>
-  <aside id="side" data-tab="ops">
-    <div class="lbl">// SCOPE</div><canvas id="scope" width="300" height="90"></canvas>
-    <div class="stabs"><button data-st="ops" class="on">OPS</button><button data-st="mesh">MESH</button></div>
-    <div id="sidebody"></div>
-  </aside>
-</div>
-<div id="pnl" role="dialog" aria-modal="true"></div>
-<div id="toast" role="status"></div>
-<input type="file" id="file" accept="image/*" hidden>
-<script src="assets/ns/core.js"></script>
-<script src="assets/ns/radio.js"></script>
-<script src="assets/ns/net.js"></script>
-<script src="assets/ns/deck.js"></script>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">why this exists</span>
+  <h2>Comms that don't need <em>permission</em></h2>
+  <div class="lede prose"><p>Every mainstream messenger starts by asking who you are: a number, an email, an account. <b>NULLSPACE</b> asks for a handle and nothing else. A frequency is just a shared 256-bit key, passed on by link or tune code; the relay only ever sees a tag and sealed bytes.</p><p>And it doesn't assume the internet. Plug in a LoRa radio over Bluetooth or USB and the same deck talks across a mesh of cheap radios with no tower in the middle. A device with both acts as a bridge, carrying traffic between the radio side and the internet side.</p></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">on the deck</span>
+  <h2 class="reveal">Inside NULLSPACE</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Frequencies, not accounts</h3><p>Create one, share its link or tune code, and anyone holding it is in. Nobody else, including the relay, can read it.</p></article><article class="card reveal"><span class="n">02</span><h3>Radio from the browser</h3><p>Meshtastic over Bluetooth or USB, MeshCore (beta), and a two-tab simulator to try it without hardware.</p></article><article class="card reveal"><span class="n">03</span><h3>Bridge mode</h3><p>One device with radio and internet relays both ways, de-duplicated, so a mesh in the hills and a phone in the city share one channel.</p></article><article class="card reveal"><span class="n">04</span><h3>Open band</h3><p>Plain mesh text from other people on the channel shows up too, and you can answer it in the clear.</p></article><article class="card reveal"><span class="n">05</span><h3>Burn, ping, beacon</h3><p>Burn timers, pings, location beacons and encrypted images (over the internet relay).</p></article><article class="card reveal"><span class="n">06</span><h3>A terminal, not a chat app</h3><p>Command line with /commands, a live traffic scope, a mesh radar, six themes and adjustable effects. History stays on the device.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">built on</span><div class="prose"><p>Web Crypto for sealing, Web Bluetooth and Web Serial for the radio, Meshtastic protobufs and the MeshCore companion protocol written from scratch, and a Cloudflare Durable Object relay for the internet side.</p></div><div class=stack><span>Web Crypto</span><span>Web Bluetooth</span><span>Web Serial</span><span>Meshtastic</span><span>MeshCore</span><span>Durable Objects</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>Radio support is tested against a simulator and the published protocols, <em>not yet on real hardware</em>. LoRa is slow, so radio messages are text-sized; images travel over the internet relay only.</p></div></article></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">No number, no account, no tower. Just a frequency and whoever is tuned to it.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in signals &amp; comms</span>
+  <div class="related reveal"><a class="rel" href="barycenter.html"><span class="tile md pic" style="--h:292" aria-hidden="true"><img src="assets/icons/v2/barycenter-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Barycenter</b><small>A private universe for two: messages, voice notes, touch and presence, encrypted end to…</small></span></a><a class="rel" href="pilotfish.html"><span class="tile md pic" style="--h:190" aria-hidden="true"><img src="assets/icons/v2/pilotfish-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Pilotfish</b><small>A shared list and a quiet signal line for two: what to grab, how you feel, what you need.…</small></span></a><a class="rel" href="meshnet.html"><span class="tile md" style="--h:333" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="7" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="13" r="2.2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="18.5" r="2"/><path d="M6.6 8.4l3.8 3.2M17.4 7.3l-3.8 4.2M10.5 14.6l-3 3M13.7 14.5l2.9 2.7M7 6.9l10-.8"/></svg></span><span><b>MeshNet</b><small>A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits…</small></span></a><a class="rel" href="novarac.html"><span class="tile md" style="--h:196" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11M9 21h6"/><circle cx="12" cy="9" r="1.6"/><path d="M8.2 5.5a5.5 5.5 0 0 0 0 7M15.8 5.5a5.5 5.5 0 0 1 0 7M5.4 3a9.5 9.5 0 0 0 0 12M18.6 3a9.5 9.5 0 0 1 0 12"/></svg></span><span><b>NovarAC</b><small>HF radio chat that works with the internet switched off — a browser VARA client verified…</small></span></a><a class="rel" href="proximity.html"><span class="tile md" style="--h:111" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="2.6"/><path d="M4 20c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5"/><path d="M16.5 6.5a4 4 0 0 1 0 6M19.3 4a8 8 0 0 1 0 11"/></svg></span><span><b>Proximity</b><small>Detects a person walking through a house from the shadow their body casts on ambient…</small></span></a><a class="rel" href="roku.html"><span class="tile md" style="--h:252" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20M10.5 8.3v4.4l3.8-2.2z"/></svg></span><span><b>Roku God Mode</b><small>A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="NULLSPACE, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>NULLSPACE, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open NULLSPACE"><div class="poster" style="background-image:url(assets/previews/nullspace.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open NULLSPACE</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "nullspace", "name": "NULLSPACE", "app": "nullspace-app.html", "h": 268}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
 </body>
 </html>

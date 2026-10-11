@@ -14,7 +14,7 @@ export { Agent } from "./agent.js";
 //   - List-It (/api/list/listit, /api/listimg/listit/<id>): one shared shopping
 //     list for two people, each with their own login (per-user verifiers);
 //     signals (/api/mood/listit: feelings, needs, replies, urgent, baby kicks)
-//     notify the other person by Web Push. The page is now /pilotfish.
+//     notify the other person by Web Push. The app is now /pilotfish-app (its page is /pilotfish).
 //   - a daily Flutterbloom reminder: Web Push subscriptions (/api/push/*) and an
 //     hourly cron that sends a payloadless push at her chosen local hour
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
