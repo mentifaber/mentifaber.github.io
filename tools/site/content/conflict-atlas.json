@@ -1,0 +1,53 @@
+{
+ "kicker": "sky & world · 28 active conflicts",
+ "tagline": "Twenty-eight active conflicts, tiered by what they cost rather than by how much attention they get. On one map, as of June 2026.",
+ "caps": [
+  "7 major · 11 significant · 10 active",
+  "map + list",
+  "ceasefire badges"
+ ],
+ "launchSub": "Filter by tier, region or ceasefire · tap one for the detail",
+ "titleTail": "28 active conflicts, tiered",
+ "ledeLabel": "the premise",
+ "story": {
+  "label": "the premise",
+  "title": "Counted, not <em>summarised</em>"
+ },
+ "lede": "<p>Conflict coverage collapses into whichever war is currently legible to a newsroom. Cameroon has been at war since 2016 with near-zero Western coverage. Myanmar has been at war since 1948. A list doesn't fix that. It does make the omission visible, which is the smallest useful thing a list can do.</p>",
+ "featuresLabel": "on the method",
+ "features": [
+  {
+   "t": "Tiered by cost",
+   "d": "major war, significant, active: ranked by what each one costs, not by how often it's in the news."
+  },
+  {
+   "t": "What a ceasefire means here",
+   "d": "several entries are marked as ceasefires and are still killing people. The agreement and the ground are different objects, and the badges say which one is being described."
+  },
+  {
+   "t": "Filter and find",
+   "d": "by tier, by region, by whether a ceasefire exists on paper, or by searching for an actor or a place."
+  }
+ ],
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>Leaflet with dark map tiles; the entries are the write-up's own words. Map positions are approximate centres of the fighting, for orientation only.</p>",
+   "stack": [
+    "Leaflet",
+    "OpenStreetMap",
+    "CARTO"
+   ]
+  }
+ ],
+ "scope": "<p>A snapshot as of June 2026, not a live feed; figures are as reported then. <em>The point is the shape of the list, not the precision of any one number.</em></p>",
+ "closing": "Twenty-eight, counted.",
+ "manifest": {
+  "categories": [
+   "news",
+   "education"
+  ],
+  "background_color": "#0b0908",
+  "theme_color": "#0b0908"
+ }
+}

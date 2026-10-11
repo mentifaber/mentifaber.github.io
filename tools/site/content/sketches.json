@@ -1,0 +1,37 @@
+{
+ "kicker": "play · built in an afternoon",
+ "tagline": "Not everything needs to become a system. Small builds, finished the day they were started, and kept as sketches. A sketch is not a failed painting.",
+ "caps": [
+  "one afternoon each",
+  "done, not abandoned"
+ ],
+ "titleTail": "built in an afternoon, kept as sketches",
+ "ledeLabel": "the pile",
+ "story": {
+  "label": "the pile",
+  "title": "Made quickly, <em>on purpose</em>"
+ },
+ "lede": "<p>Small builds that were finished the day they were started. They're listed as sketches so they stop reading as unfinished obligations, which is what happens to anything kept in a folder called “misc”.</p>",
+ "featuresLabel": "what's in it",
+ "features": [
+  {
+   "t": "Haunted Explorer · Deceasedcraft",
+   "d": "two passes at atmosphere over mechanics. Neither became a game. Both were the point at the time."
+  },
+  {
+   "t": "Space Map",
+   "d": "an orbital toy, built well before the orbital mechanics got done properly in Cartograph. The interest preceded the rigour."
+  },
+  {
+   "t": "Shopping Route · Creative Challenge",
+   "d": "a route optimiser and a prompt engine. Both solved their afternoon and stopped."
+  }
+ ],
+ "cards": [
+  {
+   "n": "graduated",
+   "html": "<p>Four sketches outgrew the pile and got pages of their own: <a href=\"watchyourgrass.html\">Watch Your Grass</a> (now a full game), <a href=\"moon-compatibility.html\">Moon Compatibility</a>, <a href=\"bubble-editor.html\">Bubble Editor</a> and <a href=\"monstrosity.html\">The Monstrosity</a>.</p>"
+  }
+ ],
+ "closing": "They are not unfinished. They are done."
+}

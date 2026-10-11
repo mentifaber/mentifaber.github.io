@@ -1,0 +1,38 @@
+{
+ "kicker": "craft · light, patience, one frame",
+ "tagline": "Twenty-eight photographs, kept as a series. The only thing in the atlas that doesn't do anything, on purpose.",
+ "caps": [
+  "28 frames",
+  "edited in January",
+  "gallery in progress"
+ ],
+ "titleTail": "photographs, kept as a series",
+ "ledeLabel": "the run",
+ "story": {
+  "label": "the run",
+  "title": "Taken, and <em>kept</em>"
+ },
+ "lede": "<p>A single series, edited across two sittings in January: twenty-eight frames that survived the cut, out of considerably more that didn't. A body of work made entirely of functional objects tells you almost nothing about the person who made them. This is the part that doesn't function.</p>",
+ "featuresLabel": "the edit",
+ "features": [
+  {
+   "t": "An engineering habit, sideways",
+   "d": "every frame carries its edit date in the filename: a version-control instinct applied to something that doesn't need one. It turned out to matter anyway."
+  },
+  {
+   "t": "Two sittings",
+   "d": "the same photographs, edited days apart, produced visibly different decisions. The filenames are the only reason that's knowable."
+  },
+  {
+   "t": "No function",
+   "d": "no data feed, no scoring, no failure mode. A shutter, and a decision about when."
+  }
+ ],
+ "cards": [
+  {
+   "n": "not yet published",
+   "html": "<p>At full resolution the frames are around twenty-five megabytes each, and a gallery that takes a minute to load is worse than no gallery. Downscaling is the remaining work, stated here rather than quietly left out.</p>"
+  }
+ ],
+ "closing": "A shutter, and a decision about when."
+}

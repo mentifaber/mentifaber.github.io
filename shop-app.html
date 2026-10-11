@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Shop · lathe simulator</title>
+<meta name="description" content="Run a FANUC-style turning program before it runs in steel: rapids, feeds, arcs, G71 roughing and G70 finishing, cycle time, and the mistakes that scrap parts.">
+<meta name="theme-color" content="#0c0d0f">
+<link rel="manifest" href="assets/manifests/shop.webmanifest">
+<link rel="icon" href="assets/icons/v2/shop.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/shop-180.png">
+<link rel="stylesheet" href="assets/shop/lathe.css">
+</head>
+<body>
+<header class="top"><b class="logo">THE <span>SHOP</span></b><span class="sub">lathe simulator · FANUC 0i-T dialect</span><span class="grow"></span>
+  <select id="sample" aria-label="Sample program"><option value="pin">Sample: turned pin (G71/G70)</option><option value="groove">Sample: shaft with groove</option><option value="crash">Sample: the crash</option></select></header>
+<main>
+  <section class="left">
+    <div class="stock"><label>Stock Ø <input id="sd" type="number" value="25" min="2" max="300" step="0.5"></label><label>Length <input id="sl" type="number" value="45" min="2" max="500" step="1"></label><span>mm</span></div>
+    <div class="editor"><pre class="gut" id="gut" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="characters" aria-label="G-code program"></textarea></div>
+    <div class="ctl"><button id="run" class="pri">▶ Cycle start</button><button id="step">Single block</button><button id="reset">Reset</button><label>Feed override <input id="ov" type="range" min="0.25" max="8" step="0.25" value="2"><b id="ovv">200%</b></label></div>
+  </section>
+  <section class="right">
+    <canvas id="cv"></canvas>
+    <div class="dro" id="dro"></div>
+    <div class="msgs" id="msgs"></div>
+  </section>
+</main>
+<script src="assets/shop/lathe.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/shop-sw.js", { scope: "/shop" }).catch(() => {});</script>
+</body>
+</html>

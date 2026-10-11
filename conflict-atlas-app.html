@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conflict Atlas · the map</title>
+<meta name="description" content="Twenty-eight active conflicts on one map, tiered by what they cost rather than how much attention they get. Data as of June 2026.">
+<meta name="theme-color" content="#0b0908">
+<link rel="manifest" href="assets/manifests/conflict-atlas.webmanifest">
+<link rel="icon" href="assets/icons/v2/conflict-atlas.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/conflict-atlas-180.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="assets/ca/ca.css">
+</head>
+<body>
+<header class="top"><b class="logo">Conflict <span>Atlas</span></b><span class="asof">as of June 2026</span><span class="grow"></span><div class="counts" id="counts"></div></header>
+<main>
+  <aside class="side">
+    <input id="q" type="search" placeholder="Search conflicts, regions, actors" autocomplete="off" aria-label="Search">
+    <div class="chips" id="tiers"></div>
+    <div class="chips" id="regions"></div>
+    <label class="cf"><input type="checkbox" id="ceasefire"> Only those with a ceasefire on paper</label>
+    <ol class="list" id="list"></ol>
+  </aside>
+  <section class="mapwrap"><div id="map"></div><div class="detail" id="detail" hidden></div><div class="nomap" id="nomap" hidden>The map tiles need a connection. The list still works.</div></section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="assets/ca/data.js"></script>
+<script src="assets/ca/ca.js"></script>
+</body>
+</html>

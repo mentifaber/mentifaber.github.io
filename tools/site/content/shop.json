@@ -1,0 +1,67 @@
+{
+ "kicker": "craft · cnc, g-code and steel",
+ "tagline": "The machine does not accept an approximate answer. Run a turning program here first, and find out what's wrong while being wrong is still cheap.",
+ "caps": [
+  "FANUC 0i-T dialect",
+  "G71 / G70 cycles",
+  "stops on a crash"
+ ],
+ "launchSub": "Paste a program or load a sample · cycle start · single block",
+ "titleTail": "CNC, G-code and a lathe simulator",
+ "ledeLabel": "the material difference",
+ "story": {
+  "label": "the material difference",
+  "title": "Where being wrong <em>gets expensive</em>"
+ },
+ "lede": "<p>Software forgives: you run it, it breaks, you change a line, you run it again, and the cost of being wrong is a few seconds. A lathe doesn't work that way. A wrong offset is a scrapped part, a broken tool, or a crash that takes the spindle with it. You are correct before you press cycle start, or you find out what being wrong costs.</p><p>The floor is HAAS ST25 and Hwacheon turning centres on FANUC 0i-F controls. The simulator below runs the same dialect against a bar of stock before the program ever meets steel.</p>",
+ "featuresLabel": "the simulator",
+ "features": [
+  {
+   "t": "The real dialect",
+   "d": "X as a diameter, U/W incremental, G0/G1/G2/G3 with R or I/K, G96 surface speed capped by G50, G98/G99 feeds, tool calls and dwell."
+  },
+  {
+   "t": "Canned cycles",
+   "d": "FANUC's two-block G71 roughing (depth, retract, finishing allowance) and G70 finishing over the same N-numbered contour."
+  },
+  {
+   "t": "It cuts the bar",
+   "d": "the stock is cut as the program runs, so you see the part you'll get, not just lines."
+  },
+  {
+   "t": "It stops like a machine",
+   "d": "a rapid into material, feeding with the spindle stopped, no F word, or the tool reaching the chuck: it halts and names the line."
+  },
+  {
+   "t": "Cycle time",
+   "d": "estimated from the feeds, surface speed and rapids before you've spent any of it."
+  },
+  {
+   "t": "Single block",
+   "d": "step through one line at a time, with the readout showing X, Z, feed, spindle and tool."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the floor",
+   "html": "<p><b>The programs:</b> turning programs for HAAS ST25 and Hwacheon, revision on revision; each rev is a part that came off the machine and got measured. <b>Setup sheets:</b> which tool in which station, what offset, what order. <b>The manuals:</b> FANUC Series 0i-F, the full set, because some alarms only the parameter manual explains.</p>",
+   "stack": [
+    "HAAS ST25",
+    "Hwacheon",
+    "FANUC 0i-F",
+    "G-code"
+   ]
+  }
+ ],
+ "scope": "<p>A teaching simulator, not CAM verification: one point-tip tool, no nose-radius compensation, no tool geometry or holder collisions, a simplified G71 for contours that rise steadily toward the chuck. <em>Measure it; don't assume it.</em></p>",
+ "closing": "In spec, or scrap. The part does not care what the program intended.",
+ "manifest": {
+  "categories": [
+   "education",
+   "utilities"
+  ],
+  "background_color": "#0c0d0f",
+  "theme_color": "#0c0d0f",
+  "orientation": "any"
+ }
+}

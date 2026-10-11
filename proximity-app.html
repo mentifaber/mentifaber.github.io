@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Proximity · simulator</title>
+<meta name="description" content="See how a body's shadow on ambient WiFi gives away where someone is: calibrate an empty house, then walk through it and watch the z-scores.">
+<meta name="theme-color" content="#070b08">
+<link rel="manifest" href="assets/manifests/proximity.webmanifest">
+<link rel="icon" href="assets/icons/v2/proximity.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/proximity-180.png">
+<link rel="stylesheet" href="assets/prox/px.css">
+</head>
+<body>
+<header class="top"><b class="logo">Proxim<span>ity</span></b><span class="pill" id="state">not calibrated</span><span class="grow"></span><button class="btn" id="cal">Calibrate empty house</button><button class="btn" id="auto">Autopilot: on</button></header>
+<main>
+  <section class="plan" id="plan"><canvas id="cv"></canvas><div class="hint" id="hint">Calibrate first, with nobody home. Then move through the rooms.</div></section>
+  <aside class="side">
+    <div class="card"><small>presence</small><b id="pres">—</b><small id="zone">inferred room: —</small><small id="truth">actually in: —</small></div>
+    <div class="card"><small>z-score per access point · trips at 2.5σ</small><div class="bars" id="bars"></div></div>
+    <div class="card"><small>path (room transitions)</small><div class="path" id="path"></div></div>
+    <p class="note">Simulated physics: the real one is a laptop that never moves, reading <code>netsh</code> scans about twice a second. Room-level resolution, no better, and it doesn't pretend otherwise.</p>
+  </aside>
+</main>
+<script src="assets/prox/px.js"></script>
+</body>
+</html>

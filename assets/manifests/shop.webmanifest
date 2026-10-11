@@ -1,0 +1,36 @@
+{
+  "id": "/shop",
+  "name": "The Shop · Mentifaber",
+  "short_name": "The Shop",
+  "description": "CNC, G-code and steel — the machines that don't accept an approximately right answer.",
+  "start_url": "/shop-app.html",
+  "scope": "/shop",
+  "display": "standalone",
+  "background_color": "#0c0d0f",
+  "theme_color": "#0c0d0f",
+  "icons": [
+    {
+      "src": "../icons/v2/shop-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/shop-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/shop-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "utilities"
+  ],
+  "orientation": "any"
+}
