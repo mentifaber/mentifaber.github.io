@@ -1,0 +1,57 @@
+{
+ "kicker": "craft · composer since 2016",
+ "tagline": "Ambient, experimental and electronic soundscapes, ten years running and genre-bending on purpose. Folk one release, ambient electronic the next. Press play right here.",
+ "caps": [
+  "86 tracks",
+  "150+ platforms",
+  "SoundCloud first"
+ ],
+ "launchSub": "Streams from SoundCloud · the whole catalogue and the picks",
+ "titleTail": "composer since 2016",
+ "ledeLabel": "in their own words",
+ "story": {
+  "label": "in their own words",
+  "title": "Genre-bending, <em>in writing</em>"
+ },
+ "lede": "<p>“I'm Sonic Veil, a composer crafting ambient, experimental, and electronic soundscapes. Join me on an audio journey that spans my work from 2016 to today. Expect genre-bending explorations through captivating compositions.”</p><p>The catalogue backs it up: a feature collaboration, a solo instrumental and a lyric-forward folk song carry three different genre tags in three different modes. That spread is the evidence, not just the word in the bio.</p>",
+ "featuresLabel": "where the range shows",
+ "features": [
+  {
+   "t": "Strings",
+   "d": "featuring Austin Corbett, a close collaborator named on the profile. Out on Amazon Music, iTunes and the rest of the 150-platform spread."
+  },
+  {
+   "t": "Equinox",
+   "d": "released August 26, 2024. A solo instrumental single: no vocal, no feature, just the composition."
+  },
+  {
+   "t": "Spirits",
+   "d": "March 2023, tagged folk and singer-songwriter. The most lyrically direct thing in the catalogue."
+  },
+  {
+   "t": "Ten releases in five months",
+   "d": "Stride, Love Is (S)pain, Deep Learning, Reflections, Imagined It, Mesh, Algorithm and more, January to May 2026."
+  }
+ ],
+ "cards": [
+  {
+   "n": "by the numbers",
+   "html": "<p>First work in 2016. 86 tracks. Around 1,200 followers. Releases land on SoundCloud first, then go out to Spotify, Apple Music, iHeartRadio and the rest.</p>",
+   "stack": [
+    "SoundCloud",
+    "Spotify",
+    "Apple Music",
+    "Amazon Music"
+   ]
+  }
+ ],
+ "closing": "Ten years, quietly.",
+ "manifest": {
+  "categories": [
+   "music",
+   "entertainment"
+  ],
+  "background_color": "#07090c",
+  "theme_color": "#07090c"
+ }
+}

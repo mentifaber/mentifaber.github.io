@@ -1,0 +1,70 @@
+{
+ "kicker": "tools · a scanner that doesn't flatter the label",
+ "tagline": "Scan or search a food, cosmetic or personal-care product. Every ingredient gets a rating and the reason for it, and the ones nobody has classified are shown as unknown instead of quietly counted as fine.",
+ "caps": [
+  "barcode camera",
+  "open databases",
+  "coverage, not just a score"
+ ],
+ "launchSub": "Search or scan · Open Food Facts + Open Beauty Facts · no account",
+ "titleTail": "an ingredient scanner that says I don't know",
+ "ledeLabel": "the premise",
+ "story": {
+  "label": "the premise",
+  "title": "The honest part is <em>the unknowns</em>"
+ },
+ "lede": "<p>Every scanner app gives a number. The number only means something if you know how much of the label it actually understood. A 78 across four of eleven ingredients is a different claim from a 78 across all eleven. <b>Worm Eater</b> shows both: the score, and the coverage it stands on. Below half, it refuses to score at all.</p>",
+ "featuresLabel": "how it reads a label",
+ "features": [
+  {
+   "t": "Classified",
+   "d": "matched against the ingredient table with a rating and a stated reason. Tap any ingredient to see why it landed where it did."
+  },
+  {
+   "t": "Unclassified",
+   "d": "on the label, missing from the table, and shown as such. That's how a mystery additive would otherwise become a good score."
+  },
+  {
+   "t": "Weighted by position",
+   "d": "labels list ingredients by weight, so the first three count most, and added sugar at the top of the list costs extra."
+  },
+  {
+   "t": "AI classify",
+   "d": "an escape hatch for the unknowns: a free model gives a provisional read, clearly marked provisional, and it never changes the score."
+  },
+  {
+   "t": "Better in the same category",
+   "d": "never the product itself, and nothing with a short or poorly understood label: the two old bugs, fixed."
+  },
+  {
+   "t": "Scan with the camera",
+   "d": "on browsers that can read barcodes (Chrome on Android), or type the number under the barcode."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the bugs it learned from",
+   "html": "<p><b>Self-substitution:</b> the substitute finder could recommend the scanned product as its own alternative. <b>Truncated data:</b> a short ingredient list looks like a clean product, so incomplete entries ranked above complete ones. Both were the scorer treating absence as good news, the instinct the app exists to argue against.</p>"
+  },
+  {
+   "n": "built on",
+   "html": "<p>Open Food Facts and Open Beauty Facts, community-made and uneven in exactly the ways the app surfaces. An ingredient table of a few hundred names and E-numbers, each with its reason. The native app (v7) adds pet food, USDA and UPC sources.</p>",
+   "stack": [
+    "Open Food Facts",
+    "BarcodeDetector",
+    "Hive free models"
+   ]
+  }
+ ],
+ "scope": "<p>Ratings are a reasoned summary, not medical advice, and the open databases are only as complete as their volunteers. <em>When it doesn't know, it says so.</em></p>",
+ "closing": "Formerly “Yuka But Honest”. Still honest.",
+ "manifest": {
+  "categories": [
+   "food",
+   "health",
+   "utilities"
+  ],
+  "background_color": "#0a0806",
+  "theme_color": "#0a0806"
+ }
+}

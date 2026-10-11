@@ -1,0 +1,68 @@
+{
+ "kicker": "ai & minds · a voice that lives on the phone",
+ "tagline": "A voice assistant that runs on the phone itself, not in an app store and not in someone else's cloud. Nobody is home on purpose: no persona, only capability. Try the browser version right here.",
+ "caps": [
+  "voice in, voice out",
+  "real device tools",
+  "degrades, never goes quiet"
+ ],
+ "launchSub": "Tap the orb and talk · or type · asks before touching anything outside the page",
+ "titleTail": "a voice that lives on the phone",
+ "ledeLabel": "the split",
+ "story": {
+  "label": "the split",
+  "title": "What leaves <em>the phone</em>"
+ },
+ "lede": "<p>The phone build runs in Termux on Android. Chat text goes to a large model because a 70B model won't fit in a pocket; everything else stays put. Camera frames and vision run locally on moondream, and GPS, the clipboard, contacts, the call log and every device action never leave the device.</p><p>The browser version below keeps the character with what a browser can do: a handful of real device tools, Hive's free models for the thinking, and the same orb.</p>",
+ "featuresLabel": "how it holds together",
+ "features": [
+  {
+   "t": "It degrades, it doesn't go quiet",
+   "d": "three voices tried in order: a neural voice, the device's own voices, then text. Drop the signal and Pi keeps talking."
+  },
+  {
+   "t": "It can touch the phone",
+   "d": "22 tools on the phone build through Termux:API; in the browser, time, battery, location, clipboard, vibration, the camera, timers, links and sharing."
+  },
+  {
+   "t": "A gate that can't be misread",
+   "d": "anything that reaches outside waits behind a confirmation keyed to a token, so a stray “no” in the next sentence can't deny something already approved."
+  },
+  {
+   "t": "Nobody is home",
+   "d": "every version of assistant-voice was cut, one session at a time: answer, be brief, don't apologise, don't offer more help. The inverse of Weaver."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the phone build",
+   "html": "<p>Termux from F-Droid (the Play Store build silently lacks camera capture), Termux:API, proot Ubuntu, Flask on :8420 with streaming, Groq for chat with Ollama as the fallback, moondream for local vision, and the orb's glow wired to real speech amplitude.</p>",
+   "stack": [
+    "Termux",
+    "Flask",
+    "Groq",
+    "Ollama",
+    "WebGL"
+   ]
+  },
+  {
+   "n": "the browser build",
+   "html": "<p>Speech recognition on the device where it exists (Whisper through Hive otherwise), Hive's free models with Pi's terse instructions, and Hive's neural voice with the browser's voices as the fallback.</p>",
+   "stack": [
+    "Web Speech",
+    "Hive",
+    "Web Audio"
+   ]
+  }
+ ],
+ "scope": "<p>The browser version can't read contacts or run shell actions, and its voice and chat run on Hive's daily free allowance. <em>The phone build is the full thing.</em></p>",
+ "closing": "No self. Only capability.",
+ "manifest": {
+  "categories": [
+   "productivity",
+   "utilities"
+  ],
+  "background_color": "#000000",
+  "theme_color": "#000000"
+ }
+}

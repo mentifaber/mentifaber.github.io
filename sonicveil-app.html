@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sonic Veil · listen</title>
+<meta name="description" content="Listen to Sonic Veil: ambient, experimental and electronic music since 2016, streamed from SoundCloud.">
+<meta name="theme-color" content="#07090c">
+<link rel="manifest" href="assets/manifests/sonicveil.webmanifest">
+<link rel="icon" href="assets/icons/v2/sonicveil.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/sonicveil-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Sonic Veil"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/sonic/sv.css">
+</head>
+<body>
+<header class="top"><b class="logo">SONIC <span>VEIL</span></b><span class="grow"></span><a class="ext" href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud ↗</a></header>
+<main>
+  <section class="now">
+    <canvas id="veil" aria-hidden="true"></canvas>
+    <div class="np"><small id="npl">ready</small><h1 id="title">Sonic Veil</h1><p id="sub">Ambient · experimental · electronic · since 2016</p></div>
+    <div class="ctl"><button id="prev" aria-label="Previous">⏮</button><button id="play" class="big" aria-label="Play">▶</button><button id="next" aria-label="Next">⏭</button></div>
+    <div class="prog"><span id="t0">0:00</span><div class="bar" id="bar"><i id="fill"></i></div><span id="t1">0:00</span></div>
+  </section>
+  <section class="side">
+    <div class="tabs"><button data-src="all" class="on">All tracks</button><button data-src="picks">Picks</button></div>
+    <ol class="list" id="list"></ol>
+    <h3>Recent releases</h3>
+    <ul class="recent" id="recent"></ul>
+    <p class="more">Also on <a href="https://www.amazon.co.uk/Strings/dp/B0D9ZMG6Q3" target="_blank" rel="noopener">Amazon Music</a>, Spotify, Apple Music and 150+ platforms.</p>
+  </section>
+  <iframe id="sc" title="SoundCloud player" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/sonicveil&amp;auto_play=false&amp;visual=false&amp;show_comments=false&amp;show_user=true&amp;color=%23c8a96e&amp;hide_related=true"></iframe>
+</main>
+<script src="https://w.soundcloud.com/player/api.js"></script>
+<script src="assets/sonic/sv.js"></script>
+</body>
+</html>
