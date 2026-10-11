@@ -145,7 +145,7 @@ $("log").onclick = async (e) => {
   if (a.dataset.act === "dl") { const x = document.createElement("a"); x.href = m.image; x.download = "hive-" + Date.now() + ".jpg"; x.click(); }
   if (a.dataset.act === "swarm") { const u = chat.msgs[i - 1], brief = ((u && u.text) || "") + "\n\nWhat we worked out so far:\n" + String(m.text || "").slice(0, 4000);
     if (!confirm("Release the swarm on this? It splits the work into tasks and builds it.")) return; const j = await api("/new", { brief }); if (j.error) return toast(j.error, 4000);
-    try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive?p=" + j.id + "#swarm"); route(); return; }
+    try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); return; }
   if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); [...$("log").children].forEach((n) => +n.dataset.i >= i && n.remove()); run(u.mode === "image"); }
 };
 const plain = (t) => String(t || "").replace(/```[\s\S]*?```/g, " (code) ").replace(/[#*_`>|]/g, "").replace(/\[(\d+)\]/g, "").replace(/\]\([^)]*\)/g, "]").replace(/\s+/g, " ").trim();
@@ -199,7 +199,7 @@ function send(text, opts) {
     if (c === "me" || c === "mind") { inp.value = ""; grow(); location.hash = "mind"; return; }
     if (c === "remember" && rest) { inp.value = ""; grow(); return api("/mind/remember", { text: rest }).then((j) => toast(j.error || "Remembered", 2500)); }
     if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
-    if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive?p=" + j.id + "#swarm"); route(); }); }
+    if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); }); }
     const map = { search: "web", web: "web", council: "council", imagine: "draw", draw: "draw" };
     if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); text = rest; }
   }

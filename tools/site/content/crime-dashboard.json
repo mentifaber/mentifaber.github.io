@@ -1,0 +1,58 @@
+{
+ "kicker": "sky & world · 43 cities, one file",
+ "tagline": "Forty-three US cities, four crime categories, FBI figures projected to 2025, ranked by rate rather than raw counts, in one HTML file you can email to somebody.",
+ "caps": [
+  "per 100,000 residents",
+  "composite safety score",
+  "single file"
+ ],
+ "launchSub": "Satellite map · rankings · city detail · search, sort and filter",
+ "titleTail": "43 cities in a single HTML file",
+ "ledeLabel": "why rates",
+ "story": {
+  "label": "why rates",
+  "title": "Rates, not <em>raw counts</em>"
+ },
+ "lede": "<p>Counting incidents ranks cities by population and tells you nothing. Everything in <b>Crime Intelligence</b> is per 100,000 residents, with the year-over-year change beside it, so a bad year reads differently from a bad decade. It was built for someone who wanted to look at the numbers himself instead of reading someone's summary of them, and grew from 15 cities to 43.</p>",
+ "featuresLabel": "inside",
+ "features": [
+  {
+   "t": "A map that follows you",
+   "d": "colour-coded markers sized by population on a satellite map, following whichever category you pick."
+  },
+  {
+   "t": "The composite score",
+   "d": "FBI rates 40%, dispatch density 20%, NeighborhoodScout 15%, CAP Index 15%, OpenCrime and SafeWise 10%. Modeled figures are labelled as modeled."
+  },
+  {
+   "t": "Rank and compare",
+   "d": "search, sort any column, filter by size or state, open a city for its detail against national averages."
+  },
+  {
+   "t": "Opens anywhere",
+   "d": "one file: double-click it from a USB stick, an email or a desktop folder. Only the map tiles need a connection."
+  }
+ ],
+ "cards": [
+  {
+   "n": "caveats it states out loud",
+   "html": "<p><b>Voluntary reporting:</b> a city that looks safe may simply have reported less. <b>Definition drift:</b> category boundaries shift between standards. <b>City limits aren't metros.</b> <b>Small denominators:</b> a handful of incidents swings a small city's rate, so rank order at the bottom is noise.</p>"
+  },
+  {
+   "n": "built on",
+   "html": "<p>Leaflet for the map, FBI city figures baked in as a JSON literal, all state in memory. No fetch, no API key to expire, no build.</p>",
+   "stack": [
+    "Leaflet",
+    "FBI UCR data",
+    "Single file"
+   ]
+  }
+ ],
+ "scope": "<p>Figures are projected to 2025 with the FBI's national trend, not measured. <em>A dashboard that hides its seams makes people confident about things they shouldn't be.</em></p>",
+ "closing": "Look at the numbers yourself. Then look at the caveats.",
+ "manifest": {
+  "id": "/crime-dashboard-app.html",
+  "background_color": "#0b0f16",
+  "theme_color": "#0b0f16"
+ }
+}

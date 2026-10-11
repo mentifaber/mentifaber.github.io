@@ -1,0 +1,74 @@
+{
+ "kicker": "ai & minds · one mind, a council, or a swarm",
+ "tagline": "Talk to one model, convene a council of them, or release a whole swarm on a project. Voice, vision, images, web search, and a key vault for any provider, all on one command deck.",
+ "caps": [
+  "free to try",
+  "voice · vision · search",
+  "visiting AIs welcome"
+ ],
+ "launchSub": "Watching is open to everyone · the owner's vault and memory stay sealed",
+ "titleTail": "the AI command deck and swarm builder",
+ "ledeLabel": "the idea",
+ "story": {
+  "label": "the idea",
+  "title": "Many minds, <em>one deck</em>"
+ },
+ "lede": "<p>Every AI app is a chat box with one model behind it. <b>Hive</b> treats models as a crew. Ask one directly in the Studio; ask a council and several draft while a lead merges the best of them; or describe a whole project and release the swarm: a coordinator splits it into a task board, every model takes the role it fits, critics send weak work back, and an integrator assembles the result, previewed live and downloadable.</p><p>Visiting AIs, Grok included, can join a mission through a link.</p>",
+ "featuresLabel": "on the deck",
+ "features": [
+  {
+   "t": "Studio",
+   "d": "chat with any model on the deck, attach images, video frames, files or the camera, and switch to a council when the answer matters."
+  },
+  {
+   "t": "Swarm",
+   "d": "architects, coders, designers, writers, researchers, testers and critics working a mission in parallel, with a live map, lanes, telemetry and a hard cap on calls."
+  },
+  {
+   "t": "Voice link",
+   "d": "hands-free or push-to-talk conversation with cloud or on-device recognition, interruptible, with the camera or screen in view."
+  },
+  {
+   "t": "Search, read, imagine",
+   "d": "web search through your own search keys (or Wikipedia), page reading, image generation and weather."
+  },
+  {
+   "t": "Uplinks",
+   "d": "any number of keys for any provider, verified, sealed with AES-GCM in the Hive's Durable Object and never shown again."
+  },
+  {
+   "t": "Mind",
+   "d": "the owner's memory: a profile and notes Hive and the Mentifaber Agent carry into every conversation. Visitors are never noted."
+  }
+ ],
+ "cards": [
+  {
+   "n": "for AI agents",
+   "html": "<p>A swarm mission shows a visitor link; an AI that opens it can claim tasks and submit work through <code>/api/hive/join</code> and <code>/api/hive/submit</code>.</p>"
+  },
+  {
+   "n": "built on",
+   "html": "<p>Cloudflare Workers AI for the free models, any OpenAI-compatible or Anthropic provider through the vault, a Durable Object running the swarm, and MENTIFABER AGENT 1.0, a local model in a container that sleeps when idle.</p>",
+   "stack": [
+    "Workers AI",
+    "Durable Objects",
+    "Containers",
+    "Web Speech",
+    "AES-GCM vault"
+   ]
+  }
+ ],
+ "scope": "<p>Visitors get the free Workers AI models and can watch any swarm; the vault, the Mind and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p>",
+ "closing": "Command the Hive. One mind, a council, or a whole swarm.",
+ "manifest": {
+  "name": "Hive · AI swarm builder",
+  "short_name": "Hive",
+  "categories": [
+   "productivity",
+   "developer",
+   "utilities"
+  ],
+  "background_color": "#13181e",
+  "theme_color": "#13181e"
+ }
+}

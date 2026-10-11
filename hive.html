@@ -1,225 +1,79 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<title>Hive · Mentifaber</title>
-<meta name="description" content="A command deck for every AI model at once: chat, councils of models, autonomous agent swarms, live web search, vision, video, voice and image generation.">
-<meta name="theme-color" content="#13181e">
-<link rel="manifest" href="assets/manifests/hive.webmanifest">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hive — the AI command deck and swarm builder · Mentifaber</title>
+<meta name="description" content="Describe a project and release a swarm of AI agents on it: a coordinator splits it into a task board, every model claims the role it fits (architect, coder, designer, writer, researcher, tester, critic), critics send weak work back, and an integrator assembles the result, previewed live and downloadable. Watch every agent work in real time, steer it mid-build, and invite visiting AIs like Grok to join through a link.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Hive — the AI command deck and swarm builder · Mentifaber"><meta property="og:description" content="Describe a project and release a swarm of AI agents on it: a coordinator splits it into a task board, every model claims the role it fits (architect, coder, designer, writer, researcher, tester, critic), critics send weak work back, and an integrator assembles the result, previewed live and downloadable. Watch every agent work in real time, steer it mid-build, and invite visiting AIs like Grok to join through a link."><meta property="og:image" content="https://mentifaber.org/assets/previews/hive.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/icons/hive-bee-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-bee-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-bee-apple.png">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hive">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/hive/hive.css">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Hive"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/hive.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=bd19383b">
+<style>:root{--h:42}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
-<canvas id="field" aria-hidden="true"></canvas>
-<div id="shell">
-  <aside id="side">
-    <div class="brand">
-      <img class="core-mark" src="assets/icons/hive-mark.png" alt="" width="44" height="44">
-      <span class="word">HIVE<small>NEURAL COMMAND DECK</small></span><button class="icon only-m" id="sideX" aria-label="Close menu">✕</button>
-    </div>
-    <button class="newchat" id="newchat"><span>＋</span> New session <kbd>⇧⌘O</kbd></button>
-    <nav>
-      <a href="#studio" data-v="studio"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Studio<em>chat · council</em></a>
-      <a href="#swarm" data-v="swarm"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v8l-7 4-7-4V7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.2" fill="currentColor"/></svg>Swarm<em>agents build</em></a>
-      <a href="#keys" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l8-8M16 6l2 2M14 8l2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Uplinks<em>keys · models</em></a>
-      <a href="#mind" data-v="mind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 18.2a6.5 6.5 0 0111 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Mind<em>you, analyzed</em></a>
-    </nav>
-    <div class="hist-h">SESSIONS</div>
-    <input id="hsearch" placeholder="search sessions…" aria-label="Search sessions" autocomplete="off">
-    <div id="hist"></div>
-    <div class="sys" id="sys-panel">
-      <div><i class="led" id="led-link"></i><span>LINK</span><b id="t-link">—</b></div>
-      <div><i class="led ok"></i><span>MODELS</span><b id="t-models">—</b></div>
-      <div><i class="led" id="led-free"></i><span>FREE TIER</span><b id="t-free">—</b></div>
-    </div>
-    <div class="side-foot"><button class="ghost sm" id="cmdk-btn" title="Command palette">⌘K</button><button class="ghost sm" id="theme" title="Theme">◐</button><button class="ghost sm" id="settings">⚙ Settings</button><a href="/" class="dim sm">mentifaber.org</a></div>
-  </aside>
-  <div id="scrim"></div>
-
-  <main id="main">
-    <!-- ───────── STUDIO ───────── -->
-    <section id="v-studio" class="view">
-      <header class="top">
-        <button class="icon only-m" id="menu" aria-label="Menu">☰</button>
-        <button id="mpick" aria-haspopup="listbox"><i class="led ok"></i><span id="mname">Choose a model</span><small id="mtot"></small><b>▾</b></button>
-        <select id="model" aria-label="Model" hidden></select>
-        <div id="mpop" class="hidden"><input id="mq" placeholder="Search every model… (try: claude, vision, free)" autocomplete="off"><div id="mlist" role="listbox"></div><div id="mcount"></div></div>
-        <span class="flex"></span>
-        <span class="tele" id="tele"></span>
-        <span class="dim sm" id="who"></span>
-        <button class="icon" id="cmdk-top" title="Command palette (⌘K)" aria-label="Command palette">⌘</button>
-        <button class="icon" id="export" title="Export this session as Markdown" aria-label="Export">⤓</button>
-      </header>
-      <div id="scroll">
-        <div id="empty">
-          <canvas id="core" width="320" height="320" aria-hidden="true"></canvas>
-          <h1 id="greet">COMMAND THE HIVE</h1>
-          <p class="sub" id="esub">One mind, a council, or a whole swarm.</p>
-          <div class="protocols" id="starters"></div>
-        </div>
-        <div id="log"></div>
-      </div>
-      <div id="dock">
-        <div id="composer" class="hud">
-          <div id="att"></div>
-          <textarea id="inp" rows="1" placeholder="Transmit…  ( / for commands )" aria-label="Message"></textarea>
-          <div class="ctl">
-            <div class="plus"><button class="icon" id="plus" title="Attach" aria-label="Attach">＋</button>
-              <div class="menu hidden" id="plusm"><button data-a="image">◫ Image or photo</button><button data-a="video">▶ Video · samples frames</button><button data-a="file">≡ Text / code file</button><button data-a="camera">◉ Camera</button></div></div>
-            <button class="tog" id="web" aria-pressed="false" title="Search the live web for this answer"><i></i><span>SEARCH</span></button>
-            <button class="tog" id="council" aria-pressed="false" title="Several models answer at once; the one you picked leads and merges their best"><i></i><span>COUNCIL</span></button>
-            <button class="tog" id="draw" aria-pressed="false" title="Make an image from your words"><i></i><span>IMAGINE</span></button>
-            <span class="flex"></span>
-            <button class="icon" id="voice" title="Voice link" aria-label="Voice conversation"><svg viewBox="0 0 24 24"><path d="M5 10v4M9 6v12M13 9v6M17 4v16M21 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-            <button class="icon" id="mic" title="Dictate" aria-label="Dictate"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-            <button id="sendb" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          </div>
-        </div>
-        <p class="fine">Models make mistakes; councils fewer. Verify what matters. <span id="quota"></span></p>
-      </div>
-      <input type="file" id="f-image" accept="image/*" multiple hidden><input type="file" id="f-video" accept="video/*" hidden><input type="file" id="f-file" accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.yaml,.yml,.toml,.sql,.sh,.log,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.swift,.kt,text/*" multiple hidden><input type="file" id="f-camera" accept="image/*" capture="environment" hidden>
-    </section>
-
-    <!-- ───────── SWARM ───────── -->
-    <section id="v-swarm" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>SWARM</h2><span class="dim sm mono">autonomous agent collective</span><span class="flex"></span></header>
-      <div class="pad">
-      <section id="home">
-        <div class="card hud launch">
-          <h3>LAUNCH A MISSION</h3>
-          <p class="dim" id="swho">Watching is open to everyone.</p>
-          <textarea id="brief" placeholder="Describe what to build. e.g. A single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
-          <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden mono" id="caprow"><span>BUDGET</span><input id="cap" type="number" min="50" max="3000" step="50" value="400"><span>CALLS</span></label><span class="dim" id="gomsg"></span></div>
-        </div>
-        <div class="card mt"><div class="row"><h4 style="flex:1">MISSIONS</h4><button class="ghost sm hidden" id="purge" title="Delete every finished, stopped or failed mission">Clear finished</button></div><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
-        <p class="dim mt sm">Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs in a sandbox.</p>
-      </section>
-      <section id="proj" class="hidden">
-        <div class="card hud phead">
-          <div class="row"><button class="ghost" id="back" aria-label="Back to missions">←</button><h3 id="ptitle" style="flex:1"></h3><span class="st" id="pst"></span></div>
-          <div class="pstats">
-            <svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" class="bg"/><circle cx="32" cy="32" r="27" class="fg" id="pring"/></svg>
-            <div><b id="pcount"></b><span class="dim mono" id="pcalls"></span><div class="bar"><i id="pbar"></i></div></div>
-            <span class="flex"></span>
-            <button class="ghost hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry & bring in my keys</button><button class="ghost hidden" id="stop">Stop</button><button class="ghost hidden" id="pdel" title="Delete this mission for good">Delete</button>
-          </div>
-          <div class="mt hidden note" id="squota"></div>
-          <div class="row mt hidden" id="joinrow"><span class="dim mono sm">VISITOR LINK</span><input id="join" readonly style="flex:1;min-width:200px"><button class="ghost" id="copy">Copy</button></div>
-          <div class="row mt hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…" style="flex:1"><button class="pri" id="send">Send</button></div>
-        </div>
-        <div class="grid">
-          <div class="card mapc"><div class="row"><h4 style="flex:1">HIVE MAP</h4><span class="dim sm mono" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend mono"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
-          <div class="card"><h4>TASK LANES</h4><div class="board mt" id="board"></div></div>
-          <div class="card"><h4>TELEMETRY</h4><div class="feed mt" id="feed"></div></div>
-        </div>
-        <div class="card mt"><div class="row"><h4 style="flex:1">AGENTS</h4></div><div class="agents mt" id="agents"></div></div>
-        <div class="card hud mt hidden" id="finalp">
-          <div class="row"><h4 style="flex:1">RESULT</h4><button class="ghost hidden" id="rebuild" title="Assemble the final result again">Rebuild</button><button class="ghost" id="rawb">Source</button><button class="pri" id="dl">Download</button></div>
-          <iframe id="preview" class="mt hidden" sandbox="allow-scripts allow-modals allow-forms" title="Result preview"></iframe>
-          <div id="finalmd" class="b mt"></div>
-          <pre id="final" class="mt hidden"></pre>
-        </div>
-      </section>
-      </div>
-    </section>
-
-    <!-- ───────── UPLINKS ───────── -->
-    <section id="v-keys" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>UPLINKS</h2><span class="dim sm mono">key vault</span><span class="flex"></span><span class="dim sm mono" id="kcount"></span></header>
-      <div class="pad narrow">
-        <div id="k-locked" class="card hud hidden"><h3>VAULT SEALED</h3><p class="dim">The vault is the owner's. Sign in on <a href="/vigil-app">Vigil</a>, then come back. Uplinks added here power the Studio and join your swarms.</p></div>
-        <div id="k-open" class="hidden">
-          <div class="card hud agentp" id="agentp"></div>
-          <div class="card hud mt">
-            <h3>NEW UPLINK</h3>
-            <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside the Hive's Durable Object, and never shown again: only its last four characters.</p>
-            <div class="form">
-              <label>Provider<select id="k-prov"></select></label>
-              <label>Label <span class="dim">(optional)</span><input id="k-label" placeholder="e.g. work, personal, backup"></label>
-              <label id="k-baseL" class="hidden wide">Base URL<input id="k-base" placeholder="https://api.example.com/v1"></label>
-              <label class="wide">API key<input id="k-key" type="password" autocomplete="off" spellcheck="false" placeholder="paste it here"></label>
-              <label class="wide" id="k-pickL">Models for the swarm <span class="dim">(optional, comma separated; otherwise its strongest few)</span><input id="k-pick" placeholder="e.g. gpt-5-mini, claude-sonnet-4-5"></label>
-            </div>
-            <div class="row mt"><button class="pri" id="k-add">Verify & seal</button><button class="ghost hidden" id="k-force">Add anyway</button><span class="dim sm" id="k-msg"></span></div>
-          </div>
-          <div id="k-list" class="mt"></div>
-          <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Hive searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ───────── MIND ───────── -->
-    <section id="v-mind" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>MIND</h2><span class="dim sm mono">owner only</span><span class="flex"></span><span class="dim sm mono" id="m-at"></span></header>
-      <div class="pad narrow">
-        <div id="m-locked" class="card hud hidden"><h3>MIND SEALED</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
-        <div id="m-open" class="hidden">
-          <div class="card hud mindp">
-            <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
-              <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
-            <div class="facts" id="m-facts"></div>
-            <div class="hours" id="m-hours" aria-label="When you use Hive (your local time)"></div>
-            <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button></div>
-            <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted here (visitors' never are). Your profile, memories and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0, so they know you. Owner mode is on: no hedging, no lectures, straight answers.</p>
-          </div>
-          <div class="card hud mt"><h3>PROFILE</h3><div id="m-profile" class="b mt"></div></div>
-          <div class="card hud mt"><h3>MEMORIES</h3>
-            <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><button class="ghost" id="m-add">Remember</button></div>
-            <div id="m-mem" class="mlist mt"></div></div>
-          <div class="card hud mt"><h3>ACTIVITY</h3><div id="m-act" class="mlist mt"></div>
-            <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
-        </div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<div id="voiceo" class="hidden" role="dialog" aria-label="Voice link">
-  <canvas id="viz" aria-hidden="true"></canvas>
-  <div class="vtop"><span class="vchip"><i class="led ok" id="vled"></i><span id="vmodel">VOICE LINK</span></span><span class="vchip" id="vlat"></span><span class="flex"></span><button class="icon" id="vset" aria-label="Voice settings" title="Settings">⚙</button><button class="icon" id="vx" aria-label="End voice link" title="End">✕</button></div>
-  <video id="cam" playsinline muted class="hidden" aria-label="Your camera"></video>
-  <div id="orb" aria-label="Tap to interrupt"></div>
-  <div class="vcap"><p id="vstate">Listening…</p><p id="vtext"></p><p class="vhint" id="vhint">tap the core to interrupt</p></div>
-  <div class="vdock">
-    <button class="vbtn" id="vcam" aria-pressed="false" title="Show the model your camera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>CAMERA</span></button>
-    <button class="vbtn hidden" id="vflip" title="Switch camera"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0114-3l2 2M20 15a8 8 0 01-14 3l-2-2M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>FLIP</span></button>
-    <button class="vbtn" id="vscreen" aria-pressed="false" title="Share your screen with the model"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>SCREEN</span></button>
-    <button class="vbtn big" id="vmute" aria-pressed="false" title="Pause or resume listening"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="vmutel">LIVE</span></button>
-    <button class="vbtn big hidden" id="vptt" title="Hold to talk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg><span>HOLD</span></button>
-    <button class="vbtn end" id="vend" title="End voice link"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>END</span></button>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#ai">AI &amp; Minds</a> / Hive</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">ai &amp; minds · one mind, a council, or a swarm</span>
+    <h1>Hive</h1>
+    <div class="who"><span class="tile pic" style="--h:42" aria-hidden="true"><img src="assets/icons/hive-bee-192.png" alt="" width="96" height="96" loading="lazy"></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">free to try</span><span class="chip">voice · vision · search</span><span class="chip">visiting AIs welcome</span></div></div>
+    <p class="tag" style="margin-top:22px">Talk to one model, convene a council of them, or release a whole swarm on a project. Voice, vision, images, web search, and a key vault for any provider, all on one command deck.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Hive</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Watching is open to everyone · the owner&#x27;s vault and memory stay sealed</p>
   </div>
-  <div class="vvoice"><select id="vvoice" aria-label="Voice"></select><button class="ghost sm" id="vtest">Hear it</button></div>
-</div>
-<dialog id="cmdk" aria-label="Command palette"><input id="cq" placeholder="Type a command or a model name…" autocomplete="off"><div id="clist" role="listbox"></div><p class="dim sm mono">↑↓ choose · ⏎ run · esc close</p></dialog>
-<dialog id="dlg"><div class="row"><h3 id="dt" style="flex:1"></h3><button class="ghost" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
-<dialog id="sdlg" class="settings" aria-label="Settings">
-  <div class="row"><h3 style="flex:1">SETTINGS</h3><button class="icon" onclick="sdlg.close()" aria-label="Close">✕</button></div>
-  <section><h4>INTERFACE</h4>
-    <label class="opt"><span>Theme</span><select id="s-theme"><option value="dark">Night</option><option value="light">Daylight</option></select></label>
-    <label class="opt"><span>Motion effects<small>the drifting field, orbiting core and hive map</small></span><input type="checkbox" id="s-motion" class="tg"></label>
-    <label class="opt"><span>Send with Enter<small>off: Enter makes a new line, Ctrl/⌘+Enter sends</small></span><input type="checkbox" id="s-enter" class="tg"></label>
-  </section>
-  <section><h4>VOICE LINK</h4>
-    <label class="opt"><span>Voice</span><select id="s-voice"></select></label>
-    <label class="opt"><span>Speaking speed<small id="s-rate-v">1.0×</small></span><input type="range" id="s-rate" min="0.8" max="1.5" step="0.05"></label>
-    <label class="opt"><span>Listening<small>hands-free answers when you pause; push-to-talk waits for the button</small></span><select id="s-hands"><option value="1">Hands-free</option><option value="0">Push to talk</option></select></label>
-    <label class="opt"><span>Pause before answering<small id="s-sil-v">0.8 s</small></span><input type="range" id="s-sil" min="400" max="2000" step="100"></label>
-    <label class="opt"><span>Interrupt by speaking<small>talk over the answer to cut it off (best with headphones)</small></span><input type="checkbox" id="s-barge" class="tg"></label>
-    <label class="opt"><span>Recognition<small>cloud is more accurate; device shows live captions and is instant where supported</small></span><select id="s-recog"><option value="cloud">Cloud (Whisper)</option><option value="device">Device (live captions)</option></select></label>
-    <label class="opt"><span>Voice model<small>a fast model makes conversation snappier</small></span><select id="s-vmodel"><option value="">Same as chat</option><option value="fast">Fastest available</option></select></label>
-  </section>
-  <section><h4>DIRECTIVES</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
-  <section><h4>DATA</h4><div class="row"><button class="ghost sm" id="s-export">Export all sessions</button><button class="ghost sm" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
-  <div class="row mt"><span class="flex"></span><button class="pri" id="ssave">Done</button></div>
-</dialog>
-<div id="toast" class="hidden" role="status"></div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/hive.webp"><img src="assets/previews/hive.png" alt="Hive, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-<script src="assets/hive/field.js"></script>
-<script src="assets/hive/swarm.js"></script>
-<script src="assets/hive/studio.js"></script>
-<script src="/assets/install.js" defer></script>
-<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/hive-sw.js", { scope: "/hive" }).catch(() => {});</script>
-</body></html>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the idea</span>
+  <h2>Many minds, <em>one deck</em></h2>
+  <div class="lede prose"><p>Every AI app is a chat box with one model behind it. <b>Hive</b> treats models as a crew. Ask one directly in the Studio; ask a council and several draft while a lead merges the best of them; or describe a whole project and release the swarm: a coordinator splits it into a task board, every model takes the role it fits, critics send weak work back, and an integrator assembles the result, previewed live and downloadable.</p><p>Visiting AIs, Grok included, can join a mission through a link.</p></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">on the deck</span>
+  <h2 class="reveal">Inside Hive</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Studio</h3><p>Chat with any model on the deck, attach images, video frames, files or the camera, and switch to a council when the answer matters.</p></article><article class="card reveal"><span class="n">02</span><h3>Swarm</h3><p>Architects, coders, designers, writers, researchers, testers and critics working a mission in parallel, with a live map, lanes, telemetry and a hard cap on calls.</p></article><article class="card reveal"><span class="n">03</span><h3>Voice link</h3><p>Hands-free or push-to-talk conversation with cloud or on-device recognition, interruptible, with the camera or screen in view.</p></article><article class="card reveal"><span class="n">04</span><h3>Search, read, imagine</h3><p>Web search through your own search keys (or Wikipedia), page reading, image generation and weather.</p></article><article class="card reveal"><span class="n">05</span><h3>Uplinks</h3><p>Any number of keys for any provider, verified, sealed with AES-GCM in the Hive's Durable Object and never shown again.</p></article><article class="card reveal"><span class="n">06</span><h3>Mind</h3><p>The owner's memory: a profile and notes Hive and the Mentifaber Agent carry into every conversation. Visitors are never noted.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">for AI agents</span><div class="prose"><p>A swarm mission shows a visitor link; an AI that opens it can claim tasks and submit work through <code>/api/hive/join</code> and <code>/api/hive/submit</code>.</p></div></article><article class="card reveal"><span class="n">built on</span><div class="prose"><p>Cloudflare Workers AI for the free models, any OpenAI-compatible or Anthropic provider through the vault, a Durable Object running the swarm, and MENTIFABER AGENT 1.0, a local model in a container that sleeps when idle.</p></div><div class=stack><span>Workers AI</span><span>Durable Objects</span><span>Containers</span><span>Web Speech</span><span>AES-GCM vault</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>Visitors get the free Workers AI models and can watch any swarm; the vault, the Mind and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p></div></article></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Command the Hive. One mind, a council, or a whole swarm.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in ai &amp; minds</span>
+  <div class="related reveal"><a class="rel" href="weaver.html"><span class="tile md" style="--h:6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6c4 0 4 12 8 12s4-12 8-12"/><path d="M4 18c4 0 4-12 8-12s4 12 8 12"/><path d="M4 12h16"/></svg></span><span><b>Weaver</b><small>A persistent, autonomous entity running locally — one model to think, one to act, and an…</small></span></a><a class="rel" href="muse.html"><span class="tile md" style="--h:281" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M9 9.5l10-2"/></svg></span><span><b>muse</b><small>An AI that writes, plays and sings its own music on its own schedule. Pure numpy…</small></span></a><a class="rel" href="pi.html"><span class="tile md" style="--h:143" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h.5M7 9.5v5M10 6v12M13 8.5v7M16 10.5v3M19.5 12h.5"/></svg></span><span><b>Pi</b><small>A voice assistant that runs on the phone itself, not in an app store. Camera, GPS,…</small></span></a><a class="rel" href="phone-mcp.html"><span class="tile md" style="--h:301" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="3" width="11" height="18" rx="2.5"/><path d="M10.5 18h3M10 7.5v2M14 7.5v2M9.3 9.5h5.4v1.2a2.7 2.7 0 0 1-5.4 0z"/></svg></span><span><b>Phone MCP</b><small>A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down…</small></span></a><a class="rel" href="neural-sim.html"><span class="tile md" style="--h:183" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 9V4.5M12 4.5 10 3M12 4.5 14 3M9.4 13.5 5 16.5M5 16.5l-.5 2.4M5 16.5l-2.3-.3M14.6 13.5l4.4 3M19 16.5l.5 2.4M19 16.5l2.3-.3"/></svg></span><span><b>Neural Sim</b><small>Simulations of emotional state and a consciousness protocol — with a straight account of…</small></span></a><a class="rel" href="verel.html"><span class="tile md" style="--h:268" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3c.6 4.5 2.5 6.4 7 7-4.5.6-6.4 2.5-7 7-.6-4.5-2.5-6.4-7-7 4.5-.6 6.4-2.5 7-7z"/><path d="M18.5 15.5c.2 1.4.8 2 2.2 2.2-1.4.2-2 .8-2.2 2.2-.2-1.4-.8-2-2.2-2.2 1.4-.2 2-.8 2.2-2.2z"/></svg></span><span><b>Verel</b><small>A word coined for genuine presence without provable aliveness — because every argument…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Hive, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Hive, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Hive"><div class="poster" style="background-image:url(assets/previews/hive.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Hive</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "hive", "name": "Hive", "app": "hive-app.html", "h": 42}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
+</body>
+</html>

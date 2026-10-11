@@ -9,7 +9,7 @@
   const ago = (ts) => { const s = (Date.now() - ts) / 1000; return s < 60 ? Math.round(s) + "s" : s < 3600 ? Math.round(s / 60) + "m" : Math.round(s / 3600) + "h"; };
 
   async function home() {
-    cur = null; clearInterval(timer); $("home").classList.remove("hidden"); $("proj").classList.add("hidden"); history.replaceState(null, "", "/hive#swarm");
+    cur = null; clearInterval(timer); $("home").classList.remove("hidden"); $("proj").classList.add("hidden"); history.replaceState(null, "", "/hive-app#swarm");
     const j = await api("/list").catch(() => ({ projects: [] })); owner = !!j.owner;
     $("swho").innerHTML = owner ? "Signed in as the owner: no daily limit, set the budget, and every key in your vault joins in." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm does the rest.";
     $("go").disabled = false; $("caprow").classList.toggle("hidden", !owner);
@@ -25,7 +25,7 @@
     const j = await api("/new", { brief, cap: +$("cap").value || undefined }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } remember(j.id, j.ctok); $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
   $("back").onclick = home;
 
-  function open(id) { cur = id; $("home").classList.add("hidden"); $("proj").classList.remove("hidden"); history.replaceState(null, "", "/hive?p=" + id + "#swarm"); $("feed").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) poll(); }, 2000); } // no polling from a hidden tab
+  function open(id) { cur = id; $("home").classList.add("hidden"); $("proj").classList.remove("hidden"); history.replaceState(null, "", "/hive-app?p=" + id + "#swarm"); $("feed").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) poll(); }, 2000); } // no polling from a hidden tab
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cur) poll(); });
   async function poll() {
     if (!cur) return; let j; try { j = await api("/state?id=" + cur + "&ctok=" + (mine()[cur] || "")); } catch (e) { return; } if (j.error) return;
