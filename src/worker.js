@@ -552,6 +552,16 @@ export default {
         } catch (e) {}
         return stub.fetch(new Request("http://agent" + sub + url.search, { method: req.method, headers: h, body }));
       }
+      if (route === "orbit") { // Orbit Watch: CelesTrak element sets, cached at the edge for two hours (CelesTrak asks that a set be pulled at most every couple of hours)
+        const g = url.searchParams.get("group"), n = url.searchParams.get("catnr");
+        const GROUPS = new Set(["stations", "visual", "weather", "noaa", "goes", "gps-ops", "galileo", "amateur", "science", "geo", "starlink", "resource", "cubesat", "last-30-days"]);
+        const q = g && GROUPS.has(g) ? "GROUP=" + g : n && /^\d{1,9}$/.test(n) ? "CATNR=" + n : null;
+        if (!q) return json({ error: "ask for a known group or a numeric catnr" }, 400);
+        const r = await fetch("https://celestrak.org/NORAD/elements/gp.php?" + q + "&FORMAT=tle", { cf: { cacheTtl: 7200, cacheEverything: true }, headers: { "user-agent": "mentifaber.org Orbit Watch" } }).catch(() => null);
+        const t = r && r.ok ? await r.text() : "";
+        if (!/^1 \d/m.test(t)) return json({ error: "no elements from CelesTrak" + (r ? " (" + r.status + ")" : "") }, 502);
+        return new Response(t, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
+      }
       if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
         const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
         return new Response(JSON.stringify({ city: cf.city || null, region: cf.region || null, country: cf.country || null, lat: n(cf.latitude), lon: n(cf.longitude), tz: cf.timezone || null }), { headers: { "content-type": "application/json", "cache-control": "private, max-age=600" } });

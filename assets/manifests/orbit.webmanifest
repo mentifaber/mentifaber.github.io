@@ -1,0 +1,35 @@
+{
+  "id": "/orbit",
+  "name": "Orbit Watch · Mentifaber",
+  "short_name": "Orbit Watch",
+  "description": "Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, the day-night line, and every pass over you, with the ones you can see by eye marked.",
+  "start_url": "/orbit-app.html",
+  "scope": "/orbit",
+  "display": "standalone",
+  "background_color": "#060a10",
+  "theme_color": "#060a10",
+  "icons": [
+    {
+      "src": "../icons/v2/orbit-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/orbit-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/orbit-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "utilities"
+  ]
+}
