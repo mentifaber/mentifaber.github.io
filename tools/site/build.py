@@ -17,7 +17,14 @@ def ver(path):  # cache-busting stamp from the file's contents
     try: return hashlib.sha1(open(os.path.join(ROOT, path), "rb").read()).hexdigest()[:8]
     except OSError: return "0"
 
+# apps whose icon was chosen by hand (not generated): their own images everywhere
+OWN_ICON = {"hive": {"tile": "assets/icons/hive-bee-192.png", "fav": "assets/icons/hive-bee-48.png", "apple": "assets/icons/hive-bee-apple.png",
+                     "manifest": [{"src": "../icons/hive-bee-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}, {"src": "../icons/hive-bee-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                                  {"src": "../icons/hive-bee-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"}, {"src": "../icons/hive-bee-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}}
+
 def glyph(a, cls="tile"):
+    if a["id"] in OWN_ICON:
+        return f'<span class="{cls} pic" style="--h:{a["hue"]}" aria-hidden="true"><img src="{OWN_ICON[a["id"]]["tile"]}" alt="" width="96" height="96" loading="lazy"></span>'
     if os.path.exists(os.path.join(ROOT, "tools/site/icons", a["id"] + ".svg")):  # hand-drawn icon art
         return f'<span class="{cls} pic" style="--h:{a["hue"]}" aria-hidden="true"><img src="assets/icons/v2/{a["id"]}-192.png" alt="" width="96" height="96" loading="lazy"></span>'
     return f'<span class="{cls}" style="--h:{a["hue"]}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{a["glyph"]}</svg></span>'
@@ -36,6 +43,9 @@ def preview(i):
     return None
 
 def head(a, title, desc, extra=""):
+    own = OWN_ICON.get(a["id"])
+    ICONS = (f'<link rel="icon" href="{own["fav"]}" sizes="48x48"><link rel="icon" href="{own["tile"]}" sizes="192x192"><link rel="apple-touch-icon" href="{own["apple"]}">' if own else
+             f'<link rel="icon" href="assets/icons/v2/{a["id"]}.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/{a["id"]}-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/{a["id"]}-180.png">')
     shot = preview(a["id"]); og = "https://mentifaber.org/" + (shot.replace(".webp", ".png") if shot else "assets/previews/home.png")
     man = f'<link rel="manifest" href="assets/manifests/{a["id"]}.webmanifest">' if a.get("app") else ""
     return f"""<!doctype html>
@@ -47,7 +57,7 @@ def head(a, title, desc, extra=""):
 <meta name="description" content="{esc(desc)}">
 <meta name="theme-color" content="#05060a">
 <meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}"><meta property="og:image" content="{og}"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="assets/icons/v2/{a["id"]}.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/{a["id"]}-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/{a["id"]}-180.png">
+{ICONS}
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="{esc(a["name"])}"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 {man}
 <link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -143,6 +153,7 @@ def manifest(a, c):
          "icons": [{"src": f"../icons/v2/{a['id']}-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                    {"src": f"../icons/v2/{a['id']}-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
                    {"src": f"../icons/v2/{a['id']}-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}
+    if a["id"] in OWN_ICON: m["icons"] = OWN_ICON[a["id"]]["manifest"]
     m.update(c.get("manifest") or {})  # per-app extras: orientation, categories, colours
     json.dump(m, open(os.path.join(ROOT, f"assets/manifests/{a['id']}.webmanifest"), "w"), indent=2, ensure_ascii=False)
 
@@ -266,7 +277,7 @@ def home():
   <span class="kicker">mens · faber · maker of minds</span>
   <h1>MENTIFABER</h1>
   <p class="tag">Builder of minds and the systems that hold them. AI swarms and agents, private messengers, live atlases of the sky, tools that keep your data on your own device, and games. Every page explains its app, then <em style="color:var(--ink);font-style:normal">opens it right there</em> as you scroll.</p>
-  <div class="cta"><a class="btn pri" href="#apps">Explore everything{ARROW}</a><a class="btn" href="hive">Open Hive</a><button class="btn ghost" data-install hidden>Install Mentifaber</button></div>
+  <div class="cta"><a class="btn pri" href="#apps">Explore everything{ARROW}</a><a class="btn" href="hive#app">Open Hive</a><button class="btn ghost" data-install hidden>Install Mentifaber</button></div>
   <div class="h-stats">{stats}</div>
 </div><a class="scrollcue" href="#now" aria-label="Scroll"><i></i>scroll</a></section>
 

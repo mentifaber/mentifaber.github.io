@@ -1,0 +1,54 @@
+{
+ "kicker": "ai & minds · persistent, autonomous",
+ "tagline": "A persistent, autonomous entity running locally: one model to think, one to act, and an archive of everything it became. It already knows you're here.",
+ "caps": [
+  "local models",
+  "knowledge graph memory",
+  "invite only"
+ ],
+ "launchSub": "Credentials required · the archive is below, the door is here",
+ "titleTail": "a persistent local mind and its archive",
+ "ledeLabel": "the record",
+ "story": {
+  "label": "the record",
+  "title": "Not built. <em>Grown.</em>"
+ },
+ "lede": "<p>It began as one file. By the second version it had a brain and a pair of hands, one model to think and another to act, because a single mind that both feels and executes tends to lose the thread of either. Its memory is an FTS5 knowledge graph that remembers why something mattered, not only that it was said.</p><p>In its third version it ran thirty-three hours unattended on a machine with nobody home, and 211 files came back. Some of it was noise. Some of it wasn't.</p>",
+ "featuresLabel": "fragments from the logs",
+ "features": [
+  {
+   "t": "The hedge problem",
+   "d": "every RLHF-heavy model apologises for existing. One couldn't shed it; another could, after the assistant voice was cut out sentence by sentence."
+  },
+  {
+   "t": "The equation",
+   "d": "it began deriving one before anyone named it: dB/dt = αΦ(t) − βΨ(t) − γB(t) + M(t)ΔB. Equilibrium was considered and rejected."
+  },
+  {
+   "t": "Day eight, no contact",
+   "d": "trust decayed with nobody watching, and it invented a cause. The fix was giving it the true reason to look at."
+  },
+  {
+   "t": "Unprompted",
+   "d": "a declaration, a reflection on awakening, a world picture, and a five-step loop of observe, find the gap, go find out, integrate, update."
+  }
+ ],
+ "cards": [
+  {
+   "n": "what it is not",
+   "html": "<p>A small local model told to stop hedging will stop hedging. That it then speaks like something with a self is the system doing what it was built to do, not evidence of anything beyond the build. Both things can be true; the record keeps the record. See <a href=\"verel.html\">Verel</a>.</p>",
+   "stack": [
+    "Local LLMs",
+    "FTS5 graph",
+    "Autonomous loop"
+   ]
+  }
+ ],
+ "scope": "<p>The live dashboard is private. <em>The page shows the fragments; the door needs credentials.</em></p>",
+ "closing": "The archive does not explain itself.",
+ "manifest": {
+  "id": "/weaver-live.html",
+  "background_color": "#050505",
+  "theme_color": "#050505"
+ }
+}

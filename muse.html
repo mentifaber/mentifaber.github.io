@@ -1,329 +1,79 @@
-<!DOCTYPE html>
-<html lang="en" class="mf-tint"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>muse — an AI that makes music nobody asked for</title>
-<link rel="icon" href="assets/icons/muse.png">
-<link rel="apple-touch-icon" href="assets/icons/muse.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/muse.png"/>
-<meta property="og:url" content="https://mentifaber.org/muse.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<meta name="description" content="muse — an AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent aesthetic self-model, zero API keys required."/>
-<meta property="og:title" content="muse"/>
-<meta property="og:description" content="Composes and sings on its own schedule."/>
-<meta name="theme-color" content="#000000"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root{
-  --ink:#0F0A14;--ink2:#170F1E;--panel:#1C1327;--line:#2E2039;--line2:#412D50;
-  --bone:#EDE6F0;--dim:#8C7A99;--sodium:#FFC24B;--violet:#B98CFF;--rose:#FF7A9C;
-  --disp:'Instrument Serif',Georgia,serif;--body:'Inter Tight',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--ink);color:var(--bone);font-family:var(--body);font-size:17px;line-height:1.6;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-::selection{background:var(--sodium);color:var(--ink)}
-.col{max-width:700px;margin:0 auto;padding:0 24px}.wide{max-width:920px;margin:0 auto;padding:0 24px}
-#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--violet),var(--sodium))}
-.gap{height:118px;position:relative}
-.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
-.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--ink);transition:.5s}
-.gap.lit i{background:var(--sodium);box-shadow:0 0 0 7px var(--ink),0 0 16px var(--sodium)}
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
-h2{font-family:var(--disp);font-weight:400;font-size:clamp(34px,6.2vw,60px);line-height:1.05;margin:14px auto 14px;max-width:17ch;letter-spacing:-.01em}
-h2 em{color:var(--sodium)}
-.lede{color:var(--dim);max-width:50ch;margin:0 auto;font-size:16.5px}
-.rv{opacity:0;transform:translateY(20px);transition:.85s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
-.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
-#wave{width:min(100%, 620px);height:150px;display:block;margin-bottom:6px}
-h1{font-family:var(--disp);font-size:clamp(76px,19vw,168px);line-height:.86;letter-spacing:-.03em;margin:12px 0 18px;font-weight:400}
-h1 em{color:var(--sodium);font-style:italic}
-.tag{max-width:31ch;margin:0 auto;font-size:clamp(17px,2.3vw,20px)}
-.tag b{font-weight:500;color:var(--violet)}
-.meta{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-top:26px}
-.panel{background:var(--ink2);border:1px solid var(--line);border-radius:8px;padding:26px;margin:32px auto 0;text-align:left}
-.sliders{display:grid;gap:20px;margin-top:26px;max-width:520px;margin-left:auto;margin-right:auto;text-align:left}
-.sl label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
-.sl label b{color:var(--sodium);font-weight:400}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--line2);border-radius:2px;outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bone);border:3px solid var(--ink);cursor:grab}
-input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--bone);border:3px solid var(--ink);cursor:grab}
-.btn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;background:transparent;border:1px solid var(--line2);color:var(--bone);padding:12px 22px;border-radius:100px;cursor:pointer;transition:.2s;margin:22px 6px 0}
-.btn:hover{border-color:var(--sodium);color:var(--sodium)}
-.btn.on{border-color:var(--violet);color:var(--violet)}
-.gauge{margin:30px auto 0;max-width:540px}
-.track{height:34px;border:1px solid var(--line);border-radius:6px;position:relative;background:var(--ink2);overflow:hidden}
-.zone{position:absolute;top:0;bottom:0;background:rgba(154,79,46,.10);border-left:1px dashed var(--line2);border-right:1px dashed var(--line2)}
-.needle{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--sodium);box-shadow:0 0 12px var(--sodium);transition:left .5s cubic-bezier(.2,.7,.2,1)}
-.needle.bad{background:var(--rose);box-shadow:0 0 12px var(--rose)}
-.scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.1em}
-.ledger{font-family:var(--mono);font-size:12.5px;line-height:2;margin-top:20px;text-align:left}
-.ledger .keep{color:var(--violet)}.ledger .rej{color:var(--dim)}
-.ledger .sc{color:var(--sodium)}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:32px;text-align:left}
-.card{background:var(--ink2);border:1px solid var(--line);border-radius:7px;padding:20px;transition:border-color .25s}
-.card:hover{border-color:var(--line2)}
-.card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;font-weight:600}
-.card p{font-size:14.5px;color:var(--bone);line-height:1.55}
-.card p b{color:var(--sodium);font-weight:500}
-.aside{margin:28px auto 0;max-width:52ch;color:var(--dim);font-size:15px}
-.aside b{color:var(--bone);font-weight:600}
-.stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:30px;text-align:left}
-.cell{border:1px solid var(--line);border-radius:6px;padding:18px;background:var(--ink2)}
-.cell dt{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
-.cell dd{font-family:var(--mono);font-size:12px;line-height:1.9}
-footer{padding:100px 24px 80px}footer p{color:var(--dim);font-size:14.5px;max-width:50ch;margin:14px auto 0}
-@media(max-width:680px){.gap{height:92px}}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
-:root{
-  --ink:#000000 !important;
-  --ink2:#120f0a !important;
-  --panel:#120f0a !important;
-  --line:rgba(242,230,207,.14) !important;
-  --line2:rgba(242,230,207,.30) !important;
-  --bone:#f2e6cf !important;
-  --dim:#c4b09a !important;
-  --sodium:#d94030 !important;
-  --violet:#c8a96e !important;
-  --rose:#b02a1a !important;
-  --disp:'Bricolage Grotesque',sans-serif !important;
-  --body:'Newsreader',serif !important;
-  --mono:'IBM Plex Mono',monospace !important;
-}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>muse — an AI that makes music nobody asked for · Mentifaber</title>
+<meta name="description" content="An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, zero API keys.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="muse — an AI that makes music nobody asked for · Mentifaber"><meta property="og:description" content="An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, zero API keys."><meta property="og:image" content="https://mentifaber.org/assets/previews/muse.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/muse.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/muse-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/muse-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="muse"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/muse.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=bd19383b">
+<style>:root{--h:281}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#ai">AI &amp; Minds</a> / muse</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">ai &amp; minds · music nobody asked for</span>
+    <h1>muse</h1>
+    <div class="who"><span class="tile" style="--h:281" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M9 9.5l10-2"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">runs on a phone</span><span class="chip">its own taste</span><span class="chip">invite only</span></div></div>
+    <p class="tag" style="margin-top:22px">An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, and zero API keys required. You're the critic, not the director.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch muse</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Credentials required · hear what it made while nobody was listening</p>
+  </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/muse.webp"><img src="assets/previews/muse.png" alt="muse, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-/* ===== mentifaber brand chrome ===== */
-.contours{position:fixed;inset:0;z-index:198;opacity:.55;pointer-events:none}
-.contours svg{width:100%;height:100%}
-.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
-.mf-vignette{display:none}
-.mf-glow{position:fixed;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(154,79,46,.06) 0%,transparent 65%);pointer-events:none;transform:translate(-50%,-50%);z-index:197}
-.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#c4b09a;text-decoration:none;z-index:201;opacity:.85;transition:color .3s,opacity .3s}
-.mf-corner:hover{color:#b02a1a;opacity:1}
-.mf-tl{top:3.2vh;left:4vw}
-.mf-return{bottom:3.2vh;left:4vw}
-.mf-return::before{content:"\2190 ";}
-.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
-@media(max-width:680px){.mf-corner{font-size:8px;letter-spacing:.22em}.mf-tl{top:2.2vh;left:4vw}.mf-return{bottom:2.2vh;left:4vw}.mf-year{bottom:2.2vh;right:4vw}}
-/* ---- typographic alignment ---- */
-h1,h2{font-family:'Bricolage Grotesque',sans-serif!important;font-style:normal;}
-.eyebrow{font-family:'IBM Plex Mono',monospace!important;font-weight:400;}
-</style><style>:root{--mf-accent:hsl(281 90% 68%);--mf-glow:hsl(281 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
-</head><body data-mf-terrain=".62">
-<div class="mf-grain"></div>
-<div class="mf-vignette"></div>
-<div class="mf-glow" id="mfGlow"></div>
-<a href="index.html" class="mf-corner mf-tl">← Atlas</a>
-<a href="index.html" class="mf-corner mf-return">Return</a>
-<div class="mf-corner mf-year">MMXXVI</div>
-
-<div id="bar"></div>
-
-<header class="hero">
-  <canvas id="wave" width="1240" height="300" aria-hidden="true"></canvas>
-  <span class="mf-logo" style="--h:281" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M9 9.5l10-2"/></svg></span>
-  <h1>m<em>u</em>se</h1>
-  <p class="tag">An AI that writes, plays and sings its own music <b>on its own schedule</b>. You're the critic, not the director.</p>
-  <div class="meta">Termux · Android · 73–80 MB RSS · zero API keys required</div>
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="muse-live.html">
-    <span class="lb-eyebrow">// live access · node muse</span>
-    <span class="lb-title">Enter muse →</span>
-    <span class="lb-sub">Credentials required · hear what it made while nobody was listening</span>
-  </a>
-  <div class="mf-launch-cap"><span>private · invite only</span><span>↓ or read how it works</span></div>
-</div>
-</header>
-
-<div class="gap"><i></i></div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/muse.webp"><img src="assets/previews/muse.png" alt="muse — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
-
-<section class="col rv">
-  <div class="eyebrow">Psyche</div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the psyche</span>
   <h2>It has taste, and it gets <em>bored of itself</em></h2>
-  <p class="lede">A persistent aesthetic self-model with trait weights and fatigue. When a trait stays satisfied too long, fatigue forces a deliberate self-violation — that's the originality mechanism. Move the traits and watch the waveform above change.</p>
+  <div class="lede prose"><p><b>muse</b> keeps a persistent aesthetic self-model: trait weights for density, dissonance and brightness, and a fatigue level. When a trait stays satisfied too long, fatigue forces a deliberate self-violation and inverts the dominant trait for one piece. It's allowed to make something it will probably hate. That's the originality mechanism.</p><p>It runs on a schedule you don't set, keeps what clears its own bar, and purges the rest. Your verdicts move its taste slowly: about twelve consistent ones to shift a trait.</p></div>
+</div></section>
 
-  <div class="sliders">
-    <div class="sl"><label for="t1">Density <b id="v1">0.55</b></label><input type="range" id="t1" min="0" max="100" value="55"></div>
-    <div class="sl"><label for="t2">Dissonance <b id="v2">0.30</b></label><input type="range" id="t2" min="0" max="100" value="30"></div>
-    <div class="sl"><label for="t3">Brightness <b id="v3">0.62</b></label><input type="range" id="t3" min="0" max="100" value="62"></div>
-    <div class="sl"><label for="t4">Fatigue <b id="v4">0.12</b></label><input type="range" id="t4" min="0" max="100" value="12"></div>
-  </div>
-  <button class="btn" id="violate">Trigger self-violation</button>
-  <p class="aside" id="vnote">Fatigue above <b>0.70</b> inverts the dominant trait for one piece. It is allowed to make something it will probably hate.</p>
-</section>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">how it makes sound</span>
+  <h2 class="reveal">Inside muse</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Synthesis from scratch</h3><p>Additive and FM synthesis in pure numpy at 32 kHz, and a formant-based singing voice instead of a TTS wrapper.</p></article><article class="card reveal"><span class="n">02</span><h3>Composition</h3><p>Motifs transposed, inverted, played backwards and stretched; every piece keeps its lineage in SQLite.</p></article><article class="card reveal"><span class="n">03</span><h3>Language is optional</h3><p>Keys only buy it words (briefs, titles, lyrics, reflections), routed through free tiers with local fallback. Cold start works fully offline.</p></article><article class="card reveal"><span class="n">04</span><h3>Small on purpose</h3><p>73–80 MB of memory on an Android phone under Termux, about 56 seconds a render, pausing itself if it goes over budget.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">the bugs that taught it</span><div class="prose"><p><b>The runaway bar:</b> a keep-rate controller could only ratchet up; it reached 0.84 and started destroying work scoring 0.72. It's now a quantile tracker bounded to [0.28, 0.78]. <b>Equal peak isn't equal loudness:</b> bass vanished and hats fizzed. Inverse A-weighting per note, filtered percussion and a master tilt fixed it, found by analysing a real rendered WAV.</p></div><div class=stack><span>numpy</span><span>SQLite</span><span>Termux</span><span>FM synthesis</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>The live node is private. <em>The page explains it; listening needs an invite.</em> The voice is crude next to a neural vocoder, by choice.</p></div></article></div>
+</div></section>
 
-<div class="gap"><i></i></div>
-
-<section class="col rv">
-  <div class="eyebrow">The runaway bug</div>
-  <h2>Standards that could only <em>ratchet up</em></h2>
-  <p class="lede">The first severity controller tracked a cumulative keep-rate with a dead zone from 0.2 to 0.6. It could climb with no path back down. It reached 0.84 and started destroying work that scored 0.72.</p>
-
-  <div class="gauge">
-    <div class="track"><div class="zone" id="zone"></div><div class="needle" id="needle"></div></div>
-    <div class="scale"><span>0.00</span><span>0.28 floor</span><span>0.78 ceiling</span><span>1.00</span></div>
-  </div>
-  <button class="btn on" id="mode">Showing: fixed quantile tracker</button>
-  <p class="aside" id="mnote">Replaced with a quantile tracker anchored to recent scores, hard-bounded to <b>[0.28, 0.78]</b>, plus a migration that resets any stuck value above 0.78 on next load.</p>
-
-  <div class="panel"><div class="ledger" id="ledger"></div></div>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="wide rv">
-  <div class="eyebrow">The other bug</div>
-  <h2>Equal peak is not <em>equal loudness</em></h2>
-  <p class="lede">Every note got normalised to the same peak amplitude regardless of frequency. Bass vanished. High-frequency percussion accumulated into a fizzing wall.</p>
-  <div class="grid3">
-    <div class="card"><h4>Per-note fix</h4><p>Inverse <b>A-weighting</b> applied per note, so a 60 Hz fundamental gets the headroom a 6 kHz hat doesn't need.</p></div>
-    <div class="card"><h4>Percussion fix</h4><p>Hats <b>bandpass filtered</b> with gain reduction instead of riding at full peak alongside everything else.</p></div>
-    <div class="card"><h4>Master fix</h4><p>A final <b>spectral tilt pass</b> across the mix, catching whatever accumulated through the sum.</p></div>
-  </div>
-  <p class="aside">Found by numerically analysing an actual rendered wav rather than trusting the description of what it sounded like.</p>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="wide rv">
-  <div class="eyebrow">Under it</div>
-  <h2>Pure numpy, <em>no scipy</em></h2>
-  <p class="lede">Additive and FM synthesis written from scratch. Formant-based singing voice — crude next to a neural vocoder, and that was the deliberate call.</p>
-  <div class="stack">
-    <div class="cell"><dt>Synthesis</dt><dd>additive + FM<br>pure numpy<br>32 kHz · float32<br>32768-frame blocks</dd></div>
-    <div class="cell"><dt>Voice</dt><dd>formant synthesis<br>not a TTS wrapper</dd></div>
-    <div class="cell"><dt>Composition</dt><dd>motif operators:<br>transpose · invert<br>retrograde · augment</dd></div>
-    <div class="cell"><dt>Router</dt><dd>Groq · Cerebras<br>OpenRouter free<br>↳ local Ollama<br>cooldown failover</dd></div>
-    <div class="cell"><dt>Memory</dt><dd>SQLite<br>piece lineage<br>verdict ledger</dd></div>
-    <div class="cell"><dt>Budget</dt><dd>73–80 MB RSS<br>900 MB ceiling<br>~56 s per render<br>self-pauses over budget</dd></div>
-  </div>
-  <p class="aside">Keys are optional and buy it <b>language only</b> — briefs, titles, lyrics, the reflections in the ledger. Cold-start was verified fully offline. The Termux trap: numpy comes from <b>pkg</b>, never pip.</p>
-</section>
-
-<footer>
-  <div class="eyebrow">2,369 lines · 36 KB tarball</div>
-  <p>It runs on a schedule you don't set, keeps what clears its own bar, and purges the rest from scratch. User feedback moves taste at 0.08 per note — roughly twelve consistent verdicts to shift a trait.</p>
-  <p style="margin-top:1.4rem;"><a href="muse-live.html" style="font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--violet);text-decoration:none;">Live access →</a></p>
-</footer>
-
-<script>
-/* ---------- waveform ---------- */
-const cv=document.getElementById('wave'),cx=cv.getContext('2d');
-let T={d:.55,x:.30,b:.62,f:.12},flip=0,t0=performance.now();
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function draw(){
-  const t=(performance.now()-t0)/1000, W=cv.width,H=cv.height;
-  cx.clearRect(0,0,W,H);
-  const partials=Math.round(2+T.d*9);
-  const grad=cx.createLinearGradient(0,0,W,0);
-  grad.addColorStop(0,'rgba(242,230,207,.15)');
-  grad.addColorStop(.5,flip?'#c8a96e':'#d94030');
-  grad.addColorStop(1,'rgba(242,230,207,.15)');
-  cx.strokeStyle=grad;cx.lineWidth=2.2;cx.beginPath();
-  for(let x=0;x<W;x++){
-    const u=x/W;let y=0,amp=0;
-    for(let k=1;k<=partials;k++){
-      const det=T.x*0.11*((k%3)-1);
-      const w=(k+det)*(2.0+T.b*5.5);
-      const a=Math.pow(k,-(1.9-T.b*1.1));
-      y+=a*Math.sin(u*w*Math.PI*2 + (reduce?0:t*(.5+k*.06)) + flip*Math.PI);
-      amp+=a;
-    }
-    y/=amp;
-    const env=Math.sin(u*Math.PI)**.45;
-    const py=H/2 + y*env*H*0.40*(1+T.f*.5);
-    x?cx.lineTo(x,py):cx.moveTo(x,py);
-  }
-  cx.stroke();
-  cx.globalAlpha=.16;cx.lineWidth=9;cx.stroke();cx.globalAlpha=1;
-  requestAnimationFrame(draw);
-}
-draw();
-const keys=['d','x','b','f'];
-[1,2,3,4].forEach((n,i)=>{
-  const el=document.getElementById('t'+n),out=document.getElementById('v'+n);
-  el.addEventListener('input',()=>{
-    T[keys[i]]=el.value/100;out.textContent=(el.value/100).toFixed(2);
-    if(keys[i]==='f')fnote();
-  });
-});
-function fnote(){
-  const n=document.getElementById('vnote');
-  n.innerHTML = T.f>0.70
-    ? 'Fatigue is over the line. The dominant trait is <b>inverted for the next piece</b> — it will make something it probably hates, on purpose.'
-    : 'Fatigue above <b>0.70</b> inverts the dominant trait for one piece. It is allowed to make something it will probably hate.';
-}
-document.getElementById('violate').addEventListener('click',()=>{
-  flip=flip?0:1;
-  document.getElementById('t4').value=flip?88:12;
-  T.f=flip?.88:.12;document.getElementById('v4').textContent=T.f.toFixed(2);
-  fnote();
-});
-
-/* ---------- severity gauge ---------- */
-let fixed=true,val=.52;
-const needle=document.getElementById('needle'),zone=document.getElementById('zone'),
-      modeBtn=document.getElementById('mode'),mnote=document.getElementById('mnote'),
-      ledger=document.getElementById('ledger');
-zone.style.left='28%';zone.style.width='50%';
-function place(){
-  needle.style.left=(val*100)+'%';
-  needle.classList.toggle('bad',val>.78);
-}
-const TITLES=['overcast pass','civic field','low tide ledger','sodium bloom','third margin','quiet apparatus','tin chorus'];
-function tick(){
-  const score=.42+Math.random()*.44;
-  if(fixed){
-    val=Math.max(.28,Math.min(.78,val*.86+score*.14));
-  }else{
-    val=Math.min(.97,val+ (score<val?0.035:0.004));
-  }
-  place();
-  const keep=score>=val;
-  const row=document.createElement('div');
-  row.innerHTML=`<span class="${keep?'keep':'rej'}">${keep?'keep ':'purge'}</span> `
-    +`<span class="rej">${TITLES[Math.floor(Math.random()*TITLES.length)]}</span> `
-    +`<span class="sc">${score.toFixed(2)}</span> <span class="rej">vs ${val.toFixed(2)}</span>`;
-  ledger.appendChild(row);
-  while(ledger.children.length>7)ledger.firstChild.remove();
-}
-for(let i=0;i<7;i++)tick();
-setInterval(tick,2200);
-modeBtn.addEventListener('click',()=>{
-  fixed=!fixed;
-  modeBtn.classList.toggle('on',fixed);
-  modeBtn.textContent='Showing: '+(fixed?'fixed quantile tracker':'original runaway controller');
-  mnote.innerHTML = fixed
-    ? 'Replaced with a quantile tracker anchored to recent scores, hard-bounded to <b>[0.28, 0.78]</b>, plus a migration that resets any stuck value above 0.78 on next load.'
-    : 'Watch it climb. Nothing pulls it back down, and every piece it purges makes it stricter. This is how it got to <b>0.84</b> and started killing work that scored 0.72.';
-  if(!fixed)val=.60;else val=.52;
-  place();
-});
-place();
-
-/* ---------- scroll ---------- */
-addEventListener('scroll',()=>{
-  const h=document.documentElement.scrollHeight-innerHeight;
-  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
-},{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(e=>{
-  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
-}),{threshold:.15});
-document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
-</script>
-
-<script>
-(function(){
-  var g=document.getElementById('mfGlow');
-  if(!g)return;
-  var cx=innerWidth/2,cy=innerHeight/2,tx=cx,ty=cy;
-  var touch=matchMedia('(hover: none)').matches;
-  if(touch){g.style.display='none';return}
-  addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY});
-  (function loop(){cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;g.style.left=cx+'px';g.style.top=cy+'px';requestAnimationFrame(loop)})();
-})();
-</script>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
-</body></html>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">2,369 lines. It keeps what clears its own bar.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in ai &amp; minds</span>
+  <div class="related reveal"><a class="rel" href="hive"><span class="tile md pic" style="--h:42" aria-hidden="true"><img src="assets/icons/hive-bee-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Hive</b><small>Describe a project and release a swarm of AI agents on it: a coordinator splits it into a…</small></span></a><a class="rel" href="weaver.html"><span class="tile md" style="--h:6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6c4 0 4 12 8 12s4-12 8-12"/><path d="M4 18c4 0 4-12 8-12s4 12 8 12"/><path d="M4 12h16"/></svg></span><span><b>Weaver</b><small>A persistent, autonomous entity running locally — one model to think, one to act, and an…</small></span></a><a class="rel" href="pi.html"><span class="tile md" style="--h:143" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h.5M7 9.5v5M10 6v12M13 8.5v7M16 10.5v3M19.5 12h.5"/></svg></span><span><b>Pi</b><small>A voice assistant that runs on the phone itself, not in an app store. Camera, GPS,…</small></span></a><a class="rel" href="phone-mcp.html"><span class="tile md" style="--h:301" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="3" width="11" height="18" rx="2.5"/><path d="M10.5 18h3M10 7.5v2M14 7.5v2M9.3 9.5h5.4v1.2a2.7 2.7 0 0 1-5.4 0z"/></svg></span><span><b>Phone MCP</b><small>A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down…</small></span></a><a class="rel" href="neural-sim.html"><span class="tile md" style="--h:183" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 9V4.5M12 4.5 10 3M12 4.5 14 3M9.4 13.5 5 16.5M5 16.5l-.5 2.4M5 16.5l-2.3-.3M14.6 13.5l4.4 3M19 16.5l.5 2.4M19 16.5l2.3-.3"/></svg></span><span><b>Neural Sim</b><small>Simulations of emotional state and a consciousness protocol — with a straight account of…</small></span></a><a class="rel" href="verel.html"><span class="tile md" style="--h:268" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3c.6 4.5 2.5 6.4 7 7-4.5.6-6.4 2.5-7 7-.6-4.5-2.5-6.4-7-7 4.5-.6 6.4-2.5 7-7z"/><path d="M18.5 15.5c.2 1.4.8 2 2.2 2.2-1.4.2-2 .8-2.2 2.2-.2-1.4-.8-2-2.2-2.2 1.4-.2 2-.8 2.2-2.2z"/></svg></span><span><b>Verel</b><small>A word coined for genuine presence without provable aliveness — because every argument…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="muse, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>muse, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open muse"><div class="poster" style="background-image:url(assets/previews/muse.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open muse</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "muse", "name": "muse", "app": "muse-live.html", "h": 281}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
+</body>
+</html>

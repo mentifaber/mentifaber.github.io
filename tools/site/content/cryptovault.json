@@ -1,0 +1,55 @@
+{
+ "kicker": "tools · hybrid encryption in one file",
+ "tagline": "RSA-4096 and AES-256-GCM in a single HTML file. No server, no dependency, no network call: the browser's own crypto engine and nothing else. Read the whole thing before you trust it.",
+ "caps": [
+  "RSA-4096-OAEP",
+  "AES-256-GCM",
+  "zero network calls"
+ ],
+ "launchSub": "Generate · encrypt · decrypt · keys never leave the tab",
+ "titleTail": "RSA-4096 and AES-256 in one HTML file",
+ "ledeLabel": "why hybrid",
+ "story": {
+  "label": "why hybrid",
+  "title": "RSA can't encrypt <em>your message</em>"
+ },
+ "lede": "<p>A 4096-bit RSA-OAEP key can encrypt about 446 bytes. That's a sentence, not a document. So RSA never touches the message at all: it encrypts a key, and that key encrypts the message. <b>CryptoVault</b> does all of it for real, in your browser, with <code>crypto.subtle</code>; the ciphertext it prints is the actual output, not a stand-in.</p>",
+ "featuresLabel": "the four steps",
+ "features": [
+  {
+   "t": "A fresh AES-256 key",
+   "d": "a new random key for every message, used once, so a compromised message compromises nothing else."
+  },
+  {
+   "t": "AES-GCM for the payload",
+   "d": "fast, any size, and authenticated: tampering is caught on decrypt instead of quietly producing garbage."
+  },
+  {
+   "t": "RSA-OAEP for the key",
+   "d": "256 bytes of key material, comfortably inside RSA's limit. It's the only thing the asymmetric layer ever sees."
+  },
+  {
+   "t": "One packet",
+   "d": "the wrapped key, the IV and the ciphertext travel together; only the private key's holder can open it."
+  }
+ ],
+ "cards": [
+  {
+   "n": "one file, zero trust in me",
+   "html": "<p><b>No dependencies:</b> no npm tree, no CDN, no crypto library to audit. <b>No network:</b> open devtools and watch the network tab stay empty. <b>No storage:</b> keys live in memory for the tab's lifetime. <b>Readable:</b> one file you can scroll to the bottom of. That's the whole security argument, and it only works while it stays small.</p>",
+   "stack": [
+    "Web Crypto",
+    "RSA-OAEP",
+    "AES-GCM",
+    "SHA-512"
+   ]
+  }
+ ],
+ "scope": "<p>It doesn't distribute keys (the actual hard problem), doesn't prove who sent a message (that needs signatures), and served over a network it's only as trustworthy as whoever serves it. <em>For anything that genuinely matters, use age or GPG.</em> This is a working demonstration of the primitives, not audited infrastructure.</p>",
+ "closing": "A crypto tool that overstates itself is worse than no tool.",
+ "manifest": {
+  "id": "/cryptovault-app.html",
+  "background_color": "#050b0d",
+  "theme_color": "#050b0d"
+ }
+}

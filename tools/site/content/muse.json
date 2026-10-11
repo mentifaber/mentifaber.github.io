@@ -1,0 +1,55 @@
+{
+ "kicker": "ai & minds · music nobody asked for",
+ "tagline": "An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, and zero API keys required. You're the critic, not the director.",
+ "caps": [
+  "runs on a phone",
+  "its own taste",
+  "invite only"
+ ],
+ "launchSub": "Credentials required · hear what it made while nobody was listening",
+ "titleTail": "an AI that makes music nobody asked for",
+ "ledeLabel": "the psyche",
+ "story": {
+  "label": "the psyche",
+  "title": "It has taste, and it gets <em>bored of itself</em>"
+ },
+ "lede": "<p><b>muse</b> keeps a persistent aesthetic self-model: trait weights for density, dissonance and brightness, and a fatigue level. When a trait stays satisfied too long, fatigue forces a deliberate self-violation and inverts the dominant trait for one piece. It's allowed to make something it will probably hate. That's the originality mechanism.</p><p>It runs on a schedule you don't set, keeps what clears its own bar, and purges the rest. Your verdicts move its taste slowly: about twelve consistent ones to shift a trait.</p>",
+ "featuresLabel": "how it makes sound",
+ "features": [
+  {
+   "t": "Synthesis from scratch",
+   "d": "additive and FM synthesis in pure numpy at 32 kHz, and a formant-based singing voice instead of a TTS wrapper."
+  },
+  {
+   "t": "Composition",
+   "d": "motifs transposed, inverted, played backwards and stretched; every piece keeps its lineage in SQLite."
+  },
+  {
+   "t": "Language is optional",
+   "d": "keys only buy it words (briefs, titles, lyrics, reflections), routed through free tiers with local fallback. Cold start works fully offline."
+  },
+  {
+   "t": "Small on purpose",
+   "d": "73–80 MB of memory on an Android phone under Termux, about 56 seconds a render, pausing itself if it goes over budget."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the bugs that taught it",
+   "html": "<p><b>The runaway bar:</b> a keep-rate controller could only ratchet up; it reached 0.84 and started destroying work scoring 0.72. It's now a quantile tracker bounded to [0.28, 0.78]. <b>Equal peak isn't equal loudness:</b> bass vanished and hats fizzed. Inverse A-weighting per note, filtered percussion and a master tilt fixed it, found by analysing a real rendered WAV.</p>",
+   "stack": [
+    "numpy",
+    "SQLite",
+    "Termux",
+    "FM synthesis"
+   ]
+  }
+ ],
+ "scope": "<p>The live node is private. <em>The page explains it; listening needs an invite.</em> The voice is crude next to a neural vocoder, by choice.</p>",
+ "closing": "2,369 lines. It keeps what clears its own bar.",
+ "manifest": {
+  "id": "/muse-live.html",
+  "background_color": "#050505",
+  "theme_color": "#050505"
+ }
+}

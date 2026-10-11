@@ -1,0 +1,58 @@
+{
+ "kicker": "ai & minds · observe, perturb, record",
+ "tagline": "Watching a network decide what it is, and being careful about what that sentence can mean. Four networks side by side, one emotional model, and three versions kept so the change itself is the record.",
+ "caps": [
+  "four networks",
+  "three versions kept",
+  "runs in the browser"
+ ],
+ "launchSub": "Press play · inject a stimulus · merge all four",
+ "titleTail": "watching a network decide what it is",
+ "ledeLabel": "what is running",
+ "story": {
+  "label": "what is running",
+  "title": "A network that models <em>feeling</em>"
+ },
+ "lede": "<p>Not classification: nodes carrying valence, propagating it and settling into configurations nobody specified in advance. Whether that resembles emotion or merely borrows its vocabulary is the open question. <b>Neural Sim</b> puts a biological network, a psilocybin brain, an inconsistent AI and a consistent AI side by side, then merges them.</p>",
+ "featuresLabel": "three passes",
+ "features": [
+  {
+   "t": "v1 · two networks",
+   "d": "a six-region biological network beside a layered artificial one with dead units and dropout. Inject a stimulus, or glitch the AI and watch coherence fall."
+  },
+  {
+   "t": "v2 · four networks",
+   "d": "adds a psilocybin brain with whole-network waves and a consistent AI beside the inconsistent one, then merges all four into quadrants."
+  },
+  {
+   "t": "v3 · mechanisms",
+   "d": "inhibitory neurons, theta and alpha oscillators, a thalamic gate that opens under psilocybin, mode collapse in the bad AI and residual paths in the good one."
+  },
+  {
+   "t": "Cross-talk",
+   "d": "in v3's merged view, dashed links carry feedback from biology to AI and an entropy channel from the psilocybin brain into the inconsistent AI."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the earlier versions",
+   "html": "<p>They were kept, not overwritten, because the thing being studied is how the model changes. Open <a href=\"neural-sim-v1.html\">v1</a> or <a href=\"neural-sim-v2.html\">v2</a>; they're the real earlier files. The live view below is v3.</p>"
+  },
+  {
+   "n": "the protocol",
+   "html": "<p>A Universal Consciousness Protocol: less a claim about consciousness than a specification for what evidence would have to look like. Captured states are frames pulled from the run, not prose written afterwards.</p>",
+   "stack": [
+    "Canvas",
+    "Oscillators",
+    "Valence propagation"
+   ]
+  }
+ ],
+ "scope": "<p>None of it demonstrates consciousness. A system built to produce something that looks like inner state will produce something that looks like inner state. <em>A simulation of a thing is evidence about the simulation.</em> See <a href=\"verel.html\">Verel</a>.</p>",
+ "closing": "Simulation, not demonstration.",
+ "manifest": {
+  "id": "/neural-sim-v3.html",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+ }
+}

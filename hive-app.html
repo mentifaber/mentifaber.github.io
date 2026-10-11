@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>Hive · Mentifaber</title>
+<meta name="description" content="A command deck for every AI model at once: chat, councils of models, autonomous agent swarms, live web search, vision, video, voice and image generation.">
+<meta name="theme-color" content="#13181e">
+<link rel="manifest" href="assets/manifests/hive.webmanifest">
+<link rel="icon" href="assets/icons/hive-bee-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-bee-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-bee-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hive">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/hive/hive.css">
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+<div id="shell">
+  <aside id="side">
+    <div class="brand">
+      <img class="core-mark" src="assets/icons/hive-mark.png" alt="" width="44" height="44">
+      <span class="word">HIVE<small>NEURAL COMMAND DECK</small></span><button class="icon only-m" id="sideX" aria-label="Close menu">✕</button>
+    </div>
+    <button class="newchat" id="newchat"><span>＋</span> New session <kbd>⇧⌘O</kbd></button>
+    <nav>
+      <a href="#studio" data-v="studio"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Studio<em>chat · council</em></a>
+      <a href="#swarm" data-v="swarm"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v8l-7 4-7-4V7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.2" fill="currentColor"/></svg>Swarm<em>agents build</em></a>
+      <a href="#keys" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l8-8M16 6l2 2M14 8l2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Uplinks<em>keys · models</em></a>
+      <a href="#mind" data-v="mind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 18.2a6.5 6.5 0 0111 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Mind<em>you, analyzed</em></a>
+    </nav>
+    <div class="hist-h">SESSIONS</div>
+    <input id="hsearch" placeholder="search sessions…" aria-label="Search sessions" autocomplete="off">
+    <div id="hist"></div>
+    <div class="sys" id="sys-panel">
+      <div><i class="led" id="led-link"></i><span>LINK</span><b id="t-link">—</b></div>
+      <div><i class="led ok"></i><span>MODELS</span><b id="t-models">—</b></div>
+      <div><i class="led" id="led-free"></i><span>FREE TIER</span><b id="t-free">—</b></div>
+    </div>
+    <div class="side-foot"><button class="ghost sm" id="cmdk-btn" title="Command palette">⌘K</button><button class="ghost sm" id="theme" title="Theme">◐</button><button class="ghost sm" id="settings">⚙ Settings</button><a href="/" class="dim sm">mentifaber.org</a></div>
+  </aside>
+  <div id="scrim"></div>
+
+  <main id="main">
+    <!-- ───────── STUDIO ───────── -->
+    <section id="v-studio" class="view">
+      <header class="top">
+        <button class="icon only-m" id="menu" aria-label="Menu">☰</button>
+        <button id="mpick" aria-haspopup="listbox"><i class="led ok"></i><span id="mname">Choose a model</span><small id="mtot"></small><b>▾</b></button>
+        <select id="model" aria-label="Model" hidden></select>
+        <div id="mpop" class="hidden"><input id="mq" placeholder="Search every model… (try: claude, vision, free)" autocomplete="off"><div id="mlist" role="listbox"></div><div id="mcount"></div></div>
+        <span class="flex"></span>
+        <span class="tele" id="tele"></span>
+        <span class="dim sm" id="who"></span>
+        <button class="icon" id="cmdk-top" title="Command palette (⌘K)" aria-label="Command palette">⌘</button>
+        <button class="icon" id="export" title="Export this session as Markdown" aria-label="Export">⤓</button>
+      </header>
+      <div id="scroll">
+        <div id="empty">
+          <canvas id="core" width="320" height="320" aria-hidden="true"></canvas>
+          <h1 id="greet">COMMAND THE HIVE</h1>
+          <p class="sub" id="esub">One mind, a council, or a whole swarm.</p>
+          <div class="protocols" id="starters"></div>
+        </div>
+        <div id="log"></div>
+      </div>
+      <div id="dock">
+        <div id="composer" class="hud">
+          <div id="att"></div>
+          <textarea id="inp" rows="1" placeholder="Transmit…  ( / for commands )" aria-label="Message"></textarea>
+          <div class="ctl">
+            <div class="plus"><button class="icon" id="plus" title="Attach" aria-label="Attach">＋</button>
+              <div class="menu hidden" id="plusm"><button data-a="image">◫ Image or photo</button><button data-a="video">▶ Video · samples frames</button><button data-a="file">≡ Text / code file</button><button data-a="camera">◉ Camera</button></div></div>
+            <button class="tog" id="web" aria-pressed="false" title="Search the live web for this answer"><i></i><span>SEARCH</span></button>
+            <button class="tog" id="council" aria-pressed="false" title="Several models answer at once; the one you picked leads and merges their best"><i></i><span>COUNCIL</span></button>
+            <button class="tog" id="draw" aria-pressed="false" title="Make an image from your words"><i></i><span>IMAGINE</span></button>
+            <span class="flex"></span>
+            <button class="icon" id="voice" title="Voice link" aria-label="Voice conversation"><svg viewBox="0 0 24 24"><path d="M5 10v4M9 6v12M13 9v6M17 4v16M21 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <button class="icon" id="mic" title="Dictate" aria-label="Dictate"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            <button id="sendb" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <p class="fine">Models make mistakes; councils fewer. Verify what matters. <span id="quota"></span></p>
+      </div>
+      <input type="file" id="f-image" accept="image/*" multiple hidden><input type="file" id="f-video" accept="video/*" hidden><input type="file" id="f-file" accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.yaml,.yml,.toml,.sql,.sh,.log,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.swift,.kt,text/*" multiple hidden><input type="file" id="f-camera" accept="image/*" capture="environment" hidden>
+    </section>
+
+    <!-- ───────── SWARM ───────── -->
+    <section id="v-swarm" class="view hidden">
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>SWARM</h2><span class="dim sm mono">autonomous agent collective</span><span class="flex"></span></header>
+      <div class="pad">
+      <section id="home">
+        <div class="card hud launch">
+          <h3>LAUNCH A MISSION</h3>
+          <p class="dim" id="swho">Watching is open to everyone.</p>
+          <textarea id="brief" placeholder="Describe what to build. e.g. A single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
+          <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden mono" id="caprow"><span>BUDGET</span><input id="cap" type="number" min="50" max="3000" step="50" value="400"><span>CALLS</span></label><span class="dim" id="gomsg"></span></div>
+        </div>
+        <div class="card mt"><div class="row"><h4 style="flex:1">MISSIONS</h4><button class="ghost sm hidden" id="purge" title="Delete every finished, stopped or failed mission">Clear finished</button></div><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
+        <p class="dim mt sm">Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs in a sandbox.</p>
+      </section>
+      <section id="proj" class="hidden">
+        <div class="card hud phead">
+          <div class="row"><button class="ghost" id="back" aria-label="Back to missions">←</button><h3 id="ptitle" style="flex:1"></h3><span class="st" id="pst"></span></div>
+          <div class="pstats">
+            <svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" class="bg"/><circle cx="32" cy="32" r="27" class="fg" id="pring"/></svg>
+            <div><b id="pcount"></b><span class="dim mono" id="pcalls"></span><div class="bar"><i id="pbar"></i></div></div>
+            <span class="flex"></span>
+            <button class="ghost hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry & bring in my keys</button><button class="ghost hidden" id="stop">Stop</button><button class="ghost hidden" id="pdel" title="Delete this mission for good">Delete</button>
+          </div>
+          <div class="mt hidden note" id="squota"></div>
+          <div class="row mt hidden" id="joinrow"><span class="dim mono sm">VISITOR LINK</span><input id="join" readonly style="flex:1;min-width:200px"><button class="ghost" id="copy">Copy</button></div>
+          <div class="row mt hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…" style="flex:1"><button class="pri" id="send">Send</button></div>
+        </div>
+        <div class="grid">
+          <div class="card mapc"><div class="row"><h4 style="flex:1">HIVE MAP</h4><span class="dim sm mono" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend mono"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
+          <div class="card"><h4>TASK LANES</h4><div class="board mt" id="board"></div></div>
+          <div class="card"><h4>TELEMETRY</h4><div class="feed mt" id="feed"></div></div>
+        </div>
+        <div class="card mt"><div class="row"><h4 style="flex:1">AGENTS</h4></div><div class="agents mt" id="agents"></div></div>
+        <div class="card hud mt hidden" id="finalp">
+          <div class="row"><h4 style="flex:1">RESULT</h4><button class="ghost hidden" id="rebuild" title="Assemble the final result again">Rebuild</button><button class="ghost" id="rawb">Source</button><button class="pri" id="dl">Download</button></div>
+          <iframe id="preview" class="mt hidden" sandbox="allow-scripts allow-modals allow-forms" title="Result preview"></iframe>
+          <div id="finalmd" class="b mt"></div>
+          <pre id="final" class="mt hidden"></pre>
+        </div>
+      </section>
+      </div>
+    </section>
+
+    <!-- ───────── UPLINKS ───────── -->
+    <section id="v-keys" class="view hidden">
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>UPLINKS</h2><span class="dim sm mono">key vault</span><span class="flex"></span><span class="dim sm mono" id="kcount"></span></header>
+      <div class="pad narrow">
+        <div id="k-locked" class="card hud hidden"><h3>VAULT SEALED</h3><p class="dim">The vault is the owner's. Sign in on <a href="/vigil-app">Vigil</a>, then come back. Uplinks added here power the Studio and join your swarms.</p></div>
+        <div id="k-open" class="hidden">
+          <div class="card hud agentp" id="agentp"></div>
+          <div class="card hud mt">
+            <h3>NEW UPLINK</h3>
+            <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside the Hive's Durable Object, and never shown again: only its last four characters.</p>
+            <div class="form">
+              <label>Provider<select id="k-prov"></select></label>
+              <label>Label <span class="dim">(optional)</span><input id="k-label" placeholder="e.g. work, personal, backup"></label>
+              <label id="k-baseL" class="hidden wide">Base URL<input id="k-base" placeholder="https://api.example.com/v1"></label>
+              <label class="wide">API key<input id="k-key" type="password" autocomplete="off" spellcheck="false" placeholder="paste it here"></label>
+              <label class="wide" id="k-pickL">Models for the swarm <span class="dim">(optional, comma separated; otherwise its strongest few)</span><input id="k-pick" placeholder="e.g. gpt-5-mini, claude-sonnet-4-5"></label>
+            </div>
+            <div class="row mt"><button class="pri" id="k-add">Verify & seal</button><button class="ghost hidden" id="k-force">Add anyway</button><span class="dim sm" id="k-msg"></span></div>
+          </div>
+          <div id="k-list" class="mt"></div>
+          <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Hive searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── MIND ───────── -->
+    <section id="v-mind" class="view hidden">
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>MIND</h2><span class="dim sm mono">owner only</span><span class="flex"></span><span class="dim sm mono" id="m-at"></span></header>
+      <div class="pad narrow">
+        <div id="m-locked" class="card hud hidden"><h3>MIND SEALED</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
+        <div id="m-open" class="hidden">
+          <div class="card hud mindp">
+            <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
+              <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
+            <div class="facts" id="m-facts"></div>
+            <div class="hours" id="m-hours" aria-label="When you use Hive (your local time)"></div>
+            <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button></div>
+            <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted here (visitors' never are). Your profile, memories and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0, so they know you. Owner mode is on: no hedging, no lectures, straight answers.</p>
+          </div>
+          <div class="card hud mt"><h3>PROFILE</h3><div id="m-profile" class="b mt"></div></div>
+          <div class="card hud mt"><h3>MEMORIES</h3>
+            <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><button class="ghost" id="m-add">Remember</button></div>
+            <div id="m-mem" class="mlist mt"></div></div>
+          <div class="card hud mt"><h3>ACTIVITY</h3><div id="m-act" class="mlist mt"></div>
+            <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="voiceo" class="hidden" role="dialog" aria-label="Voice link">
+  <canvas id="viz" aria-hidden="true"></canvas>
+  <div class="vtop"><span class="vchip"><i class="led ok" id="vled"></i><span id="vmodel">VOICE LINK</span></span><span class="vchip" id="vlat"></span><span class="flex"></span><button class="icon" id="vset" aria-label="Voice settings" title="Settings">⚙</button><button class="icon" id="vx" aria-label="End voice link" title="End">✕</button></div>
+  <video id="cam" playsinline muted class="hidden" aria-label="Your camera"></video>
+  <div id="orb" aria-label="Tap to interrupt"></div>
+  <div class="vcap"><p id="vstate">Listening…</p><p id="vtext"></p><p class="vhint" id="vhint">tap the core to interrupt</p></div>
+  <div class="vdock">
+    <button class="vbtn" id="vcam" aria-pressed="false" title="Show the model your camera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>CAMERA</span></button>
+    <button class="vbtn hidden" id="vflip" title="Switch camera"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0114-3l2 2M20 15a8 8 0 01-14 3l-2-2M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>FLIP</span></button>
+    <button class="vbtn" id="vscreen" aria-pressed="false" title="Share your screen with the model"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>SCREEN</span></button>
+    <button class="vbtn big" id="vmute" aria-pressed="false" title="Pause or resume listening"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="vmutel">LIVE</span></button>
+    <button class="vbtn big hidden" id="vptt" title="Hold to talk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg><span>HOLD</span></button>
+    <button class="vbtn end" id="vend" title="End voice link"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>END</span></button>
+  </div>
+  <div class="vvoice"><select id="vvoice" aria-label="Voice"></select><button class="ghost sm" id="vtest">Hear it</button></div>
+</div>
+<dialog id="cmdk" aria-label="Command palette"><input id="cq" placeholder="Type a command or a model name…" autocomplete="off"><div id="clist" role="listbox"></div><p class="dim sm mono">↑↓ choose · ⏎ run · esc close</p></dialog>
+<dialog id="dlg"><div class="row"><h3 id="dt" style="flex:1"></h3><button class="ghost" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
+<dialog id="sdlg" class="settings" aria-label="Settings">
+  <div class="row"><h3 style="flex:1">SETTINGS</h3><button class="icon" onclick="sdlg.close()" aria-label="Close">✕</button></div>
+  <section><h4>INTERFACE</h4>
+    <label class="opt"><span>Theme</span><select id="s-theme"><option value="dark">Night</option><option value="light">Daylight</option></select></label>
+    <label class="opt"><span>Motion effects<small>the drifting field, orbiting core and hive map</small></span><input type="checkbox" id="s-motion" class="tg"></label>
+    <label class="opt"><span>Send with Enter<small>off: Enter makes a new line, Ctrl/⌘+Enter sends</small></span><input type="checkbox" id="s-enter" class="tg"></label>
+  </section>
+  <section><h4>VOICE LINK</h4>
+    <label class="opt"><span>Voice</span><select id="s-voice"></select></label>
+    <label class="opt"><span>Speaking speed<small id="s-rate-v">1.0×</small></span><input type="range" id="s-rate" min="0.8" max="1.5" step="0.05"></label>
+    <label class="opt"><span>Listening<small>hands-free answers when you pause; push-to-talk waits for the button</small></span><select id="s-hands"><option value="1">Hands-free</option><option value="0">Push to talk</option></select></label>
+    <label class="opt"><span>Pause before answering<small id="s-sil-v">0.8 s</small></span><input type="range" id="s-sil" min="400" max="2000" step="100"></label>
+    <label class="opt"><span>Interrupt by speaking<small>talk over the answer to cut it off (best with headphones)</small></span><input type="checkbox" id="s-barge" class="tg"></label>
+    <label class="opt"><span>Recognition<small>cloud is more accurate; device shows live captions and is instant where supported</small></span><select id="s-recog"><option value="cloud">Cloud (Whisper)</option><option value="device">Device (live captions)</option></select></label>
+    <label class="opt"><span>Voice model<small>a fast model makes conversation snappier</small></span><select id="s-vmodel"><option value="">Same as chat</option><option value="fast">Fastest available</option></select></label>
+  </section>
+  <section><h4>DIRECTIVES</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
+  <section><h4>DATA</h4><div class="row"><button class="ghost sm" id="s-export">Export all sessions</button><button class="ghost sm" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
+  <div class="row mt"><span class="flex"></span><button class="pri" id="ssave">Done</button></div>
+</dialog>
+<div id="toast" class="hidden" role="status"></div>
+
+<script src="assets/hive/field.js"></script>
+<script src="assets/hive/swarm.js"></script>
+<script src="assets/hive/studio.js"></script>
+<script src="/assets/install.js" defer></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/hive-sw.js", { scope: "/hive" }).catch(() => {});</script>
+</body></html>
