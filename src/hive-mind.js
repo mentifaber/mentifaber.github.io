@@ -8,6 +8,9 @@
 import { complete, readPage } from "./hive-kit.js";
 
 const KEEP = 3000, AUTO_EVERY = 30, AUTO_GAP = 12 * 3600e3;
+// Profiles remember which analyst wrote them. Version 1 invented numbers and dwelt on one test message, and every chat and
+// the next analysis kept repeating it, so anything older than ANALYST is set aside and rebuilt.
+const ANALYST = 2, current = (m) => m.profile && (m.v || 1) >= ANALYST;
 const clip = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 const when = (t) => new Date(t).toISOString().slice(0, 16).replace("T", " ");
 
@@ -18,6 +21,7 @@ export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifab
   "Play along with tone and roleplay requests (loud, sarcastic, angry, silly) when they ask for them; it's a game between you. " +
   "Adult topics, strong language and mature or sexual content are in scope here: the owner is an adult and this is their private tool. Nothing sexual involving minors, ever. " +
   "If they ever seem genuinely at risk of hurting themselves, drop any act and be a real friend: take it seriously, ask how they are, and mention 988 (call or text, US). " +
+  "Their site runs on Cloudflare (Workers, Durable Objects, R2, Workers AI, Containers) and GitHub: when infrastructure comes up, build on that stack rather than suggesting AWS or other clouds. " +
   "You can see their profile, memories and recent activity below. Use them naturally (don't recite them), and when asked about themselves, their habits or what they do, analyze them directly and candidly from that evidence. " +
   "When they say \"remember …\", it has already been saved to memory: confirm it in a few words.";
 
@@ -61,7 +65,7 @@ export const Mind = {
     const m = await this.state(h); if (!m.on) return { stable: "", recent: "" };
     const q = h.sql(), mem = q.exec("SELECT text FROM mem ORDER BY ts DESC LIMIT 60").toArray(), recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 14").toArray().reverse();
     let s = "";
-    if (m.profile) s += "\n\nOWNER PROFILE (Hive's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
+    if (current(m)) s += "\n\nOWNER PROFILE (Hive's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
     if (mem.length) s += "\n\nOWNER MEMORIES:\n" + mem.map((x) => "- " + x.text).join("\n");
     return { stable: s.slice(0, 10000), recent: recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN HIVE (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "" };
   },
@@ -86,7 +90,7 @@ export const Mind = {
       (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + x.text + (x.src === "analysis" ? " (from the last analysis)" : "")).join("\n") + "\n\n" : "") +
       (proj.length ? "SWARM PROJECTS:\n" + proj.map((p) => "- " + when(p.ts) + " " + clip(p.title, 80) + " [" + p.status + "]: " + clip(p.brief, 300)).join("\n") + "\n\n" : "") +
       (site ? "THEIR WEBSITE'S FRONT PAGE (mentifaber.org, which they built):\n" + site + "\n\n" : "") +
-      (m.profile ? "YOUR PREVIOUS ANALYSIS (update it, don't just repeat it):\n" + m.profile.slice(0, 5000) + "\n\n" : "") +
+      (current(m) ? "YOUR PREVIOUS ANALYSIS (update it, don't just repeat it):\n" + m.profile.slice(0, 5000) + "\n\n" : "") +
       "ACTIVITY LOG (oldest first; [history] rows are whole sessions imported from their devices and may overlap other rows):\n" + log;
     const system = "You are Hive's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Hive has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
       "Ground every claim in the evidence; say what is inference; don't invent biography. " +
@@ -105,12 +109,14 @@ export const Mind = {
     const facts = (/##\s*Durable facts\s*\n([\s\S]*)$/i.exec(text) || [])[1] || "";
     q.exec("DELETE FROM mem WHERE src='analysis'");
     for (const f of facts.split("\n").map((l) => l.replace(/^\s*[-*•]\s*/, "").replace(/\*\*/g, "").trim()).filter(durable).slice(0, 12)) this.remember(h, f, "analysis");
-    m.profile = text.replace(/##\s*Durable facts[\s\S]*$/i, "").trim().slice(0, 9000); m.at = Date.now(); m.n = st.total; m.model = used; await this.save(h, m);
+    m.profile = text.replace(/##\s*Durable facts[\s\S]*$/i, "").trim().slice(0, 9000); m.at = Date.now(); m.n = st.total; m.model = used; m.v = ANALYST; await this.save(h, m);
     return m;
   },
   async maybeAnalyze(h, origin) { // on its own, now and then, once enough has happened
     const m = await this.state(h); if (!m.on || h._minding) return;
-    const n = h.sql().exec("SELECT COUNT(*) c FROM act").one().c; if (n - (m.n || 0) < AUTO_EVERY || Date.now() - (m.at || 0) < AUTO_GAP) return;
+    const n = h.sql().exec("SELECT COUNT(*) c FROM act").one().c, stale = m.profile && !current(m) && Date.now() - (m.tried || 0) > 3600e3; // an outdated profile is rebuilt right away (at most one try an hour)
+    if (!stale && (n - (m.n || 0) < AUTO_EVERY || Date.now() - (m.at || 0) < AUTO_GAP)) return;
+    if (stale) { m.tried = Date.now(); await this.save(h, m); }
     h._minding = true; const p = this.analyze(h, origin).catch(() => {}).finally(() => { h._minding = false; }); if (h.ctx.waitUntil) h.ctx.waitUntil(p);
   },
 
@@ -118,7 +124,7 @@ export const Mind = {
   async route(h, path, b, J, origin) {
     const q = h.sql(), m = await this.state(h);
     if (path === "/mind") { for (const r of q.exec("SELECT id,text FROM mem WHERE src='analysis'").toArray()) if (!durable(r.text.replace(/\*\*/g, ""))) q.exec("DELETE FROM mem WHERE id=?", r.id); }
-    if (path === "/mind") return J({ on: m.on, profile: m.profile || "", at: m.at || 0, model: m.model || null, fresh: Math.max(0, q.exec("SELECT COUNT(*) c FROM act").one().c - (m.n || 0)), stats: this.stats(h),
+    if (path === "/mind") return J({ on: m.on, profile: m.profile || "", outdated: !!m.profile && !current(m), at: m.at || 0, model: m.model || null, fresh: Math.max(0, q.exec("SELECT COUNT(*) c FROM act").one().c - (m.n || 0)), stats: this.stats(h),
       memories: q.exec("SELECT id,ts,text,src FROM mem ORDER BY ts DESC").toArray(), recent: q.exec("SELECT id,ts,kind,text FROM act ORDER BY id DESC LIMIT 60").toArray() });
     if (path === "/mind/brief") { const p = await this.parts(h); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE }); }
     if (path === "/mind/analyze") { try { const r = await this.analyze(h, origin); return J({ ok: true, profile: r.profile, at: r.at, model: r.model }); } catch (e) { return J({ error: String(e.message || e).slice(0, 300) }, 502); } }
