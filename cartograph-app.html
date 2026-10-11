@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cartograph · the atlas</title>
+<meta name="description" content="A 3D atlas from the planets to the first galaxies: every object at its real position, cited to the instrument that measured it, plus live satellites around Earth.">
+<meta name="theme-color" content="#04060b">
+<link rel="manifest" href="assets/manifests/cartograph.webmanifest">
+<link rel="icon" href="assets/icons/v2/cartograph.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/cartograph-180.png">
+<link rel="stylesheet" href="assets/carto/ct.css">
+</head>
+<body>
+<header class="top"><b class="logo">Carto<span>graph</span></b><nav class="views" id="views" aria-label="Views"></nav><input id="q" list="names" placeholder="Find anything" aria-label="Find an object" autocomplete="off"><datalist id="names"></datalist></header>
+<main>
+  <canvas id="cv" aria-label="3D view: drag to turn, scroll or pinch to zoom, tap an object for its card"></canvas>
+  <aside class="card" id="card" hidden></aside>
+  <div class="hud">
+    <p class="blurb"><span id="blurb"></span> <b id="count"></b></p>
+    <div class="ctl"><button class="btn" id="labels" title="Labels (L)">Labels</button><button class="btn on" id="spin" title="Drift (A)">Drift</button><button class="btn" id="reset" title="Reset (R)">Reset</button>
+      <span class="soltime" id="soltime"><span class="date" id="date"></span><span class="rates"><button data-rate="now" class="on" title="Today">Today</button><button data-rate="1">1 d/s</button><button data-rate="30">1 mo/s</button><button data-rate="365">1 yr/s</button></span><label class="ts"><input type="checkbox" id="truescale"> true scale</label></span>
+    </div>
+  </div>
+</main>
+<script src="assets/carto/data.js"></script>
+<script src="assets/orbit/satellite.min.js"></script>
+<script src="assets/orbit/land.js"></script>
+<script src="assets/carto/ct.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/cartograph-sw.js", { scope: "/cartograph" }).catch(() => {});</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+:root { --bg: #04060b; --bg2: rgba(12,16,28,.86); --ink: #e8eeff; --dim: #a3b0cc; --mute: #63708c; --line: rgba(232,238,255,.12); --acc: #8fb4ff; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14.5px/1.45 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+button, input { font: inherit; color: inherit; }
+body { display: flex; flex-direction: column; }
+.top { display: flex; align-items: center; gap: 10px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-bottom: 1px solid var(--line); background: rgba(4,6,11,.9); z-index: 2; }
+.logo { font-size: 18px; white-space: nowrap; } .logo span { color: var(--acc); }
+.views { display: flex; gap: 4px; overflow-x: auto; flex: 1; scrollbar-width: none; min-width: 0; } .views::-webkit-scrollbar { display: none; }
+.views button { flex: none; border: 1px solid transparent; background: transparent; border-radius: 999px; padding: 5px 11px; font-size: 13px; color: var(--dim); cursor: pointer; white-space: nowrap; }
+.views button:hover { color: var(--ink); } .views button.on { border-color: var(--acc); color: var(--ink); background: rgba(143,180,255,.1); }
+#q { height: 34px; width: 190px; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 9px; padding: 0 10px; min-width: 0; }
+main { position: relative; flex: 1; min-height: 0; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#cv:active { cursor: grabbing; }
+.card { position: absolute; top: 12px; right: 12px; width: 320px; max-height: calc(100% - 24px); overflow-y: auto; background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px); }
+.card[hidden] { display: none; }
+.card .x { position: absolute; top: 8px; right: 8px; border: 0; background: transparent; color: var(--mute); cursor: pointer; font-size: 15px; padding: 4px 8px; }
+.card .kind { font: 600 11px/1 ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
+.card h2 { margin: 6px 28px 4px 0; font-size: 22px; line-height: 1.15; } .card .dist { margin: 0 0 10px; color: var(--dim); }
+.card dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: 0; font-size: 13.5px; } .card dt { color: var(--mute); } .card dd { margin: 0; }
+.card .x2 { margin: 12px 0 0; color: var(--ink); font-size: 13.5px; } .card .src { margin: 10px 0 0; color: var(--mute); font-size: 12px; } .card .src::before { content: "source · "; }
+.card .row { margin-top: 12px; display: flex; gap: 6px; }
+.btn { height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line); background: rgba(12,16,28,.8); cursor: pointer; font-size: 13px; color: var(--dim); } .btn:hover { color: var(--ink); } .btn.on { color: var(--ink); border-color: var(--acc); }
+.hud { position: absolute; left: 12px; bottom: 12px; right: 12px; display: grid; gap: 8px; pointer-events: none; }
+.hud > * { pointer-events: auto; justify-self: start; }
+.blurb { margin: 0; max-width: 620px; color: var(--dim); font-size: 13px; background: rgba(4,6,11,.6); padding: 6px 10px; border-radius: 10px; } .blurb b { color: var(--acc); font-weight: 600; white-space: nowrap; }
+.ctl { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.soltime { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; } .soltime[hidden] { display: none; }
+.date { font: 600 13px ui-monospace, monospace; color: var(--acc); padding: 0 4px; }
+.rates { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: rgba(12,16,28,.8); } .rates button { border: 0; background: transparent; height: 30px; padding: 0 9px; font-size: 12.5px; color: var(--dim); cursor: pointer; } .rates button.on { color: var(--ink); background: rgba(143,180,255,.16); }
+.ts { font-size: 12.5px; color: var(--dim); display: inline-flex; gap: 5px; align-items: center; background: rgba(12,16,28,.8); border: 1px solid var(--line); border-radius: 9px; height: 32px; padding: 0 9px; cursor: pointer; } .ts input { accent-color: var(--acc); }
+@media (max-width: 760px) {
+  .top { flex-wrap: wrap; } .views { order: 3; flex-basis: 100%; } #q { flex: 1; width: auto; }
+  .card { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; max-height: 52%; }
+  .blurb { font-size: 12px; }
+  main:has(.card:not([hidden])) .hud { display: none; }
+}
