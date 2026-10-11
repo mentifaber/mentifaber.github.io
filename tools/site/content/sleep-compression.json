@@ -1,0 +1,50 @@
+{
+ "kicker": "protocol · tracker · obsidian vault",
+ "nameHtml": "Sleep <span>Compression</span>",
+ "tagline": "Consolidate. Expand. Rest. A sleep-restriction protocol built as an Obsidian vault — and a tracker that does the arithmetic every morning.",
+ "caps": [],
+ "launchSub": "Log nights · SE% · window calculator · stored only in your browser",
+ "story": {
+  "label": "why this exists",
+  "title": "Sleep pressure is <em>the mechanism</em>"
+ },
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>Obsidian first: daily and weekly templates, graph colour groups keyed to phase tags, and a CSS snippet in the Mentifaber palette. The web tracker is vanilla JS with everything in localStorage — no account, and nothing leaves the browser.</p>",
+   "stack": [
+    "Obsidian",
+    "Markdown templates",
+    "Vanilla JS",
+    "localStorage"
+   ]
+  }
+ ],
+ "features": [
+  {
+   "t": "Nightly log",
+   "d": "bed time, time to fall asleep, time awake, rise time; time in bed, total sleep and efficiency computed as you type."
+  },
+  {
+   "t": "Status bands",
+   "d": "excellent at 90%+, good at 85–89, marginal at 80–84, poor below 80, each with the protocol's own instruction."
+  },
+  {
+   "t": "Phase and streak",
+   "d": "baseline, compression or expansion, and a live count toward the five-night streak."
+  },
+  {
+   "t": "Window calculator",
+   "d": "average sleep plus thirty, held at the 5.5-hour floor, counted back from your fixed wake time to tonight's bedtime."
+  },
+  {
+   "t": "The vault",
+   "d": "the original Obsidian templates, guide, phase-coloured graph and theme, as a download."
+  }
+ ],
+ "lede": "<p><b>\"Sleep pressure is the mechanism. The window is the tool. Consistency is the cure.\"</b> Track sleep as it is for one to two weeks, then shrink time in bed to the sleep you actually get plus thirty minutes — never below five and a half hours — with a wake time that does not move. Once efficiency holds at 85% for five nights running, give fifteen minutes back. Repeat until rested.</p>",
+ "ledeLabel": "the idea",
+ "featuresLabel": "what it does",
+ "scope": "<p>A tracker for a known behavioural protocol, not medical advice. <em>The protocol's own red-flag table says it plainly: if efficiency plateaus below 85% for weeks, something else may be going on — anxiety, sleep apnea — and it's worth a professional evaluation.</em></p>",
+ "closing": "Consolidate. Expand. Rest."
+}

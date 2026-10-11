@@ -4,7 +4,8 @@
 (() => {
   const key = "mf-install-" + location.pathname.replace(/\.html$/, "");
   const standalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone;
-  if (standalone() || !document.querySelector('link[rel="manifest"]')) return;
+  let framed = false; try { framed = window.top !== window; } catch (e) { framed = true; }
+  if (framed || standalone() || !document.querySelector('link[rel="manifest"]')) return; // inside a Mentifaber page's live frame, the page's own Install button does this
   try { if (+localStorage.getItem(key) > Date.now()) return; } catch (e) {}
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   let prompt = null, el = null;

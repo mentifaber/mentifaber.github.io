@@ -3,3 +3,4 @@
 
 # Wrangler local dev state
 .wrangler/
+__pycache__/

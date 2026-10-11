@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><radialGradient id="b" cx="28%" cy="18%" r="105%"><stop offset="0" stop-color="hsl(330 72% 34%)"/><stop offset=".55" stop-color="hsl(348 78% 14%)"/><stop offset="1" stop-color="hsl(362 80% 6%)"/></radialGradient>
+<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<clipPath id="c"><rect width="512" height="512" rx="116"/></clipPath></defs>
+<g clip-path="url(#c)"><rect width="512" height="512" fill="url(#b)"/><rect width="512" height="512" fill="url(#s)"/>
+<circle cx="256" cy="256" r="190" fill="hsl(330 95% 60%)" opacity=".10"/></g>
+<g transform="translate(256 256) scale(11.6) translate(-12 -12)" fill="none" stroke-linecap="round" stroke-linejoin="round" color="hsl(330 96% 76%)">
+<g stroke="hsl(330 100% 62%)" stroke-width="5.2" opacity=".10"><path d="M12 7.5v11"/><path d="M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4"/><path d="M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9"/><path d="M11.2 6 9.8 3.8M12.8 6l1.4-2.2"/></g><g stroke="hsl(330 100% 66%)" stroke-width="3" opacity=".22"><path d="M12 7.5v11"/><path d="M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4"/><path d="M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9"/><path d="M11.2 6 9.8 3.8M12.8 6l1.4-2.2"/></g><g stroke="hsl(330 96% 78%)" stroke-width="1.55"><path d="M12 7.5v11"/><path d="M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4"/><path d="M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9"/><path d="M11.2 6 9.8 3.8M12.8 6l1.4-2.2"/></g></g>
+<rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="hsl(330 85% 70%)" stroke-opacity=".28" stroke-width="3"/>
+</svg>

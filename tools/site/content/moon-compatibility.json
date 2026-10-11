@@ -1,0 +1,50 @@
+{
+ "kicker": "lunar reading · two moons",
+ "nameHtml": "Moon <span>Compatibility</span>",
+ "tagline": "Any two dates, two moons — drawn, overlaid, plotted on the synodic cycle, and read. Pick the dates, name them, share the link.",
+ "caps": [],
+ "launchSub": "Canvas-drawn moons · cycle chart · one HTML file",
+ "story": {
+  "label": "why this exists",
+  "title": "Two moons, <em>overlaid</em>"
+ },
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>Vanilla JS and the canvas API — no charting library, no astrology API. Lunar ages come from the synodic cycle, with the footer citing NASA RP 1349.</p>",
+   "stack": [
+    "Canvas 2D",
+    "Vanilla JS",
+    "Synodic month",
+    "One file"
+   ]
+  }
+ ],
+ "features": [
+  {
+   "t": "Overlaid phases",
+   "d": "each moon drawn on its own canvas from its illumination fraction, terminator curve and all, then stacked so the difference is visible at a glance."
+  },
+  {
+   "t": "Per-date readout",
+   "d": "phase name, moon age in days, illumination, and the new moon that came before."
+  },
+  {
+   "t": "Cycle chart",
+   "d": "the full illumination curve from new to full to new, both dates plotted on it, with a bracket measuring the gap."
+  },
+  {
+   "t": "The reading",
+   "d": "written for the pair of phases you land on: twins, neighbours, complements or opposites."
+  },
+  {
+   "t": "Date picker",
+   "d": "two dates, optional names, a swap button, and a copy-link button that saves the pair in the URL. Phase ages come from the mean synodic month anchored to a known new moon, so they are within about a day."
+  }
+ ],
+ "lede": "<p>A compatibility reading built from the one thing two birthdays share with the sky: the phase of the moon. Each date's lunar age is placed on the 29.53-day synodic month, both moons are drawn and laid over each other, and the distance between them becomes the score.</p>",
+ "ledeLabel": "the idea",
+ "featuresLabel": "what it does",
+ "scope": "<p>The astronomy is real — phase ages on the synodic cycle, illumination from the moon's age. The compatibility is poetry, and it says so by being beautiful rather than by pretending to be a test. <em>It was made for one particular pair, whose dates are still the default. Now it takes any two dates, and the link remembers them.</em></p>",
+ "closing": "Two growing lights, less than a day apart."
+}

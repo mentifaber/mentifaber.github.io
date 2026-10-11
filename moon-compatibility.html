@@ -1,163 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Moon Compatibility — any two dates placed on the 29.53-day synodic cycle, both moons drawn and overlaid, and the gap between them read as a score."/>
-<meta property="og:title" content="Moon Compatibility"/>
-<meta property="og:description" content="Any two dates, two moons, overlaid and read."/>
-<meta name="theme-color" content="#000000"/>
-<title>Moon Compatibility</title>
-<link rel="icon" href="assets/icons/moon-compatibility.png">
-<link rel="apple-touch-icon" href="assets/icons/moon-compatibility.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/moon-compatibility.png"/>
-<meta property="og:url" content="https://mentifaber.org/moon-compatibility.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-  --accent: hsl(255 70% 62%);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
-.name span { color: var(--accent); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--accent), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
-.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
-  border: 1px solid hsla(255,70%,62%,.35); background: linear-gradient(180deg, hsla(255,70%,62%,.08), hsla(255,70%,62%,.02));
-  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
-.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, hsla(255,70%,62%,.16), transparent 70%);
-  opacity: 0; transition: opacity .3s ease; }
-.launch-btn:hover { border-color: var(--accent); }
-.launch-btn:hover::before { opacity: 1; }
-.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
-  color: var(--accent); position: relative; }
-.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
-  color: var(--ink); margin-top: .6rem; position: relative; }
-.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
-  margin-top: .6rem; letter-spacing: .06em; position: relative; }
-.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
-.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
-.frag li b { color: var(--ink); font-weight: 600; }
-
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
-</style>
-<style>:root{--mf-accent:hsl(255 90% 68%);--mf-glow:hsl(255 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Moon Compatibility — Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score. · Mentifaber</title>
+<meta name="description" content="Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Moon Compatibility — Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score. · Mentifaber"><meta property="og:description" content="Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score."><meta property="og:image" content="https://mentifaber.org/assets/previews/moon-compatibility.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/moon-compatibility.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/moon-compatibility-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/moon-compatibility-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moon Compatibility"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/moon-compatibility.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=e460cab9">
+<style>:root{--h:255}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">lunar reading · two moons</p>
-  <span class="mf-logo" style="--h:255" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4a6.5 6.5 0 1 0 5 11.2A7 7 0 0 1 10 4z"/><circle cx="17" cy="8" r="3.5"/></svg></span>
-  <h1 class="name">Moon <span>Compatibility</span></h1>
-  <p class="tagline">Any two dates, two moons — drawn, overlaid, plotted on the synodic cycle, and read. Pick the dates, name them, share the link.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>live — open it below</span>
-</div>
-
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="moon-compatibility-app.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// lunar reading · synodic cycle</span>
-    <span class="lb-title">Open the reading →</span>
-    <span class="lb-sub">Canvas-drawn moons · cycle chart · one HTML file</span>
-  </a>
-  <div class="mf-launch-cap"><span>Any two dates</span><span>Shareable link</span></div>
-</div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/moon-compatibility.webp"><img src="assets/previews/moon-compatibility.png" alt="Moon Compatibility — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
-
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">why this exists</p>
-    <h2 class="frag-title">Two moons, <em>overlaid</em></h2>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#play">Play</a> / Moon Compatibility</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">lunar reading · two moons</span>
+    <h1 class="long">Moon Compatibility</h1>
+    <div class="who"><span class="tile" style="--h:255" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4a6.5 6.5 0 1 0 5 11.2A7 7 0 0 1 10 4z"/><circle cx="17" cy="8" r="3.5"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span></div></div>
+    <p class="tag" style="margin-top:22px">Any two dates, two moons — drawn, overlaid, plotted on the synodic cycle, and read. Pick the dates, name them, share the link.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Moon Compatibility</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Canvas-drawn moons · cycle chart · one HTML file</p>
   </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/moon-compatibility.webp"><img src="assets/previews/moon-compatibility.png" alt="Moon Compatibility, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-  <div class="frag">
-    <span class="tag">the idea</span>
-    <p>A compatibility reading built from the one thing two birthdays share with the sky: the phase of the moon. Each date's lunar age is placed on the 29.53-day synodic month, both moons are drawn and laid over each other, and the distance between them becomes the score.</p>
-  </div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the idea</span>
+  <h2>Two moons, <em>overlaid</em></h2>
+  <div class="lede prose"><p>A compatibility reading built from the one thing two birthdays share with the sky: the phase of the moon. Each date's lunar age is placed on the 29.53-day synodic month, both moons are drawn and laid over each other, and the distance between them becomes the score.</p></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">what it does</span>
-    <ul><li><b>Overlaid phases</b> — each moon drawn on its own canvas from its illumination fraction, terminator curve and all, then stacked so the difference is visible at a glance.</li><li><b>Per-date readout</b> — phase name, moon age in days, illumination, and the new moon that came before.</li><li><b>Cycle chart</b> — the full illumination curve from new to full to new, both dates plotted on it, with a bracket measuring the gap.</li><li><b>The reading</b> — written for the pair of phases you land on: twins, neighbours, complements or opposites.</li><li><b>Date picker</b> — two dates, optional names, a swap button, and a copy-link button that saves the pair in the URL. Phase ages come from the mean synodic month anchored to a known new moon, so they are within about a day.</li></ul>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what it does</span>
+  <h2 class="reveal">Inside Moon Compatibility</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Overlaid phases</h3><p>Each moon drawn on its own canvas from its illumination fraction, terminator curve and all, then stacked so the difference is visible at a glance.</p></article><article class="card reveal"><span class="n">02</span><h3>Per-date readout</h3><p>Phase name, moon age in days, illumination, and the new moon that came before.</p></article><article class="card reveal"><span class="n">03</span><h3>Cycle chart</h3><p>The full illumination curve from new to full to new, both dates plotted on it, with a bracket measuring the gap.</p></article><article class="card reveal"><span class="n">04</span><h3>The reading</h3><p>Written for the pair of phases you land on: twins, neighbours, complements or opposites.</p></article><article class="card reveal"><span class="n">05</span><h3>Date picker</h3><p>Two dates, optional names, a swap button, and a copy-link button that saves the pair in the URL. Phase ages come from the mean synodic month anchored to a known new moon, so they are within about a day.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">built on</span><div class="prose"><p>Vanilla JS and the canvas API — no charting library, no astrology API. Lunar ages come from the synodic cycle, with the footer citing NASA RP 1349.</p></div><div class=stack><span>Canvas 2D</span><span>Vanilla JS</span><span>Synodic month</span><span>One file</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>The astronomy is real — phase ages on the synodic cycle, illumination from the moon's age. The compatibility is poetry, and it says so by being beautiful rather than by pretending to be a test. <em>It was made for one particular pair, whose dates are still the default. Now it takes any two dates, and the link remembers them.</em></p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">built on</span>
-    <p>Vanilla JS and the canvas API — no charting library, no astrology API. Lunar ages come from the synodic cycle, with the footer citing NASA RP 1349.</p>
-    <div class="stack-row"><span>Canvas 2D</span><span>Vanilla JS</span><span>Synodic month</span><span>One file</span></div>
-  </div>
-
-  <div class="frag">
-    <span class="tag">honest scope</span>
-    <p>The astronomy is real — phase ages on the synodic cycle, illumination from the moon's age. The compatibility is poetry, and it says so by being beautiful rather than by pretending to be a test. <em>It was made for one particular pair, whose dates are still the default. Now it takes any two dates, and the link remembers them.</em></p>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>Two growing lights, less than a day apart.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Two growing lights, less than a day apart.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in play</span>
+  <div class="related reveal"><a class="rel" href="tether.html"><span class="tile md" style="--h:18" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><path d="M6 7l9 10"/><circle cx="16.5" cy="18" r="3"/><path d="M3 21h18"/></svg></span><span><b>Tether</b><small>A one-finger rope-swinging game, open to everyone: real rope physics over lava through…</small></span></a><a class="rel" href="thoughtform.html"><span class="tile md" style="--h:340" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg></span><span><b>Thoughtform</b><small>A first-person shooter set inside a mind under siege, built from nothing but maths: a…</small></span></a><a class="rel" href="watchyourgrass.html"><span class="tile md" style="--h:248" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20h17"/><path d="M6 20c0-5 1-9 3-12M10.5 20c0-4 .5-7 2-10M14.5 20c0-6 2-10 5-13M18 20c-.3-3-1.5-5-3.5-6.5"/></svg></span><span><b>Watch Your Grass</b><small>Arena defense on a 6×6 lawn — ten plant and terrain types, six player classes, drawn up…</small></span></a><a class="rel" href="sketches.html"><span class="tile md" style="--h:236" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3 3"/></svg></span><span><b>Sketches</b><small>Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.</small></span></a><a class="rel" href="sideways.html"><span class="tile md" style="--h:200" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="8" rx="2" transform="rotate(-20 12 12)"/><path d="M3 19c3-1 5-1 8 0M2 15c2-.6 3-.6 5 0"/></svg></span><span><b>Sideways</b><small>A drifting game Claude made for Anders where the soundtrack is played by how you drive:…</small></span></a><a class="rel" href="rootcause.html"><span class="tile md" style="--h:4" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><path d="M7.5 10.5h1.5l1-2 1.5 4 1-2h1.5"/></svg></span><span><b>Root Cause</b><small>An on-call detective game Claude made for Anders, unprompted: the pager goes off, the…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Moon Compatibility, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Moon Compatibility, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Moon Compatibility"><div class="poster" style="background-image:url(assets/previews/moon-compatibility.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Moon Compatibility</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "moon-compatibility", "name": "Moon Compatibility", "app": "moon-compatibility-app.html", "h": 255}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
 </body>
 </html>
