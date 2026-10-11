@@ -1,24 +1,31 @@
 {
-  "name": "Vigil",
+  "id": "/vigil",
+  "name": "Vigil · Mentifaber",
   "short_name": "Vigil",
-  "description": "A private command screen: weather, markets, space weather, quakes, satellites and conflict, all live.",
+  "description": "A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.",
   "start_url": "/vigil-app.html",
-  "scope": "/vigil-app.html",
+  "scope": "/vigil",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#05060a",
+  "theme_color": "#05060a",
   "icons": [
     {
-      "src": "../icons/vigil.png",
+      "src": "../icons/v2/vigil-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/vigil-512.png",
+      "src": "../icons/v2/vigil-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/vigil-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

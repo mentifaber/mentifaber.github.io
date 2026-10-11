@@ -1,163 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Bubble Editor — drag numbered balloons onto an engineering drawing for first-article inspection, load your own drawing, and export the ballooned sheet as a PNG. One HTML file."/>
-<meta property="og:title" content="Bubble Editor"/>
-<meta property="og:description" content="Ballooning an engineering drawing for inspection, in a browser tab."/>
-<meta name="theme-color" content="#000000"/>
-<title>Bubble Editor</title>
-<link rel="icon" href="assets/icons/bubble-editor.png">
-<link rel="apple-touch-icon" href="assets/icons/bubble-editor.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/bubble-editor.png"/>
-<meta property="og:url" content="https://mentifaber.org/bubble-editor.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-  --accent: hsl(350 70% 62%);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
-.name span { color: var(--accent); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--accent), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
-.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
-  border: 1px solid hsla(350,70%,62%,.35); background: linear-gradient(180deg, hsla(350,70%,62%,.08), hsla(350,70%,62%,.02));
-  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
-.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, hsla(350,70%,62%,.16), transparent 70%);
-  opacity: 0; transition: opacity .3s ease; }
-.launch-btn:hover { border-color: var(--accent); }
-.launch-btn:hover::before { opacity: 1; }
-.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
-  color: var(--accent); position: relative; }
-.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
-  color: var(--ink); margin-top: .6rem; position: relative; }
-.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
-  margin-top: .6rem; letter-spacing: .06em; position: relative; }
-.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
-.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
-.frag li b { color: var(--ink); font-weight: 600; }
-
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
-</style>
-<style>:root{--mf-accent:hsl(350 90% 68%);--mf-glow:hsl(350 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bubble Editor — Ballooning an engineering drawing for first-article inspection · Mentifaber</title>
+<meta name="description" content="Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Bubble Editor — Ballooning an engineering drawing for first-article inspection · Mentifaber"><meta property="og:description" content="Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet."><meta property="og:image" content="https://mentifaber.org/assets/previews/bubble-editor.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/bubble-editor.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/bubble-editor-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/bubble-editor-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Bubble Editor"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/bubble-editor.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=e460cab9">
+<style>:root{--h:350}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">shop floor · first-article inspection</p>
-  <span class="mf-logo" style="--h:350" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="9" r="5.5"/><path d="M14.1 7.4l1.4-1v5.3"/><path d="M11 13 4 20M4 16.5V20h3.5"/></svg></span>
-  <h1 class="name">Bubble <span>Editor</span></h1>
-  <p class="tagline">Every characteristic on a drawing gets a number before the part gets measured. Drag the balloons into place, load your own drawing, export the sheet.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>live — open it below</span>
-</div>
-
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="bubble-editor-app.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// inspection · ballooning</span>
-    <span class="lb-title">Open Bubble Editor →</span>
-    <span class="lb-sub">Load a drawing · drag to place · export PNG</span>
-  </a>
-  <div class="mf-launch-cap"><span>demo drawing loaded</span><span>14 callouts</span></div>
-</div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/bubble-editor.webp"><img src="assets/previews/bubble-editor.png" alt="Bubble Editor — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
-
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">why this exists</p>
-    <h2 class="frag-title">Every dimension <em>gets a number</em></h2>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#craft">Craft</a> / Bubble Editor</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">shop floor · first-article inspection</span>
+    <h1 class="long">Bubble Editor</h1>
+    <div class="who"><span class="tile" style="--h:350" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="9" r="5.5"/><path d="M14.1 7.4l1.4-1v5.3"/><path d="M11 13 4 20M4 16.5V20h3.5"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span></div></div>
+    <p class="tag" style="margin-top:22px">Every characteristic on a drawing gets a number before the part gets measured. Drag the balloons into place, load your own drawing, export the sheet.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Bubble Editor</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Load a drawing · drag to place · export PNG</p>
   </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/bubble-editor.webp"><img src="assets/previews/bubble-editor.png" alt="Bubble Editor, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-  <div class="frag">
-    <span class="tag">the problem</span>
-    <p>Before a machined part is inspected, every characteristic on its drawing gets a numbered balloon, so the inspection report can say <b>balloon 12: in spec</b> and mean exactly one dimension. Doing that in a PDF editor is slow, and placement is the whole job. This does only that job.</p>
-  </div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the problem</span>
+  <h2>Every dimension <em>gets a number</em></h2>
+  <div class="lede prose"><p>Before a machined part is inspected, every characteristic on its drawing gets a numbered balloon, so the inspection report can say <b>balloon 12: in spec</b> and mean exactly one dimension. Doing that in a PDF editor is slow, and placement is the whole job. This does only that job.</p></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">what it does</span>
-    <ul><li><b>Drag to place</b> — every balloon is a pointer-captured handle positioned in percentages, so it stays put at any zoom.</li><li><b>Sub-characteristics</b> — labels like 1a, 5b and 19a for the geometric tolerances hanging off a dimension.</li><li><b>Edit panel</b> — the full list, add a balloon by label, delete with a click or the Delete key, reset to the defaults.</li><li><b>Export PNG</b> — re-rendered at the drawing's native resolution, balloons scaled to match.</li><li><b>Load your own drawing</b> — any image, straight from disk; nothing is uploaded anywhere.</li></ul>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what it does</span>
+  <h2 class="reveal">Inside Bubble Editor</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Drag to place</h3><p>Every balloon is a pointer-captured handle positioned in percentages, so it stays put at any zoom.</p></article><article class="card reveal"><span class="n">02</span><h3>Sub-characteristics</h3><p>Labels like 1a, 5b and 19a for the geometric tolerances hanging off a dimension.</p></article><article class="card reveal"><span class="n">03</span><h3>Edit panel</h3><p>The full list, add a balloon by label, delete with a click or the Delete key, reset to the defaults.</p></article><article class="card reveal"><span class="n">04</span><h3>Export PNG</h3><p>Re-rendered at the drawing's native resolution, balloons scaled to match.</p></article><article class="card reveal"><span class="n">05</span><h3>Load your own drawing</h3><p>Any image, straight from disk; nothing is uploaded anywhere.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">built on</span><div class="prose"><p>Vanilla JS, pointer events and a canvas export — one file. It sits beside <a class="mf-xref" href="shop.html">The Shop</a>: the part of the job that happens after the program runs and before anyone signs off on the part.</p></div><div class=stack><span>Vanilla JS</span><span>Pointer events</span><span>Canvas export</span><span>One file</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>The copy used on the floor carried a real customer drawing, and that drawing is not published here. <em>The sheet loaded on this site is an original demo part drawn for the page.</em> Positions live in memory — reload and they reset — so export before you close the tab.</p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">built on</span>
-    <p>Vanilla JS, pointer events and a canvas export — one file. It sits beside <a class="mf-xref" href="shop.html">The Shop</a>: the part of the job that happens after the program runs and before anyone signs off on the part.</p>
-    <div class="stack-row"><span>Vanilla JS</span><span>Pointer events</span><span>Canvas export</span><span>One file</span></div>
-  </div>
-
-  <div class="frag">
-    <span class="tag">honest scope</span>
-    <p>The copy used on the floor carried a real customer drawing, and that drawing is not published here. <em>The sheet loaded on this site is an original demo part drawn for the page.</em> Positions live in memory — reload and they reset — so export before you close the tab.</p>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>Numbered before it is measured.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Numbered before it is measured.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in craft</span>
+  <div class="related reveal"><a class="rel" href="shop.html"><span class="tile md" style="--h:321" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><path d="M12 2.8v2.7M12 18.5v2.7M21.2 12h-2.7M5.5 12H2.8M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9M18.5 18.5l-1.9-1.9M7.4 7.4 5.5 5.5"/></svg></span><span><b>The Shop</b><small>CNC, G-code and steel — the machines that don&#x27;t accept an approximately right answer.</small></span></a><a class="rel" href="frames.html"><span class="tile md" style="--h:98" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><rect x="6.5" y="7.5" width="11" height="9" rx=".5"/><path d="M6.5 14.5l3-3 2.5 2.5 2-2 3.5 3.5"/></svg></span><span><b>Frames</b><small>Twenty-eight photographs kept as a series. The only thing in the atlas that doesn&#x27;t do…</small></span></a><a class="rel" href="sonicveil.html"><span class="tile md" style="--h:216" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></svg></span><span><b>Sonic Veil</b><small>Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Bubble Editor, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Bubble Editor, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Bubble Editor"><div class="poster" style="background-image:url(assets/previews/bubble-editor.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Bubble Editor</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "bubble-editor", "name": "Bubble Editor", "app": "bubble-editor-app.html", "h": 350}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
 </body>
 </html>

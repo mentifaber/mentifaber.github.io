@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><radialGradient id="b" cx="28%" cy="18%" r="105%"><stop offset="0" stop-color="hsl(216 72% 34%)"/><stop offset=".55" stop-color="hsl(234 78% 14%)"/><stop offset="1" stop-color="hsl(248 80% 6%)"/></radialGradient>
+<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<clipPath id="c"><rect width="512" height="512" rx="116"/></clipPath></defs>
+<g clip-path="url(#c)"><rect width="512" height="512" fill="url(#b)"/><rect width="512" height="512" fill="url(#s)"/>
+<circle cx="256" cy="256" r="190" fill="hsl(216 95% 60%)" opacity=".10"/></g>
+<g transform="translate(256 256) scale(11.6) translate(-12 -12)" fill="none" stroke-linecap="round" stroke-linejoin="round" color="hsl(216 96% 76%)">
+<g stroke="hsl(216 100% 62%)" stroke-width="5.2" opacity=".10"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></g><g stroke="hsl(216 100% 66%)" stroke-width="3" opacity=".22"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></g><g stroke="hsl(216 96% 78%)" stroke-width="1.55"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></g></g>
+<rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="hsl(216 85% 70%)" stroke-opacity=".28" stroke-width="3"/>
+</svg>

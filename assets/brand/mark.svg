@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mentifaber">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>

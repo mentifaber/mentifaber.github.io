@@ -1,0 +1,58 @@
+{
+ "kicker": "private · password-gated command dashboard",
+ "nameHtml": "Vi<span>gil</span>",
+ "tagline": "A watch kept on the world — weather, markets, space weather, seismic and volcanic activity, satellites, and conflict, pulled live into one screen.",
+ "caps": [
+  "requires a password",
+  "live public data feeds",
+  "home-screen widgets →"
+ ],
+ "launchSub": "Encrypted behind a login · public feeds only · runs entirely in your browser",
+ "story": {
+  "label": "why this exists",
+  "title": "One screen, <em>always watching</em>"
+ },
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>Vanilla JS pulling directly from public APIs — Open-Meteo, CoinGecko, Frankfurter, NOAA, USGS, NASA, weather.gov, wheretheis.at — no backend of its own, no data it collects. Everything renders client-side, in the browser running it.</p>",
+   "stack": [
+    "Vanilla JS",
+    "Public APIs",
+    "No server",
+    "No tracking"
+   ]
+  }
+ ],
+ "features": [
+  {
+   "t": "Weather & alerts",
+   "d": "current conditions and active NWS severe weather alerts."
+  },
+  {
+   "t": "Markets",
+   "d": "live crypto and FX rates."
+  },
+  {
+   "t": "Space weather",
+   "d": "NOAA SWPC solar activity, plus NASA's Astronomy Picture of the Day."
+  },
+  {
+   "t": "Earth activity",
+   "d": "USGS earthquake and volcanic activity, elevated-status alerts included."
+  },
+  {
+   "t": "Orbital tracking",
+   "d": "live ISS position and satellite ground tracks."
+  },
+  {
+   "t": "Global conflict",
+   "d": "a GDELT-driven monitor of active conflict activity worldwide."
+  }
+ ],
+ "lede": "<p>The information that actually matters day to day — is a storm coming, did the market move, is anything seismic or volcanic worth paying attention to, where's the ISS, what's happening globally — lives scattered across a dozen different sites and apps. <b>Vigil</b> is a single personal dashboard that pulls the live, public feeds worth checking into one place.</p>",
+ "ledeLabel": "the problem",
+ "featuresLabel": "what it does",
+ "scope": "<p>This is a personal dashboard, not an early-warning system — treat every feed as informational, not authoritative, and go to the source (NWS, USGS, NOAA directly) for anything that actually matters in the moment. <em>The dashboard itself is encrypted (AES-256, key derived from the operator name and access code) — without them the page is unreadable ciphertext, even in the source.</em></p>",
+ "closing": "A watch kept on the world, one feed at a time."
+}

@@ -552,6 +552,10 @@ export default {
         } catch (e) {}
         return stub.fetch(new Request("http://agent" + sub + url.search, { method: req.method, headers: h, body }));
       }
+      if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
+        const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
+        return new Response(JSON.stringify({ city: cf.city || null, region: cf.region || null, country: cf.country || null, lat: n(cf.latitude), lon: n(cf.longitude), tz: cf.timezone || null }), { headers: { "content-type": "application/json", "cache-control": "private, max-age=600" } });
+      }
       if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");
         const cf = req.cf || {}; h.set("x-geo", JSON.stringify({ city: cf.city, region: cf.region, country: cf.country, lat: cf.latitude, lon: cf.longitude })); // where the visitor is, for "what's the weather?"

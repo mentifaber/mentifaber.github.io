@@ -1,163 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Sleep Compression — a sleep-restriction protocol built as an Obsidian vault, now a browser tracker: log nights, get sleep efficiency, set the compression window, and know when to expand. Local only."/>
-<meta property="og:title" content="Sleep Compression"/>
-<meta property="og:description" content="Consolidate. Expand. Rest. A sleep-compression protocol and tracker."/>
-<meta name="theme-color" content="#000000"/>
-<title>Sleep Compression</title>
-<link rel="icon" href="assets/icons/sleep-compression.png">
-<link rel="apple-touch-icon" href="assets/icons/sleep-compression.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/sleep-compression.png"/>
-<meta property="og:url" content="https://mentifaber.org/sleep-compression.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-  --accent: hsl(205 70% 62%);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
-.name span { color: var(--accent); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--accent), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
-.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
-  border: 1px solid hsla(205,70%,62%,.35); background: linear-gradient(180deg, hsla(205,70%,62%,.08), hsla(205,70%,62%,.02));
-  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
-.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, hsla(205,70%,62%,.16), transparent 70%);
-  opacity: 0; transition: opacity .3s ease; }
-.launch-btn:hover { border-color: var(--accent); }
-.launch-btn:hover::before { opacity: 1; }
-.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
-  color: var(--accent); position: relative; }
-.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
-  color: var(--ink); margin-top: .6rem; position: relative; }
-.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
-  margin-top: .6rem; letter-spacing: .06em; position: relative; }
-.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
-.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
-.frag li b { color: var(--ink); font-weight: 600; }
-
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
-</style>
-<style>:root{--mf-accent:hsl(205 90% 68%);--mf-glow:hsl(205 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sleep Compression — A sleep-restriction protocol turned tracker · Mentifaber</title>
+<meta name="description" content="A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Sleep Compression — A sleep-restriction protocol turned tracker · Mentifaber"><meta property="og:description" content="A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included."><meta property="og:image" content="https://mentifaber.org/assets/previews/sleep-compression.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/sleep-compression.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/sleep-compression-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/sleep-compression-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Sleep Compression"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/sleep-compression.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=e460cab9">
+<style>:root{--h:205}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">protocol · tracker · obsidian vault</p>
-  <span class="mf-logo" style="--h:205" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4a8.5 8.5 0 1 0 6.5 12.4A7 7 0 0 1 13.5 4z"/><path d="M16 3.5h3.5L16 7.5h3.5"/></svg></span>
-  <h1 class="name">Sleep <span>Compression</span></h1>
-  <p class="tagline">Consolidate. Expand. Rest. A sleep-restriction protocol built as an Obsidian vault — and a tracker that does the arithmetic every morning.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>live — open it below</span>
-</div>
-
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="sleep-compression-app.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// protocol · sleep efficiency</span>
-    <span class="lb-title">Open the tracker →</span>
-    <span class="lb-sub">Log nights · SE% · window calculator · stored only in your browser</span>
-  </a>
-  <div class="mf-launch-cap"><span>SE% = TST ÷ TIB × 100</span><span>original vault included</span></div>
-</div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/sleep-compression.webp"><img src="assets/previews/sleep-compression.png" alt="Sleep Compression — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
-
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">why this exists</p>
-    <h2 class="frag-title">Sleep pressure is <em>the mechanism</em></h2>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#tools">Tools</a> / Sleep Compression</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">protocol · tracker · obsidian vault</span>
+    <h1 class="long">Sleep Compression</h1>
+    <div class="who"><span class="tile" style="--h:205" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4a8.5 8.5 0 1 0 6.5 12.4A7 7 0 0 1 13.5 4z"/><path d="M16 3.5h3.5L16 7.5h3.5"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span></div></div>
+    <p class="tag" style="margin-top:22px">Consolidate. Expand. Rest. A sleep-restriction protocol built as an Obsidian vault — and a tracker that does the arithmetic every morning.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Sleep Compression</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Log nights · SE% · window calculator · stored only in your browser</p>
   </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/sleep-compression.webp"><img src="assets/previews/sleep-compression.png" alt="Sleep Compression, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-  <div class="frag">
-    <span class="tag">the idea</span>
-    <p><b>"Sleep pressure is the mechanism. The window is the tool. Consistency is the cure."</b> Track sleep as it is for one to two weeks, then shrink time in bed to the sleep you actually get plus thirty minutes — never below five and a half hours — with a wake time that does not move. Once efficiency holds at 85% for five nights running, give fifteen minutes back. Repeat until rested.</p>
-  </div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the idea</span>
+  <h2>Sleep pressure is <em>the mechanism</em></h2>
+  <div class="lede prose"><p><b>"Sleep pressure is the mechanism. The window is the tool. Consistency is the cure."</b> Track sleep as it is for one to two weeks, then shrink time in bed to the sleep you actually get plus thirty minutes — never below five and a half hours — with a wake time that does not move. Once efficiency holds at 85% for five nights running, give fifteen minutes back. Repeat until rested.</p></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">what it does</span>
-    <ul><li><b>Nightly log</b> — bed time, time to fall asleep, time awake, rise time; time in bed, total sleep and efficiency computed as you type.</li><li><b>Status bands</b> — excellent at 90%+, good at 85–89, marginal at 80–84, poor below 80, each with the protocol's own instruction.</li><li><b>Phase and streak</b> — baseline, compression or expansion, and a live count toward the five-night streak.</li><li><b>Window calculator</b> — average sleep plus thirty, held at the 5.5-hour floor, counted back from your fixed wake time to tonight's bedtime.</li><li><b>The vault</b> — the original Obsidian templates, guide, phase-coloured graph and theme, as a download.</li></ul>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what it does</span>
+  <h2 class="reveal">Inside Sleep Compression</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Nightly log</h3><p>Bed time, time to fall asleep, time awake, rise time; time in bed, total sleep and efficiency computed as you type.</p></article><article class="card reveal"><span class="n">02</span><h3>Status bands</h3><p>Excellent at 90%+, good at 85–89, marginal at 80–84, poor below 80, each with the protocol's own instruction.</p></article><article class="card reveal"><span class="n">03</span><h3>Phase and streak</h3><p>Baseline, compression or expansion, and a live count toward the five-night streak.</p></article><article class="card reveal"><span class="n">04</span><h3>Window calculator</h3><p>Average sleep plus thirty, held at the 5.5-hour floor, counted back from your fixed wake time to tonight's bedtime.</p></article><article class="card reveal"><span class="n">05</span><h3>The vault</h3><p>The original Obsidian templates, guide, phase-coloured graph and theme, as a download.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">built on</span><div class="prose"><p>Obsidian first: daily and weekly templates, graph colour groups keyed to phase tags, and a CSS snippet in the Mentifaber palette. The web tracker is vanilla JS with everything in localStorage — no account, and nothing leaves the browser.</p></div><div class=stack><span>Obsidian</span><span>Markdown templates</span><span>Vanilla JS</span><span>localStorage</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>A tracker for a known behavioural protocol, not medical advice. <em>The protocol's own red-flag table says it plainly: if efficiency plateaus below 85% for weeks, something else may be going on — anxiety, sleep apnea — and it's worth a professional evaluation.</em></p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">built on</span>
-    <p>Obsidian first: daily and weekly templates, graph colour groups keyed to phase tags, and a CSS snippet in the Mentifaber palette. The web tracker is vanilla JS with everything in localStorage — no account, and nothing leaves the browser.</p>
-    <div class="stack-row"><span>Obsidian</span><span>Markdown templates</span><span>Vanilla JS</span><span>localStorage</span></div>
-  </div>
-
-  <div class="frag">
-    <span class="tag">honest scope</span>
-    <p>A tracker for a known behavioural protocol, not medical advice. <em>The protocol's own red-flag table says it plainly: if efficiency plateaus below 85% for weeks, something else may be going on — anxiety, sleep apnea — and it's worth a professional evaluation.</em></p>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>Consolidate. Expand. Rest.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Consolidate. Expand. Rest.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in tools</span>
+  <div class="related reveal"><a class="rel" href="ballast.html"><span class="tile md" style="--h:116" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.8" r="2.6"/></svg></span><span><b>Ballast</b><small>Every bill on a real calendar, ninety days projected forward, and one honest number:…</small></span></a><a class="rel" href="cryptovault.html"><span class="tile md" style="--h:163" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.5v2.5"/></svg></span><span><b>CryptoVault</b><small>Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file — the browser&#x27;s own crypto…</small></span></a><a class="rel" href="worm-eater.html"><span class="tile md" style="--h:26" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5V5h3M17 5h3v2.5M20 16.5V19h-3M7 19H4v-2.5"/><path d="M7.5 8.5v7M10 8.5v7M13 8.5v7M15.5 8.5v7M17 8.5v7"/></svg></span><span><b>Worm Eater</b><small>An ingredient scanner for food, cosmetics and personal care that says &quot;I don&#x27;t know&quot;…</small></span></a><a class="rel" href="doccrawler.html"><span class="tile md" style="--h:52" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 10V8l-4.5-4.5H6.5v17h6"/><path d="M13 3.5V8h4.5M9 9.5h2M9 13h3"/><circle cx="16" cy="15.5" r="3.3"/><path d="M18.4 17.9 21 20.5"/></svg></span><span><b>DocCrawler</b><small>A local document library for the phone — scan a folder, OCR and index everything into…</small></span></a><a class="rel" href="omnilogos.html"><span class="tile md" style="--h:58" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z"/><path d="M12 6.5v13"/></svg></span><span><b>Omnilogos</b><small>933,573 verses across thirty translations, wired into one navigable graph — the most…</small></span></a><a class="rel" href="arsenal.html"><span class="tile md" style="--h:183" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L4 16.7 7.3 20l5.3-5.3a4 4 0 0 0 5.1-5.4l-2.5 2.5-2.1-.6-.6-2.1z"/></svg></span><span><b>Mechanic&#x27;s Arsenal</b><small>Machines you can take apart in the browser — a 2008 Volvo XC70 with 126 cataloged parts,…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Sleep Compression, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Sleep Compression, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Sleep Compression"><div class="poster" style="background-image:url(assets/previews/sleep-compression.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Sleep Compression</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "sleep-compression", "name": "Sleep Compression", "app": "sleep-compression-app.html", "h": 205}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
 </body>
 </html>

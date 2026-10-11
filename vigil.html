@@ -1,172 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Vigil — a private command dashboard: live weather, markets, space weather, seismic and volcanic activity, satellite tracking, and global conflict monitoring, in one screen."/>
-<meta property="og:title" content="Vigil"/>
-<meta property="og:description" content="A watch kept on the world, one feed at a time."/>
-<meta name="theme-color" content="#000000"/>
-<title>Vigil</title>
-<link rel="icon" href="assets/icons/vigil.png">
-<link rel="apple-touch-icon" href="assets/icons/vigil.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/vigil.png"/>
-<meta property="og:url" content="https://mentifaber.org/vigil.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-  --accent: #d94030;
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
-.name span { color: var(--accent); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--accent), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
-.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
-  border: 1px solid rgba(217,64,48,.35); background: linear-gradient(180deg, rgba(217,64,48,.08), rgba(217,64,48,.02));
-  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
-.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(217,64,48,.16), transparent 70%);
-  opacity: 0; transition: opacity .3s ease; }
-.launch-btn:hover { border-color: var(--accent); }
-.launch-btn:hover::before { opacity: 1; }
-.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
-  color: var(--accent); position: relative; }
-.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
-  color: var(--ink); margin-top: .6rem; position: relative; }
-.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
-  margin-top: .6rem; letter-spacing: .06em; position: relative; }
-.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
-.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
-.frag li b { color: var(--ink); font-weight: 600; }
-
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
-</style>
-<style>:root{--mf-accent:#d94030;--mf-glow:rgba(217,64,48,.45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vigil — A private command screen · Mentifaber</title>
+<meta name="description" content="A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Vigil — A private command screen · Mentifaber"><meta property="og:description" content="A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass."><meta property="og:image" content="https://mentifaber.org/assets/previews/vigil.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/vigil.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/vigil-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/vigil-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Vigil"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/vigil.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=e460cab9">
+<style>:root{--h:6}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">private · password-gated command dashboard</p>
-  <span class="mf-logo" style="--h:6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="15.6" cy="15.2" r="1.1" fill="currentColor"/></svg></span>
-  <h1 class="name">Vi<span>gil</span></h1>
-  <p class="tagline">A watch kept on the world — weather, markets, space weather, seismic and volcanic activity, satellites, and conflict, pulled live into one screen.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>live — open it below</span>
-</div>
-
-<div class="launch-wrap">
-  <a class="launch-btn" href="vigil-app.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// sys.online · node vigil</span>
-    <span class="lb-title">Open Vigil →</span>
-    <span class="lb-sub">Encrypted behind a login · public feeds only · runs entirely in your browser</span>
-  </a>
-  <div class="launch-cap"><span>requires a password</span><span>live public data feeds</span><span><a href="widgets/" style="color:inherit">home-screen widgets →</a></span></div>
-</div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/vigil.webp"><img src="assets/previews/vigil.png" alt="Vigil — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
-
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">why this exists</p>
-    <h2 class="frag-title">One screen, <em>always watching</em></h2>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#world">Sky &amp; World</a> / Vigil</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">private · password-gated command dashboard</span>
+    <h1>Vigil</h1>
+    <div class="who"><span class="tile" style="--h:6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="15.6" cy="15.2" r="1.1" fill="currentColor"/></svg></span><div class="chips"><span class="chip lock"><span class="dot"></span>Private · login</span><span class="chip">requires a password</span><span class="chip">live public data feeds</span><span class="chip">home-screen widgets →</span></div></div>
+    <p class="tag" style="margin-top:22px">A watch kept on the world — weather, markets, space weather, seismic and volcanic activity, satellites, and conflict, pulled live into one screen.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Vigil</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Encrypted behind a login · public feeds only · runs entirely in your browser</p>
   </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/vigil.webp"><img src="assets/previews/vigil.png" alt="Vigil, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-  <div class="frag">
-    <span class="tag">the problem</span>
-    <p>The information that actually matters day to day — is a storm coming, did the market move, is anything seismic or volcanic worth paying attention to, where's the ISS, what's happening globally — lives scattered across a dozen different sites and apps. <b>Vigil</b> is a single personal dashboard that pulls the live, public feeds worth checking into one place.</p>
-  </div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the problem</span>
+  <h2>One screen, <em>always watching</em></h2>
+  <div class="lede prose"><p>The information that actually matters day to day — is a storm coming, did the market move, is anything seismic or volcanic worth paying attention to, where's the ISS, what's happening globally — lives scattered across a dozen different sites and apps. <b>Vigil</b> is a single personal dashboard that pulls the live, public feeds worth checking into one place.</p></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">what it does</span>
-    <ul>
-      <li><b>Weather &amp; alerts</b> — current conditions and active NWS severe weather alerts.</li>
-      <li><b>Markets</b> — live crypto and FX rates.</li>
-      <li><b>Space weather</b> — NOAA SWPC solar activity, plus NASA's Astronomy Picture of the Day.</li>
-      <li><b>Earth activity</b> — USGS earthquake and volcanic activity, elevated-status alerts included.</li>
-      <li><b>Orbital tracking</b> — live ISS position and satellite ground tracks.</li>
-      <li><b>Global conflict</b> — a GDELT-driven monitor of active conflict activity worldwide.</li>
-    </ul>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what it does</span>
+  <h2 class="reveal">Inside Vigil</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Weather &amp; alerts</h3><p>Current conditions and active NWS severe weather alerts.</p></article><article class="card reveal"><span class="n">02</span><h3>Markets</h3><p>Live crypto and FX rates.</p></article><article class="card reveal"><span class="n">03</span><h3>Space weather</h3><p>NOAA SWPC solar activity, plus NASA's Astronomy Picture of the Day.</p></article><article class="card reveal"><span class="n">04</span><h3>Earth activity</h3><p>USGS earthquake and volcanic activity, elevated-status alerts included.</p></article><article class="card reveal"><span class="n">05</span><h3>Orbital tracking</h3><p>Live ISS position and satellite ground tracks.</p></article><article class="card reveal"><span class="n">06</span><h3>Global conflict</h3><p>A GDELT-driven monitor of active conflict activity worldwide.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">built on</span><div class="prose"><p>Vanilla JS pulling directly from public APIs — Open-Meteo, CoinGecko, Frankfurter, NOAA, USGS, NASA, weather.gov, wheretheis.at — no backend of its own, no data it collects. Everything renders client-side, in the browser running it.</p></div><div class=stack><span>Vanilla JS</span><span>Public APIs</span><span>No server</span><span>No tracking</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>This is a personal dashboard, not an early-warning system — treat every feed as informational, not authoritative, and go to the source (NWS, USGS, NOAA directly) for anything that actually matters in the moment. <em>The dashboard itself is encrypted (AES-256, key derived from the operator name and access code) — without them the page is unreadable ciphertext, even in the source.</em></p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">built on</span>
-    <p>Vanilla JS pulling directly from public APIs — Open-Meteo, CoinGecko, Frankfurter, NOAA, USGS, NASA, weather.gov, wheretheis.at — no backend of its own, no data it collects. Everything renders client-side, in the browser running it.</p>
-    <div class="stack-row">
-      <span>Vanilla JS</span><span>Public APIs</span><span>No server</span><span>No tracking</span>
-    </div>
-  </div>
-
-  <div class="frag">
-    <span class="tag">honest scope</span>
-    <p>This is a personal dashboard, not an early-warning system — treat every feed as informational, not authoritative, and go to the source (NWS, USGS, NOAA directly) for anything that actually matters in the moment. <em>The dashboard itself is encrypted (AES-256, key derived from the operator name and access code) — without them the page is unreadable ciphertext, even in the source.</em></p>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>A watch kept on the world, one feed at a time.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">A watch kept on the world, one feed at a time.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in sky &amp; world</span>
+  <div class="related reveal"><a class="rel" href="cartograph.html"><span class="tile md" style="--h:228" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M2.8 16.3c1.6 1.6 7.4.4 12.4-3.1s7.4-7.6 6-8.4c-.8-.5-2.5-.1-4.4.8"/><path d="M5 5.5h.01M19.5 19h.01M8 20h.01"/></svg></span><span><b>Cartograph</b><small>A live 3D atlas of everything — 312+ objects across ten views, from the planets out to…</small></span></a><a class="rel" href="conflict-atlas.html"><span class="tile md" style="--h:46" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.3 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.3-3.5-8.5s1-6 3.5-8.5z"/></svg></span><span><b>Conflict Atlas</b><small>Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get.…</small></span></a><a class="rel" href="crime-dashboard.html"><span class="tile md" style="--h:78" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.8-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.7-7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span><span><b>Crime Intelligence</b><small>Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Vigil, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Vigil, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Vigil"><div class="poster" style="background-image:url(assets/previews/vigil.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Vigil</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "vigil", "name": "Vigil", "app": "vigil-app.html", "h": 6}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
 </body>
 </html>

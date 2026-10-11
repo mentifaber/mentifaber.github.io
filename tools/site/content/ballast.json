@@ -1,0 +1,49 @@
+{
+ "kicker": "private · local-first budget tool",
+ "nameHtml": "Ball<span>ast</span>",
+ "tagline": "The weight carried low in the hull, so rough water cannot turn the vessel over — measured in money. Ninety days projected forward, and one honest number for today.",
+ "caps": [
+  "bills on a real calendar",
+  "90-day balance projection"
+ ],
+ "launchSub": "Local-first · no server · runs entirely in your browser",
+ "story": {
+  "label": "why this exists",
+  "title": "One number, <em>held honest</em>"
+ },
+ "cards": [
+  {
+   "n": "built on",
+   "html": "<p>Vanilla JS, no backend, no account, no server to trust with the numbers. Everything is entered and stored locally, in the browser that's running it.</p>",
+   "stack": [
+    "Vanilla JS",
+    "Local-first",
+    "No server",
+    "No account"
+   ]
+  }
+ ],
+ "features": [
+  {
+   "t": "Dashboard",
+   "d": "current balance, monthly bills, monthly net income, and monthly surplus at a glance."
+  },
+  {
+   "t": "90-day projection",
+   "d": "every bill and income event plotted forward, with the lowest projected balance flagged before it happens."
+  },
+  {
+   "t": "Bills & calendar",
+   "d": "recurring obligations tracked against their real due dates, not just a monthly total."
+  },
+  {
+   "t": "Daily spend & analysis",
+   "d": "what's actually safe to spend today without breaking the projection."
+  }
+ ],
+ "lede": "<p>A bank balance tells you what's there right now. It doesn't tell you what's already spoken for — the rent that clears Friday, the card payment due next week, the subscription that renews before the next paycheck lands. <b>Ballast</b> puts every recurring bill on a real calendar and projects the balance forward, so \"can I afford this today\" has an actual answer instead of a guess.</p>",
+ "ledeLabel": "the problem",
+ "featuresLabel": "what it does",
+ "scope": "<p>This is a personal budgeting tool, not a bank integration or a financial advisor. Balances and projections are only as accurate as what's entered — <em>it doesn't see your actual accounts, and it won't warn you about anything it wasn't told about.</em></p>",
+ "closing": "Ballast keeps the ship upright. Not the cargo — just the weight."
+}

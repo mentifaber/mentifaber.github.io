@@ -1,24 +1,31 @@
 {
-  "name": "Ballast",
+  "id": "/ballast",
+  "name": "Ballast · Mentifaber",
   "short_name": "Ballast",
-  "description": "Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today.",
+  "description": "Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today. Local-first — the numbers never leave the browser.",
   "start_url": "/ballast-app.html",
-  "scope": "/ballast-app.html",
+  "scope": "/ballast",
   "display": "standalone",
-  "background_color": "#0b1014",
-  "theme_color": "#0b1014",
+  "background_color": "#05060a",
+  "theme_color": "#05060a",
   "icons": [
     {
-      "src": "../icons/ballast.png",
+      "src": "../icons/v2/ballast-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/ballast-512.png",
+      "src": "../icons/v2/ballast-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/ballast-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

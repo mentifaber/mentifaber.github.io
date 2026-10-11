@@ -7,7 +7,7 @@ import json, os, re, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APPS = {
-    "arsenal": ("Mechanic's Arsenal", "mechanics-arsenal.html"),
+    "arsenal": ("Mechanic's Arsenal", "arsenal-app.html"),
     "ballast": ("Ballast", "ballast-app.html"),
     "bubble-editor": ("Bubble Editor", "bubble-editor-app.html"),
     "crime-dashboard": ("Crime Intelligence", "crime-dashboard-app.html"),
@@ -32,7 +32,7 @@ def tidy(subject, name):
 
 out = {}
 for key, (name, page) in APPS.items():
-    log = [l for l in git("log", "--no-merges", "--format=%cs\t%s", "--", page).splitlines() if l]
+    log = [l for l in git("log", "--follow", "--no-merges", "--format=%cs\t%s", "--", page).splitlines() if l]
     if not log:
         continue
     notes = []
