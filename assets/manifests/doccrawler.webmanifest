@@ -1,0 +1,35 @@
+{
+  "id": "/doccrawler",
+  "name": "DocCrawler · Mentifaber",
+  "short_name": "DocCrawler",
+  "description": "A local document library for the phone — scan a folder, OCR and index everything into SQLite full-text search, auto-tag it, and ask the Librarian questions answered from your own files, with citations. Offline by design.",
+  "start_url": "/doccrawler-app.html",
+  "scope": "/doccrawler",
+  "display": "standalone",
+  "background_color": "#0b0d0a",
+  "theme_color": "#0b0d0a",
+  "icons": [
+    {
+      "src": "../icons/v2/doccrawler-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/doccrawler-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/doccrawler-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "utilities"
+  ]
+}

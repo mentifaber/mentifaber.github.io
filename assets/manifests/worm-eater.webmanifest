@@ -1,0 +1,36 @@
+{
+  "id": "/worm-eater",
+  "name": "Worm Eater · Mentifaber",
+  "short_name": "Worm Eater",
+  "description": "An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.",
+  "start_url": "/worm-eater-app.html",
+  "scope": "/worm-eater",
+  "display": "standalone",
+  "background_color": "#0a0806",
+  "theme_color": "#0a0806",
+  "icons": [
+    {
+      "src": "../icons/v2/worm-eater-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/worm-eater-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/worm-eater-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "food",
+    "health",
+    "utilities"
+  ]
+}

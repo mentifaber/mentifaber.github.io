@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>DocCrawler · your library</title>
+<meta name="description" content="Drop in PDFs, Word files, notes and photos of paper. DocCrawler reads, indexes and tags them in your browser, and the Librarian answers questions from them with citations.">
+<meta name="theme-color" content="#0b0d0a">
+<link rel="manifest" href="assets/manifests/doccrawler.webmanifest">
+<link rel="icon" href="assets/icons/v2/doccrawler.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/doccrawler-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DocCrawler"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/doc/dc.css">
+</head>
+<body>
+<header class="top">
+  <b class="logo">Doc<span>Crawler</span></b>
+  <form class="q" id="find"><input id="q" type="search" placeholder="Search everything you've added" autocomplete="off" aria-label="Search the library"></form>
+  <label class="btn pri add">＋ Add files<input type="file" id="files" multiple accept=".txt,.md,.markdown,.csv,.json,.html,.pdf,.docx,image/*" hidden></label>
+</header>
+<main>
+  <aside class="lib">
+    <div class="libhead"><b id="count">0 documents</b><button class="link" id="sample">Load a sample library</button></div>
+    <div class="tags" id="tags"></div>
+    <ul class="docs" id="docs"></ul>
+    <div class="drop" id="drop">Drop files anywhere · PDF, Word, text, Markdown, or photos of paper (OCR)</div>
+    <div class="libfoot"><button class="link" id="export">Export</button><label class="link">Import<input type="file" id="import" accept=".json" hidden></label><button class="link danger" id="wipe">Clear library</button></div>
+  </aside>
+  <section class="pane">
+    <div class="tabs"><button data-t="lib" class="on">Results</button><button data-t="ask">Ask the Librarian</button></div>
+    <div id="p-lib"><div id="results"></div></div>
+    <div id="p-ask" hidden>
+      <div class="chat" id="chat"></div>
+      <form class="ask" id="ask"><input id="aq" placeholder="Ask a question about your documents" autocomplete="off"><button class="btn pri">Ask</button></form>
+      <label class="mode"><input type="checkbox" id="useModel" checked> Write the answer with a model (sends your question and the matching excerpts to Hive; the files stay here). Off: plain retrieval, nothing leaves this device.</label>
+    </div>
+  </section>
+</main>
+<div class="view" id="view" hidden><div class="vcard"><header><b id="vt"></b><button class="link" id="vx">Close</button></header><div class="vtags" id="vtags"></div><pre id="vb"></pre></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="assets/doc/dc.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/doccrawler-sw.js", { scope: "/doccrawler" }).catch(() => {});</script>
+</body>
+</html>

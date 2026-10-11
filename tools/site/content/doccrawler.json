@@ -1,0 +1,78 @@
+{
+ "kicker": "tools · paper in, answers out",
+ "tagline": "Point it at your documents and it reads everything: PDFs, Word files, notes and photos of paper. Then it indexes them, tags them, and answers questions from them with citations. Without sending a single file anywhere.",
+ "caps": [
+  "PDF · Word · OCR",
+  "search any of the words",
+  "cited answers"
+ ],
+ "launchSub": "Your library lives in this browser · try the sample library",
+ "titleTail": "a local document library with a librarian",
+ "ledeLabel": "the problem",
+ "story": {
+  "label": "the problem",
+  "title": "A pile, turned into <em>a library</em>"
+ },
+ "lede": "<p>Manuals, alarm sheets, receipts, service notes, screenshots of things you meant to read later: they pile up in a Downloads folder where search means scrolling. <b>DocCrawler</b> turns that pile into a library you can search and question. The phone build runs in Termux with the internet off; the version below runs entirely in your browser.</p>",
+ "featuresLabel": "how it works",
+ "features": [
+  {
+   "t": "Ingest",
+   "d": "every file is hashed with SHA-256 and de-duplicated. Add the same receipt twice and it's kept once."
+  },
+  {
+   "t": "Extract",
+   "d": "text straight from text and Markdown, pdf.js for PDFs, mammoth for Word, Tesseract OCR for photos of paper (each loaded only when needed)."
+  },
+  {
+   "t": "Index",
+   "d": "ranked full-text search where a natural question is searched as any of its words, not a strict AND, so real questions find real answers."
+  },
+  {
+   "t": "Tag",
+   "d": "each document gets its top keywords as tags; add, remove or filter by your own."
+  },
+  {
+   "t": "The Librarian",
+   "d": "answers grounded in ranked excerpts with numbered citations. Turn the model off and it answers with plain retrieval, and nothing leaves the device."
+  },
+  {
+   "t": "Yours",
+   "d": "the library lives in this browser's storage; export it as one file, import it anywhere."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the hard part (phone build)",
+   "html": "<p>Ollama has no Android build, so on the phone it runs inside a Debian container under proot-distro. Keeping it up took a run of fixes: a <code>pkill</code> that killed its own wrapper, a server that died with its launcher, a wrong HOME that made every model vanish, and timeouts long enough for a phone CPU to finish thinking.</p>",
+   "stack": [
+    "Python",
+    "Flask",
+    "SQLite FTS5",
+    "Tesseract",
+    "Ollama",
+    "Termux"
+   ]
+  },
+  {
+   "n": "the browser build",
+   "html": "<p>IndexedDB for the library, BM25 over passages for search, pdf.js, mammoth and Tesseract.js on demand, and Hive's free models for the Librarian when you allow it.</p>",
+   "stack": [
+    "IndexedDB",
+    "BM25",
+    "pdf.js",
+    "Tesseract.js"
+   ]
+  }
+ ],
+ "scope": "<p>Single-user on purpose. Auto-tags are a keyword heuristic, not a classifier; OCR is only as good as the photo. <em>The Librarian cites its sources: check them for anything that matters.</em></p>",
+ "closing": "The library stays on the device. The questions do too, if you want them to.",
+ "manifest": {
+  "categories": [
+   "productivity",
+   "utilities"
+  ],
+  "background_color": "#0b0d0a",
+  "theme_color": "#0b0d0a"
+ }
+}

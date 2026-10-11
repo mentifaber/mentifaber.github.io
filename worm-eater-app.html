@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Worm Eater · scan a label</title>
+<meta name="description" content="Scan or search a food, cosmetic or personal-care product and see what's in it: every ingredient rated with a reason, and the unknowns shown as unknown.">
+<meta name="theme-color" content="#0a0806">
+<link rel="manifest" href="assets/manifests/worm-eater.webmanifest">
+<link rel="icon" href="assets/icons/v2/worm-eater.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/worm-eater-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Worm Eater"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/worm/we.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M4 30c6-14 14-14 18-4s12 10 16-2 12-12 16 0c2 6 4 8 6 8" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/><circle cx="58" cy="32" r="2.6" fill="currentColor"/></svg><b>Worm <span>Eater</span></b></div>
+  <form id="find" class="find"><input id="q" placeholder="Barcode or product name" autocomplete="off" inputmode="search" aria-label="Barcode or product name"><button class="btn" id="scan" type="button" title="Scan a barcode with the camera">⌁ Scan</button><button class="btn pri">Look up</button></form>
+</header>
+<main id="main">
+  <section class="intro" id="intro">
+    <h1>What's actually in it?</h1>
+    <p>Search a product or scan its barcode. Every ingredient gets a rating <em>and the reason</em>. The ones nobody has classified are shown as <b>unknown</b>, never quietly counted as fine, and the score says how much of the label it actually understood.</p>
+    <div class="tries"><span>Try:</span><button data-try="3017620422003">Nutella</button><button data-try="5449000000996">Coca-Cola</button><button data-try="0016000275287">Cheerios</button><button data-try="3600523615571">a shampoo</button><button data-try="oreo">“oreo”</button></div>
+    <div class="recent" id="recent"></div>
+  </section>
+  <section id="results" hidden></section>
+  <section id="product" hidden></section>
+</main>
+<div class="cam" id="cam" hidden><video id="vid" playsinline muted></video><div class="frame"></div><p id="camMsg">Point at a barcode</p><button class="btn" id="camX">Close</button></div>
+<footer class="foot">Data from <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> and <a href="https://world.openbeautyfacts.org" target="_blank" rel="noopener">Open Beauty Facts</a>, community-made and uneven in exactly the ways this app shows. Not medical advice.</footer>
+<script src="assets/worm/table.js"></script>
+<script src="assets/worm/we.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/worm-eater-sw.js", { scope: "/worm-eater" }).catch(() => {});</script>
+</body>
+</html>

@@ -1,298 +1,79 @@
-<!DOCTYPE html>
-<html lang="en" class="mf-tint"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#000000">
-<title>Sonic Veil — composer, since 2016</title>
-<link rel="icon" href="assets/icons/sonicveil.png">
-<link rel="apple-touch-icon" href="assets/icons/sonicveil.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/sonicveil.png"/>
-<meta property="og:url" content="https://mentifaber.org/sonicveil.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<meta property="og:description" content="Sonic Veil — composer since 2016. Ambient, experimental and electronic: 86 tracks and ten years of genre-bending, on SoundCloud, Spotify, Apple Music and 150+ platforms."/>
-<meta name="description" content="Sonic Veil — composer since 2016. Ambient, experimental and electronic: 86 tracks and ten years of genre-bending, on SoundCloud, Spotify, Apple Music and 150+ platforms."/>
-<meta property="og:title" content="Sonic Veil"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root{
-  --black:#000000;--panel:#120f0a;--panel2:#120f0a;--line:rgba(242,230,207,.14);--line2:rgba(242,230,207,.28);
-  --parch:#f2e6cf;--dim:#c4b09a;--gold:#c8a96e;--gold-dim:#8a7050;--ember:#b02a1a;--ember-hi:#d94030;--blood:#b02a1a;
-  --disp:'Bricolage Grotesque',sans-serif;--body:'Newsreader',serif;--mono:'IBM Plex Mono',monospace;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--black);color:var(--parch);font-family:var(--body);font-size:17.5px;line-height:1.65;text-align:center;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-::selection{background:var(--gold);color:var(--black)}
-.col{max-width:700px;margin:0 auto;padding:0 24px}.wide{max-width:920px;margin:0 auto;padding:0 24px}
-#bar{position:fixed;top:0;left:0;height:2px;width:0;z-index:99;background:linear-gradient(90deg,var(--gold),var(--ember))}
-.gap{height:118px;position:relative}
-.gap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--line) 25%,var(--line) 75%,transparent)}
-.gap i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line2);box-shadow:0 0 0 7px var(--black);transition:.5s}
-.gap.lit i{background:var(--gold);box-shadow:0 0 0 7px var(--black),0 0 16px var(--gold)}
-.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
-h2{font-family:'Bricolage Grotesque',sans-serif;font-style:normal;font-weight:700;font-size:clamp(30px,5.4vw,50px);line-height:1.1;margin:16px auto 16px;max-width:19ch;letter-spacing:-.01em}
-h2 em{color:var(--gold);font-family:'Newsreader',serif;font-style:italic}
-.lede{color:var(--dim);max-width:52ch;margin:0 auto;font-size:17px}
-.rv{opacity:0;transform:translateY(20px);transition:.9s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}
-.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px}
-#veil{width:min(100%, 640px);height:190px;display:block}
-.label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.4em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px}
-h1{font-family:'Bricolage Grotesque',sans-serif;font-style:normal;font-weight:700;font-size:clamp(58px,13vw,124px);line-height:.9;letter-spacing:-.02em;margin:14px 0 18px}
-h1 em{color:var(--ember);font-family:'Newsreader',serif;font-style:italic;font-weight:500}
-.tagline{font-family:var(--body);font-style:italic;font-size:clamp(17px,2.2vw,20px);color:var(--dim);letter-spacing:.03em;max-width:38ch;margin:0 auto}
-.meta{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:28px}
-.meta a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-dim)}
-.meta a:hover{color:var(--ember-hi);border-color:var(--ember-hi)}
-.bio cite a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line2)}
-.bio cite a:hover{color:var(--gold)}
-.trow .s a{color:inherit;text-decoration:none}
-.trow:hover .s{color:var(--gold)}
-a.card{color:inherit;text-decoration:none;display:block}
-a.card:hover h4{color:var(--gold)}
-a.card .cta{display:block;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim)}
-a.card:hover .cta{color:var(--gold)}
-
-/* transport */
-.transport{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:30px;flex-wrap:wrap}
-.play{width:54px;height:54px;border-radius:50%;border:1px solid var(--line2);background:transparent;
-  color:var(--parch);cursor:pointer;transition:.2s;display:grid;place-items:center;font-size:15px}
-.play:hover{border-color:var(--gold);color:var(--gold)}
-.play.on{border-color:var(--ember);color:var(--ember-hi);box-shadow:0 0 24px rgba(154,79,46,.25)}
-.readout{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.1em;text-align:left;min-width:210px}
-.readout b{color:var(--parch);font-weight:400}
-
-/* discography */
-.disco{margin-top:34px;text-align:left;max-width:640px;margin-left:auto;margin-right:auto}
-.trow{display:grid;grid-template-columns:96px 1fr auto;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer;transition:.18s}
-.trow:hover{background:rgba(200,169,110,.04)}
-.trow .d{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
-.trow .n{font-family:'Newsreader',serif;font-style:italic;font-size:17px}
-.trow .n b{font-style:normal;color:var(--gold);font-weight:400}
-.trow .s{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold-dim);letter-spacing:.08em;text-align:right}
-.trow.head{color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;cursor:default;border-bottom-color:var(--line2)}
-.trow.head:hover{background:transparent}
-
-.stat-row{display:flex;gap:34px;justify-content:center;flex-wrap:wrap;margin-top:34px}
-.stat{text-align:center}
-.stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-style:normal;font-weight:700;font-size:34px;color:var(--gold)}
-.stat span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
-
-.bio{margin:32px auto 0;max-width:560px;background:var(--panel);border-left:2px solid var(--gold);
-  padding:26px 28px;text-align:left;font-family:var(--body);font-style:italic;font-size:18px;line-height:1.75;color:var(--parch)}
-.bio cite{display:block;margin-top:14px;font-family:'IBM Plex Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
-
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-top:32px;text-align:left}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:22px;transition:border-color .25s}
-.card:hover{border-color:var(--line2)}
-.card h4{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
-.card p{font-size:15.5px;line-height:1.6}
-.card p b{color:var(--gold);font-weight:600}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:32px;text-align:left}
-.aside{margin:30px auto 0;max-width:54ch;color:var(--dim);font-size:15.5px}
-.aside b{color:var(--parch);font-weight:600}
-.aside a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-dim)}
-.aside a:hover{color:var(--ember-hi);border-color:var(--ember-hi)}
-footer{padding:110px 24px 90px}footer p{color:var(--dim);font-size:15px;max-width:52ch;margin:16px auto 0}
-
-.mf-grain{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.05;mix-blend-mode:multiply;pointer-events:none;z-index:200}
-.mf-contours{position:fixed;inset:0;z-index:-1;opacity:.55;pointer-events:none}
-.mf-contours svg{width:100%;height:100%}
-.mf-corner{position:fixed;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-decoration:none;z-index:201;opacity:.85;transition:.3s}
-.mf-corner:hover{color:var(--ember);opacity:1}
-.mf-tl{top:3.2vh;left:4vw}.mf-return{bottom:3.2vh;left:4vw}.mf-return::before{content:"\2190 "}.mf-year{bottom:3.2vh;right:4vw;pointer-events:none}
-
-@media(max-width:680px){.gap{height:92px}.split{grid-template-columns:1fr}.trow{grid-template-columns:70px 1fr;gap:10px}.trow .s{grid-column:1/-1;text-align:left}
-  .mf-corner{font-size:8px;letter-spacing:.1em}.mf-tl{top:2.2vh}.mf-return{bottom:2.2vh}.mf-year{bottom:2.2vh}}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition-duration:.01ms!important}}
-</style><style>:root{--mf-accent:hsl(216 90% 68%);--mf-glow:hsl(216 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
-</head><body data-mf-terrain=".62">
-
-<div class="mf-contours">
-  <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-    <g fill="none" stroke="#f2e6cf" stroke-width="1">
-      <path d="M-50,120 C 200,80 400,180 650,110 S 1050,150 1100,90" opacity=".5"/>
-      <path d="M-50,220 C 180,170 420,270 640,200 S 1000,240 1100,180" opacity=".4"/>
-      <path d="M-50,780 C 220,850 380,720 620,800 S 980,760 1100,830" opacity=".45"/>
-      <path d="M-50,880 C 250,930 420,830 660,900 S 1000,860 1100,910" opacity=".35"/>
-      <path d="M-50,500 C 150,460 300,540 500,500 S 850,470 1100,510" opacity=".3"/>
-    </g>
-  </svg>
-</div>
-<div class="mf-grain"></div>
-<a href="index.html" class="mf-corner mf-tl">Atlas of Systems</a>
-<a href="index.html" class="mf-corner mf-return">Atlas</a>
-<div class="mf-corner mf-year">MMXXVI</div>
-
-<div id="bar"></div>
-
-<header class="hero">
-  <canvas id="veil" width="1280" height="380" aria-hidden="true"></canvas>
-  <div class="transport">
-    <button class="play" id="play" aria-label="Play">▶</button>
-    <div class="readout" id="readout">stopped · composer since 2016<br>86 tracks · 1,181 followers</div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sonic Veil — composer since 2016 · Mentifaber</title>
+<meta name="description" content="Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Sonic Veil — composer since 2016 · Mentifaber"><meta property="og:description" content="Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms."><meta property="og:image" content="https://mentifaber.org/assets/previews/sonicveil.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/sonicveil.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/sonicveil-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/sonicveil-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Sonic Veil"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/sonicveil.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=bd19383b">
+<style>:root{--h:216}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#craft">Craft</a> / Sonic Veil</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">craft · composer since 2016</span>
+    <h1 class="long">Sonic Veil</h1>
+    <div class="who"><span class="tile" style="--h:216" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Music</span><span class="chip">86 tracks</span><span class="chip">150+ platforms</span><span class="chip">SoundCloud first</span></div></div>
+    <p class="tag" style="margin-top:22px">Ambient, experimental and electronic soundscapes, ten years running and genre-bending on purpose. Folk one release, ambient electronic the next. Press play right here.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Sonic Veil</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Streams from SoundCloud · the whole catalogue and the picks</p>
   </div>
-  <p class="label">mens · mentis — faber · fabri</p>
-  <span class="mf-logo" style="--h:216" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></svg></span>
-  <h1>Sonic <em>Veil</em></h1>
-  <p class="tagline">Ambient, experimental, electronic — genre-bending explorations, ten years running.</p>
-  <div class="meta"><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud</a> · Spotify · Apple Music · 150+ platforms</div>
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// now streaming · soundcloud</span>
-    <span class="lb-title">Listen to Sonic Veil →</span>
-    <span class="lb-sub">86 tracks · ambient · experimental · electronic</span>
-  </a>
-  <div class="mf-launch-cap"><span>releases land here first</span><span>also on Spotify · Apple Music · 150+ platforms</span></div>
-</div>
-</header>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/sonicveil.webp"><img src="assets/previews/sonicveil.png" alt="Sonic Veil, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-<div class="gap"><i></i></div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">in their own words</span>
+  <h2>Genre-bending, <em>in writing</em></h2>
+  <div class="lede prose"><p>“I'm Sonic Veil, a composer crafting ambient, experimental, and electronic soundscapes. Join me on an audio journey that spans my work from 2016 to today. Expect genre-bending explorations through captivating compositions.”</p><p>The catalogue backs it up: a feature collaboration, a solo instrumental and a lyric-forward folk song carry three different genre tags in three different modes. That spread is the evidence, not just the word in the bio.</p></div>
+</div></section>
 
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/sonicveil.webp"><img src="assets/previews/sonicveil.png" alt="Sonic Veil — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">where the range shows</span>
+  <h2 class="reveal">Inside Sonic Veil</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Strings</h3><p>Featuring Austin Corbett, a close collaborator named on the profile. Out on Amazon Music, iTunes and the rest of the 150-platform spread.</p></article><article class="card reveal"><span class="n">02</span><h3>Equinox</h3><p>Released August 26, 2024. A solo instrumental single: no vocal, no feature, just the composition.</p></article><article class="card reveal"><span class="n">03</span><h3>Spirits</h3><p>March 2023, tagged folk and singer-songwriter. The most lyrically direct thing in the catalogue.</p></article><article class="card reveal"><span class="n">04</span><h3>Ten releases in five months</h3><p>Stride, Love Is (S)pain, Deep Learning, Reflections, Imagined It, Mesh, Algorithm and more, January to May 2026.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">by the numbers</span><div class="prose"><p>First work in 2016. 86 tracks. Around 1,200 followers. Releases land on SoundCloud first, then go out to Spotify, Apple Music, iHeartRadio and the rest.</p></div><div class=stack><span>SoundCloud</span><span>Spotify</span><span>Apple Music</span><span>Amazon Music</span></div></article></div>
+</div></section>
 
-<section class="col rv">
-  <div class="eyebrow">In their own words</div>
-  <h2>What the <em>bio</em> actually says</h2>
-  <div class="bio">
-    "I'm Sonic Veil, a composer crafting ambient, experimental, and electronic soundscapes. Join me on an audio journey that spans my work from 2016 to today. Expect genre-bending explorations through captivating compositions."
-    <cite><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">soundcloud.com/sonicveil</a></cite>
-  </div>
-  <p class="aside">Not one genre held down for ten years — the bio calls it "genre-bending" outright, and the catalogue backs that up: folk one release, ambient electronic the next, something that sounds like it's arguing with a machine learning paper after that.</p>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="col rv">
-  <div class="eyebrow">Recent releases</div>
-  <h2>Ten tracks in <em>five months</em></h2>
-  <p class="lede">Everything below is real, pulled straight from the catalogue — titles, dates, in order. Click a row to hear the transport read it back.</p>
-  <div class="disco" id="disco"></div>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="col rv">
-  <div class="eyebrow">Further back</div>
-  <h2>Where the <em>range</em> shows</h2>
-  <div class="grid">
-    <a class="card" href="https://www.amazon.co.uk/Strings/dp/B0D9ZMG6Q3" target="_blank" rel="noopener"><h4>Strings</h4><p>Feat. <b>Austin Corbett</b> — out on Amazon Music, iTunes and the rest of the 150-platform spread. The collaboration credit, in writing.<span class="cta">Listen on Amazon Music ↗</span></p></a>
-    <div class="card"><h4>Equinox</h4><p>Released Aug 26, 2024. 3:35. A solo instrumental single — no vocal, no feature, just the composition on its own.</p></div>
-    <a class="card" href="https://soundcloud.com/sonicveil/spirits" target="_blank" rel="noopener"><h4>Spirits</h4><p>Published March 26, 2023, tagged <b>Folk & Singer-Songwriter</b> — the most lyrically direct thing in the catalogue. Copyright X2 Studios.<span class="cta">Listen on SoundCloud ↗</span></p></a>
-  </div>
-  <p class="aside">Three releases, three different genre tags, three different modes — a feature collaboration, a solo instrumental, and a lyric-forward folk song. That spread is the actual evidence for "genre-bending," not just the word in the bio.</p>
-  <p class="aside">Deeper catalogue, straight from SoundCloud: <a href="https://soundcloud.com/sonicveil/echo-park" target="_blank" rel="noopener">Echo Park</a> · <a href="https://soundcloud.com/sonicveil/earthquake-instrumental" target="_blank" rel="noopener">EARTHQUAKE (Instrumental)</a> · <a href="https://soundcloud.com/sonicveil/ambiatic" target="_blank" rel="noopener">Ambiatic</a> · <a href="https://soundcloud.com/sonicveil/titan-opium" target="_blank" rel="noopener">Titan Opium</a></p>
-</section>
-
-<div class="gap"><i></i></div>
-
-<section class="wide rv">
-  <div class="eyebrow">By the numbers</div>
-  <h2>Ten years, <em>quietly</em></h2>
-  <div class="stat-row">
-    <div class="stat"><b>2016</b><span>first work</span></div>
-    <div class="stat"><b>86</b><span>tracks</span></div>
-    <div class="stat"><b>1,181</b><span>followers</span></div>
-    <div class="stat"><b>150+</b><span>platforms</span></div>
-  </div>
-  <div class="split" style="margin-top:34px">
-    <div class="card"><h4>Close collaborator</h4><p>Austin Corbett is named directly in the SoundCloud profile as a close collaborator, with his own work pointed to as "Indy Vibe originals" — not an occasional feature, a standing partnership.</p></div>
-    <div class="card"><h4>Distribution</h4><p>SoundCloud is the working feed — releases land there first — but the catalogue is fully distributed out to Spotify, Apple Music, iHeartRadio, and the rest of the 150-platform spread through a standard distributor pipeline.</p></div>
-  </div>
-</section>
-
-<footer>
-  <div class="eyebrow">Sonic Veil · composer · since 2016</div>
-  <p>The canvas above is a rough sonic silhouette, not a waveform recording — press play and it reads the discography back to you in order.</p>
-</footer>
-
-<script>
-/* ===== veil canvas ===== */
-const cv=document.getElementById('veil'),cx=cv.getContext('2d');
-let t=0,amp=0,target=0;
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function draw(){
-  t+=reduce?0:0.014;
-  target*=0.93;amp+=(target-amp)*0.15;
-  const W=cv.width,H=cv.height;
-  cx.clearRect(0,0,W,H);
-  const grad=cx.createLinearGradient(0,0,W,0);
-  grad.addColorStop(0,'rgba(60,85,102,.12)');
-  grad.addColorStop(.5,'#c8a96e');
-  grad.addColorStop(1,'rgba(60,85,102,.12)');
-  cx.strokeStyle=grad;cx.lineWidth=2;cx.beginPath();
-  for(let x=0;x<W;x++){
-    const u=x/W;
-    let y=0;
-    for(let k=1;k<=6;k++){
-      const a=Math.pow(k,-1.5-amp*0.4);
-      y+=a*Math.sin(u*(k*3.2)*Math.PI*2+t*(0.4+k*0.05));
-    }
-    const env=Math.sin(u*Math.PI)**0.5;
-    const py=H/2+y*env*H*0.28*(1+amp*0.6);
-    x?cx.lineTo(x,py):cx.moveTo(x,py);
-  }
-  cx.stroke();
-  cx.globalAlpha=.12;cx.lineWidth=8;cx.stroke();cx.globalAlpha=1;
-  requestAnimationFrame(draw);
-}
-draw();
-
-/* ===== discography ===== */
-const TRACKS=[
-  {d:'2026-05-16',n:'Stride'},
-  {d:'2026-04-05',n:'Love Is (S)pain'},
-  {d:'2026-03-16',n:'Deep Learning'},
-  {d:'2026-03-15',n:'Reflections'},
-  {d:'2026-03-14',n:'Imagined It'},
-  {d:'2026-02-05',n:'Mesh'},
-  {d:'2026-01-27',n:'Reflection — Instrumental'},
-  {d:'2026-01-27',n:'Algorithm'},
-  {d:'2026-01-26',n:'Sweetest'},
-  {d:'2026-01-26',n:'Fears To Flee'}
-];
-const disco=document.getElementById('disco');
-const head=document.createElement('div');
-head.className='trow head';
-head.innerHTML='<div>date</div><div>track</div><div>soundcloud</div>';
-disco.appendChild(head);
-TRACKS.forEach(tr=>{
-  const row=document.createElement('div');row.className='trow';
-  row.innerHTML=`<div class="d">${tr.d}</div><div class="n">${tr.n}</div><div class="s"><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener" onclick="event.stopPropagation()">sonicveil ↗</a></div>`;
-  row.addEventListener('click',()=>play(tr.n));
-  disco.appendChild(row);
-});
-
-/* ===== transport (illustrative, not real audio) ===== */
-const playBtn=document.getElementById('play'),readout=document.getElementById('readout');
-let playing=false,queue=[...TRACKS],qi=0,timer=null;
-function play(name){
-  clearInterval(timer);
-  playing=true;playBtn.classList.add('on');playBtn.textContent='❚❚';
-  readout.innerHTML='playing · <b>'+name+'</b><br>86 tracks · 1,181 followers';
-  target=1;
-  timer=setTimeout(()=>{target=0.3},1400);
-}
-playBtn.addEventListener('click',()=>{
-  if(playing){
-    playing=false;playBtn.classList.remove('on');playBtn.textContent='▶';
-    readout.innerHTML='stopped · composer since 2016<br>86 tracks · 1,181 followers';
-    clearInterval(timer);target=0;return;
-  }
-  qi=(qi+1)%queue.length;
-  play(queue[qi].n);
-});
-
-/* ===== scroll ===== */
-addEventListener('scroll',()=>{
-  const h=document.documentElement.scrollHeight-innerHeight;
-  document.getElementById('bar').style.width=(h>0?scrollY/h*100:0)+'%';
-},{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(e=>{
-  if(e.isIntersecting)e.target.classList.add(e.target.classList.contains('gap')?'lit':'in')
-}),{threshold:.15});
-document.querySelectorAll('.rv,.gap').forEach(e=>io.observe(e));
-
-</script>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
-</body></html>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Ten years, quietly.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in craft</span>
+  <div class="related reveal"><a class="rel" href="bubble-editor.html"><span class="tile md" style="--h:350" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="9" r="5.5"/><path d="M14.1 7.4l1.4-1v5.3"/><path d="M11 13 4 20M4 16.5V20h3.5"/></svg></span><span><b>Bubble Editor</b><small>Ballooning an engineering drawing for first-article inspection — drag numbered callouts…</small></span></a><a class="rel" href="shop.html"><span class="tile md" style="--h:321" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><path d="M12 2.8v2.7M12 18.5v2.7M21.2 12h-2.7M5.5 12H2.8M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9M18.5 18.5l-1.9-1.9M7.4 7.4 5.5 5.5"/></svg></span><span><b>The Shop</b><small>CNC, G-code and steel — the machines that don&#x27;t accept an approximately right answer.</small></span></a><a class="rel" href="frames.html"><span class="tile md" style="--h:98" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><rect x="6.5" y="7.5" width="11" height="9" rx=".5"/><path d="M6.5 14.5l3-3 2.5 2.5 2-2 3.5 3.5"/></svg></span><span><b>Frames</b><small>Twenty-eight photographs kept as a series. The only thing in the atlas that doesn&#x27;t do…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Sonic Veil, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Sonic Veil, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Sonic Veil"><div class="poster" style="background-image:url(assets/previews/sonicveil.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Sonic Veil</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "sonicveil", "name": "Sonic Veil", "app": "sonicveil-app.html", "h": 216}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
+</body>
+</html>
