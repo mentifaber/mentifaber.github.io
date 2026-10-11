@@ -1,0 +1,62 @@
+{
+ "kicker": "signals · seeing people through walls",
+ "tagline": "Detecting a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone. Just one laptop that never moves.",
+ "caps": [
+  "one stationary scanner",
+  "z-scores, not raw dBm",
+  "room-level, honestly"
+ ],
+ "launchSub": "A live simulator: calibrate the empty house, then walk through it",
+ "titleTail": "seeing people through walls with ambient WiFi",
+ "ledeLabel": "live perturbation",
+ "story": {
+  "label": "live perturbation",
+  "title": "A body is <em>60% water</em>"
+ },
+ "lede": "<p>Water absorbs 2.4 and 5 GHz. Walking through a room shifts RSSI by one to three dBm, and it shifts each access point by a different amount depending on what's between it and the receiver. That difference is the signal. <b>Proximity</b> reads what the house was already broadcasting.</p>",
+ "featuresLabel": "the corrected model",
+ "features": [
+  {
+   "t": "01 · Baseline",
+   "d": "scan an empty house for 30 seconds; a stable mean and spread for every BSSID."
+  },
+  {
+   "t": "02 · Perturbation",
+   "d": "every live reading becomes a z-score against that baseline. The deviation is the motion signal; raw dBm never is."
+  },
+  {
+   "t": "03 · Zone inference",
+   "d": "each room has a signature: which BSSIDs deviate, and in which direction. Live deviations are matched against the library; past 2.5σ the zone trips."
+  },
+  {
+   "t": "04 · Track",
+   "d": "zone transitions over time become a path. Room-level resolution, no better, and the code doesn't pretend otherwise."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the rewrite",
+   "html": "<p>The first architecture solved the wrong problem: it fingerprinted the scanner's own position (which room is the laptop in?), a solved and useless question when the laptop never moves. The corrected model keeps the scanner fixed and detects <em>someone else</em> by how their body perturbs the ambient field.</p>"
+  },
+  {
+   "n": "bugs that cost real time",
+   "html": "<p>An <code>asyncio.Lock()</code> built outside the event loop, a deprecated startup hook, and (the dumbest) a Windows launcher that died on a folder path with spaces and a trailing backslash. Windows scans go through <code>netsh</code>, which caps the poll rate and quietly caches; that ceiling, not the physics, limits time resolution.</p>",
+   "stack": [
+    "Python",
+    "FastAPI",
+    "WebSockets",
+    "netsh"
+   ]
+  }
+ ],
+ "scope": "<p>Presence and motion are reliable; room-level zoning works after calibration. Sub-room position, counting people, and seeing through more than a couple of walls without a second access point don't. <em>The simulator's physics are simplified; the method is the real one.</em> The upgrade paths are CSI (sensitive enough for breathing) and 802.11mc round-trip timing.</p>",
+ "closing": "Ambient RF is already everywhere in the house, already carrying the information.",
+ "manifest": {
+  "categories": [
+   "utilities",
+   "education"
+  ],
+  "background_color": "#070b08",
+  "theme_color": "#070b08"
+ }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "/conflict-atlas",
+  "name": "Conflict Atlas",
+  "short_name": "Conflict Atl",
+  "description": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.",
+  "start_url": "/conflict-atlas-app.html",
+  "scope": "/conflict-atlas",
+  "display": "standalone",
+  "background_color": "#0b0908",
+  "theme_color": "#0b0908",
+  "icons": [
+    {
+      "src": "../icons/v2/conflict-atlas-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/conflict-atlas-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/conflict-atlas-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "news",
+    "education"
+  ]
+}
