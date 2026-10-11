@@ -23,11 +23,11 @@ const TARGETS = {
   flutterbloom: { out: "flutterbloom.html", src: ".private/flutterbloom-game.html" },
   muse: { out: "muse-live.html", src: ".private/muse-live.html" },
   weaver: { out: "weaver-live.html", src: ".private/weaver-live.html" },
-  graveyard: { out: "graveyard.html", src: ".private/graveyard-game.html" },
-  tether: { out: "tether.html", src: ".private/tether-game.html" },
+  graveyard: { out: "graveyard-app.html", src: ".private/graveyard-game.html" },
+  tether: { out: "tether-app.html", src: ".private/tether-game.html" },
   angels: { out: "angels.html", src: ".private/angels-src.html" },
-  sideways: { out: "sideways.html", src: ".private/sideways-game.html" },
-  rootcause: { out: "rootcause.html", src: ".private/rootcause-game.html" },
+  sideways: { out: "sideways-app.html", src: ".private/sideways-game.html" },
+  rootcause: { out: "rootcause-app.html", src: ".private/rootcause-game.html" },
 };
 const ITER = 600000;
 const BLOB_RE = /(<script type="application\/octet-stream" id="mf-blob">)([^<]*)(<\/script>)/;

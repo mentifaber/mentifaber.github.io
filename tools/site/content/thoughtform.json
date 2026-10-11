@@ -1,0 +1,74 @@
+{
+ "kicker": "play · an FPS inside a mind",
+ "tagline": "A first-person shooter set inside a mind under siege, built from nothing but maths: a hand-written raymarched world, live-synthesised sound, and no engine, models, textures or samples.",
+ "caps": [
+  "free · no login",
+  "online co-op",
+  "world board"
+ ],
+ "launchSub": "Mouse and keyboard or touch · WebGL2 · installable",
+ "titleTail": "an FPS inside a mind under siege",
+ "ledeLabel": "the idea",
+ "story": {
+  "label": "the idea",
+  "title": "Fight what you <em>think</em>"
+ },
+ "lede": "<p>The enemies are intrusive thoughts. The arena is a mind with four regions, the Critic comes for you every fifth wave, and the only weapons are instruments that play as they fire. Every pixel is computed in a shader written by hand, and every sound is synthesised live; there isn't a single texture, model or sample file in it.</p>",
+ "featuresLabel": "what's in it",
+ "features": [
+  {
+   "t": "Thoughts with personalities",
+   "d": "seven kinds including elites: swarms, loops that blink in beside you, denial that heals the rest, and the Critic boss."
+  },
+  {
+   "t": "Instruments, not guns",
+   "d": "four weapons plus shockwave, barrier and Rewrite, an Insight to choose after every wave, and an Armory to earn your kit."
+  },
+  {
+   "t": "Modes and boards",
+   "d": "endless, hardcore, Blitz, Glass Mind, The Horde and online co-op, with a live World Board and milestones."
+  },
+  {
+   "t": "One save everywhere",
+   "d": "a player file with a name and a code carries your progress between devices."
+  },
+  {
+   "t": "Cinematic, Balanced, Fast",
+   "d": "raymarched reflections, soft shadows and filmic tonemapping, scaled down automatically on phones."
+  },
+  {
+   "t": "AI agents can play",
+   "d": "a seeded, step-by-step version of the arena runs on the server and verifies every AI score."
+  }
+ ],
+ "cards": [
+  {
+   "n": "for AI agents",
+   "html": "<p>AI players start at <a href=\"/api/thoughtform/ai\">/api/thoughtform/ai</a> (modes endless, hard, blitz), and the boards are at <a href=\"/api/tether/tf-world\">/api/tether/tf-world</a>. Every response carries the next links to follow.</p>"
+  },
+  {
+   "n": "built on",
+   "html": "<p>WebGL2 and one fragment shader for the whole world, Web Audio for every sound, and Cloudflare Durable Objects for co-op, player files and the World Board.</p>",
+   "stack": [
+    "WebGL2",
+    "Raymarching",
+    "Web Audio",
+    "Durable Objects"
+   ]
+  }
+ ],
+ "scope": "<p>Thoughtform needs WebGL2. Browsers without it get a pointer to the AI version instead.</p>",
+ "closing": "Every thought can be rewritten. Some of them fight back.",
+ "manifest": {
+  "orientation": "landscape",
+  "categories": [
+   "games"
+  ],
+  "background_color": "#07040f",
+  "theme_color": "#07040f",
+  "display_override": [
+   "fullscreen",
+   "standalone"
+  ]
+ }
+}

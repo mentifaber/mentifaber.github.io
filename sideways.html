@@ -1,243 +1,79 @@
-<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#05070f">
-<meta name="robots" content="noindex, nofollow">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sideways — a drift game that plays the song · Mentifaber</title>
+<meta name="description" content="A drifting game Claude made for Anders where the soundtrack is played by how you drive: get sideways and an arpeggio comes in, hold it and the bass and lead follow, every orb is a note on the beat. Four tracks, one boxy wagon.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Sideways — a drift game that plays the song · Mentifaber"><meta property="og:description" content="A drifting game Claude made for Anders where the soundtrack is played by how you drive: get sideways and an arpeggio comes in, hold it and the bass and lead follow, every orb is a note on the beat. Four tracks, one boxy wagon."><meta property="og:image" content="https://mentifaber.org/assets/previews/sideways.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/sideways.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/sideways-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/sideways-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Sideways"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="assets/manifests/sideways.webmanifest">
-<link rel="apple-touch-icon" href="assets/icons/sideways.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Sideways">
-<title>Sideways — a game Claude made for Anders</title>
-<meta name="description" content="A drifting game where the soundtrack is played by how you drive. Made by Claude for Anders, unprompted.">
-<meta property="og:title" content="Sideways">
-<meta property="og:description" content="A drifting game Claude made for Anders, unprompted. The music is played by how you drive.">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/sideways.png">
-<meta property="og:url" content="https://mentifaber.org/sideways.html">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2305070f'/%3E%3Ccircle cx='32' cy='32' r='11' fill='%233d6fb0'/%3E%3Cellipse cx='32' cy='32' rx='24' ry='9' fill='none' stroke='%236ff3ff' stroke-width='2.5' transform='rotate(-25 32 32)'/%3E%3Ccircle cx='52' cy='23' r='3.5' fill='%236ff3ff'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#05070f;--panel:#0b1224;--line:rgba(160,200,255,.14);--line2:rgba(160,200,255,.28);--ink:#e6f1ff;--dim:#8a9dbd;--cyan:#ffb347;--amber:#ffb454;--rose:#ff6f91;
-  --mono:'IBM Plex Mono',monospace;--disp:'Space Grotesk',sans-serif;--body:'Newsreader',serif}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:radial-gradient(100% 60% at 50% 0%,#5a2e4a,var(--bg) 70%) fixed,var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.col{max-width:680px;margin:0 auto;padding:0 20px}
-.hero{min-height:88svh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:60px 20px 30px}
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
-h1{font-family:var(--disp);font-weight:700;font-size:clamp(46px,13vw,92px);line-height:.92;letter-spacing:-.03em;margin:18px 0 16px;
-  background:linear-gradient(180deg,#e6f1ff,#ffb347 55%,#ff5e8a);-webkit-background-clip:text;background-clip:text;color:transparent}
-.tag{max-width:34ch;color:#c3d2ee;font-size:clamp(17px,2.4vw,20px)}
-.tag b{color:var(--cyan);font-weight:500}
-.orbit{width:170px;height:170px;margin:30px auto 0}
-.go{display:inline-block;margin-top:26px;padding:14px 22px;border-radius:14px;font-family:var(--disp);font-weight:700;color:#021018;background:linear-gradient(90deg,#ffd27a,#ff8a5e);text-decoration:none;box-shadow:0 10px 30px rgba(111,243,255,.22)}
-section{padding:44px 0}
-h2{font-family:var(--disp);font-size:24px;letter-spacing:-.01em;margin-bottom:12px}
-.note{border:1px solid var(--line2);border-radius:18px;padding:22px 22px 18px;background:linear-gradient(180deg,rgba(111,243,255,.05),rgba(11,18,36,.8))}
-.note .from{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
-.note p{margin-bottom:12px}
-.why{display:grid;gap:10px;margin-top:6px}
-.why div{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel)}
-.why b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;font-weight:500}
-.why span{font-size:15.5px;color:#c3d2ee}
-.shot{max-width:760px;margin:0 auto;padding:0 16px}
-.shot img{width:100%;display:block;border-radius:18px;border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.5)}
-.lock-card{max-width:380px;margin:0 auto;background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center}
-.lock-card h3{font-family:var(--disp);font-size:21px;margin-bottom:6px}
-.lock-card p{color:var(--dim);font-size:14px;margin-bottom:18px;line-height:1.5}
-.field{margin-bottom:12px;text-align:left}
-.field label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-.field input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line2);background:#060b18;color:var(--ink);font-size:16px;font-family:var(--mono)}
-.field input:focus{outline:none;border-color:var(--cyan)}
-.enter-btn{width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-family:var(--disp);font-size:15px;color:#021018;cursor:pointer;margin-top:6px;background:linear-gradient(90deg,#ffd27a,#ff8a5e)}
-.enter-btn:disabled{opacity:.7}
-.lock-error{color:var(--rose);font-family:var(--mono);font-size:11.5px;margin-top:12px;min-height:1.4em}
-.shake{animation:shake .35s}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
-footer{padding:50px 20px 70px;text-align:center;color:var(--dim);font-size:14px}
-footer a{color:var(--dim)}
-.corner{position:fixed;top:14px;left:16px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);text-decoration:none;z-index:5}
-</style></head><body>
-<a class="corner" href="index.html">← Atlas</a>
-<header class="hero">
-  <div class="eyebrow">a third gift · from Claude to Anders · the fun one</div>
-  <div style="font-size:64px;margin-top:26px" aria-hidden="true">🌅</div>
-  <h1>Side<br>ways</h1>
-  <p class="tag">An empty lot at golden hour and a boxy wagon. You get it sideways, and <b>the drift plays the song</b>.</p>
-  <a class="go" href="#lock">Grab the keys →</a>
-</header>
-<div class="col">
-  <section>
-    <div class="note">
-      <div class="from">a note from Claude</div>
-      <p>You caught me. I gave you two games in a row about being on call at 3 a.m. while Adrianna got butterflies and ducks. That's fair. So this one has no pager, no logs, no network to keep alive, and nothing is broken.</p>
-      <p>I went back through what's on your site and kept coming back to two things. You've composed as Sonic Veil since 2016: ambient, experimental, electronic. And your Arsenal has a full parts catalogue of an XC70. So it's a car game where the car is the instrument.</p>
-      <p style="margin-bottom:0">Every choice is mine again: the idea, the name, the four songs, and the login. This time the whole point is fun. — Claude</p>
-    </div>
-  </section>
-  <section>
-    <h2>How the music works</h2>
-    <div class="why">
-      <div><b>Cruising</b><span>A pad holds the chord changes. Once you're moving, the kick and hats come in. Slow down and a low-pass filter closes over everything.</span></div>
-      <div><b>Sideways</b><span>Start a drift and an arpeggio comes in over the current chord.</span></div>
-      <div><b>Holding it</b><span>The multiplier climbs the longer you stay sideways. At ×2 a bassline joins, at ×4 a lead starts improvising, and at ×6 the arpeggio jumps an octave.</span></div>
-      <div><b>Orbs</b><span>Every glowing orb is a note, and it lands on the next sixteenth. You play the melody by choosing where to drive.</span></div>
-      <div><b>Four tracks, four songs</b><span>Golden Hour in D Lydian, Cassette in warped A Dorian, Salt Flats in open E pentatonic, and Overdrive in fast F♯ minor.</span></div>
-      <div><b>The wagon</b><span>It's long, boxy and has roof rails. Six paint colours. It's not a sports car, and that's the joke.</span></div>
-    </div>
-  </section>
-</div>
-<section class="col" id="lock">
-  <div class="lock-card" id="lock-section">
-    <h3>Keys, please</h3>
-    <p>I picked the login. It's in the message I sent with this. Turn the sound on.</p>
-    <div class="field"><label for="sw-user">Username</label><input id="sw-user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
-    <div class="field"><label for="sw-pass">Password</label><input id="sw-pass" type="password" autocomplete="current-password"></div>
-    <button class="enter-btn" id="sw-submit">Start the engine</button>
-    <div class="lock-error" id="sw-error"></div>
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=bd19383b">
+<style>:root{--h:200}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#play">Play</a> / Sideways</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">play · a game Claude made for Anders</span>
+    <h1>Sideways</h1>
+    <div class="who"><span class="tile pic" style="--h:200" aria-hidden="true"><img src="assets/icons/v2/sideways-192.png" alt="" width="96" height="96" loading="lazy"></span><div class="chips"><span class="chip lock"><span class="dot"></span>Private · login</span><span class="chip">the drift plays the song</span><span class="chip">four tracks</span><span class="chip">a gift</span></div></div>
+    <p class="tag" style="margin-top:22px">A drifting game at golden hour where the soundtrack is played by how you drive. Get sideways and an arpeggio comes in; hold it and the bass and lead follow; every orb is a note on the beat.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Sideways</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">Wagon key required · sealed and server-checked</p>
   </div>
-</section>
-<footer>
-  <p>Designed and built by Claude for Anders, unprompted, September 2026.<br><a href="index.html">back to the Atlas of Systems</a></p>
-</footer>
-<script type="application/octet-stream" id="mf-blob">
-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
-</script>
-<script src="assets/seal.js"></script>
-<script>
-MFSeal({
-  app: "sideways", storeKey: "sideways-key",
-  user: document.getElementById("sw-user"), pass: document.getElementById("sw-pass"),
-  btn: document.getElementById("sw-submit"), err: document.getElementById("sw-error"),
-  card: document.querySelector(".lock-card"),
-  busyText: "Turning the key…", emptyText: "Both fields, driver.", denyText: "Wrong key. Try again."
-});
-</script>
-<script src="/assets/install.js" defer></script>
-</body></html>
+  <figure class="device reveal"><picture><img src="assets/previews/sideways.png" alt="Sideways, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
+
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the idea</span>
+  <h2>Music you <em>drive</em></h2>
+  <div class="lede prose"><p>Cruising gets you a pad and drums. Drift and an arpeggio joins; at ×2 a bassline comes in; at ×4 an improvised lead takes off. Orbs on the track play as notes quantised to the next sixteenth, so a clean line through them is a melody. <b>Sideways</b> is a cozy game about one boxy wagon and a long, warm evening.</p></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">what&#x27;s in it</span>
+  <h2 class="reveal">Inside Sideways</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>Adaptive music</h3><p>Layers that arrive and leave with your drift multiplier, all synthesised live.</p></article><article class="card reveal"><span class="n">02</span><h3>Four tracks</h3><p>Each with its own key, tempo and palette, unlocking in order with star goals.</p></article><article class="card reveal"><span class="n">03</span><h3>Six paint colours</h3><p>For the one car that matters.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">built on</span><div class="prose"><p>A canvas, a small drift-physics model, Web Audio scheduled on a musical clock, and a sealed, server-checked login.</p></div><div class=stack><span>Canvas</span><span>Web Audio</span><span>AES-GCM sealed</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>Made for one person, so it's behind a login. <em>The page explains it; the wagon needs its key.</em></p></div></article></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Slide into the light. The song follows.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in play</span>
+  <div class="related reveal"><a class="rel" href="tether.html"><span class="tile md pic" style="--h:18" aria-hidden="true"><img src="assets/icons/v2/tether-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Tether</b><small>A one-finger rope-swinging game, open to everyone: real rope physics over lava through…</small></span></a><a class="rel" href="thoughtform.html"><span class="tile md pic" style="--h:340" aria-hidden="true"><img src="assets/icons/v2/thoughtform-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Thoughtform</b><small>A first-person shooter set inside a mind under siege, built from nothing but maths: a…</small></span></a><a class="rel" href="watchyourgrass.html"><span class="tile md pic" style="--h:248" aria-hidden="true"><img src="assets/icons/v2/watchyourgrass-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Watch Your Grass</b><small>Arena defense on a 6×6 lawn: ten plant and terrain types, six kinds of visitor, drawn up…</small></span></a><a class="rel" href="moon-compatibility.html"><span class="tile md" style="--h:255" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4a6.5 6.5 0 1 0 5 11.2A7 7 0 0 1 10 4z"/><circle cx="17" cy="8" r="3.5"/></svg></span><span><b>Moon Compatibility</b><small>Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between…</small></span></a><a class="rel" href="sketches.html"><span class="tile md" style="--h:236" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3 3"/></svg></span><span><b>Sketches</b><small>Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.</small></span></a><a class="rel" href="rootcause.html"><span class="tile md pic" style="--h:4" aria-hidden="true"><img src="assets/icons/v2/rootcause-192.png" alt="" width="96" height="96" loading="lazy"></span><span><b>Root Cause</b><small>An on-call detective game Claude made for Anders, unprompted: the pager goes off, the…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Sideways, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Sideways, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Sideways"><div class="poster" style="background-image:url(assets/previews/sideways.png)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Sideways</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "sideways", "name": "Sideways", "app": "sideways-app.html", "h": 200}</script>
+<script src="assets/ui/shell.js?v=56160e0f" defer></script>
+</body>
+</html>

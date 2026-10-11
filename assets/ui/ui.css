@@ -97,7 +97,8 @@ section { position: relative; }
 .hero { min-height: 100svh; display: grid; align-items: center; padding: calc(96px + env(safe-area-inset-top)) 0 64px; }
 .hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
 .hero h1 { font: 400 clamp(52px, 9vw, 116px)/.92 var(--display); letter-spacing: .02em; margin: 22px 0 18px; background: linear-gradient(180deg, var(--ink) 30%, hsl(var(--h) 60% 75%)); -webkit-background-clip: text; background-clip: text; color: transparent; text-wrap: balance; }
-.hero h1.long { font-size: clamp(44px, 6.2vw, 84px); line-height: .98; }
+.hero h1.long { font-size: clamp(30px, 9.2vw, 84px); line-height: .98; }
+@media (min-width: 901px) { .hero h1.long { font-size: clamp(44px, 6.2vw, 84px); } }
 .hero .sub { font: 500 12.5px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 0; }
 .hero .tag { font-size: clamp(18px, 2.1vw, 22px); line-height: 1.55; color: var(--ink-2); max-width: 34em; margin: 0 0 28px; }
 .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 26px; }
@@ -111,7 +112,7 @@ section { position: relative; }
 .scrollcue i::after { content: ""; position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--acc); animation: mf-cue 1.8s infinite var(--ease); }
 @keyframes mf-cue { 0% { opacity: 0; transform: translateY(-3px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px); } }
 @media (max-width: 900px) {
-  .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .device { transform: none; }
   .hero { min-height: auto; padding-top: calc(84px + env(safe-area-inset-top)); }
   .scrollcue { display: none; }
@@ -137,6 +138,7 @@ section { position: relative; }
 @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
 .card.scope { border-color: hsl(38 80% 55% / .3); background: linear-gradient(180deg, hsl(38 60% 20% / .2), var(--glass)); }
 .card.scope .n { color: var(--gold); }
+.prose a, .prose code { overflow-wrap: anywhere; }
 .prose p { color: var(--ink-2); margin: 0 0 14px; } .prose p:last-child { margin-bottom: 0; }
 .prose em { color: var(--ink); font-style: italic; }
 .prose ul { margin: 0; padding-left: 1.1em; color: var(--ink-2); } .prose li { margin: 6px 0; }

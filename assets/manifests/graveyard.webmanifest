@@ -1,24 +1,34 @@
 {
+  "id": "/graveyard",
   "name": "Graveyard Shift",
-  "short_name": "Graveyard",
-  "description": "A night-shift orbit game.",
-  "start_url": "/graveyard",
+  "short_name": "Graveyard Sh",
+  "description": "A night-shift orbit game Claude designed and built for Anders with no input from him: put relay satellites into real orbits, route signals across the network, and keep the stations talking until dawn.",
+  "start_url": "/graveyard-app.html",
   "scope": "/graveyard",
   "display": "standalone",
   "background_color": "#05070f",
   "theme_color": "#05070f",
   "icons": [
     {
-      "src": "../icons/graveyard.png",
+      "src": "../icons/v2/graveyard-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/graveyard-512.png",
+      "src": "../icons/v2/graveyard-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/graveyard-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
+  ],
+  "categories": [
+    "games"
   ]
 }

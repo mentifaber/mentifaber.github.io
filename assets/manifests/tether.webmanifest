@@ -1,25 +1,35 @@
 {
-  "name": "Tether",
+  "id": "/tether",
+  "name": "Tether · Mentifaber",
   "short_name": "Tether",
-  "description": "One finger. One rope. No floor.",
-  "start_url": "/tether",
+  "description": "A one-finger rope-swinging game, open to everyone: real rope physics over lava through ten biomes with their own weather and soundtracks. Saws, drones, rockets, fire spouts, speed lasers and world-flipping rings; ten stackable power-ups; eleven modes including co-op, racing, time trial and the daily course; a ghost of your best run, and an online lobby where you can challenge anyone playing to a live head-to-head race.",
+  "start_url": "/tether-app.html",
   "scope": "/tether",
   "display": "standalone",
-  "orientation": "any",
   "background_color": "#07060f",
   "theme_color": "#07060f",
   "icons": [
     {
-      "src": "../icons/tether.png",
+      "src": "../icons/v2/tether-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/tether-512.png",
+      "src": "../icons/v2/tether-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/tether-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
+  ],
+  "orientation": "any",
+  "categories": [
+    "games"
   ]
 }

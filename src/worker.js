@@ -39,7 +39,7 @@ const VERIFIERS = {
     adrianna: "2d9ea0c1375a9447704e64a88c06b977f9aa73c4dcb2b487a3b2555abbe16eac",
   },
 };
-const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard": "graveyard", "/rootcause": "rootcause", "/sideways": "sideways", "/angels": "angels" };
+const PAGES = { "/vigil-app": "vigil", "/flutterbloom": "flutterbloom", "/muse-live": "muse", "/weaver-live": "weaver", "/graveyard-app": "graveyard", "/rootcause-app": "rootcause", "/sideways-app": "sideways", "/angels": "angels" };
 const SAVES = new Set(["flutterbloom"]);
 // Apps with extra accounts beside the main login (e.g. a developer account with its own garden).
 // Each extra account has a login verifier and the page key wrapped under its own login.
