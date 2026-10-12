@@ -132,6 +132,136 @@
   }
   function untuck() { dockEl.classList.remove("tuck"); clearTimeout(tuckT); tuckT = setTimeout(() => docked && dockEl.classList.add("tuck"), 2600); }
 
+  // ── the suite: every app on the home screen, one at a time ──
+  // A browser installs an app only when the person taps Install for it, so the suite can't do it silently. It queues the
+  // apps you pick and walks through them: on a phone each app's page opens here with an Install button, you tap and
+  // confirm, and the next one comes up by itself; on a computer (where Chrome moves an installed page into its own
+  // window) each opens in a new tab and this page keeps the list. The queue lives in localStorage under mf:suite.
+  const SK = "mf:suite", SD = "mf:suite-installed";
+  const sGet = (k = SK) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } };
+  const sSet = (v, k = SK) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const markInstalled = (id) => { const d = sGet(SD) || {}; d[id] = Date.now(); sSet(d, SD); };
+  const chainMode = ios || matchMedia("(pointer: coarse)").matches || /android|mobile/i.test(navigator.userAgent);
+  const canPrompt = "onbeforeinstallprompt" in window;
+  let suiteList = null;
+  const loadSuite = async () => suiteList || (suiteList = await fetch("assets/suite.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => []));
+  addEventListener("appinstalled", () => { if (cfg.id) markInstalled(cfg.id); });
+  const platformNote = () => ios ? "Safari doesn't let a website press Install for you, so each app shows the two taps to make (Share, then Add to Home Screen) and a Next button."
+    : !canPrompt ? "This browser installs from its own menu (Add to Home screen). Each app shows the steps and a Next button. Chrome, Edge, Samsung Internet and Brave can do it in one tap."
+    : chainMode ? "Each app opens here with an Install button. Tap it, confirm, and the next one comes up by itself."
+    : "Each app opens in a new tab with an Install button. Once it's installed, come back here and the next one is ready.";
+
+  async function openSuite() {
+    if (standalone) return sheet('<div class="suite"><h3>Install the suite</h3><p class="sub">You\'re inside the installed Mentifaber app, and apps can only be added to the home screen from the browser. Open <b>' + esc(location.host) + '</b> in Chrome, Safari or Edge and tap <b>Install the suite</b> there.</p><div class="row"><button class="btn sm pri" data-scopy>Copy the link</button><button class="btn sm" data-close>OK</button></div></div>'), ($("[data-scopy]") || {}).onclick = () => { try { navigator.clipboard.writeText(location.origin + "/#suite"); toast("Link copied"); } catch (e) {} };
+    const list = await loadSuite(), st = sGet(), have = sGet(SD) || {};
+    if (!list.length) return sheet('<h3>Install the suite</h3><p>The app list couldn\'t load. Try again when you\'re online.</p><div class="row"><button class="btn sm" data-close>OK</button></div>');
+    const running = st && !st.fin && st.i < st.items.length, cats = [];
+    list.forEach((a) => { let g = cats.find((c) => c[0] === a.c); if (!g) cats.push((g = [a.c, []])); g[1].push(a); });
+    sheet('<div class="suite"><h3>Install the suite</h3><p class="sub">Every Mentifaber app as its own icon on your home screen. ' + esc(platformNote()) + '</p>' +
+      '<div class="launcher"><img src="assets/icons/v2/mentifaber-192.png" alt="" width="44" height="44"><span><b>Mentifaber</b><small>the launcher: everything in one place, with shortcuts</small></span>' + (standalone ? '<span class="ok">✓ open now</span>' : '<button class="btn sm" data-install-home>Install</button>') + '</div>' +
+      (running ? '<div class="resume"><span>A suite run is under way: <b>' + st.i + ' of ' + st.items.length + '</b> done.</span><button class="btn sm pri" data-sresume>Resume</button><button class="btn sm" data-sreset>Start over</button></div>' : "") +
+      (st && st.fin ? '<p class="last">Last run: <b>' + st.done.length + '</b> installed, ' + (st.already || []).length + ' already there, ' + st.skipped.length + ' skipped.</p>' : "") +
+      '<div class="tools"><span><b data-scount>0</b> selected</span><button data-sall>All</button><button data-snone>None</button><button data-snew>Not yet installed</button></div>' +
+      '<div class="list">' + cats.map(([c, as]) => '<div class="cat">' + esc(c) + "</div>" + as.map((a) => '<label class="si"><input type="checkbox" value="' + esc(a.id) + '"' + (have[a.id] ? "" : " checked") + '><img src="' + esc(a.ic) + '" alt="" width="32" height="32" loading="lazy"><span>' + esc(a.n) + (a.lock ? ' <i title="private: sign-in needed to use it">🔒</i>' : "") + "</span>" + (have[a.id] ? '<small class="ok">✓ installed</small>' : "") + "</label>").join("")).join("") + "</div>" +
+      '<div class="row"><button class="btn pri" data-sstart>Add them one by one</button><button class="btn sm" data-close>Close</button></div></div>');
+    const pane = $("#mf-sheet .pane"), boxes = () => $$(".si input", pane);
+    const count = () => { const n = boxes().filter((b) => b.checked).length; $("[data-scount]", pane).textContent = n; const go = $("[data-sstart]", pane); go.disabled = !n; go.textContent = n ? "Add " + n + " app" + (n > 1 ? "s" : "") + ", one by one" : "Pick some apps"; };
+    pane.addEventListener("change", count); count();
+    pane.onclick = (e) => {
+      const t = e.target.closest("button"); if (!t) return;
+      if (t.matches("[data-sall]")) { boxes().forEach((b) => (b.checked = true)); count(); }
+      else if (t.matches("[data-snone]")) { boxes().forEach((b) => (b.checked = false)); count(); }
+      else if (t.matches("[data-snew]")) { boxes().forEach((b) => (b.checked = !have[b.value])); count(); }
+      else if (t.matches("[data-install-home]")) install();
+      else if (t.matches("[data-sreset]")) { sSet(null); openSuite(); }
+      else if (t.matches("[data-sresume]")) { const s2 = sGet(); s2.stopped = false; s2.mode = chainMode ? "chain" : "tabs"; sSet(s2); go(s2); }
+      else if (t.matches("[data-sstart]")) {
+        const pick = new Set(boxes().filter((b) => b.checked).map((b) => b.value));
+        const s2 = { items: list.filter((a) => pick.has(a.id)).map((a) => ({ id: a.id, n: a.n, p: a.p, ic: a.ic })), i: 0, done: [], skipped: [], mode: chainMode ? "chain" : "tabs", t: Date.now() };
+        sSet(s2); go(s2);
+      }
+    };
+  }
+  function go(st) { // start or resume a run
+    if (st.mode === "chain") { location.href = st.items[st.i].p; return; }
+    controller();
+  }
+  function controller() { // desktop: this page keeps the list; each app installs from its own tab
+    const st = sGet(); if (!st) return;
+    if (st.fin || st.i >= st.items.length) return finished(st);
+    const a = st.items[st.i], pct = Math.round((100 * st.i) / st.items.length);
+    sheet('<div class="suite"><h3>Installing the suite</h3><div class="bar"><i style="width:' + pct + '%"></i></div><p class="sub"><b>' + (st.i + 1) + " of " + st.items.length + '</b> · ' + st.done.length + ' installed, ' + st.skipped.length + ' skipped</p>' +
+      '<div class="launcher"><img src="' + esc(a.ic) + '" alt="" width="44" height="44"><span><b>' + esc(a.n) + '</b><small>opens in a new tab with an Install button; this list waits here</small></span></div>' +
+      '<div class="row"><button class="btn pri" data-sopen>Open ' + esc(a.n) + '</button><button class="btn sm" data-sskip>Skip</button><button class="btn sm" data-sstop>Stop</button></div></div>');
+    const pane = $("#mf-sheet .pane");
+    pane.onclick = (e) => {
+      const t = e.target.closest("button"); if (!t) return;
+      if (t.matches("[data-sopen]")) { window.open(a.p, "_blank"); t.textContent = "Waiting for " + a.n + "…"; }
+      else if (t.matches("[data-sskip]")) { const s2 = sGet(); step(s2, false); controller(); }
+      else if (t.matches("[data-sstop]")) { const s2 = sGet(); s2.stopped = true; sSet(s2); $("#mf-sheet").classList.remove("open"); toast("Stopped. Resume from Install the suite."); }
+    };
+  }
+  function finished(st) {
+    st.fin = st.fin || Date.now(); sSet(st);
+    sheet('<div class="suite"><h3>The suite is installed</h3><p class="sub"><b>' + st.done.length + '</b> app' + (st.done.length === 1 ? "" : "s") + ' installed' + ((st.already || []).length ? ", " + st.already.length + " already there" : "") + (st.skipped.length ? ", " + st.skipped.length + " skipped" : "") + '. They\'re on your home screen' + (chainMode ? "" : " and in your apps list") + '; each opens full screen, like any app.</p>' +
+      (st.skipped.length ? '<p class="last">Skipped: ' + st.skipped.map((id) => esc((st.items.find((x) => x.id === id) || { n: id }).n)).join(", ") + '. Run the suite again and pick "Not yet installed" to try them.</p>' : "") +
+      '<div class="row"><button class="btn sm pri" data-close>Done</button></div></div>');
+  }
+  function step(st, ok) { // the current app is finished: installed (true), skipped (false) or already there ("already")
+    const a = st.items[st.i]; if (!a) return st;
+    st.already = st.already || [];
+    (ok === "already" ? st.already : ok ? st.done : st.skipped).push(a.id); if (ok) markInstalled(a.id);
+    st.i++; if (st.i >= st.items.length) st.fin = Date.now();
+    sSet(st); return st;
+  }
+  // on an app's page: the step for this app
+  function suiteStep() {
+    const st = sGet(); if (!st || st.stopped || st.fin || !cfg.id || standalone) return;
+    const a = st.items[st.i]; if (!a || a.id !== cfg.id) return;
+    const el = document.createElement("div"); el.className = "suitebar"; el.style.setProperty("--h", cfg.h || 38); el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Suite installer");
+    el.innerHTML = '<div class="sb-top"><span class="sb-k">Suite · ' + (st.i + 1) + " of " + st.items.length + '</span><button class="sb-x" aria-label="Stop the suite" data-sbstop>✕</button></div>' +
+      '<div class="sb-main"><img src="' + esc(a.ic) + '" alt="" width="40" height="40"><span><b>' + esc(a.n) + '</b><small class="sb-msg"></small></span></div><div class="sb-row"></div>';
+    document.body.appendChild(el);
+    const msg = $(".sb-msg", el), row = $(".sb-row", el); let countdown = 0;
+    const btns = (html) => { row.innerHTML = html; };
+    const next = (ok) => {
+      clearInterval(countdown); const s2 = step(sGet(), ok);
+      if (s2.mode === "chain") { msg.textContent = ok === "already" ? "Already there ✓" : ok ? "Installed ✓" : "Skipped"; setTimeout(() => { location.href = s2.fin ? "./#suite" : s2.items[s2.i].p; }, ok ? 900 : 200); }
+      else { msg.textContent = (ok === "already" ? "Already there ✓ " : ok ? "Installed ✓ " : "Skipped. ") + (s2.fin ? "That was the last one." : "The suite tab has the next one ready."); btns('<button class="btn sm" data-sbclose>Close this tab</button>'); try { if (!matchMedia("(display-mode: standalone)").matches) setTimeout(() => window.close(), 1600); } catch (e) {} }
+    };
+    const ready = () => { msg.textContent = "Tap Install, then confirm."; btns('<button class="btn sm pri" data-sbgo>Install</button><button class="btn sm" data-sbskip>Skip</button>'); };
+    const manual = (how) => { msg.innerHTML = how; btns('<button class="btn sm pri" data-sbdone>Done, next →</button><button class="btn sm" data-sbskip>Skip</button>'); };
+    if (ios) manual("Tap <b>Share</b> ⬆︎, then <b>Add to Home Screen</b>, then <b>Add</b>.");
+    else if (!canPrompt) manual("Open the browser menu ⋮ and choose <b>Add to Home screen</b> or <b>Install</b>.");
+    else if (deferred) ready();
+    else {
+      msg.textContent = "Waiting for the browser's install offer…"; btns('<button class="btn sm" data-sbskip>Skip</button>');
+      addEventListener("beforeinstallprompt", () => { clearTimeout(waitT); clearInterval(countdown); ready(); }, { once: true });
+      const waitT = setTimeout(() => { if (deferred) return ready();
+        let n = 5; const tickC = () => { msg.textContent = "No install offer: it's probably installed already. Moving on in " + n + "…"; if (n-- <= 0) next("already"); };
+        btns('<button class="btn sm pri" data-sbnext>Next →</button><button class="btn sm" data-sbstay>Stay</button>'); tickC(); countdown = setInterval(tickC, 1000); }, 3500);
+    }
+    el.addEventListener("click", async (e) => {
+      const t = e.target.closest("button"); if (!t) return;
+      if (t.matches("[data-sbgo]")) {
+        if (!deferred) { msg.textContent = "The install offer expired; reloading to get a fresh one…"; return setTimeout(() => location.reload(), 600); }
+        const d = deferred; deferred = null; d.prompt(); const r = await d.userChoice.catch(() => null);
+        if (r && r.outcome === "accepted") next(true); else { msg.textContent = "Not installed."; btns('<button class="btn sm pri" data-sbretry>Try again</button><button class="btn sm" data-sbskip>Skip</button>'); }
+      }
+      else if (t.matches("[data-sbretry]")) location.reload();
+      else if (t.matches("[data-sbdone]")) next(true);
+      else if (t.matches("[data-sbskip]")) next(false);
+      else if (t.matches("[data-sbnext]")) next("already");
+      else if (t.matches("[data-sbstay]")) { clearInterval(countdown); msg.textContent = "Staying. Install from the browser menu if you like, then:"; btns('<button class="btn sm pri" data-sbdone>Done, next →</button><button class="btn sm" data-sbskip>Skip</button>'); }
+      else if (t.matches("[data-sbclose]")) window.close();
+      else if (t.matches("[data-sbstop]")) { const s2 = sGet(); if (s2) { s2.stopped = true; sSet(s2); } el.remove(); toast("Suite stopped. Resume it from the home page."); }
+    });
+  }
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-suite]")) { e.preventDefault(); const st = sGet(); if (st && !st.fin && !st.stopped && st.mode === "tabs") controller(); else openSuite(); } });
+  addEventListener("storage", (e) => { if (e.key === SK && $("#mf-sheet.open .suite") && !cfg.id) { const st = sGet(); if (st && st.mode === "tabs" && !st.stopped) controller(); } }); // a tab finished its app: show the next
+  suiteStep();
+  if (!cfg.id && location.hash === "#suite") { history.replaceState(null, "", location.pathname + location.search); const st = sGet(); setTimeout(() => (st && st.fin ? finished(st) : openSuite()), 300); }
+
   // ── tiny toast ──
   function toast(t) { const el = document.createElement("div"); el.textContent = t; el.style.cssText = "position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:95;padding:10px 16px;border-radius:999px;background:rgba(10,12,20,.92);color:#eef1fb;border:1px solid rgba(255,255,255,.15);font:600 14px/1.2 system-ui"; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
   function esc(t) { return String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }

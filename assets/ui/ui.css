@@ -203,6 +203,33 @@ html.docked .dock.tuck { transform: translate(-50%, calc(-100% + 8px)); opacity:
 .sheet h3 { margin: 0 0 6px; font: 650 20px/1.3 var(--font); } .sheet p, .sheet li { color: var(--ink-2); font-size: 15px; } .sheet ol { padding-left: 1.2em; }
 .sheet .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
 
+/* ── the suite: pick apps, then install them one at a time ── */
+.sheet .pane:has(.suite) { width: min(560px, 100%); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; padding: 20px; }
+.suite { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: 10px; }
+.suite h3 { margin: 0; } .suite .sub { margin: 0; font-size: 14.5px; line-height: 1.5; } .suite .sub b, .suite .last b { color: var(--ink); }
+.suite .last { margin: 0; font-size: 13.5px; color: var(--dim); }
+.suite .launcher, .suite .resume { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--glass); }
+.suite .launcher img { border-radius: 11px; flex: none; } .suite .launcher > span { flex: 1; min-width: 0; display: grid; } .suite .launcher small { color: var(--dim); font-size: 12.5px; line-height: 1.35; }
+.suite .resume { font-size: 14px; color: var(--ink-2); flex-wrap: wrap; } .suite .resume span { flex: 1; min-width: 180px; }
+.suite .ok { color: hsl(140 60% 55%); font: 600 12.5px/1 var(--font); white-space: nowrap; }
+.suite .tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; color: var(--dim); } .suite .tools span { flex: 1; } .suite .tools b { color: var(--ink); }
+.suite .tools button { border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); border-radius: 999px; padding: 4px 10px; font: 500 12.5px/1 var(--font); cursor: pointer; } .suite .tools button:hover { border-color: var(--acc); color: var(--ink); }
+.suite .list { overflow-y: auto; min-height: 120px; flex: 1; border: 1px solid var(--line); border-radius: 14px; padding: 4px 6px 8px; overscroll-behavior: contain; }
+.suite .cat { position: sticky; top: 0; z-index: 1; background: var(--bg-2); font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); padding: 10px 6px 6px; }
+.suite .si { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 10px; cursor: pointer; font-size: 14.5px; color: var(--ink); } .suite .si:hover { background: var(--glass); }
+.suite .si input { width: 18px; height: 18px; accent-color: var(--acc); flex: none; margin: 0; } .suite .si img { border-radius: 8px; flex: none; } .suite .si span { flex: 1; min-width: 0; } .suite .si i { font-style: normal; font-size: 12px; }
+.suite .bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; } .suite .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc-2)); transition: width .4s var(--ease); }
+.suite .row { margin-top: 4px; flex-wrap: wrap; }
+.suite .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+/* on an app's page, the step for that app */
+.suitebar { position: fixed; z-index: 96; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(420px, calc(100vw - 20px)); padding: 12px 14px 14px; border-radius: 20px; background: rgba(10,12,20,.95); color: #eef1fb; border: 1px solid hsl(var(--h) 80% 60% / .5); box-shadow: 0 20px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: mf-sb .4s var(--ease); font: 400 14px/1.4 var(--font); }
+@keyframes mf-sb { from { opacity: 0; transform: translate(-50%, 24px); } }
+.suitebar .sb-top { display: flex; align-items: center; justify-content: space-between; } .suitebar .sb-k { font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: hsl(var(--h) 90% 72%); }
+.suitebar .sb-x { border: 0; background: none; color: #8b93ad; font-size: 16px; cursor: pointer; padding: 2px 6px; }
+.suitebar .sb-main { display: flex; align-items: center; gap: 12px; margin: 8px 0 10px; } .suitebar .sb-main img { border-radius: 10px; flex: none; } .suitebar .sb-main span { display: grid; min-width: 0; } .suitebar b { font-size: 16px; } .suitebar small { color: #c9cfe2; font-size: 13px; } .suitebar small b { font-size: inherit; }
+.suitebar .sb-row { display: flex; gap: 8px; flex-wrap: wrap; } .suitebar .btn { --bh: 38px; padding: 0 16px; font-size: 14px; } .suitebar .btn:not(.pri) { color: #eef1fb; border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+html.docked .suitebar { bottom: calc(76px + env(safe-area-inset-bottom)); }
+
 /* ── widgets ── */
 .widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
 .w { position: relative; padding: 16px 18px; border-radius: var(--radius-s); background: var(--glass); border: 1px solid var(--line); min-height: 112px; overflow: hidden; text-decoration: none; display: block; transition: border-color .25s, transform .25s var(--ease); }

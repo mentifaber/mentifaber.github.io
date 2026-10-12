@@ -277,7 +277,7 @@ def home():
   <span class="kicker">mens · faber · maker of minds</span>
   <h1>MENTIFABER</h1>
   <p class="tag">Builder of minds and the systems that hold them. AI swarms and agents, private messengers, live atlases of the sky, tools that keep your data on your own device, and games. Every page explains its app, then <em style="color:var(--ink);font-style:normal">opens it right there</em> as you scroll.</p>
-  <div class="cta"><a class="btn pri" href="#apps">Explore everything{ARROW}</a><a class="btn" href="hive#app">Open Hive</a><button class="btn ghost" data-install hidden>Install Mentifaber</button></div>
+  <div class="cta"><a class="btn pri" href="#apps">Explore everything{ARROW}</a><a class="btn" href="hive#app">Open Hive</a><button class="btn ghost" data-suite>Install the suite</button></div>
   <div class="h-stats">{stats}</div>
 </div><a class="scrollcue" href="#now" aria-label="Scroll"><i></i>scroll</a></section>
 
@@ -341,14 +341,22 @@ def brand_icons():  # the Mentifaber app icon: the mark on a dark tile (and full
          "icons": [{"src": "../icons/v2/mentifaber-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                    {"src": "../icons/v2/mentifaber-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
                    {"src": "../icons/v2/mentifaber-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
-         "shortcuts": [{"name": "Hive", "url": "/hive", "icons": [{"src": "../icons/v2/hive-192.png", "sizes": "192x192"}]},
-                       {"name": "NULLSPACE", "url": "/nullspace.html", "icons": [{"src": "../icons/v2/nullspace-192.png", "sizes": "192x192"}]},
-                       {"name": "Ballast", "url": "/ballast.html#app", "icons": [{"src": "../icons/v2/ballast-192.png", "sizes": "192x192"}]},
-                       {"name": "Vigil", "url": "/vigil.html#app", "icons": [{"src": "../icons/v2/vigil-192.png", "sizes": "192x192"}]}]}
+         "shortcuts": [{"name": A[i]["name"], "url": "/" + i + ".html#app", "icons": [{"src": ("../" + OWN_ICON[i]["tile"].replace("assets/", "")) if i in OWN_ICON else f"../icons/v2/{i}-192.png", "sizes": "192x192"}]}
+                       for i in ("hive", "barycenter", "nullspace", "pi", "orbit", "ballast", "vigil", "cartograph") if i in A]}
     json.dump(m, open(os.path.join(ROOT, "assets/manifests/mentifaber.webmanifest"), "w"), indent=2, ensure_ascii=False)
+
+def suite():  # assets/suite.json: what "Install the suite" walks through, one app at a time
+    order = [c[0] for c in CATS]; out = []
+    for a in sorted(A.values(), key=lambda a: order.index(a["cat"]) if a["cat"] in order else 99):
+        i = a["id"]
+        page = os.path.join(ROOT, f"{i}.html")
+        if not (os.path.exists(os.path.join(ROOT, f"assets/manifests/{i}.webmanifest")) and os.path.exists(page) and 'id="mf-app"' in open(page, encoding="utf-8").read()): continue  # the page must carry the shell, which runs the step
+        out.append({"id": i, "n": a["name"], "p": f"{i}.html", "ic": OWN_ICON[i]["tile"] if i in OWN_ICON else f"assets/icons/v2/{i}-192.png", "c": dict((c[0], c[1]) for c in CATS).get(a["cat"], ""), "lock": a["status"] == "private"})
+    json.dump(out, open(os.path.join(ROOT, "assets/suite.json"), "w"), ensure_ascii=False, separators=(",", ":"))
+    return f"assets/suite.json ({len(out)} apps)"
 
 if __name__ == "__main__":
     ids = sys.argv[1:] or [f[:-5] for f in sorted(os.listdir(CONTENT)) if f.endswith(".json")]
     icons(list(A)); brand_icons()
     for i in ids: print("built", page(i))
-    if not sys.argv[1:]: print("built", home())
+    if not sys.argv[1:]: print("built", home()); print("built", suite())
