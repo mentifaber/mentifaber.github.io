@@ -1,21 +1,22 @@
 {
  "arsenal": {
   "name": "Mechanic's Arsenal",
-  "version": "1.4",
-  "date": "2026-09-28",
+  "version": "1.7",
+  "date": "2026-10-12",
   "notes": [
-   "Apps now show their version and what's new after an update",
-   "App icons and home-screen install for every live app; fresh Roku preview",
-   "Fix the intro, add categories and sorting, update Mechanic's Arsenal",
-   "Add Mechanic's Arsenal project page"
+   "Performance: Arsenal drops from 4.2 MB to a 200 KB page; previews and icons lose 8.8 MB",
+   "Mentifaber 2, phase 1: new brand, design system, scroll-into-app pages, new home",
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
+   "Apps now show their version and what's new after an update"
   ],
   "page": "arsenal-app.html"
  },
  "ballast": {
   "name": "Ballast",
-  "version": "1.3",
-  "date": "2026-09-28",
+  "version": "1.7",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
    "Split Ballast and Vigil into bio/landing pages with launch links"
@@ -24,9 +25,10 @@
  },
  "bubble-editor": {
   "name": "Bubble Editor",
-  "version": "1.3",
-  "date": "2026-09-28",
+  "version": "1.4",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
    "Publish four new projects and the real apps behind three others"
@@ -35,68 +37,70 @@
  },
  "crime-dashboard": {
   "name": "Crime Intelligence",
-  "version": "1.4",
-  "date": "2026-09-28",
+  "version": "1.5",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets",
-   "Publish four new projects and the real apps behind three others"
+   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets"
   ],
   "page": "crime-dashboard-app.html"
  },
  "cryptovault": {
   "name": "CryptoVault",
-  "version": "1.3",
-  "date": "2026-09-28",
+  "version": "1.5",
+  "date": "2026-10-12",
   "notes": [
+   "CryptoVault finished: identities, contacts, signatures, files, and no network by policy",
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
-   "App icons and home-screen install for every live app; fresh Roku preview",
-   "Publish four new projects and the real apps behind three others"
+   "App icons and home-screen install for every live app; fresh Roku preview"
   ],
   "page": "cryptovault-app.html"
  },
  "monstrosity": {
   "name": "The Monstrosity",
-  "version": "1.4",
-  "date": "2026-09-28",
+  "version": "1.5",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets",
-   "Publish four new projects and the real apps behind three others"
+   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets"
   ],
   "page": "monstrosity-log.html"
  },
  "moon-compatibility": {
   "name": "Moon Compatibility",
-  "version": "1.4",
-  "date": "2026-09-28",
+  "version": "1.5",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Compare any two dates",
-   "Publish four new projects and the real apps behind three others"
+   "Compare any two dates"
   ],
   "page": "moon-compatibility-app.html"
  },
  "neural-sim": {
   "name": "Neural Sim",
-  "version": "1.4",
-  "date": "2026-09-28",
+  "version": "1.5",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets",
-   "Publish four new projects and the real apps behind three others"
+   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets"
   ],
   "page": "neural-sim-v3.html"
  },
  "sleep-compression": {
   "name": "Sleep Compression",
-  "version": "1.3",
-  "date": "2026-09-28",
+  "version": "1.4",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
    "Publish four new projects and the real apps behind three others"
@@ -105,49 +109,49 @@
  },
  "vigil": {
   "name": "Vigil",
-  "version": "1.7",
-  "date": "2026-09-28",
+  "version": "1.21",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
+   "Server-checked logins and Flutterbloom cloud saves on Cloudflare",
    "Apps now show their version and what's new after an update",
-   "App icons and home-screen install for every live app; fresh Roku preview",
-   "Fix the Space Weather, Vigil Mini and Next Launch widgets",
-   "Revamp Flutterbloom and seal it like Vigil"
+   "App icons and home-screen install for every live app; fresh Roku preview"
   ],
   "page": "vigil-app.html"
  },
  "muse": {
   "name": "Muse",
-  "version": "1.5",
-  "date": "2026-09-28",
+  "version": "1.10",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
+   "Server-checked logins and Flutterbloom cloud saves on Cloudflare",
    "Apps now show their version and what's new after an update",
-   "App icons and home-screen install for every live app; fresh Roku preview",
-   "Seal Muse and Weaver behind real logins",
-   "Give every project page its own glowing identity and connect them"
+   "App icons and home-screen install for every live app; fresh Roku preview"
   ],
   "page": "muse-live.html"
  },
  "weaver": {
   "name": "Weaver",
-  "version": "1.7",
-  "date": "2026-09-28",
+  "version": "1.9",
+  "date": "2026-10-04",
   "notes": [
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
+   "Server-checked logins and Flutterbloom cloud saves on Cloudflare",
    "Apps now show their version and what's new after an update",
-   "App icons and home-screen install for every live app; fresh Roku preview",
-   "Seal Muse and Weaver behind real logins",
-   "Give every project page its own glowing identity and connect them"
+   "App icons and home-screen install for every live app; fresh Roku preview"
   ],
   "page": "weaver-live.html"
  },
  "flutterbloom": {
   "name": "Flutterbloom",
-  "version": "1.12",
-  "date": "2026-09-28",
+  "version": "1.22",
+  "date": "2026-10-04",
   "notes": [
-   "Pinch to zoom, drag to look around, brighter nights",
-   "Seasonal events and a garden photo album",
-   "Serve previews as WebP (11.5 MB → 1.1 MB)",
-   "Give every project page its app icon, logo and in-app preview"
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
+   "Duck families",
+   "Flutterbloom phase 4: real sky, offline app, daily reminder, visual polish",
+   "Flutterbloom phase 3: arrange decor, photo challenges, titles, memory wall"
   ],
   "page": "flutterbloom.html"
  },

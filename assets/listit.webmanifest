@@ -1,6 +1,7 @@
 {
   "name": "List-It",
   "short_name": "List-It",
+  "id": "/listit",
   "start_url": "/listit",
   "scope": "/listit",
   "display": "standalone",

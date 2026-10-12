@@ -361,8 +361,22 @@ def suite():  # assets/suite.json: what "Install the suite" walks through, one a
     json.dump(out, open(os.path.join(ROOT, "assets/suite.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     return f"assets/suite.json ({len(out)} apps)"
 
+def sitemap():  # sitemap.xml: every public page, skipping noindex pages and whatever robots.txt keeps out
+    import subprocess, datetime
+    blocked = [l.split(":", 1)[1].strip() for l in open(os.path.join(ROOT, "robots.txt")) if l.lower().startswith("disallow:")]
+    pages = sorted(f for f in os.listdir(ROOT) if f.endswith(".html") and f != "404.html") + ["wx/index.html", "widgets/index.html"]
+    rows = []
+    for f in pages:
+        url = "/" + f.replace("index.html", "")
+        if any(b and url.startswith(b) for b in blocked) or "noindex" in open(os.path.join(ROOT, f), encoding="utf-8").read(): continue
+        day = subprocess.run(["git", "-C", ROOT, "log", "-1", "--format=%cs", "--", f], capture_output=True, text=True).stdout.strip() or datetime.date.today().isoformat()
+        pri = "1.0" if url == "/" else "0.8" if has_page(f[:-5]) else "0.6" if f.endswith("-app.html") else "0.5"
+        rows.append(f"  <url><loc>https://mentifaber.org{url}</loc><lastmod>{day}</lastmod><priority>{pri}</priority></url>")
+    open(os.path.join(ROOT, "sitemap.xml"), "w").write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "\n".join(rows) + "\n</urlset>\n")
+    return f"sitemap.xml ({len(rows)} pages)"
+
 if __name__ == "__main__":
     ids = sys.argv[1:] or [f[:-5] for f in sorted(os.listdir(CONTENT)) if f.endswith(".json")]
     icons(list(A)); brand_icons()
     for i in ids: print("built", page(i))
-    if not sys.argv[1:]: print("built", home()); print("built", suite())
+    if not sys.argv[1:]: print("built", home()); print("built", suite()); print("built", sitemap())
