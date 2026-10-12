@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Duely · the reminder desk</title>
+<meta name="description" content="Overdue invoices, chased politely: a dated three-email reminder sequence for each one, friendly to firm, checked against hard legal guardrails, sent from your own mail app.">
+<meta name="theme-color" content="#0a0c0b">
+<link rel="manifest" href="assets/manifests/duely.webmanifest">
+<link rel="icon" href="assets/icons/v2/duely.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/duely-180.png">
+<link rel="stylesheet" href="assets/duely/du.css">
+</head>
+<body>
+<header class="top"><b class="logo">Duely<span>.</span></b><span class="pill">reminder desk</span><span class="grow"></span><span class="tot" id="tot"></span></header>
+<main>
+  <aside class="list">
+    <button class="btn pri wide" id="new">+ Overdue invoice</button>
+    <div id="invs"></div>
+    <p class="note">Kept on this device only. Nothing here is sent anywhere: every email goes out from your own mail app, in your name.</p>
+  </aside>
+  <section class="desk" id="desk"></section>
+</main>
+<dialog id="dlg"><form method="dialog" id="form">
+  <h2>An overdue invoice</h2>
+  <div class="grid2">
+    <label>Your name or business<input name="me" required maxlength="60" autocomplete="organization"></label>
+    <label>Client's name<input name="client" required maxlength="60"></label>
+    <label>Client's email (optional)<input name="email" type="email" maxlength="120"></label>
+    <label>Invoice number<input name="num" required maxlength="30" placeholder="1042"></label>
+    <label>Amount<span class="amt"><select name="cur" aria-label="Currency"><option>USD</option><option>EUR</option><option>GBP</option><option>CAD</option><option>AUD</option></select><input name="amount" required inputmode="decimal" placeholder="150.00"></span></label>
+    <label>Was due on<input name="due" type="date" required></label>
+  </div>
+  <label>What it was for<input name="what" required maxlength="80" placeholder="lawn care, 3 visits in May"></label>
+  <label>Payment link (optional: your Stripe, PayPal or bank details page)<input name="link" type="url" maxlength="300" placeholder="https://"></label>
+  <div class="row end"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn pri" value="ok">Draft the sequence</button></div>
+</form></dialog>
+<script src="assets/duely/du.js"></script>
+</body>
+</html>

@@ -43,7 +43,7 @@ APP_URL = {
   "crime-dashboard": "crime-dashboard-app.html", "muse": "muse-live.html", "weaver": "weaver-live.html",
   "barycenter": "barycenter-app.html", "nullspace": "nullspace-app.html", "pilotfish": "pilotfish-app.html", "meshnet": "meshnet-app.html", "novarac": "novarac-app.html",
   "tether": "tether-app.html", "thoughtform": "thoughtform-app.html", "graveyard": "graveyard-app.html", "rootcause": "rootcause-app.html", "sideways": "sideways-app.html", "watchyourgrass": "watchyourgrass-app.html",
-  "hive": "hive-app.html", "neural-sim": "neural-sim-v3.html", "worm-eater": "worm-eater-app.html", "pi": "pi-app.html", "sonicveil": "sonicveil-app.html", "doccrawler": "doccrawler-app.html", "shop": "shop-app.html", "conflict-atlas": "conflict-atlas-app.html", "proximity": "proximity-app.html", "monstrosity": "monstrosity-app.html", "phone-mcp": "phone-mcp-app.html", "roku": "roku-app.html", "omnilogos": "omnilogos-app.html", "orbit": "orbit-app.html", "cartograph": "cartograph-app.html",
+  "hive": "hive-app.html", "neural-sim": "neural-sim-v3.html", "worm-eater": "worm-eater-app.html", "pi": "pi-app.html", "sonicveil": "sonicveil-app.html", "doccrawler": "doccrawler-app.html", "shop": "shop-app.html", "conflict-atlas": "conflict-atlas-app.html", "proximity": "proximity-app.html", "monstrosity": "monstrosity-app.html", "duely": "duely-app.html", "phone-mcp": "phone-mcp-app.html", "roku": "roku-app.html", "omnilogos": "omnilogos-app.html", "orbit": "orbit-app.html", "cartograph": "cartograph-app.html",
 }
 def _id(href):
     h = href.split("#")[0].split("?")[0].rstrip("/")

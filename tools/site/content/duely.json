@@ -1,0 +1,35 @@
+{
+ "kicker": "tools · get paid, politely",
+ "tagline": "Overdue invoices, chased without the awkward part: three dated reminders, friendly to firm, each checked against hard guardrails and sent from your own mail app. On the real thing, you pay nothing unless your client does.",
+ "caps": [
+  "friendly → firm → final",
+  "hard legal guardrails",
+  "nothing unless it works"
+ ],
+ "launchSub": "The reminder desk: log an invoice, get the sequence, send it yourself",
+ "titleTail": "overdue invoices, chased politely",
+ "ledeLabel": "the problem",
+ "story": {
+  "label": "the problem",
+  "title": "Awkward to chase, <em>too small to matter</em>"
+ },
+ "lede": "<p>Anyone who invoices a client directly ends up sitting on unpaid invoices nobody wants to chase: lawn care, house cleaning, handyman work, pet grooming, photography, freelancing, tutoring. Collection agencies won't touch anything under a few thousand dollars, and invoice-chasing tools charge a subscription whether or not they work, which is a hard sell to someone owed one $150 lawn job. <b>Duely</b> flips it: no cost to try it, and a fee only at the moment the client actually pays.</p>",
+ "featuresLabel": "how it runs",
+ "features": [
+  {"t": "One overdue invoice", "d": "who, how much, what for, when it was due, and a payment link if you have one. It stays on your device."},
+  {"t": "Three reminders, a week apart", "d": "a friendly nudge, a firm follow-up, and a calm last reminder with a date to close it out by. Each one is editable and dated, and the one that's due today is marked."},
+  {"t": "Hard guardrails", "d": "every draft is checked for legal threats, collections language, credit reporting, added fees and ultimatums. A draft that trips one can't be opened in your mail app until it's fixed. An optional AI polish is held to the same rules, and has to keep the invoice number and amount."},
+  {"t": "You send it, in your name", "d": "each reminder opens in your own mail app, ready to send. Mark it sent, mark the invoice paid, and see the contingency split the real product takes."}
+ ],
+ "cards": [
+  {"n": "legal positioning", "html": "<p>Built deliberately as <b>invoice-reminder software</b>, not a collection agency. Collectors need state licences and fall under the FDCPA. Every email goes in the freelancer's own name, about their own invoice, and never mentions legal action or a \"collections department\". The guardrails enforce that in code, not just in a style guide.</p>"},
+  {"n": "the full product", "html": "<p>The prototype adds Stripe Connect Express accounts, Payment Links that split the fee off the payment itself, Claude drafting under the same guardrails, Resend for delivery and passwordless magic-link sign-in, on Next.js 14 with Postgres and Prisma.</p>", "stack": ["Next.js 14", "Prisma / Postgres", "Stripe Connect", "Claude API", "Resend"]}
+ ],
+ "scope": "<p>The reminder desk on this page works: drafts, guardrails, scheduling, mail-app hand-off and the fee math. Payments aren't wired up here (the fee shown is an example of how the split would work), and nothing is sent or charged by this page. The full product is a private prototype, not yet public. <em>This isn't legal advice: if a client disputes the work, talk to them, not to a template.</em></p>",
+ "closing": "Pay nothing unless it works. The pitch does the converting on its own.",
+ "manifest": {
+  "categories": ["business", "productivity"],
+  "background_color": "#0a0c0b",
+  "theme_color": "#0a0c0b"
+ }
+}
