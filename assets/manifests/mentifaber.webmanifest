@@ -31,20 +31,50 @@
   "shortcuts": [
     {
       "name": "Hive",
-      "url": "/hive",
+      "url": "/hive.html#app",
       "icons": [
         {
-          "src": "../icons/v2/hive-192.png",
+          "src": "../icons/hive-bee-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Barycenter",
+      "url": "/barycenter.html#app",
+      "icons": [
+        {
+          "src": "../icons/v2/barycenter-192.png",
           "sizes": "192x192"
         }
       ]
     },
     {
       "name": "NULLSPACE",
-      "url": "/nullspace.html",
+      "url": "/nullspace.html#app",
       "icons": [
         {
           "src": "../icons/v2/nullspace-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Pi",
+      "url": "/pi.html#app",
+      "icons": [
+        {
+          "src": "../icons/v2/pi-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Orbit Watch",
+      "url": "/orbit.html#app",
+      "icons": [
+        {
+          "src": "../icons/v2/orbit-192.png",
           "sizes": "192x192"
         }
       ]
@@ -65,6 +95,16 @@
       "icons": [
         {
           "src": "../icons/v2/vigil-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Cartograph",
+      "url": "/cartograph.html#app",
+      "icons": [
+        {
+          "src": "../icons/v2/cartograph-192.png",
           "sizes": "192x192"
         }
       ]
