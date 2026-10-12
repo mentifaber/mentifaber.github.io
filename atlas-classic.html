@@ -117,7 +117,7 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
 }
 
 .atlas { position: relative; z-index: 2; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-.atlas::before, .atlas::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; filter: blur(80px); }
+.atlas::before, .atlas::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; filter: blur(80px); max-width: 80vw; max-height: 80vw; }
 .atlas::before { top: -6rem; left: 8%; width: 420px; height: 420px; background: radial-gradient(circle, rgba(200,169,110,.14), transparent 70%); }
 .atlas::after { top: 30vh; right: 4%; width: 460px; height: 460px; background: radial-gradient(circle, rgba(176,42,26,.12), transparent 70%); }
 

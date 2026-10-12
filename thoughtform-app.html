@@ -1266,13 +1266,18 @@ function hud() {
 }
 
 /* ───────────────────────── frame ───────────────────────── */
-let last = performance.now(), fpsAcc = 0, fpsN = 0, titleT = 0;
+let last = performance.now(), fpsAcc = 0, fpsN = 0, titleT = 0, idle = 0;
+// shown as a preview inside its explainer page (not yet docked): a third of the frames, so the page around it still scrolls smoothly
+const preview = () => { try { return !!frameElement && !frameElement.ownerDocument.documentElement.classList.contains("docked"); } catch (e) { return false; } };
 function frame(now) {
+  const pv = state === "title" && !coop && preview();
+  if (pv && ++idle % 3) { requestAnimationFrame(frame); return; }
   const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
   if (state === "play" || (coop && state === "paused")) update(dt);
   if (coop) netTick(dt);
   else if (state === "title") { titleT += dt; }
   draw();
+  if (pv) { requestAnimationFrame(frame); return; }
   // keep the frame rate smooth by trading resolution
   fpsAcc += dt; fpsN++; if (fpsAcc > 1.5) { const fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
     if (save.qual === "low" || save.qual === "high") { requestAnimationFrame(frame); return; }

@@ -2,6 +2,7 @@
   "name": "Pilotfish",
   "short_name": "Pilotfish",
   "description": "Always swimming beside you.",
+  "id": "/pilotfish",
   "start_url": "/pilotfish",
   "scope": "/pilotfish",
   "display": "standalone",

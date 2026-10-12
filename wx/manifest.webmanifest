@@ -2,6 +2,7 @@
   "name": "Mentifaber Weather",
   "short_name": "Weather",
   "description": "Current conditions, the next hours and the week at a glance.",
+  "id": "/wx/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
