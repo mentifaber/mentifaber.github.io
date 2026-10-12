@@ -1,6 +1,6 @@
 /* Mentifaber 2 · live widgets. Any element with data-w="<kind>" becomes a small live tile; each one links to the app
    it comes from. Keyless public sources only, cached for a few minutes per tab, and a dead feed just says so.
-   Kinds: weather · moon · quakes · iss · btc · kp · hive · agent */
+   Kinds: weather · moon · pass · quakes · iss · btc · kp · hf · hive · agent · suite */
 (() => {
   const TTL = 5 * 60e3;
   const cache = async (k, fn) => {
@@ -44,11 +44,30 @@
       return { label: "Bitcoin", value: "$" + Math.round(p).toLocaleString(), sub: (ch >= 0 ? "▲ " : "▼ ") + Math.abs(ch).toFixed(2) + "% · 24h", href: "vigil.html", tone: ch >= 0 ? "up" : "down" };
     },
     async kp() {
-      const v = await cache("kp", async () => { const j = await get("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"); const last = j[j.length - 1]; // rows were arrays under a header row; newer SWPC products are objects
-        const kp = Array.isArray(last) ? +last[1] : +(last.Kp != null ? last.Kp : last.kp_index != null ? last.kp_index : last.estimated_kp);
-        if (!isFinite(kp)) throw new Error("no kp"); return { kp, at: Array.isArray(last) ? last[0] : last.time_tag }; });
+      const v = await kpData();
       const s = v.kp >= 7 ? "Severe storm" : v.kp >= 5 ? "Geomagnetic storm" : v.kp >= 4 ? "Unsettled" : "Quiet";
       return { label: "Space weather · Kp", value: v.kp.toFixed(1), sub: s + (v.kp >= 5 ? " · auroras likely" : ""), href: "vigil.html" };
+    },
+    async pass() {
+      const v = await cache("pass", async () => {
+        let o = null; try { o = JSON.parse(localStorage.getItem("ow.obs") || "null"); } catch (e) {}
+        if (!o || !isFinite(o.lat)) { const w = await get("/api/where", 5000); if (!w || w.lat == null) throw new Error("no location"); o = { lat: w.lat, lon: w.lon, how: w.city }; }
+        const tle = await fetch("/api/orbit/tle?catnr=25544").then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
+        const L = tle.split(/\r?\n/).filter((x) => /^[12] /.test(x)); if (L.length < 2) throw new Error("no elements");
+        await loadSat(); return { p: nextPass(L[0], L[1], +o.lat, +o.lon), place: o.how };
+      });
+      if (!v.p) return { label: "Next ISS pass", value: "None", sub: "no pass over you in the next two days", href: "orbit.html" };
+      const now = Date.now(), up = v.p.rise <= now, mins = Math.round((v.p.rise - now) / 60e3), when = mins >= 60 ? Math.floor(mins / 60) + "h " + (mins % 60) + "m" : mins + "m";
+      return { label: "Next ISS pass" + (v.place ? " · " + String(v.place).replace(/ \(approx\.\)$/, "") : ""), value: up ? "Now" : new Date(v.p.rise).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), sub: (up ? "overhead" : "in " + when) + " · max " + Math.round(v.p.max) + "° · " + (v.p.vis ? "visible to the eye" : "not visible"), href: "orbit.html", tone: v.p.vis ? "up" : "" };
+    },
+    async hf() { // HF radio and the geomagnetic field: one factor of several (solar flux and time of day matter too)
+      const v = await kpData(), kp = v.kp;
+      return { label: "HF conditions · Kp " + kp.toFixed(1), value: kp >= 5 ? "Poor" : kp >= 4 ? "Fair" : "Good", sub: kp >= 5 ? "geomagnetic storm: HF absorbed, worst near the poles" : kp >= 4 ? "unsettled: fading on polar paths" : "quiet field, no geomagnetic trouble", href: "novarac.html", tone: kp >= 5 ? "down" : kp < 4 ? "up" : "" };
+    },
+    async suite() {
+      let have = {}; try { have = JSON.parse(localStorage.getItem("mf:suite-installed") || "{}"); } catch (e) {}
+      const list = await cache("suite", () => get("assets/suite.json", 6000)), n = list.filter((a) => have[a.id]).length;
+      return { label: "Your suite", value: n + "<small>/" + list.length + "</small>", sub: n === list.length ? "every app is on this device" : n ? "installed here · add the rest" : "none installed yet · add them all", href: "./#suite" };
     },
     async hive() {
       const v = await cache("hive", () => get("/api/hive/models", 8000));
@@ -60,6 +79,29 @@
       return { label: "Mentifaber Agent", value: st, sub: v.model ? v.model.label : "", href: "hive#keys", tone: v.state === "online" ? "up" : "" };
     },
   };
+
+  function kpData() {
+    return cache("kp", async () => { const j = await get("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"); const last = j[j.length - 1]; // rows were arrays under a header row; newer SWPC products are objects
+      const kp = Array.isArray(last) ? +last[1] : +(last.Kp != null ? last.Kp : last.kp_index != null ? last.kp_index : last.estimated_kp);
+      if (!isFinite(kp)) throw new Error("no kp"); return { kp, at: Array.isArray(last) ? last[0] : last.time_tag }; });
+  }
+  // ── the next ISS pass over you: Orbit Watch's engine, run here ──
+  let satP = null;
+  const loadSat = () => satP || (satP = new Promise((ok, no) => { if (window.satellite) return ok(); const s = document.createElement("script"); s.src = "assets/orbit/satellite.min.js"; s.onload = ok; s.onerror = no; document.head.appendChild(s); }));
+  function nextPass(l1, l2, lat, lon) {
+    const S = window.satellite, rec = S.twoline2satrec(l1, l2), D = Math.PI / 180, obs = { latitude: lat * D, longitude: lon * D, height: 0.05 };
+    const at = (t) => { const d = new Date(t), pv = S.propagate(rec, d); if (!pv || !pv.position || typeof pv.position !== "object") return null; const g = S.gstime(d); return { eci: pv.position, g, el: S.ecfToLookAngles(obs, S.eciToEcf(pv.position, g)).elevation / D }; };
+    const sun = (t) => { const n = t / 864e5 - 10957.5, L = (280.46 + 0.9856474 * n) % 360, gm = ((357.528 + 0.9856003 * n) % 360) * D, lam = (L + 1.915 * Math.sin(gm) + 0.02 * Math.sin(2 * gm)) * D, e = (23.439 - 4e-7 * n) * D; return [Math.cos(lam), Math.cos(e) * Math.sin(lam), Math.sin(e) * Math.sin(lam)]; };
+    const lit = (p, t) => { const s = sun(t), r = p.eci, d = r.x * s[0] + r.y * s[1] + r.z * s[2]; return d > 0 || Math.hypot(r.x - d * s[0], r.y - d * s[1], r.z - d * s[2]) > 6378; };
+    const sunEl = (t) => { const s = sun(t), g = S.gstime(new Date(t)), x = s[0] * Math.cos(g) + s[1] * Math.sin(g), y = -s[0] * Math.sin(g) + s[1] * Math.cos(g), la = lat * D, lo = lon * D; return Math.asin(Math.cos(la) * Math.cos(lo) * x + Math.cos(la) * Math.sin(lo) * y + Math.sin(la) * s[2]) / D; };
+    let pass = null;
+    for (let t = Date.now() - 15 * 60e3, end = Date.now() + 48 * 3600e3; t < end; t += 30e3) {
+      const p = at(t); if (!p) break;
+      if (p.el > 0) { if (!pass) pass = { rise: t, max: p.el, vis: false }; pass.max = Math.max(pass.max, p.el); if (p.el > 8 && !pass.vis && lit(p, t) && sunEl(t) < -6) pass.vis = true; pass.set = t; }
+      else if (pass) { if (pass.max >= 10 && pass.set > Date.now()) return pass; pass = null; }
+    }
+    return null;
+  }
 
   function moonArt(f) { // a lit disc for the phase fraction f (0 new → .5 full → 1 new)
     const r = 15, k = Math.cos(2 * Math.PI * f), right = f < .5, sweep = right ? 1 : 0, rx = Math.abs(k) * r;

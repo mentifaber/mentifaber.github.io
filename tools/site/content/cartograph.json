@@ -58,5 +58,10 @@
   ],
   "background_color": "#04060b",
   "theme_color": "#04060b"
- }
+ },
+ "widgets": [
+  "moon",
+  "iss",
+  "kp"
+ ]
 }

@@ -59,5 +59,10 @@
   ],
   "background_color": "#060a10",
   "theme_color": "#060a10"
- }
+ },
+ "widgets": [
+  "pass",
+  "iss",
+  "kp"
+ ]
 }

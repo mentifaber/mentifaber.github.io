@@ -70,5 +70,9 @@
   ],
   "background_color": "#13181e",
   "theme_color": "#13181e"
- }
+ },
+ "widgets": [
+  "hive",
+  "agent"
+ ]
 }

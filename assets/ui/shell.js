@@ -260,6 +260,7 @@
   document.addEventListener("click", (e) => { if (e.target.closest("[data-suite]")) { e.preventDefault(); const st = sGet(); if (st && !st.fin && !st.stopped && st.mode === "tabs") controller(); else openSuite(); } });
   addEventListener("storage", (e) => { if (e.key === SK && $("#mf-sheet.open .suite") && !cfg.id) { const st = sGet(); if (st && st.mode === "tabs" && !st.stopped) controller(); } }); // a tab finished its app: show the next
   suiteStep();
+  addEventListener("hashchange", () => { if (!cfg.id && location.hash === "#suite") { history.replaceState(null, "", location.pathname + location.search); openSuite(); } }); // the suite widget links here
   if (!cfg.id && location.hash === "#suite") { history.replaceState(null, "", location.pathname + location.search); const st = sGet(); setTimeout(() => (st && st.fin ? finished(st) : openSuite()), 300); }
 
   // ── tiny toast ──

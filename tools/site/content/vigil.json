@@ -54,5 +54,10 @@
  "ledeLabel": "the problem",
  "featuresLabel": "what it does",
  "scope": "<p>This is a personal dashboard, not an early-warning system — treat every feed as informational, not authoritative, and go to the source (NWS, USGS, NOAA directly) for anything that actually matters in the moment. <em>The dashboard itself is encrypted (AES-256, key derived from the operator name and access code) — without them the page is unreadable ciphertext, even in the source.</em></p>",
- "closing": "A watch kept on the world, one feed at a time."
+ "closing": "A watch kept on the world, one feed at a time.",
+ "widgets": [
+  "quakes",
+  "kp",
+  "weather"
+ ]
 }
