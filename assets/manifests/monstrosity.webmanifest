@@ -1,24 +1,31 @@
 {
+  "id": "/monstrosity-log.html",
   "name": "The Monstrosity",
-  "short_name": "The",
-  "description": "A bolted-together homelab: three machines, ten drives, Traefik, and a tunnel as the only door.",
-  "start_url": "/monstrosity-log.html",
-  "scope": "/monstrosity-log.html",
+  "short_name": "Monstrosity",
+  "description": "A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.",
+  "start_url": "/monstrosity-app.html",
+  "scope": "/monstrosity",
   "display": "standalone",
-  "background_color": "#0e0c0a",
-  "theme_color": "#0e0c0a",
+  "background_color": "#0b0a08",
+  "theme_color": "#0b0a08",
   "icons": [
     {
-      "src": "../icons/monstrosity.png",
+      "src": "../icons/v2/monstrosity-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/monstrosity-512.png",
+      "src": "../icons/v2/monstrosity-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/monstrosity-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
