@@ -2,7 +2,7 @@
   "id": "/cryptovault-app.html",
   "name": "CryptoVault · Mentifaber",
   "short_name": "CryptoVault",
-  "description": "Hybrid RSA-4096 + AES-256-GCM encryption in a single HTML file — the browser's own crypto engine, no server, no dependencies, nothing simulated.",
+  "description": "Encryption you can read to the bottom of: RSA-4096 and AES-256-GCM in one HTML file, with identities, contacts, signatures and files. No server, no dependency, and no network call allowed.",
   "start_url": "/cryptovault-app.html",
   "scope": "/cryptovault",
   "display": "standalone",
