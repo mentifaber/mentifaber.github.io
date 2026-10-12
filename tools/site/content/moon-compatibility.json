@@ -46,5 +46,8 @@
  "ledeLabel": "the idea",
  "featuresLabel": "what it does",
  "scope": "<p>The astronomy is real — phase ages on the synodic cycle, illumination from the moon's age. The compatibility is poetry, and it says so by being beautiful rather than by pretending to be a test. <em>It was made for one particular pair, whose dates are still the default. Now it takes any two dates, and the link remembers them.</em></p>",
- "closing": "Two growing lights, less than a day apart."
+ "closing": "Two growing lights, less than a day apart.",
+ "widgets": [
+  "moon"
+ ]
 }

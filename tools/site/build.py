@@ -89,6 +89,10 @@ def page(i):
     fig = f'<figure class="device reveal"><picture>{f"""<source type="image/webp" srcset="{shot}">""" if shot and shot.endswith(".webp") else ""}<img src="{esc(shot_png or shot)}" alt="{esc(name)}, inside" width="1280" height="800" fetchpriority="high"></picture></figure>' if shot else ""
     feats = "".join(f'<article class="card reveal"><span class="n">{k + 1:02d}</span><h3>{esc(f["t"]) if f["t"] else ""}</h3><p>{cap(f["d"])}</p></article>' for k, f in enumerate(c.get("features", [])))
     cards = "".join(f'<article class="card reveal"><span class="n">{esc(x["n"])}</span><div class="prose">{x["html"]}</div>{"<div class=stack>" + "".join(f"<span>{esc(s)}</span>" for s in x.get("stack", [])) + "</div>" if x.get("stack") else ""}</article>' for x in c.get("cards", []))
+    WL = dict(NOW + WIDGET_EXTRA)
+    live = (f'<div class="wrap reveal" style="margin-top:34px"><span class="kicker">live right now</span><div class="widgets" style="margin-top:14px">'
+            + "".join(f'<a class="w" data-w="{k}" data-label="{esc(WL.get(k, k))}"><span class="wl"><span>{esc(WL.get(k, k))}</span></span><div class="wv">&nbsp;</div><div class="ws">&nbsp;</div></a>' for k in c["widgets"])
+            + "</div></div>") if c.get("widgets") else ""
     scope = f'<article class="card scope reveal"><span class="n">honest scope</span><div class="prose">{c["scope"]}</div></article>' if c.get("scope") else ""
     morph = f"""<section class="morph" id="live" aria-label="{esc(name)}, live"><div class="stage">
   <div class="intro"><span class="kicker">step inside</span><h2>{esc(name)}, live</h2><p>keep scrolling · it opens right here</p></div>
@@ -117,7 +121,7 @@ def page(i):
   <span class="kicker">{esc(c.get("ledeLabel") or c["story"].get("label") or "why this exists")}</span>
   <h2>{c["story"].get("title") or esc(name)}</h2>
   <div class="lede prose">{c.get("lede", "")}</div>
-</div></section>
+</div>{live}</section>
 
 {f'''<section class="block"><div class="wrap">
   <span class="kicker reveal">{esc(c.get("featuresLabel") or "what it does")}</span>
@@ -137,6 +141,7 @@ def page(i):
 </main>
 <script type="application/json" id="mf-app">{cfg}</script>
 <script src="assets/ui/shell.js?v={ver("assets/ui/shell.js")}" defer></script>
+{f'<script src="assets/ui/widgets.js?v={ver("assets/ui/widgets.js")}" defer></script>' if c.get("widgets") else ""}
 </body>
 </html>
 """
@@ -191,7 +196,8 @@ def icons(ids):
 # ── the home page ─────────────────────────────────────────────────────────────────────────────────────────────────────
 ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
 SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>'
-NOW = [("weather", "Weather"), ("moon", "Moon"), ("quakes", "Quakes"), ("iss", "ISS"), ("kp", "Space weather"), ("btc", "Bitcoin"), ("hive", "Hive"), ("agent", "Mentifaber Agent")]
+NOW = [("weather", "Weather"), ("moon", "Moon"), ("pass", "Next ISS pass"), ("iss", "ISS"), ("quakes", "Quakes"), ("kp", "Space weather"), ("btc", "Bitcoin"), ("hive", "Hive"), ("agent", "Mentifaber Agent"), ("suite", "Your suite")]
+WIDGET_EXTRA = [("hf", "HF conditions")]  # kinds used on app pages only
 FEATURED = [  # the messengers up top, then Hive across the full width
   ("barycenter", "A private universe for two", "Messages, voice notes, touch and presence, sealed end to end and kept on your own two devices. No one else gets in, including the server.", "Enter with your invite"),
   ("nullspace", "Comms with no account", "Pick a handle, tune a frequency, transmit. Talks over the internet and over LoRa mesh radio when the internet is gone.", "Open the deck"),
