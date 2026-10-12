@@ -1,764 +1,373 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CryptoVault — RSA-4096 + AES-256-GCM</title>
-<link rel="icon" href="assets/icons/cryptovault.png">
-<link rel="apple-touch-icon" href="assets/icons/cryptovault.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- No network, enforced by the browser rather than promised: this page may not fetch, connect, or load anything that isn't
+     inside this file (icons and the manifest aside). Open devtools; the network tab stays empty. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>CryptoVault · hybrid encryption in one file</title>
+<meta name="description" content="RSA-4096 and AES-256-GCM in one HTML file: identities with passphrase-protected backups, contacts with fingerprints, signed and encrypted messages and files. No server, no dependency, no network.">
+<meta name="theme-color" content="#050b0d">
 <link rel="manifest" href="assets/manifests/cryptovault.webmanifest">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="CryptoVault">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/icons/v2/cryptovault.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/cryptovault-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CryptoVault">
 <style>
-  :root {
-    --bg: #030b0f;
-    --panel: #070f14;
-    --border: #0d3040;
-    --accent: #00e5ff;
-    --accent2: #00ff9d;
-    --warn: #ff6b35;
-    --dim: #1a3a4a;
-    --text: #b0d8e8;
-    --glow: 0 0 20px rgba(0,229,255,0.3);
-    --glow2: 0 0 20px rgba(0,255,157,0.3);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Animated grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(ellipse at 60% 40%, rgba(0,229,255,0.04) 0%, transparent 60%),
-                radial-gradient(ellipse at 20% 80%, rgba(0,255,157,0.03) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-    animation: pulse 8s ease-in-out infinite alternate;
-  }
-
-  @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 40px 20px;
-  }
-
-  header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
-  .logo {
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(28px, 5vw, 48px);
-    font-weight: 900;
-    letter-spacing: 6px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 8px;
-    text-shadow: none;
-    filter: drop-shadow(0 0 30px rgba(0,229,255,0.4));
-  }
-
-  .tagline {
-    font-size: 12px;
-    letter-spacing: 4px;
-    color: var(--dim);
-    text-transform: uppercase;
-  }
-
-  .entropy-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 16px;
-    padding: 6px 18px;
-    border: 1px solid var(--accent2);
-    border-radius: 2px;
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: var(--accent2);
-    box-shadow: var(--glow2), inset 0 0 20px rgba(0,255,157,0.05);
-  }
-
-  .entropy-badge::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--accent2);
-    border-radius: 50%;
-    animation: blink 1.5s step-end infinite;
-  }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 28px;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.6;
-  }
-
-  .panel-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .panel-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--border), transparent);
-  }
-
-  .key-display {
-    background: rgba(0,229,255,0.03);
-    border: 1px solid var(--dim);
-    border-radius: 2px;
-    padding: 14px;
-    font-size: 10px;
-    color: var(--accent);
-    word-break: break-all;
-    line-height: 1.6;
-    max-height: 120px;
-    overflow-y: auto;
-    opacity: 0.7;
-    transition: opacity 0.3s;
-  }
-
-  .key-display:hover { opacity: 1; }
-  .key-display.empty { color: var(--dim); font-style: normal; }
-
-  .key-meta {
-    display: flex;
-    gap: 20px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-  }
-
-  .meta-item {
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--dim);
-  }
-
-  .meta-item span {
-    color: var(--accent2);
-  }
-
-  .btn {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 12px 28px;
-    border: none;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .btn:hover::before { opacity: 1; }
-  .btn:active { transform: scale(0.97); }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #004d66, #006680);
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    box-shadow: var(--glow);
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #006680, #008099);
-    box-shadow: 0 0 30px rgba(0,229,255,0.5);
-  }
-
-  .btn-success {
-    background: linear-gradient(135deg, #003d28, #005236);
-    color: var(--accent2);
-    border: 1px solid var(--accent2);
-    box-shadow: var(--glow2);
-  }
-
-  .btn-success:hover {
-    box-shadow: 0 0 30px rgba(0,255,157,0.5);
-  }
-
-  .btn-warn {
-    background: linear-gradient(135deg, #3d1a00, #522200);
-    color: var(--warn);
-    border: 1px solid var(--warn);
-  }
-
-  .btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 20px;
-  }
-
-  textarea {
-    width: 100%;
-    background: rgba(0,229,255,0.02);
-    border: 1px solid var(--dim);
-    border-radius: 2px;
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    line-height: 1.7;
-    padding: 14px;
-    resize: vertical;
-    min-height: 120px;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px rgba(0,229,255,0.2);
-  }
-
-  textarea::placeholder { color: var(--dim); }
-
-  .tabs {
-    display: flex;
-    gap: 2px;
-    margin-bottom: 20px;
-    background: rgba(0,0,0,0.3);
-    padding: 4px;
-    border-radius: 3px;
-    border: 1px solid var(--border);
-  }
-
-  .tab {
-    flex: 1;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 10px;
-    border: none;
-    border-radius: 2px;
-    cursor: pointer;
-    background: transparent;
-    color: var(--dim);
-    transition: all 0.2s;
-  }
-
-  .tab.active {
-    background: rgba(0,229,255,0.1);
-    color: var(--accent);
-    border: 1px solid var(--border);
-  }
-
-  .output-box {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--dim);
-    border-radius: 2px;
-    padding: 14px;
-    font-size: 12px;
-    line-height: 1.7;
-    word-break: break-all;
-    min-height: 80px;
-    color: var(--accent2);
-    position: relative;
-    white-space: pre-wrap;
-  }
-
-  .output-box.empty { color: var(--dim); font-style: italic; }
-
-  .copy-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 1px;
-    padding: 4px 10px;
-    background: transparent;
-    border: 1px solid var(--dim);
-    color: var(--dim);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .status {
-    padding: 10px 14px;
-    border-radius: 2px;
-    font-size: 11px;
-    letter-spacing: 1px;
-    margin-top: 12px;
-    display: none;
-  }
-
-  .status.show { display: block; }
-  .status.ok { background: rgba(0,255,157,0.08); border: 1px solid rgba(0,255,157,0.3); color: var(--accent2); }
-  .status.err { background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.3); color: var(--warn); }
-  .status.loading { background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.3); color: var(--accent); }
-
-  .progress-bar {
-    height: 2px;
-    background: var(--dim);
-    border-radius: 1px;
-    margin-top: 8px;
-    overflow: hidden;
-    display: none;
-  }
-
-  .progress-bar.show { display: block; }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 1px;
-    width: 0%;
-    transition: width 0.4s;
-    animation: scanline 1.5s ease-in-out infinite;
-  }
-
-  @keyframes scanline {
-    0% { box-shadow: none; }
-    50% { box-shadow: 0 0 8px rgba(0,229,255,0.8); }
-    100% { box-shadow: none; }
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-top: 4px;
-  }
-
-  .stat-card {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid var(--dim);
-    padding: 14px;
-    border-radius: 2px;
-    text-align: center;
-  }
-
-  .stat-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent);
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .stat-value.green { color: var(--accent2); }
-
-  .stat-label {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--dim);
-    text-transform: uppercase;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
-
-  .label {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--dim);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    display: block;
-  }
-
-  .divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border), transparent);
-    margin: 24px 0;
-  }
-
-  @media (max-width: 600px) {
-    .btn-row { flex-direction: column; }
-    .btn { text-align: center; }
-  }
+:root { --bg: #050b0d; --panel: #0a1418; --panel2: #0e1b20; --line: rgba(0,229,255,.14); --line2: rgba(0,229,255,.3); --acc: #00e5ff; --acc2: #00ff9d; --ink: #d6eef5; --dim: #8fb3bf; --mute: #557884; --bad: #ff6b6b; --warn: #ffb347; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: radial-gradient(1200px 600px at 80% -10%, rgba(0,229,255,.07), transparent 60%), var(--bg); color: var(--ink); font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input, textarea, select { font: inherit; color: inherit; }
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; border-bottom: 1px solid var(--line); }
+.logo { font: 700 17px/1 var(--mono); letter-spacing: .14em; } .logo span { color: var(--acc); }
+.who { margin-left: auto; display: flex; align-items: center; gap: 8px; font: 13px var(--mono); color: var(--dim); min-width: 0; }
+.who b { color: var(--acc2); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; } .who .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); flex: none; } .who.on .dot { background: var(--acc2); box-shadow: 0 0 10px var(--acc2); }
+nav { display: flex; gap: 4px; padding: 10px 16px 0; overflow-x: auto; scrollbar-width: none; } nav::-webkit-scrollbar { display: none; }
+nav button { flex: none; border: 1px solid transparent; background: none; color: var(--dim); padding: 7px 14px; border-radius: 999px; cursor: pointer; font: 600 13px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+nav button.on { color: var(--bg); background: var(--acc); } nav button:hover:not(.on) { color: var(--ink); border-color: var(--line2); }
+main { max-width: 860px; margin: 0 auto; padding: 16px 16px calc(40px + env(safe-area-inset-bottom)); }
+section[hidden] { display: none; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+.card h2 { margin: 0 0 4px; font: 600 18px/1.3 ui-sans-serif, sans-serif; } .card > p { margin: 0 0 12px; color: var(--dim); font-size: 14px; }
+.k { font: 600 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin-bottom: 8px; display: block; }
+label { display: grid; gap: 6px; font-size: 13px; color: var(--dim); margin-bottom: 10px; }
+input[type=text], input[type=password], textarea, select { width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--ink); outline: none; }
+input:focus, textarea:focus, select:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(0,229,255,.12); }
+textarea { min-height: 120px; resize: vertical; font: 13px/1.5 var(--mono); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line2); background: transparent; color: var(--ink); cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+.btn:hover { border-color: var(--acc); } .btn.pri { background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #021014; border-color: transparent; } .btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.bad { color: var(--bad); border-color: rgba(255,107,107,.4); }
+.st { margin-top: 10px; font: 13px/1.45 var(--mono); color: var(--dim); min-height: 1.4em; } .st.ok { color: var(--acc2); } .st.err { color: var(--bad); } .st.busy { color: var(--warn); }
+.fp { font: 600 14px/1.5 var(--mono); letter-spacing: .06em; color: var(--acc2); word-spacing: .2em; overflow-wrap: anywhere; }
+.box { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); color: var(--dim); overflow-wrap: anywhere; max-height: 220px; overflow: auto; white-space: pre-wrap; }
+.box.out { color: var(--ink); } .empty { color: var(--mute); font-style: italic; }
+.meter { height: 6px; border-radius: 4px; background: var(--panel2); overflow: hidden; margin: -4px 0 10px; } .meter i { display: block; height: 100%; width: 0; transition: width .2s, background .2s; }
+.contacts { display: grid; gap: 8px; } .contact { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); }
+.contact > div { flex: 1; min-width: 0; } .contact b { display: block; } .contact .fp { font-size: 12.5px; color: var(--dim); }
+.drop { border: 1.5px dashed var(--line2); border-radius: 12px; padding: 18px; text-align: center; color: var(--dim); cursor: pointer; font-size: 14px; } .drop.over { border-color: var(--acc); background: rgba(0,229,255,.05); } .drop b { color: var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--line2); border-radius: 10px; overflow: hidden; margin-bottom: 12px; } .seg button { border: 0; background: none; padding: 7px 14px; cursor: pointer; color: var(--dim); font-weight: 600; font-size: 13px; } .seg button.on { background: rgba(0,229,255,.15); color: var(--acc); }
+.check { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 14px; } .check input { width: 18px; height: 18px; accent-color: var(--acc); }
+.sig { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 14px; border: 1px solid var(--line); } .sig.good { border-color: rgba(0,255,157,.4); color: var(--acc2); } .sig.bad { border-color: rgba(255,107,107,.45); color: var(--bad); } .sig.unk { border-color: rgba(255,179,71,.4); color: var(--warn); }
+.spec { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font: 13px/1.5 var(--mono); } .spec dt { color: var(--acc); } .spec dd { margin: 0; color: var(--dim); }
+.note { font-size: 13px; color: var(--mute); margin: 8px 0 0; }
+a { color: var(--acc); }
+@media (max-width: 560px) { .who b { max-width: 34vw; } .card { padding: 14px; } .spec { grid-template-columns: 1fr; gap: 2px; } .spec dd { margin-bottom: 8px; } }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <div class="logo">CRYPTOVAULT</div>
-    <div class="tagline">Asymmetric Hybrid Encryption Engine</div>
-    <div class="entropy-badge">RSA-4096-OAEP + AES-256-GCM · SHA-512</div>
-  </header>
-
-  <!-- Key Generation Panel -->
-  <div class="panel">
-    <div class="panel-title">01 · Key Generation</div>
-
-    <div class="stats-grid" id="statsGrid">
-      <div class="stat-card">
-        <span class="stat-value" id="statEntropy">—</span>
-        <div class="stat-label">RSA Modulus (bits)</div>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value green" id="statAlgo">—</span>
-        <div class="stat-label">Algorithm</div>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value" id="statStatus">IDLE</span>
-        <div class="stat-label">System Status</div>
-      </div>
+<header class="top"><span class="logo">CRYPTO<span>VAULT</span></span><span class="who" id="who"><span class="dot"></span><span id="whoName">locked</span></span></header>
+<nav id="tabs" aria-label="Sections"><button data-t="id" class="on">Identity</button><button data-t="ct">Contacts</button><button data-t="enc">Encrypt</button><button data-t="dec">Decrypt</button><button data-t="spec">How it works</button></nav>
+<main>
+  <!-- ── identity ── -->
+  <section id="t-id">
+    <div class="card" id="haveId" hidden>
+      <span class="k">your identity</span><h2 id="myName"></h2>
+      <p>Your fingerprint. When someone adds you, they should compare it with you over a channel you trust (in person, a call):</p>
+      <div class="fp" id="myFp"></div>
+      <span class="k" style="margin-top:16px">your public ID · safe to share</span>
+      <div class="box out" id="myId"></div>
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="copyId">Copy public ID</button><button class="btn" id="shareId" hidden>Share…</button><button class="btn" id="backup">Download key backup</button><button class="btn bad" id="lock">Lock</button></div>
+      <p class="note">The backup holds your private keys, encrypted with your passphrase (PBKDF2, 600,000 rounds, then AES-256-GCM). Without the passphrase it's noise; without the backup, a lost identity is gone for good.</p>
+      <div class="st" id="idSt"></div>
     </div>
-
-    <div class="divider"></div>
-
-    <div class="label">Public Key</div>
-    <div class="key-display scrollbar-thin empty" id="pubKeyDisplay">No key generated</div>
-
-    <div class="label" style="margin-top:14px">Private Key</div>
-    <div class="key-display scrollbar-thin empty" id="privKeyDisplay">No key generated</div>
-
-    <div class="key-meta" id="keyMeta" style="display:none">
-      <div class="meta-item">Modulus: <span id="metaModulus">—</span></div>
-      <div class="meta-item">Hash: <span>SHA-512</span></div>
-      <div class="meta-item">Padding: <span>OAEP</span></div>
-      <div class="meta-item">Symmetric: <span>AES-256-GCM</span></div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="generateKeys()">⌗ Generate Key Pair</button>
-      <button class="btn btn-warn" onclick="clearKeys()" id="clearBtn" style="display:none">✕ Clear Keys</button>
-    </div>
-
-    <div class="status" id="genStatus"></div>
-    <div class="progress-bar" id="genProgress"><div class="progress-fill" id="genFill"></div></div>
-  </div>
-
-  <!-- Encrypt / Decrypt Panel -->
-  <div class="panel">
-    <div class="panel-title">02 · Operations</div>
-
-    <div class="tabs">
-      <button class="tab active" id="tabEncrypt" onclick="switchTab('encrypt')">Encrypt</button>
-      <button class="tab" id="tabDecrypt" onclick="switchTab('decrypt')">Decrypt</button>
-    </div>
-
-    <!-- Encrypt view -->
-    <div id="encryptView">
-      <span class="label">Plaintext Input</span>
-      <textarea id="plaintextInput" placeholder="Enter message to encrypt..." rows="5"></textarea>
-
-      <div class="btn-row">
-        <button class="btn btn-success" onclick="encryptMessage()" id="encryptBtn" disabled>▲ Encrypt</button>
-        <button class="btn btn-primary" onclick="copyOutput('encOutput')">⊕ Copy Ciphertext</button>
+    <div id="noId">
+      <div class="card" id="rememberedCard" hidden>
+        <span class="k">on this device</span><h2>Unlock <span id="remName"></span></h2>
+        <p>Your key backup is stored here, encrypted. Enter its passphrase to load the keys into this tab.</p>
+        <label>Passphrase<input type="password" id="remPass" autocomplete="current-password"></label>
+        <div class="row"><button class="btn pri" id="remUnlock">Unlock</button><button class="btn bad" id="remForget">Forget it on this device</button></div>
+        <div class="st" id="remSt"></div>
       </div>
-
-      <div class="status" id="encStatus"></div>
-
-      <div style="margin-top:16px">
-        <span class="label">Ciphertext Output (Base64)</span>
-        <div class="output-box empty scrollbar-thin" id="encOutput" style="position:relative;max-height:160px;overflow-y:auto">
-          Ciphertext will appear here...
-        </div>
+      <div class="card">
+        <span class="k">new identity</span><h2>Create your keys</h2>
+        <p>An RSA-4096 key to receive encrypted messages and an ECDSA P-256 key to sign the ones you send. Both are generated here, by your browser.</p>
+        <label>Name (shown to the people you share your ID with)<input type="text" id="newName" maxlength="40" placeholder="e.g. Anders" autocomplete="off"></label>
+        <label>Passphrase (protects your backup; at least 10 characters)<input type="password" id="newPass" autocomplete="new-password"></label>
+        <div class="meter"><i id="meter"></i></div>
+        <label>Passphrase again<input type="password" id="newPass2" autocomplete="new-password"></label>
+        <label class="check"><input type="checkbox" id="remember"> Keep the encrypted backup on this device, so I only need the passphrase next time</label>
+        <div class="row"><button class="btn pri" id="create">Generate keys</button></div>
+        <div class="st" id="newSt"></div>
+      </div>
+      <div class="card">
+        <span class="k">existing identity</span><h2>Restore from a backup</h2>
+        <div class="drop" id="restoreDrop">Drop your <b>.cryptovault-key.json</b> here, or tap to choose it</div>
+        <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+        <label style="margin-top:10px">Passphrase<input type="password" id="restorePass" autocomplete="current-password"></label>
+        <label class="check"><input type="checkbox" id="restoreRemember"> Keep the encrypted backup on this device</label>
+        <div class="row"><button class="btn pri" id="restore" disabled>Restore</button></div>
+        <div class="st" id="restoreSt"></div>
       </div>
     </div>
-
-    <!-- Decrypt view -->
-    <div id="decryptView" style="display:none">
-      <span class="label">Ciphertext Input (Base64)</span>
-      <textarea id="ciphertextInput" placeholder="Paste encrypted ciphertext here..." rows="5"></textarea>
-
-      <div class="btn-row">
-        <button class="btn btn-success" onclick="decryptMessage()" id="decryptBtn" disabled>▼ Decrypt</button>
-        <button class="btn btn-primary" onclick="copyOutput('decOutput')">⊕ Copy Plaintext</button>
-      </div>
-
-      <div class="status" id="decStatus"></div>
-
-      <div style="margin-top:16px">
-        <span class="label">Decrypted Output</span>
-        <div class="output-box empty" id="decOutput">Decrypted message will appear here...</div>
-      </div>
+  </section>
+  <!-- ── contacts ── -->
+  <section id="t-ct" hidden>
+    <div class="card">
+      <span class="k">add someone</span><h2>Paste their public ID</h2>
+      <p>It starts with <code>CVID2:</code>. Check the fingerprint it shows against theirs before you trust it: a swapped key is the classic attack.</p>
+      <textarea id="addId" placeholder="CVID2:…" spellcheck="false"></textarea>
+      <div class="box" id="addPreview" hidden></div>
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="addBtn" disabled>Add contact</button></div>
+      <div class="st" id="ctSt"></div>
     </div>
-  </div>
-
-  <!-- Info Panel -->
-  <div class="panel">
-    <div class="panel-title">03 · Protocol Specification</div>
-    <div style="font-size:11px; line-height:2; color: var(--dim); letter-spacing:1px;">
-      <div>ASYMMETRIC &nbsp; RSA-4096-OAEP + SHA-512 &nbsp;·&nbsp; 4096-bit modulus</div>
-      <div>SYMMETRIC &nbsp;&nbsp; AES-256-GCM &nbsp;·&nbsp; 256 bits, authenticated encryption</div>
-      <div>KEY WRAP &nbsp;&nbsp;&nbsp; Ephemeral AES key encrypted with RSA public key</div>
-      <div>NONCE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 96-bit random IV per operation (never reused)</div>
-      <div>AUTH TAG &nbsp;&nbsp;&nbsp; 128-bit GCM authentication tag (tamper-evident)</div>
-      <div>STRENGTH &nbsp;&nbsp;&nbsp; &gt;128-bit security (NIST SP 800-57 rates RSA-3072 at 128)</div>
+    <div class="card"><span class="k">your contacts</span><div class="contacts" id="contacts"></div><p class="note">Contacts are public keys only, kept in this browser so you don't have to paste them again.</p></div>
+  </section>
+  <!-- ── encrypt ── -->
+  <section id="t-enc" hidden>
+    <div class="card">
+      <span class="k">encrypt</span><h2>For</h2>
+      <select id="to" aria-label="Recipient"></select>
+      <div class="seg" style="margin-top:12px"><button data-m="text" class="on">Message</button><button data-m="file">File</button></div>
+      <div id="encText"><textarea id="plain" placeholder="Write the message…"></textarea></div>
+      <div id="encFile" hidden><div class="drop" id="encDrop">Drop a file here, or tap to choose one</div><input type="file" id="encFileIn" hidden></div>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="sign" checked> Sign it as me, so they can tell it's really from me</label>
+      <div class="row"><button class="btn pri" id="encBtn">Encrypt</button></div>
+      <div class="st" id="encSt"></div>
     </div>
-  </div>
-</div>
-
+    <div class="card" id="encOutCard" hidden>
+      <span class="k">result</span><div class="box out" id="encOut"></div>
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="encCopy">Copy</button><button class="btn" id="encShare" hidden>Share…</button><button class="btn" id="encSave">Download</button></div>
+    </div>
+  </section>
+  <!-- ── decrypt ── -->
+  <section id="t-dec" hidden>
+    <div class="card">
+      <span class="k">decrypt</span><h2>Paste a message or open a file</h2>
+      <textarea id="cipher" placeholder="-----BEGIN CRYPTOVAULT MESSAGE-----" spellcheck="false"></textarea>
+      <div class="drop" id="decDrop" style="margin-top:10px">…or drop a <b>.cv</b> file here</div><input type="file" id="decFileIn" hidden>
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="decBtn">Decrypt</button></div>
+      <div class="st" id="decSt"></div>
+    </div>
+    <div class="card" id="decOutCard" hidden>
+      <span class="k">plaintext</span><div class="box out" id="decOut"></div>
+      <div class="row" style="margin-top:10px" id="decActions"></div>
+      <div class="sig" id="sigBox"></div>
+    </div>
+  </section>
+  <!-- ── how it works ── -->
+  <section id="t-spec" hidden>
+    <div class="card"><span class="k">protocol · CryptoVault 2</span>
+      <dl class="spec">
+        <dt>identity</dt><dd>RSA-4096-OAEP (SHA-512) to receive · ECDSA P-256 (SHA-256) to sign</dd>
+        <dt>fingerprint</dt><dd>SHA-256 over both public keys (SPKI), first 128 bits shown</dd>
+        <dt>per message</dt><dd>a fresh AES-256-GCM key and a 96-bit random IV, used once</dd>
+        <dt>key wrap</dt><dd>the AES key, encrypted to the recipient's RSA key</dd>
+        <dt>header</dt><dd>"CV" · version 2 · flags · recipient's short fingerprint · wrapped key, all authenticated as GCM additional data</dd>
+        <dt>signature</dt><dd>sign, then encrypt: the signature covers the recipient and the content, and travels inside the ciphertext, so only the recipient learns who signed</dd>
+        <dt>files</dt><dd>name and type go inside the ciphertext too</dd>
+        <dt>backup</dt><dd>private keys (PKCS#8) under AES-256-GCM, keyed by PBKDF2-SHA-256 with 600,000 rounds and a random salt</dd>
+        <dt>network</dt><dd>none: the page's Content-Security-Policy forbids every connection, so even a bug can't phone home</dd>
+      </dl>
+    </div>
+    <div class="card"><span class="k">honest scope</span>
+      <p style="color:var(--ink);margin:0 0 8px">This is a readable, working use of the browser's own cryptography, not audited software.</p>
+      <p style="margin:0 0 8px">Key exchange is still the hard part: compare fingerprints with people before trusting them. Served over a network, the page is only as trustworthy as whoever serves it; save it and run it locally if that matters. There's no forward secrecy: if your private key and backup passphrase leak, past messages to you can be opened.</p>
+      <p style="margin:0">For anything that genuinely matters, use <a href="https://age-encryption.org" rel="noopener">age</a>, GPG or Signal.</p>
+    </div>
+  </section>
+</main>
 <script>
-let keyPair = null;
+"use strict";
+// ── tiny helpers ──
+const $ = (id) => document.getElementById(id), subtle = crypto.subtle, te = new TextEncoder(), td = new TextDecoder();
+const b64 = (buf) => { const u = new Uint8Array(buf); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/").replace(/\s+/g, "")), (c) => c.charCodeAt(0));
+const b64url = (buf) => b64(buf).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const cat = (...a) => { const n = a.reduce((x, y) => x + y.length, 0), o = new Uint8Array(n); let p = 0; a.forEach((x) => { o.set(x, p); p += x.length; }); return o; };
+const hex = (u) => [...u].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+const group = (h) => h.match(/.{4}/g).join(" ");
+const size = (n) => n < 1024 ? n + " bytes" : n < 1048576 ? (n / 1024).toFixed(1) + " KB" : (n / 1048576).toFixed(1) + " MB";
+const eq = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+const st = (id, cls, t) => { const e = $(id); e.className = "st " + (cls || ""); e.textContent = t || ""; };
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
+const RSA = { name: "RSA-OAEP", hash: "SHA-512" }, ECDSA = { name: "ECDSA", namedCurve: "P-256" }, SIGN = { name: "ECDSA", hash: "SHA-256" };
+const ITER = 600000;
+const S = { me: null, contacts: [] };
 
-// ─── Key Generation ──────────────────────────────────────────────────────────
-async function generateKeys() {
-  setStatus('genStatus', 'loading', '⌛ Generating RSA-4096 key pair — this may take a moment...');
-  showProgress('genProgress', 'genFill', [10, 40, 70, 95]);
+async function fingerprint(eSpki, sSpki) { const d = new Uint8Array(await subtle.digest("SHA-256", cat(eSpki, sSpki))); return { full: group(hex(d.slice(0, 16))), short: d.slice(0, 8) }; }
+async function importPub(e, s) { return { enc: await subtle.importKey("spki", e, RSA, true, ["encrypt"]), sig: await subtle.importKey("spki", s, ECDSA, true, ["verify"]) }; }
 
-  document.getElementById('statStatus').textContent = 'GEN...';
+// ── identity ──
+async function passKey(pass, salt, iter) { const base = await subtle.importKey("raw", te.encode(pass), "PBKDF2", false, ["deriveKey"]); return subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); }
+async function createIdentity(name, pass) {
+  const enc = await subtle.generateKey({ ...RSA, modulusLength: 4096, publicExponent: new Uint8Array([1, 0, 1]) }, true, ["encrypt", "decrypt"]);
+  const sig = await subtle.generateKey(ECDSA, true, ["sign", "verify"]);
+  const e = new Uint8Array(await subtle.exportKey("spki", enc.publicKey)), s = new Uint8Array(await subtle.exportKey("spki", sig.publicKey));
+  const fp = await fingerprint(e, s);
+  const priv = JSON.stringify({ e: b64(await subtle.exportKey("pkcs8", enc.privateKey)), s: b64(await subtle.exportKey("pkcs8", sig.privateKey)) });
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const box = await subtle.encrypt({ name: "AES-GCM", iv, additionalData: te.encode(fp.full) }, await passKey(pass, salt, ITER), te.encode(priv));
+  const backup = { cryptovault: 2, name, fp: fp.full, created: new Date().toISOString(), pub: { e: b64(e), s: b64(s) }, kdf: { name: "PBKDF2", hash: "SHA-256", iterations: ITER, salt: b64(salt) }, iv: b64(iv), box: b64(box) };
+  // the in-tab keys: private ones re-imported as non-extractable, so nothing in the page can read them back out
+  const keys = { enc: await subtle.importKey("pkcs8", await subtle.exportKey("pkcs8", enc.privateKey), RSA, false, ["decrypt"]), sig: await subtle.importKey("pkcs8", await subtle.exportKey("pkcs8", sig.privateKey), ECDSA, false, ["sign"]) };
+  return { backup, me: { name, fp, e, s, pub: { enc: enc.publicKey, sig: sig.publicKey }, priv: keys } };
+}
+async function openBackup(bk, pass) {
+  if (!bk || bk.cryptovault !== 2 || !bk.box || !bk.kdf) throw new Error("That isn't a CryptoVault 2 key backup.");
+  const e = unb64(bk.pub.e), s = unb64(bk.pub.s), fp = await fingerprint(e, s);
+  if (fp.full !== bk.fp) throw new Error("The backup's public keys don't match its fingerprint: it has been altered.");
+  let priv;
+  try { priv = JSON.parse(td.decode(await subtle.decrypt({ name: "AES-GCM", iv: unb64(bk.iv), additionalData: te.encode(bk.fp) }, await passKey(pass, unb64(bk.kdf.salt), bk.kdf.iterations), unb64(bk.box)))); }
+  catch (err) { throw new Error("Wrong passphrase, or the backup is damaged."); }
+  const keys = { enc: await subtle.importKey("pkcs8", unb64(priv.e), RSA, false, ["decrypt"]), sig: await subtle.importKey("pkcs8", unb64(priv.s), ECDSA, false, ["sign"]) };
+  return { name: bk.name, fp, e, s, pub: await importPub(e, s), priv: keys };
+}
+const publicId = (me) => "CVID2:" + b64url(te.encode(JSON.stringify({ n: me.name, e: b64(me.e), s: b64(me.s) })));
+async function parseId(str) {
+  const m = /CVID2:([A-Za-z0-9_-]+)/.exec(str || ""); if (!m) throw new Error("Paste an ID that starts with CVID2:");
+  let j; try { j = JSON.parse(td.decode(unb64(m[1]))); } catch (e) { throw new Error("That ID is damaged (copy it again, all of it)."); }
+  const e = unb64(j.e), s = unb64(j.s), fp = await fingerprint(e, s);
+  return { name: String(j.n || "unnamed").slice(0, 40), fp, e, s, pub: await importPub(e, s), id: m[0] };
+}
 
-  try {
-    keyPair = await window.crypto.subtle.generateKey(
-      {
-        name: 'RSA-OAEP',
-        modulusLength: 4096,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-512',
-      },
-      true,
-      ['encrypt', 'decrypt']
-    );
-
-    const pubJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
-    const privJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
-
-    const pubStr = JSON.stringify(pubJwk, null, 0);
-    const privStr = JSON.stringify(privJwk, null, 0);
-
-    const pubEl = document.getElementById('pubKeyDisplay');
-    const privEl = document.getElementById('privKeyDisplay');
-
-    pubEl.textContent = pubStr;
-    pubEl.classList.remove('empty');
-    privEl.textContent = privStr;
-    privEl.classList.remove('empty');
-
-    document.getElementById('statEntropy').textContent = '4096';
-    document.getElementById('statAlgo').textContent = 'RSA-OAEP';
-    document.getElementById('statStatus').textContent = 'READY';
-    document.getElementById('keyMeta').style.display = 'flex';
-    document.getElementById('metaModulus').textContent = pubJwk.n.length * 6 + ' (JWK n)';
-    document.getElementById('clearBtn').style.display = '';
-
-    document.getElementById('encryptBtn').disabled = false;
-    document.getElementById('decryptBtn').disabled = false;
-
-    setFill('genFill', 100);
-    setStatus('genStatus', 'ok', '✓ RSA-4096 key pair generated in this tab. Private key lives in memory only.');
-  } catch (e) {
-    setStatus('genStatus', 'err', '✕ Key generation failed: ' + e.message);
-    document.getElementById('statStatus').textContent = 'ERROR';
+// ── the message format ──
+// header: "CV" 0x02 · flags (1 file, 2 signed) · recipient short fingerprint (8) · wrapped key length (2) · wrapped key · IV (12)
+// then AES-GCM(content), with everything before the IV as additional data, so the header can't be swapped or edited.
+// content: [sender short fingerprint (8) · signature length (1) · signature] if signed, then the body
+// body: text, or for a file: name length (2) · name · type length (1) · type · bytes
+async function seal(to, body, isFile, signer) {
+  const flags = (isFile ? 1 : 0) | (signer ? 2 : 0);
+  const aes = await subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
+  const wrapped = new Uint8Array(await subtle.encrypt(RSA, to.pub.enc, await subtle.exportKey("raw", aes)));
+  const len = new Uint8Array(2); new DataView(len.buffer).setUint16(0, wrapped.length);
+  const head = cat(new Uint8Array([0x43, 0x56, 2, flags]), to.fp.short, len, wrapped);
+  let content = body;
+  if (signer) {
+    const sig = new Uint8Array(await subtle.sign(SIGN, signer.priv.sig, cat(te.encode("CV2-SIG"), to.fp.short, new Uint8Array([flags]), body)));
+    content = cat(signer.fp.short, new Uint8Array([sig.length]), sig, body);
   }
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await subtle.encrypt({ name: "AES-GCM", iv, additionalData: head }, aes, content));
+  return cat(head, iv, ct);
 }
-
-function clearKeys() {
-  keyPair = null;
-  ['pubKeyDisplay', 'privKeyDisplay'].forEach(id => {
-    const el = document.getElementById(id);
-    el.textContent = 'No key generated';
-    el.classList.add('empty');
-  });
-  document.getElementById('statEntropy').textContent = '—';
-  document.getElementById('statAlgo').textContent = '—';
-  document.getElementById('statStatus').textContent = 'IDLE';
-  document.getElementById('keyMeta').style.display = 'none';
-  document.getElementById('clearBtn').style.display = 'none';
-  document.getElementById('encryptBtn').disabled = true;
-  document.getElementById('decryptBtn').disabled = true;
-  hideStatus('genStatus');
-  document.getElementById('genProgress').classList.remove('show');
-}
-
-// ─── Hybrid Encrypt ──────────────────────────────────────────────────────────
-async function encryptMessage() {
-  const plaintext = document.getElementById('plaintextInput').value.trim();
-  if (!plaintext) { setStatus('encStatus', 'err', '✕ Enter a message to encrypt.'); return; }
-  if (!keyPair) { setStatus('encStatus', 'err', '✕ Generate a key pair first.'); return; }
-
-  setStatus('encStatus', 'loading', '⌛ Encrypting with RSA-4096 + AES-256-GCM...');
-
-  try {
-    // 1. Generate ephemeral AES-256-GCM key
-    const aesKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
-
-    // 2. Export raw AES key
-    const rawAes = await crypto.subtle.exportKey('raw', aesKey);
-
-    // 3. Encrypt AES key with RSA public key
-    const wrappedKey = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, keyPair.publicKey, rawAes);
-
-    // 4. Encrypt plaintext with AES-256-GCM
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const enc = new TextEncoder();
-    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, enc.encode(plaintext));
-
-    // 5. Package: [2-byte wrappedKey length][wrappedKey][12-byte iv][ciphertext]
-    const wkLen = new Uint8Array(2);
-    new DataView(wkLen.buffer).setUint16(0, wrappedKey.byteLength);
-
-    const bundle = concat(wkLen, new Uint8Array(wrappedKey), iv, new Uint8Array(ciphertext));
-    const b64 = btoa(String.fromCharCode(...bundle));
-
-    const out = document.getElementById('encOutput');
-    out.textContent = b64;
-    out.classList.remove('empty');
-
-    setStatus('encStatus', 'ok', `✓ Encrypted ${plaintext.length} chars → ${b64.length} chars ciphertext. AES key wrapped with RSA-4096.`);
-  } catch (e) {
-    setStatus('encStatus', 'err', '✕ Encryption failed: ' + e.message);
+async function unseal(packet, me, known) {
+  if (packet.length < 30 || packet[0] !== 0x43 || packet[1] !== 0x56) throw new Error("That isn't a CryptoVault message.");
+  if (packet[2] !== 2) throw new Error("This message uses CryptoVault version " + packet[2] + "; this page reads version 2.");
+  const flags = packet[3], rfp = packet.slice(4, 12), wl = new DataView(packet.buffer, packet.byteOffset).getUint16(12);
+  if (!eq(rfp, me.fp.short)) throw new Error("This message was encrypted for " + group(hex(rfp)) + "…, not for you (" + group(hex(me.fp.short)) + "…).");
+  const head = packet.slice(0, 14 + wl), wrapped = packet.slice(14, 14 + wl), iv = packet.slice(14 + wl, 26 + wl), ct = packet.slice(26 + wl);
+  let raw; try { raw = await subtle.decrypt(RSA, me.priv.enc, wrapped); } catch (e) { throw new Error("Your key couldn't unwrap it: the message is damaged."); }
+  let content; try { content = new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv, additionalData: head }, await subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]), ct)); }
+  catch (e) { throw new Error("Authentication failed: the message was altered after it was sealed, or it's incomplete."); }
+  let sig = null, body = content;
+  if (flags & 2) {
+    const sfp = content.slice(0, 8), sl = content[8], sgn = content.slice(9, 9 + sl); body = content.slice(9 + sl);
+    const who = known.find((c) => eq(c.fp.short, sfp));
+    if (!who) sig = { state: "unk", fp: group(hex(sfp)) };
+    else sig = { state: (await subtle.verify(SIGN, who.pub.sig, sgn, cat(te.encode("CV2-SIG"), rfp, new Uint8Array([flags]), body))) ? "good" : "bad", who };
   }
+  if (flags & 1) { const nl = new DataView(body.buffer, body.byteOffset).getUint16(0), name = td.decode(body.slice(2, 2 + nl)), tl = body[2 + nl], type = td.decode(body.slice(3 + nl, 3 + nl + tl)); return { file: { name, type, data: body.slice(3 + nl + tl) }, sig }; }
+  return { text: td.decode(body), sig };
 }
+const armor = (u) => "-----BEGIN CRYPTOVAULT MESSAGE-----\n" + b64(u).match(/.{1,64}/g).join("\n") + "\n-----END CRYPTOVAULT MESSAGE-----";
+const unarmor = (t) => unb64(t.replace(/-----[^-]+-----/g, ""));
 
-// ─── Hybrid Decrypt ──────────────────────────────────────────────────────────
-async function decryptMessage() {
-  const b64 = document.getElementById('ciphertextInput').value.trim();
-  if (!b64) { setStatus('decStatus', 'err', '✕ Enter ciphertext to decrypt.'); return; }
-  if (!keyPair) { setStatus('decStatus', 'err', '✕ Generate (or load) the correct key pair first.'); return; }
+// ── state and screens ──
+function contactsAll() { return S.me ? [{ name: S.me.name + " (me)", fp: S.me.fp, pub: S.me.pub, me: true }, ...S.contacts] : S.contacts; }
+function saveContacts() { store.set("cv:contacts", JSON.stringify(S.contacts.map((c) => c.id))); }
+async function loadContacts() { try { const ids = JSON.parse(store.get("cv:contacts") || "[]"); for (const id of ids) { try { S.contacts.push(await parseId(id)); } catch (e) {} } } catch (e) {} }
+function render() {
+  const me = S.me;
+  $("who").classList.toggle("on", !!me); $("whoName").textContent = me ? me.name : "locked";
+  $("haveId").hidden = !me; $("noId").hidden = !!me;
+  if (me) { $("myName").textContent = me.name; $("myFp").textContent = me.fp.full; $("myId").textContent = publicId(me); }
+  const rem = (() => { try { return JSON.parse(store.get("cv:identity") || "null"); } catch (e) { return null; } })();
+  $("rememberedCard").hidden = !!me || !rem; if (rem) $("remName").textContent = rem.name;
+  $("contacts").innerHTML = S.contacts.length ? "" : '<p class="note" style="margin:0">No contacts yet. Paste someone\'s public ID above.</p>';
+  S.contacts.forEach((c, i) => { const d = document.createElement("div"); d.className = "contact"; d.innerHTML = '<div><b></b><span class="fp"></span></div><button class="btn bad" aria-label="Remove">Remove</button>'; d.querySelector("b").textContent = c.name; d.querySelector(".fp").textContent = c.fp.full; d.querySelector("button").onclick = () => { if (confirm("Remove " + c.name + "?")) { S.contacts.splice(i, 1); saveContacts(); render(); } }; $("contacts").appendChild(d); });
+  const to = $("to"), prev = to.value; to.innerHTML = "";
+  contactsAll().forEach((c) => { const o = document.createElement("option"); o.value = c.fp.full; o.textContent = c.name + " · " + c.fp.full.slice(0, 9); to.appendChild(o); });
+  if (!to.options.length) { const o = document.createElement("option"); o.textContent = "Add a contact or create your identity first"; o.disabled = true; to.appendChild(o); }
+  if (prev) to.value = prev;
+  $("sign").disabled = !me; $("sign").checked = !!me && !S.noSign; // signed by default once there's someone to sign as
+}
+function tab(t) { document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.t === t)); ["id", "ct", "enc", "dec", "spec"].forEach((x) => ($("t-" + x).hidden = x !== t)); }
+$("tabs").onclick = (e) => { const b = e.target.closest("button"); if (b) tab(b.dataset.t); };
 
-  setStatus('decStatus', 'loading', '⌛ Decrypting with RSA-4096 private key...');
+// identity: create, unlock, restore, lock, back up
+$("newPass").oninput = () => { const p = $("newPass").value, pool = (/[a-z]/.test(p) ? 26 : 0) + (/[A-Z]/.test(p) ? 26 : 0) + (/\d/.test(p) ? 10 : 0) + (/[^a-zA-Z\d]/.test(p) ? 33 : 0), bits = p.length * Math.log2(pool || 1), m = $("meter"); m.style.width = Math.min(100, bits) + "%"; m.style.background = bits < 50 ? "var(--bad)" : bits < 75 ? "var(--warn)" : "var(--acc2)"; };
+$("create").onclick = async () => {
+  const name = $("newName").value.trim(), p = $("newPass").value;
+  if (!name) return st("newSt", "err", "Give your identity a name.");
+  if (p.length < 10) return st("newSt", "err", "Use a passphrase of at least 10 characters (a few random words is good).");
+  if (p !== $("newPass2").value) return st("newSt", "err", "The two passphrases don't match.");
+  $("create").disabled = true; st("newSt", "busy", "Generating an RSA-4096 key… this can take a few seconds.");
+  try { const r = await createIdentity(name, p); S.me = r.me; S.backup = r.backup; if ($("remember").checked) store.set("cv:identity", JSON.stringify(r.backup)); $("newPass").value = $("newPass2").value = ""; st("newSt"); render(); st("idSt", "ok", "Keys created. Download the backup now: it's the only way to restore this identity."); }
+  catch (e) { st("newSt", "err", "Couldn't create keys: " + e.message); }
+  $("create").disabled = false;
+};
+$("remUnlock").onclick = async () => { st("remSt", "busy", "Unlocking…"); try { const bk = JSON.parse(store.get("cv:identity")); S.me = await openBackup(bk, $("remPass").value); S.backup = bk; $("remPass").value = ""; st("remSt"); render(); st("idSt", "ok", "Unlocked. Your keys are in this tab until you lock or close it."); } catch (e) { st("remSt", "err", e.message); } };
+$("remPass").onkeydown = (e) => { if (e.key === "Enter") $("remUnlock").click(); };
+$("remForget").onclick = () => { if (confirm("Delete the stored backup from this device? Keep a downloaded copy, or this identity is gone.")) { store.set("cv:identity", null); render(); } };
+let restoreJson = null;
+const pickRestore = async (f) => { try { restoreJson = JSON.parse(await f.text()); $("restoreDrop").innerHTML = "Loaded <b></b>"; $("restoreDrop").querySelector("b").textContent = (restoreJson.name || "backup") + " · " + (restoreJson.fp || "").slice(0, 9); $("restore").disabled = false; st("restoreSt"); } catch (e) { st("restoreSt", "err", "That file isn't a key backup."); } };
+dropZone($("restoreDrop"), $("restoreFile"), pickRestore);
+$("restore").onclick = async () => { st("restoreSt", "busy", "Checking the passphrase…"); try { S.me = await openBackup(restoreJson, $("restorePass").value); S.backup = restoreJson; if ($("restoreRemember").checked) store.set("cv:identity", JSON.stringify(restoreJson)); $("restorePass").value = ""; st("restoreSt"); render(); st("idSt", "ok", "Restored."); } catch (e) { st("restoreSt", "err", e.message); } };
+$("lock").onclick = () => { S.me = null; S.backup = null; render(); st("remSt", "ok", "Locked: the keys are gone from this tab."); };
+$("backup").onclick = () => save(new Blob([JSON.stringify(S.backup, null, 1)], { type: "application/json" }), S.me.name.replace(/[^\w-]+/g, "_") + ".cryptovault-key.json");
+$("copyId").onclick = () => copy(publicId(S.me), "idSt", "Public ID copied. Send it to anyone; it can only encrypt to you, never decrypt.");
+if (navigator.share) { $("shareId").hidden = false; $("shareId").onclick = () => navigator.share({ title: "My CryptoVault ID", text: publicId(S.me) }).catch(() => {}); }
 
+// contacts
+let pending = null;
+$("addId").oninput = async () => { const v = $("addId").value.trim(); pending = null; $("addBtn").disabled = true; $("addPreview").hidden = !v; if (!v) return;
+  try { pending = await parseId(v); $("addPreview").textContent = pending.name + "\nfingerprint " + pending.fp.full + "\nCheck this with them before you add it."; $("addBtn").disabled = false; st("ctSt"); }
+  catch (e) { $("addPreview").textContent = e.message; } };
+$("addBtn").onclick = () => { if (!pending) return; if (S.contacts.some((c) => c.fp.full === pending.fp.full)) return st("ctSt", "err", "Already in your contacts."); if (S.me && pending.fp.full === S.me.fp.full) return st("ctSt", "err", "That's your own ID."); S.contacts.push(pending); saveContacts(); st("ctSt", "ok", "Added " + pending.name + "."); $("addId").value = ""; $("addPreview").hidden = true; pending = null; $("addBtn").disabled = true; render(); };
+
+// encrypt
+let encMode = "text", encFile = null, lastOut = null;
+$("sign").onchange = () => { S.noSign = !$("sign").checked; };
+document.querySelector(".seg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; encMode = b.dataset.m; document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b)); $("encText").hidden = encMode !== "text"; $("encFile").hidden = encMode !== "file"; };
+dropZone($("encDrop"), $("encFileIn"), (f) => { encFile = f; $("encDrop").innerHTML = "<b></b> · " + size(f.size); $("encDrop").querySelector("b").textContent = f.name; });
+$("encBtn").onclick = async () => {
+  const to = contactsAll().find((c) => c.fp.full === $("to").value); if (!to) return st("encSt", "err", "Pick who it's for (add a contact, or create your identity to encrypt to yourself).");
+  let body;
+  if (encMode === "text") { const t = $("plain").value; if (!t) return st("encSt", "err", "Write a message first."); body = te.encode(t); }
+  else { if (!encFile) return st("encSt", "err", "Choose a file first."); if (encFile.size > 200 * 1024 * 1024) return st("encSt", "err", "Files up to 200 MB: it all happens in memory."); const n = te.encode(encFile.name.slice(0, 200)), ty = te.encode((encFile.type || "application/octet-stream").slice(0, 120)), nl = new Uint8Array(2); new DataView(nl.buffer).setUint16(0, n.length); body = cat(nl, n, new Uint8Array([ty.length]), ty, new Uint8Array(await encFile.arrayBuffer())); }
+  const signer = $("sign").checked && S.me ? S.me : null;
+  st("encSt", "busy", "Encrypting…");
   try {
-    // Decode base64
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const packet = await seal(to, body, encMode === "file", signer);
+    lastOut = { packet, file: encMode === "file" ? encFile.name : null };
+    $("encOut").textContent = encMode === "file" ? encFile.name + ".cv · " + size(packet.length) + ", ready to download" : armor(packet);
+    $("encOutCard").hidden = false; $("encCopy").hidden = encMode === "file";
+    st("encSt", "ok", "Sealed for " + to.name + (signer ? ", signed by you" : ", unsigned") + ". Only their private key can open it.");
+  } catch (e) { st("encSt", "err", "Encryption failed: " + e.message); }
+};
+$("encCopy").onclick = () => copy($("encOut").textContent, "encSt", "Copied.");
+$("encSave").onclick = () => lastOut && (lastOut.file ? save(new Blob([lastOut.packet], { type: "application/octet-stream" }), lastOut.file + ".cv") : save(new Blob([armor(lastOut.packet)], { type: "text/plain" }), "message.cvmsg"));
+if (navigator.share) { $("encShare").hidden = false; $("encShare").onclick = () => navigator.share({ text: $("encOut").textContent }).catch(() => {}); }
 
-    // Parse bundle
-    const wkLen = new DataView(bytes.buffer).getUint16(0);
-    const wrappedKey = bytes.slice(2, 2 + wkLen);
-    const iv = bytes.slice(2 + wkLen, 2 + wkLen + 12);
-    const ciphertext = bytes.slice(2 + wkLen + 12);
+// decrypt
+let decPacket = null;
+dropZone($("decDrop"), $("decFileIn"), async (f) => { const u = new Uint8Array(await f.arrayBuffer()); if (u[0] === 0x43 && u[1] === 0x56) { decPacket = u; $("cipher").value = ""; $("decDrop").innerHTML = "<b></b> loaded"; $("decDrop").querySelector("b").textContent = f.name; } else { $("cipher").value = td.decode(u); decPacket = null; } });
+$("cipher").oninput = () => { decPacket = null; $("decDrop").innerHTML = "…or drop a <b>.cv</b> file here"; };
+$("decBtn").onclick = async () => {
+  if (!S.me) return st("decSt", "err", "Unlock or create your identity first: decrypting needs your private key.");
+  let packet = decPacket; if (!packet) { const t = $("cipher").value.trim(); if (!t) return st("decSt", "err", "Paste a message or drop a file."); try { packet = unarmor(t); } catch (e) { return st("decSt", "err", "That isn't valid base64: copy the whole block, BEGIN to END."); } }
+  st("decSt", "busy", "Decrypting…"); $("decOutCard").hidden = true;
+  try {
+    const r = await unseal(packet, S.me, contactsAll()); const out = $("decOut"), act = $("decActions"); act.innerHTML = "";
+    if (r.file) { out.textContent = r.file.name + " · " + size(r.file.data.length) + " · " + r.file.type; const b = document.createElement("button"); b.className = "btn pri"; b.textContent = "Save " + r.file.name; b.onclick = () => save(new Blob([r.file.data], { type: r.file.type }), r.file.name); act.appendChild(b); }
+    else { out.textContent = r.text; const b = document.createElement("button"); b.className = "btn"; b.textContent = "Copy"; b.onclick = () => copy(r.text, "decSt", "Copied."); act.appendChild(b); }
+    const s = $("sigBox"), sg = r.sig;
+    s.className = "sig " + (!sg ? "" : sg.state); s.textContent = !sg ? "Not signed: it could be from anyone who has your public ID." : sg.state === "good" ? "✓ Signed by " + sg.who.name + " (" + sg.who.fp.full.slice(0, 19) + "…). The signature checks out." : sg.state === "bad" ? "✕ The signature claims to be " + sg.who.name + " and does NOT verify. Don't trust who this says it's from." : "Signed by a key you don't have (" + sg.fp + "…). Add the sender as a contact to check it.";
+    $("decOutCard").hidden = false; st("decSt", "ok", "Decrypted and authenticated.");
+  } catch (e) { st("decSt", "err", e.message); }
+};
 
-    // Unwrap AES key with RSA private key
-    const rawAes = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, keyPair.privateKey, wrappedKey);
-
-    // Import AES key
-    const aesKey = await crypto.subtle.importKey('raw', rawAes, { name: 'AES-GCM' }, false, ['decrypt']);
-
-    // Decrypt ciphertext
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, ciphertext);
-    const text = new TextDecoder().decode(plain);
-
-    const out = document.getElementById('decOutput');
-    out.textContent = text;
-    out.classList.remove('empty');
-
-    setStatus('decStatus', 'ok', `✓ Decrypted successfully. ${ciphertext.length} bytes → ${text.length} chars. Authentication tag verified.`);
-  } catch (e) {
-    setStatus('decStatus', 'err', '✕ Decryption failed — wrong key or corrupted ciphertext. ' + e.message);
-  }
+// ── plumbing ──
+function save(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+function copy(text, sid, msg) { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => st(sid, "ok", msg), () => st(sid, "err", "Copy didn't work here; select the text and copy it by hand.")); }
+function dropZone(zone, input, onFile) {
+  zone.onclick = () => input.click(); input.onchange = () => input.files[0] && onFile(input.files[0]);
+  zone.ondragover = (e) => { e.preventDefault(); zone.classList.add("over"); }; zone.ondragleave = () => zone.classList.remove("over");
+  zone.ondrop = (e) => { e.preventDefault(); zone.classList.remove("over"); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); };
 }
-
-// ─── Utilities ───────────────────────────────────────────────────────────────
-function concat(...arrays) {
-  const total = arrays.reduce((n, a) => n + a.length, 0);
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const a of arrays) { out.set(a, offset); offset += a.length; }
-  return out;
-}
-
-function switchTab(tab) {
-  document.getElementById('encryptView').style.display = tab === 'encrypt' ? '' : 'none';
-  document.getElementById('decryptView').style.display = tab === 'decrypt' ? '' : 'none';
-  document.getElementById('tabEncrypt').className = 'tab' + (tab === 'encrypt' ? ' active' : '');
-  document.getElementById('tabDecrypt').className = 'tab' + (tab === 'decrypt' ? ' active' : '');
-}
-
-function copyOutput(id) {
-  const text = document.getElementById(id).textContent;
-  if (!text || text.includes('will appear')) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const prev = event.target.textContent;
-    event.target.textContent = '✓ COPIED';
-    setTimeout(() => event.target.textContent = prev, 1500);
-  });
-}
-
-function setStatus(id, type, msg) {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.className = `status show ${type}`;
-}
-
-function hideStatus(id) {
-  document.getElementById(id).className = 'status';
-}
-
-function setFill(id, pct) {
-  document.getElementById(id).style.width = pct + '%';
-}
-
-function showProgress(barId, fillId, steps) {
-  const bar = document.getElementById(barId);
-  bar.classList.add('show');
-  setFill(fillId, 0);
-  steps.forEach((pct, i) => setTimeout(() => setFill(fillId, pct), i * 600));
-}
+if (!window.isSecureContext || !crypto.subtle) document.querySelector("main").innerHTML = '<div class="card"><h2>This needs a secure page</h2><p>Web Crypto only runs over https or on localhost.</p></div>';
+else loadContacts().then(() => { render(); if (store.get("cv:identity")) setTimeout(() => $("remPass").focus(), 200); });
+window.CryptoVault = { S, seal, unseal, createIdentity, openBackup, parseId, publicId, armor, unarmor };
 </script>
-<script src="assets/js/mf-version.js" data-app="cryptovault" data-pos="bl" defer></script>
-<script src="/assets/install.js" defer></script>
 </body>
 </html>
