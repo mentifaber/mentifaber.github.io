@@ -1,153 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Duely — get overdue invoices paid, on contingency."/>
-<meta property="og:title" content="Duely"/>
-<meta property="og:description" content="You pay nothing unless your client pays."/>
-<meta name="theme-color" content="#000000"/>
-<title>Duely</title>
-<link rel="icon" href="assets/icons/duely.png">
-<link rel="apple-touch-icon" href="assets/icons/duely.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/duely.png"/>
-<meta property="og:url" content="https://mentifaber.org/duely.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3.4rem, 12vw, 9rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.9; color: var(--ink); }
-.name span { color: var(--rust-hi); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 46ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--rust), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo-dim); }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--rust-hi); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
-.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
-.frag li b { color: var(--ink); font-weight: 600; }
-
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
-</style>
-<style>:root{--mf-accent:hsl(353 90% 68%);--mf-glow:hsl(353 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Duely — overdue invoices, chased politely · Mentifaber</title>
+<meta name="description" content="Overdue invoices, chased politely: three dated reminders, friendly to firm, checked against hard legal guardrails and sent from your own mail app. You pay nothing unless your client does.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="Duely — overdue invoices, chased politely · Mentifaber"><meta property="og:description" content="Overdue invoices, chased politely: three dated reminders, friendly to firm, checked against hard legal guardrails and sent from your own mail app. You pay nothing unless your client does."><meta property="og:image" content="https://mentifaber.org/assets/previews/duely.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/duely.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/duely-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/duely-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Duely"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/duely.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=810e172b">
+<style>:root{--h:353}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">contingency invoicing — no cost unless it works</p>
-  <span class="mf-logo" style="--h:353" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 12.5V7L15 3.5H6v17h6"/><path d="M9 9h5M9 12.5h3"/><circle cx="17" cy="17.5" r="3.5"/><path d="M17 16v1.7l1.1.9"/></svg></span>
-  <h1 class="name">Duely<span>.</span></h1>
-  <p class="tagline">Get overdue invoices paid. You pay nothing unless your client does.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>concept — private prototype</span>
-</div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/duely.webp"><img src="assets/previews/duely.png" alt="Duely — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>on desktop and phone</figcaption></figure>
-
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">the problem</p>
-    <h2 class="frag-title">Awkward to <em>chase</em>, too small to matter</h2>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#tools">Tools</a> / Duely</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">tools · get paid, politely</span>
+    <h1>Duely</h1>
+    <div class="who"><span class="tile" style="--h:353" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 12.5V7L15 3.5H6v17h6"/><path d="M9 9h5M9 12.5h3"/><circle cx="17" cy="17.5" r="3.5"/><path d="M17 16v1.7l1.1.9"/></svg></span><div class="chips"><span class="chip live"><span class="dot"></span>Live</span><span class="chip">friendly → firm → final</span><span class="chip">hard legal guardrails</span><span class="chip">nothing unless it works</span></div></div>
+    <p class="tag" style="margin-top:22px">Overdue invoices, chased without the awkward part: three dated reminders, friendly to firm, each checked against hard guardrails and sent from your own mail app. On the real thing, you pay nothing unless your client does.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch Duely</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">The reminder desk: log an invoice, get the sequence, send it yourself</p>
   </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/duely.webp"><img src="assets/previews/duely.png" alt="Duely, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-  <div class="frag">
-    <span class="tag">who this is for</span>
-    <p>Any business that invoices a client directly ends up sitting on unpaid invoices nobody wants to chase — <b>lawn care, house cleaning, handyman work, contracting, pet grooming, photography, freelancing, tutoring.</b> Real collection agencies won't touch anything under a few thousand dollars. Existing invoice-chasing tools charge a subscription whether or not it works, which kills adoption for someone owed one $150 lawn job.</p>
-  </div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">the problem</span>
+  <h2>Awkward to chase, <em>too small to matter</em></h2>
+  <div class="lede prose"><p>Anyone who invoices a client directly ends up sitting on unpaid invoices nobody wants to chase: lawn care, house cleaning, handyman work, pet grooming, photography, freelancing, tutoring. Collection agencies won't touch anything under a few thousand dollars, and invoice-chasing tools charge a subscription whether or not they work, which is a hard sell to someone owed one $150 lawn job. <b>Duely</b> flips it: no cost to try it, and a fee only at the moment the client actually pays.</p></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">the flip</span>
-    <p>Duely charges <b>nothing upfront</b> — a platform fee is taken automatically, only at the moment the client actually pays, split off the payment itself via Stripe Connect. No cost to try it, no trust problem, no invoice for using the invoice tool.</p>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">how it runs</span>
+  <h2 class="reveal">Inside Duely</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>One overdue invoice</h3><p>Who, how much, what for, when it was due, and a payment link if you have one. It stays on your device.</p></article><article class="card reveal"><span class="n">02</span><h3>Three reminders, a week apart</h3><p>A friendly nudge, a firm follow-up, and a calm last reminder with a date to close it out by. Each one is editable and dated, and the one that's due today is marked.</p></article><article class="card reveal"><span class="n">03</span><h3>Hard guardrails</h3><p>Every draft is checked for legal threats, collections language, credit reporting, added fees and ultimatums. A draft that trips one can't be opened in your mail app until it's fixed. An optional AI polish is held to the same rules, and has to keep the invoice number and amount.</p></article><article class="card reveal"><span class="n">04</span><h3>You send it, in your name</h3><p>Each reminder opens in your own mail app, ready to send. Mark it sent, mark the invoice paid, and see the contingency split the real product takes.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">legal positioning</span><div class="prose"><p>Built deliberately as <b>invoice-reminder software</b>, not a collection agency. Collectors need state licences and fall under the FDCPA. Every email goes in the freelancer's own name, about their own invoice, and never mentions legal action or a "collections department". The guardrails enforce that in code, not just in a style guide.</p></div></article><article class="card reveal"><span class="n">the full product</span><div class="prose"><p>The prototype adds Stripe Connect Express accounts, Payment Links that split the fee off the payment itself, Claude drafting under the same guardrails, Resend for delivery and passwordless magic-link sign-in, on Next.js 14 with Postgres and Prisma.</p></div><div class=stack><span>Next.js 14</span><span>Prisma / Postgres</span><span>Stripe Connect</span><span>Claude API</span><span>Resend</span></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>The reminder desk on this page works: drafts, guardrails, scheduling, mail-app hand-off and the fee math. Payments aren't wired up here (the fee shown is an example of how the split would work), and nothing is sent or charged by this page. The full product is a private prototype, not yet public. <em>This isn't legal advice: if a client disputes the work, talk to them, not to a template.</em></p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">how it runs</span>
-    <ul>
-      <li><b>01</b> — Business owner connects a free Stripe Express account. Duely never touches the money directly.</li>
-      <li><b>02</b> — They describe one overdue invoice; Claude drafts a three-email escalating reminder sequence — friendly to firm, never threatening legal action or posing as a collector.</li>
-      <li><b>03</b> — The freelancer reviews and sends each email themselves, on their own timeline.</li>
-      <li><b>04</b> — When the client pays through the embedded Stripe Payment Link, the split happens automatically — their cut lands in their account, Duely's fee is taken in the same instant.</li>
-    </ul>
-  </div>
-
-  <div class="frag">
-    <span class="tag">built on</span>
-    <p>Next.js 14 App Router, Postgres via Prisma, passwordless magic-link auth, Stripe Connect (Express) for payouts and fee-split Payment Links, Claude for drafting the reminder sequence under hard-coded legal guardrails, Resend for delivery.</p>
-    <div class="stack-row">
-      <span>Next.js 14</span><span>Prisma / Postgres</span><span>Stripe Connect</span><span>Claude API</span><span>Resend</span>
-    </div>
-  </div>
-
-  <div class="frag">
-    <span class="tag">legal positioning</span>
-    <p>Deliberately built as <em>invoice-reminder software</em>, not a collection agency — collectors require state licensing and are bound by the FDCPA. Every email sends in the freelancer's own name, about their own invoice, and never mentions legal action or a "collections department."</p>
-  </div>
-
-  <div class="frag">
-    <span class="tag">status</span>
-    <p>A working prototype, not yet public. The fastest path from here is a real Stripe Connect account plus a verified sending domain, then posting it — not as an ad, but as "I built this because I was owed money and didn't want to be awkward about it" — into freelance and local-service-business communities. The pitch does the converting on its own: <em>pay nothing unless it works.</em></p>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>A monetization concept, not a live product. Kept here as a record of the idea.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Pay nothing unless it works. The pitch does the converting on its own.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in tools</span>
+  <div class="related reveal"><a class="rel" href="ballast.html"><span class="tile md" style="--h:116" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.8" r="2.6"/></svg></span><span><b>Ballast</b><small>Every bill on a real calendar, ninety days projected forward, and one honest number:…</small></span></a><a class="rel" href="sleep-compression.html"><span class="tile md" style="--h:205" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4a8.5 8.5 0 1 0 6.5 12.4A7 7 0 0 1 13.5 4z"/><path d="M16 3.5h3.5L16 7.5h3.5"/></svg></span><span><b>Sleep Compression</b><small>A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know…</small></span></a><a class="rel" href="cryptovault.html"><span class="tile md" style="--h:163" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.5v2.5"/></svg></span><span><b>CryptoVault</b><small>Encryption you can read to the bottom of: RSA-4096 and AES-256-GCM in one HTML file, with…</small></span></a><a class="rel" href="worm-eater.html"><span class="tile md" style="--h:26" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5V5h3M17 5h3v2.5M20 16.5V19h-3M7 19H4v-2.5"/><path d="M7.5 8.5v7M10 8.5v7M13 8.5v7M15.5 8.5v7M17 8.5v7"/></svg></span><span><b>Worm Eater</b><small>An ingredient scanner for food, cosmetics and personal care that says &quot;I don&#x27;t know&quot;…</small></span></a><a class="rel" href="doccrawler.html"><span class="tile md" style="--h:52" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 10V8l-4.5-4.5H6.5v17h6"/><path d="M13 3.5V8h4.5M9 9.5h2M9 13h3"/><circle cx="16" cy="15.5" r="3.3"/><path d="M18.4 17.9 21 20.5"/></svg></span><span><b>DocCrawler</b><small>A local document library for the phone — scan a folder, OCR and index everything into…</small></span></a><a class="rel" href="omnilogos.html"><span class="tile md" style="--h:58" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z"/><path d="M12 6.5v13"/></svg></span><span><b>Omnilogos</b><small>933,573 verses across thirty translations, wired into one navigable graph — the most…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="Duely, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>Duely, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open Duely"><div class="poster" style="background-image:url(assets/previews/duely.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open Duely</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "duely", "name": "Duely", "app": "duely-app.html", "h": 353}</script>
+<script src="assets/ui/shell.js?v=c22947ba" defer></script>
 </body>
 </html>
