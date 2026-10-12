@@ -1,163 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="The Monstrosity — build log 001 of a bolted-together homelab: three machines on a private line, ten drives under one Samba namespace, Docker behind a self-routing Traefik proxy, and a Cloudflare Tunnel as the only front door."/>
-<meta property="og:title" content="The Monstrosity"/>
-<meta property="og:description" content="A bolted-together, beautifully chaotic homelab — build log 001."/>
-<meta name="theme-color" content="#000000"/>
-<title>The Monstrosity</title>
-<link rel="icon" href="assets/icons/monstrosity.png">
-<link rel="apple-touch-icon" href="assets/icons/monstrosity.png">
-<meta property="og:image" content="https://mentifaber.org/assets/previews/monstrosity.png"/>
-<meta property="og:url" content="https://mentifaber.org/monstrosity.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000000; --paper-hi: #120f0a; --paper-shadow: rgba(200,169,110,.18);
-  --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050;
-  --rust: #b02a1a; --rust-hi: #d94030;
-  --contour: rgba(242,230,207,.14); --contour-soft: rgba(242,230,207,.07);
-  --accent: hsl(28 70% 62%);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; overflow-x: hidden; }
-.contours { position: fixed; inset: 0; z-index: 0; opacity: .55; pointer-events: none; }
-.contours svg { width: 100%; height: 100%; }
-.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-.container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: clamp(5rem, 10vh, 8rem) clamp(1.5rem, 12vw, 14vw); position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.45em;
-  color: var(--ink-faint); text-transform: uppercase; margin-bottom: clamp(1.8rem, 4vh, 3rem); }
-.name { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(3rem, 10vw, 7.5rem);
-  font-weight: 700; letter-spacing: -0.02em; line-height: 0.95; color: var(--ink); }
-.name span { color: var(--accent); }
-.tagline { margin-top: clamp(1.6rem, 3.5vh, 3rem); font-family: 'Newsreader', serif;
-  font-size: clamp(1.05rem, 2vw, 1.3rem); font-style: italic; color: var(--ink-soft); letter-spacing: 0.02em; max-width: 48ch; }
-.divider { margin: clamp(2.4rem, 5vh, 4rem) auto; width: clamp(44px, 6vw, 90px); height: 1px;
-  background: linear-gradient(to right, transparent, var(--accent), transparent); }
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; font-family: 'IBM Plex Mono', monospace;
-  font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-.status-pill .sw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-.launch-wrap { max-width: 720px; margin: 0 auto; padding: 0 clamp(1.5rem,8vw,6rem) 4vh; position: relative; z-index: 2; }
-.launch-btn { display: block; text-align: center; padding: 1.5rem 2rem; text-decoration: none;
-  border: 1px solid hsla(28,70%,62%,.35); background: linear-gradient(180deg, hsla(28,70%,62%,.08), hsla(28,70%,62%,.02));
-  position: relative; overflow: hidden; transition: border-color .3s ease, background .3s ease; }
-.launch-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 100% at 50% 0%, hsla(28,70%,62%,.16), transparent 70%);
-  opacity: 0; transition: opacity .3s ease; }
-.launch-btn:hover { border-color: var(--accent); }
-.launch-btn:hover::before { opacity: 1; }
-.launch-btn .lb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .3em; text-transform: uppercase;
-  color: var(--accent); position: relative; }
-.launch-btn .lb-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(1.4rem,3vw,1.9rem);
-  color: var(--ink); margin-top: .6rem; position: relative; }
-.launch-btn .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--ink-faint);
-  margin-top: .6rem; letter-spacing: .06em; position: relative; }
-.launch-cap { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
-
-.frag-wrap { position: relative; max-width: 720px; margin: 0 auto; padding: 6vh clamp(1.5rem,8vw,6rem) 10vh; z-index: 2; }
-.frag-head { text-align: center; margin-bottom: 5rem; }
-.frag-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .42em; color: var(--ink-faint); text-transform: uppercase; }
-.frag-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2rem,4.6vw,3rem);
-  color: var(--ink); margin-top: 1rem; letter-spacing: -.01em; }
-.frag-title em { color: var(--accent); font-style: italic; font-family: 'Newsreader', serif; }
-.frag { position: relative; padding: 2.2rem 0; border-top: 1px solid var(--contour); }
-.frag:last-child { border-bottom: 1px solid var(--contour); }
-.frag .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
-  color: var(--indigo-dim); display: block; margin-bottom: 1rem; }
-.frag p { font-family: 'Newsreader', serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink-soft); }
-.frag p + p { margin-top: .9rem; }
-.frag p b { color: var(--ink); font-weight: 600; }
-.frag p em { color: var(--rust); font-style: italic; }
-.frag ul { margin-top: .8rem; padding-left: 1.3rem; }
-.frag li { font-family: 'Newsreader', serif; font-size: 1.05rem; color: var(--ink-soft); line-height: 1.7; margin-bottom: .4rem; }
-.frag li b { color: var(--ink); font-weight: 600; }
-
-.stack-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.stack-row span { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .04em;
-  color: var(--ink-soft); border: 1px solid var(--contour); padding: .35rem .7rem; border-radius: 2px; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-faint); font-size: .95rem; max-width: 46ch; margin: 0 auto; }
-footer.mf-foot a { color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .3em; text-transform: uppercase; display: inline-block; margin-top: 2.5rem; transition: .3s; }
-footer.mf-foot a:hover { color: var(--rust); }
-
-.corner { position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: clamp(8px, 0.85vw, 10px);
-  letter-spacing: 0.4em; text-transform: uppercase; color: var(--ink-faint); z-index: 3; }
-.corner-tl { top: 5vh; left: 5vw; text-decoration: none; }
-.corner-tl:hover { color: var(--rust); }
-@media (max-width: 600px) { .container { padding: 4rem 1.8rem 4rem; min-height: 100svh; } .corner-tl { top: 3vh; left: 3vw; } }
-</style>
-<style>:root{--mf-accent:hsl(28 90% 68%);--mf-glow:hsl(28 95% 60% / .45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Monstrosity — a homelab built to be opened, understood and grown · Mentifaber</title>
+<meta name="description" content="A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="The Monstrosity — a homelab built to be opened, understood and grown · Mentifaber"><meta property="og:description" content="A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door."><meta property="og:image" content="https://mentifaber.org/assets/previews/monstrosity.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/v2/monstrosity.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/monstrosity-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/monstrosity-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="The Monstrosity"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/monstrosity.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/ui.css?v=810e172b">
+<style>:root{--h:28}</style><script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body data-mf-terrain=".62">
-<div class="grain"></div>
-<a href="index.html" class="corner corner-tl">← Atlas</a>
-
-<div class="container">
-  <p class="label">homelab · build log 001</p>
-  <span class="mf-logo" style="--h:28" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="10" width="16" height="5" rx="1.5"/><rect x="4" y="16" width="16" height="4.5" rx="1.5"/><path d="M7 6.5h.01M7 12.5h.01M7 18.2h.01M11 6.5h6M11 12.5h6"/></svg></span>
-  <h1 class="name">The <span>Monstrosity</span></h1>
-  <p class="tagline">A bolted-together, beautifully chaotic homelab. Three machines, ten drives, one private line — routed by a proxy that thinks for itself, fronted by a door with no holes punched in the firewall.</p>
-  <div class="divider"></div>
-  <span class="status-pill"><span class="sw"></span>pre-ignition — build log below</span>
-</div>
-
-<div class="mf-launch-wrap">
-  <a class="mf-launch" href="monstrosity-log.html" target="_blank" rel="noopener">
-    <span class="lb-eyebrow">// build log 001 · node fedora-01</span>
-    <span class="lb-title">Read the build log →</span>
-    <span class="lb-sub">Five phases · troubleshooting · ignition sequence</span>
-  </a>
-  <div class="mf-launch-cap"><span>status: pre-ignition</span><span>class: tinkerer’s utility</span></div>
-</div>
-
-<figure class="mf-shot"><picture><source type="image/webp" srcset="assets/previews/monstrosity.webp"><img src="assets/previews/monstrosity.png" alt="The Monstrosity — a look inside, on desktop and phone" width="1280" height="800" loading="lazy"></picture><figcaption>inside the app · desktop and phone</figcaption></figure>
-
-<section class="frag-wrap">
-  <div class="frag-head">
-    <p class="frag-label">why this exists</p>
-    <h2 class="frag-title">Opened, understood, <em>grown</em></h2>
+<body>
+<div class="mf-sky"><i></i></div>
+<header class="mf-bar"><a class="mf-brand" href="./" aria-label="Mentifaber home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="mfg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE29A"/><stop offset=".5" stop-color="#F0A63A"/><stop offset="1" stop-color="#FF5A36"/>
+    </linearGradient>
+    <radialGradient id="mfc" cx="32" cy="33" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4D6"/><stop offset=".45" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3.5 56.7 17.75v28.5L32 60.5 7.3 46.25v-28.5z" fill="#0B0A10" stroke="url(#mfg)" stroke-width="3.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="url(#mfg)" stroke-width="1.2" opacity=".38"/>
+  <circle cx="32" cy="34" r="11" fill="url(#mfc)"/>
+  <path d="M19.5 43V22.5L32 34.5 44.5 22.5V43" fill="none" stroke="url(#mfg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#FFE7B0"><circle cx="19.5" cy="43" r="2.7"/><circle cx="19.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="22.5" r="2.7"/><circle cx="44.5" cy="43" r="2.7"/></g>
+  <circle cx="32" cy="34.5" r="3.6" fill="#FFF6DE"/>
+</svg>
+<b>MENTIFABER</b></a><span class="mf-crumb"><a href="./#tools">Tools</a> / The Monstrosity</span><span class="grow"></span><button class="iconbtn" data-theme-toggle aria-label="Light or dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button class="btn sm" data-install hidden>Install</button><button class="btn sm pri" data-launch>Launch</button></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">tools · a homelab, opened up</span>
+    <h1 class="long">The Monstrosity</h1>
+    <div class="who"><span class="tile" style="--h:28" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="10" width="16" height="5" rx="1.5"/><rect x="4" y="16" width="16" height="4.5" rx="1.5"/><path d="M7 6.5h.01M7 12.5h.01M7 18.2h.01M11 6.5h6M11 12.5h6"/></svg></span><div class="chips"><span class="chip build"><span class="dot"></span>In the works</span><span class="chip">zero inbound ports</span><span class="chip">routes from labels</span><span class="chip">isolate the layer</span></div></div>
+    <p class="tag" style="margin-top:22px">A bolted-together, beautifully chaotic homelab: three machines on a private line, ten drives and three SSDs in one namespace, Traefik routing by itself, and a tunnel as the only door. Built to be opened, understood and grown.</p>
+    <div class="cta"><button class="btn pri" data-launch><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Launch The Monstrosity</button><button class="btn" data-install hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app</button><a class="btn ghost" href="#story">How it works</a></div>
+    <p class="sub">The console: the stack, a traced request, the troubleshooter, the ignition checklist, a starter stack</p>
   </div>
+  <figure class="device reveal"><picture><source type="image/webp" srcset="assets/previews/monstrosity.webp"><img src="assets/previews/monstrosity.png" alt="The Monstrosity, inside" width="1280" height="800" fetchpriority="high"></picture></figure>
+</div><a class="scrollcue" href="#story" aria-label="Scroll"><i></i>scroll</a></section>
 
-  <div class="frag">
-    <span class="tag">the idea</span>
-    <p>Not a rented cloud tier and not a black box you trust and forget — a stack built to be opened, understood, and grown. Storage is one organ among many. It's also where the rest of the atlas is meant to live: the log names <a class="mf-xref" href="weaver.html">Weaver</a> and <a class="mf-xref" href="muse.html">muse</a> among the first tenants.</p>
-  </div>
+<section class="block" id="story"><div class="wrap reveal">
+  <span class="kicker">why this exists</span>
+  <h2>Not a rented cloud tier, <em>not a black box</em></h2>
+  <div class="lede prose"><p>A stack you can open and understand. Storage is one organ among many, routed through a proxy that wires up new services by itself and fronted by a door with no holes punched in the firewall. It's also where the rest of the atlas is meant to live: Weaver and muse are among the first tenants. <b>The Monstrosity</b> console lays the whole thing out, layer by layer.</p></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">the plan</span>
-    <ul><li><b>01 · The private line</b> — a gigabit switch puts all three machines on one segment; machine-to-machine traffic never touches the open internet, and static leases keep anything from drifting on reboot.</li><li><b>02 · Fedora &amp; the source of truth</b> — the Fedora server anchors it; Samba pulls ten drives and three SSDs, scattered across boxes, into one shared namespace. Naming is decided before anything mounts.</li><li><b>03 · Docker, so nothing clashes</b> — every service in its own container: NextCloud first, then whatever Weaver and muse expose as a web UI.</li><li><b>04 · Traefik</b> — watches the Docker socket and routes new containers the moment their labels appear. No manual proxy edits, ever.</li><li><b>05 · Cloudflare Tunnel</b> — the only front door. No inbound ports on the home firewall, full stop; everything else stays LAN-bound.</li></ul>
-  </div>
+<section class="block"><div class="wrap">
+  <span class="kicker reveal">the plan, in five layers</span>
+  <h2 class="reveal">Inside The Monstrosity</h2>
+  <div class="feat"><article class="card reveal"><span class="n">01</span><h3>The private line</h3><p>A cheap gigabit switch puts all three machines on one segment. Machine-to-machine traffic never touches the open internet, and static leases keep anything from drifting on reboot.</p></article><article class="card reveal"><span class="n">02</span><h3>Fedora and the source of truth</h3><p>The Fedora server anchors it, and Samba pulls ten drives and three SSDs, scattered across the boxes, into one shared namespace. The naming is decided before anything mounts.</p></article><article class="card reveal"><span class="n">03</span><h3>Docker, then Traefik</h3><p>Every service in its own container. Traefik watches the Docker socket and routes a new container the moment its labels appear: no manual proxy edits, ever.</p></article><article class="card reveal"><span class="n">04</span><h3>Cloudflare Tunnel</h3><p>The only front door. cloudflared dials out from the master node, so no inbound port is ever opened on the home firewall. Everything that doesn't need outside reach stays on the LAN.</p></article></div>
+  
+  <div class="split" style="margin-top:16px"><article class="card reveal"><span class="n">the rule</span><div class="prose"><p><b>Isolate the layer before you debug it.</b> Drive, share, container, proxy, tunnel: each keeps its own logs. The console's troubleshooter walks them bottom up, with the real commands (<code>journalctl -k</code>, <code>testparm</code>, <code>docker logs</code>, a <code>curl</code> with a Host header, the tunnel's own log), and stops at the first layer that doesn't look right. It never guesses across layers.</p></div><div class=stack><span>Fedora</span><span>Samba</span><span>Docker Compose</span><span>Traefik</span><span>Cloudflare Tunnel</span><span>NextCloud</span></div></article><article class="card reveal"><span class="n">build log 001</span><div class="prose"><p>The original entry, with its five phases, the troubleshooting notes and the ignition sequence, is still the source of truth: <a href="monstrosity-log.html">read build log 001 →</a></p></div></article><article class="card scope reveal"><span class="n">honest scope</span><div class="prose"><p>Pre-ignition: this is the plan, the troubleshooting rules and a working starter stack, not a running cluster. The ignition checklist is still unticked, and the drive-labelling scheme is an open thread. Cloudflare sits in the middle of external traffic, a trade-off the log names out loud and leaves to be revisited. The console's checklist ticks are kept on your device only. <em>First node officially alive: not yet.</em></p></div></article></div>
+</div></section>
 
-  <div class="frag">
-    <span class="tag">the rule</span>
-    <p><b>Isolate the layer before you debug it.</b> Drive, share, container, proxy, tunnel — each keeps its own logs, and the log's troubleshooting section starts from <code>dmesg</code> and ends at <code>cloudflared</code> without ever guessing across layers.</p>
-    <div class="stack-row"><span>Fedora</span><span>Samba</span><span>Docker Compose</span><span>Traefik</span><span>Cloudflare Tunnel</span><span>NextCloud</span></div>
-  </div>
-
-  <div class="frag">
-    <span class="tag">honest scope</span>
-    <p>Pre-ignition: this is the plan and the troubleshooting rules, not a running cluster — the ignition checklist is still unticked, and the drive-labelling scheme is an open thread. <em>Cloudflare sits in the middle of external traffic; the log names that trade-off out loud and leaves it to be revisited.</em></p>
-  </div>
-</section>
-
-<footer class="mf-foot">
-  <p>First node officially alive — not yet. The log stays open.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-<script src="assets/js/mf-terrain.js" defer></script>
-<script src="assets/mf.js" defer></script>
+<section class="block"><div class="wrap">
+  <p class="closing reveal" style="font:400 clamp(22px,3vw,32px)/1.4 var(--display);color:var(--ink-2);max-width:28em">Not a rented cloud tier. Not a black box you trust and forget.</p>
+  <span class="kicker reveal" style="margin-top:46px">more in tools</span>
+  <div class="related reveal"><a class="rel" href="ballast.html"><span class="tile md" style="--h:116" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.8" r="2.6"/></svg></span><span><b>Ballast</b><small>Every bill on a real calendar, ninety days projected forward, and one honest number:…</small></span></a><a class="rel" href="sleep-compression.html"><span class="tile md" style="--h:205" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4a8.5 8.5 0 1 0 6.5 12.4A7 7 0 0 1 13.5 4z"/><path d="M16 3.5h3.5L16 7.5h3.5"/></svg></span><span><b>Sleep Compression</b><small>A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know…</small></span></a><a class="rel" href="cryptovault.html"><span class="tile md" style="--h:163" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.5v2.5"/></svg></span><span><b>CryptoVault</b><small>Encryption you can read to the bottom of: RSA-4096 and AES-256-GCM in one HTML file, with…</small></span></a><a class="rel" href="worm-eater.html"><span class="tile md" style="--h:26" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5V5h3M17 5h3v2.5M20 16.5V19h-3M7 19H4v-2.5"/><path d="M7.5 8.5v7M10 8.5v7M13 8.5v7M15.5 8.5v7M17 8.5v7"/></svg></span><span><b>Worm Eater</b><small>An ingredient scanner for food, cosmetics and personal care that says &quot;I don&#x27;t know&quot;…</small></span></a><a class="rel" href="doccrawler.html"><span class="tile md" style="--h:52" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 10V8l-4.5-4.5H6.5v17h6"/><path d="M13 3.5V8h4.5M9 9.5h2M9 13h3"/><circle cx="16" cy="15.5" r="3.3"/><path d="M18.4 17.9 21 20.5"/></svg></span><span><b>DocCrawler</b><small>A local document library for the phone — scan a folder, OCR and index everything into…</small></span></a><a class="rel" href="omnilogos.html"><span class="tile md" style="--h:58" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z"/><path d="M12 6.5v13"/></svg></span><span><b>Omnilogos</b><small>933,573 verses across thirty translations, wired into one navigable graph — the most…</small></span></a></div>
+  <div class="foot" style="border:0;padding-top:46px"><div class="row"><a href="./">← All of Mentifaber</a><span>Scroll on: the app opens right here.</span></div></div>
+</div></section>
+<section class="morph" id="live" aria-label="The Monstrosity, live"><div class="stage">
+  <div class="intro"><span class="kicker">step inside</span><h2>The Monstrosity, live</h2><p>keep scrolling · it opens right here</p></div>
+  <div class="glow"></div>
+  <div class="frame" role="button" tabindex="0" aria-label="Open The Monstrosity"><div class="poster" style="background-image:url(assets/previews/monstrosity.webp)"></div><div class="spin"></div></div>
+  <button class="btn pri enter" data-launch>Open The Monstrosity</button>
+</div></section>
+</main>
+<script type="application/json" id="mf-app">{"id": "monstrosity", "name": "The Monstrosity", "app": "monstrosity-app.html", "h": 28}</script>
+<script src="assets/ui/shell.js?v=c22947ba" defer></script>
 </body>
 </html>

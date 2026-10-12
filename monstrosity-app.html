@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Monstrosity · the console</title>
+<meta name="description" content="The homelab, opened up: the layered stack, a request traced hop by hop, a layer-by-layer troubleshooter with the real commands, the ignition checklist, and a starter compose file for your own domain.">
+<meta name="theme-color" content="#0b0a08">
+<link rel="manifest" href="assets/manifests/monstrosity.webmanifest">
+<link rel="icon" href="assets/icons/v2/monstrosity.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/monstrosity-180.png">
+<link rel="stylesheet" href="assets/mon/mn.css">
+</head>
+<body>
+<header class="top"><b class="logo">THE <span>MONSTROSITY</span></b><span class="pill" id="status">pre-ignition</span><span class="grow"></span><span class="node">node <b>fedora-01</b></span></header>
+<nav id="tabs" aria-label="Sections"><button data-t="stack" class="on">Stack</button><button data-t="trace">Trace</button><button data-t="iso">Isolate</button><button data-t="ign">Ignition</button><button data-t="gen">Compose</button></nav>
+<main>
+  <section id="t-stack"><div class="split"><div class="stack" id="stack"></div><aside class="info" id="info"></aside></div></section>
+  <section id="t-trace" hidden><div class="split"><div class="stack" id="stack2"></div><aside class="info"><div class="seg" id="routes"><button data-r="out" class="on">From outside</button><button data-r="lan">From the LAN</button></div><ol class="hops" id="hops"></ol><div class="row"><button class="btn pri" id="play">Trace it</button><button class="btn" id="stepb">Step</button></div></aside></div></section>
+  <section id="t-iso" hidden><div class="iso"><p class="lede">The one rule: <b>isolate the layer before you debug it.</b> Drive, share, container, proxy, tunnel: each keeps its own logs. Pick what you're seeing; it checks from the bottom up and stops at the layer that's wrong.</p><div class="symptoms" id="symptoms"></div><div id="walk"></div></div></section>
+  <section id="t-ign" hidden><div class="ign"><div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="bg"/><circle cx="60" cy="60" r="52" class="fg" id="ringFg"/></svg><b id="ringN">0/8</b><small id="ringL">pre-ignition</small></div><ol class="checks" id="checks"></ol><p class="note">Ticks are kept on this device only. The log stays open until the last one.</p></div></section>
+  <section id="t-gen" hidden><div class="gen">
+    <p class="lede">A starting stack in the Monstrosity's shape: Traefik watching Docker, NextCloud as the first tenant, and a Cloudflare Tunnel as the only door. Fill in your domain and where the shared pool is mounted.</p>
+    <div class="fields"><label>Domain<input id="dom" value="example.com" autocomplete="off" spellcheck="false"></label><label>NextCloud subdomain<input id="sub" value="cloud" autocomplete="off" spellcheck="false"></label><label>Pool mount on fedora-01<input id="pool" value="/srv/pool" autocomplete="off" spellcheck="false"></label><label>Internal LAN name<input id="lan" value="lan" autocomplete="off" spellcheck="false"></label></div>
+    <div class="files"><div class="file"><div class="fh"><b>docker-compose.yml</b><button class="btn sm" data-copy="yml">Copy</button></div><pre id="yml"></pre></div><div class="file"><div class="fh"><b>.env</b><button class="btn sm" data-copy="env">Copy</button></div><pre id="env"></pre></div><div class="file"><div class="fh"><b>then, in Cloudflare</b></div><pre id="cf"></pre></div></div>
+  </div></section>
+</main>
+<script src="assets/mon/mn.js"></script>
+</body>
+</html>

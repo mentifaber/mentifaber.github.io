@@ -1,0 +1,36 @@
+{
+ "kicker": "tools · a homelab, opened up",
+ "tagline": "A bolted-together, beautifully chaotic homelab: three machines on a private line, ten drives and three SSDs in one namespace, Traefik routing by itself, and a tunnel as the only door. Built to be opened, understood and grown.",
+ "caps": [
+  "zero inbound ports",
+  "routes from labels",
+  "isolate the layer"
+ ],
+ "launchSub": "The console: the stack, a traced request, the troubleshooter, the ignition checklist, a starter stack",
+ "titleTail": "a homelab built to be opened, understood and grown",
+ "ledeLabel": "why this exists",
+ "story": {
+  "label": "why this exists",
+  "title": "Not a rented cloud tier, <em>not a black box</em>"
+ },
+ "lede": "<p>A stack you can open and understand. Storage is one organ among many, routed through a proxy that wires up new services by itself and fronted by a door with no holes punched in the firewall. It's also where the rest of the atlas is meant to live: Weaver and muse are among the first tenants. <b>The Monstrosity</b> console lays the whole thing out, layer by layer.</p>",
+ "featuresLabel": "the plan, in five layers",
+ "features": [
+  {"t": "The private line", "d": "a cheap gigabit switch puts all three machines on one segment. Machine-to-machine traffic never touches the open internet, and static leases keep anything from drifting on reboot."},
+  {"t": "Fedora and the source of truth", "d": "the Fedora server anchors it, and Samba pulls ten drives and three SSDs, scattered across the boxes, into one shared namespace. The naming is decided before anything mounts."},
+  {"t": "Docker, then Traefik", "d": "every service in its own container. Traefik watches the Docker socket and routes a new container the moment its labels appear: no manual proxy edits, ever."},
+  {"t": "Cloudflare Tunnel", "d": "the only front door. cloudflared dials out from the master node, so no inbound port is ever opened on the home firewall. Everything that doesn't need outside reach stays on the LAN."}
+ ],
+ "cards": [
+  {"n": "the rule", "html": "<p><b>Isolate the layer before you debug it.</b> Drive, share, container, proxy, tunnel: each keeps its own logs. The console's troubleshooter walks them bottom up, with the real commands (<code>journalctl -k</code>, <code>testparm</code>, <code>docker logs</code>, a <code>curl</code> with a Host header, the tunnel's own log), and stops at the first layer that doesn't look right. It never guesses across layers.</p>", "stack": ["Fedora", "Samba", "Docker Compose", "Traefik", "Cloudflare Tunnel", "NextCloud"]},
+  {"n": "build log 001", "html": "<p>The original entry, with its five phases, the troubleshooting notes and the ignition sequence, is still the source of truth: <a href=\"monstrosity-log.html\">read build log 001 →</a></p>"}
+ ],
+ "scope": "<p>Pre-ignition: this is the plan, the troubleshooting rules and a working starter stack, not a running cluster. The ignition checklist is still unticked, and the drive-labelling scheme is an open thread. Cloudflare sits in the middle of external traffic, a trade-off the log names out loud and leaves to be revisited. The console's checklist ticks are kept on your device only. <em>First node officially alive: not yet.</em></p>",
+ "closing": "Not a rented cloud tier. Not a black box you trust and forget.",
+ "manifest": {
+  "id": "/monstrosity-log.html",
+  "short_name": "Monstrosity",
+  "background_color": "#0b0a08",
+  "theme_color": "#0b0a08"
+ }
+}
