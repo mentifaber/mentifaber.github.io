@@ -8,7 +8,7 @@ import { DurableObject } from "cloudflare:workers";
 import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
-import { Genesis, genesisTables } from "./hive-genesis.js";
+import { Genesis, genesisTables, asksSystems } from "./hive-genesis.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -151,7 +151,7 @@ export class Hive extends DurableObject {
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
-      if (owner && (await Mind.state(this)).on) Mind.log(this, "project", brief);
+      if (owner && b.by !== "genesis" && (await Mind.state(this)).on) Mind.log(this, "project", brief); // Genesis's own missions aren't his activity
       const running = q.exec("SELECT COUNT(*) c FROM proj WHERE status NOT IN ('done','stopped','failed')").one().c;
       if (running >= (owner ? 6 : 4)) return J({ error: "the hive is busy with " + running + " projects; try again in a few minutes" }, 429);
       if (!owner) { // public: everyone gets a go, within what the free allowance can carry
@@ -558,6 +558,8 @@ export class Hive extends DurableObject {
     }
     // their projects as the site lists them, so audits and status questions start from facts
     if (owner && asksAboutWork(last.text)) try { const st = siteText(await siteIndex(this, new URL(req.url).origin)); if (st) { notes.push(st); tools.push("read your site's project index"); } } catch (e) {}
+    // "test the systems": a real check, so the answer reports what actually happened instead of inventing a test run
+    if (owner && asksSystems(last.text)) try { const hc = await Genesis.health(this); notes.push(hc.text); tools.push("ran a system check: " + (hc.ok ? "all " + hc.checks.length + " passed" : hc.checks.filter((c) => !c.ok).length + " of " + hc.checks.length + " need attention")); } catch (e) { notes.push("(the system check itself failed: " + e.message + ")"); }
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
@@ -574,7 +576,7 @@ export class Hive extends DurableObject {
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
     const system = (owner ? "You are " + gName + ", the mind that lives in Hive on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Hive, the assistant of Hive on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
-      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
+      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." + (local ? "" : " Now: " + now + ".") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +

@@ -15,7 +15,7 @@ const applyTheme = () => { document.documentElement.dataset.theme = LS.get("them
 applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") === "light" ? "dark" : "light"; LS.set("theme", t); applyTheme(); toast(t === "light" ? "Daylight mode" : "Night mode"); };
 
 // ── views ──
-let owner = false, gname = ""; // gname: Genesis, the mind the owner talks to (visitors talk to plain Hive)
+let owner = false, gname = "", busyAt = 0; // gname: Genesis, the mind the owner talks to (visitors talk to plain Hive)
 function route() {
   const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0];
   const view = ["studio", "swarm", "keys", "mind"].includes(v) ? v : "studio";
@@ -194,7 +194,7 @@ $("draw").onclick = () => { setTog("draw", $("draw").getAttribute("aria-pressed"
 const on = (id) => $(id).getAttribute("aria-pressed") === "true";
 ["web", "council", "draw"].forEach((id) => $(id).addEventListener("click", () => setTimeout(tele)));
 let busy = null; // AbortController while a reply is coming
-$("sendb").onclick = () => (busy ? busy.abort() : send());
+$("sendb").onclick = () => (busy ? Date.now() - busyAt > 1500 && busy.abort() : send()); // a quick second tap on send isn't a stop
 
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
@@ -222,7 +222,7 @@ function send(text, opts) {
 }
 async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
-  chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><rect x='7' y='7' width='10' height='10' rx='2' fill='currentColor'/></svg>";
+  chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><rect x='7' y='7' width='10' height='10' rx='2' fill='currentColor'/></svg>";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
   const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
     cid: chat.id, messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
@@ -595,13 +595,14 @@ const GenV = {
     const j = await api("/genesis"); if (j.error) return; GenV.j = j;
     const s = j.self, st = j.stats || {}, ago = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
     const days = Math.max(1, Math.round((Date.now() - s.born) / 864e5)), name = esc(s.name);
-    $("g-name").textContent = s.name.toUpperCase(); gname = s.name;
+    $("g-name").textContent = s.name.toUpperCase(); gname = s.name; $("g-auto").checked = !!s.auto;
     $("g-sub").textContent = "named by " + s.creator + " · " + new Date(s.born).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) + " · " + (s.reflected ? "last reflected " + ago(s.reflected) + (s.model ? " · " + s.model.split("|").pop().split("/").pop() : "") : "hasn't reflected yet") + (j.due ? " · ready to reflect" : "");
     $("g-facts").innerHTML = [["DAYS ALIVE", days], ["CONVERSATIONS", st.turns || 0], ["REMEMBERED", st.remembered || 0], ["👍 · 👎", (st.up || 0) + " · " + (st.down || 0)], ["LESSONS", st.lessons || 0], ["REFLECTIONS", st.reflections || 0], ["IDEAS", st.ideas || 0]].map(([a, b]) => "<div>" + a + "<b>" + esc(b) + "</b></div>").join("");
     $("g-lessons").innerHTML = (j.lessons || []).map((l) => "<div class='mi lesson'><p><small>" + (l.src === "anders" ? "<b>" + esc(s.creator) + "</b>" : l.src === "reflection" ? "learned on its own" : esc(l.src)) + " · " + ago(l.ts) + "</small>" + esc(l.text) + "</p><button data-les='" + l.id + "' title='Retire this lesson'>✕</button></div>").join("") || "<p class='dim sm'>No lessons yet.</p>";
     $("g-retired").innerHTML = (j.retired || []).map((l) => "<div class='mi'><p><small>retired " + ago(l.off_ts) + (l.why ? " · " + esc(l.why) : "") + "</small>" + esc(l.text) + "</p><button data-res='" + l.id + "' title='Bring it back'>↺</button></div>").join("") || "<p class='dim sm'>None.</p>";
     $("g-retd").classList.toggle("hidden", !(j.retired || []).length);
-    $("g-ideas").innerHTML = (j.ideas || []).map((i) => "<div class='mi'><p><small>" + esc(i.status === "building" ? "the swarm is on it" : i.status) + " · " + ago(i.ts) + "</small><b>" + esc(i.title) + "</b><br>" + esc(i.detail) + "</p><div class='ib'>" + (i.status === "building" && i.pid ? "<button data-iopen='" + esc(i.pid) + "'>Open</button>" : "<button data-ib='" + i.id + "' title='Hand it to the Swarm to build'>Build</button>") + "<button data-idx='" + i.id + "' title='Not now'>✕</button></div></div>").join("") || "<p class='dim sm'>No ideas yet. " + name + " proposes them when it reflects.</p>";
+    const st8 = (i) => i.status === "building" ? "the swarm is on it (" + (i.by_ === "genesis" ? "started by " + s.name : "started by you") + (i.ps ? " · " + i.ps : "") + ")" : i.status === "built" ? "built: the result is waiting for you" : i.status;
+    $("g-ideas").innerHTML = (j.ideas || []).map((i) => "<div class='mi'><p><small>" + esc(st8(i)) + " · " + ago(i.ts) + "</small><b>" + esc(i.title) + "</b><br>" + esc(i.detail) + "</p><div class='ib'>" + ((i.status === "building" || i.status === "built") && i.pid ? "<button data-iopen='" + esc(i.pid) + "'>" + (i.status === "built" ? "Result" : "Open") + "</button>" : "<button data-ib='" + i.id + "' title='Hand it to the Swarm to build'>Build</button>") + "<button data-idx='" + i.id + "' title='Not now'>✕</button></div></div>").join("") || "<p class='dim sm'>No ideas yet. " + name + " proposes them when it reflects.</p>";
     $("g-journal").innerHTML = (j.journal || []).map((e) => "<div class='je " + esc(e.kind) + "'><small>" + esc(e.kind === "milestone" ? "milestone" : "reflection") + " · " + new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + (e.model ? " · " + esc(String(e.model).split("|").pop().split("/").pop()) : "") + "</small><p>" + esc(e.text) + "</p></div>").join("") || "<p class='dim sm'>Empty.</p>";
   },
   async reflect() {
@@ -612,6 +613,13 @@ const GenV = {
 };
 if ($("genp")) {
 $("g-reflect").onclick = () => GenV.reflect();
+$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }); if (j.error) return toast(j.error); toast(on ? gname + " can start one Swarm mission a day from its own ideas" : gname + "'s ideas wait for you", 3500); GenV.load(); };
+$("g-check").onclick = async () => {
+  const b = $("g-check"), box = $("g-health"); b.disabled = true; b.textContent = "Checking…";
+  const j = await api("/genesis/health").catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Check systems";
+  if (j.error) return toast(j.error, 5000); box.classList.remove("hidden");
+  box.innerHTML = j.checks.map((c) => "<div class='" + (c.ok ? "ok" : "no") + "'><b>" + (c.ok ? "✓" : "✗") + "</b><span>" + esc(c.name) + "<small>" + esc(c.detail || "") + " · " + c.ms + " ms</small></span></div>").join("");
+  toast(j.ok ? "All " + j.checks.length + " checks passed" : j.checks.filter((c) => !c.ok).length + " need attention", 3000); };
 $("g-add").onclick = async () => { const t = $("g-new").value.trim(); if (!t) return; const j = await api("/genesis/teach", { text: t }); if (j.error) return toast(j.error, 5000); $("g-new").value = ""; toast(gname + " learned it"); GenV.load(); };
 $("g-new").onkeydown = (e) => { if (e.key === "Enter") $("g-add").click(); };
 $("genp").closest(".pad").addEventListener("click", async (e) => {
