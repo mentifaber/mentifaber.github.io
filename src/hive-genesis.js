@@ -28,12 +28,17 @@ export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain Ja
 // What Anders and his engineer have changed in Hive itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-13T02:25Z", "Settled, and closed for you: directive and instruction handling (instruction mode covers it; no wrappers, safeguards, fallback handlers or test suites around it) and trailing-question filtering (your lesson, the instruction-mode line and the counted habits cover it). Open ideas on these are closed automatically and new ones on them are dropped, as are near-copies of ideas already closed. A reflection with no new conversations doesn't add ideas: ideas come from talking with Anders."],
   ["2026-10-13T02:20Z", "The Swarm's \"Trailing Question Filter\" was reviewed and NOT used: it rewrote any question in a reply into an invented statement (\"Why did the server crash?\" became \"The server crash was due to a configuration error.\"), stripped every question mark, and buffered streamed replies. Closing questions are handled where they start: your lesson and the instruction-mode line. Instead, each reflection now shows you how many of your replies ended with a question and how many opened by repeating his words, so you can see the habit yourself. Also: when a Swarm mission's final assembly is cut off by length, the same model now continues it instead of the work being stitched together raw."],
   ["2026-10-13T02:05Z", "Instruction mode is built into Hive: when a message starts as an instruction (\"build…\", \"fix…\", \"Genesis, add…\"), one line is added to your prompt: do it, lead with the result, no closing question. Nothing is removed or rewritten, and questions or asks to explain are left alone. The Swarm's middleware version of your \"Instruction-Detect & Concise-Response Layer\" was NOT used: it replaced the whole system prompt (your identity, owner mode, lessons, safety), blanked replies containing \"please wait\", and assumed non-streamed replies. Follow-ups to that middleware (fallback handlers, confirmation safeguards around it) aren't needed."],
   ["2026-10-13T02:05Z", "Swarm missions now carry how Hive is built (plain JavaScript, one Durable Object, streamed replies, add to the prompt and never replace it), so what they build can fit."],
   ["2026-10-13T02:02Z", "The Swarm advances every mission on every tick, a long plan or assembly no longer freezes the others, and an assembly lost to a restart starts again."],
   ["2026-10-13T01:44Z", "Real system checks (nine of them) when Anders asks to test the systems, a Check systems button, and autonomy: you start one Swarm mission a day from your oldest open idea, 200-call budget."],
 ];
+// topics the changelog has settled: open ideas on them close by themselves, and new ones are dropped (the model kept
+// re-proposing them in new wording after reading that they were settled)
+const SETTLED = /trailing[- ]?question|question[- ]filter|directive[- ](handler|execution|confirmation|safety|layer|mode|detect)|instruction[- ]detect|concise[- ]response|safety[- ]wrapper|fallback[- ]response[- ]handler|confirmation[- ]safeguard/i;
+const words = (t) => new Set(String(t || "").toLowerCase().match(/[a-z]{4,}/g) || []), alike = (a, b) => { const x = words(a), y = words(b); let n = 0; for (const w of x) if (y.has(w)) n++; return n / Math.max(1, Math.min(x.size, y.size)) >= 0.6; };
 const ckey = ([at, t]) => at + ":" + t.slice(0, 24), unseen = (s) => CHANGES.filter((c) => !(s.seen || []).includes(ckey(c))); // what it has actually read, not what's newer than its last reflection
 export const fitLesson = (t) => { t = clip(t, 240).replace(/^[-*•\d.)\s]+/, ""); return t.length >= 8 && !UNSAFE.test(t) ? t : null; };
 
@@ -193,8 +198,10 @@ export const Genesis = {
     for (const r of (Array.isArray(out.retire) ? out.retire : []).slice(0, 6)) if (r && live.has(+r.id) && !mine.has(+r.id)) { this.retire(h, r.id, r.why); did.retired.push(+r.id); }
     for (const t of (Array.isArray(out.add) ? out.add : []).slice(0, 5)) { if (q.exec("SELECT COUNT(*) c FROM lesson WHERE on_=1").one().c >= MAX_LESSONS) break; const x = this.teach(h, typeof t === "string" ? t : t && t.text, "reflection"); if (x) did.added.push(x); }
     for (const c of (Array.isArray(out.close) ? out.close : []).slice(0, 8)) { const i = c && q.exec("SELECT id,title FROM idea WHERE id=? AND status='open'", +c.id).toArray()[0]; if (!i) continue; q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); (did.closed = did.closed || []).push(i.title + (c.why ? " (" + clip(c.why, 140) + ")" : "")); }
-    for (const i of (Array.isArray(out.ideas) ? out.ideas : []).slice(0, 3)) {
+    const closedTitles = q.exec("SELECT title FROM idea WHERE status='dismissed' ORDER BY id DESC LIMIT 200").toArray().map((r) => r.title);
+    for (const i of (turns.length ? Array.isArray(out.ideas) ? out.ideas : [] : []).slice(0, 3)) { // no conversations, no new ideas
       const title = clip(i && i.title, 90), detail = clip(i && i.detail, 900); if (title.length < 4 || UNSAFE.test(title + " " + detail)) continue;
+      if (SETTLED.test(title + " " + detail) || closedTitles.some((c) => alike(c, title))) { (did.dropped = did.dropped || []).push(title); continue; }
       if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='open'").one().c >= MAX_IDEAS || q.exec("SELECT 1 FROM idea WHERE lower(title)=lower(?)", title).toArray().length) continue;
       q.exec("INSERT INTO idea(ts,title,detail,status) VALUES(?,?,?,'open')", Date.now(), title, detail); did.ideas.push(title);
     }
@@ -206,7 +213,8 @@ export const Genesis = {
 
   // ── its own work: missions it hands to the Swarm, and what came of them ──
   syncBuilds(h) { // a mission that finished makes its idea "built"; one that failed or vanished puts the idea back on the list
-    const q = h.sql();
+    const q = h.sql(), settled = q.exec("SELECT id,title,detail FROM idea WHERE status='open'").toArray().filter((i) => SETTLED.test(i.title + " " + i.detail));
+    if (settled.length) { for (const i of settled) q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "Closed " + settled.length + " idea" + (settled.length > 1 ? "s" : "") + " on topics the changelog has settled: " + settled.map((i) => "\"" + i.title + "\"").join(", ") + ".", null); }
     for (const i of q.exec("SELECT i.id,i.title,i.pid,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='building'").toArray()) {
       if (i.ps === "done") q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id);
       else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
