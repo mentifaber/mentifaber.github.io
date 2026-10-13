@@ -159,9 +159,12 @@
         <div id="m-open" class="hidden">
           <div class="card hud mindp genp" id="genp">
             <div class="ah"><i class="led ok" id="g-led"></i><h3><span id="g-name">GENESIS</span><small id="g-sub">—</small></h3>
+              <label class="mtg" title="Let Genesis start one Swarm mission a day from its own ideas"><span>Autonomy</span><input type="checkbox" id="g-auto" class="tg"></label>
+              <button class="ghost" id="g-check" title="Run a real check of every part of the system">Check systems</button>
               <button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button></div>
             <div class="facts" id="g-facts"></div>
-            <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once; ideas wait for you to hand them to the Swarm. It can't learn its way around the safety rules.</p>
+            <div class="health hidden" id="g-health"></div>
+            <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it starts one mission a day itself (200-call budget) and judges the result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
           </div>
           <div class="card hud mt"><h3>LESSONS</h3>
             <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="ghost" id="g-add">Teach</button></div>

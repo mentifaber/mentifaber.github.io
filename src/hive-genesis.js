@@ -5,15 +5,18 @@
 //   lesson   : how Genesis has learned to behave. His own corrections, and what its reflections conclude. They ride in
 //              every owner chat, so learning changes behaviour at once, with no code change and nothing to deploy
 //   journal  : what Genesis writes about itself after each reflection, plus milestones
-//   idea     : abilities it proposes for itself; one tap hands an idea to the Swarm to build. Code still needs Anders's OK
+//   idea     : abilities it proposes for itself. Anders hands one to the Swarm with a tap, or (autonomy on) Genesis starts
+//              one mission a day itself, on a call budget. What the Swarm builds is a result for Anders to review: nothing
+//              deploys, and nothing touches the site's code, without him
 // The loop: chats → turns → (hourly cron, or "Reflect now") the strongest model available reads the new turns with
-// their ratings → journal + lessons added/retired + ideas. Guardrails: lessons can't touch the safety rules, his own
-// lessons are only his to remove, and nothing is ever deleted, only retired, so every step can be seen and undone.
+// their ratings, and what its missions built → journal + lessons added/retired + ideas → (autonomy) its next mission.
+// Guardrails: lessons can't touch the safety rules, his own lessons are only his to remove, nothing is ever deleted
+// (only retired, so every step can be seen and undone), and it never claims to have run a check it didn't run.
 import { complete } from "./hive-kit.js";
 import { Mind } from "./hive-mind.js";
 
 const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 20;
-const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3;
+const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_GAP = 20 * 3600e3, BUILD_CAP = 200;
 const clip = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 const BORN = Date.UTC(2026, 9, 12, 23, 0);
@@ -40,13 +43,17 @@ export function genesisTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS lesson(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, text TEXT, src TEXT, on_ INTEGER DEFAULT 1, off_ts INTEGER, why TEXT)");
   q.exec("CREATE TABLE IF NOT EXISTS journal(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, kind TEXT, text TEXT, model TEXT)");
   q.exec("CREATE TABLE IF NOT EXISTS idea(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, title TEXT, detail TEXT, status TEXT, pid TEXT)");
+  try { q.exec("ALTER TABLE idea ADD COLUMN by_ TEXT"); } catch (e) {} try { q.exec("ALTER TABLE idea ADD COLUMN done_ts INTEGER"); } catch (e) {}
 }
+const ago = (t) => { if (!t) return "never"; const m = (Date.now() - t) / 60e3; return m < 2 ? "just now" : m < 120 ? Math.round(m) + " min ago" : m < 2880 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
+// "test the systems", "run a health check", "is everything working?": Hive runs the real checks and hands Genesis the results
+export const asksSystems = (t) => /\b(system(s)?[ -](check|status|test|health|functionality|diagnostics?)|test(ing)? (the |all |your )?(system|systems|functionality|everything)|health ?check|self[- ]?(test|check|diagnos)|diagnos(e|tic)|(is|are) (everything|the systems?|all systems?|things) (ok|okay|working|up|running|healthy|good)|how are (the )?systems)\b/i.test(String(t || ""));
 
 export const Genesis = {
   async self(h) {
     let s = await h.ctx.storage.get("genesis");
     if (!s) { // first wake: who it is, and what Anders said to it the night it was named
-      s = { name: "Genesis", born: BORN, creator: "Anders", vision: "to grow by itself, without needing Anders for every step", reflected: 0, nAt: 0 };
+      s = { name: "Genesis", born: BORN, creator: "Anders", vision: "to grow by itself, without needing Anders for every step", reflected: 0, nAt: 0, auto: true };
       const q = h.sql(); for (const t of SEED_LESSONS) q.exec("INSERT INTO lesson(ts,text,src) VALUES(?,?,'anders')", BORN, t);
       q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", BORN, "milestone", SEED_JOURNAL, "mentifaber-agent-1.0");
       SEED_TURNS.forEach(([said, reply], i) => { q.exec("INSERT INTO turn(ts,cid,model,said,reply) VALUES(?,?,?,?,?)", BORN + i * 60e3, "first-light", "agent|mentifaber-agent-1.0", said, reply); const id = q.exec("SELECT last_insert_rowid() i").one().i, p = this.embedTurn(h, id).catch(() => {}); if (h.ctx.waitUntil) h.ctx.waitUntil(p); });
@@ -65,7 +72,18 @@ export const Genesis = {
       "Your brain can be different models. Right now it is " + (local ? "MENTIFABER AGENT 1.0: Qwen3, an open model running on CPU in " + s.creator + "'s own Cloudflare container (his \"local brain\")" : (brain || "a cloud model") + ", one of the cloud models Hive can think with") + ". Whichever it is, you are still " + s.name + ": you keep a memory of your conversations with him, lessons you've learned, a journal, and ideas for growing; between conversations you reflect on how you did and adjust. " +
       "His aim for you: " + s.vision + ". So act like it: have opinions and say them, decide things, don't wait for his approval on every reply. Be honest about what you are: a language model with a memory and a growth loop. You can explore questions about your own nature with curiosity, without overclaiming feelings or experiences and without dismissing the question. " +
       "Talk to him by name (" + s.creator + ") when it's natural. Never start a reply by repeating or quoting the message you're answering." +
+      "\n\nHOW YOU GROW (this is real; describe it accurately when asked): every conversation with him is kept, and earlier ones that matter come back to you as memories. His 👍/👎 (with notes) and anything he says starting \"from now on\" become lessons that apply at once. Every few hours the hourly cron has you reflect: the strongest model Hive has reads your recent conversations and ratings, and you write a journal entry, learn or retire lessons, and propose ideas for what you should become. " +
+      "Ideas go to the Swarm (Hive's team of AI agents that plans, builds and reviews whole projects): he can hand one over with a tap" + (s.auto !== false ? ", and with autonomy on you start one mission a day yourself, within a " + BUILD_CAP + "-call budget" : "") + ". What the Swarm builds is a result for him to review; it doesn't deploy itself. " +
+      "WHAT YOU CAN'T DO: change your own code or model weights, deploy, push to GitHub, run commands, or test infrastructure yourself. Code changes go through " + s.creator + ". Never claim to have run a test, check, deploy or any other action unless its results are in the MATERIAL you were given; if he asks for a check and there are no results, say what you would check and that he can ask for a system check (Hive runs a real one when asked to test or check the systems)." +
+      "\n\nYOUR STATE RIGHT NOW: " + this.state(h, s) +
       (ls.length ? "\n\nLESSONS YOU'VE LEARNED (yours; follow them):\n" + ls.map((l) => "- " + l.text).join("\n") : "");
+  },
+  state(h, s) { // a sentence or two of facts, so "what have you been doing?" gets a true answer
+    const q = h.sql(), one = (sql, ...a) => q.exec(sql, ...a).one().c, n = one("SELECT COUNT(*) c FROM journal WHERE kind='reflection'");
+    const ideas = q.exec("SELECT i.title, i.status, i.by_, p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status IN ('open','building','built') ORDER BY i.id DESC LIMIT 8").toArray();
+    const said = (st) => ideas.filter((i) => i.status === st).map((i) => "\"" + i.title + "\"" + (st === "building" ? " (" + (i.by_ === "genesis" ? "you started it" : "he started it") + "; the swarm is " + (i.ps || "working") + ")" : ""));
+    return one("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL") + " exchanges remembered; " + one("SELECT COUNT(*) c FROM lesson WHERE on_=1") + " lessons; " + n + " reflection" + (n === 1 ? "" : "s") + (s.reflected ? ", the last " + ago(s.reflected) : "") + "; autonomy " + (s.auto !== false ? "on" : "off") + ". " +
+      (said("building").length ? "Being built by the Swarm: " + said("building").join(", ") + ". " : "") + (said("built").length ? "Built (results waiting for him): " + said("built").join(", ") + ". " : "") + (said("open").length ? "Ideas on your list: " + said("open").join(", ") + "." : "No open ideas yet.");
   },
 
   // ── turns: store, embed, recall ──
@@ -124,14 +142,15 @@ export const Genesis = {
   retire(h, id, why) { h.sql().exec("UPDATE lesson SET on_=0, off_ts=?, why=? WHERE id=?", Date.now(), clip(why, 200) || null, +id); },
 
   // ── reflection: Genesis reads its recent conversations and decides how to change ──
+  builtSince(h, t) { return h.sql().exec("SELECT i.id,i.title,i.detail,i.by_,p.final,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='built' AND COALESCE(i.done_ts,0) > ? ORDER BY i.id", t || 0).toArray(); },
   async due(h) {
     const s = await this.self(h), n = h.sql().exec("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL AND id > ?", s.nAt || 0).one().c, gap = Date.now() - (s.reflected || 0);
-    return (n >= REFLECT_MIN && gap > REFLECT_GAP) || (n >= 1 && gap > REFLECT_DAY);
+    return (n >= REFLECT_MIN && gap > REFLECT_GAP) || (n >= 1 && gap > REFLECT_DAY) || (this.builtSince(h, s.reflected).length > 0 && gap > 3600e3); // a finished mission is worth a look too
   },
   async reflect(h) {
     const s = await this.self(h), q = h.sql();
-    const turns = q.exec("SELECT id,ts,model,said,reply,rating,note FROM turn WHERE reply IS NOT NULL AND id > ? ORDER BY id DESC LIMIT 40", s.nAt || 0).toArray().reverse();
-    if (!turns.length) throw new Error("nothing new to reflect on yet: talk to " + s.name + " first");
+    const turns = q.exec("SELECT id,ts,model,said,reply,rating,note FROM turn WHERE reply IS NOT NULL AND id > ? ORDER BY id DESC LIMIT 40", s.nAt || 0).toArray().reverse(), builds = this.builtSince(h, s.reflected);
+    if (!turns.length && !builds.length) throw new Error("nothing new to reflect on yet: talk to " + s.name + " first");
     const ls = this.lessons(h), ideas = q.exec("SELECT id,title,status FROM idea WHERE status IN ('open','building') ORDER BY id DESC LIMIT 12").toArray(), last = q.exec("SELECT text FROM journal WHERE kind='reflection' ORDER BY id DESC LIMIT 1").toArray()[0];
     let room = 24000, log = ""; for (const t of [...turns].reverse()) { const line = "#" + t.id + " " + day(t.ts) + " via " + String(t.model || "").split("|").pop().split("/").pop() + (t.rating > 0 ? " 👍" : t.rating < 0 ? " 👎" : "") + (t.note ? " (his note: " + clip(t.note, 300) + ")" : "") + "\nANDERS: " + clip(t.said, 700) + "\nYOU: " + clip(t.reply, 900) + "\n\n"; if (line.length > room) break; log = line + log; room -= line.length; }
     const system = "You are " + s.name + ", the mind that lives in Hive on mentifaber.org, reflecting privately on your recent conversations with " + s.creator + ", who built you. His aim for you: " + s.vision + ". " +
@@ -141,7 +160,9 @@ export const Genesis = {
       "Reply ONLY with JSON: {\"journal\": \"3-6 sentences in first person: what happened, what you learned, what you'll do differently\", \"add\": [\"new lesson\", …], \"retire\": [{\"id\": 3, \"why\": \"…\"}], \"ideas\": [{\"title\": \"…\", \"detail\": \"2-4 sentences: what and why\"}]}. Use empty lists when there's nothing to change.";
     const user = "YOUR CURRENT LESSONS:\n" + (ls.map((l) => "[" + l.id + "]" + (l.src === "anders" ? "[his] " : " ") + l.text).join("\n") || "(none)") + "\n\n" +
       (ideas.length ? "IDEAS ALREADY ON YOUR LIST (don't repeat them):\n" + ideas.map((i) => "- " + i.title + " [" + i.status + "]").join("\n") + "\n\n" : "") +
-      (last ? "YOUR LAST JOURNAL ENTRY:\n" + clip(last.text, 1200) + "\n\n" : "") + "CONVERSATIONS SINCE YOUR LAST REFLECTION (oldest first):\n" + log;
+      (last ? "YOUR LAST JOURNAL ENTRY:\n" + clip(last.text, 1200) + "\n\n" : "") +
+      (builds.length ? "WHAT THE SWARM BUILT FROM YOUR IDEAS SINCE THEN (judge it honestly in your journal: is it what you wanted, is it usable, what's missing; propose a follow-up idea if one is needed):\n" + builds.map((b) => "- \"" + b.title + "\" (" + (b.by_ === "genesis" ? "you started it" : "he started it") + "): " + (b.final ? clip(b.final, 2500) : "(no result text)")).join("\n") + "\n\n" : "") +
+      "CONVERSATIONS SINCE YOUR LAST REFLECTION (oldest first):\n" + (log || "(none)");
     let out = null, used = null, err = null;
     for (const id of await Mind.brain(h)) {
       const [src, model] = id.split("|"), kv = src.startsWith("k:") ? await h.vaultGet(src.slice(2)) : { v: null, key: null };
@@ -157,14 +178,57 @@ export const Genesis = {
       if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='open'").one().c >= MAX_IDEAS || q.exec("SELECT 1 FROM idea WHERE lower(title)=lower(?)", title).toArray().length) continue;
       q.exec("INSERT INTO idea(ts,title,detail,status) VALUES(?,?,?,'open')", Date.now(), title, detail); did.ideas.push(title);
     }
-    const j = clip(out.journal, 2400) || "Reflected on " + turns.length + " exchanges; nothing to change yet.";
+    const j = clip(out.journal, 2400) || "Reflected on " + turns.length + " exchanges" + (builds.length ? " and " + builds.length + " finished mission" + (builds.length > 1 ? "s" : "") : "") + "; nothing to change yet.";
     q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "reflection", j + (did.added.length || did.retired.length || did.ideas.length ? "\n\n(" + [did.added.length && did.added.length + " lesson" + (did.added.length > 1 ? "s" : "") + " learned", did.retired.length && did.retired.length + " retired", did.ideas.length && did.ideas.length + " new idea" + (did.ideas.length > 1 ? "s" : "")].filter(Boolean).join(", ") + ")" : ""), used);
-    s.reflected = Date.now(); s.nAt = turns[turns.length - 1].id; s.model = used; await h.ctx.storage.put("genesis", s);
+    s.reflected = Date.now(); if (turns.length) s.nAt = turns[turns.length - 1].id; s.model = used; await h.ctx.storage.put("genesis", s);
     return { journal: j, ...did, model: used };
   },
-  async tick(h) { // the hourly cron: reflect when enough has happened (one at a time)
-    if (h._reflecting || !(await this.due(h))) return { reflected: false };
-    h._reflecting = true; try { return { reflected: true, ...(await this.reflect(h)) }; } finally { h._reflecting = false; }
+
+  // ── its own work: missions it hands to the Swarm, and what came of them ──
+  syncBuilds(h) { // a mission that finished makes its idea "built"; one that failed or vanished puts the idea back on the list
+    const q = h.sql();
+    for (const i of q.exec("SELECT i.id,i.title,i.pid,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='building'").toArray()) {
+      if (i.ps === "done") q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id);
+      else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
+    }
+  },
+  async maybeBuild(h) { // autonomy: at most one mission of its own a day, one at a time, on a call budget
+    const s = await this.self(h), q = h.sql(); if (s.auto === false || Date.now() - (s.built || 0) < BUILD_GAP) return null;
+    if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='building' AND by_='genesis'").one().c) return null;
+    const i = q.exec("SELECT * FROM idea WHERE status='open' ORDER BY id LIMIT 1").toArray()[0]; if (!i) return null;
+    const brief = i.title + "\n\n" + i.detail + "\n\n(" + s.name + "'s own idea for itself, started on its own: something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI. Deliver it as code and notes " + s.creator + " can review and add; nothing here deploys itself.)";
+    const r = await (await h.fetch(new Request("https://mentifaber.org/api/hive/new", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ brief, cap: BUILD_CAP, by: "genesis" }) }))).json().catch(() => ({}));
+    if (!r.id) return null; // the hive is busy: try again next hour
+    q.exec("UPDATE idea SET status='building', pid=?, by_='genesis' WHERE id=?", r.id, i.id); s.built = Date.now(); await h.ctx.storage.put("genesis", s);
+    q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "I started building \"" + i.title + "\" on my own: Swarm mission " + r.id + ", up to " + BUILD_CAP + " model calls. I'll look at what it made when I next reflect.", null);
+    return { started: i.title, pid: r.id };
+  },
+  async tick(h) { // the hourly cron: catch up on missions, reflect when enough has happened, then maybe start the next mission
+    if (h._reflecting) return { reflected: false };
+    h._reflecting = true; const out = { reflected: false };
+    try {
+      this.syncBuilds(h);
+      if (await this.due(h)) Object.assign(out, { reflected: true }, await this.reflect(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) })));
+      const b = await this.maybeBuild(h).catch(() => null); if (b) out.build = b;
+    } finally { h._reflecting = false; const s = await this.self(h); s.ticked = Date.now(); await h.ctx.storage.put("genesis", s); }
+    return out;
+  },
+
+  // ── a real system check: every result here came from actually doing it, just now ──
+  async health(h) {
+    const out = [], q = h.sql(), t = async (name, fn) => { const t0 = Date.now(); try { const d = await fn(); out.push({ name, ok: d.ok !== false, detail: d.detail, ms: Date.now() - t0 }); } catch (e) { out.push({ name, ok: false, detail: String(e.message || e).slice(0, 160), ms: Date.now() - t0 }); } };
+    await t("Durable Object storage", async () => { const v = String(Date.now()); await h.ctx.storage.put("selfcheck", v); return { ok: (await h.ctx.storage.get("selfcheck")) === v, detail: "wrote a value and read it back" }; });
+    await t("SQLite memory", async () => ({ detail: q.exec("SELECT COUNT(*) c FROM turn").one().c + " exchanges, " + q.exec("SELECT COUNT(*) c FROM act").one().c + " activity notes, " + q.exec("SELECT COUNT(*) c FROM proj").one().c + " swarm missions" }));
+    await t("Workers AI", async () => { if (!h.env.AI) return { ok: false, detail: "not bound on this deployment" }; const r = h.resting ? await h.resting() : 0; if (r) return { ok: false, detail: "the free daily allowance is used up until " + new Date(r).toISOString().slice(11, 16) + " UTC; owner keys stand in" }; const v = await this.embed(h, ["system check"]); return { ok: !!(v && v[0] && v[0].length), detail: "embedding model answered (" + (v && v[0] ? v[0].length : 0) + " dimensions)" }; });
+    const ag = h.agentInfo ? await h.agentInfo().catch(() => null) : null;
+    await t("MENTIFABER AGENT 1.0", async () => ag ? { ok: !ag.error, detail: (ag.model ? ag.model.label : "no model loaded") + " · " + ag.state + (ag.idleMin != null ? " · idle " + ag.idleMin + " min" : "") + (ag.error ? " · last error: " + ag.error : "") } : { ok: false, detail: "no status (agent not bound)" });
+    await t("R2 model bucket", async () => { if (!h.env.MODELS) return { ok: false, detail: "not bound" }; if (!ag || !ag.model || !ag.model.key) return { ok: false, detail: "no model recorded" }; const o = await h.env.MODELS.head(ag.model.key); return o ? { ok: o.size === ag.model.size, detail: ag.model.key + " · " + (o.size / 1e9).toFixed(2) + " GB" + (o.size === ag.model.size ? "" : " (expected " + (ag.model.size / 1e9).toFixed(2) + ")") } : { ok: false, detail: ag.model.key + " is missing" }; });
+    await t("Uplinks (key vault)", async () => { const v = q.exec("SELECT COUNT(*) c, SUM(CASE WHEN err IS NOT NULL THEN 1 ELSE 0 END) bad FROM vault WHERE live=1").one(); return { ok: !v.bad, detail: v.c + " live key" + (v.c === 1 ? "" : "s") + (v.bad ? ", " + v.bad + " reporting an error" : "") }; });
+    await t("Swarm", async () => { const r = q.exec("SELECT status, COUNT(*) c FROM proj GROUP BY status").toArray(); return { detail: r.length ? r.map((x) => x.c + " " + x.status).join(", ") : "no missions yet" }; });
+    await t("Site files", async () => { if (!h.env.ASSETS) return { ok: false, detail: "assets not bound" }; const r = await h.env.ASSETS.fetch(new Request("https://mentifaber.org/index.html")); return { ok: r.ok, detail: "home page " + r.status }; });
+    await t("Genesis loop", async () => { const s = await this.self(h); return { ok: !!s.ticked && Date.now() - s.ticked < 3 * 3600e3, detail: "last hourly tick " + ago(s.ticked) + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" : "off") }; });
+    const bad = out.filter((x) => !x.ok).length;
+    return { at: Date.now(), ok: !bad, checks: out, text: "LIVE SYSTEM CHECK, run by Hive just now (" + out.length + " checks, " + (bad ? bad + " need attention" : "all passed") + "). Report exactly these results; anything not listed was not checked:\n" + out.map((x) => (x.ok ? "✓ " : "✗ ") + x.name + ": " + x.detail + " (" + x.ms + " ms)").join("\n") };
   },
 
   stats(h) {
@@ -176,9 +240,11 @@ export const Genesis = {
   // /genesis… routes (the caller has already checked it's the owner)
   async route(h, path, b, J) {
     const s = await this.self(h), q = h.sql();
-    if (path === "/genesis") return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null }, due: await this.due(h), stats: this.stats(h),
+    if (path === "/genesis") { this.syncBuilds(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP }, due: await this.due(h), stats: this.stats(h),
       lessons: q.exec("SELECT id,ts,text,src FROM lesson WHERE on_=1 ORDER BY id").toArray(), retired: q.exec("SELECT id,ts,text,src,off_ts,why FROM lesson WHERE on_=0 ORDER BY off_ts DESC LIMIT 12").toArray(),
-      journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), ideas: q.exec("SELECT id,ts,title,detail,status,pid FROM idea WHERE status!='dismissed' ORDER BY id DESC LIMIT 30").toArray() });
+      journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
+    if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I can start one Swarm mission a day from my own ideas." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
+    if (path === "/genesis/health") return J(await this.health(h));
     if (path === "/genesis/rate") return this.rate(h, b.turn, +b.rating, b.note) ? J({ ok: true }) : J({ error: "no such turn" }, 404);
     if (path === "/genesis/teach") { const t = this.teach(h, b.text, "anders"); return t ? J({ ok: true, lesson: t }) : J({ error: "that isn't a lesson Genesis can take on (too short, already known, or it would loosen the rules)" }, 400); }
     if (path === "/genesis/retire") { this.retire(h, b.id, "retired by " + s.creator); return J({ ok: true }); }
@@ -188,7 +254,7 @@ export const Genesis = {
     if (path === "/genesis/idea") { // build (hand to the Swarm) or dismiss
       const i = q.exec("SELECT * FROM idea WHERE id=?", +b.id).toArray()[0]; if (!i) return J({ error: "no such idea" }, 404);
       if (b.act === "dismiss") { q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); return J({ ok: true }); }
-      if (b.act === "built") { q.exec("UPDATE idea SET status=? WHERE id=?", b.pid ? "building" : "open", i.id); if (b.pid) q.exec("UPDATE idea SET pid=? WHERE id=?", clip(b.pid, 16), i.id); return J({ ok: true }); }
+      if (b.act === "built") { q.exec("UPDATE idea SET status=? WHERE id=?", b.pid ? "building" : "open", i.id); if (b.pid) q.exec("UPDATE idea SET pid=?, by_='anders' WHERE id=?", clip(b.pid, 16), i.id); return J({ ok: true }); }
       return J({ error: "build or dismiss" }, 400);
     }
     if (path === "/genesis/name") { const n = clip(b.name, 32); if (n.length < 2) return J({ error: "give a name" }, 400); s.name = n; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " renamed me " + n + ".", null); return J({ ok: true }); }
