@@ -618,7 +618,7 @@ $("g-check").onclick = async () => {
   const b = $("g-check"), box = $("g-health"); b.disabled = true; b.textContent = "Checking…";
   const j = await api("/genesis/health").catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Check systems";
   if (j.error) return toast(j.error, 5000); box.classList.remove("hidden");
-  box.innerHTML = j.checks.map((c) => "<div class='" + (c.ok ? "ok" : "no") + "'><b>" + (c.ok ? "✓" : "✗") + "</b><span>" + esc(c.name) + "<small>" + esc(c.detail || "") + " · " + c.ms + " ms</small></span></div>").join("");
+  box.innerHTML = j.checks.map((c) => "<div class='" + (c.wait ? "wait" : c.ok ? "ok" : "no") + "'><b>" + (c.wait ? "◷" : c.ok ? "✓" : "✗") + "</b><span>" + esc(c.name) + "<small>" + esc(c.detail || "") + " · " + c.ms + " ms</small></span></div>").join("");
   toast(j.ok ? "All " + j.checks.length + " checks passed" : j.checks.filter((c) => !c.ok).length + " need attention", 3000); };
 $("g-add").onclick = async () => { const t = $("g-new").value.trim(); if (!t) return; const j = await api("/genesis/teach", { text: t }); if (j.error) return toast(j.error, 5000); $("g-new").value = ""; toast(gname + " learned it"); GenV.load(); };
 $("g-new").onkeydown = (e) => { if (e.key === "Enter") $("g-add").click(); };
