@@ -258,7 +258,7 @@ export class Hive extends DurableObject {
     const q = this.sql(); let busy = false, resting = false;
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const out = this.quota && Date.now() < this.quota;
-    const runs = []; // every mission moves on the same tick: one waiting on slow models no longer holds up the rest
+    const runs = []; this._adv = this._adv || {}; // every mission moves on the same tick: one waiting on slow models no longer holds up the rest
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
       q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor') AND COALESCE(last,0)<?", p.id, Date.now() - 600e3); // a key that failed gets another try every 10 minutes
       let others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired') AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
@@ -273,9 +273,13 @@ export class Hive extends DurableObject {
         q.exec("UPDATE proj SET status=COALESCE(NULLIF(note,''),'working') WHERE id=?", p.id); this.say(p.id, "hive", "info", "the allowance has reset; the swarm is back at work"); p.status = q.exec("SELECT status FROM proj WHERE id=?", p.id).one().status;
       }
       busy = true; const cap = p.cap || MAX_CALLS; if (p.calls >= cap) { q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "call budget used up (" + cap + "); stopped"); continue; }
-      runs.push(this.advance(p).catch((e) => this.say(p.id, "hive", "error", String(e && e.message || e))));
+      if (this._adv[p.id]) continue; // still on an earlier tick's step (a plan or the final assembly can take minutes): never twice at once
+      const run = (this._adv[p.id] = this.advance(p).catch((e) => this.say(p.id, "hive", "error", String(e && e.message || e))).finally(() => { delete this._adv[p.id]; }));
+      runs.push(run);
     }
-    await Promise.all(runs);
+    // a long step carries on by itself; the tick doesn't wait past one window for it, so the other missions keep moving
+    const all = Promise.all(runs); if (this.ctx.waitUntil) this.ctx.waitUntil(all);
+    await Promise.race([all, new Promise((r) => setTimeout(r, +this.env.HIVE_SLOW_TICK || SLOW_TICK))]);
     if (busy) await this.ctx.storage.setAlarm(Date.now() + TICK);
     else if (resting) await this.ctx.storage.setAlarm(this.quota + 1000);
   }
@@ -341,6 +345,7 @@ export class Hive extends DurableObject {
       q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); this.say(p.id, coord.name, "plan", "task board: " + Object.keys(idmap).length + " new tasks");
       return;
     }
+    if (p.status === "integrating") { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); p.status = "working"; } // nothing is assembling it now (the tick never runs a mission twice at once): a restart lost the assembly, so start it again
     q.exec("UPDATE task SET status='open', agent=NULL WHERE pid=? AND status='claimed' AND agent LIKE 'visitor:%' AND ts<?", p.id, Date.now() - 6e5); // a visitor that never came back
     if (!this.flying(p.id)) { // nothing is running here, so anything marked as running was lost to a restart: put it back
       q.exec("UPDATE task SET status='open', agent=NULL WHERE pid=? AND status='claimed' AND (agent IS NULL OR agent NOT LIKE 'visitor:%')", p.id);
