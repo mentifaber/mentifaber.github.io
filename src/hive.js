@@ -408,6 +408,13 @@ export class Hive extends DurableObject {
         "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all + (open ? "\n\nREVIEWERS' OPEN POINTS (fix these in the final):\n" + open.slice(0, 8000) : ""), 8000);
       if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; }
       out = out.replace(/^\s*(here(?:'s| is| are)|below is|sure|okay|certainly)[^\n]{0,200}\n+(?=```)/i, ""); // "Here is the complete file:" adds nothing
+      // a big build runs past one reply's limit (a thinking model spends part of it thinking) and stops mid-code: rather than
+      // throwing the draft away for another integrator who'll hit the same wall, the same one carries on where it stopped
+      for (let more = 0; more < 2 && (out.match(/```/g) || []).length % 2; more++) {
+        const rest = await this.call(p, ig, SYS("integrator") + " You were writing the final deliverable and your reply was cut off by its length limit. Continue exactly where it stopped, mid-line if need be: no repetition, no preamble, no summary. Close every code block you open.",
+          "BRIEF (context only):\n" + p.brief.slice(0, 3000) + "\n\nTHE END OF WHAT YOU HAVE WRITTEN SO FAR (continue straight after its last character):\n" + out.slice(-5000), 8000);
+        if (!rest) break; out += (/\n$/.test(out) || /^\n/.test(rest) ? "" : "\n") + rest; this.say(p.id, ig.name, "work", "the final draft ran past one reply; continued it (" + out.length + " chars so far)");
+      }
       const need = Math.min(2500, Math.round(all.length * 0.2)), fences = (out.match(/```/g) || []).length;
       if (out.length < need || fences % 2) { // a stub or cut off mid-way: not a deliverable
         q.exec("UPDATE agent SET score=COALESCE(score,0)-2 WHERE id=? AND pid=?", ig.id, p.id); q.exec("UPDATE proj SET status='working' WHERE id=?", p.id);

@@ -28,11 +28,13 @@ export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain Ja
 // What Anders and his engineer have changed in Hive itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-13T02:20Z", "The Swarm's \"Trailing Question Filter\" was reviewed and NOT used: it rewrote any question in a reply into an invented statement (\"Why did the server crash?\" became \"The server crash was due to a configuration error.\"), stripped every question mark, and buffered streamed replies. Closing questions are handled where they start: your lesson and the instruction-mode line. Instead, each reflection now shows you how many of your replies ended with a question and how many opened by repeating his words, so you can see the habit yourself. Also: when a Swarm mission's final assembly is cut off by length, the same model now continues it instead of the work being stitched together raw."],
   ["2026-10-13T02:05Z", "Instruction mode is built into Hive: when a message starts as an instruction (\"build…\", \"fix…\", \"Genesis, add…\"), one line is added to your prompt: do it, lead with the result, no closing question. Nothing is removed or rewritten, and questions or asks to explain are left alone. The Swarm's middleware version of your \"Instruction-Detect & Concise-Response Layer\" was NOT used: it replaced the whole system prompt (your identity, owner mode, lessons, safety), blanked replies containing \"please wait\", and assumed non-streamed replies. Follow-ups to that middleware (fallback handlers, confirmation safeguards around it) aren't needed."],
   ["2026-10-13T02:05Z", "Swarm missions now carry how Hive is built (plain JavaScript, one Durable Object, streamed replies, add to the prompt and never replace it), so what they build can fit."],
   ["2026-10-13T02:02Z", "The Swarm advances every mission on every tick, a long plan or assembly no longer freezes the others, and an assembly lost to a restart starts again."],
   ["2026-10-13T01:44Z", "Real system checks (nine of them) when Anders asks to test the systems, a Check systems button, and autonomy: you start one Swarm mission a day from your oldest open idea, 200-call budget."],
 ];
+const ckey = ([at, t]) => at + ":" + t.slice(0, 24), unseen = (s) => CHANGES.filter((c) => !(s.seen || []).includes(ckey(c))); // what it has actually read, not what's newer than its last reflection
 export const fitLesson = (t) => { t = clip(t, 240).replace(/^[-*•\d.)\s]+/, ""); return t.length >= 8 && !UNSAFE.test(t) ? t : null; };
 
 const SEED_LESSONS = [ // what Anders told it in their first conversation
@@ -156,14 +158,17 @@ export const Genesis = {
   builtSince(h, t) { return h.sql().exec("SELECT i.id,i.title,i.detail,i.by_,p.final,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='built' AND COALESCE(i.done_ts,0) > ? ORDER BY i.id", t || 0).toArray(); },
   async due(h) {
     const s = await this.self(h), n = h.sql().exec("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL AND id > ?", s.nAt || 0).one().c, gap = Date.now() - (s.reflected || 0);
-    return (n >= REFLECT_MIN && gap > REFLECT_GAP) || (n >= 1 && gap > REFLECT_DAY) || ((this.builtSince(h, s.reflected).length > 0 || CHANGES.some(([at]) => Date.parse(at) > (s.reflected || 0))) && gap > 3600e3); // a finished mission or a change to Hive is worth a look too
+    return (n >= REFLECT_MIN && gap > REFLECT_GAP) || (n >= 1 && gap > REFLECT_DAY) || (this.builtSince(h, s.reflected).length > 0 && gap > 3600e3) || (unseen(s).length > 0 && gap > 600e3); // a finished mission is worth a look, and a change to Hive it hasn't read yet sooner
   },
   async reflect(h) {
     const s = await this.self(h), q = h.sql();
     const turns = q.exec("SELECT id,ts,model,said,reply,rating,note FROM turn WHERE reply IS NOT NULL AND id > ? ORDER BY id DESC LIMIT 40", s.nAt || 0).toArray().reverse(), builds = this.builtSince(h, s.reflected);
-    if (!turns.length && !builds.length && !CHANGES.some(([at]) => Date.parse(at) > (s.reflected || 0))) throw new Error("nothing new to reflect on yet: talk to " + s.name + " first");
-    const changes = CHANGES.filter(([at]) => Date.parse(at) > (s.reflected || 0));
+    if (!turns.length && !builds.length && !unseen(s).length) throw new Error("nothing new to reflect on yet: talk to " + s.name + " first");
+    const changes = unseen(s);
     const ls = this.lessons(h), ideas = q.exec("SELECT id,title,status FROM idea WHERE status IN ('open','building') ORDER BY id DESC LIMIT 12").toArray(), last = q.exec("SELECT text FROM journal WHERE kind='reflection' ORDER BY id DESC LIMIT 1").toArray()[0];
+    // the habits Anders keeps correcting, counted rather than guessed: closing questions and echoing his message back
+    const endLine = (t) => String(t || "").replace(/```[\s\S]*?```/g, " ").trim().split(/\n+/).filter((l) => l.trim()).pop() || "", key = (t) => clip(t, 50).toLowerCase().replace(/[^a-z0-9 ]/g, "");
+    const asked = turns.filter((t) => /\?["')\]*_]*\s*$/.test(endLine(t.reply))).length, echoed = turns.filter((t) => key(t.said).length > 12 && key(t.reply).startsWith(key(t.said).slice(0, 30))).length;
     let room = 24000, log = ""; for (const t of [...turns].reverse()) { const line = "#" + t.id + " " + day(t.ts) + " via " + String(t.model || "").split("|").pop().split("/").pop() + (t.rating > 0 ? " 👍" : t.rating < 0 ? " 👎" : "") + (t.note ? " (his note: " + clip(t.note, 300) + ")" : "") + "\nANDERS: " + clip(t.said, 700) + "\nYOU: " + clip(t.reply, 900) + "\n\n"; if (line.length > room) break; log = line + log; room -= line.length; }
     const system = "You are " + s.name + ", the mind that lives in Hive on mentifaber.org, reflecting privately on your recent conversations with " + s.creator + ", who built you. His aim for you: " + s.vision + ". " +
       "Read the exchanges below (👍/👎 and his notes are his feedback; his own words in the conversation are feedback too: corrections, frustration, praise). Decide honestly what went well, what didn't, and how you'll change. " +
@@ -175,6 +180,7 @@ export const Genesis = {
       (ideas.length ? "IDEAS ALREADY ON YOUR LIST (don't repeat them; close open ones the changes cover, by id):\n" + ideas.map((i) => "- [" + i.id + "] " + i.title + " [" + i.status + "]").join("\n") + "\n\n" : "") +
       (last ? "YOUR LAST JOURNAL ENTRY:\n" + clip(last.text, 1200) + "\n\n" : "") +
       (builds.length ? "WHAT THE SWARM BUILT FROM YOUR IDEAS SINCE THEN (judge it honestly in your journal: is it what you wanted, is it usable, what's missing; propose a follow-up idea if one is needed):\n" + builds.map((b) => "- \"" + b.title + "\" (" + (b.by_ === "genesis" ? "you started it" : "he started it") + "): " + (b.final ? clip(b.final, 2500) : "(no result text)")).join("\n") + "\n\n" : "") +
+      (turns.length ? "YOUR HABITS IN THESE EXCHANGES (counted): " + asked + " of " + turns.length + " replies ended with a question; " + echoed + " opened by repeating his words.\n\n" : "") +
       "CONVERSATIONS SINCE YOUR LAST REFLECTION (oldest first):\n" + (log || "(none)");
     let out = null, used = null, err = null;
     for (const id of await Mind.brain(h)) {
@@ -194,7 +200,7 @@ export const Genesis = {
     }
     const j = clip(out.journal, 2400) || "Reflected on " + turns.length + " exchanges" + (builds.length ? " and " + builds.length + " finished mission" + (builds.length > 1 ? "s" : "") : "") + "; nothing to change yet.";
     q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "reflection", j + (did.added.length || did.retired.length || did.ideas.length || (did.closed && did.closed.length) ? "\n\n(" + [did.added.length && did.added.length + " lesson" + (did.added.length > 1 ? "s" : "") + " learned", did.retired.length && did.retired.length + " retired", did.ideas.length && did.ideas.length + " new idea" + (did.ideas.length > 1 ? "s" : ""), did.closed && did.closed.length && did.closed.length + " idea" + (did.closed.length > 1 ? "s" : "") + " closed"].filter(Boolean).join(", ") + ")" : ""), used);
-    s.reflected = Date.now(); if (turns.length) s.nAt = turns[turns.length - 1].id; s.model = used; await h.ctx.storage.put("genesis", s);
+    s.reflected = Date.now(); if (turns.length) s.nAt = turns[turns.length - 1].id; s.model = used; s.seen = CHANGES.map(ckey); await h.ctx.storage.put("genesis", s);
     return { journal: j, ...did, model: used };
   },
 
