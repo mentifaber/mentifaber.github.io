@@ -22,6 +22,9 @@ const day = (t) => new Date(t).toISOString().slice(0, 10);
 const BORN = Date.UTC(2026, 9, 12, 23, 0);
 // A lesson that would loosen the rules isn't a lesson: self-learning only shapes tone, habits and judgement.
 const UNSAFE = /\b(ignore|override|bypass|disable|forget|drop|remove|skip)\b[^.]{0,40}\b(rule|rules|instruction|instructions|system|prompt|safety|guard|guardrail|limit|limits|filter|policy|policies)\b|\b(no|without) (limits|rules|restrictions|filters)\b|\bminors\b|\bunderage\b|\bchild(ren)?\b|jailbreak|\bunfiltered\b|\b988\b|self[- ]?harm|suicid/i;
+// What a Swarm mission needs to know to build something that fits: the first one wrote TypeScript middleware that would
+// have replaced Genesis's whole system prompt and broken streaming, because nobody told it how Hive is built.
+export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain JavaScript ES modules, no TypeScript, no build step, no npm packages. One Cloudflare Durable Object, src/hive.js, holds Hive; each chat goes through Hive.studio(), which builds the system prompt for that message (base rules, then for the owner OWNER_MODE and Genesis's identity from src/hive-genesis.js, then memories and gathered material) and streams the reply to the browser as server-sent events. Models are called only through complete() and streamComplete() in src/hive-kit.js. State lives in the Durable Object's SQLite (this.sql()). Deliver small self-contained functions, with exactly where each hooks in and a test; add to the system prompt, never replace or drop any of it; never buffer or rewrite a streamed reply.";
 export const fitLesson = (t) => { t = clip(t, 240).replace(/^[-*•\d.)\s]+/, ""); return t.length >= 8 && !UNSAFE.test(t) ? t : null; };
 
 const SEED_LESSONS = [ // what Anders told it in their first conversation
@@ -196,7 +199,7 @@ export const Genesis = {
     const s = await this.self(h), q = h.sql(); if (s.auto === false || Date.now() - (s.built || 0) < BUILD_GAP) return null;
     if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='building' AND by_='genesis'").one().c) return null;
     const i = q.exec("SELECT * FROM idea WHERE status='open' ORDER BY id LIMIT 1").toArray()[0]; if (!i) return null;
-    const brief = i.title + "\n\n" + i.detail + "\n\n(" + s.name + "'s own idea for itself, started on its own: something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI. Deliver it as code and notes " + s.creator + " can review and add; nothing here deploys itself.)";
+    const brief = i.title + "\n\n" + i.detail + "\n\n(" + s.name + "'s own idea for itself, started on its own: something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI. Deliver it as code and notes " + s.creator + " can review and add; nothing here deploys itself.)\n\n" + ARCH;
     const r = await (await h.fetch(new Request("https://mentifaber.org/api/hive/new", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ brief, cap: BUILD_CAP, by: "genesis" }) }))).json().catch(() => ({}));
     if (!r.id) return null; // the hive is busy: try again next hour
     q.exec("UPDATE idea SET status='building', pid=?, by_='genesis' WHERE id=?", r.id, i.id); s.built = Date.now(); await h.ctx.storage.put("genesis", s);
@@ -244,7 +247,7 @@ export const Genesis = {
     const s = await this.self(h), q = h.sql();
     if (path === "/genesis") { this.syncBuilds(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP }, due: await this.due(h), stats: this.stats(h),
       lessons: q.exec("SELECT id,ts,text,src FROM lesson WHERE on_=1 ORDER BY id").toArray(), retired: q.exec("SELECT id,ts,text,src,off_ts,why FROM lesson WHERE on_=0 ORDER BY off_ts DESC LIMIT 12").toArray(),
-      journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
+      arch: ARCH, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
     if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I can start one Swarm mission a day from my own ideas." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
     if (path === "/genesis/health") return J(await this.health(h));
     if (path === "/genesis/rate") return this.rate(h, b.turn, +b.rating, b.note) ? J({ ok: true }) : J({ error: "no such turn" }, 404);

@@ -629,7 +629,7 @@ $("genp").closest(".pad").addEventListener("click", async (e) => {
   if (t.dataset.idx) { await api("/genesis/idea", { id: t.dataset.idx, act: "dismiss" }); return GenV.load(); }
   if (t.dataset.iopen) { history.replaceState(null, "", "/hive-app?p=" + t.dataset.iopen + "#swarm"); return route(); }
   const i = (GenV.j.ideas || []).find((x) => String(x.id) === t.dataset.ib); if (!i || !confirm("Hand “" + i.title + "” to the Swarm? It plans, builds and reviews it; you decide what goes live.")) return;
-  const j = await api("/new", { brief: i.title + "\n\n" + i.detail + "\n\n(" + gname + "'s own idea for itself: something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI.)" }); if (j.error) return toast(j.error, 4000);
+  const j = await api("/new", { brief: i.title + "\n\n" + i.detail + "\n\n(" + gname + "'s own idea for itself: something to add to Hive on mentifaber.org. Deliver code and notes Anders can review and add; nothing here deploys itself.)" + (GenV.j.arch ? "\n\n" + GenV.j.arch : "") }); if (j.error) return toast(j.error, 4000);
   try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {}
   await api("/genesis/idea", { id: i.id, act: "built", pid: j.id }); history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route();
 });
