@@ -8,6 +8,7 @@ import { DurableObject } from "cloudflare:workers";
 import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
+import { Genesis, genesisTables } from "./hive-genesis.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -80,7 +81,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
-      mindTables(q); this._init = 1;
+      mindTables(q); genesisTables(q); this._init = 1;
     }
     return q;
   }
@@ -140,11 +141,13 @@ export class Hive extends DurableObject {
       for (const id of ids) { for (const t of ["task", "agent", "feed"]) q.exec("DELETE FROM " + t + " WHERE pid=?", id); q.exec("DELETE FROM proj WHERE id=?", id); }
       return J({ ok: true, removed: ids.length });
     }
+    if (path === "/mind/brief" && owner) { const p = await Mind.parts(this); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE, genesis: await Genesis.block(this, "mentifaber-agent-1.0") }); } // the owner's apps on MENTIFABER AGENT talk to Genesis too
     if (path.startsWith("/mind")) { if (!owner) return J({ error: "Hive's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
+    if (path.startsWith("/genesis")) { if (!owner) return J({ error: "Genesis is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
-    if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
+    if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
@@ -530,11 +533,16 @@ export class Hive extends DurableObject {
     msgs.forEach((m) => m !== last && (m.images = []));
     const t0 = Date.now(), sources = [], notes = [], tools = [];
     let mind = ""; // the owner's profile, memories and recent activity ride along with every owner chat
-    if (owner && b.mind !== false && (await Mind.state(this)).on) {
+    const mindOn = owner && b.mind !== false && (await Mind.state(this)).on, inChat = msgs.filter((m) => m.role === "user").map((m) => m.text), asked = last.text; // asked: his words, before any context is added
+    if (mindOn) {
       const r = Mind.heard(last.text); if (r && Mind.remember(this, r, "you")) tools.push("saved to memory");
       Mind.log(this, b.voice ? "voice" : b.swarm ? "council" : "chat", last.text + (last.images.length ? " [+" + last.images.length + (b.frames ? " video frames" : b.live ? " live camera/screen frame" : " image(s)") + "]" : ""), { model: b.model, web: b.web ? 1 : undefined });
-      mind = await Mind.brief(this); Mind.maybeAnalyze(this, new URL(req.url).origin);
+      mind = await Mind.brief(this, 12000, inChat); Mind.maybeAnalyze(this, new URL(req.url).origin);
     }
+    // Genesis: the owner talks to the mind that lives here, which remembers earlier conversations and learns from them
+    const gName = owner ? (await Genesis.self(this)).name : "", lesson = owner && Genesis.taught(last.text);
+    if (lesson && Genesis.teach(this, lesson, "anders")) tools.push("learned: " + lesson.slice(0, 70));
+    const recall = mindOn ? await Genesis.recall(this, last.text, b.cid).catch(() => "") : "";
     // pasted links get read
     const urls = [...new Set((last.text.match(/https?:\/\/[^\s<>"')\]]+/g) || []))].slice(0, 3);
     for (const u of urls) try { const pg = await readPage(u); sources.push({ title: pg.title, url: pg.url }); notes.push("[" + sources.length + "] PAGE " + pg.title + " — " + pg.url + "\n" + pg.text); tools.push("read " + new URL(pg.url).hostname); } catch (e) { notes.push("(could not read " + u + ": " + e.message + ")"); }
@@ -562,16 +570,17 @@ export class Hive extends DurableObject {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
     // MENTIFABER AGENT keeps the start of the conversation cached between messages, so for it everything that changes
     // every message (the time, recent activity, gathered material) rides at the end of the newest message instead
-    const local = src === "agent", mp = owner && mind ? await Mind.parts(this) : { stable: "", recent: "" };
-    const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
-    if (local) last.text = "[CONTEXT FOR THIS MESSAGE]\n" + live + "\n[END CONTEXT]\n\n" + last.text;
-    const system = "You are Hive, the assistant of Hive on mentifaber.org, answering through the model " + model.split("/").pop() + ". " +
+    const local = src === "agent", mp = owner && mind ? await Mind.parts(this, inChat) : { stable: "", recent: "" }, who = owner ? await Genesis.block(this, local ? "mentifaber-agent-1.0" : model.split("/").pop()) : "";
+    const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
+    if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
+    const system = (owner ? "You are " + gName + ", the mind that lives in Hive on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Hive, the assistant of Hive on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
       "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." + (local ? "" : " Now: " + now + ".") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
-      (owner ? "\n\n" + OWNER_MODE + (local ? mp.stable : mind) : "") + (local ? "" :
+      (owner ? "\n\n" + OWNER_MODE + "\n\n" + who + (local ? mp.stable : mind) : "") + (local ? "" : recall +
       (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
+    const turn = mindOn ? Genesis.startTurn(this, b.cid, b.model, asked + (last.images.length || b.frames ? " [with " + (b.frames ? "a video" : "images") + "]" : "")) : null; // what he said; the reply is added when it's finished
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
       const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
@@ -598,16 +607,17 @@ export class Hive extends DurableObject {
       const leadSys = system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Drafts sometimes invent specifics (numbers, statuses, files, repos, settings): keep a specific only if the MATERIAL, the profile or the user's own words support it, otherwise drop it or mark it as a guess. Finish the whole answer; if it would be very long, tighten it rather than stopping mid-way. Do not mention drafts by letter unless it helps the user.", leadMsgs = [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }];
       text = good.length ? await complete(this.env, v, key, model, leadSys, leadMsgs, Math.min(8192, +b.max || 6000)).catch(async (e) => { if (/max_tokens|max tokens|maximum|too large|context length/i.test(String(e.message || e))) return complete(this.env, v, key, model, leadSys, leadMsgs, 3000); throw e; }) : null; // some models cap a reply at 4096
       if (!text) text = await complete(this.env, v, key, model, system + (failed.length ? "\n\nNOTE: the user asked for Hive's council, but none of the " + failed.length + " models called could answer right now (" + failed.map((d) => d.model.split("|").pop().split("/").pop() + ": " + d.error.slice(0, 80)).join("; ") + "). Say so in one sentence, then answer yourself." : ""), msgs, 3000);
-      return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used });
+      Genesis.finishTurn(this, turn, text, used);
+      return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used, turn: turn || undefined });
     }
     if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
       const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 4096)); // the agent gets every token its memory leaves free
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
       const ping = setInterval(() => w.write(enc.encode(": still thinking\n\n")).catch(() => {}), 15000); // keeps the line open while a slow model reads
       (async () => {
-        let got = 0; const onDelta = (t) => { got++; emit("delta", { t }); };
+        let got = 0, said = ""; const onDelta = (t) => { got++; said += t; emit("delta", { t }); };
         try {
-          emit("meta", { sources, tools, model: used });
+          emit("meta", { sources, tools, model: used, turn: turn || undefined });
           let out;
           try { out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta); }
           catch (e) {
@@ -615,11 +625,12 @@ export class Hive extends DurableObject {
             if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) throw new Error(outMsg(this.quota)); }
             else if (last.images.length) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); }
             else throw e;
-            emit("meta", { sources, tools, model: used });
+            emit("meta", { sources, tools, model: used, turn: turn || undefined });
             out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta);
           }
           if (!got) { const t = await complete(this.env, v, key, model, system, msgs, max); if (t) onDelta(t); else onDelta("(the model returned nothing)"); } // a provider that streams nothing still answers
-          emit("done", { ms: Date.now() - t0, model: used, tools });
+          Genesis.finishTurn(this, turn, said, used);
+          emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined });
         } catch (e) { emit("error", { error: String(e && e.message || e).slice(0, 300) }); }
         clearInterval(ping); w.close().catch(() => {});
       })();
@@ -627,8 +638,9 @@ export class Hive extends DurableObject {
     }
     try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 4096))); }
     catch (e) {
-      if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used }); }
+      if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); Genesis.finishTurn(this, turn, text, used); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
-    return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used });
+    Genesis.finishTurn(this, turn, text, used);
+    return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined });
   }
 }
