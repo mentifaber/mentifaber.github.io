@@ -613,7 +613,7 @@ const GenV = {
 };
 if ($("genp")) {
 $("g-reflect").onclick = () => GenV.reflect();
-$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }); if (j.error) return toast(j.error); toast(on ? gname + " can start one Swarm mission a day from its own ideas" : gname + "'s ideas wait for you", 3500); GenV.load(); };
+$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }).catch(() => ({ error: "couldn't reach the Hive" })); if (j.error) { $("g-auto").checked = !on; return toast(j.error + ": autonomy unchanged", 4000); } toast(on ? gname + " can start one Swarm mission a day from its own ideas" : gname + "'s ideas wait for you", 3500); GenV.load(); };
 $("g-check").onclick = async () => {
   const b = $("g-check"), box = $("g-health"); b.disabled = true; b.textContent = "Checking…";
   const j = await api("/genesis/health").catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Check systems";
