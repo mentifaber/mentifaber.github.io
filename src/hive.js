@@ -65,7 +65,7 @@ const BUILTIN_PLAN = { tasks: [
   { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
 ] };
 const STUDIO_DAY = 60, IMAGINE_DAY = 8, MAX_KEYS = 500;
-const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, TICK = 1500, SLOW_TICK = 75e3;
+const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, ALL_PARALLEL = 30, TICK = 1500, SLOW_TICK = 75e3; // ALL_PARALLEL: every mission together, under Workers AI's rate limits
 // models that think before they answer: they need room for both, or the answer comes back empty or cut off
 const THINKS = /qwq|deepseek-r1|-r1-|gpt-oss|qwen3(?!.*instruct)|\bo[134](-|$)|thinking|reason/i;
 const clean = (t) => String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*<\/think>/i, "").trim(); // its thinking isn't the work
@@ -258,6 +258,7 @@ export class Hive extends DurableObject {
     const q = this.sql(); let busy = false, resting = false;
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const out = this.quota && Date.now() < this.quota;
+    const runs = []; // every mission moves on the same tick: one waiting on slow models no longer holds up the rest
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
       q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor') AND COALESCE(last,0)<?", p.id, Date.now() - 600e3); // a key that failed gets another try every 10 minutes
       let others = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired') AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
@@ -272,8 +273,9 @@ export class Hive extends DurableObject {
         q.exec("UPDATE proj SET status=COALESCE(NULLIF(note,''),'working') WHERE id=?", p.id); this.say(p.id, "hive", "info", "the allowance has reset; the swarm is back at work"); p.status = q.exec("SELECT status FROM proj WHERE id=?", p.id).one().status;
       }
       busy = true; const cap = p.cap || MAX_CALLS; if (p.calls >= cap) { q.exec("UPDATE proj SET status='stopped' WHERE id=?", p.id); this.say(p.id, "hive", "info", "call budget used up (" + cap + "); stopped"); continue; }
-      try { await this.advance(p); } catch (e) { this.say(p.id, "hive", "error", String(e && e.message || e)); }
+      runs.push(this.advance(p).catch((e) => this.say(p.id, "hive", "error", String(e && e.message || e))));
     }
+    await Promise.all(runs);
     if (busy) await this.ctx.storage.setAlarm(Date.now() + TICK);
     else if (resting) await this.ctx.storage.setAlarm(this.quota + 1000);
   }
@@ -283,6 +285,7 @@ export class Hive extends DurableObject {
   // jobs run alongside the alarm: a slow model holds up only its own task, never the whole swarm
   fly(pid, job) { this._fly = this._fly || {}; this._fly[pid] = (this._fly[pid] || 0) + 1; return job().catch((e) => this.say(pid, "hive", "error", String(e && e.message || e).slice(0, 200))).finally(() => { this._fly[pid]--; }); }
   flying(pid) { return (this._fly && this._fly[pid]) || 0; }
+  full(pid) { return this.flying(pid) >= PARALLEL || Object.values(this._fly || {}).reduce((a, n) => a + n, 0) >= ALL_PARALLEL; } // this mission's share, and everyone's
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
     let room = THINKS.test(a.model) ? Math.min(8000, Math.max(max * 3, 4000)) : max;
@@ -347,7 +350,7 @@ export class Hive extends DurableObject {
     const jobs = [];
     // critics review work in review
     for (const t of q.exec("SELECT * FROM task WHERE pid=? AND status='review' ORDER BY id", p.id).toArray()) {
-      const c = this.agentsFor(p.id, "critic").find((a) => a.id !== t.agent) || this.agentsFor(p.id, "tester").find((a) => a.id !== t.agent); if (!c || this.flying(p.id) >= PARALLEL) break;
+      const c = this.agentsFor(p.id, "critic").find((a) => a.id !== t.agent) || this.agentsFor(p.id, "tester").find((a) => a.id !== t.agent); if (!c || this.full(p.id)) break;
       q.exec("UPDATE agent SET status='reviewing', task=?, last=? WHERE id=? AND pid=?", t.id, Date.now(), c.id, p.id); q.exec("UPDATE task SET status='reviewing' WHERE id=?", t.id);
       jobs.push(this.fly(p.id, async () => {
         const out = await this.call(p, c, SYS("critic"), "PROJECT BRIEF (context only):\n" + p.brief + "\n\nTHE TASK UNDER REVIEW, #" + t.id + " (" + t.role + "): " + t.title + "\n" + t.detail + "\n\nWORK SUBMITTED:\n" + (t.output || "").slice(0, 14000) +
@@ -362,7 +365,7 @@ export class Hive extends DurableObject {
     }
     // idle agents claim open work for their roles
     for (const a of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx(), p.id).toArray().sort((x, y) => (y.score || 0) - (x.score || 0) || this.rank(x.model) - this.rank(y.model) || x.done - y.done)) {
-      if (this.flying(p.id) >= PARALLEL) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
+      if (this.full(p.id)) break; const t = this.claim(p.id, a, JSON.parse(a.roles)); if (!t) continue;
       jobs.push(this.fly(p.id, async () => {
         const web = t.role === "researcher" ? await this.webContext(t.title + " " + (t.detail || "").slice(0, 120), !!p.own) : "";
         const redo = t.note ? "\n\nA REVIEWER SENT THIS BACK:\n" + t.note + "\n\nPREVIOUS ATTEMPT:\n" + (t.output || "").slice(0, 6000) : "";

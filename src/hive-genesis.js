@@ -216,7 +216,7 @@ export const Genesis = {
 
   // ── a real system check: every result here came from actually doing it, just now ──
   async health(h) {
-    const out = [], q = h.sql(), t = async (name, fn) => { const t0 = Date.now(); try { const d = await fn(); out.push({ name, ok: d.ok !== false, detail: d.detail, ms: Date.now() - t0 }); } catch (e) { out.push({ name, ok: false, detail: String(e.message || e).slice(0, 160), ms: Date.now() - t0 }); } };
+    const out = [], q = h.sql(), t = async (name, fn) => { const t0 = Date.now(); try { const d = await fn(); out.push({ name, ok: d.ok !== false, wait: !!d.wait, detail: d.detail, ms: Date.now() - t0 }); } catch (e) { out.push({ name, ok: false, detail: String(e.message || e).slice(0, 160), ms: Date.now() - t0 }); } };
     await t("Durable Object storage", async () => { const v = String(Date.now()); await h.ctx.storage.put("selfcheck", v); return { ok: (await h.ctx.storage.get("selfcheck")) === v, detail: "wrote a value and read it back" }; });
     await t("SQLite memory", async () => ({ detail: q.exec("SELECT COUNT(*) c FROM turn").one().c + " exchanges, " + q.exec("SELECT COUNT(*) c FROM act").one().c + " activity notes, " + q.exec("SELECT COUNT(*) c FROM proj").one().c + " swarm missions" }));
     await t("Workers AI", async () => { if (!h.env.AI) return { ok: false, detail: "not bound on this deployment" }; const r = h.resting ? await h.resting() : 0; if (r) return { ok: false, detail: "the free daily allowance is used up until " + new Date(r).toISOString().slice(11, 16) + " UTC; owner keys stand in" }; const v = await this.embed(h, ["system check"]); return { ok: !!(v && v[0] && v[0].length), detail: "embedding model answered (" + (v && v[0] ? v[0].length : 0) + " dimensions)" }; });
@@ -226,9 +226,11 @@ export const Genesis = {
     await t("Uplinks (key vault)", async () => { const v = q.exec("SELECT COUNT(*) c, SUM(CASE WHEN err IS NOT NULL THEN 1 ELSE 0 END) bad FROM vault WHERE live=1").one(); return { ok: !v.bad, detail: v.c + " live key" + (v.c === 1 ? "" : "s") + (v.bad ? ", " + v.bad + " reporting an error" : "") }; });
     await t("Swarm", async () => { const r = q.exec("SELECT status, COUNT(*) c FROM proj GROUP BY status").toArray(); return { detail: r.length ? r.map((x) => x.c + " " + x.status).join(", ") : "no missions yet" }; });
     await t("Site files", async () => { if (!h.env.ASSETS) return { ok: false, detail: "assets not bound" }; const r = await h.env.ASSETS.fetch(new Request("https://mentifaber.org/index.html")); return { ok: r.ok, detail: "home page " + r.status }; });
-    await t("Genesis loop", async () => { const s = await this.self(h); return { ok: !!s.ticked && Date.now() - s.ticked < 3 * 3600e3, detail: "last hourly tick " + ago(s.ticked) + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" : "off") }; });
+    await t("Genesis loop", async () => { const s = await this.self(h), next = new Date(); next.setUTCMinutes(7, 0, 0); if (next < new Date()) next.setUTCHours(next.getUTCHours() + 1);
+      const tick = s.ticked ? "last hourly tick " + ago(s.ticked) : "waiting for its first hourly tick (due " + next.toISOString().slice(11, 16) + " UTC)";
+      return { ok: !s.ticked || Date.now() - s.ticked < 3 * 3600e3, wait: !s.ticked, detail: tick + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" : "off") }; });
     const bad = out.filter((x) => !x.ok).length;
-    return { at: Date.now(), ok: !bad, checks: out, text: "LIVE SYSTEM CHECK, run by Hive just now (" + out.length + " checks, " + (bad ? bad + " need attention" : "all passed") + "). Report exactly these results; anything not listed was not checked:\n" + out.map((x) => (x.ok ? "✓ " : "✗ ") + x.name + ": " + x.detail + " (" + x.ms + " ms)").join("\n") };
+    return { at: Date.now(), ok: !bad, checks: out, text: "LIVE SYSTEM CHECK, run by Hive just now (" + out.length + " checks, " + (bad ? bad + " need attention" : "all passed") + "). Report exactly these results; anything not listed was not checked:\n" + out.map((x) => (x.wait ? "◷ " : x.ok ? "✓ " : "✗ ") + x.name + ": " + x.detail + " (" + x.ms + " ms)").join("\n") };
   },
 
   stats(h) {
