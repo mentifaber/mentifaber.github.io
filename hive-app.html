@@ -25,7 +25,7 @@
       <a href="#studio" data-v="studio"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Studio<em>chat · council</em></a>
       <a href="#swarm" data-v="swarm"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v8l-7 4-7-4V7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.2" fill="currentColor"/></svg>Swarm<em>agents build</em></a>
       <a href="#keys" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l8-8M16 6l2 2M14 8l2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Uplinks<em>keys · models</em></a>
-      <a href="#mind" data-v="mind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 18.2a6.5 6.5 0 0111 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Mind<em>you, analyzed</em></a>
+      <a href="#mind" data-v="mind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 18.2a6.5 6.5 0 0111 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Mind<em>genesis · you</em></a>
     </nav>
     <div class="hist-h">SESSIONS</div>
     <input id="hsearch" placeholder="search sessions…" aria-label="Search sessions" autocomplete="off">
@@ -157,7 +157,19 @@
       <div class="pad narrow">
         <div id="m-locked" class="card hud hidden"><h3>MIND SEALED</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
         <div id="m-open" class="hidden">
-          <div class="card hud mindp">
+          <div class="card hud mindp genp" id="genp">
+            <div class="ah"><i class="led ok" id="g-led"></i><h3><span id="g-name">GENESIS</span><small id="g-sub">—</small></h3>
+              <button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button></div>
+            <div class="facts" id="g-facts"></div>
+            <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once; ideas wait for you to hand them to the Swarm. It can't learn its way around the safety rules.</p>
+          </div>
+          <div class="card hud mt"><h3>LESSONS</h3>
+            <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="ghost" id="g-add">Teach</button></div>
+            <div id="g-lessons" class="mlist mt"></div>
+            <details class="mt" id="g-retd"><summary class="dim sm">Retired lessons</summary><div id="g-retired" class="mlist mt"></div></details></div>
+          <div class="card hud mt"><h3>IDEAS<small class="dim sm mono" style="margin-left:8px;letter-spacing:.06em">what it wants to become</small></h3><div id="g-ideas" class="mlist mt"></div></div>
+          <div class="card hud mt"><h3>JOURNAL</h3><div id="g-journal" class="journal mt"></div></div>
+          <div class="card hud mindp mt">
             <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
               <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
             <div class="facts" id="m-facts"></div>

@@ -231,3 +231,15 @@ body.still #field{display:none}
 .mlist .mi{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--code);font-size:13.5px}
 .mlist .mi p{flex:1;margin:0;min-width:0;overflow-wrap:anywhere}.mlist .mi small{display:block;font:10.5px "JetBrains Mono",monospace;color:var(--dim);letter-spacing:.06em;margin-bottom:2px;text-transform:uppercase}
 .mlist .mi button{flex:none;background:none;border:0;color:var(--dim);cursor:pointer;font-size:14px;padding:2px 4px}.mlist .mi button:hover{color:var(--bad)}
+
+/* Genesis: the mind that lives in Hive */
+.genp{background:radial-gradient(120% 140% at 0% 0%,rgba(255,196,0,.10),transparent 55%),linear-gradient(135deg,rgba(0,229,255,.07),rgba(166,108,255,.10)),var(--glass)}
+.genp #g-name{font-size:22px;letter-spacing:.22em}
+.genp .ah button{margin-left:auto}
+.mi.lesson p small b{color:var(--cy);font-weight:600}
+.mi .ib{display:flex;gap:6px;flex-shrink:0;align-items:flex-start}.mi .ib button{width:auto;padding:0 10px;height:28px;font:600 11px "JetBrains Mono",monospace;letter-spacing:.06em}
+.journal .je{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:0 0 14px}.journal .je.milestone{border-color:var(--cy)}
+.journal .je small{display:block;font:11px "JetBrains Mono",monospace;color:var(--dim);margin-bottom:4px}.journal .je p{margin:0 0 6px;white-space:pre-wrap}
+.acts .rate.on{color:var(--cy)}.acts .rate[data-act='down'].on{color:var(--warn,#ff8b6b)}
+.mlist .mi .ib button{border:1px solid var(--line);border-radius:8px;color:var(--mute)}.mlist .mi .ib button:hover{color:var(--cy);border-color:var(--cy)}
+.genp .facts{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}

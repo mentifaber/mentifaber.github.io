@@ -78,11 +78,13 @@ export const Mind = {
   },
 
   // what goes into the owner's chats
-  async brief(h, max) { const p = await this.parts(h); return (p.stable + p.recent).slice(0, max || 12000); },
-  // stable: profile and memories, which change rarely, so a model can keep them cached; recent: changes every message
-  async parts(h) {
+  async brief(h, max, skip) { const p = await this.parts(h, skip); return (p.stable + p.recent).slice(0, max || 12000); },
+  // stable: profile and memories, which change rarely, so a model can keep them cached; recent: changes every message.
+  // skip: messages already in the conversation at hand; repeating them as "activity" made small models echo them back
+  async parts(h, skip) {
     const m = await this.state(h); if (!m.on) return { stable: "", recent: "" };
-    const q = h.sql(), mem = q.exec("SELECT text FROM mem ORDER BY ts DESC LIMIT 60").toArray(), recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 14").toArray().reverse();
+    const q = h.sql(), mem = q.exec("SELECT text FROM mem ORDER BY ts DESC LIMIT 60").toArray(), key = (t) => clip(t, 60).toLowerCase(), seen = new Set((skip || []).map(key));
+    const recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 30").toArray().filter((x) => !seen.has(key(x.text))).slice(0, 14).reverse();
     let s = "";
     if (current(m)) s += "\n\nOWNER PROFILE (Hive's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
     if (mem.length) s += "\n\nOWNER MEMORIES:\n" + mem.map((x) => "- " + x.text).join("\n");
@@ -150,7 +152,7 @@ export const Mind = {
     if (path === "/mind/analyze") { try { const r = await this.analyze(h, origin); return J({ ok: true, profile: r.profile, at: r.at, model: r.model }); } catch (e) { return J({ error: String(e.message || e).slice(0, 300) }, 502); } }
     if (path === "/mind/remember") { const t = this.remember(h, b.text, "you"); return t ? J({ ok: true }) : J({ error: "nothing new to remember" }, 400); }
     if (path === "/mind/forget") {
-      if (b.all) { q.exec("DELETE FROM act"); q.exec("DELETE FROM mem"); await this.save(h, { on: m.on, profile: "", at: 0, n: 0 }); return J({ ok: true }); }
+      if (b.all) { q.exec("DELETE FROM act"); q.exec("DELETE FROM mem"); try { q.exec("DELETE FROM turn"); h._vecs = null; } catch (e) {} await this.save(h, { on: m.on, profile: "", at: 0, n: 0 }); return J({ ok: true }); }
       if (b.mem) q.exec("DELETE FROM mem WHERE id=?", +b.mem); if (b.act) q.exec("DELETE FROM act WHERE id=?", +b.act); if (b.profile) { m.profile = ""; m.at = 0; await this.save(h, m); }
       return J({ ok: true });
     }

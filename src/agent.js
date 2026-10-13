@@ -87,8 +87,10 @@ export class Agent extends DurableObject {
     this.touch(); this.busy = (this.busy || 0) + 1;
     const done = () => { this.busy = Math.max(0, this.busy - 1); this.touch(); };
     const ask = () => this.port().fetch(new Request("http://agent/v1/chat/completions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+    // the container can restart under a request ("port connection closed unexpectedly"): wait for it to come back and ask once more
+    const again = async () => { this.ready = false; await this.boot(); if (!(await this.waitReady(READY_WAIT))) throw new Error("it restarted and is still loading its model; try again in a minute"); this.restarts = (this.restarts || 0) + 1; return ask(); };
     if (!body.stream) {
-      try { const r = await ask(), t = await r.arrayBuffer(); return new Response(t, { status: r.status, headers: { "content-type": r.headers.get("content-type") || "application/json", "cache-control": "no-store" } }); }
+      try { const r = await ask().catch(again), t = await r.arrayBuffer(); return new Response(t, { status: r.status, headers: { "content-type": r.headers.get("content-type") || "application/json", "cache-control": "no-store" } }); }
       catch (e) { return J({ error: AGENT.name + " couldn't answer: " + String(e.message || e).slice(0, 200) }, 502); } finally { done(); }
     }
     // streaming: the reply starts at once; while the model is still reading a long prompt (minutes, on CPU) a comment
@@ -97,10 +99,19 @@ export class Agent extends DurableObject {
     const beat = () => { if (Date.now() - lastW > 14e3) { lastW = Date.now(); w.write(enc.encode(": " + AGENT.alias + " is reading\n\n")).catch(() => {}); } };
     beat(); const ping = setInterval(beat, 5000);
     (async () => {
+      let sent = false;
       try {
-        const r = await ask();
-        if (!r.ok || !r.body) { const t = await r.text(); let m = t.slice(0, 300); try { const j = JSON.parse(t); m = (j.error && (j.error.message || j.error)) || m; } catch (e) {} await w.write(enc.encode("data: " + JSON.stringify({ error: { message: String(m), status: r.status } }) + "\n\n")); return; }
-        const rd = r.body.getReader(); for (;;) { const { value, done: end } = await rd.read(); if (end) break; lastW = Date.now(); this.touch(); await w.write(value); }
+        for (let tries = 0; ; tries++) try {
+          const r = await ask();
+          if (!r.ok || !r.body) { const t = await r.text(); let m = t.slice(0, 300); try { const j = JSON.parse(t); m = (j.error && (j.error.message || j.error)) || m; } catch (e) {} await w.write(enc.encode("data: " + JSON.stringify({ error: { message: String(m), status: r.status } }) + "\n\n")); return; }
+          const rd = r.body.getReader(); for (;;) { const { value, done: end } = await rd.read(); if (end) break; sent = true; lastW = Date.now(); this.touch(); await w.write(value); }
+          break;
+        } catch (e) { // nothing reached the reader yet: the container went away under us, so bring it back and ask again (once)
+          if (sent || tries) throw e;
+          lastW = Date.now(); await w.write(enc.encode(": " + AGENT.alias + " restarted; asking again\n\n")); this.ready = false; await this.boot();
+          if (!(await this.waitReady(READY_WAIT))) throw new Error("it restarted and is still loading its model; try again in a minute");
+          this.restarts = (this.restarts || 0) + 1;
+        }
       } catch (e) { await w.write(enc.encode("data: " + JSON.stringify({ error: { message: AGENT.name + " couldn't answer: " + String(e.message || e).slice(0, 200) } }) + "\n\n")).catch(() => {}); }
       finally { clearInterval(ping); done(); w.close().catch(() => {}); }
     })();

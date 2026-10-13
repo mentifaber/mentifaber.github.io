@@ -546,7 +546,7 @@ export default {
           const j = JSON.parse(new TextDecoder().decode(body)), hh = new Headers({ "x-hive-owner": "1" });
           const m = await (await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/mind/brief", { headers: hh }))).json();
           if (Array.isArray(j.messages) && j.mind !== false && m.owner) { // one system message (Qwen's template allows only one, first); only what rarely changes, so it stays cached
-            const add = m.owner + (m.stable || ""), s0 = j.messages[0]; if (s0 && s0.role === "system" && typeof s0.content === "string") s0.content = s0.content + "\n\n" + add; else j.messages.unshift({ role: "system", content: add });
+            const add = m.owner + (m.genesis ? "\n\n" + m.genesis : "") + (m.stable || ""), s0 = j.messages[0]; if (s0 && s0.role === "system" && typeof s0.content === "string") s0.content = s0.content + "\n\n" + add; else j.messages.unshift({ role: "system", content: add });
             body = new TextEncoder().encode(JSON.stringify(j));
           }
         } catch (e) {}
@@ -600,6 +600,8 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(dailyReminders(env));
+    // Genesis reflects on its recent conversations when enough has happened (it decides; most hours it's a no-op)
+    if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/tick", { method: "POST", headers: { "x-hive-owner": "1" } })).catch(() => {}));
   },
 };
 

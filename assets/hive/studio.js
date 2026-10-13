@@ -8,14 +8,14 @@ const api = async (path, body, signal) => { const r = await fetch("/api/hive" + 
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hidden"), ms || 2600); };
 const ICON = '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 5" opacity=".6"/><path d="M20 6l12 7v14l-12 7-12-7V13z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 13l6 3.5v7L20 27l-6-3.5v-7z" fill="currentColor"/></svg>';
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "#"); // only real web links leave the page
-const SV = { swarm: '<svg viewBox="0 0 24 24"><path d="M8 3l4 2.3v4.6L8 12.2 4 9.9V5.3zM16 3l4 2.3v4.6l-4 2.3-4-2.3V5.3zM12 11.8l4 2.3v4.6L12 21l-4-2.3v-4.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', copy: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>', say: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', redo: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.3-5.6M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', dl: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
+const SV = { up: '<svg viewBox="0 0 24 24"><path d="M7 11v9H4v-9zM7 11l4-7c1.4 0 2.3 1 2 2.4L12.4 10H18a2 2 0 012 2.3l-1.2 6A2 2 0 0116.8 20H7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', down: '<svg viewBox="0 0 24 24"><path d="M7 13V4H4v9zM7 13l4 7c1.4 0 2.3-1 2-2.4L12.4 14H18a2 2 0 002-2.3l-1.2-6A2 2 0 0016.8 4H7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', swarm: '<svg viewBox="0 0 24 24"><path d="M8 3l4 2.3v4.6L8 12.2 4 9.9V5.3zM16 3l4 2.3v4.6l-4 2.3-4-2.3V5.3zM12 11.8l4 2.3v4.6L12 21l-4-2.3v-4.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', copy: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>', say: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', redo: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.3-5.6M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', dl: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
 
 // ── theme ──
 const applyTheme = () => { document.documentElement.dataset.theme = LS.get("theme", "dark") === "light" ? "light" : "dark"; }; // dark by default: it's a command deck
 applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") === "light" ? "dark" : "light"; LS.set("theme", t); applyTheme(); toast(t === "light" ? "Daylight mode" : "Night mode"); };
 
 // ── views ──
-let owner = false;
+let owner = false, gname = ""; // gname: Genesis, the mind the owner talks to (visitors talk to plain Hive)
 function route() {
   const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0];
   const view = ["studio", "swarm", "keys", "mind"].includes(v) ? v : "studio";
@@ -33,7 +33,7 @@ $("scrim").onclick = $("sideX").onclick = () => document.body.classList.remove("
 
 // ── models ──
 async function loadModels() {
-  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || [];
+  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").textContent = gname.toUpperCase() + " IS LISTENING";
   if (j.resting) { const t = new Date(j.resting).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); models.forEach((m) => { if (m.id.startsWith("workers-ai|")) m.group = "Cloudflare Workers AI (free) · resting until " + t; }); }
   const sel = $("model"), groups = {}; for (const m of models) (groups[m.group] = groups[m.group] || []).push(m);
   sel.innerHTML = Object.entries(groups).map(([g, ms]) => "<optgroup label='" + esc(g) + "'>" + ms.map((m) => "<option value='" + esc(m.id) + "'>" + esc(m.name) + "</option>").join("") + "</optgroup>").join("") || "<option value=''>No models available</option>";
@@ -119,14 +119,14 @@ function drawMsg(m, i) {
   const d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
   if (m.role === "user") d.innerHTML = "<div>" + (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools' style='justify-content:flex-end'>" + m.files.map((f) => "<span>📄 " + esc(f) + "</span>").join("") + "</div>" : "") + (m.show || m.text ? "<div class='b'>" + esc(m.show || m.text) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and resend' aria-label='Edit and resend'>✎</button><button data-uact='copy' title='Copy' aria-label='Copy'>⧉</button></div></div>";
   else {
-    const who = "<div class='who-line'>HIVE // <b>" + esc(String(m.model || $("model").value || "").split("|").pop().split("/").pop()) + "</b>" + (m.council ? " · COUNCIL" : "") + (m.streaming ? " · STREAMING" : "") + "</div>";
+    const who = "<div class='who-line'>" + esc((gname || "Hive").toUpperCase()) + " // <b>" + esc(String(m.model || $("model").value || "").split("|").pop().split("/").pop()) + "</b>" + (m.council ? " · COUNCIL" : "") + (m.streaming ? " · STREAMING" : "") + "</div>";
     const body = m.pending && !m.text ? who + (m.council ? "<div class='const'><svg><line x1='26' y1='16' x2='92' y2='62'/><line x1='156' y1='20' x2='92' y2='62'/><line x1='16' y1='96' x2='92' y2='62'/><line x1='162' y1='98' x2='92' y2='62'/><line x1='94' y1='8' x2='92' y2='62'/></svg><i class='lead'></i><i></i><i></i><i></i><i></i><i></i></div>" : "<div class='dots'><i></i><i></i><i></i></div>") + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
       : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1")
       : m.error ? "<p class='err'>" + esc(m.error) + "</p>"
       : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:6px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) +
         (m.drafts && m.drafts.length ? "<details class='drafts'><summary>⬡ " + m.drafts.filter((x) => x.text).length + " COUNCIL DRAFTS" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (tap to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
         (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
-    d.innerHTML = "<div class='av" + (m.pending ? " think" : "") + "'>" + ICON + "</div><div style='flex:1;min-width:0'><div class='b'>" + body + "</div>" + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl' title='Download'>" + SV.dl + "</button>" : "<button data-act='copy' title='Copy'>" + SV.copy + "</button><button data-act='say' title='Read aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Try again'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (m.model ? "<span class='meta'>" + esc(m.model.split("|").pop().split("/").pop()) + (m.ttft ? " · first word " + (m.ttft / 1000).toFixed(2) + "s" : "") + (m.ms ? " · " + (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>") + "</div>";
+    d.innerHTML = "<div class='av" + (m.pending ? " think" : "") + "'>" + ICON + "</div><div style='flex:1;min-width:0'><div class='b'>" + body + "</div>" + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl' title='Download'>" + SV.dl + "</button>" : "<button data-act='copy' title='Copy'>" + SV.copy + "</button><button data-act='say' title='Read aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Try again'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + esc(m.model.split("|").pop().split("/").pop()) + (m.ttft ? " · first word " + (m.ttft / 1000).toFixed(2) + "s" : "") + (m.ms ? " · " + (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>") + "</div>";
   }
   const old = $("log").querySelector(".m[data-i='" + i + "']"); if (old) old.replaceWith(d); else $("log").appendChild(d);
   return d;
@@ -146,6 +146,11 @@ $("log").onclick = async (e) => {
   if (a.dataset.act === "swarm") { const u = chat.msgs[i - 1], brief = ((u && u.text) || "") + "\n\nWhat we worked out so far:\n" + String(m.text || "").slice(0, 4000);
     if (!confirm("Release the swarm on this? It splits the work into tasks and builds it.")) return; const j = await api("/new", { brief }); if (j.error) return toast(j.error, 4000);
     try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); return; }
+  if (a.dataset.act === "up" || a.dataset.act === "down") { // 👍/👎: Genesis reads these when it reflects
+    const up = a.dataset.act === "up", r = up ? (m.rating > 0 ? 0 : 1) : (m.rating < 0 ? 0 : -1); let note = "";
+    if (r < 0) { note = prompt("What should " + gname + " do differently? (optional, it reads this when it reflects)") ; if (note === null) return; }
+    const j = await api("/genesis/rate", { turn: m.turn, rating: r, note: note || undefined }); if (j.error) return toast(j.error);
+    m.rating = r; save(); drawMsg(m, i); if (r) toast(r > 0 ? "Noted: " + gname + " keeps doing that" : gname + " will learn from this", 2400); return; }
   if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); [...$("log").children].forEach((n) => +n.dataset.i >= i && n.remove()); run(u.mode === "image"); }
 };
 const plain = (t) => String(t || "").replace(/```[\s\S]*?```/g, " (code) ").replace(/[#*_`>|]/g, "").replace(/\[(\d+)\]/g, "").replace(/\]\([^)]*\)/g, "]").replace(/\s+/g, " ").trim();
@@ -197,6 +202,7 @@ function send(text, opts) {
   if (sl) { const [, c, rest] = sl;
     if (c === "new") { inp.value = ""; return newChat(); }
     if (c === "me" || c === "mind") { inp.value = ""; grow(); location.hash = "mind"; return; }
+    if (c === "teach" && rest) { inp.value = ""; grow(); return api("/genesis/teach", { text: rest }).then((j) => toast(j.error || (gname || "Genesis") + " learned it", 3000)); }
     if (c === "remember" && rest) { inp.value = ""; grow(); return api("/mind/remember", { text: rest }).then((j) => toast(j.error || "Remembered", 2500)); }
     if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
     if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); }); }
@@ -219,16 +225,16 @@ async function run(image, opts) {
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><rect x='7' y='7' width='10' height='10' rx='2' fill='currentColor'/></svg>";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
   const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
-    messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
+    cid: chat.id, messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
     else if (u.council) j = await api("/chat", body, busy.signal);
     else j = await stream(body, m, i, busy.signal);
-  } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : "Couldn't reach the Hive. Check your connection.", text: m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; } }
+  } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : m.text ? null : "Couldn't reach the Hive. Check your connection.", text: m.text && e.name !== "AbortError" ? m.text + "\n\n_(the connection dropped here)_" : m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; j.turn = m.turn; } }
   busy = null; $("sendb").classList.remove("stop"); $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><path d='M12 19V5M5.5 11.5 12 5l6.5 6.5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
-  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value });
+  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
   m.ms = Date.now() - t0; lastMs = m.ms; lastTtft = m.ttft || 0; lastCps = m.text && m.ttft && m.ms > m.ttft ? Math.round(m.text.length / ((m.ms - m.ttft) / 1000)) : 0; tele();
   if (chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } delete u._images; save();
   return m;
@@ -247,9 +253,9 @@ async function stream(body, m, i, signal) {
     const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
     let k; while ((k = buf.indexOf("\n\n")) >= 0) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
-      if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
+      if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
       else if (ev === "delta") { if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
-      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; }
+      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
   }
@@ -548,7 +554,7 @@ $("agentp").onclick = async (e) => {
 // ── MIND: what Hive knows about the owner ──
 const MindV = {
   async load() {
-    const j = await api("/mind"); $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); if (j.error) return; MindV.j = j;
+    const j = await api("/mind"); $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); if (j.error) return; MindV.j = j; GenV.load();
     const st = j.stats || {}, k = st.kinds || {}, ago = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
     $("m-on").checked = !!j.on; $("m-led").className = "led " + (j.on ? "ok" : "");
     $("m-sub").textContent = j.on ? (j.at ? "profile from " + ago(j.at) + (j.model ? " · " + j.model.split("|").pop().split("/").pop() : "") + (j.fresh ? " · " + j.fresh + " new since" : "") : "no profile yet: analyze to build one") : "memory is off: nothing is noted or shared";
@@ -581,6 +587,45 @@ $("m-add").onclick = async () => { const t = $("m-new").value.trim(); if (!t) re
 $("m-new").onkeydown = (e) => { if (e.key === "Enter") $("m-add").click(); };
 $("m-wipe").onclick = async () => { if (!confirm("Forget everything Hive knows about you: the profile, every memory and the whole activity log? This can't be undone.")) return; await api("/mind/forget", { all: true }); toast("Forgotten"); MindV.load(); };
 $("v-mind").onclick = async (e) => { const b = e.target.closest("[data-mem],[data-act]"); if (!b) return; await api("/mind/forget", b.dataset.mem ? { mem: b.dataset.mem } : { act: b.dataset.act }); b.closest(".mi").remove(); };
+
+// ── GENESIS: the mind that lives in Hive (owner only) ──
+const GenV = {
+  async load() {
+    if (!$("genp")) return; // an older cached page without the Genesis panel
+    const j = await api("/genesis"); if (j.error) return; GenV.j = j;
+    const s = j.self, st = j.stats || {}, ago = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
+    const days = Math.max(1, Math.round((Date.now() - s.born) / 864e5)), name = esc(s.name);
+    $("g-name").textContent = s.name.toUpperCase(); gname = s.name;
+    $("g-sub").textContent = "named by " + s.creator + " · " + new Date(s.born).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) + " · " + (s.reflected ? "last reflected " + ago(s.reflected) + (s.model ? " · " + s.model.split("|").pop().split("/").pop() : "") : "hasn't reflected yet") + (j.due ? " · ready to reflect" : "");
+    $("g-facts").innerHTML = [["DAYS ALIVE", days], ["CONVERSATIONS", st.turns || 0], ["REMEMBERED", st.remembered || 0], ["👍 · 👎", (st.up || 0) + " · " + (st.down || 0)], ["LESSONS", st.lessons || 0], ["REFLECTIONS", st.reflections || 0], ["IDEAS", st.ideas || 0]].map(([a, b]) => "<div>" + a + "<b>" + esc(b) + "</b></div>").join("");
+    $("g-lessons").innerHTML = (j.lessons || []).map((l) => "<div class='mi lesson'><p><small>" + (l.src === "anders" ? "<b>" + esc(s.creator) + "</b>" : l.src === "reflection" ? "learned on its own" : esc(l.src)) + " · " + ago(l.ts) + "</small>" + esc(l.text) + "</p><button data-les='" + l.id + "' title='Retire this lesson'>✕</button></div>").join("") || "<p class='dim sm'>No lessons yet.</p>";
+    $("g-retired").innerHTML = (j.retired || []).map((l) => "<div class='mi'><p><small>retired " + ago(l.off_ts) + (l.why ? " · " + esc(l.why) : "") + "</small>" + esc(l.text) + "</p><button data-res='" + l.id + "' title='Bring it back'>↺</button></div>").join("") || "<p class='dim sm'>None.</p>";
+    $("g-retd").classList.toggle("hidden", !(j.retired || []).length);
+    $("g-ideas").innerHTML = (j.ideas || []).map((i) => "<div class='mi'><p><small>" + esc(i.status === "building" ? "the swarm is on it" : i.status) + " · " + ago(i.ts) + "</small><b>" + esc(i.title) + "</b><br>" + esc(i.detail) + "</p><div class='ib'>" + (i.status === "building" && i.pid ? "<button data-iopen='" + esc(i.pid) + "'>Open</button>" : "<button data-ib='" + i.id + "' title='Hand it to the Swarm to build'>Build</button>") + "<button data-idx='" + i.id + "' title='Not now'>✕</button></div></div>").join("") || "<p class='dim sm'>No ideas yet. " + name + " proposes them when it reflects.</p>";
+    $("g-journal").innerHTML = (j.journal || []).map((e) => "<div class='je " + esc(e.kind) + "'><small>" + esc(e.kind === "milestone" ? "milestone" : "reflection") + " · " + new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + (e.model ? " · " + esc(String(e.model).split("|").pop().split("/").pop()) : "") + "</small><p>" + esc(e.text) + "</p></div>").join("") || "<p class='dim sm'>Empty.</p>";
+  },
+  async reflect() {
+    const b = $("g-reflect"); b.disabled = true; b.textContent = "Reflecting…";
+    const j = await api("/genesis/reflect", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Reflect now";
+    if (j.error) toast(j.error, 6000); else toast("Reflected: " + [j.added.length + " learned", j.retired.length + " retired", j.ideas.length + " ideas"].join(" · "), 4000); GenV.load();
+  },
+};
+if ($("genp")) {
+$("g-reflect").onclick = () => GenV.reflect();
+$("g-add").onclick = async () => { const t = $("g-new").value.trim(); if (!t) return; const j = await api("/genesis/teach", { text: t }); if (j.error) return toast(j.error, 5000); $("g-new").value = ""; toast(gname + " learned it"); GenV.load(); };
+$("g-new").onkeydown = (e) => { if (e.key === "Enter") $("g-add").click(); };
+$("genp").closest(".pad").addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-les],[data-res],[data-ib],[data-idx],[data-iopen]"); if (!t) return;
+  if (t.dataset.les) { await api("/genesis/retire", { id: t.dataset.les }); return GenV.load(); }
+  if (t.dataset.res) { const j = await api("/genesis/restore", { id: t.dataset.res }); if (j.error) toast(j.error); return GenV.load(); }
+  if (t.dataset.idx) { await api("/genesis/idea", { id: t.dataset.idx, act: "dismiss" }); return GenV.load(); }
+  if (t.dataset.iopen) { history.replaceState(null, "", "/hive-app?p=" + t.dataset.iopen + "#swarm"); return route(); }
+  const i = (GenV.j.ideas || []).find((x) => String(x.id) === t.dataset.ib); if (!i || !confirm("Hand “" + i.title + "” to the Swarm? It plans, builds and reviews it; you decide what goes live.")) return;
+  const j = await api("/new", { brief: i.title + "\n\n" + i.detail + "\n\n(" + gname + "'s own idea for itself: something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI.)" }); if (j.error) return toast(j.error, 4000);
+  try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {}
+  await api("/genesis/idea", { id: i.id, act: "built", pid: j.id }); history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route();
+});
+}
 
 // ── start ──
 greet(); drawHist(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); if (owner && !LS.get("mind-sync", 0)) MindV.importLocal(true); }); route(); sync();
