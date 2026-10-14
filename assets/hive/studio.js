@@ -153,6 +153,13 @@ $("log").onclick = async (e) => {
     m.rating = r; save(); drawMsg(m, i); if (r) toast(r > 0 ? "Noted: " + gname + " keeps doing that" : gname + " will learn from this", 2400); return; }
   if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); [...$("log").children].forEach((n) => +n.dataset.i >= i && n.remove()); run(u.mode === "image"); }
 };
+const SAY_AS = Object.fromEntries("NATO NASA NOAA GDACS OPEC UNESCO ASEAN UNICEF FEMA LIDAR RADAR SCUBA LASER COVID AIDS GIF JPEG ASCII CAPTCHA WIFI OK AM PM NOT AND THE YOU ARE BUT FOR NOW NEW ALL ONE TWO YES NO STOP GO NOTE WARNING ALERT HELP".split(" ").map((w) => [w, 1]));
+const speakable = (t) => String(t || "").replace(/https?:\/\/\S+/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/[\u2010\u2011\u2012]/g, "-").replace(/(\d)\s*[–—]\s*(\d)/g, "$1 to $2").replace(/(\w)–(\w)/g, "$1-$2").replace(/\s*—\s*|\s+–\s+/g, ", ")
+  .replace(/≈|~(?=\s?\d)/g, "about ").replace(/±/g, " plus or minus ").replace(/×/g, " times ").replace(/→|->/g, " to ").replace(/&/g, " and ").replace(/(\d)\s?%/g, "$1 percent")
+  .replace(/°\s?F\b/g, " degrees Fahrenheit").replace(/°\s?C\b/g, " degrees Celsius").replace(/°/g, " degrees").replace(/\be\.g\./gi, "for example").replace(/\bi\.e\./gi, "that is").replace(/\betc\./gi, "et cetera").replace(/\bvs\.?\s/gi, "versus ")
+  .replace(/(\d)\s?km\/h\b/g, "$1 kilometers per hour").replace(/(\d)\s?mph\b/g, "$1 miles per hour").replace(/(\d)\s?km\b/g, "$1 kilometers").replace(/(\d)\s?nm\b/g, "$1 nautical miles").replace(/(\d)\s?ft\b/g, "$1 feet").replace(/(\d)\s?kts?\b/g, "$1 knots").replace(/(\d)\s?h\b/g, "$1 hours").replace(/(\d)\s?min\b/g, "$1 minutes")
+  .replace(/\bM\s?(\d\.\d)\b/g, "magnitude $1").replace(/\bKp\b/g, "K P").replace(/(\d(?:\.\d+)?)\s?([KMBT])\b/g, (m, n, u) => n + " " + { K: "thousand", M: "million", B: "billion", T: "trillion" }[u])
+  .replace(/\b[A-Z]{2,5}\b/g, (w) => (SAY_AS[w] ? w : w.split("").join(" "))).replace(/\s+([,.!?])/g, "$1").replace(/\s{2,}/g, " ").trim(); // tickers and initialisms letter by letter (X O M), words like NATO as words
 const plain = (t) => String(t || "").replace(/```[\s\S]*?```/g, " (code) ").replace(/[#*_`>|]/g, "").replace(/\[(\d+)\]/g, "").replace(/\]\([^)]*\)/g, "]").replace(/\s+/g, " ").trim();
 
 // ── attachments ──
@@ -234,7 +241,7 @@ async function run(image, opts) {
   busy = null; $("sendb").classList.remove("stop"); $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><path d='M12 19V5M5.5 11.5 12 5l6.5 6.5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
-  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
+  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text + (j.cut && !body.voice ? "\n\n_(cut off at the model's length limit: say “continue” for the rest)_" : ""), cut: j.cut || undefined, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
   m.ms = Date.now() - t0; lastMs = m.ms; lastTtft = m.ttft || 0; lastCps = m.text && m.ttft && m.ms > m.ttft ? Math.round(m.text.length / ((m.ms - m.ttft) / 1000)) : 0; tele();
   if (chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } delete u._images; save();
   return m;
@@ -255,7 +262,7 @@ async function stream(body, m, i, signal) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
       if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
       else if (ev === "delta") { if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
-      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; }
+      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; out.cut = !!d.cut; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
   }
@@ -298,7 +305,7 @@ const toWav = async (blob) => { // any recording → 16 kHz mono WAV, which Whis
   return readAs(new Blob([dv], { type: "audio/wav" }), "readAsDataURL");
 };
 // ── settings (this device) ──
-const SET = { rate: 1, sil: 800, hands: "1", barge: false, recog: "cloud", vmodel: "", motion: true, enter: true };
+const SET = { rate: 1, sil: 900, hands: "1", barge: false, recog: "cloud", vmodel: "", motion: true, enter: true };
 const S = (k) => LS.get("set:" + k, SET[k]), setS = (k, v) => LS.set("set:" + k, v);
 const motion = () => document.body.classList.toggle("still", !S("motion")); motion();
 
@@ -345,6 +352,7 @@ const Voice = (window.HiveVoice = {
     try { Voice.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
     catch (e) { return toast("Microphone blocked: allow it for this site"); }
     Voice.micAn = Voice.ac.createAnalyser(); Voice.micAn.fftSize = 256; Voice.ac.createMediaStreamSource(Voice.mic).connect(Voice.micAn);
+    try { Voice.ear = window.HiveEars ? await window.HiveEars.open(Voice.ac, Voice.mic) : null; } catch (e) { Voice.ear = null; } // assets/hive/ears.js; without it, the old recorder
     Voice.on = true; Voice.paused = false; $("voiceo").classList.remove("hidden"); Voice.ui(); viz.start(); Voice.loop();
   },
   ui() {
@@ -356,13 +364,23 @@ const Voice = (window.HiveVoice = {
   },
   async listen() { // one turn of the user speaking → text (or null)
     if (S("recog") === "device" && (window.SpeechRecognition || window.webkitSpeechRecognition) && !navigator.brave) return Voice.listenDevice();
-    if (S("hands") === "0") { Voice.set("Hold to talk", ""); await new Promise((ok) => (Voice.pttGo = ok)); if (!Voice.on) return null; }
+    const ptt = S("hands") === "0";
+    if (ptt) { Voice.set("Hold to talk", ""); await new Promise((ok) => (Voice.pttGo = ok)); if (!Voice.on) return null; }
     Voice.set("Listening…", "");
+    if (!Voice.ear) return Voice.listenRec();
+    const t = Voice.ear.turn({ engine: S("recog") === "whisper" ? "whisper" : "flux", ptt, silence: +S("sil") || 900, guard: ptt ? 0 : 450, keyterm: gname || "Hive", lang: (navigator.language || "en").slice(0, 2),
+      onStart: () => Voice.set("Listening…", ""), onPartial: (x) => { $("vtext").textContent = x; }, onSend: () => Voice.set("Transcribing…"), onWait: () => Voice.set("Listening…", ""), onError: (m) => toast("Couldn't hear that: " + m) });
+    if (ptt) Voice.pttStop = () => Voice.ear && Voice.ear.stop();
+    const r = await t; Voice.pttStop = null;
+    if (!Voice.on || Voice.paused || !r) return null;
+    Voice.sttMs = r.sttMs || 0; Voice.heardBy = r.engine; return r.text;
+  },
+  async listenRec() { // browsers where the ears can't open: record, then Whisper
     let blob; try { Voice.h = await record({ vad: S("hands") !== "0", stream: Voice.mic, an: Voice.micAn, silence: S("sil"), level: (lv) => (Voice.lv = lv) }); if (S("hands") === "0") Voice.pttStop = () => Voice.h && Voice.h.stop(); blob = await Voice.h.finished; }
     catch (e) { Voice.set("Microphone error", e.message); return null; }
     Voice.h = null; if (!Voice.on || Voice.paused || !blob) return null;
     Voice.set("Transcribing…"); const t0 = performance.now();
-    try { const text = await stt(blob); Voice.sttMs = performance.now() - t0; return text; } catch (e) { Voice.set("Couldn't hear that", e.message); await sleep(1200); return null; }
+    try { const text = await stt(blob); Voice.sttMs = performance.now() - t0; Voice.heardBy = "whisper"; return window.HiveEars && window.HiveEars.phantom(text, 1000) ? null : text; } catch (e) { Voice.set("Couldn't hear that", e.message); await sleep(1200); return null; }
   },
   listenDevice() { // browser recognition: live captions while you talk
     return new Promise((ok) => { const SR = window.SpeechRecognition || window.webkitSpeechRecognition, r = new SR(); r.lang = navigator.language || "en-US"; r.interimResults = true; r.continuous = false; let fin = "";
@@ -376,14 +394,14 @@ const Voice = (window.HiveVoice = {
       const frame = await Voice.frame(); Voice.hush(); Voice.spoken = 0; Voice.live = true; Voice.t0 = performance.now(); Voice.first = 0;
       const m = await send(text, { voice: true, model: voiceModel(), images: frame ? [frame] : null, live: !!frame }); Voice.live = false; if (!Voice.on) return;
       if (!m || m.error) { Voice.set("Something went wrong", m && m.error); await sleep(1800); continue; }
-      Voice.feed(m.text || "", true); if (Voice.q.length || Voice.playing) Voice.set("Speaking…");
+      Voice.feed(m.cut ? String(m.text || "").replace(/[^.!?…]*$/, "") || m.text : m.text || "", true); if (Voice.q.length || Voice.playing) Voice.set("Speaking…");
       if (S("barge") && S("hands") !== "0") Voice.watchBarge();
       await Voice.drained();
     }
   },
   watchBarge() { // talking over the reply cuts it off and starts the next turn
     let loud = 0; const d = new Uint8Array(Voice.micAn.fftSize);
-    const t = setInterval(() => { if (!Voice.playing) return clearInterval(t); Voice.micAn.getByteTimeDomainData(d); let s = 0; for (const v of d) s += (v - 128) ** 2; const lv = Math.sqrt(s / d.length) / 30; loud = lv > .32 ? loud + 50 : 0; if (loud >= 350) { clearInterval(t); Voice.hush(); } }, 50);
+    const t = setInterval(() => { if (!Voice.playing) return clearInterval(t); if (Voice.ear) loud = Voice.ear.loud; else { Voice.micAn.getByteTimeDomainData(d); let s = 0; for (const v of d) s += (v - 128) ** 2; const lv = Math.sqrt(s / d.length) / 30; loud = lv > .32 ? loud + 50 : 0; } if (loud >= 350) { clearInterval(t); Voice.hush(); } }, 50);
   },
   // ── eyes: the camera or a shared screen; one frame goes with each turn ──
   async cam(on, facing) {
@@ -404,13 +422,14 @@ const Voice = (window.HiveVoice = {
   q: [], playing: false, gen: 0, spoken: 0,
   pick() { const s = LS.get("voice", ""); if (s && (s === "device" || !Voice.list || Voice.list.some((v) => v.id === s))) return s; return (Voice.list && Voice.list[0] && Voice.list[0].id) || "device"; }, // unchosen: ElevenLabs if you have it, else free Aura-2
   clip(text) { const g = Voice.gen; if (Voice.pick() === "device") return Promise.resolve({ device: text, g });
-    return api("/tts", { text, voice: Voice.pick() }).then((j) => (j.error ? { device: text, g, err: j.error } : { url: j.audio, g, used: j.used })).catch(() => ({ device: text, g })); },
-  queue(text) { text = plain(text); if (!text) return; Voice.q.push(Voice.clip(text)); if (!Voice.playing) Voice.play(); },
+    const once = () => api("/tts", { text, voice: Voice.pick() }).then((j) => { if (j.error) throw new Error(j.error); return j; });
+    return once().catch(() => sleep(250).then(once)).then((j) => { const a = new Audio(); a.preload = "auto"; a.src = j.audio; return { url: j.audio, audio: a, g, used: j.used }; }).catch((e) => ({ device: text, g, err: e.message })); },
+  queue(text) { text = speakable(plain(text)); if (!text) return; Voice.q.push(Voice.clip(text)); if (!Voice.playing) Voice.play(); },
   async play() {
     Voice.playing = true; if (Voice.on) Voice.set("Speaking…");
     while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue;
-      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "VOICE IN " + (Voice.first / 1000).toFixed(1) + "s" + (Voice.sttMs ? " · HEARD " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used.toUpperCase() : ""); }
-      await new Promise((ok) => { if (c.url) { const a = (Voice.audio = new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
+      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "VOICE IN " + (Voice.first / 1000).toFixed(1) + "s" + (Voice.heardBy === "flux" ? " · HEARD LIVE" : Voice.sttMs ? " · HEARD " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used.toUpperCase() : ""); }
+      await new Promise((ok) => { if (c.url) { const a = (Voice.audio = c.audio || new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
     Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f());
   },
   device(text) { if (!window.speechSynthesis) return Promise.resolve(); return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03 * (+S("rate") || 1); u.onend = u.onerror = ok; speechSynthesis.speak(u); }); },
@@ -423,7 +442,7 @@ const Voice = (window.HiveVoice = {
   },
   say(text) { Voice.hush(); Voice.spoken = 0; Voice.feed(String(text || ""), true); return Voice.drained(); },
   hush() { Voice.gen++; Voice.q = []; try { speechSynthesis.cancel(); } catch (e) {} if (Voice.audio) { Voice.audio.pause(); Voice.audio = null; } Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f()); },
-  end() { Voice.on = false; Voice.hush(); if (Voice.h) Voice.h.stop(); if (Voice.pttGo) Voice.pttGo(); Voice.stopVideo(); if (Voice.mic) Voice.mic.getTracks().forEach((t) => t.stop()); Voice.mic = null; viz.stop(); $("voiceo").classList.add("hidden"); },
+  end() { Voice.on = false; Voice.hush(); if (Voice.h) Voice.h.stop(); if (Voice.ear) { Voice.ear.close(); Voice.ear = null; } if (Voice.pttGo) Voice.pttGo(); Voice.stopVideo(); if (Voice.mic) Voice.mic.getTracks().forEach((t) => t.stop()); Voice.mic = null; viz.stop(); $("voiceo").classList.add("hidden"); },
 });
 const voiceModel = () => { const v = S("vmodel"); if (!v) return ""; if (v !== "fast") return models.some((m) => m.id === v) ? v : "";
   const fast = /(groq|cerebras|sambanova)/i, good = /gpt-oss-120b|llama-3\.3-70b|llama-4|qwen3|kimi|gpt-oss-20b/i; // fastest inference hosts, decent models
@@ -435,7 +454,7 @@ const viz = { raf: 0, start() { cancelAnimationFrame(viz.raf); const c = $("viz"
     const d = Math.min(2, devicePixelRatio || 1), W = (c.width = c.clientWidth * d), H = (c.height = c.clientHeight * d), cx = W / 2, cy = H * .4, R = Math.min(W, H) * .16, time = (t - t0) / 1000, st = getComputedStyle(document.documentElement);
     const cyc = st.getPropertyValue("--cy").trim(), vic = st.getPropertyValue("--vi").trim(), hnc = st.getPropertyValue("--hn").trim(), col = Voice.mode === "talk" ? vic : Voice.mode === "think" ? hnc : cyc;
     const an = Voice.mode === "talk" ? Voice.outAn : Voice.micAn; let lv = 0; if (an && (Voice.mode === "talk" || Voice.mode === "listen")) { an.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) lv += fd[i]; lv /= 64 * 255; } else fd.fill(0);
-    if (Voice.mode === "listen" && Voice.lv) lv = Math.max(lv, Voice.lv * .6); sm += (lv - sm) * .25;
+    const ml = Voice.ear ? Voice.ear.level : Voice.lv; if (Voice.mode === "listen" && ml) lv = Math.max(lv, ml * .6); sm += (lv - sm) * .25;
     const glow = g.createRadialGradient(cx, cy, R * .2, cx, cy, R * 3.2); glow.addColorStop(0, col + "55"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
     const bars = 72; for (let i = 0; i < bars; i++) { const a = (i / bars) * Math.PI * 2 + time * .15, v = (fd[i % 64] || 0) / 255, len = R * (.12 + v * 1.1 + (Voice.mode === "think" ? .25 * (1 + Math.sin(time * 6 + i * .5)) / 2 : 0));
       g.strokeStyle = col; g.globalAlpha = .35 + v * .65; g.lineWidth = 2.2 * d; g.lineCap = "round"; g.beginPath(); g.moveTo(cx + Math.cos(a) * R * 1.25, cy + Math.sin(a) * R * 1.25); g.lineTo(cx + Math.cos(a) * (R * 1.25 + len), cy + Math.sin(a) * (R * 1.25 + len)); g.stroke(); }
@@ -447,7 +466,7 @@ const viz = { raf: 0, start() { cancelAnimationFrame(viz.raf); const c = $("viz"
   }; viz.raf = requestAnimationFrame(draw); }, stop() { cancelAnimationFrame(viz.raf); } };
 
 $("voice").onclick = () => Voice.start(); $("vend").onclick = $("vx").onclick = () => Voice.end();
-$("vmute").onclick = () => { Voice.paused = !Voice.paused; Voice.ui(); if (Voice.paused) { Voice.hush(); if (Voice.h) Voice.h.stop(); Voice.set("Paused", ""); } else Voice.loop(); };
+$("vmute").onclick = () => { Voice.paused = !Voice.paused; Voice.ui(); if (Voice.paused) { Voice.hush(); if (Voice.h) Voice.h.stop(); if (Voice.ear) Voice.ear.cancel(); Voice.set("Paused", ""); } else Voice.loop(); };
 const pttDown = (e) => { e.preventDefault(); Voice.hush(); $("vptt").classList.add("held"); if (Voice.pttGo) { const f = Voice.pttGo; Voice.pttGo = null; f(); } };
 const pttUp = () => { $("vptt").classList.remove("held"); setTimeout(() => Voice.pttStop && Voice.pttStop(), 150); };
 $("vptt").addEventListener("pointerdown", pttDown); ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => $("vptt").addEventListener(ev, pttUp));
@@ -481,7 +500,7 @@ $("s-theme").onchange = () => { LS.set("theme", $("s-theme").value); applyTheme(
 $("s-motion").onchange = () => { setS("motion", $("s-motion").checked); motion(); };
 $("s-enter").onchange = () => setS("enter", $("s-enter").checked);
 $("s-rate").oninput = () => { setS("rate", +$("s-rate").value); $("s-rate-v").textContent = (+$("s-rate").value).toFixed(2) + "×"; if (Voice.audio) Voice.audio.playbackRate = +$("s-rate").value; };
-$("s-hands").onchange = () => { setS("hands", $("s-hands").value); if (Voice.on) { Voice.ui(); if (Voice.h) Voice.h.stop(); } };
+$("s-hands").onchange = () => { setS("hands", $("s-hands").value); if (Voice.on) { Voice.ui(); if (Voice.h) Voice.h.stop(); if (Voice.ear) Voice.ear.cancel(); } };
 $("s-sil").oninput = () => { setS("sil", +$("s-sil").value); $("s-sil-v").textContent = ($("s-sil").value / 1000).toFixed(1) + " s"; };
 $("s-barge").onchange = () => { setS("barge", $("s-barge").checked); if (Voice.on) Voice.ui(); };
 $("s-recog").onchange = () => setS("recog", $("s-recog").value);
