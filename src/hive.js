@@ -10,6 +10,8 @@ import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
 import { Genesis, genesisTables, asksSystems } from "./hive-genesis.js";
 import { vigilBrief, briefTopics } from "./vigil.js";
+import { trends, worldText } from "./hive-world.js";
+import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
 const CF_MODELS = [
@@ -586,14 +588,23 @@ export class Hive extends DurableObject {
     // Vigil's live board: aircraft, quakes, space weather, conflict, alerts… whatever he asks about, read just now.
     // Asked from inside Vigil, the board always comes along (he's looking at it), with where he is and what he's looking at.
     const fromVigil = owner && b.vigil && typeof b.vigil === "object", topics = owner ? briefTopics(last.text, fromVigil) : [];
+    const wantWL = owner && /\b(my )?(watch ?list|portfolio|my (stocks|coins|positions|holdings))\b/i.test(last.text), wl = wantWL ? (await this.ctx.storage.get("watchlist")) || [] : null;
+    if (wantWL && !topics.includes("markets") && !topics.includes("summary")) topics.push("markets");
     if (topics.length) try {
       let home = null; const w = fromVigil && b.vigil.where;
       if (w && isFinite(+w.lat) && isFinite(+w.lon)) home = { lat: +w.lat, lon: +w.lon, name: String(w.name || "").slice(0, 80) || null };
       else try { const g = JSON.parse(req.headers.get("x-geo") || "null"); if (g && g.lat != null) home = { lat: +g.lat, lon: +g.lon, name: [g.city, g.region].filter(Boolean).join(", ") || null }; } catch (e) {}
-      const vb = await vigilBrief(this.env, topics, home, last.text), link = new URL(req.url).origin + "/vigil-app";
+      const vb = await vigilBrief(this.env, topics, home, last.text, wl && wl.length ? wl : undefined), link = new URL(req.url).origin + "/vigil-app";
       if (vb.text) { sources.push({ title: "Vigil · live board", url: link }); notes.push("[" + sources.length + "] VIGIL LIVE BOARD (his private dashboard; every line read from its source just now, " + new Date(vb.at).toISOString().slice(11, 16) + " UTC" + (home ? "; his position: " + (home.name || home.lat.toFixed(2) + ", " + home.lon.toFixed(2)) : "") + "):\n" + vb.text +
         (fromVigil && b.vigil.view ? "\nHe is on Vigil's " + String(b.vigil.view).slice(0, 20) + " view" + (b.vigil.sel ? "; selected: " + String(b.vigil.sel).slice(0, 300) : "") + "." : "")); tools.push("read Vigil's live board (" + vb.ok.join(", ") + ")"); }
     } catch (e) { notes.push("(Vigil's live board couldn't be read: " + e.message + "; say so)"); }
+    if (wantWL && wl && !wl.length) notes.push("(His Vigil watchlist is empty: he adds symbols in Vigil → World → Markets.)");
+    // Genesis's own world record: for war, tension, escalation and "what patterns do you see"
+    if (owner && (WORLD_Q.test(last.text) || topics.includes("conflict") || topics.includes("summary"))) try {
+      const t = trends(this); sources.push({ title: "Genesis's world record (GDELT, counted hourly)", url: new URL(req.url).origin + "/vigil-app#world" }); notes.push("[" + sources.length + "] " + worldText(t)); tools.push("read its world record (" + (t.empty ? "empty so far" : t.days + " days") + ")");
+    } catch (e) { notes.push("(Genesis's world record couldn't be read: " + e.message + ")"); }
+    // prices for anyone: any ticker, coin or name in the message (public data; the owner gets them through Vigil's board above)
+    if (!owner) try { const syms = await symbolsFor(last.text); if (syms.length) { const qs = await quotes(syms); sources.push({ title: "Market quotes", url: "https://finance.yahoo.com/quote/" + encodeURIComponent(qs[0].sym) }); notes.push("[" + sources.length + "] LIVE QUOTES, read just now:\n" + qs.map(quoteText).join("\n")); tools.push("checked prices for " + syms.join(", ")); } } catch (e) {}
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
@@ -694,4 +705,5 @@ export class Hive extends DurableObject {
     const t = await complete(this.env, kv.v, kv.key, m2, system, msgs, 2000); return t ? { text: t, by: m2.split("/").pop() } : null;
   }
 }
+const WORLD_Q = /\b(world ?war|ww ?(3|iii)|wars?|tensions?|escalat\w*|nuclear|brink|conflicts?|hostilit\w*|geopolitic\w*|patterns?|trends?|nato|russia|china|taiwan|iran|israel|ukraine|pakistan|north korea|great powers?)\b/i;
 const VOICE_RULE = "\n\nSPOKEN REPLY (this outranks every formatting habit above): your words will be read aloud to someone talking to you. Answer like a person talking: lead with the answer, usually two to four sentences; go longer only when asked for detail or a rundown, and then still in plain spoken sentences. No Markdown, no lists or headings, no bold, no emoji, no links or [n] source numbers. Say numbers and units the way you'd say them out loud. If the message looks misheard or makes no sense, say so in one short sentence and ask them to repeat it; never answer with nothing. Never offer to fetch or check something later.";

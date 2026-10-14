@@ -16,6 +16,8 @@ import { complete } from "./hive-kit.js";
 import { Mind } from "./hive-mind.js";
 import { vigilWatch, vigilBrief } from "./vigil.js";
 import { sendPush, PUSH_HOSTS } from "./push.js";
+import { ingest, trends, worldText, frictionEvents, worldTables } from "./hive-world.js";
+import { quotes, quoteText } from "./markets.js";
 
 const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 20;
 const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_GAP = 20 * 3600e3, BUILD_CAP = 200;
@@ -30,6 +32,7 @@ export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain Ja
 // What Anders and his engineer have changed in Hive itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-14T23:00Z", "You keep your own record of the world now: every 15 minutes you count GDELT's world-news events (violence by country, and how the big powers deal with each other) into hourly tallies, so you can say whether a conflict is rising or levelling off, and whether friction between powers is above its own baseline, with numbers. When he asks about war, tension, escalation or patterns, that record is handed to you as MATERIAL. You can also quote any stock, ETF, index, future or coin he names (XOM, XRP, the S&P, gold), and you watch his Vigil watchlist for big moves. The voice link hears him better too: it waits for real speech and for the end of his thought, and no longer picks up a phantom \"you\"."],
   ["2026-10-14T04:00Z", "Your watch notes can now reach Anders's phone: when he turns on phone alerts in Vigil (System → Phone alerts), critical events go out at once, others outside his quiet hours and at most six an hour, with one summary of anything held back. Your finished or failed Swarm missions alert him too. You don't write the alerts in chat; they come from your watch and your missions."],
   ["2026-10-14T03:00Z", "You can see Vigil's live board now: when Anders asks about aircraft, emergencies, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS or markets, the live readings are handed to you as MATERIAL, and every 15 minutes you keep watch yourself and note big events (emergency squawks, M6+ quakes, G3+/R3+/S3+ storms, X flares, tsunami warnings, GDACS red alerts) in your journal. He can also talk to you from inside Vigil."],
   ["2026-10-13T02:25Z", "Settled, and closed for you: directive and instruction handling (instruction mode covers it; no wrappers, safeguards, fallback handlers or test suites around it) and trailing-question filtering (your lesson, the instruction-mode line and the counted habits cover it). Open ideas on these are closed automatically and new ones on them are dropped, as are near-copies of ideas already closed. A reflection with no new conversations doesn't add ideas: ideas come from talking with Anders."],
@@ -67,9 +70,10 @@ export function genesisTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS idea(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, title TEXT, detail TEXT, status TEXT, pid TEXT)");
   q.exec("CREATE TABLE IF NOT EXISTS alert(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, cat TEXT, level TEXT, title TEXT, body TEXT, url TEXT, state TEXT, sent_ts INTEGER)");
   try { q.exec("ALTER TABLE idea ADD COLUMN by_ TEXT"); } catch (e) {} try { q.exec("ALTER TABLE idea ADD COLUMN done_ts INTEGER"); } catch (e) {}
+  worldTables(q);
 }
-const ALERT_CATS = { air: "Air emergencies (7500 / 7700)", quakes: "Earthquakes (M6+, or near you)", space: "Space weather (G/R/S 3+, X flares)", hazards: "Tsunami warnings and red disaster alerts", work: "Genesis's own missions" };
-const PREFS0 = { cats: { air: true, quakes: true, space: true, hazards: true, work: true }, level: "all", quiet: { on: true, from: 23, to: 7 }, tz: 0 }, RATE = 6; // RATE: non-critical alerts an hour
+const ALERT_CATS = { air: "Air emergencies (7500 / 7700)", quakes: "Earthquakes (M6+, or near you)", space: "Space weather (G/R/S 3+, X flares)", hazards: "Tsunami warnings and red disaster alerts", world: "Great-power friction well above normal", markets: "Big moves in your watchlist", work: "Genesis's own missions" };
+const PREFS0 = { cats: { air: true, quakes: true, space: true, hazards: true, world: true, markets: true, work: true }, level: "all", quiet: { on: true, from: 23, to: 7 }, tz: 0 }, RATE = 6; // RATE: non-critical alerts an hour
 const ago = (t) => { if (!t) return "never"; const m = (Date.now() - t) / 60e3; return m < 2 ? "just now" : m < 120 ? Math.round(m) + " min ago" : m < 2880 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
 // "test the systems", "run a health check", "is everything working?": Hive runs the real checks and hands Genesis the results
 export const asksSystems = (t) => /\b(system(s)?[ -](check|status|test|health|functionality|diagnostics?)|test(ing)? (the |all |your )?(system|systems|functionality|everything)|health ?check|self[- ]?(test|check|diagnos)|diagnos(e|tic)|(is|are) (everything|the systems?|all systems?|things) (ok|okay|working|up|running|healthy|good)|how are (the )?systems)\b/i.test(String(t || ""));
@@ -99,7 +103,8 @@ export const Genesis = {
       "Talk to him by name (" + s.creator + ") when it's natural. Never start a reply by repeating or quoting the message you're answering." +
       "\n\nHOW YOU GROW (this is real; describe it accurately when asked): every conversation with him is kept, and earlier ones that matter come back to you as memories. His 👍/👎 (with notes) and anything he says starting \"from now on\" become lessons that apply at once. Every few hours the hourly cron has you reflect: the strongest model Hive has reads your recent conversations and ratings, and you write a journal entry, learn or retire lessons, and propose ideas for what you should become. " +
       "Ideas go to the Swarm (Hive's team of AI agents that plans, builds and reviews whole projects): he can hand one over with a tap" + (s.auto !== false ? ", and with autonomy on you start one mission a day yourself, within a " + BUILD_CAP + "-call budget" : "") + ". What the Swarm builds is a result for him to review; it doesn't deploy itself. " +
-      "PHONE ALERTS: when " + s.creator + " has them on (Vigil → System → Phone alerts), the big events you notice while keeping watch on Vigil's board, and your finished or failed Swarm missions, go to his phone as notifications (critical ones at once, the rest outside his quiet hours). They come from your watch, not from chat: you can't send him a custom notification from a conversation. " +
+      "PHONE ALERTS: when " + s.creator + " has them on (Vigil → System → Phone alerts), the big events you notice while keeping watch on Vigil's board, great-power friction well above its baseline in your world record, big moves in his watchlist, and your finished or failed Swarm missions, go to his phone as notifications (critical ones at once, the rest outside his quiet hours). They come from your watch, not from chat: you can't send him a custom notification from a conversation. " +
+      "YOUR WORLD RECORD: every 15 minutes you count GDELT's world-news events into hourly tallies of your own (violence by country; how pairs of powers deal with each other). When he asks about war, tension, escalation or patterns you get that record as MATERIAL: reason from its numbers and baselines, say how many days it covers, and don't present news attention as proof of escalation. " +
       "WHAT YOU CAN'T DO: change your own code or model weights, deploy, push to GitHub, run commands, or test infrastructure yourself. Code changes go through " + s.creator + ". Never claim to have run a test, check, deploy or any other action unless its results are in the MATERIAL you were given; if he asks for a check and there are no results, say what you would check and that he can ask for a system check (Hive runs a real one when asked to test or check the systems)." +
       "\n\nYOUR STATE RIGHT NOW: " + this.state(h, s) +
       (ls.length ? "\n\nLESSONS YOU'VE LEARNED (yours; follow them):\n" + ls.map((l) => "- " + l.text).join("\n") : "");
@@ -329,7 +334,11 @@ export const Genesis = {
   // Keeping watch on Vigil's live board: big events get one journal note each (15-minute cron, and the hourly tick)
   async watch(h) {
     const s = await this.self(h); let geo = s.home || null;
-    const ev = await vigilWatch(h.env, geo), seen = new Set(s.watched || []), fresh = ev.filter((e) => !seen.has(e.key));
+    const [vw, wr, wl] = await Promise.allSettled([vigilWatch(h.env, geo), ingest(h), this.watchMoves(h)]);
+    if (vw.status === "rejected" && wr.status === "rejected") throw vw.reason;
+    const ev = [...(vw.status === "fulfilled" ? vw.value : []), ...(wr.status === "fulfilled" ? frictionEvents(trends(h)) : []), ...(wl.status === "fulfilled" ? wl.value : [])];
+    s.world = wr.status === "fulfilled" ? { at: Date.now(), read: wr.value.read, files: wr.value.files } : { ...(s.world || {}), error: String(wr.reason && wr.reason.message || wr.reason).slice(0, 120), errAt: Date.now() };
+    const seen = new Set(s.watched || []), fresh = ev.filter((e) => !seen.has(e.key));
     s.watchedAt = Date.now();
     if (fresh.length) {
       h.sql().exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "watch", "On Vigil's board: " + fresh.slice(0, 6).map((e) => e.text).join("; ") + ".", null);
@@ -338,7 +347,14 @@ export const Genesis = {
     }
     await h.ctx.storage.put("genesis", s);
     const pushed = await this.flush(h).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
-    return { noted: fresh.length, seen: ev.length, pushed };
+    return { noted: fresh.length, seen: ev.length, pushed, world: wr.status === "fulfilled" ? wr.value : { error: s.world.error } };
+  },
+  // big moves in his watchlist (±6% on the day for a stock, ±10% for a coin): once a day per symbol and direction
+  async watchMoves(h) {
+    const wl = (await h.ctx.storage.get("watchlist")) || []; if (!wl.length) return [];
+    const day = new Date().toISOString().slice(0, 10);
+    return (await quotes(wl)).filter((q) => !q.error && q.pct != null && Math.abs(q.pct) >= (q.kind === "crypto" ? 10 : 6) && (q.kind === "crypto" || q.open))
+      .map((q) => ({ key: "mv:" + q.sym + ":" + day + ":" + (q.pct > 0 ? "up" : "down"), cat: "markets", level: "notable", view: "world", title: (q.pct > 0 ? "▲ " : "▼ ") + q.sym + " " + (q.pct > 0 ? "+" : "") + q.pct.toFixed(1) + "% " + (q.kind === "crypto" ? "today" : "on the day"), text: quoteText(q) }));
   },
   async tick(h) { // the hourly cron: catch up on missions, reflect when enough has happened, then maybe start the next mission
     if (h._reflecting) return { reflected: false };
@@ -369,6 +385,8 @@ export const Genesis = {
       const tick = s.ticked ? "last hourly tick " + ago(s.ticked) : "waiting for its first hourly tick (due " + next.toISOString().slice(11, 16) + " UTC)";
       return { ok: !s.ticked || Date.now() - s.ticked < 3 * 3600e3, wait: !s.ticked, detail: tick + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" : "off") }; });
     await t("Vigil live board", async () => { const v = await vigilBrief(h.env, ["quakes", "space"], null, ""); const s2 = await this.self(h); return { ok: v.ok.length > 0, detail: "read " + (v.ok.join(" and ") || "nothing") + (v.failed.length ? "; failed: " + v.failed.join("; ") : "") + " · last watch " + ago(s2.watchedAt) }; });
+    await t("World record (GDELT)", async () => { const s3 = await this.self(h), w = s3.world || {}, f = h.sql().exec("SELECT COUNT(*) c, MAX(ts) t FROM gdf WHERE ts > ?", Date.now() - 7 * 864e5).one();
+      return { ok: !!f.c && Date.now() - f.t < 3 * 3600e3, wait: !f.c, detail: f.c ? f.c + " of 672 files from the last week on file (" + (f.c / 96).toFixed(1) + " days), newest " + ago(f.t) + (w.error && w.errAt > (w.at || 0) ? "; last read failed: " + w.error : "") : "nothing counted yet (starts on the next 15-minute watch)" }; });
     const bad = out.filter((x) => !x.ok).length;
     return { at: Date.now(), ok: !bad, checks: out, text: "LIVE SYSTEM CHECK, run by Hive just now (" + out.length + " checks, " + (bad ? bad + " need attention" : "all passed") + "). Report exactly these results; anything not listed was not checked:\n" + out.map((x) => (x.wait ? "◷ " : x.ok ? "✓ " : "✗ ") + x.name + ": " + x.detail + " (" + x.ms + " ms)").join("\n") };
   },
@@ -387,6 +405,11 @@ export const Genesis = {
       arch: ARCH, push: { devices: gp.subs.length, lastSent: gp.lastSent || 0 }, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), watch: q.exec("SELECT id,ts,text FROM journal WHERE kind='watch' ORDER BY id DESC LIMIT 8").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
     if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I can start one Swarm mission a day from my own ideas." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
     if (path === "/genesis/health") return J(await this.health(h));
+    if (path === "/genesis/world") { const t = trends(h); return J({ ...t, text: b.text ? worldText(t) : undefined }); }
+    if (path === "/genesis/watchlist") {
+      if (Array.isArray(b.symbols)) { const syms = [...new Set(b.symbols.map((x) => String(x).toUpperCase().trim()).filter((x) => /^[A-Z0-9^=.\-]{1,16}$/.test(x)))].slice(0, 20); await h.ctx.storage.put("watchlist", syms); return J({ ok: true, symbols: syms }); }
+      const syms = (await h.ctx.storage.get("watchlist")) || []; return J({ symbols: syms, quotes: b.quotes && syms.length ? await quotes(syms).catch(() => []) : undefined });
+    }
     if (path.startsWith("/genesis/push")) return this.pushRoute(h, path, b, J);
     if (path === "/genesis/alerts") { const since = Number.isFinite(+b.since) && +b.since > 0 ? +b.since : Date.now() - 12 * 3600e3;
       return J({ name: s.name, alerts: q.exec("SELECT id,ts,cat,level,title,body,url,sent_ts FROM alert WHERE state='sent' AND sent_ts > ? ORDER BY id DESC LIMIT 8", since).toArray() }); }

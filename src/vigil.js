@@ -11,6 +11,8 @@
 //                                              every 60 s on the anonymous quota
 //   NASA_API_KEY                               a personal api.nasa.gov key (APOD) instead of DEMO_KEY
 
+import { quotes, quoteText, symbolsFor, tickersIn, lookup, BOARD } from "./markets.js"; // any ticker, keyless (Yahoo Finance; crypto also CoinGecko, Coinbase)
+
 const UA = "mentifaber.org Vigil/1.0 (+https://mentifaber.org/contact)";
 const flying = new Map(); // in-isolate request coalescing: one upstream call per key at a time
 const backoff = {}; // upstream -> retry-not-before (ms), after a 429
@@ -257,7 +259,7 @@ async function xray() {
 const CAMEO = { 180: "Unconventional violence", 181: "Abduction", 182: "Physical assault", 183: "Bombing", 184: "Human shield", 185: "Assassination", 186: "Assassination attempt",
   190: "Military force", 191: "Blockade", 192: "Occupation", 193: "Small-arms fighting", 194: "Artillery and armor", 195: "Airstrike", 196: "Ceasefire violation",
   200: "Mass violence", 201: "Mass expulsion", 202: "Mass killing", 203: "Ethnic cleansing", 204: "Weapons of mass destruction" };
-async function unzipFirst(buf) {
+export async function unzipFirst(buf) { // also used by Genesis's world record (src/hive-world.js)
   const v = new DataView(buf);
   let e = buf.byteLength - 22;
   while (e >= 0 && v.getUint32(e, true) !== 0x06054b50) e--;
@@ -337,12 +339,13 @@ export const BRIEF_TOPICS = {
   hazards: /\b(volcan\w*|eruptions?|tsunamis?|disasters?|cyclones?|typhoons?|hurricanes?|floods?|wildfires?|drought)\b/i,
   launches: /\b(launch(es)?|rockets?|spacex|falcon|starship|liftoff)\b/i,
   iss: /\b(iss|space station)\b/i,
-  markets: /\b(bitcoin|btc|ethereum|crypto\w*|markets?|exchange rates?|dollar|euro)\b/i,
+  markets: /\b(bitcoin|btc|ethereum|crypto\w*|markets?|stocks?|shares|exchange rates?|dollar|euro|dow|nasdaq|s&p|gold price|oil price)\b/i,
   news: /\b(news|headlines)\b/i,
 };
 const ALL = /\b(vigil|the board|dashboard|situation|sitrep|brief me|briefing|what'?s (happening|going on)( in the world)?|anything (big|major|notable|happening|important)|state of the world|threat)\b/i;
 export function briefTopics(text, fromVigil) {
   const t = String(text || ""), out = Object.keys(BRIEF_TOPICS).filter((k) => BRIEF_TOPICS[k].test(t));
+  if (!out.includes("markets") && tickersIn(t).length) out.push("markets"); // "what are XRP and XOM doing?"
   if (ALL.test(t) || (fromVigil && !out.length)) return ["summary"];
   return out;
 }
@@ -417,12 +420,16 @@ const TOPIC = {
     const d = await memo("iss", 10, () => get("https://api.wheretheiss.at/v1/satellites/25544"));
     return "ISS now at " + pos(d.latitude, d.longitude) + ", " + Math.round(d.altitude) + " km up, " + Math.round(d.velocity).toLocaleString("en-US") + " km/h, " + d.visibility + (home ? ", " + Math.round(nm([home.lat, home.lon], [d.latitude, d.longitude]) * 1.852).toLocaleString("en-US") + " km from him" : "") + ".";
   },
-  async markets() {
-    const [c, fx] = await Promise.allSettled([memo("cg", 120, () => get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin&vs_currencies=usd&include_24hr_change=true")), memo("fx", 3600, () => get("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP,JPY,CAD"))]);
-    const out = [];
-    if (c.status === "fulfilled") out.push("Crypto (CoinGecko): " + Object.entries(c.value).map(([k, v]) => k + " $" + v.usd.toLocaleString("en-US") + " (" + (v.usd_24h_change >= 0 ? "+" : "") + (v.usd_24h_change || 0).toFixed(1) + "% 24h)").join(", ") + ".");
-    if (fx.status === "fulfilled") out.push("USD buys " + Object.entries(fx.value.rates || {}).map(([k, v]) => (+v).toFixed(2) + " " + k).join(", ") + ".");
-    return out.join(" ");
+  async markets(env, home, q, extra) { // what he asked about (any ticker or name), his watchlist when he mentions it, else the board
+    const asked = await symbolsFor(q || ""), want = [...asked, ...(extra || [])], out = [];
+    if (want.length) { const qs = await memo("q:" + want.join(","), 60, () => quotes(want)); out.push("Quotes:\n" + qs.map(quoteText).join("\n")); }
+    if (!asked.length) {
+      const [b, fx] = await Promise.allSettled([memo("board", 120, () => quotes(BOARD)), memo("fx", 3600, () => get("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP,JPY,CAD"))]);
+      if (b.status === "fulfilled") out.push("Board: " + b.value.filter((x) => !x.error).map((x) => x.name.replace(/ USD$/, "") + " " + (x.kind === "index" ? "" : "$") + x.price + (x.pct != null ? " (" + (x.pct >= 0 ? "+" : "") + x.pct.toFixed(2) + "%)" : "")).join(", ") + ".");
+      if (fx.status === "fulfilled") out.push("USD buys " + Object.entries(fx.value.rates || {}).map(([k, v]) => (+v).toFixed(2) + " " + k).join(", ") + ".");
+    }
+    if (!out.length) throw new Error("no market data");
+    return out.join("\n");
   },
   async news() {
     const d = await memo("doc", 900, headlines);
@@ -431,9 +438,9 @@ const TOPIC = {
 };
 const LABEL = { air: "AIR TRAFFIC", quakes: "EARTHQUAKES", space: "SPACE WEATHER", conflict: "CONFLICT", alerts: "WEATHER ALERTS", hazards: "VOLCANOES, DISASTERS, TSUNAMIS", launches: "LAUNCHES", iss: "ISS", markets: "MARKETS", news: "HEADLINES" };
 // topics: from briefTopics(); "summary" reads everything. home: {lat, lon, name} for overhead / nearby questions.
-export async function vigilBrief(env, topics, home, q) {
+export async function vigilBrief(env, topics, home, q, watch) { // watch: his watchlist symbols, when he asks about it
   const list = !topics || topics.includes("summary") ? Object.keys(TOPIC) : topics.filter((t) => TOPIC[t]);
-  const res = await Promise.all(list.map((t) => Promise.race([TOPIC[t](env, home, q), new Promise((_, no) => setTimeout(() => no(new Error("timed out")), 9000))])
+  const res = await Promise.all(list.map((t) => Promise.race([TOPIC[t](env, home, q, t === "markets" ? watch : undefined), new Promise((_, no) => setTimeout(() => no(new Error("timed out")), 9000))])
     .then((x) => [t, x, null], (e) => [t, null, e])));
   const ok = res.filter((r) => r[1]), bad = res.filter((r) => !r[1]);
   return { at: Date.now(), topics: list, ok: ok.map((r) => r[0]), failed: bad.map((r) => r[0] + ": " + String(r[2] && r[2].message || r[2]).slice(0, 80)),
@@ -481,6 +488,16 @@ export async function vigil(req, env, ctx, owner, json) {
   if (kind === "brief") { const g = url.searchParams, la = +g.get("lat"), lo = +g.get("lon"), home = isFinite(la) && isFinite(lo) && g.get("lat") ? { lat: la, lon: lo, name: g.get("name") || null } : null;
     return json(await vigilBrief(env, g.get("topics") ? g.get("topics").split(",") : ["summary"], home, g.get("q") || "")); }
   if (kind === "status") return json({ opensky: !!(env.OPENSKY_CLIENT_ID && env.OPENSKY_CLIENT_SECRET), nasa: !!env.NASA_API_KEY });
+  if (kind === "quote") { // any tickers: ?s=XOM,XRP-USD,^GSPC
+    const syms = String(url.searchParams.get("s") || "").toUpperCase().split(",").map((x) => x.trim()).filter((x) => /^[A-Z0-9^=.\-]{1,16}$/.test(x)).slice(0, 12);
+    if (!syms.length) return json({ error: "which symbols?" }, 400);
+    return C("quote-" + syms.join(","), 30, async () => ({ quotes: await quotes(syms) }));
+  }
+  if (kind === "lookup") { // a name or a question → symbols: "exxon", "what's rheinmetall stock at"
+    const qq = String(url.searchParams.get("q") || "").slice(0, 120); if (!qq.trim()) return json({ error: "what to look up?" }, 400);
+    let syms = await symbolsFor(qq, true); if (!syms.length) { const s1 = await lookup(qq).catch(() => null); if (s1) syms = [s1]; }
+    return json({ symbols: syms });
+  }
   if (kind === "air") {
     if (what === "global") return C("air-global", osTTL(env), () => opensky(env));
     if (what === "near") {
@@ -500,6 +517,7 @@ export async function vigil(req, env, ctx, owner, json) {
     if (what === "solar") return C("feed-solar", 60, solar);
     if (what === "xray") return C("feed-xray", 120, xray);
     if (what === "conflict") return C("feed-conflict", 900, () => conflict(8));
+    if (what === "markets") return C("feed-markets", 90, async () => ({ quotes: await quotes(BOARD) }));
     if (what === "headlines") return C("feed-headlines", 900, headlines);
     if (what === "apod") return C("feed-apod", 21600, () => get("https://api.nasa.gov/planetary/apod?thumbs=true&api_key=" + encodeURIComponent(env.NASA_API_KEY || "DEMO_KEY")));
     return json({ error: "unknown feed" }, 404);
