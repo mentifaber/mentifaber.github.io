@@ -247,3 +247,5 @@ body.still #field{display:none}
 .genp .health{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;margin-top:12px}.genp .health div{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--code);font-size:12.5px;min-width:0}
 .genp .health b{flex:none;width:16px;text-align:center}.genp .health .ok b{color:var(--ok,#3ddc97)}.genp .health .no b{color:var(--bad,#ff6b6b)}.genp .health span{min-width:0;overflow-wrap:anywhere}.genp .health small{display:block;color:var(--dim);font:10.5px "JetBrains Mono",monospace}
 .genp .health .wait b{color:var(--warn,#ffc14d)}
+
+.genp .facts .own-build{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.genp .facts .own-build small{flex:1;min-width:200px}

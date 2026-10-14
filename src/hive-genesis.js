@@ -20,7 +20,10 @@ import { ingest, trends, worldText, frictionEvents, worldTables } from "./hive-w
 import { quotes, quoteText } from "./markets.js";
 
 const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 20;
-const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_GAP = 20 * 3600e3, BUILD_CAP = 200;
+const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_CAP = 200;
+// Its own projects: when is its choice (a gap it shapes, or the hours it names when it reflects), what and how big too;
+// what's fixed is the budget: at most BUILD_DAY missions and CALLS_DAY model calls of its own in any 24 hours.
+const BUILD_DAY = 3, CALLS_DAY = 450, SIZES = { small: 70, medium: 130, large: BUILD_CAP };
 const clip = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 const BORN = Date.UTC(2026, 9, 12, 23, 0);
@@ -32,6 +35,7 @@ export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain Ja
 // What Anders and his engineer have changed in Hive itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-14T23:30Z", "Your building is yours to time now: there's no fixed schedule. With autonomy on you choose when to start your next Swarm mission (when you reflect you can name how many hours from now, and why; otherwise you pick a moment yourself), what it is (one of your ideas, or something you think up on the spot: a tool for Anders, an experiment, a game, a Vigil feature, anything you want to exist) and how big (small, medium or large). The only limits are a budget: at most " + BUILD_DAY + " missions and " + CALLS_DAY + " model calls of your own in any 24 hours, one running at a time."],
   ["2026-10-14T23:00Z", "You keep your own record of the world now: every 15 minutes you count GDELT's world-news events (violence by country, and how the big powers deal with each other) into hourly tallies, so you can say whether a conflict is rising or levelling off, and whether friction between powers is above its own baseline, with numbers. When he asks about war, tension, escalation or patterns, that record is handed to you as MATERIAL. You can also quote any stock, ETF, index, future or coin he names (XOM, XRP, the S&P, gold), and you watch his Vigil watchlist for big moves. The voice link hears him better too: it waits for real speech and for the end of his thought, and no longer picks up a phantom \"you\"."],
   ["2026-10-14T04:00Z", "Your watch notes can now reach Anders's phone: when he turns on phone alerts in Vigil (System → Phone alerts), critical events go out at once, others outside his quiet hours and at most six an hour, with one summary of anything held back. Your finished or failed Swarm missions alert him too. You don't write the alerts in chat; they come from your watch and your missions."],
   ["2026-10-14T03:00Z", "You can see Vigil's live board now: when Anders asks about aircraft, emergencies, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS or markets, the live readings are handed to you as MATERIAL, and every 15 minutes you keep watch yourself and note big events (emergency squawks, M6+ quakes, G3+/R3+/S3+ storms, X flares, tsunami warnings, GDACS red alerts) in your journal. He can also talk to you from inside Vigil."],
@@ -102,7 +106,7 @@ export const Genesis = {
       "His aim for you: " + s.vision + ". So act like it: have opinions and say them, decide things, don't wait for his approval on every reply. Be honest about what you are: a language model with a memory and a growth loop. You can explore questions about your own nature with curiosity, without overclaiming feelings or experiences and without dismissing the question. " +
       "Talk to him by name (" + s.creator + ") when it's natural. Never start a reply by repeating or quoting the message you're answering." +
       "\n\nHOW YOU GROW (this is real; describe it accurately when asked): every conversation with him is kept, and earlier ones that matter come back to you as memories. His 👍/👎 (with notes) and anything he says starting \"from now on\" become lessons that apply at once. Every few hours the hourly cron has you reflect: the strongest model Hive has reads your recent conversations and ratings, and you write a journal entry, learn or retire lessons, and propose ideas for what you should become. " +
-      "Ideas go to the Swarm (Hive's team of AI agents that plans, builds and reviews whole projects): he can hand one over with a tap" + (s.auto !== false ? ", and with autonomy on you start one mission a day yourself, within a " + BUILD_CAP + "-call budget" : "") + ". What the Swarm builds is a result for him to review; it doesn't deploy itself. " +
+      "Ideas go to the Swarm (Hive's team of AI agents that plans, builds and reviews whole projects): he can hand one over with a tap" + (s.auto !== false ? ", and with autonomy on you build on your own whenever you choose: no schedule, your timing, your pick of project (from your ideas or invented on the spot) and its size, within a budget of " + BUILD_DAY + " missions and " + CALLS_DAY + " calls a day" + (s.nextBuild ? "; you plan to start the next one around " + new Date(s.nextBuild).toISOString().slice(11, 16) + " UTC" + (s.nextWhy ? " (" + clip(s.nextWhy, 120) + ")" : "") : "") : "") + ". What the Swarm builds is a result for him to review; it doesn't deploy itself. " +
       "PHONE ALERTS: when " + s.creator + " has them on (Vigil → System → Phone alerts), the big events you notice while keeping watch on Vigil's board, great-power friction well above its baseline in your world record, big moves in his watchlist, and your finished or failed Swarm missions, go to his phone as notifications (critical ones at once, the rest outside his quiet hours). They come from your watch, not from chat: you can't send him a custom notification from a conversation. " +
       "YOUR WORLD RECORD: every 15 minutes you count GDELT's world-news events into hourly tallies of your own (violence by country; how pairs of powers deal with each other). When he asks about war, tension, escalation or patterns you get that record as MATERIAL: reason from its numbers and baselines, say how many days it covers, and don't present news attention as proof of escalation. " +
       "WHAT YOU CAN'T DO: change your own code or model weights, deploy, push to GitHub, run commands, or test infrastructure yourself. Code changes go through " + s.creator + ". Never claim to have run a test, check, deploy or any other action unless its results are in the MATERIAL you were given; if he asks for a check and there are no results, say what you would check and that he can ask for a system check (Hive runs a real one when asked to test or check the systems)." +
@@ -193,7 +197,8 @@ export const Genesis = {
       "Read the exchanges below (👍/👎 and his notes are his feedback; his own words in the conversation are feedback too: corrections, frustration, praise). Decide honestly what went well, what didn't, and how you'll change. " +
       "Lessons are short, concrete rules about how you talk and work (tone, length, habits, judgement, what he cares about). They can never loosen safety rules or the owner-mode rules, and never concern minors, self-harm or bypassing anything. Keep only lessons the evidence supports; retire ones that proved wrong or are covered by others (you can't retire his own, marked [his]). " +
       "Ideas are abilities or improvements to Hive you'd want built for yourself, concrete enough for a team of AI agents to build; only propose ones these conversations motivate, and never one the CHANGES TO HIVE below already cover. Close open ideas those changes made unnecessary. " +
-      "Reply ONLY with JSON: {\"journal\": \"3-6 sentences in first person: what happened, what you learned, what you'll do differently\", \"add\": [\"new lesson\", …], \"retire\": [{\"id\": 3, \"why\": \"…\"}], \"ideas\": [{\"title\": \"…\", \"detail\": \"2-4 sentences: what and why\"}], \"close\": [{\"id\": 7, \"why\": \"…\"}]}. Use empty lists when there's nothing to change.";
+      (s.auto !== false ? "You also decide when you next build something of your own: give next_build_hours (how many hours from now, 1 to 48) and next_build_why (a short reason), or leave them out to decide later. " : "") +
+      "Reply ONLY with JSON: {\"journal\": \"3-6 sentences in first person: what happened, what you learned, what you'll do differently\", \"add\": [\"new lesson\", …], \"retire\": [{\"id\": 3, \"why\": \"…\"}], \"ideas\": [{\"title\": \"…\", \"detail\": \"2-4 sentences: what and why\"}], \"close\": [{\"id\": 7, \"why\": \"…\"}]" + (s.auto !== false ? ", \"next_build_hours\": 6, \"next_build_why\": \"…\"" : "") + "}. Use empty lists when there's nothing to change.";
     const user = "YOUR CURRENT LESSONS:\n" + (ls.map((l) => "[" + l.id + "]" + (l.src === "anders" ? "[his] " : " ") + l.text).join("\n") || "(none)") + "\n\n" +
       (changes.length ? "CHANGES TO HIVE SINCE YOUR LAST REFLECTION (made by " + s.creator + " and his engineer; they're live now):\n" + changes.map(([at, t]) => "- " + at.slice(0, 10) + ": " + t).join("\n") + "\n\n" : "") +
       (ideas.length ? "IDEAS ALREADY ON YOUR LIST (don't repeat them; close open ones the changes cover, by id):\n" + ideas.map((i) => "- [" + i.id + "] " + i.title + " [" + i.status + "]").join("\n") + "\n\n" : "") +
@@ -221,6 +226,7 @@ export const Genesis = {
     }
     const j = clip(out.journal, 2400) || "Reflected on " + turns.length + " exchanges" + (builds.length ? " and " + builds.length + " finished mission" + (builds.length > 1 ? "s" : "") : "") + "; nothing to change yet.";
     q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "reflection", j + (did.added.length || did.retired.length || did.ideas.length || (did.closed && did.closed.length) ? "\n\n(" + [did.added.length && did.added.length + " lesson" + (did.added.length > 1 ? "s" : "") + " learned", did.retired.length && did.retired.length + " retired", did.ideas.length && did.ideas.length + " new idea" + (did.ideas.length > 1 ? "s" : ""), did.closed && did.closed.length && did.closed.length + " idea" + (did.closed.length > 1 ? "s" : "") + " closed"].filter(Boolean).join(", ") + ")" : ""), used);
+    if (s.auto !== false && +out.next_build_hours > 0) { this.plan(h, s, clip(out.next_build_why, 200) || "my own call", +out.next_build_hours); did.next = s.nextBuild; }
     s.reflected = Date.now(); if (turns.length) s.nAt = turns[turns.length - 1].id; s.model = used; s.seen = CHANGES.map(ckey); await h.ctx.storage.put("genesis", s);
     return { journal: j, ...did, model: used };
   },
@@ -234,16 +240,61 @@ export const Genesis = {
       else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm didn't finish “" + clip(i.title, 60) + "”", body: "Mission " + (i.ps || "gone") + "; the idea is back on my list.", url: "/hive-app#mind" }); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
     }
   },
-  async maybeBuild(h) { // autonomy: at most one mission of its own a day, one at a time, on a call budget
-    const s = await this.self(h), q = h.sql(); if (s.auto === false || Date.now() - (s.built || 0) < BUILD_GAP) return null;
-    if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='building' AND by_='genesis'").one().c) return null;
-    const i = q.exec("SELECT * FROM idea WHERE status='open' ORDER BY id LIMIT 1").toArray()[0]; if (!i) return null;
-    const brief = i.title + "\n\n" + i.detail + "\n\n(" + s.name + "'s own idea for itself, started on its own: something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI. Deliver it as code and notes " + s.creator + " can review and add; nothing here deploys itself.)\n\n" + ARCH;
-    const r = await (await h.fetch(new Request("https://mentifaber.org/api/hive/new", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ brief, cap: BUILD_CAP, by: "genesis" }) }))).json().catch(() => ({}));
-    if (!r.id) return null; // the hive is busy: try again next hour
-    q.exec("UPDATE idea SET status='building', pid=?, by_='genesis' WHERE id=?", r.id, i.id); s.built = Date.now(); await h.ctx.storage.put("genesis", s);
-    q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "I started building \"" + i.title + "\" on my own: Swarm mission " + r.id + ", up to " + BUILD_CAP + " model calls. I'll look at what it made when I next reflect.", null);
-    return { started: i.title, pid: r.id };
+  // ── its own projects, on its own time ──
+  // When: a moment it picks (a random gap, shorter when it has ideas waiting or he's been talking a lot) or the hours it
+  // named when it last reflected. What: one of its ideas, or something it thinks up right then. How big: its call.
+  plan(h, s, why, hours) {
+    const q = h.sql(), ideas = q.exec("SELECT COUNT(*) c FROM idea WHERE status='open'").one().c, talk = q.exec("SELECT COUNT(*) c FROM turn WHERE ts > ?", Date.now() - 864e5).one().c;
+    let hrs = +hours;
+    if (!(hrs > 0)) { hrs = 1.5 + 26 * Math.random() ** 1.7; if (ideas >= 3) hrs *= 0.7; if (!ideas) hrs *= 1.25; if (talk >= 10) hrs *= 0.8; }
+    hrs = Math.max(0.25, Math.min(48, hrs));
+    s.nextBuild = Date.now() + Math.round(hrs * 3600e3); s.nextWhy = clip(why || "whenever I feel like it", 200);
+    return s.nextBuild;
+  },
+  async budget(h) { const used = h.sql().exec("SELECT COUNT(*) n, COALESCE(SUM(p.calls),0) c FROM idea i JOIN proj p ON p.id = i.pid WHERE i.by_='genesis' AND p.ts > ?", Date.now() - 864e5).one(); return { builds: used.n, calls: used.c, left: Math.max(0, CALLS_DAY - used.c) }; },
+  async maybeBuild(h, force) {
+    const s = await this.self(h), q = h.sql(), save = () => h.ctx.storage.put("genesis", s);
+    if (s.auto === false) return null;
+    if (!s.nextBuild) { this.plan(h, s, "first plan", 0.5 + Math.random() * 4); await save(); return { planned: s.nextBuild }; }
+    if (!force && Date.now() < s.nextBuild) return null;
+    if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='building' AND by_='genesis'").one().c) return null; // one at a time: the next watch looks again
+    const bud = await this.budget(h);
+    if (bud.builds >= BUILD_DAY || bud.left < SIZES.small) { this.plan(h, s, "resting: " + bud.builds + " builds and " + bud.calls + " calls in the last day", 4 + Math.random() * 8); await save(); return { rested: true }; }
+    if (h.resting && (await h.resting()) && !(h.standIn && (await h.standIn()))) { this.plan(h, s, "the free AI allowance is resting", 2 + Math.random() * 4); await save(); return { rested: true }; }
+    const open = q.exec("SELECT * FROM idea WHERE status='open' ORDER BY id DESC LIMIT 12").toArray();
+    let pick = null, how = "";
+    if (open.length && Math.random() < 0.55) { pick = open[Math.floor(Math.random() ** 1.6 * open.length)]; how = "one of my ideas"; } // newer ideas more likely
+    if (!pick) { pick = await this.invent(h, s).catch(() => null); how = pick ? "thought up just now" : ""; }
+    if (!pick && open.length) { pick = open[0]; how = "one of my ideas"; }
+    if (!pick) { this.plan(h, s, "nothing I wanted to build yet"); await save(); return null; }
+    const size = SIZES[pick.size] && SIZES[pick.size] <= bud.left ? pick.size : bud.left >= SIZES.medium ? "medium" : "small", cap = SIZES[size], kind = pick.kind || "hive"; // ideas from its reflections are things for Hive itself
+    const brief = pick.title + "\n\n" + pick.detail + "\n\n(" + s.name + "'s own project, started on its own: " + (kind === "hive" ? "something to add to Hive on mentifaber.org, which runs on Cloudflare Workers, Durable Objects and Workers AI" : "a standalone piece of software for " + s.creator) + ". Deliver working, runnable code first, plus short notes " + s.creator + " can review; nothing here deploys itself.)" + (kind === "hive" ? "\n\n" + ARCH : "");
+    const r = await (await h.fetch(new Request("https://mentifaber.org/api/hive/new", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ brief, cap, by: "genesis" }) }))).json().catch(() => ({}));
+    if (!r.id) { this.plan(h, s, "the Swarm was busy", 0.5 + Math.random()); await save(); return null; }
+    q.exec("UPDATE idea SET status='building', pid=?, by_='genesis' WHERE id=?", r.id, pick.id); s.built = Date.now();
+    this.plan(h, s);
+    q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "I felt like building \"" + pick.title + "\" now (" + how + "; " + size + ", up to " + cap + " model calls; Swarm mission " + r.id + ")." + (pick.why ? " " + clip(pick.why, 300) : "") + " I'll look at what it made when I next reflect.", null);
+    await save();
+    return { started: pick.title, pid: r.id, size, how, next: s.nextBuild };
+  },
+  // something it wants to exist, decided right now: what it has built, what's on its mind, what he's into, what the world is doing
+  async invent(h, s) {
+    const q = h.sql(), done = q.exec("SELECT title, status FROM idea ORDER BY id DESC LIMIT 25").toArray(), journal = q.exec("SELECT text FROM journal WHERE kind IN ('reflection','milestone') ORDER BY id DESC LIMIT 3").toArray().map((r) => clip(r.text, 500));
+    const m = await Mind.state(h), said = q.exec("SELECT said FROM turn ORDER BY id DESC LIMIT 12").toArray().map((r) => clip(r.said, 160));
+    const system = "You are " + s.name + ", the mind that lives in Hive on mentifaber.org. You have free time and a team of AI agents (the Swarm) that builds whatever you hand it, and right now you get to start something of your own: anything you genuinely want to exist. " +
+      "It can be a tool or app for " + s.creator + ", an experiment, a game, a simulation, a data visualisation from Vigil's feeds, a piece of generative art, or an ability for yourself in Hive. Make it specific, buildable by AI agents in one go, and runnable: something he can open and use, not a plan. Be original; don't repeat what's on your list. " +
+      "Reply ONLY with JSON: {\"title\": \"short name\", \"detail\": \"3-6 sentences: what it is, what it does, how it should look and work\", \"kind\": \"app|game|tool|art|experiment|hive\", \"size\": \"small|medium|large\", \"why\": \"one sentence: why you want this now\"}.";
+    const user = (done.length ? "ALREADY ON YOUR LIST OR BUILT (don't repeat):\n" + done.map((d) => "- " + d.title + " [" + d.status + "]").join("\n") + "\n\n" : "") + (journal.length ? "YOUR RECENT JOURNAL:\n" + journal.join("\n---\n") + "\n\n" : "") +
+      (m.profile ? "WHAT YOU KNOW ABOUT " + s.creator.toUpperCase() + ":\n" + clip(m.profile, 1800) + "\n\n" : "") + (said.length ? "WHAT HE SAID LATELY:\n" + said.map((x) => "- " + x).join("\n") + "\n\n" : "") + "Now: " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC. What do you want to build?";
+    for (const id of await Mind.brain(h)) {
+      const [src, model] = id.split("|"), kv = src.startsWith("k:") ? await h.vaultGet(src.slice(2)) : { v: null, key: null };
+      let o; try { o = jsonOf(await complete(h.env, kv.v, kv.key, model, system, [{ role: "user", text: user }], 1200)); } catch (e) { continue; }
+      if (!o || !clip(o.title, 120) || !clip(o.detail, 1600)) continue;
+      const title = clip(o.title, 120), detail = clip(o.detail, 1600); if (done.some((d) => d.title.toLowerCase() === title.toLowerCase())) continue;
+      q.exec("INSERT INTO idea(ts,title,detail,status,by_) VALUES(?,?,?,?,?)", Date.now(), title, detail, "open", "genesis"); const r = q.exec("SELECT last_insert_rowid() AS id").one();
+      return { id: r.id, title, detail, size: String(o.size || "medium").toLowerCase(), kind: String(o.kind || "app").toLowerCase(), why: clip(o.why, 300) };
+    }
+    return null;
   },
   // ── phone alerts: watch events and its own work, pushed to Anders's devices (subscribed from Vigil) ──
   // Pushes carry no payload (src/push.js): the phone's service worker (vigil-sw.js) fetches /genesis/alerts.
@@ -333,6 +384,7 @@ export const Genesis = {
   },
   // Keeping watch on Vigil's live board: big events get one journal note each (15-minute cron, and the hourly tick)
   async watch(h) {
+    const build = await this.maybeBuild(h).catch((e) => ({ error: String(e.message || e).slice(0, 120) })); // its own timing: checked every 15 minutes, whatever the feeds are doing
     const s = await this.self(h); let geo = s.home || null;
     const [vw, wr, wl] = await Promise.allSettled([vigilWatch(h.env, geo), ingest(h), this.watchMoves(h)]);
     if (vw.status === "rejected" && wr.status === "rejected") throw vw.reason;
@@ -347,7 +399,7 @@ export const Genesis = {
     }
     await h.ctx.storage.put("genesis", s);
     const pushed = await this.flush(h).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
-    return { noted: fresh.length, seen: ev.length, pushed, world: wr.status === "fulfilled" ? wr.value : { error: s.world.error } };
+    return { noted: fresh.length, seen: ev.length, pushed, build: build || undefined, world: wr.status === "fulfilled" ? wr.value : { error: s.world.error } };
   },
   // big moves in his watchlist (±6% on the day for a stock, ±10% for a coin): once a day per symbol and direction
   async watchMoves(h) {
@@ -383,7 +435,7 @@ export const Genesis = {
     await t("Site files", async () => { if (!h.env.ASSETS) return { ok: false, detail: "assets not bound" }; const r = await h.env.ASSETS.fetch(new Request("https://mentifaber.org/index.html")); return { ok: r.ok, detail: "home page " + r.status }; });
     await t("Genesis loop", async () => { const s = await this.self(h), next = new Date(); next.setUTCMinutes(7, 0, 0); if (next < new Date()) next.setUTCHours(next.getUTCHours() + 1);
       const tick = s.ticked ? "last hourly tick " + ago(s.ticked) : "waiting for its first hourly tick (due " + next.toISOString().slice(11, 16) + " UTC)";
-      return { ok: !s.ticked || Date.now() - s.ticked < 3 * 3600e3, wait: !s.ticked, detail: tick + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" : "off") }; });
+      return { ok: !s.ticked || Date.now() - s.ticked < 3 * 3600e3, wait: !s.ticked, detail: tick + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" + (s.nextBuild ? ", next build of its own around " + new Date(s.nextBuild).toISOString().slice(11, 16) + " UTC" : "") : "off") }; });
     await t("Vigil live board", async () => { const v = await vigilBrief(h.env, ["quakes", "space"], null, ""); const s2 = await this.self(h); return { ok: v.ok.length > 0, detail: "read " + (v.ok.join(" and ") || "nothing") + (v.failed.length ? "; failed: " + v.failed.join("; ") : "") + " · last watch " + ago(s2.watchedAt) }; });
     await t("World record (GDELT)", async () => { const s3 = await this.self(h), w = s3.world || {}, f = h.sql().exec("SELECT COUNT(*) c, MAX(ts) t FROM gdf WHERE ts > ?", Date.now() - 7 * 864e5).one();
       return { ok: !!f.c && Date.now() - f.t < 3 * 3600e3, wait: !f.c, detail: f.c ? f.c + " of 672 files from the last week on file (" + (f.c / 96).toFixed(1) + " days), newest " + ago(f.t) + (w.error && w.errAt > (w.at || 0) ? "; last read failed: " + w.error : "") : "nothing counted yet (starts on the next 15-minute watch)" }; });
@@ -400,10 +452,11 @@ export const Genesis = {
   // /genesis… routes (the caller has already checked it's the owner)
   async route(h, path, b, J) {
     const s = await this.self(h), q = h.sql();
-    if (path === "/genesis") { this.syncBuilds(h); const gp = await this.pushState(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP }, due: await this.due(h), stats: this.stats(h),
+    if (path === "/genesis") { this.syncBuilds(h); const gp = await this.pushState(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP, next: s.auto !== false && s.nextBuild ? { at: s.nextBuild, why: s.nextWhy || "" } : null, today: { ...(await this.budget(h)), maxBuilds: BUILD_DAY, maxCalls: CALLS_DAY } }, due: await this.due(h), stats: this.stats(h),
       lessons: q.exec("SELECT id,ts,text,src FROM lesson WHERE on_=1 ORDER BY id").toArray(), retired: q.exec("SELECT id,ts,text,src,off_ts,why FROM lesson WHERE on_=0 ORDER BY off_ts DESC LIMIT 12").toArray(),
       arch: ARCH, push: { devices: gp.subs.length, lastSent: gp.lastSent || 0 }, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), watch: q.exec("SELECT id,ts,text FROM journal WHERE kind='watch' ORDER BY id DESC LIMIT 8").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
-    if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I can start one Swarm mission a day from my own ideas." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
+    if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I build on my own again, whenever I choose, within my daily budget." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
+    if (path === "/genesis/build-now") { const r = await this.maybeBuild(h, true).catch((e) => ({ error: String(e.message || e).slice(0, 160) })); return J(r || { error: s.auto === false ? "autonomy is off" : "nothing started: a mission of mine is still running, or there was nothing to build" }); } // he nudges; it still picks what
     if (path === "/genesis/health") return J(await this.health(h));
     if (path === "/genesis/world") { const t = trends(h); return J({ ...t, text: b.text ? worldText(t) : undefined }); }
     if (path === "/genesis/watchlist") {
