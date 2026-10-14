@@ -1,0 +1,62 @@
+name: Vigil feed probe (temporary)
+
+on:
+  push:
+    branches: [claude/website-redesign-portfolio-9dci67]
+    paths: [.github/workflows/vigil-probe.yml]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe feeds
+        run: |
+          probe() {
+            echo "=================== $1"
+            curl -s -m 40 -o body.bin -D head.txt -w "status=%{http_code} time=%{time_total}s size=%{size_download}\n" -H "Origin: https://mentifaber.org" -H "User-Agent: Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129 Mobile Safari/537.36" "$1" || echo "curl failed"
+            grep -iE "^(HTTP|location|access-control-allow-origin|content-type|retry-after|x-rate|cache-control)" head.txt || true
+            head -c 700 body.bin | tr -d '\000' ; echo
+          }
+          probe "https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json"
+          probe "https://services.swpc.noaa.gov/products/solar-wind/mag-1-day.json"
+          probe "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
+          probe "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json"
+          probe "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json"
+          probe "https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json"
+          probe "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
+          probe "https://services.swpc.noaa.gov/products/noaa-scales.json"
+          probe "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
+          probe "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+          probe "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
+          probe "https://api.gdeltproject.org/api/v2/geo/geo?query=(airstrike%20OR%20shelling%20OR%20offensive%20OR%20ceasefire)%20sourcelang:eng&format=GeoJSON&timespan=12h&maxpoints=60"
+          sleep 6
+          probe "https://api.gdeltproject.org/api/v2/doc/doc?query=(airstrike%20OR%20shelling%20OR%20offensive%20OR%20ceasefire)%20sourcelang:eng&mode=artlist&maxrecords=14&sort=datedesc&format=json"
+          probe "https://opensky-network.org/api/states/all?lamin=45&lomin=5&lamax=47&lomax=8"
+          probe "https://opensky-network.org/api/states/all"
+          probe "https://api.adsb.lol/v2/point/40.64/-73.78/60"
+          probe "https://api.adsb.lol/v2/lat/40.64/lon/-73.78/dist/60"
+          probe "https://api.adsb.lol/v2/mil"
+          probe "https://api.adsb.lol/v2/sqk/7700"
+          probe "https://api.adsb.lol/v2/squawk/7700"
+          probe "https://re-api.adsb.lol/?all_with_pos"
+          probe "https://api.airplanes.live/v2/point/40.64/-73.78/60"
+          sleep 2
+          probe "https://api.airplanes.live/v2/mil"
+          sleep 2
+          probe "https://api.airplanes.live/v2/squawk/7700"
+          probe "https://opendata.adsb.fi/api/v2/lat/40.64/lon/-73.78/dist/60"
+          sleep 2
+          probe "https://opendata.adsb.fi/api/v2/mil"
+          sleep 2
+          probe "https://opendata.adsb.fi/api/v3/lat/40.64/lon/-73.78/dist/60"
+          probe "https://api.planespotters.net/pub/photos/hex/a0b1c2"
+          probe "https://api.planespotters.net/pub/photos/hex/4ca7b5"
+          echo "=================== routeset"
+          curl -s -m 30 -D - -H "Origin: https://mentifaber.org" -H "content-type: application/json" -X POST "https://api.adsb.lol/api/0/routeset" -d '{"planes":[{"callsign":"UAL1","lat":40.6,"lng":-73.8},{"callsign":"BAW117","lat":51.4,"lng":-0.4}]}' | head -c 1500; echo
+          echo "=================== routeset preflight"
+          curl -s -m 30 -D - -o /dev/null -X OPTIONS -H "Origin: https://mentifaber.org" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type" "https://api.adsb.lol/api/0/routeset"
+          probe "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
+          probe "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=1&hide_recent_previous=true"
+          probe "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=1"
+          probe "https://raw.githubusercontent.com/astrion-tech/celestrak-mirror/main/tle/stations.tle"
+          probe "https://geocoding-api.open-meteo.com/v1/search?count=1&name=Chicago"
