@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>runner probe</title><iframe id="f" sandbox="allow-scripts" style="width:600px;height:400px"></iframe><pre id="log"></pre>
+<script src="/assets/hive/runner.js"></script>
+<script>
+const final = "## Run it\n\n```python run\nimport statistics\nimport numpy as np\nimport matplotlib.pyplot as plt\nxs = np.arange(10)\nplt.plot(xs, xs ** 2)\nprint('mean', statistics.mean([1, 2, 3, 4]))\nprint('sum', int(np.sum(xs)))\n```";
+const fs = HiveRun.files(final), log = [];
+HiveRun.run(document.getElementById("f"), HiveRun.entry(fs), fs, (k, t) => { log.push(k + ": " + t); document.getElementById("log").textContent = log.join("\n"); });
+</script>
