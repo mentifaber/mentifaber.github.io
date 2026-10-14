@@ -12,9 +12,9 @@ export async function listen(req, env, owner, meter) {
   const input = { encoding: "linear16", sample_rate: String(num("rate", 8000, 48000, 16000)), eot_threshold: num("eot", 0.5, 0.9, 0.7).toFixed(2), eot_timeout_ms: String(Math.round(num("wait", 1000, 10000, 4000))), ...(kt ? { keyterm: kt } : {}) };
   const [client, server] = Object.values(new WebSocketPair()); server.accept();
   const say = (o) => { try { server.send(JSON.stringify(o)); } catch (e) {} };
-  let up = null;
+  let up = null, r0 = null;
   try {
-    const r = await env.AI.run("@cf/deepgram/flux", input, { websocket: true });
+    const r = (r0 = await env.AI.run("@cf/deepgram/flux", input, { websocket: true }));
     up = r && (r.webSocket || (typeof r.accept === "function" && typeof r.send === "function" ? r : null));
     if (!up) throw new Error("the recognizer didn't open a socket" + (r && r.status ? " (" + r.status + ")" : ""));
     up.accept();
@@ -22,7 +22,13 @@ export async function listen(req, env, owner, meter) {
   const t0 = Date.now(); let last = Date.now(), closed = false;
   const end = (code, why) => { if (closed) return; closed = true; clearInterval(watch); try { server.close(code, why); } catch (e) {} try { up.close(1000, "done"); } catch (e) {} };
   const watch = setInterval(() => { if (Date.now() - t0 > MAX_MS) end(1000, "turn too long"); else if (Date.now() - last > IDLE_MS) end(1000, "idle"); }, 5000);
-  server.addEventListener("message", (e) => { last = Date.now(); try { up.send(e.data); } catch (x) { end(1011, "recognizer gone"); } }); // audio (binary) and control messages (text) go straight through
+  const dbg = u.searchParams.get("debug") === "1"; let first = true, chain = Promise.resolve();
+  if (dbg) say({ type: "Debug", r: Object.prototype.toString.call(r0), rKeys: r0 && typeof r0 === "object" ? Object.keys(r0).slice(0, 12) : null, status: r0 && r0.status, up: Object.prototype.toString.call(up), upCtor: up && up.constructor && up.constructor.name, sameAsWs: up === (r0 && r0.webSocket) });
+  server.addEventListener("message", (e) => { last = Date.now(); const d = e.data, bin = typeof d !== "string";
+    if (dbg && first) { first = false; say({ type: "Debug", dataType: Object.prototype.toString.call(d), isAB: d instanceof ArrayBuffer, len: d && (d.byteLength || d.length || d.size) }); }
+    // audio goes on as raw bytes, in order (a Blob would otherwise be sent as the text "[object Blob]"); control messages as text
+    chain = chain.then(async () => { const out = !bin ? d : d instanceof ArrayBuffer ? d : ArrayBuffer.isView(d) ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : typeof d.arrayBuffer === "function" ? await d.arrayBuffer() : d; up.send(out); })
+      .catch((x) => { if (dbg) say({ type: "Debug", sendError: String(x && x.message || x) }); end(1011, "recognizer gone"); }); });
   up.addEventListener("message", (e) => { try { server.send(e.data); } catch (x) {} });
   up.addEventListener("close", (e) => end(1000, String(e.reason || "recognizer closed").slice(0, 100)));
   up.addEventListener("error", () => { say({ type: "Error", error: "the recognizer failed" }); end(1011, "recognizer error"); });
