@@ -1,0 +1,14 @@
+# Temporary: samples the market and GDELT sources Vigil is about to use (removed after the run).
+name: Data probe
+on:
+  push:
+    branches: [claude/website-redesign-portfolio-9dci67]
+    paths: [.github/workflows/data-probe.yml, .github/probe/data.mjs]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node .github/probe/data.mjs
