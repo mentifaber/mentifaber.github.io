@@ -9,54 +9,47 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe feeds
+      - name: Probe feeds (round 2)
         run: |
           probe() {
             echo "=================== $1"
-            curl -s -m 40 -o body.bin -D head.txt -w "status=%{http_code} time=%{time_total}s size=%{size_download}\n" -H "Origin: https://mentifaber.org" -H "User-Agent: Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129 Mobile Safari/537.36" "$1" || echo "curl failed"
+            curl -s -m 40 -o body.bin -D head.txt -w "status=%{http_code} time=%{time_total}s size=%{size_download}\n" -H "Origin: https://mentifaber.org" -H "User-Agent: mentifaber.org Vigil/1.0 (+https://mentifaber.org/contact)" "$1" || echo "curl failed"
             grep -iE "^(HTTP|location|access-control-allow-origin|content-type|retry-after|x-rate|cache-control)" head.txt || true
-            head -c 700 body.bin | tr -d '\000' ; echo
+            head -c 900 body.bin | tr -d '\000' ; echo
           }
-          probe "https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json"
-          probe "https://services.swpc.noaa.gov/products/solar-wind/mag-1-day.json"
-          probe "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
-          probe "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json"
-          probe "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json"
-          probe "https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json"
-          probe "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
-          probe "https://services.swpc.noaa.gov/products/noaa-scales.json"
-          probe "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
-          probe "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
-          probe "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
-          probe "https://api.gdeltproject.org/api/v2/geo/geo?query=(airstrike%20OR%20shelling%20OR%20offensive%20OR%20ceasefire)%20sourcelang:eng&format=GeoJSON&timespan=12h&maxpoints=60"
-          sleep 6
+          probe "https://data.gdeltproject.org/gdeltv2/lastupdate.txt"
+          URL=$(head -n1 body.bin | awk '{print $3}')
+          echo "export url: $URL"
+          curl -s -m 60 -o ex.zip -w "zip status=%{http_code} size=%{size_download}\n" "$URL"
+          unzip -o -q ex.zip && ls -la *.CSV && wc -l *.CSV && head -n 2 *.CSV | cut -c1-900
+          awk -F'\t' '$30==4' *.CSV | wc -l
+          awk -F'\t' '$30==4 {print $27, $29, $30, $32, $54, $57, $58, $61}' *.CSV | head -5
+          probe "https://api.gdeltproject.org/api/v2/geo/geo?query=ukraine&mode=PointData&format=GeoJSON&timespan=24h"
+          sleep 7
           probe "https://api.gdeltproject.org/api/v2/doc/doc?query=(airstrike%20OR%20shelling%20OR%20offensive%20OR%20ceasefire)%20sourcelang:eng&mode=artlist&maxrecords=14&sort=datedesc&format=json"
-          probe "https://opensky-network.org/api/states/all?lamin=45&lomin=5&lamax=47&lomax=8"
-          probe "https://opensky-network.org/api/states/all"
-          probe "https://api.adsb.lol/v2/point/40.64/-73.78/60"
-          probe "https://api.adsb.lol/v2/lat/40.64/lon/-73.78/dist/60"
-          probe "https://api.adsb.lol/v2/mil"
-          probe "https://api.adsb.lol/v2/sqk/7700"
-          probe "https://api.adsb.lol/v2/squawk/7700"
-          probe "https://re-api.adsb.lol/?all_with_pos"
-          probe "https://api.airplanes.live/v2/point/40.64/-73.78/60"
-          sleep 2
-          probe "https://api.airplanes.live/v2/mil"
-          sleep 2
-          probe "https://api.airplanes.live/v2/squawk/7700"
-          probe "https://opendata.adsb.fi/api/v2/lat/40.64/lon/-73.78/dist/60"
-          sleep 2
-          probe "https://opendata.adsb.fi/api/v2/mil"
-          sleep 2
-          probe "https://opendata.adsb.fi/api/v3/lat/40.64/lon/-73.78/dist/60"
-          probe "https://api.planespotters.net/pub/photos/hex/a0b1c2"
-          probe "https://api.planespotters.net/pub/photos/hex/4ca7b5"
-          echo "=================== routeset"
-          curl -s -m 30 -D - -H "Origin: https://mentifaber.org" -H "content-type: application/json" -X POST "https://api.adsb.lol/api/0/routeset" -d '{"planes":[{"callsign":"UAL1","lat":40.6,"lng":-73.8},{"callsign":"BAW117","lat":51.4,"lng":-0.4}]}' | head -c 1500; echo
-          echo "=================== routeset preflight"
-          curl -s -m 30 -D - -o /dev/null -X OPTIONS -H "Origin: https://mentifaber.org" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type" "https://api.adsb.lol/api/0/routeset"
-          probe "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY"
-          probe "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=1&hide_recent_previous=true"
-          probe "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=1"
-          probe "https://raw.githubusercontent.com/astrion-tech/celestrak-mirror/main/tle/stations.tle"
-          probe "https://geocoding-api.open-meteo.com/v1/search?count=1&name=Chicago"
+          probe "https://api.adsbdb.com/v0/callsign/UAL2677"
+          probe "https://api.adsbdb.com/v0/aircraft/aa2ba2"
+          probe "https://hexdb.io/api/v1/route/icao/UAL2677"
+          probe "https://hexdb.io/api/v1/aircraft/aa2ba2"
+          probe "https://hexdb.io/hex-image-thumb?hex=aa2ba2"
+          probe "https://api.adsb.lol/v2/ladd"
+          probe "https://api.adsb.lol/v2/pia"
+          probe "https://api.adsb.lol/v2/closest/40.64/-73.78/50"
+          probe "https://opendata.adsb.fi/api/v2/sqk/7700"
+          probe "https://api.adsb.lol/v2/point/40.64/-73.78/250"
+          echo "=================== routeset as adsb.lol origin"
+          curl -s -m 30 -D - -H "Origin: https://adsb.lol" -H "content-type: application/json" -X POST "https://api.adsb.lol/api/0/routeset" -d '{"planes":[{"callsign":"UAL2677","lat":40.6,"lng":-75.0}]}' | head -c 1500; echo
+          probe "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+          probe "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json"
+          probe "https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"
+          probe "https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json"
+          probe "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
+          python3 - <<'EOF'
+          import json
+          d = json.load(open("body.bin"))
+          print("records", len(d), "first", d[0]["time_tag"], "last", d[-1]["time_tag"])
+          from collections import Counter
+          print(Counter((r["source"], r["active"]) for r in d).most_common())
+          act = [r for r in d if r["active"]]
+          print("active first", act[0]["time_tag"], act[0]["proton_speed"], act[0]["proton_density"])
+          EOF
