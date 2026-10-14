@@ -2,7 +2,7 @@
   "id": "/vigil",
   "name": "Vigil · Mentifaber",
   "short_name": "Vigil",
-  "description": "A private command screen. Weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.",
+  "description": "A private command screen. Every aircraft in the sky, weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.",
   "start_url": "/vigil-app.html",
   "scope": "/vigil",
   "display": "standalone",

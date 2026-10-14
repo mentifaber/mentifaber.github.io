@@ -4,6 +4,7 @@ import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } 
 import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
 export { Agent } from "./agent.js";
+import { vigil } from "./vigil.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -15,6 +16,7 @@ export { Agent } from "./agent.js";
 //     list for two people, each with their own login (per-user verifiers);
 //     signals (/api/mood/listit: feelings, needs, replies, urgent, baby kicks)
 //     notify the other person by Web Push. The app is now /pilotfish-app (its page is /pilotfish).
+//   - Vigil's feed relay (/api/vigil/*, owner only; src/vigil.js)
 //   - a daily Flutterbloom reminder: Web Push subscriptions (/api/push/*) and an
 //     hourly cron that sends a payloadless push at her chosen local hour
 // Sessions, rate limits, saves and photos live in one SQLite-backed Durable Object.
@@ -522,11 +524,12 @@ async function sealedPage(req, env, app) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
+      if (route === "vigil") return vigil(req, env, ctx, !!(await session(req, env, "vigil")), json); // Vigil's relay for feeds a browser can't read directly (src/vigil.js)
       if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
       if (route === "agent") { // MENTIFABER AGENT 1.0: the owner loads/wakes/sleeps it; apps chat with it; its container pulls weights
         if (!env.AGENT) return json({ error: "the agent isn't deployed" }, 503);

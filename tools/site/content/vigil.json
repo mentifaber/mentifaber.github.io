@@ -1,13 +1,13 @@
 {
  "kicker": "private · password-gated command dashboard",
  "nameHtml": "Vi<span>gil</span>",
- "tagline": "A watch kept on the world — weather, markets, space weather, seismic and volcanic activity, satellites, and conflict, pulled live into one screen.",
+ "tagline": "A watch kept on the world — live air traffic, weather, markets, space weather, seismic and volcanic activity, satellites, and conflict, pulled live into one screen.",
  "caps": [
   "requires a password",
-  "live public data feeds",
+  "every aircraft in the sky, live",
   "home-screen widgets →"
  ],
- "launchSub": "Encrypted behind a login · public feeds only · runs entirely in your browser",
+ "launchSub": "Encrypted behind a login · public feeds only · runs in your browser, with a small relay for the feeds a browser can't read",
  "story": {
   "label": "why this exists",
   "title": "One screen, <em>always watching</em>"
@@ -15,16 +15,20 @@
  "cards": [
   {
    "n": "built on",
-   "html": "<p>Vanilla JS pulling directly from public APIs — Open-Meteo, CoinGecko, Frankfurter, NOAA, USGS, NASA, weather.gov, wheretheis.at — no backend of its own, no data it collects. Everything renders client-side, in the browser running it.</p>",
+   "html": "<p>Vanilla JS pulling directly from public sources — Open-Meteo, CoinGecko, Frankfurter, NOAA, USGS, NASA, weather.gov, wheretheiss.at, GDELT. The few that a browser isn't allowed to read (OpenSky and the ADS-B receiver networks, GDELT's event files, NOAA's large solar-wind files) go through a small owner-only relay on mentifaber.org that trims and briefly caches them and stores nothing else.</p>",
    "stack": [
     "Vanilla JS",
     "Public APIs",
-    "No server",
+    "Owner-only relay",
     "No tracking"
    ]
   }
  ],
  "features": [
+  {
+   "t": "Live air traffic",
+   "d": "every aircraft broadcasting a position worldwide, moving smoothly on its own map and the globe — tap one for its route, photo and live numbers, find any flight by callsign, and watch for emergency squawks and military traffic."
+  },
   {
    "t": "Weather & alerts",
    "d": "current conditions and active NWS severe weather alerts."
@@ -35,7 +39,7 @@
   },
   {
    "t": "Space weather",
-   "d": "NOAA SWPC solar activity, plus NASA's Astronomy Picture of the Day."
+   "d": "NOAA's R/S/G storm scales, solar wind and magnetic field with 24-hour charts, X-ray flares, the 3-day Kp forecast, and NASA's Astronomy Picture of the Day."
   },
   {
    "t": "Earth activity",
@@ -47,7 +51,7 @@
   },
   {
    "t": "Global conflict",
-   "d": "a GDELT-driven monitor of active conflict activity worldwide."
+   "d": "violence reported in world news over the last two hours, read from GDELT's 15-minute event stream and mapped by place."
   }
  ],
  "lede": "<p>The information that actually matters day to day — is a storm coming, did the market move, is anything seismic or volcanic worth paying attention to, where's the ISS, what's happening globally — lives scattered across a dozen different sites and apps. <b>Vigil</b> is a single personal dashboard that pulls the live, public feeds worth checking into one place.</p>",
