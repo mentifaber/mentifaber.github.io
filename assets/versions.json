@@ -109,13 +109,13 @@
  },
  "vigil": {
   "name": "Vigil",
-  "version": "1.21",
-  "date": "2026-10-04",
+  "version": "1.22",
+  "date": "2026-10-14",
   "notes": [
+   "Live air traffic worldwide; solar wind, conflict and headline feeds fixed",
    "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Server-checked logins and Flutterbloom cloud saves on Cloudflare",
-   "Apps now show their version and what's new after an update",
-   "App icons and home-screen install for every live app; fresh Roku preview"
+   "Apps now show their version and what's new after an update"
   ],
   "page": "vigil-app.html"
  },
