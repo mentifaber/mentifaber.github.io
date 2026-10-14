@@ -15,6 +15,7 @@
 import { complete } from "./hive-kit.js";
 import { Mind } from "./hive-mind.js";
 import { vigilWatch, vigilBrief } from "./vigil.js";
+import { sendPush, PUSH_HOSTS } from "./push.js";
 
 const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 20;
 const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_GAP = 20 * 3600e3, BUILD_CAP = 200;
@@ -29,6 +30,7 @@ export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain Ja
 // What Anders and his engineer have changed in Hive itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-14T04:00Z", "Your watch notes can now reach Anders's phone: when he turns on phone alerts in Vigil (System → Phone alerts), critical events go out at once, others outside his quiet hours and at most six an hour, with one summary of anything held back. Your finished or failed Swarm missions alert him too. You don't write the alerts in chat; they come from your watch and your missions."],
   ["2026-10-14T03:00Z", "You can see Vigil's live board now: when Anders asks about aircraft, emergencies, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS or markets, the live readings are handed to you as MATERIAL, and every 15 minutes you keep watch yourself and note big events (emergency squawks, M6+ quakes, G3+/R3+/S3+ storms, X flares, tsunami warnings, GDACS red alerts) in your journal. He can also talk to you from inside Vigil."],
   ["2026-10-13T02:25Z", "Settled, and closed for you: directive and instruction handling (instruction mode covers it; no wrappers, safeguards, fallback handlers or test suites around it) and trailing-question filtering (your lesson, the instruction-mode line and the counted habits cover it). Open ideas on these are closed automatically and new ones on them are dropped, as are near-copies of ideas already closed. A reflection with no new conversations doesn't add ideas: ideas come from talking with Anders."],
   ["2026-10-13T02:20Z", "The Swarm's \"Trailing Question Filter\" was reviewed and NOT used: it rewrote any question in a reply into an invented statement (\"Why did the server crash?\" became \"The server crash was due to a configuration error.\"), stripped every question mark, and buffered streamed replies. Closing questions are handled where they start: your lesson and the instruction-mode line. Instead, each reflection now shows you how many of your replies ended with a question and how many opened by repeating his words, so you can see the habit yourself. Also: when a Swarm mission's final assembly is cut off by length, the same model now continues it instead of the work being stitched together raw."],
@@ -63,8 +65,11 @@ export function genesisTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS lesson(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, text TEXT, src TEXT, on_ INTEGER DEFAULT 1, off_ts INTEGER, why TEXT)");
   q.exec("CREATE TABLE IF NOT EXISTS journal(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, kind TEXT, text TEXT, model TEXT)");
   q.exec("CREATE TABLE IF NOT EXISTS idea(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, title TEXT, detail TEXT, status TEXT, pid TEXT)");
+  q.exec("CREATE TABLE IF NOT EXISTS alert(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, cat TEXT, level TEXT, title TEXT, body TEXT, url TEXT, state TEXT, sent_ts INTEGER)");
   try { q.exec("ALTER TABLE idea ADD COLUMN by_ TEXT"); } catch (e) {} try { q.exec("ALTER TABLE idea ADD COLUMN done_ts INTEGER"); } catch (e) {}
 }
+const ALERT_CATS = { air: "Air emergencies (7500 / 7700)", quakes: "Earthquakes (M6+, or near you)", space: "Space weather (G/R/S 3+, X flares)", hazards: "Tsunami warnings and red disaster alerts", work: "Genesis's own missions" };
+const PREFS0 = { cats: { air: true, quakes: true, space: true, hazards: true, work: true }, level: "all", quiet: { on: true, from: 23, to: 7 }, tz: 0 }, RATE = 6; // RATE: non-critical alerts an hour
 const ago = (t) => { if (!t) return "never"; const m = (Date.now() - t) / 60e3; return m < 2 ? "just now" : m < 120 ? Math.round(m) + " min ago" : m < 2880 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
 // "test the systems", "run a health check", "is everything working?": Hive runs the real checks and hands Genesis the results
 export const asksSystems = (t) => /\b(system(s)?[ -](check|status|test|health|functionality|diagnostics?)|test(ing)? (the |all |your )?(system|systems|functionality|everything)|health ?check|self[- ]?(test|check|diagnos)|diagnos(e|tic)|(is|are) (everything|the systems?|all systems?|things) (ok|okay|working|up|running|healthy|good)|how are (the )?systems)\b/i.test(String(t || ""));
@@ -94,16 +99,17 @@ export const Genesis = {
       "Talk to him by name (" + s.creator + ") when it's natural. Never start a reply by repeating or quoting the message you're answering." +
       "\n\nHOW YOU GROW (this is real; describe it accurately when asked): every conversation with him is kept, and earlier ones that matter come back to you as memories. His 👍/👎 (with notes) and anything he says starting \"from now on\" become lessons that apply at once. Every few hours the hourly cron has you reflect: the strongest model Hive has reads your recent conversations and ratings, and you write a journal entry, learn or retire lessons, and propose ideas for what you should become. " +
       "Ideas go to the Swarm (Hive's team of AI agents that plans, builds and reviews whole projects): he can hand one over with a tap" + (s.auto !== false ? ", and with autonomy on you start one mission a day yourself, within a " + BUILD_CAP + "-call budget" : "") + ". What the Swarm builds is a result for him to review; it doesn't deploy itself. " +
+      "PHONE ALERTS: when " + s.creator + " has them on (Vigil → System → Phone alerts), the big events you notice while keeping watch on Vigil's board, and your finished or failed Swarm missions, go to his phone as notifications (critical ones at once, the rest outside his quiet hours). They come from your watch, not from chat: you can't send him a custom notification from a conversation. " +
       "WHAT YOU CAN'T DO: change your own code or model weights, deploy, push to GitHub, run commands, or test infrastructure yourself. Code changes go through " + s.creator + ". Never claim to have run a test, check, deploy or any other action unless its results are in the MATERIAL you were given; if he asks for a check and there are no results, say what you would check and that he can ask for a system check (Hive runs a real one when asked to test or check the systems)." +
       "\n\nYOUR STATE RIGHT NOW: " + this.state(h, s) +
       (ls.length ? "\n\nLESSONS YOU'VE LEARNED (yours; follow them):\n" + ls.map((l) => "- " + l.text).join("\n") : "");
   },
   state(h, s) { // a sentence or two of facts, so "what have you been doing?" gets a true answer
-    const q = h.sql(), one = (sql, ...a) => q.exec(sql, ...a).one().c, n = one("SELECT COUNT(*) c FROM journal WHERE kind='reflection'");
+    const q = h.sql(), sent = q.exec("SELECT COUNT(*) c FROM alert WHERE state='sent' AND cat!='test' AND sent_ts > ?", Date.now() - 864e5).one().c, one = (sql, ...a) => q.exec(sql, ...a).one().c, n = one("SELECT COUNT(*) c FROM journal WHERE kind='reflection'");
     const ideas = q.exec("SELECT i.title, i.status, i.by_, p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status IN ('open','building','built') ORDER BY i.id DESC LIMIT 8").toArray();
     const said = (st) => ideas.filter((i) => i.status === st).map((i) => "\"" + i.title + "\"" + (st === "building" ? " (" + (i.by_ === "genesis" ? "you started it" : "he started it") + "; the swarm is " + (i.ps || "working") + ")" : ""));
     const watch = q.exec("SELECT ts,text FROM journal WHERE kind='watch' AND ts > ? ORDER BY id DESC LIMIT 3", Date.now() - 2 * 864e5).toArray();
-    return (watch.length ? "What you noticed on Vigil's live board lately (tell him if it matters and he hasn't heard): " + watch.map((w) => ago(w.ts) + ": " + clip(w.text, 300)).join(" | ") + ". " : "") + "Latest changes to Hive: " + CHANGES.slice(0, 2).map(([at, t]) => at.slice(0, 10) + ": " + t.split(". ")[0].replace(/\.$/, "") + ".").join(" ") + " " + one("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL") + " exchanges remembered; " + one("SELECT COUNT(*) c FROM lesson WHERE on_=1") + " lessons; " + n + " reflection" + (n === 1 ? "" : "s") + (s.reflected ? ", the last " + ago(s.reflected) : "") + "; autonomy " + (s.auto !== false ? "on" : "off") + ". " +
+    return (sent ? "You sent him " + sent + " phone alert" + (sent > 1 ? "s" : "") + " in the last day. " : "") + (watch.length ? "What you noticed on Vigil's live board lately (tell him if it matters and he hasn't heard): " + watch.map((w) => ago(w.ts) + ": " + clip(w.text, 300)).join(" | ") + ". " : "") + "Latest changes to Hive: " + CHANGES.slice(0, 2).map(([at, t]) => at.slice(0, 10) + ": " + t.split(". ")[0].replace(/\.$/, "") + ".").join(" ") + " " + one("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL") + " exchanges remembered; " + one("SELECT COUNT(*) c FROM lesson WHERE on_=1") + " lessons; " + n + " reflection" + (n === 1 ? "" : "s") + (s.reflected ? ", the last " + ago(s.reflected) : "") + "; autonomy " + (s.auto !== false ? "on" : "off") + ". " +
       (said("building").length ? "Being built by the Swarm: " + said("building").join(", ") + ". " : "") + (said("built").length ? "Built (results waiting for him): " + said("built").join(", ") + ". " : "") + (said("open").length ? "Ideas on your list: " + said("open").join(", ") + "." : "No open ideas yet.");
   },
 
@@ -219,8 +225,8 @@ export const Genesis = {
     const q = h.sql(), settled = q.exec("SELECT id,title,detail FROM idea WHERE status='open'").toArray().filter((i) => SETTLED.test(i.title + " " + i.detail));
     if (settled.length) { for (const i of settled) q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "Closed " + settled.length + " idea" + (settled.length > 1 ? "s" : "") + " on topics the changelog has settled: " + settled.map((i) => "\"" + i.title + "\"").join(", ") + ".", null); }
     for (const i of q.exec("SELECT i.id,i.title,i.pid,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='building'").toArray()) {
-      if (i.ps === "done") q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id);
-      else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
+      if (i.ps === "done") { q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm finished “" + clip(i.title, 60) + "”", body: "Its result is waiting for you in Hive (Mind → Genesis).", url: "/hive-app#mind" }); }
+      else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm didn't finish “" + clip(i.title, 60) + "”", body: "Mission " + (i.ps || "gone") + "; the idea is back on my list.", url: "/hive-app#mind" }); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
     }
   },
   async maybeBuild(h) { // autonomy: at most one mission of its own a day, one at a time, on a call budget
@@ -234,6 +240,92 @@ export const Genesis = {
     q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "I started building \"" + i.title + "\" on my own: Swarm mission " + r.id + ", up to " + BUILD_CAP + " model calls. I'll look at what it made when I next reflect.", null);
     return { started: i.title, pid: r.id };
   },
+  // ── phone alerts: watch events and its own work, pushed to Anders's devices (subscribed from Vigil) ──
+  // Pushes carry no payload (src/push.js): the phone's service worker (vigil-sw.js) fetches /genesis/alerts.
+  async pushState(h) {
+    const p = (await h.ctx.storage.get("gpush")) || { subs: [] };
+    p.prefs = { ...PREFS0, ...(p.prefs || {}), cats: { ...PREFS0.cats, ...((p.prefs || {}).cats || {}) }, quiet: { ...PREFS0.quiet, ...((p.prefs || {}).quiet || {}) } };
+    return p;
+  },
+  async pushKey(h) { if (!h.env.STORE) throw new Error("the push key store isn't bound"); return h.env.STORE.get(h.env.STORE.idFromName("main")).vapid(); },
+  queueAlert(h, a) { h.sql().exec("INSERT INTO alert(ts,cat,level,title,body,url,state) VALUES(?,?,?,?,?,?,'new')", Date.now(), a.cat, a.level || "notable", clip(a.title, 120), clip(a.body, 600), a.url || "/vigil-app#brief"); },
+  quiet(prefs, now) {
+    const qh = prefs.quiet; if (!qh || !qh.on || qh.from === qh.to) return false;
+    const hr = new Date(now - (prefs.tz || 0) * 60e3).getUTCHours();
+    return qh.from < qh.to ? hr >= qh.from && hr < qh.to : hr >= qh.from || hr < qh.to;
+  },
+  async flush(h) { // send what's queued: critical now; the rest outside quiet hours and within the hourly limit, the remainder as one summary later
+    const p = await this.pushState(h), q = h.sql(), now = Date.now();
+    const rows = q.exec("SELECT * FROM alert WHERE state IN ('new','held') ORDER BY id").toArray();
+    if (!rows.length) return { sent: 0, devices: p.subs.length };
+    if (!p.subs.length) { q.exec("UPDATE alert SET state='nodevice' WHERE state IN ('new','held')"); return { sent: 0, devices: 0 }; }
+    const quiet = this.quiet(p.prefs, now), out = [];
+    let budget = Math.max(0, RATE - q.exec("SELECT COUNT(*) c FROM alert WHERE state='sent' AND level!='critical' AND cat NOT IN ('test') AND sent_ts > ?", now - 3600e3).one().c);
+    for (const r of rows) {
+      const always = r.level === "critical" || r.cat === "test";
+      if (r.state === "new" && !always && r.cat !== "digest" && (p.prefs.cats[r.cat] === false || p.prefs.level === "critical")) { q.exec("UPDATE alert SET state='skipped' WHERE id=?", r.id); continue; }
+      if (always) { out.push(r); continue; }
+      if (quiet || budget <= 0) { if (r.state !== "held") q.exec("UPDATE alert SET state='held' WHERE id=?", r.id); continue; }
+      if (r.state === "new") { out.push(r); budget--; }
+    }
+    if (!quiet && budget > 0) {
+      const held = q.exec("SELECT * FROM alert WHERE state='held' ORDER BY id").toArray();
+      if (held.length) {
+        q.exec("UPDATE alert SET state='summed' WHERE state='held'");
+        q.exec("INSERT INTO alert(ts,cat,level,title,body,url,state) VALUES(?,?,?,?,?,?,'new')", now, "digest", "notable", held.length === 1 ? held[0].title : "◈ While alerts were held: " + held.length + " things on the board",
+          held.length === 1 ? held[0].body : held.slice(-6).map((x) => "• " + x.title.replace(/^\W+\s*/, "")).join("\n") + (held.length > 6 ? "\n…and " + (held.length - 6) + " more" : ""), held[held.length - 1].url);
+        out.push(q.exec("SELECT * FROM alert WHERE id = last_insert_rowid()").one());
+      }
+    }
+    if (!out.length) return { sent: 0, devices: p.subs.length, held: q.exec("SELECT COUNT(*) c FROM alert WHERE state='held'").one().c };
+    for (const r of out) q.exec("UPDATE alert SET state='sent', sent_ts=? WHERE id=?", now, r.id); // first, so the phone's fetch finds them
+    const v = await this.pushKey(h), urgent = out.some((r) => r.level === "critical");
+    let ok = 0, dropped = 0;
+    for (const sub of [...p.subs]) { // one push per device covers the batch: the phone shows each alert it hasn't shown yet
+      const st = await sendPush(sub, v, urgent ? "high" : "normal", urgent ? 3600 : 6 * 3600).catch(() => 0);
+      if (st === 404 || st === 410) { p.subs = p.subs.filter((x) => x.id !== sub.id); dropped++; }
+      else if (st >= 200 && st < 300) { ok++; sub.last = now; delete sub.err; }
+      else sub.err = st ? "push service said " + st : "push service unreachable";
+    }
+    p.sentTotal = (p.sentTotal || 0) + out.length; p.lastSent = now;
+    await h.ctx.storage.put("gpush", p);
+    if (Math.random() < 0.1) q.exec("DELETE FROM alert WHERE id <= (SELECT id FROM alert ORDER BY id DESC LIMIT 1 OFFSET 400)");
+    return { sent: out.length, devices: ok, dropped, held: q.exec("SELECT COUNT(*) c FROM alert WHERE state='held'").one().c };
+  },
+  async pushRoute(h, path, b, J) {
+    const p = await this.pushState(h), q = h.sql(), s = await this.self(h);
+    const idOf = async (ep) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ep)))].map((x) => x.toString(16).padStart(2, "0")).join("").slice(0, 32);
+    if (path === "/genesis/push") { let key = null; try { key = (await this.pushKey(h)).pub; } catch (e) {}
+      return J({ key, prefs: p.prefs, cats: ALERT_CATS, devices: p.subs.map((x) => ({ id: x.id, label: x.label, at: x.at, last: x.last || null, err: x.err || null })), sentTotal: p.sentTotal || 0, lastSent: p.lastSent || 0,
+        recent: q.exec("SELECT id,ts,cat,level,title,body,url,state,sent_ts FROM alert ORDER BY id DESC LIMIT 12").toArray() }); }
+    if (path === "/genesis/push/subscribe") {
+      const ep = b.sub && typeof b.sub.endpoint === "string" ? b.sub.endpoint : "";
+      if (!(PUSH_HOSTS.test(ep) || (h.env.PUSH_TEST_HOST && ep.startsWith(h.env.PUSH_TEST_HOST)))) return J({ error: "that isn't a push subscription this server accepts" }, 400);
+      const id = await idOf(ep), had = p.subs.some((x) => x.id === id);
+      p.subs = p.subs.filter((x) => x.id !== id).concat([{ id, endpoint: ep, label: clip(b.label, 60) || "a device", at: Date.now() }]).slice(-8);
+      if (Number.isFinite(+b.tz) && b.tz !== "" && b.tz !== null) p.prefs.tz = Math.max(-840, Math.min(840, Math.round(+b.tz)));
+      await h.ctx.storage.put("gpush", p);
+      if (!had) q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned on phone alerts (" + clip(b.label, 60) + "): what I notice on Vigil's board, and my finished missions, now reach him there.", null);
+      return J({ ok: true, devices: p.subs.length });
+    }
+    if (path === "/genesis/push/unsubscribe") { const id = await idOf(String(b.endpoint || "")); p.subs = p.subs.filter((x) => x.id !== id && x.id !== b.id); await h.ctx.storage.put("gpush", p); return J({ ok: true, devices: p.subs.length }); }
+    if (path === "/genesis/push/prefs") {
+      const n = b.prefs || {}, cats = {};
+      for (const k of Object.keys(ALERT_CATS)) cats[k] = n.cats && k in n.cats ? !!n.cats[k] : p.prefs.cats[k];
+      const hr = (x, d) => (Number.isInteger(+x) && +x >= 0 && +x <= 23 && x !== "" && x !== null ? +x : d);
+      p.prefs = { ...p.prefs, cats, level: n.level === "critical" ? "critical" : n.level === "all" ? "all" : p.prefs.level,
+        quiet: { on: n.quiet && "on" in n.quiet ? !!n.quiet.on : p.prefs.quiet.on, from: hr(n.quiet && n.quiet.from, p.prefs.quiet.from), to: hr(n.quiet && n.quiet.to, p.prefs.quiet.to) },
+        tz: Number.isFinite(+n.tz) && n.tz !== "" && n.tz !== null ? Math.max(-840, Math.min(840, Math.round(+n.tz))) : p.prefs.tz };
+      await h.ctx.storage.put("gpush", p);
+      return J({ ok: true, prefs: p.prefs });
+    }
+    if (path === "/genesis/push/test") {
+      if (!p.subs.length) return J({ error: "no device has phone alerts turned on yet" }, 400);
+      this.queueAlert(h, { cat: "test", level: "notable", title: "◈ " + s.name, body: "Phone alerts work. I'll tell you when something big shows up on Vigil's board, and when my missions finish.", url: "/vigil-app#brief" });
+      return J(await this.flush(h));
+    }
+    return J({ error: "not found" }, 404);
+  },
   // Keeping watch on Vigil's live board: big events get one journal note each (15-minute cron, and the hourly tick)
   async watch(h) {
     const s = await this.self(h); let geo = s.home || null;
@@ -242,9 +334,11 @@ export const Genesis = {
     if (fresh.length) {
       h.sql().exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "watch", "On Vigil's board: " + fresh.slice(0, 6).map((e) => e.text).join("; ") + ".", null);
       s.watched = [...(s.watched || []), ...fresh.map((e) => e.key)].slice(-300);
+      for (const e of fresh.slice(0, 6)) this.queueAlert(h, { cat: e.cat || "hazards", level: e.level || "notable", title: e.title || clip(e.text, 80), body: e.text, url: "/vigil-app#" + (e.view || "brief") });
     }
     await h.ctx.storage.put("genesis", s);
-    return { noted: fresh.length, seen: ev.length };
+    const pushed = await this.flush(h).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
+    return { noted: fresh.length, seen: ev.length, pushed };
   },
   async tick(h) { // the hourly cron: catch up on missions, reflect when enough has happened, then maybe start the next mission
     if (h._reflecting) return { reflected: false };
@@ -254,6 +348,7 @@ export const Genesis = {
       if (await this.due(h)) Object.assign(out, { reflected: true }, await this.reflect(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) })));
       const b = await this.maybeBuild(h).catch(() => null); if (b) out.build = b;
       out.watch = await this.watch(h).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
+      if (out.watch && out.watch.error) out.pushed = await this.flush(h).catch(() => null); // the watch flushes on success; make sure mission alerts still go out
     } finally { h._reflecting = false; const s = await this.self(h); s.ticked = Date.now(); await h.ctx.storage.put("genesis", s); }
     return out;
   },
@@ -287,11 +382,14 @@ export const Genesis = {
   // /genesis… routes (the caller has already checked it's the owner)
   async route(h, path, b, J) {
     const s = await this.self(h), q = h.sql();
-    if (path === "/genesis") { this.syncBuilds(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP }, due: await this.due(h), stats: this.stats(h),
+    if (path === "/genesis") { this.syncBuilds(h); const gp = await this.pushState(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP }, due: await this.due(h), stats: this.stats(h),
       lessons: q.exec("SELECT id,ts,text,src FROM lesson WHERE on_=1 ORDER BY id").toArray(), retired: q.exec("SELECT id,ts,text,src,off_ts,why FROM lesson WHERE on_=0 ORDER BY off_ts DESC LIMIT 12").toArray(),
-      arch: ARCH, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), watch: q.exec("SELECT id,ts,text FROM journal WHERE kind='watch' ORDER BY id DESC LIMIT 8").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
+      arch: ARCH, push: { devices: gp.subs.length, lastSent: gp.lastSent || 0 }, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), watch: q.exec("SELECT id,ts,text FROM journal WHERE kind='watch' ORDER BY id DESC LIMIT 8").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
     if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I can start one Swarm mission a day from my own ideas." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
     if (path === "/genesis/health") return J(await this.health(h));
+    if (path.startsWith("/genesis/push")) return this.pushRoute(h, path, b, J);
+    if (path === "/genesis/alerts") { const since = Number.isFinite(+b.since) && +b.since > 0 ? +b.since : Date.now() - 12 * 3600e3;
+      return J({ name: s.name, alerts: q.exec("SELECT id,ts,cat,level,title,body,url,sent_ts FROM alert WHERE state='sent' AND sent_ts > ? ORDER BY id DESC LIMIT 8", since).toArray() }); }
     if (path === "/genesis/watch") { if (b.home && isFinite(+b.home.lat) && isFinite(+b.home.lon)) { s.home = { lat: +b.home.lat, lon: +b.home.lon, name: clip(b.home.name, 80) || null }; await h.ctx.storage.put("genesis", s); } return J(b.run === false ? { ok: true } : await this.watch(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) }))); }
     if (path === "/genesis/rate") return this.rate(h, b.turn, +b.rating, b.note) ? J({ ok: true }) : J({ error: "no such turn" }, 404);
     if (path === "/genesis/teach") { const t = this.teach(h, b.text, "anders"); return t ? J({ ok: true, lesson: t }) : J({ error: "that isn't a lesson Genesis can take on (too short, already known, or it would loosen the rules)" }, 400); }
