@@ -439,19 +439,38 @@ export async function vigilBrief(env, topics, home, q) {
   return { at: Date.now(), topics: list, ok: ok.map((r) => r[0]), failed: bad.map((r) => r[0] + ": " + String(r[2] && r[2].message || r[2]).slice(0, 80)),
     text: ok.map(([t, x]) => LABEL[t] + ": " + x).join("\n") + (bad.length ? "\n(could not read just now: " + bad.map((r) => LABEL[r[0]].toLowerCase()).join(", ") + ")" : "") };
 }
-// What deserves a note in Genesis's journal without being asked: big, rare, and each noted once.
+// What deserves a note in Genesis's journal (and, if he turned alerts on, a push to his phone) without being asked:
+// big, rare, and each noted once. level: "critical" comes through quiet hours; "notable" waits for the morning.
+const nmTo = (home, la, lo) => (home ? nm([home.lat, home.lon], [la, lo]) : Infinity);
 export async function vigilWatch(env, home) {
-  const out = [];
+  const out = [], add = (e) => out.push(e);
   const [em, qk, sc, xr, ts, gd] = await Promise.allSettled([memo("em", 30, emergencies), memo("usgs", 120, () => get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson")),
     memo("scales", 300, () => get("https://services.swpc.noaa.gov/products/noaa-scales.json")), memo("xray", 300, xray),
     memo("tsu", 180, () => get("https://api.weather.gov/alerts/active?event=" + encodeURIComponent("Tsunami Warning"))),
     memo("gdacs", 900, () => get("https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC;FL;DR;WF;EQ;VO&alertlevel=red"))]);
-  if (em.status === "fulfilled") for (const r of em.value.ac) if (r[9] === "7500" || r[9] === "7700" || r[18] === "unlawful" || r[18] === "general") out.push({ key: "sq:" + r[0] + ":" + r[9] + ":" + new Date().toISOString().slice(0, 10), text: acName(r) + " is squawking " + r[9] + " (" + (EM_TXT[r[18]] || "emergency") + "), " + alt(r) + " at " + pos(r[2], r[3]) + (home ? ", " + Math.round(nm([home.lat, home.lon], [r[2], r[3]])) + " nm from Anders" : "") });
-  if (qk.status === "fulfilled") for (const f of qk.value.features) { const m = f.properties.mag || 0, near_ = home && nm([home.lat, home.lon], [f.geometry.coordinates[1], f.geometry.coordinates[0]]) < 160; if ((m >= 6 || (near_ && m >= 3.5)) && f.properties.time > Date.now() - 6 * 3600e3) out.push({ key: "eq:" + f.id, text: "M" + m.toFixed(1) + " earthquake, " + f.properties.place + (near_ ? " (near Anders)" : "") + ", " + agoT(f.properties.time) + (f.properties.tsunami ? ", tsunami flag set" : "") }); }
-  if (sc.status === "fulfilled" && sc.value["0"]) { const c = sc.value["0"]; for (const k of ["R", "S", "G"]) if (+(c[k].Scale) >= 3) out.push({ key: "sc:" + k + c[k].Scale + ":" + c.DateStamp, text: "NOAA " + k + c[k].Scale + " " + ({ R: "radio blackout", S: "solar radiation storm", G: "geomagnetic storm" })[k] + " in progress (" + c[k].Text + ")" }); }
-  if (xr.status === "fulfilled" && xr.value.flare && /^X/.test(xr.value.flare.max || "")) out.push({ key: "xf:" + xr.value.flare.maxAt, text: "X-class solar flare: " + xr.value.flare.max + " peaked " + agoT(Date.parse(xr.value.flare.maxAt)) });
-  if (ts.status === "fulfilled") for (const f of ts.value.features || []) out.push({ key: "ts:" + f.id, text: "Tsunami Warning: " + String(f.properties.areaDesc || "").split(";").slice(0, 3).join(", ") });
-  if (gd.status === "fulfilled") for (const f of gd.value.features || []) { const p = f.properties || {}; out.push({ key: "gd:" + (p.eventid || p.name) + ":" + (p.episodeid || ""), text: "GDACS red alert: " + (p.name || p.eventname || p.eventtype) + (p.country ? " — " + p.country : "") }); }
+  if (em.status === "fulfilled") for (const r of em.value.ac) {
+    const hijack = r[9] === "7500" || r[18] === "unlawful";
+    if (!hijack && r[9] !== "7700" && r[18] !== "general") continue;
+    const d = nmTo(home, r[2], r[3]);
+    add({ key: "sq:" + r[0] + ":" + r[9] + ":" + new Date().toISOString().slice(0, 10), cat: "air", level: hijack || d < 100 ? "critical" : "notable", view: "air",
+      title: "✈ Squawk " + (r[9] || (hijack ? "7500" : "7700")) + " · " + (r[1] || r[11] || r[0]).toUpperCase(),
+      text: acName(r) + " is squawking " + r[9] + " (" + (EM_TXT[r[18]] || "emergency") + "), " + alt(r) + " at " + pos(r[2], r[3]) + (home ? ", " + Math.round(d) + " nm from Anders" : "") });
+  }
+  if (qk.status === "fulfilled") for (const f of qk.value.features) {
+    const m = f.properties.mag || 0, d = nmTo(home, f.geometry.coordinates[1], f.geometry.coordinates[0]), near_ = d < 160;
+    if (!((m >= 6 || (near_ && m >= 3.5)) && f.properties.time > Date.now() - 6 * 3600e3)) continue;
+    add({ key: "eq:" + f.id, cat: "quakes", level: m >= 7 || (near_ && m >= 5) ? "critical" : "notable", view: "earth",
+      title: "🌍 M" + m.toFixed(1) + " earthquake" + (near_ ? " near you" : ""),
+      text: "M" + m.toFixed(1) + " earthquake, " + f.properties.place + (near_ ? " (near Anders)" : "") + ", " + agoT(f.properties.time) + (f.properties.tsunami ? ", tsunami flag set" : "") });
+  }
+  if (sc.status === "fulfilled" && sc.value["0"]) { const c = sc.value["0"]; for (const k of ["R", "S", "G"]) { const n = +(c[k].Scale); if (n >= 3) add({ key: "sc:" + k + n + ":" + c.DateStamp, cat: "space", level: n >= 4 ? "critical" : "notable", view: "space",
+    title: "☀ " + k + n + " " + ({ R: "radio blackout", S: "radiation storm", G: "geomagnetic storm" })[k], text: "NOAA " + k + n + " " + ({ R: "radio blackout", S: "solar radiation storm", G: "geomagnetic storm" })[k] + " in progress (" + c[k].Text + ")" + (k === "G" ? ": aurora may reach mid latitudes" : "") }); } }
+  if (xr.status === "fulfilled" && xr.value.flare && /^X/.test(xr.value.flare.max || "")) add({ key: "xf:" + xr.value.flare.maxAt, cat: "space", level: parseFloat(xr.value.flare.max.slice(1)) >= 10 ? "critical" : "notable", view: "space",
+    title: "☀ " + xr.value.flare.max + " solar flare", text: "X-class solar flare: " + xr.value.flare.max + " peaked " + agoT(Date.parse(xr.value.flare.maxAt)) });
+  if (ts.status === "fulfilled") for (const f of ts.value.features || []) add({ key: "ts:" + f.id, cat: "hazards", level: "critical", view: "earth",
+    title: "🌊 Tsunami warning", text: "Tsunami Warning: " + String(f.properties.areaDesc || "").split(";").slice(0, 3).join(", ") });
+  if (gd.status === "fulfilled") for (const f of gd.value.features || []) { const p = f.properties || {}; add({ key: "gd:" + (p.eventid || p.name) + ":" + (p.episodeid || ""), cat: "hazards", level: "notable", view: "earth",
+    title: "⚠ GDACS red alert", text: "GDACS red alert: " + (p.name || p.eventname || p.eventtype) + (p.country ? " — " + p.country : "") }); }
   return out;
 }
 

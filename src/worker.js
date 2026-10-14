@@ -5,6 +5,7 @@ import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
 export { Agent } from "./agent.js";
 import { vigil } from "./vigil.js";
+import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -434,23 +435,7 @@ async function listPush(req, env, app, action) {
   return json({ error: "not found" }, 404);
 }
 
-// Web Push (RFC 8030/8292) without a payload: the service worker picks the
-// words, so nothing needs encrypting; the request only carries a VAPID JWT.
-const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-const b64urlStr = (str) => b64url(new TextEncoder().encode(str));
-async function vapidAuth(endpoint, v) {
-  const aud = new URL(endpoint).origin;
-  const head = b64urlStr(JSON.stringify({ typ: "JWT", alg: "ES256" }));
-  const body = b64urlStr(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: "mailto:anders@mentifaber.org" }));
-  const key = await crypto.subtle.importKey("jwk", v.priv, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(head + "." + body));
-  return "vapid t=" + head + "." + body + "." + b64url(sig) + ", k=" + v.pub;
-}
-async function sendPush(sub, v, urgency) {
-  const res = await fetch(sub.endpoint, { method: "POST", headers: { TTL: "43200", Urgency: urgency || "normal", Authorization: await vapidAuth(sub.endpoint, v), "Content-Length": "0" } });
-  return res.status;
-}
-const PUSH_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(push\.apple\.com|fcm\.googleapis\.com|googleapis\.com|mozilla\.com|push\.services\.mozilla\.com|notify\.windows\.com)\//;
+// Web Push itself (VAPID, the push-service allowlist) lives in src/push.js, shared with Genesis.
 async function push(req, env, action) {
   const s = store(env);
   if (action === "key" && req.method === "GET") return json({ key: (await s.vapid()).pub });

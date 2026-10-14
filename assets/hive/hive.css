@@ -238,11 +238,11 @@ body.still #field{display:none}
 .genp .ah button{margin-left:auto}
 .mi.lesson p small b{color:var(--cy);font-weight:600}
 .mi .ib{display:flex;gap:6px;flex-shrink:0;align-items:flex-start}.mi .ib button{width:auto;padding:0 10px;height:28px;font:600 11px "JetBrains Mono",monospace;letter-spacing:.06em}
-.journal .je{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:0 0 14px}.journal .je.milestone{border-color:var(--cy)}
+.journal .je{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:0 0 14px}.journal .je.milestone{border-color:var(--cy)}.journal .je.watch{border-color:#ff6a55}
 .journal .je small{display:block;font:11px "JetBrains Mono",monospace;color:var(--dim);margin-bottom:4px}.journal .je p{margin:0 0 6px;white-space:pre-wrap}
 .acts .rate.on{color:var(--cy)}.acts .rate[data-act='down'].on{color:var(--warn,#ff8b6b)}
 .mlist .mi .ib button{border:1px solid var(--line);border-radius:8px;color:var(--mute)}.mlist .mi .ib button:hover{color:var(--cy);border-color:var(--cy)}
-.genp .facts{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+.genp .facts{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}.genp .facts .full{grid-column:1/-1;background:none;border-style:dashed}.genp .facts .full a{color:var(--cy);text-decoration:none}
 .genp .ah{gap:10px}.genp .ah .mtg{margin-left:auto}.genp .ah button{margin-left:0}
 .genp .health{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;margin-top:12px}.genp .health div{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--code);font-size:12.5px;min-width:0}
 .genp .health b{flex:none;width:16px;text-align:center}.genp .health .ok b{color:var(--ok,#3ddc97)}.genp .health .no b{color:var(--bad,#ff6b6b)}.genp .health span{min-width:0;overflow-wrap:anywhere}.genp .health small{display:block;color:var(--dim);font:10.5px "JetBrains Mono",monospace}
