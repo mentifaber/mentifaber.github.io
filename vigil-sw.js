@@ -1,7 +1,7 @@
 // Vigil service worker (scope /vigil): Genesis's phone alerts. A push carries no words (src/push.js), so on each
 // one this asks Hive which alerts went out and shows the ones this phone hasn't shown yet. Nothing is cached:
 // Vigil is a sealed page and always comes fresh from the network.
-const ICON = "/assets/icons/vigil.png", BADGE = "/assets/icons/v2/vigil-48.png", SEEN = "vigil-alerts";
+const ICON = "/assets/icons/vigil.png", BADGE = "/assets/icons/v2/vigil-badge.png", SEEN = "vigil-alerts";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
