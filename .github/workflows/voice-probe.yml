@@ -1,0 +1,22 @@
+# Temporary: checks the deployed voice routes with real speech (removed after the run).
+name: Voice probe
+on:
+  push:
+    branches: [claude/website-redesign-portfolio-9dci67]
+    paths: [.github/workflows/voice-probe.yml, .github/probe/**]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng ffmpeg >/dev/null
+      - name: Make speech and noise
+        run: |
+          espeak-ng -v en-us -s 155 -w s.wav "Good morning, Genesis. What does the world look like right now?"
+          ffmpeg -loglevel error -y -i s.wav -af "adelay=600|600,apad=pad_dur=1.5" -ar 16000 -ac 1 speech.wav
+          ffmpeg -loglevel error -y -f lavfi -i "anoisesrc=d=3:c=pink:a=0.003" -ar 16000 -ac 1 noise.wav
+          ls -la *.wav
+      - name: Probe
+        run: node .github/probe/voice.mjs
