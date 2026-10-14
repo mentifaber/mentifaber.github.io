@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://mentifaber.org/arsenal-app.html</loc><lastmod>2026-10-12</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/arsenal.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/atlas-classic.html</loc><lastmod>2026-09-29</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/atlas-classic.html</loc><lastmod>2026-10-12</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/atlas.html</loc><lastmod>2026-10-11</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/ballast-app.html</loc><lastmod>2026-10-04</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/ballast.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
@@ -24,8 +24,8 @@
   <url><loc>https://mentifaber.org/duely.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/frames.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/graveyard.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/hive-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
-  <url><loc>https://mentifaber.org/hive.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://mentifaber.org/hive-app.html</loc><lastmod>2026-10-13</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/hive.html</loc><lastmod>2026-10-13</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/</loc><lastmod>2026-10-12</lastmod><priority>1.0</priority></url>
   <url><loc>https://mentifaber.org/meshnet-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/meshnet.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
@@ -66,7 +66,7 @@
   <url><loc>https://mentifaber.org/sonicveil.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/tether-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/tether.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/thoughtform-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/thoughtform-app.html</loc><lastmod>2026-10-12</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/thoughtform.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/verel.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/vigil.html</loc><lastmod>2026-10-12</lastmod><priority>0.8</priority></url>
