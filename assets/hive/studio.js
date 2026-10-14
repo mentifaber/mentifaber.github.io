@@ -428,7 +428,7 @@ const Voice = (window.HiveVoice = {
   async play() {
     Voice.playing = true; if (Voice.on) Voice.set("Speaking…");
     while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue;
-      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "VOICE IN " + (Voice.first / 1000).toFixed(1) + "s" + (Voice.heardBy === "flux" ? " · HEARD LIVE" : Voice.sttMs ? " · HEARD " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used.toUpperCase() : ""); }
+      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "VOICE IN " + (Voice.first / 1000).toFixed(1) + "s" + (/flux/.test(Voice.heardBy || "") ? " · HEARD LIVE" + (Voice.heardBy !== "flux" ? " + CHECKED" : "") : Voice.sttMs ? " · HEARD " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used.toUpperCase() : ""); }
       await new Promise((ok) => { if (c.url) { const a = (Voice.audio = c.audio || new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
     Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f());
   },

@@ -34,6 +34,7 @@ const pcm16 = (frames) => { const n = frames.reduce((a, f) => a + f.length, 0), 
 // what Whisper says when there's nothing to hear (the classic ones), and words a thought rarely ends on
 const PHANTOM = /^(you|thank you|thanks for watching|thank you for watching|bye|bye bye|subtitles by.*|amara\.org.*|\.+|♪+)[.!?]*$/i;
 const DANGLING = /(,|\b(and|but|so|or|because|the|a|an|to|of|with|um|uh|like|if|then|that|which|my|your|is|are|was|for|about))[.…]?$/i;
+const unsure = (c) => c.length > 0 && (c.reduce((a, b) => a + b, 0) / c.length < 0.8 || Math.min(...c) < 0.4); // Flux's per-word confidence
 const phantom = (t, voicedMs, engine) => { t = String(t || "").trim(); if (!/[\p{L}\p{N}]/u.test(t)) return true; if (/^you[.!?]*$/i.test(t)) return true; return engine !== "flux" && PHANTOM.test(t) && voicedMs < 450; }; // Flux doesn't invent words for silence; Whisper does
 
 class Ear {
@@ -74,7 +75,7 @@ class Ear {
 
 class Turn {
   constructor(ear, o, done) {
-    Object.assign(this, { ear, o, done, frames: [], phase: "wait", t0: ear.n, guard: Math.round((o.guard || 0) / FMS), voiced: 0, last: ear.n, partial: "", gen: 0, spec: null, specN: 0, extra: 0, extended: false, sock: null, sent: 0, dead: false, finalAt: 0 });
+    Object.assign(this, { ear, o, done, frames: [], phase: "wait", t0: ear.n, guard: Math.round((o.guard || 0) / FMS), voiced: 0, last: ear.n, partial: "", pieces: [], confs: [], words: [], eotAt: 0, since: 0, gen: 0, spec: null, specN: 0, extra: 0, extended: false, sock: null, sent: 0, dead: false });
     this.engine = o.engine === "whisper" || !window.WebSocket ? "whisper" : "flux";
     if (o.ptt) this.begin([]);
   }
@@ -85,7 +86,7 @@ class Turn {
       return;
     }
     if (this.phase !== "speech") return;
-    this.frames.push(x); if (x.on) { this.voiced++; this.last = x.n; this.resumed(); }
+    this.frames.push(x); if (x.on) { this.voiced++; this.last = x.n; this.resumed(); if (this.eotAt && ++this.since >= 4) this.eotAt = 0; } // 80 ms of voice after Flux's end of turn: he's carrying on
     if (this.sock && this.sock.readyState === 1) this.flush();
     if (this.frames.length * FMS > 60000) return this.end();
     this.tick((x.n - this.last) * FMS);
@@ -105,8 +106,14 @@ class Turn {
     s.onopen = () => { this.openMs = performance.now() - t0; this.flush(); };
     s.onmessage = (e) => { if (typeof e.data !== "string" || this.sock !== s) return; let j; try { j = JSON.parse(e.data); } catch (x) { return; } if (j && j.response && typeof j.response === "object") j = j.response;
       const ev = j.event || j.type; if (ev === "Error" || j.error) return this.fail(String(j.error || j.description || j.message || "recognizer error"));
-      if (typeof j.transcript === "string" && j.transcript.trim()) { this.partial = j.transcript.trim(); if (this.o.onPartial) this.o.onPartial(this.partial); }
-      if (ev === "EndOfTurn") this.finish(j.transcript || this.partial, "flux");
+      if (typeof j.transcript === "string" && j.transcript.trim()) { this.partial = j.transcript.trim(); this.words = (j.words || []).map((w) => +w.confidence).filter(isFinite); if (this.o.onPartial) this.o.onPartial(this.heard()); }
+      if (ev === "StartOfTurn" && this.eotAt) this.eotAt = 0;
+      // Flux's end of turn is necessary but not enough: "Good morning, Genesis." is a complete sentence, and he may be about to ask
+      // the question. The turn ends when Flux thinks the thought is done AND the pause has lasted his "patience" (tick).
+      if (ev === "EndOfTurn") { const t = String(j.transcript || this.partial || "").trim(), c = (j.words || []).map((w) => +w.confidence).filter(isFinite); this.partial = ""; this.words = [];
+        if (t) { this.pieces.push(t); this.confs.push(...c); this.eotAt = this.ear.n; this.since = 0; if (this.o.onPartial) this.o.onPartial(this.heard());
+          if (unsure(c) && !this.spec) { this.spec = this.transcribe(true); this.specN = this.frames.length; } } // Flux wasn't sure of some words: Whisper checks the clip while the pause runs
+        else if (!this.pieces.length) this.finish("", "flux"); }
     };
     s.onerror = () => { if (this.sock === s) this.fail("socket error"); };
     s.onclose = (e) => { if (this.sock === s && this.phase === "speech") this.fail("socket closed" + (e.code ? " (" + e.code + (e.reason ? " " + e.reason : "") + ")" : "")); };
@@ -119,11 +126,24 @@ class Turn {
     if (this.dead) return; this.dead = true; this.why = why; if (!this.openMs) this.ear.fluxOff = Date.now() + 5 * 60e3;
     this.drop(); if (this.phase === "speech" && this.o.ptt && this.stopped) this.decide();
   }
+  heard() { return [...this.pieces, this.partial].filter(Boolean).join(" ").trim(); }
+  async final() { // Flux's words, unless it wasn't sure of them and Whisper has the clip in hand (or nearly: up to 2.5 s)
+    if (this.deciding || this.phase !== "speech") return; this.deciding = true; const g = this.gen, text = this.heard();
+    if (unsure([...this.confs, ...this.words]) && this.voiced >= 12) {
+      const fresh = !this.spec || this.frames.slice(this.specN).some((r) => r.on), p = fresh ? this.transcribe(true) : this.spec;
+      const r = await Promise.race([p.catch(() => null), new Promise((ok) => setTimeout(() => ok(null), 2500))]);
+      if (g !== this.gen || this.phase !== "speech") return; // he started talking again: the turn goes on
+      if (r && r.text && !phantom(r.text, this.voiced * FMS, "whisper")) return this.finish(r.text, "flux+whisper", r);
+    }
+    this.finish(text, "flux");
+  }
   drop() { const s = this.sock; this.sock = null; if (s) { s.onclose = s.onerror = s.onmessage = null; try { s.close(1000, "done"); } catch (e) {} } }
   tick(sil) {
-    if (this.engine === "flux" && !this.dead) { // Flux decides; these only cover a socket that has gone quiet
-      if (this.stopped && performance.now() - this.stopped > 1800) return this.partial ? this.finish(this.partial, "flux") : this.fail("no words after release");
-      if (sil > Math.max(4500, (this.o.silence || 900) * 4)) return this.partial ? this.finish(this.partial, "flux") : this.voiced < 12 ? this.reset() : this.fail("no end of turn");
+    if (this.engine === "flux" && !this.dead) {
+      if (this.eotAt && (this.stopped || sil >= Math.max(500, this.o.silence || 900))) return this.final();
+      // a socket that has gone quiet: what it heard so far, else Whisper
+      if (this.stopped && performance.now() - this.stopped > 1800) return this.heard() ? this.finish(this.heard(), "flux") : this.fail("no words after release");
+      if (sil > Math.max(4500, (this.o.silence || 900) * 4)) return this.heard() ? this.finish(this.heard(), "flux") : this.voiced < 12 ? this.reset() : this.fail("no end of turn");
       return;
     }
     if (this.o.ptt && !this.stopped) return; // push-to-talk: the button ends it
@@ -143,10 +163,10 @@ class Turn {
     if (!this.o.ptt && !this.extended && DANGLING.test(String(r.text || "").trim())) { this.extended = true; this.extra = 1500; this.spec = Promise.resolve(r); this.specN = this.frames.length; return; } // "so I was thinking that…": give it a moment more
     this.finish(r.text, "whisper", r);
   }
-  transcribe() {
+  transcribe(quiet) {
     const fr = this.frames, first = fr.findIndex((r) => r.on), lastI = fr.length - 1 - [...fr].reverse().findIndex((r) => r.on);
     const clip = first < 0 ? [] : fr.slice(Math.max(0, first - 15), Math.min(fr.length, lastI + 13)).map((r) => r.f), t0 = performance.now(); // 300 ms before the first sound, 260 ms after the last
-    if (this.o.onSend) this.o.onSend();
+    if (this.o.onSend && !quiet) this.o.onSend();
     return fetch("/api/hive/stt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audio: wav(clip), lang: this.o.lang || "", ms: this.voiced * FMS, kt: this.o.keyterm || "" }) })
       .then((r) => r.json().catch(() => ({ error: "the server said " + r.status }))).then((j) => (j.error ? { error: j.error } : { text: String(j.text || "").trim(), ms: performance.now() - t0, dropped: j.dropped }));
   }
@@ -156,7 +176,7 @@ class Turn {
     this.phase = "done"; this.drop(); this.done({ text, engine, voicedMs: this.voiced * FMS, sttMs: r && r.ms, openMs: this.openMs, why: this.why });
   }
   reset() { // it was noise: keep waiting for real speech (no guard this time; Hive isn't talking)
-    this.drop(); Object.assign(this, { phase: "wait", frames: [], voiced: 0, partial: "", spec: null, specN: 0, extra: 0, extended: false, sent: 0, dead: false, deciding: false, flushAll: false, t0: this.ear.n, guard: 0 }); this.gen++;
+    this.drop(); Object.assign(this, { phase: "wait", frames: [], voiced: 0, partial: "", pieces: [], confs: [], words: [], eotAt: 0, since: 0, spec: null, specN: 0, extra: 0, extended: false, sent: 0, dead: false, deciding: false, flushAll: false, t0: this.ear.n, guard: 0 }); this.gen++;
     if (this.o.onWait) this.o.onWait();
   }
   stop() { // push-to-talk released: Flux gets half a second of quiet to close the turn on, Whisper gets the clip
