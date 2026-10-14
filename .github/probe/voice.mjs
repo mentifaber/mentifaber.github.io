@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-const O = "https://mentifaber.org", wav = (f) => readFileSync(f), url = (b) => "data:audio/wav;base64," + b.toString("base64");
+const O = "https://mentifaber-1.sonicnomad01.workers.dev", wav = (f) => readFileSync(f), url = (b) => "data:audio/wav;base64," + b.toString("base64");
 const t = () => new Date().toISOString().slice(11, 23);
 for (const f of ["speech.wav", "noise.wav"]) {
   const t0 = Date.now(), r = await fetch(O + "/api/hive/stt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audio: url(wav(f)), lang: "en", kt: "Hive" }) });
@@ -8,7 +8,7 @@ for (const f of ["speech.wav", "noise.wav"]) {
 // live: stream the speech at real-time pace in 80 ms packets, then quiet, like the voice link does
 const pcm = wav("speech.wav").subarray(44); const t0 = Date.now(); let done = false;
 await new Promise((resolve) => {
-  const ws = new WebSocket("wss://mentifaber.org/api/hive/listen?rate=16000&eot=0.70&wait=4000&kt=Genesis"); ws.binaryType = "arraybuffer";
+  const ws = new WebSocket("wss://mentifaber-1.sonicnomad01.workers.dev/api/hive/listen?rate=16000&eot=0.70&wait=4000&kt=Genesis"); ws.binaryType = "arraybuffer";
   const stop = setTimeout(() => { console.log(t(), "LIVE timeout"); try { ws.close(); } catch (e) {} resolve(); }, 20000);
   ws.onopen = async () => { console.log(t(), "LIVE open after", Date.now() - t0, "ms");
     for (let i = 0; i < pcm.length && !done; i += 2560) { ws.send(pcm.subarray(i, i + 2560)); await new Promise((r) => setTimeout(r, 80)); }
