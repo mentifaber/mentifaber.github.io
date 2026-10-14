@@ -602,6 +602,10 @@ export default {
     return env.ASSETS.fetch(req);
   },
   async scheduled(event, env, ctx) {
+    if (event.cron === "*/15 * * * *") { // Genesis keeps watch on Vigil's live board between the hourly ticks
+      if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/watch", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {}));
+      return;
+    }
     ctx.waitUntil(dailyReminders(env));
     // Genesis reflects on its recent conversations when enough has happened (it decides; most hours it's a no-op)
     if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/tick", { method: "POST", headers: { "x-hive-owner": "1" } })).catch(() => {}));

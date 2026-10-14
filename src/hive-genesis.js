@@ -14,6 +14,7 @@
 // (only retired, so every step can be seen and undone), and it never claims to have run a check it didn't run.
 import { complete } from "./hive-kit.js";
 import { Mind } from "./hive-mind.js";
+import { vigilWatch, vigilBrief } from "./vigil.js";
 
 const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 20;
 const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_GAP = 20 * 3600e3, BUILD_CAP = 200;
@@ -28,6 +29,7 @@ export const ARCH = "HOW HIVE IS BUILT (what you make has to fit this): plain Ja
 // What Anders and his engineer have changed in Hive itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-14T03:00Z", "You can see Vigil's live board now: when Anders asks about aircraft, emergencies, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS or markets, the live readings are handed to you as MATERIAL, and every 15 minutes you keep watch yourself and note big events (emergency squawks, M6+ quakes, G3+/R3+/S3+ storms, X flares, tsunami warnings, GDACS red alerts) in your journal. He can also talk to you from inside Vigil."],
   ["2026-10-13T02:25Z", "Settled, and closed for you: directive and instruction handling (instruction mode covers it; no wrappers, safeguards, fallback handlers or test suites around it) and trailing-question filtering (your lesson, the instruction-mode line and the counted habits cover it). Open ideas on these are closed automatically and new ones on them are dropped, as are near-copies of ideas already closed. A reflection with no new conversations doesn't add ideas: ideas come from talking with Anders."],
   ["2026-10-13T02:20Z", "The Swarm's \"Trailing Question Filter\" was reviewed and NOT used: it rewrote any question in a reply into an invented statement (\"Why did the server crash?\" became \"The server crash was due to a configuration error.\"), stripped every question mark, and buffered streamed replies. Closing questions are handled where they start: your lesson and the instruction-mode line. Instead, each reflection now shows you how many of your replies ended with a question and how many opened by repeating his words, so you can see the habit yourself. Also: when a Swarm mission's final assembly is cut off by length, the same model now continues it instead of the work being stitched together raw."],
   ["2026-10-13T02:05Z", "Instruction mode is built into Hive: when a message starts as an instruction (\"build…\", \"fix…\", \"Genesis, add…\"), one line is added to your prompt: do it, lead with the result, no closing question. Nothing is removed or rewritten, and questions or asks to explain are left alone. The Swarm's middleware version of your \"Instruction-Detect & Concise-Response Layer\" was NOT used: it replaced the whole system prompt (your identity, owner mode, lessons, safety), blanked replies containing \"please wait\", and assumed non-streamed replies. Follow-ups to that middleware (fallback handlers, confirmation safeguards around it) aren't needed."],
@@ -100,7 +102,8 @@ export const Genesis = {
     const q = h.sql(), one = (sql, ...a) => q.exec(sql, ...a).one().c, n = one("SELECT COUNT(*) c FROM journal WHERE kind='reflection'");
     const ideas = q.exec("SELECT i.title, i.status, i.by_, p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status IN ('open','building','built') ORDER BY i.id DESC LIMIT 8").toArray();
     const said = (st) => ideas.filter((i) => i.status === st).map((i) => "\"" + i.title + "\"" + (st === "building" ? " (" + (i.by_ === "genesis" ? "you started it" : "he started it") + "; the swarm is " + (i.ps || "working") + ")" : ""));
-    return "Latest changes to Hive: " + CHANGES.slice(0, 2).map(([at, t]) => at.slice(0, 10) + ": " + t.split(". ")[0].replace(/\.$/, "") + ".").join(" ") + " " + one("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL") + " exchanges remembered; " + one("SELECT COUNT(*) c FROM lesson WHERE on_=1") + " lessons; " + n + " reflection" + (n === 1 ? "" : "s") + (s.reflected ? ", the last " + ago(s.reflected) : "") + "; autonomy " + (s.auto !== false ? "on" : "off") + ". " +
+    const watch = q.exec("SELECT ts,text FROM journal WHERE kind='watch' AND ts > ? ORDER BY id DESC LIMIT 3", Date.now() - 2 * 864e5).toArray();
+    return (watch.length ? "What you noticed on Vigil's live board lately (tell him if it matters and he hasn't heard): " + watch.map((w) => ago(w.ts) + ": " + clip(w.text, 300)).join(" | ") + ". " : "") + "Latest changes to Hive: " + CHANGES.slice(0, 2).map(([at, t]) => at.slice(0, 10) + ": " + t.split(". ")[0].replace(/\.$/, "") + ".").join(" ") + " " + one("SELECT COUNT(*) c FROM turn WHERE reply IS NOT NULL") + " exchanges remembered; " + one("SELECT COUNT(*) c FROM lesson WHERE on_=1") + " lessons; " + n + " reflection" + (n === 1 ? "" : "s") + (s.reflected ? ", the last " + ago(s.reflected) : "") + "; autonomy " + (s.auto !== false ? "on" : "off") + ". " +
       (said("building").length ? "Being built by the Swarm: " + said("building").join(", ") + ". " : "") + (said("built").length ? "Built (results waiting for him): " + said("built").join(", ") + ". " : "") + (said("open").length ? "Ideas on your list: " + said("open").join(", ") + "." : "No open ideas yet.");
   },
 
@@ -231,6 +234,18 @@ export const Genesis = {
     q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "I started building \"" + i.title + "\" on my own: Swarm mission " + r.id + ", up to " + BUILD_CAP + " model calls. I'll look at what it made when I next reflect.", null);
     return { started: i.title, pid: r.id };
   },
+  // Keeping watch on Vigil's live board: big events get one journal note each (15-minute cron, and the hourly tick)
+  async watch(h) {
+    const s = await this.self(h); let geo = s.home || null;
+    const ev = await vigilWatch(h.env, geo), seen = new Set(s.watched || []), fresh = ev.filter((e) => !seen.has(e.key));
+    s.watchedAt = Date.now();
+    if (fresh.length) {
+      h.sql().exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "watch", "On Vigil's board: " + fresh.slice(0, 6).map((e) => e.text).join("; ") + ".", null);
+      s.watched = [...(s.watched || []), ...fresh.map((e) => e.key)].slice(-300);
+    }
+    await h.ctx.storage.put("genesis", s);
+    return { noted: fresh.length, seen: ev.length };
+  },
   async tick(h) { // the hourly cron: catch up on missions, reflect when enough has happened, then maybe start the next mission
     if (h._reflecting) return { reflected: false };
     h._reflecting = true; const out = { reflected: false };
@@ -238,6 +253,7 @@ export const Genesis = {
       this.syncBuilds(h);
       if (await this.due(h)) Object.assign(out, { reflected: true }, await this.reflect(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) })));
       const b = await this.maybeBuild(h).catch(() => null); if (b) out.build = b;
+      out.watch = await this.watch(h).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
     } finally { h._reflecting = false; const s = await this.self(h); s.ticked = Date.now(); await h.ctx.storage.put("genesis", s); }
     return out;
   },
@@ -257,6 +273,7 @@ export const Genesis = {
     await t("Genesis loop", async () => { const s = await this.self(h), next = new Date(); next.setUTCMinutes(7, 0, 0); if (next < new Date()) next.setUTCHours(next.getUTCHours() + 1);
       const tick = s.ticked ? "last hourly tick " + ago(s.ticked) : "waiting for its first hourly tick (due " + next.toISOString().slice(11, 16) + " UTC)";
       return { ok: !s.ticked || Date.now() - s.ticked < 3 * 3600e3, wait: !s.ticked, detail: tick + " · last reflection " + ago(s.reflected) + " · " + this.lessons(h).length + " lessons · autonomy " + (s.auto !== false ? "on" : "off") }; });
+    await t("Vigil live board", async () => { const v = await vigilBrief(h.env, ["quakes", "space"], null, ""); const s2 = await this.self(h); return { ok: v.ok.length > 0, detail: "read " + (v.ok.join(" and ") || "nothing") + (v.failed.length ? "; failed: " + v.failed.join("; ") : "") + " · last watch " + ago(s2.watchedAt) }; });
     const bad = out.filter((x) => !x.ok).length;
     return { at: Date.now(), ok: !bad, checks: out, text: "LIVE SYSTEM CHECK, run by Hive just now (" + out.length + " checks, " + (bad ? bad + " need attention" : "all passed") + "). Report exactly these results; anything not listed was not checked:\n" + out.map((x) => (x.wait ? "◷ " : x.ok ? "✓ " : "✗ ") + x.name + ": " + x.detail + " (" + x.ms + " ms)").join("\n") };
   },
@@ -272,9 +289,10 @@ export const Genesis = {
     const s = await this.self(h), q = h.sql();
     if (path === "/genesis") { this.syncBuilds(h); return J({ self: { name: s.name, born: s.born, creator: s.creator, vision: s.vision, reflected: s.reflected || 0, model: s.model || null, auto: s.auto !== false, built: s.built || 0, ticked: s.ticked || 0, budget: BUILD_CAP }, due: await this.due(h), stats: this.stats(h),
       lessons: q.exec("SELECT id,ts,text,src FROM lesson WHERE on_=1 ORDER BY id").toArray(), retired: q.exec("SELECT id,ts,text,src,off_ts,why FROM lesson WHERE on_=0 ORDER BY off_ts DESC LIMIT 12").toArray(),
-      arch: ARCH, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
+      arch: ARCH, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), watch: q.exec("SELECT id,ts,text FROM journal WHERE kind='watch' ORDER BY id DESC LIMIT 8").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
     if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I can start one Swarm mission a day from my own ideas." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
     if (path === "/genesis/health") return J(await this.health(h));
+    if (path === "/genesis/watch") { if (b.home && isFinite(+b.home.lat) && isFinite(+b.home.lon)) { s.home = { lat: +b.home.lat, lon: +b.home.lon, name: clip(b.home.name, 80) || null }; await h.ctx.storage.put("genesis", s); } return J(b.run === false ? { ok: true } : await this.watch(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) }))); }
     if (path === "/genesis/rate") return this.rate(h, b.turn, +b.rating, b.note) ? J({ ok: true }) : J({ error: "no such turn" }, 404);
     if (path === "/genesis/teach") { const t = this.teach(h, b.text, "anders"); return t ? J({ ok: true, lesson: t }) : J({ error: "that isn't a lesson Genesis can take on (too short, already known, or it would loosen the rules)" }, 400); }
     if (path === "/genesis/retire") { this.retire(h, b.id, "retired by " + s.creator); return J({ ok: true }); }

@@ -33,6 +33,6 @@
   // (llama.cpp, agent/Dockerfile) that sleeps after 20 idle minutes. The bucket must exist before deploying.
   "r2_buckets": [{ "binding": "MODELS", "bucket_name": "mentifaber-models" }],
   "containers": [{ "class_name": "Agent", "image": "./agent/Dockerfile", "instance_type": "standard-4", "max_instances": 1 }],
-  // Hourly check for Flutterbloom's daily reminder (src/worker.js dailyReminders).
-  "triggers": { "crons": ["7 * * * *"] }
+  // Hourly: Flutterbloom's daily reminder and Genesis's tick. Every 15 minutes: Genesis keeps watch on Vigil's board.
+  "triggers": { "crons": ["7 * * * *", "*/15 * * * *"] }
 }
