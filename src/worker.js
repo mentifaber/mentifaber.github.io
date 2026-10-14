@@ -6,6 +6,7 @@ export { Hive } from "./hive.js";
 export { Agent } from "./agent.js";
 import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
+import { listen } from "./listen.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -553,6 +554,10 @@ export default {
       if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
         const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
         return new Response(JSON.stringify({ city: cf.city || null, region: cf.region || null, country: cf.country || null, lat: n(cf.latitude), lon: n(cf.longitude), tz: cf.timezone || null }), { headers: { "content-type": "application/json", "cache-control": "private, max-age=600" } });
+      }
+      if (route === "hive" && app === "listen") { // the voice link's live ears: a WebSocket to Deepgram Flux (src/listen.js)
+        const own = !!(await session(req, env, "vigil"));
+        return listen(req, env, own, async () => { const h = new Headers({ "cf-connecting-ip": req.headers.get("cf-connecting-ip") || "" }); const r = await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/listen-ok", { method: "POST", headers: h })); return !!(await r.json().catch(() => ({}))).ok; });
       }
       if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");

@@ -138,9 +138,27 @@ export async function describe(env, dataUrl, ask) {
   const r = await env.AI.run("@cf/llava-hf/llava-1.5-7b-hf", { image: [...unb64(p.data)], prompt: ask || "Describe this image in detail: subjects, any text, layout, colours.", max_tokens: 400 });
   return String((r && (r.description || r.response)) || "").trim();
 }
-export async function transcribe(env, audioB64, lang) { const r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio: audioB64, ...(/^[a-z]{2}$/.test(lang || "") ? { language: lang } : {}) }); return String((r && r.text) || "").trim(); } // a language hint stops short clips being heard as Russian or Icelandic
+// Whisper, told which names it's likely to hear, and made to skip what isn't speech: its own VAD drops silent stretches,
+// segments it judges to be silence are dropped, and so are its stock phrases for silence ("you", "thanks for watching").
+// A language hint stops short clips being heard as Russian or Icelandic.
+export async function transcribe(env, audioB64, lang, names) {
+  const base = { audio: audioB64, ...(/^[a-z]{2}$/.test(lang || "") ? { language: lang } : {}) }, prompt = names && names.length ? "Glossary: " + names.join(", ") + "." : "";
+  let r; try { r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { ...base, vad_filter: true, condition_on_previous_text: false, hallucination_silence_threshold: 1, ...(prompt ? { initial_prompt: prompt } : {}) }); }
+  catch (e) { r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", base); } // an older schema: plain transcription still works
+  return heard(r, prompt);
+}
+const PHANTOM = /^(you|thank you|thanks|thank you for watching|thanks for watching|bye|bye bye|goodbye|subtitles by[\s\S]*|[\s\S]*amara\.org[\s\S]*|\.+|♪+)[.!?]*$/i;
+export function heard(r, prompt) {
+  const info = (r && r.transcription_info) || {}, segs = Array.isArray(r && r.segments) ? r.segments : null, raw = String((r && r.text) || "").trim();
+  let text = segs ? segs.filter((s) => !((s.no_speech_prob || 0) > 0.6 && (s.avg_logprob || 0) < -1) && !((s.compression_ratio || 0) > 2.6)).map((s) => s.text || "").join("").replace(/\s+/g, " ").trim() : raw;
+  const norm = (t) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim(), voiced = info.duration_after_vad;
+  if (prompt && (norm(text) === norm(prompt) || /^glossary\b/i.test(text))) text = ""; // the hint read back over silence
+  if (voiced != null && voiced < 0.25) text = "";
+  if (/^you[.!?]*$/i.test(text) || (PHANTOM.test(text) && (voiced == null || voiced < 0.6))) text = "";
+  return { text, dropped: text !== raw ? raw.slice(0, 120) : undefined, dur: info.duration, voiced };
+}
 // ── voices, most human first: ElevenLabs → OpenAI's expressive voices → Deepgram Aura-2 (Workers AI) → Aura-1 → MeloTTS ──
-export const AURA2 = ["thalia", "andromeda", "helena", "apollo", "arcas", "aries", "asteria", "athena", "luna", "orion", "orpheus", "hermes", "harmonia", "draco", "electra", "zeus"];
+export const AURA2 = ["thalia", "andromeda", "helena", "apollo", "arcas", "aries", "asteria", "athena", "luna", "orion", "orpheus", "hermes", "harmonia", "draco", "electra", "zeus", "amalthea", "atlas", "aurora", "callista", "cora", "cordelia", "delia", "hera", "hyperion", "iris", "janus", "juno", "jupiter", "mars", "minerva", "neptune", "odysseus", "ophelia", "pandora", "phoebe", "pluto", "saturn", "theia", "vesta"];
 const AURA1 = ["asteria", "luna", "stella", "athena", "hera", "orion", "arcas", "perseus", "angus", "orpheus", "helios", "zeus"];
 export const OPENAI_VOICES = ["sage", "coral", "ballad", "verse", "alloy", "ash", "echo", "fable", "nova", "onyx", "shimmer"];
 async function bytes64(x) { // Workers AI hands audio back as a stream, bytes or base64, depending on the model
@@ -182,6 +200,7 @@ async function sse(body, onData, onBytes) { // read a server-sent-event stream, 
     let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line.startsWith("data:")) { const d = line.slice(5).trim(); if (d && d !== "[DONE]") try { onData(JSON.parse(d)); } catch (e) {} } }
   }
 }
+const cutOff = (j) => { const c = j && j.choices && j.choices[0]; return !!((c && c.finish_reason === "length") || (j && j.type === "message_delta" && j.delta && j.delta.stop_reason === "max_tokens") || (j && j.finish_reason === "length") || (j && j.type === "response.incomplete")); };
 const piece = (j) => { // the new text in one streamed event, whichever provider sent it
   if (!j) return "";
   if (typeof j.response === "string") return j.response;
@@ -190,9 +209,9 @@ const piece = (j) => { // the new text in one streamed event, whichever provider
   if (j.type === "response.output_text.delta") return j.delta || "";
   return "";
 };
-export async function streamComplete(env, v, key, model, system, msgs, max, onDelta) {
-  max = max || 2048; let text = "", serr = null;
-  const take = (j) => { if (j && j.error && !text) { serr = j.error; return; } const t = piece(j); if (t) { text += t; onDelta(t); } }; // an error can arrive inside a stream that had already begun
+export async function streamComplete(env, v, key, model, system, msgs, max, onDelta, meta) {
+  max = max || 2048; let text = "", serr = null; meta = meta || {};
+  const take = (j) => { if (j && j.error && !text) { serr = j.error; return; } if (cutOff(j)) meta.cut = true; const t = piece(j); if (t) { text += t; onDelta(t); } }; // an error can arrive inside a stream that had already begun
 
   if (!v) {
     const s = await env.AI.run(model, { messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text || "" }))], max_tokens: max, stream: true });

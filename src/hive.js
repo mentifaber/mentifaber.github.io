@@ -152,6 +152,7 @@ export class Hive extends DurableObject {
     if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
+    if (path === "/listen-ok" && req.method === "POST") return J({ ok: owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
     if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
@@ -531,7 +532,9 @@ export class Hive extends DurableObject {
     if (path === "/stt") {
       const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
       if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
-      return J({ text: await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase()) });
+      const names = owner ? [(await Genesis.self(this)).name || "Genesis", "Anders", "Vigil", "Hive", "Mentifaber", "Swarm"] : ["Hive", "Mentifaber"];
+      const h = await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase(), [...new Set(names.filter(Boolean))]);
+      return J({ text: h.text, dropped: h.dropped, voiced: h.voiced });
     }
     if (path === "/tts") {
       const t = String(b.text || "").replace(/[*_`#>|]/g, "").trim(); if (!t) return J({ error: "nothing to say" }, 400);
@@ -607,13 +610,13 @@ export class Hive extends DurableObject {
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
     const system = (owner ? "You are " + gName + ", the mind that lives in Hive on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Hive, the assistant of Hive on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
-      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. " +
+      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." +
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") + (local ? "" : " Now: " + now + ".") +
-      (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") + (b.voice ? " This is a live spoken conversation: answer like a person talking, in a few natural sentences (start with the answer itself, keep the first sentence short), no Markdown, no lists, no emoji." : "") + (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
+      (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") +  (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
       (owner ? "\n\n" + OWNER_MODE + "\n\n" + who + (local ? mp.stable : mind) : "") + (local ? "" : recall +
-      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "");
+      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + (b.system ? "\n\nOWNER'S INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (b.voice ? VOICE_RULE : "");
     const turn = mindOn ? Genesis.startTurn(this, b.cid, b.model, asked + (last.images.length || b.frames ? " [with " + (b.frames ? "a video" : "images") + "]" : "")) : null; // what he said; the reply is added when it's finished
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
@@ -645,7 +648,7 @@ export class Hive extends DurableObject {
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used, turn: turn || undefined });
     }
     if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
-      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 4096)); // the agent gets every token its memory leaves free
+      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 2400 : local ? 8192 : 4096)), meta = {}; // the agent gets every token its memory leaves free; voice leaves a reasoning model room to think (its thinking counts)
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
       const ping = setInterval(() => w.write(enc.encode(": still thinking\n\n")).catch(() => {}), 15000); // keeps the line open while a slow model reads
       (async () => {
@@ -653,28 +656,42 @@ export class Hive extends DurableObject {
         try {
           emit("meta", { sources, tools, model: used, turn: turn || undefined });
           let out;
-          try { out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta); }
+          try { out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta, meta); }
           catch (e) {
             if (got) throw e;
             if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) throw new Error(outMsg(this.quota)); }
             else if (last.images.length) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); }
             else throw e;
             emit("meta", { sources, tools, model: used, turn: turn || undefined });
-            out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta);
+            out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta, meta);
           }
-          if (!got) { const t = await complete(this.env, v, key, model, system, msgs, max); if (t) onDelta(t); else onDelta("(the model returned nothing)"); } // a provider that streams nothing still answers
+          if (!got) { // a provider that streams nothing still answers; a reasoning model that thought until it ran out gets more room; then another model
+            let t = await complete(this.env, v, key, model, system, msgs, Math.min(8192, Math.max(max * 2, 4096))).catch(() => "");
+            if (!t) { const r = await this.rescue(system, msgs, used, owner).catch(() => null); if (r && r.text) { t = r.text; tools.push(model.split("/").pop() + " returned nothing; " + r.by + " answered"); emit("meta", { sources, tools, model: used, turn: turn || undefined }); } }
+            onDelta(t || (b.voice ? "Sorry, I lost that one. Could you say it again?" : "(the model returned nothing, twice; try again or pick another model)")); meta.cut = false;
+          }
           Genesis.finishTurn(this, turn, said, used);
-          emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined });
+          emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined, cut: meta.cut || undefined });
         } catch (e) { emit("error", { error: String(e && e.message || e).slice(0, 300) }); }
         clearInterval(ping); w.close().catch(() => {});
       })();
       return new Response(readable, { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
     }
-    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 700 : local ? 8192 : 4096))); }
+    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 2400 : local ? 8192 : 4096))); }
     catch (e) {
       if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); Genesis.finishTurn(this, turn, text, used); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
+    if (!text) { const r = await this.rescue(system, msgs, used, owner).catch(() => null); if (r && r.text) { text = r.text; tools.push(model.split("/").pop() + " returned nothing; " + r.by + " answered"); } }
     Genesis.finishTurn(this, turn, text, used);
-    return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined });
+    return J({ text: text || (b.voice ? "Sorry, I lost that one. Could you say it again?" : "(the model returned nothing; try again or pick another model)"), sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined });
+  }
+  // A model came back empty: the free fast Llama answers instead (or, while the free allowance rests, the owner's best key)
+  async rescue(system, msgs, used, owner) {
+    const alt = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+    if (this.env.AI && !(await this.resting()) && used !== "workers-ai|" + alt) { const t = await complete(this.env, null, null, alt, system, msgs, 2000); if (t) return { text: t, by: "llama-3.3-70b" }; }
+    if (!owner) return null; // the owner's keys are his
+    const s2 = await this.standIn(used); if (!s2 || s2 === used) return null; const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2));
+    const t = await complete(this.env, kv.v, kv.key, m2, system, msgs, 2000); return t ? { text: t, by: m2.split("/").pop() } : null;
   }
 }
+const VOICE_RULE = "\n\nSPOKEN REPLY (this outranks every formatting habit above): your words will be read aloud to someone talking to you. Answer like a person talking: lead with the answer, usually two to four sentences; go longer only when asked for detail or a rundown, and then still in plain spoken sentences. No Markdown, no lists or headings, no bold, no emoji, no links or [n] source numbers. Say numbers and units the way you'd say them out loud. If the message looks misheard or makes no sense, say so in one short sentence and ask them to repeat it; never answer with nothing. Never offer to fetch or check something later.";
