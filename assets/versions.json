@@ -109,13 +109,13 @@
  },
  "vigil": {
   "name": "Vigil",
-  "version": "1.23",
+  "version": "1.24",
   "date": "2026-10-14",
   "notes": [
+   "Genesis phone alerts: push from Genesis to his phone through Vigil",
    "Genesis sees the live board; new layout with views, themes and a Brief screen",
    "Live air traffic worldwide; solar wind, conflict and headline feeds fixed",
-   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
-   "Server-checked logins and Flutterbloom cloud saves on Cloudflare"
+   "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)"
   ],
   "page": "vigil-app.html"
  },
