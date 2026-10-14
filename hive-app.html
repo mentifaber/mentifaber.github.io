@@ -95,7 +95,7 @@
           <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden mono" id="caprow"><span>BUDGET</span><input id="cap" type="number" min="50" max="3000" step="50" value="400"><span>CALLS</span></label><span class="dim" id="gomsg"></span></div>
         </div>
         <div class="card mt"><div class="row"><h4 style="flex:1">MISSIONS</h4><button class="ghost sm hidden" id="purge" title="Delete every finished, stopped or failed mission">Clear finished</button></div><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
-        <p class="dim mt sm">Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs in a sandbox.</p>
+        <p class="dim mt sm">Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs here, in a sandbox: open a finished mission and press Run.</p>
       </section>
       <section id="proj" class="hidden">
         <div class="card hud phead">
@@ -110,15 +110,29 @@
           <div class="row mt hidden" id="joinrow"><span class="dim mono sm">VISITOR LINK</span><input id="join" readonly style="flex:1;min-width:200px"><button class="ghost" id="copy">Copy</button></div>
           <div class="row mt hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…" style="flex:1"><button class="pri" id="send">Send</button></div>
         </div>
-        <div class="grid">
+        <div class="ptabs mt" id="ptabs" role="tablist" aria-label="Mission views">
+          <button data-pt="run" role="tab">▶ Run</button><button data-pt="code" role="tab">Code</button><button data-pt="doc" role="tab">Write-up</button><button data-pt="swarm" role="tab">Swarm</button>
+          <span class="flex"></span>
+          <select id="vers" class="hidden" aria-label="Version of the result"></select>
+          <button class="ghost sm hidden" id="rebuild" title="Assemble the final result again">Rebuild</button>
+          <button class="ghost sm" id="dlzip" disabled title="Every file of the result, and the write-up, in one .zip">Download .zip</button>
+        </div>
+        <div class="card hud runp mt hidden" id="pt-run">
+          <div class="runbar"><span class="seg" id="sizes" role="group" aria-label="Preview width"><button data-sz="390">Phone</button><button data-sz="820">Tablet</button><button data-sz="0" class="on">Full</button></span>
+            <span class="dim mono sm" id="runwhat"></span><span class="flex"></span><button class="ghost sm" id="rerun" title="Start it again from scratch">↻ Run again</button><button class="ghost sm" id="popout" title="Open it in its own tab">New tab ↗</button></div>
+          <div class="stage" id="stage"><iframe id="preview" sandbox="allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups allow-downloads" title="The result, running"></iframe></div>
+          <div class="norun hidden" id="norun"><p>This result has nothing to run yet: it's a write-up, or its code needs a server. The swarm can turn it into something you can run here: a working page, or a Python program.</p><button class="pri" id="mkrun">Make it runnable</button></div>
+          <div class="console" id="console"><div class="ch"><b>CONSOLE</b><span class="cc" id="ccount"></span><span class="flex"></span><label class="sm af" id="aflabel"><input type="checkbox" id="autofix"> fix errors automatically</label><button class="pri sm hidden" id="fixit">Fix it</button></div><div class="clog" id="clog"><span class="dim">Nothing yet.</span></div></div>
+        </div>
+        <div class="card mt hidden" id="pt-code"><div class="files" id="files"></div></div>
+        <div class="grid" id="pt-swarm">
           <div class="card mapc"><div class="row"><h4 style="flex:1">HIVE MAP</h4><span class="dim sm mono" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend mono"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
           <div class="card"><h4>TASK LANES</h4><div class="board mt" id="board"></div></div>
           <div class="card"><h4>TELEMETRY</h4><div class="feed mt" id="feed"></div></div>
         </div>
-        <div class="card mt"><div class="row"><h4 style="flex:1">AGENTS</h4></div><div class="agents mt" id="agents"></div></div>
+        <div class="card mt" id="pt-agents"><div class="row"><h4 style="flex:1">AGENTS</h4></div><div class="agents mt" id="agents"></div></div>
         <div class="card hud mt hidden" id="finalp">
-          <div class="row"><h4 style="flex:1">RESULT</h4><button class="ghost hidden" id="rebuild" title="Assemble the final result again">Rebuild</button><button class="ghost" id="rawb">Source</button><button class="pri" id="dl">Download</button></div>
-          <iframe id="preview" class="mt hidden" sandbox="allow-scripts allow-modals allow-forms" title="Result preview"></iframe>
+          <div class="row"><h4 style="flex:1">WRITE-UP</h4><button class="ghost sm" id="rawb">Source</button></div>
           <div id="finalmd" class="b mt"></div>
           <pre id="final" class="mt hidden"></pre>
         </div>
@@ -233,6 +247,7 @@
 <div id="toast" class="hidden" role="status"></div>
 
 <script src="assets/hive/field.js"></script>
+<script src="assets/hive/runner.js"></script>
 <script src="assets/hive/swarm.js"></script>
 <script src="assets/hive/ears.js"></script>
 <script src="assets/hive/studio.js"></script>

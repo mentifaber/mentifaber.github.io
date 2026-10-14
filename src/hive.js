@@ -86,6 +86,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
       q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
+      q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
       mindTables(q); genesisTables(q); this._init = 1;
@@ -151,7 +152,8 @@ export class Hive extends DurableObject {
     if (path === "/mind/brief" && owner) { const p = await Mind.parts(this); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE, genesis: await Genesis.block(this, "mentifaber-agent-1.0") }); } // the owner's apps on MENTIFABER AGENT talk to Genesis too
     if (path.startsWith("/mind")) { if (!owner) return J({ error: "Hive's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "Genesis is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
-    if (path === "/list") return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts FROM proj ORDER BY ts DESC LIMIT 30").toArray() });
+    if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
+      return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has FROM proj ORDER BY ts DESC LIMIT 40").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined })) }); }
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
     if (path === "/listen-ok" && req.method === "POST") return J({ ok: owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
@@ -183,10 +185,35 @@ export class Hive extends DurableObject {
     const ctl = owner || (b.ctok && p.ctok && b.ctok === p.ctok), cap = p.cap || MAX_CALLS;
     if (path === "/state") {
       const since = +b.since || 0;
-      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
+      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, owner,
+        versions: q.exec("SELECT v, ts, note FROM ver WHERE pid=? ORDER BY v DESC LIMIT 20", p.id).toArray(), join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
         agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last,COALESCE(score,0) score,err FROM agent WHERE pid=? ORDER BY COALESCE(score,0) DESC, done DESC, name", p.id).toArray(),
         feed: q.exec("SELECT ts,who,kind,text FROM feed WHERE pid=? AND ts>? ORDER BY ts DESC LIMIT 80", p.id, since).toArray() });
+    }
+    if (path === "/version") { const v = q.exec("SELECT v, ts, final, note FROM ver WHERE pid=? AND v=?", p.id, +b.v).toArray()[0]; return v ? J(v) : J({ error: "no such version" }, 404); }
+    if (path === "/repair") { // the runner hit errors, or the result has nothing to run: one call to the strongest model on the mission fixes it, as a new version
+      if (!ctl) return J({ error: "only whoever started this project can ask for a fix" }, 401);
+      if (!p.final) return J({ error: "there's no result to fix yet" }, 400);
+      if (p.calls >= cap + 25) return J({ error: "this mission has used its call budget" }, 429);
+      const mode = b.mode === "demo" ? "demo" : "fix", lang = /^(html|python|js)$/.test(b.lang) ? b.lang : "html", code = String(b.code || "").slice(0, 150000), errors = (Array.isArray(b.errors) ? b.errors : []).map((x) => String(x).slice(0, 600)).slice(0, 30).join("\n");
+      if (mode === "fix" && (!code || !errors)) return J({ error: "send the code and what went wrong" }, 400);
+      const fixer = [...this.agentsFor(p.id, "integrator"), ...this.agentsFor(p.id, "coder"), ...this.agentsFor(p.id, "architect")].sort((x, y) => this.rank(x.model) - this.rank(y.model) || (y.score || 0) - (x.score || 0))[0]
+        || (this.env.AI && !(await this.resting()) ? { id: "fixer", src: "workers-ai", model: "@cf/openai/gpt-oss-120b", name: "GPT-OSS 120B" } : null);
+      if (!fixer) return J({ error: "no model is free to fix it right now" }, 503);
+      const sys = mode === "fix" ? "You are fixing a runnable result that failed when it ran in a browser sandbox (no network except CDNs; storage works but doesn't persist). Return the COMPLETE corrected file as ONE ```" + lang + " run block and nothing else. Keep everything that works; fix exactly what the errors show, and anything that would obviously fail next. No placeholders, no TODOs."
+        : "This result has nothing anyone can run. Make it runnable: return ONE block he can run as-is and nothing else: either a complete self-contained HTML page (```html run, inline CSS and JS, external scripts only from a CDN) that shows it working in the browser, with in-page fakes for any server, API or hardware and realistic sample data; or, for data or algorithm work better shown as a program, a Python program (```python run) that runs as-is with sample input and prints its results. Make it genuinely work, not a mock-up of a UI.";
+      const user = "BRIEF:\n" + p.brief.slice(0, 6000) + (mode === "fix" ? "\n\nTHE FILE (" + lang + "):\n```" + lang + "\n" + code + "\n```\n\nWHAT HAPPENED WHEN IT RAN:\n" + errors : "\n\nTHE RESULT:\n" + p.final.slice(0, 40000));
+      const out = await this.call(p, fixer, sys, user, 8000).catch((e) => { this.say(p.id, "hive", "error", "fix failed: " + String(e.message || e).slice(0, 160)); return ""; });
+      const m = /```(html|python|py|js|javascript)[^\n]*\n([\s\S]*?)```/i.exec(out || ""); if (!m || m[2].trim().length < 40) return J({ error: "the fix didn't come back as a runnable file; try again" }, 502);
+      const nl = /^py/i.test(m[1]) ? "python" : /^j/i.test(m[1]) ? "js" : "html", block = "```" + nl + " run\n" + m[2].replace(/\s+$/, "") + "\n```";
+      let fin = p.final, i = mode === "fix" ? fin.indexOf(code.trim()) : -1;
+      if (i >= 0) { const a = fin.lastIndexOf("```", i), z = fin.indexOf("```", i + code.trim().length); if (a >= 0 && z > a) fin = fin.slice(0, a) + block + fin.slice(z + 3); else fin = "## Run it\n\n" + block + "\n\n" + fin; }
+      else fin = "## Run it\n\n" + block + "\n\n" + fin.replace(/^## Run it\n\n```[^\n]*\n[\s\S]*?```\n*/, "");
+      const v = (q.exec("SELECT COALESCE(MAX(v),0) v FROM ver WHERE pid=?", p.id).one().v || 0) + 1, note = mode === "fix" ? "before fixing: " + errors.split("\n")[0].slice(0, 140) : "before it was made runnable";
+      q.exec("INSERT INTO ver(pid,v,ts,final,note) VALUES(?,?,?,?,?)", p.id, v, Date.now(), p.final, note); q.exec("UPDATE proj SET final=? WHERE id=?", fin.slice(0, 200000), p.id);
+      this.say(p.id, fixer.name || "fixer", "done", mode === "fix" ? "fixed the runnable result (" + errors.split("\n").length + " error" + (errors.split("\n").length > 1 ? "s" : "") + ")" : "made the result runnable");
+      return J({ ok: true, version: v + 1, kept: v, lang: nl });
     }
     if (path === "/output") { const t = q.exec("SELECT output FROM task WHERE pid=? AND id=?", p.id, +b.task).toArray()[0]; return J({ output: t ? t.output : null }); }
     if (path === "/say") { if (!ctl) return J({ error: "only whoever started this project can steer it" }, 401); const text = String(b.text || "").trim().slice(0, 3000); if (text) { this.say(p.id, "you", "chat", text); q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND src='workers-ai' AND status='offline'", p.id); q.exec("UPDATE proj SET status='replanning' WHERE id=?", p.id); await this.ctx.storage.setAlarm(Date.now() + 200); } return J({ ok: true }); }
@@ -407,7 +434,7 @@ export class Hive extends DurableObject {
       tried.add(ig.id);
       const all = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.role + ": " + r.title + "\n" + r.output.slice(0, 9000)).join("\n\n").slice(0, 60000);
       const open = q.exec("SELECT id,title,note FROM task WHERE pid=? AND note LIKE 'UNRESOLVED:%' ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.title + ": " + r.note.slice(12, 700)).join("\n");
-      let out = await this.call(p, ig, SYS("integrator") + " Deliver the whole thing, not a summary or an outline of it. If the project is software for the web, deliver ONE complete self-contained HTML file in a ```html block (inline CSS and JS, no external files unless from a CDN). Otherwise deliver the finished document in Markdown." +
+      let out = await this.call(p, ig, SYS("integrator") + " Deliver the whole thing, not a summary or an outline of it. Make it runnable: start with '## Run it' and ONE block he can run as-is. For anything a browser can show (apps, games, tools, visualisations, simulations, dashboards; and server, library or hardware code, demonstrated in a page with in-page fakes for the server, APIs or devices and realistic sample data), that's ONE complete self-contained HTML file in a ```html run block (inline CSS and JS; external scripts only from a CDN). For data or algorithm work better shown as a program, a Python program in a ```python run block that runs as-is with sample input and prints its results (standard library, or numpy/pandas/matplotlib). Then the rest: each further source file as its own block opening with its file name (```js file=worker.js), and short notes. A finished document with nothing to run is delivered in Markdown." +
         " If it is a physical design (a building, floor plan, room, site, product, machine, circuit), the deliverable must include the drawings as inline SVG (plans, elevations, diagrams) drawn to a stated scale with labelled dimensions, and every number must agree: areas equal length × width, parts fit inside the footprint, counts and totals add up; where the team's numbers conflict, pick consistent ones and say so. Fix the reviewers' open points below. Start with the deliverable itself: no preamble.",
         "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all + (open ? "\n\nREVIEWERS' OPEN POINTS (fix these in the final):\n" + open.slice(0, 8000) : ""), 8000);
       if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; }
