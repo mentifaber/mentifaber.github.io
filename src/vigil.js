@@ -47,8 +47,8 @@ async function get(url, o = {}) {
 // `have` is the x-vigil-at the client already holds: when that is still the newest copy, the answer is
 // {"same":true} instead of the whole body again (the global traffic snapshot is over a megabyte).
 async function cached(env, ctx, origin, key, ttl, make, have) {
-  const cache = caches.default, req = new Request(origin + "/__vigil_cache/" + key);
-  const hit = await cache.match(req).catch(() => null);
+  const cache = typeof caches !== "undefined" ? caches.default : null, req = new Request(origin + "/__vigil_cache/" + key);
+  const hit = cache ? await cache.match(req).catch(() => null) : null;
   const at = hit ? +hit.headers.get("x-vigil-at") : 0;
   if (hit && Date.now() - at < ttl * 1e3) return reply(have && +have === at ? new Response('{"same":true}') : hit, at);
   let job = flying.get(key);
@@ -57,7 +57,7 @@ async function cached(env, ctx, origin, key, ttl, make, have) {
       const body = typeof make === "function" ? JSON.stringify(await make()) : make;
       const now = Date.now();
       const res = new Response(body, { headers: { "content-type": "application/json", "cache-control": "max-age=86400", "x-vigil-at": String(now) } });
-      ctx.waitUntil(cache.put(req, res.clone()).catch(() => {}));
+      if (cache) ctx.waitUntil(cache.put(req, res.clone()).catch(() => {}));
       return { body, at: now };
     })().finally(() => flying.delete(key));
     flying.set(key, job);
@@ -317,10 +317,150 @@ async function headlines() {
   }
 }
 
+
+// ── the live board in words: what Genesis (src/hive.js) reads when Anders asks about the world right now ──
+// Each topic is a few lines of facts with their age; results are memoised in this isolate (the Worker's or Hive's)
+// so a burst of questions shares one upstream call per topic.
+const memoMap = new Map();
+async function memo(key, ttl, fn) {
+  const m = memoMap.get(key);
+  if (m && Date.now() - m.at < ttl * 1e3) return m.v;
+  try { const v = await fn(); memoMap.set(key, { at: Date.now(), v }); return v; }
+  catch (e) { if (m) return m.v; throw e; }
+}
+export const BRIEF_TOPICS = {
+  air: /\b(planes?|aircraft|airplanes?|jets?|flights?|flying|air ?traffic|airspace|squawk\w*|7[567]00|helicopters?|overhead|above (me|us)|callsign|airliners?|airport|aviation)\b/i,
+  quakes: /\b(earthquakes?|quakes?|seismic|tremors?|richter|magnitude)\b/i,
+  space: /\b(solar|the sun|flares?|space weather|auroras?|northern lights|geomagnetic|kp|cme|radiation storm|radio blackout)\b/i,
+  conflict: /\b(conflicts?|wars?|fighting|airstrikes?|strikes|shelling|violence|attacks?|front ?lines?|military action)\b/i,
+  alerts: /\b(alerts?|warnings?|tornado(es)?|severe weather|nws)\b/i,
+  hazards: /\b(volcan\w*|eruptions?|tsunamis?|disasters?|cyclones?|typhoons?|hurricanes?|floods?|wildfires?|drought)\b/i,
+  launches: /\b(launch(es)?|rockets?|spacex|falcon|starship|liftoff)\b/i,
+  iss: /\b(iss|space station)\b/i,
+  markets: /\b(bitcoin|btc|ethereum|crypto\w*|markets?|exchange rates?|dollar|euro)\b/i,
+  news: /\b(news|headlines)\b/i,
+};
+const ALL = /\b(vigil|the board|dashboard|situation|sitrep|brief me|briefing|what'?s (happening|going on)( in the world)?|anything (big|major|notable|happening|important)|state of the world|threat)\b/i;
+export function briefTopics(text, fromVigil) {
+  const t = String(text || ""), out = Object.keys(BRIEF_TOPICS).filter((k) => BRIEF_TOPICS[k].test(t));
+  if (ALL.test(t) || (fromVigil && !out.length)) return ["summary"];
+  return out;
+}
+const nm = (a, b) => { const R = Math.PI / 180, x = Math.sin((b[0] - a[0]) * R / 2) ** 2 + Math.cos(a[0] * R) * Math.cos(b[0] * R) * Math.sin((b[1] - a[1]) * R / 2) ** 2; return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(x))); };
+const brg = (a, b) => { const R = Math.PI / 180, dl = (b[1] - a[1]) * R, y = Math.sin(dl) * Math.cos(b[0] * R), x = Math.cos(a[0] * R) * Math.sin(b[0] * R) - Math.sin(a[0] * R) * Math.cos(b[0] * R) * Math.cos(dl); return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((Math.atan2(y, x) / R + 360) % 360) / 45) % 8]; };
+const agoT = (t) => { const m = Math.round((Date.now() - t) / 60e3); return m < 1 ? "just now" : m < 90 ? m + " min ago" : Math.round(m / 60) + " h ago"; };
+const pos = (la, lo) => Math.abs(la).toFixed(1) + (la >= 0 ? "N " : "S ") + Math.abs(lo).toFixed(1) + (lo >= 0 ? "E" : "W");
+const alt = (r) => r[5] ? "on the ground" : r[4] == null ? "altitude unknown" : r[4] >= 18000 ? "FL" + Math.round(r[4] / 100) : r[4].toLocaleString("en-US") + " ft";
+const EM_TXT = { general: "general emergency", nordo: "radio failure", unlawful: "hijack / unlawful interference", minfuel: "minimum fuel", lifeguard: "medical", downed: "aircraft down" };
+const acName = (r) => (r[1] || r[11] || r[0]).toUpperCase() + (r[16] || r[12] ? " (" + (r[16] || r[12]) + ")" : "");
+
+const TOPIC = {
+  async air(env, home, q) {
+    const lines = [];
+    const [g, em, mil, hm] = await Promise.allSettled([memo("os", 60, () => opensky(env)), memo("em", 30, emergencies), memo("mil", 60, () => list("mil")),
+      home ? memo("near" + home.lat.toFixed(1) + home.lon.toFixed(1), 15, () => near(Math.round(home.lat * 4) / 4, Math.round(home.lon * 4) / 4, 100)) : Promise.reject(0)]);
+    if (g.status === "fulfilled") { const v = g.value; lines.push("Worldwide: " + v.n.toLocaleString("en-US") + " aircraft broadcasting a position (" + v.ac.filter((r) => !r[5]).length.toLocaleString("en-US") + " airborne), OpenSky snapshot " + agoT(v.t) + "."); }
+    if (em.status === "fulfilled") lines.push(em.value.n ? "Emergency squawks right now: " + em.value.ac.map((r) => acName(r) + " squawk " + (r[9] || "?") + " — " + (EM_TXT[r[18]] || "emergency") + ", " + alt(r) + ", at " + pos(r[2], r[3]) + (home ? " (" + Math.round(nm([home.lat, home.lon], [r[2], r[3]])).toLocaleString("en-US") + " nm from him)" : "")).join("; ") + "." : "No aircraft anywhere is squawking 7500, 7600 or 7700.");
+    if (mil.status === "fulfilled") lines.push(mil.value.n + " military aircraft are broadcasting worldwide" + (mil.value.n ? ", e.g. " + mil.value.ac.filter((r) => !r[5]).slice(0, 4).map((r) => acName(r) + " " + alt(r) + " at " + pos(r[2], r[3])).join("; ") : "") + ".");
+    if (hm.status === "fulfilled" && home) {
+      const rows = hm.value.ac.map((r) => [r, nm([home.lat, home.lon], [r[2], r[3]])]).filter((x) => x[1] <= 60).sort((a, b) => a[1] - b[1]);
+      lines.push("Within 60 nm of " + (home.name || "him") + ": " + rows.length + " aircraft" + (rows.length ? "; closest: " + rows.slice(0, 6).map(([r, d]) => acName(r) + " " + Math.round(d) + " nm " + brg([home.lat, home.lon], [r[2], r[3]]) + ", " + alt(r) + (r[6] != null && !r[5] ? ", " + Math.round(r[6]) + " kt heading " + Math.round(r[7] || 0) + "°" : "")).join("; ") : "") + ".");
+    }
+    const cs = (String(q || "").match(/\b([A-Z]{2,3}\d{1,4}[A-Z]?|N\d{1,5}[A-Z]{0,2})\b/i) || [])[1];
+    if (cs) try { const f = await memo("find" + cs.toLowerCase(), 15, () => find(cs.toLowerCase())); lines.push(f.n ? cs.toUpperCase() + ": " + f.ac.slice(0, 2).map((r) => acName(r) + " " + alt(r) + ", " + (r[6] != null ? Math.round(r[6]) + " kt, " : "") + "at " + pos(r[2], r[3]) + (home ? " (" + Math.round(nm([home.lat, home.lon], [r[2], r[3]])) + " nm from him)" : "")).join("; ") + "." : "No aircraft is broadcasting as " + cs.toUpperCase() + " right now."); } catch (e) {}
+    return lines.join("\n");
+  },
+  async quakes(env, home) {
+    const d = await memo("usgs", 120, () => get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson"));
+    const qs = d.features.map((f) => ({ m: f.properties.mag || 0, p: f.properties.place || "?", t: f.properties.time, la: f.geometry.coordinates[1], lo: f.geometry.coordinates[0], dep: f.geometry.coordinates[2], ts: f.properties.tsunami }));
+    const day = qs.filter((x) => x.t > Date.now() - 864e5).sort((a, b) => b.m - a.m), week = qs.slice().sort((a, b) => b.m - a.m)[0];
+    const f = (x) => "M" + x.m.toFixed(1) + " " + x.p + " (" + agoT(x.t) + ", depth " + Math.round(x.dep) + " km" + (x.ts ? ", tsunami flag" : "") + ")";
+    const close = home ? qs.filter((x) => x.t > Date.now() - 7 * 864e5 && nm([home.lat, home.lon], [x.la, x.lo]) < 270).sort((a, b) => b.m - a.m)[0] : null;
+    return "USGS, M2.5+: " + day.length + " quakes in the last 24 h; strongest: " + (day.slice(0, 5).map(f).join("; ") || "none") + ". Strongest this week: " + (week ? f(week) : "none") + "." + (close ? " Nearest notable to him this week: " + f(close) + "." : "");
+  },
+  async space() {
+    const [kp, sc, sw, xr] = await Promise.allSettled([memo("kp", 300, () => get("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json")), memo("scales", 300, () => get("https://services.swpc.noaa.gov/products/noaa-scales.json")), memo("solar", 120, solar), memo("xray", 300, xray)]);
+    const out = [];
+    if (kp.status === "fulfilled" && Array.isArray(kp.value)) { const last = kp.value[kp.value.length - 1], k = +(last.Kp ?? last.kp ?? last[1]); if (isFinite(k)) out.push("Planetary Kp " + k.toFixed(1) + " (" + (k >= 7 ? "severe storm" : k >= 5 ? "geomagnetic storm" : k >= 4 ? "unsettled" : "quiet") + "; aurora " + (k >= 5 ? "likely at mid latitudes" : k >= 4 ? "possible at high latitudes" : "unlikely away from the poles") + ")."); }
+    if (sc.status === "fulfilled" && sc.value["0"]) { const c = sc.value["0"], d1 = sc.value["1"]; out.push("NOAA scales now: R" + (c.R.Scale || 0) + " radio blackout, S" + (c.S.Scale || 0) + " radiation storm, G" + (c.G.Scale || 0) + " geomagnetic storm" + (d1 ? "; today's odds R1-2 " + (d1.R.MinorProb ?? "?") + "%, R3+ " + (d1.R.MajorProb ?? "?") + "%, S1+ " + (d1.S.Prob ?? "?") + "%" : "") + "."); }
+    if (sw.status === "fulfilled") { const n = sw.value.now; out.push("Solar wind " + Math.round(n.speed || 0) + " km/s, density " + (+n.density || 0).toFixed(1) + "/cm³, IMF Bt " + (+n.bt || 0).toFixed(1) + " nT, Bz " + (+n.bz || 0).toFixed(1) + " nT" + (n.bz <= -5 ? " (southward: favours aurora)" : "") + "."); }
+    if (xr.status === "fulfilled") { const f = xr.value.flux, i = f > 0 ? Math.max(0, Math.min(4, Math.floor(Math.log10(f)) + 8)) : -1; out.push("GOES X-ray flux " + (i >= 0 ? "ABCMX"[i] + (f / Math.pow(10, i - 8)).toFixed(1) : "?") + (xr.value.flare && xr.value.flare.max ? "; latest flare peaked at " + xr.value.flare.max + " " + agoT(Date.parse(xr.value.flare.maxAt)) : "") + "."); }
+    return out.join(" ");
+  },
+  async conflict() {
+    const d = await memo("gdelt", 900, () => conflict(8));
+    return "GDELT event stream, last " + d.hours + " h: " + d.events + " violent events coded from world news (machine-coded from headlines: where violence is being reported, not verified incidents). Most-reported places: " + d.points.slice(0, 8).map((p) => p.name + " — " + p.kind + " (" + p.n + " events, " + p.m + " mentions)").join("; ") + ".";
+  },
+  async alerts(env, home) {
+    const out = [];
+    if (home) try { const d = await memo("nws" + home.lat.toFixed(2) + home.lon.toFixed(2), 180, () => get("https://api.weather.gov/alerts/active?point=" + home.lat.toFixed(4) + "," + home.lon.toFixed(4))); const f = d.features || []; out.push("NWS alerts for " + (home.name || "his location") + ": " + (f.length ? f.slice(0, 5).map((x) => x.properties.event + " (" + x.properties.severity + ", until " + (x.properties.ends || x.properties.expires || "?") + ")").join("; ") : "none") + "."); } catch (e) {}
+    const d = await memo("nwsall", 300, () => get("https://api.weather.gov/alerts/active?status=actual&severity=Extreme,Severe"));
+    const ev = {}; for (const x of d.features || []) ev[x.properties.event] = (ev[x.properties.event] || 0) + 1;
+    out.push("Severe/extreme NWS alerts across the US: " + (Object.keys(ev).length ? Object.entries(ev).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, n]) => n + " " + k).join(", ") : "none") + ".");
+    return out.join(" ");
+  },
+  async hazards() {
+    const [v, g, t] = await Promise.allSettled([memo("hans", 1800, () => get("https://volcanoes.usgs.gov/hans-public/api/volcano/getElevatedVolcanoes")),
+      memo("gdacs", 900, () => get("https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC;FL;DR;WF;EQ;VO&alertlevel=orange;red")),
+      memo("tsu", 180, () => get("https://api.weather.gov/alerts/active?event=" + encodeURIComponent("Tsunami Warning,Tsunami Watch,Tsunami Advisory")))]);
+    const out = [];
+    if (v.status === "fulfilled" && Array.isArray(v.value)) out.push("US volcanoes at elevated status: " + (v.value.length ? v.value.map((x) => x.volcano_name + " " + x.alert_level + "/" + x.color_code).join(", ") : "none") + ".");
+    if (g.status === "fulfilled") { const f = g.value.features || []; out.push("GDACS orange/red disaster alerts: " + (f.length ? f.slice(0, 8).map((x) => { const p = x.properties || {}; return (p.name || p.eventname || p.eventtype) + " [" + p.alertlevel + "]" + (p.country ? " — " + p.country : ""); }).join("; ") : "none") + "."); }
+    if (t.status === "fulfilled") { const f = t.value.features || []; out.push("Tsunami bulletins (NWS): " + (f.length ? f.map((x) => x.properties.event + " — " + String(x.properties.areaDesc || "").split(";")[0]).join("; ") : "none") + "."); }
+    return out.join(" ");
+  },
+  async launches() {
+    const d = await memo("ll", 1800, () => get("https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=5&hide_recent_previous=true&mode=list"));
+    return "Next launches: " + (d.results || []).slice(0, 5).map((l) => l.name + " — " + (l.net ? new Date(l.net).toISOString().slice(0, 16).replace("T", " ") + " UTC" : "TBD") + (l.status && l.status.abbrev ? " [" + l.status.abbrev + "]" : "") + (l.location ? ", " + l.location : "")).join("; ") + ".";
+  },
+  async iss(env, home) {
+    const d = await memo("iss", 10, () => get("https://api.wheretheiss.at/v1/satellites/25544"));
+    return "ISS now at " + pos(d.latitude, d.longitude) + ", " + Math.round(d.altitude) + " km up, " + Math.round(d.velocity).toLocaleString("en-US") + " km/h, " + d.visibility + (home ? ", " + Math.round(nm([home.lat, home.lon], [d.latitude, d.longitude]) * 1.852).toLocaleString("en-US") + " km from him" : "") + ".";
+  },
+  async markets() {
+    const [c, fx] = await Promise.allSettled([memo("cg", 120, () => get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin&vs_currencies=usd&include_24hr_change=true")), memo("fx", 3600, () => get("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP,JPY,CAD"))]);
+    const out = [];
+    if (c.status === "fulfilled") out.push("Crypto (CoinGecko): " + Object.entries(c.value).map(([k, v]) => k + " $" + v.usd.toLocaleString("en-US") + " (" + (v.usd_24h_change >= 0 ? "+" : "") + (v.usd_24h_change || 0).toFixed(1) + "% 24h)").join(", ") + ".");
+    if (fx.status === "fulfilled") out.push("USD buys " + Object.entries(fx.value.rates || {}).map(([k, v]) => (+v).toFixed(2) + " " + k).join(", ") + ".");
+    return out.join(" ");
+  },
+  async news() {
+    const d = await memo("doc", 900, headlines);
+    return "Latest conflict headlines (GDELT): " + (d.articles || []).slice(0, 6).map((a) => a.title + " — " + a.domain).join("; ") + ".";
+  },
+};
+const LABEL = { air: "AIR TRAFFIC", quakes: "EARTHQUAKES", space: "SPACE WEATHER", conflict: "CONFLICT", alerts: "WEATHER ALERTS", hazards: "VOLCANOES, DISASTERS, TSUNAMIS", launches: "LAUNCHES", iss: "ISS", markets: "MARKETS", news: "HEADLINES" };
+// topics: from briefTopics(); "summary" reads everything. home: {lat, lon, name} for overhead / nearby questions.
+export async function vigilBrief(env, topics, home, q) {
+  const list = !topics || topics.includes("summary") ? Object.keys(TOPIC) : topics.filter((t) => TOPIC[t]);
+  const res = await Promise.all(list.map((t) => Promise.race([TOPIC[t](env, home, q), new Promise((_, no) => setTimeout(() => no(new Error("timed out")), 9000))])
+    .then((x) => [t, x, null], (e) => [t, null, e])));
+  const ok = res.filter((r) => r[1]), bad = res.filter((r) => !r[1]);
+  return { at: Date.now(), topics: list, ok: ok.map((r) => r[0]), failed: bad.map((r) => r[0] + ": " + String(r[2] && r[2].message || r[2]).slice(0, 80)),
+    text: ok.map(([t, x]) => LABEL[t] + ": " + x).join("\n") + (bad.length ? "\n(could not read just now: " + bad.map((r) => LABEL[r[0]].toLowerCase()).join(", ") + ")" : "") };
+}
+// What deserves a note in Genesis's journal without being asked: big, rare, and each noted once.
+export async function vigilWatch(env, home) {
+  const out = [];
+  const [em, qk, sc, xr, ts, gd] = await Promise.allSettled([memo("em", 30, emergencies), memo("usgs", 120, () => get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson")),
+    memo("scales", 300, () => get("https://services.swpc.noaa.gov/products/noaa-scales.json")), memo("xray", 300, xray),
+    memo("tsu", 180, () => get("https://api.weather.gov/alerts/active?event=" + encodeURIComponent("Tsunami Warning"))),
+    memo("gdacs", 900, () => get("https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC;FL;DR;WF;EQ;VO&alertlevel=red"))]);
+  if (em.status === "fulfilled") for (const r of em.value.ac) if (r[9] === "7500" || r[9] === "7700" || r[18] === "unlawful" || r[18] === "general") out.push({ key: "sq:" + r[0] + ":" + r[9] + ":" + new Date().toISOString().slice(0, 10), text: acName(r) + " is squawking " + r[9] + " (" + (EM_TXT[r[18]] || "emergency") + "), " + alt(r) + " at " + pos(r[2], r[3]) + (home ? ", " + Math.round(nm([home.lat, home.lon], [r[2], r[3]])) + " nm from Anders" : "") });
+  if (qk.status === "fulfilled") for (const f of qk.value.features) { const m = f.properties.mag || 0, near_ = home && nm([home.lat, home.lon], [f.geometry.coordinates[1], f.geometry.coordinates[0]]) < 160; if ((m >= 6 || (near_ && m >= 3.5)) && f.properties.time > Date.now() - 6 * 3600e3) out.push({ key: "eq:" + f.id, text: "M" + m.toFixed(1) + " earthquake, " + f.properties.place + (near_ ? " (near Anders)" : "") + ", " + agoT(f.properties.time) + (f.properties.tsunami ? ", tsunami flag set" : "") }); }
+  if (sc.status === "fulfilled" && sc.value["0"]) { const c = sc.value["0"]; for (const k of ["R", "S", "G"]) if (+(c[k].Scale) >= 3) out.push({ key: "sc:" + k + c[k].Scale + ":" + c.DateStamp, text: "NOAA " + k + c[k].Scale + " " + ({ R: "radio blackout", S: "solar radiation storm", G: "geomagnetic storm" })[k] + " in progress (" + c[k].Text + ")" }); }
+  if (xr.status === "fulfilled" && xr.value.flare && /^X/.test(xr.value.flare.max || "")) out.push({ key: "xf:" + xr.value.flare.maxAt, text: "X-class solar flare: " + xr.value.flare.max + " peaked " + agoT(Date.parse(xr.value.flare.maxAt)) });
+  if (ts.status === "fulfilled") for (const f of ts.value.features || []) out.push({ key: "ts:" + f.id, text: "Tsunami Warning: " + String(f.properties.areaDesc || "").split(";").slice(0, 3).join(", ") });
+  if (gd.status === "fulfilled") for (const f of gd.value.features || []) { const p = f.properties || {}; out.push({ key: "gd:" + (p.eventid || p.name) + ":" + (p.episodeid || ""), text: "GDACS red alert: " + (p.name || p.eventname || p.eventtype) + (p.country ? " — " + p.country : "") }); }
+  return out;
+}
+
 export async function vigil(req, env, ctx, owner, json) {
   if (!owner) return json({ error: "signed out" }, 401);
   const url = new URL(req.url), parts = url.pathname.split("/").slice(3), [kind, what, arg] = parts, o = url.origin;
   const C = (key, ttl, make) => cached(env, ctx, o, key, ttl, make, url.searchParams.get("have"));
+  if (kind === "brief") { const g = url.searchParams, la = +g.get("lat"), lo = +g.get("lon"), home = isFinite(la) && isFinite(lo) && g.get("lat") ? { lat: la, lon: lo, name: g.get("name") || null } : null;
+    return json(await vigilBrief(env, g.get("topics") ? g.get("topics").split(",") : ["summary"], home, g.get("q") || "")); }
   if (kind === "status") return json({ opensky: !!(env.OPENSKY_CLIENT_ID && env.OPENSKY_CLIENT_SECRET), nasa: !!env.NASA_API_KEY });
   if (kind === "air") {
     if (what === "global") return C("air-global", osTTL(env), () => opensky(env));
