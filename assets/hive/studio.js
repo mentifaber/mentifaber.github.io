@@ -6,13 +6,12 @@ const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "
 const LS = { get(k, d) { try { const v = localStorage.getItem("hive:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("hive:" + k, JSON.stringify(v)); return true; } catch (e) { return false; } } };
 const api = async (path, body, signal) => { const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal } : { cache: "no-store", signal }); const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; };
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hidden"), ms || 2600); };
-const ICON = '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 5" opacity=".6"/><path d="M20 6l12 7v14l-12 7-12-7V13z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 13l6 3.5v7L20 27l-6-3.5v-7z" fill="currentColor"/></svg>';
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "#"); // only real web links leave the page
-const SV = { up: '<svg viewBox="0 0 24 24"><path d="M7 11v9H4v-9zM7 11l4-7c1.4 0 2.3 1 2 2.4L12.4 10H18a2 2 0 012 2.3l-1.2 6A2 2 0 0116.8 20H7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', down: '<svg viewBox="0 0 24 24"><path d="M7 13V4H4v9zM7 13l4 7c1.4 0 2.3-1 2-2.4L12.4 14H18a2 2 0 002-2.3l-1.2-6A2 2 0 0016.8 4H7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', swarm: '<svg viewBox="0 0 24 24"><path d="M8 3l4 2.3v4.6L8 12.2 4 9.9V5.3zM16 3l4 2.3v4.6l-4 2.3-4-2.3V5.3zM12 11.8l4 2.3v4.6L12 21l-4-2.3v-4.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>', copy: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>', say: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', redo: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.3-5.6M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', dl: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
+const SV = { up: "Good", down: "Off", swarm: "Build it", copy: "Copy", say: "Listen", redo: "Again", dl: "Download" }; // the actions under an answer, in words
 
 // ── theme ──
-const applyTheme = () => { document.documentElement.dataset.theme = LS.get("theme", "dark") === "light" ? "light" : "dark"; }; // dark by default: it's a command deck
-applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") === "light" ? "dark" : "light"; LS.set("theme", t); applyTheme(); toast(t === "light" ? "Daylight mode" : "Night mode"); };
+const applyTheme = () => { const l = LS.get("theme", "dark") === "light"; document.documentElement.dataset.theme = l ? "light" : "dark"; const tc = document.querySelector("meta[name=theme-color]"); if (tc) tc.content = l ? "#e9eae4" : "#0d1012"; }; // basalt (dark) by default, limestone by day
+applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") === "light" ? "dark" : "light"; LS.set("theme", t); applyTheme(); toast(t === "light" ? "Limestone" : "Basalt"); };
 
 // ── views ──
 let owner = false, gname = "", busyAt = 0; // gname: Genesis, the mind the owner talks to (visitors talk to plain Hive)
@@ -20,16 +19,13 @@ function route() {
   const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0].split("/")[0]; // "#mind/genesis": a view and a part of it
   const view = ["studio", "swarm", "keys", "mind"].includes(v) ? v : "studio";
   for (const s of ["studio", "swarm", "keys", "mind"]) $("v-" + s).classList.toggle("hidden", s !== view);
-  document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("on", a.dataset.v === view));
-  document.body.classList.remove("side");
+  document.querySelectorAll("#realms a").forEach((a) => { a.classList.toggle("on", a.dataset.v === view); if (a.dataset.v === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   if (view === "swarm") window.HiveSwarm.show(); else window.HiveSwarm.hide();
   if (view === "keys") Keys.load();
   if (view === "mind") MindV.load();
-  if (view === "studio") setTimeout(() => $("inp").focus({ preventScroll: true }), 50);
+  if (view === "studio" && !matchMedia("(pointer:coarse)").matches) setTimeout(() => $("inp").focus({ preventScroll: true }), 50); // not on phones: it would raise the keyboard
 }
 addEventListener("hashchange", route);
-$("menu").onclick = () => document.body.classList.add("side"); document.querySelectorAll("[data-menu]").forEach((b) => (b.onclick = () => document.body.classList.add("side")));
-$("scrim").onclick = $("sideX").onclick = () => document.body.classList.remove("side");
 
 // ── models ──
 async function loadModels() {
@@ -41,29 +37,32 @@ async function loadModels() {
   if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so Hive switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
   const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: (() => { let x = k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, ""); if (x.includes(" · ")) x = x.split(" · ").pop(); x = x.replace(/^Cloudflare /, ""); return x.charAt(0).toUpperCase() + x.slice(1); })(), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
-  const gl = Object.values(pg); $("esub").textContent = models.length + " minds · " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + (innerWidth > 600 ? " · council ready" : "");
-  $("t-models").textContent = models.length + " / " + gl.length + " prov"; $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
-  if (window.HiveFX) HiveFX.core($("core"), gl); tele();
+  const gl = Object.values(pg); $("esub").textContent = models.length + " minds from " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + ". One, a council, or a whole swarm.";
+  $("t-models").textContent = models.length + " minds · " + gl.length + " provider" + (gl.length === 1 ? "" : "s"); $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
+  stone(); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
   $("quota").textContent = owner ? "" : "Visitors get the free models and a daily allowance.";
 }
 let models = [];
+// the geode: a crystal for every mind it can reach, a band for every few sessions; the same stone, small, in the crown
+const stone = () => { if (!window.HiveFX) return; const seed = gname || "Hive", bands = Math.min(9, 3 + Math.floor(Math.log2(chats.length + 1)));
+  HiveFX.geode($("core"), { seed, minds: models, bands }); HiveFX.geode($("geo-mark"), { seed, minds: models, mark: true });
+  const fam = new Set(models.map((m) => HiveFX.mineralName(m.id))).size;
+  $("gcap").innerHTML = "<b>" + models.length + " minds</b>, " + fam + " mineral" + (fam === 1 ? "" : "s") + ".<br>Every crystal is a mind it can reach; a band forms as your sessions pile up."; };
 // live telemetry in the header and the side panel
 let lastMs = 0, lastTtft = 0, lastCps = 0; window.tele = () => tele();
 function tele() {
-  const modes = [on("web") && "SEARCH", on("council") && "COUNCIL", on("draw") && "IMAGINE"].filter(Boolean);
-  $("tele").innerHTML = "MODE <b>" + (modes.join("+") || "DIRECT") + "</b>" + (lastTtft ? " FIRST WORD <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? " LAT <b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "") + (lastCps ? " RATE <b>" + lastCps + " ch/s</b>" : "") + " SESSION <b>" + (chat ? chat.msgs.length : 0) + "</b>";
+  const modes = [on("web") && "search", on("council") && "council", on("draw") && "imagine"].filter(Boolean), layers = chat ? chat.msgs.filter((m) => m.role === "user").length : 0;
+  $("tele").innerHTML = [modes.length ? "<b>" + modes.join(" + ") + "</b>" : "", lastTtft ? "first word <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? "<b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "", lastCps ? "<b>" + lastCps + "</b> ch/s" : "", layers ? "<b>" + layers + "</b> layer" + (layers === 1 ? "" : "s") : ""].filter(Boolean).join(" · ");
 }
 const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = ok ? "online" : "offline"; $("led-link").className = "led " + (ok ? "ok" : "bad"); };
 addEventListener("online", link); addEventListener("offline", link); link();
 // the picker: thousands of models, searchable
 const nameOf = (id) => { const m = models.find((x) => x.id === id); return m ? m.name : "Choose a model"; };
-// pollen: each family of minds wears the colour of a real pollen load (sage, apricot, borage blue, rapeseed, poppy…), so
-// who answered is visible at a glance; the agent is pale new wax, anything unknown plain honey
-const POLLEN = [[/claude|anthropic/i, "#e8a06a"], [/gpt|openai|\bo[134]\b|o[134]-/i, "#8ccf9d"], [/gemini|gemma|google/i, "#7fb2ea"], [/llama|meta/i, "#e3c34a"], [/qwen|qwq/i, "#e0714f"], [/deepseek/i, "#7d93de"],
-  [/mistral|mixtral/i, "#c98bc2"], [/grok|xai/i, "#a7b3bf"], [/kimi|moonshot/i, "#b7d36a"], [/mentifaber-agent|agent\|/i, "#f3e3b0"], [/hermes|nous|granite|sea-lion|command/i, "#d7a77c"]];
-const pollen = (id) => { const s = String(id || ""); for (const [r, c] of POLLEN) if (r.test(s)) return c; return "#f2a516"; };
-const showPick = () => { $("mname").textContent = nameOf($("model").value); const pc = $("mpollen"); if (pc) pc.style.setProperty("--pc", pollen($("model").value)); };
+// minerals: each family of minds is one (assets/hive/field.js), so who laid a layer down shows at a glance; the whole page
+// takes the mineral of the mind you're talking to
+const pollen = (id) => (window.HiveFX ? HiveFX.mineral(id) : "var(--m-flint)");
+const showPick = () => { $("mname").textContent = nameOf($("model").value); const pc = $("mpollen"), m = pollen($("model").value); if (pc) pc.style.setProperty("--pc", m); document.documentElement.style.setProperty("--m", m); };
 function drawPick() {
   const q = $("mq").value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean), hit = models.filter((m) => words.every((w) => (m.name + " " + m.group + " " + m.id).toLowerCase().includes(w)));
   const groups = {}; for (const m of hit) (groups[m.group] = groups[m.group] || []).push(m); let shown = 0;
@@ -82,15 +81,22 @@ let chats = LS.get("chats", []), chat = null;
 const save = () => { chats.sort((a, b) => b.ts - a.ts); chats = chats.slice(0, 80); if (!LS.set("chats", chats)) { for (const c of chats.slice(10)) for (const m of c.msgs) { delete m.image; m.thumbs = []; } LS.set("chats", chats); } drawHist(); };
 function drawHist() {
   const q = ($("hsearch").value || "").trim().toLowerCase(), list = q ? chats.filter((c) => (c.title + " " + c.msgs.map((m) => m.text || "").join(" ")).toLowerCase().includes(q)) : chats;
-  $("hist").innerHTML = list.map((c) => "<div data-c='" + c.id + "' class='" + (chat && chat.id === c.id ? "on" : "") + "'><span>" + esc(c.title || "New chat") + "</span><button data-del title='Delete'>✕</button></div>").join("") || "<p class='dim sm' style='padding:0 10px'>Your chats appear here.</p>";
+  const day = (t) => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], d.getFullYear() === n.getFullYear() ? { month: "short", day: "numeric" } : { month: "short", year: "numeric" }); };
+  $("hist").innerHTML = list.map((c) => { const n = c.msgs.filter((m) => m.role === "user").length, last = [...c.msgs].reverse().find((m) => m.role !== "user" && m.model), mid = (last && last.model) || c.model || "";
+    return "<div data-c='" + esc(c.id) + "' class='sess" + (chat && chat.id === c.id ? " on" : "") + "' style='--m:" + pollen(mid) + "' tabindex='0' role='button'><time>" + esc(day(c.ts)) + "</time><span class='strip'></span><span class='t'><span>" + esc(c.title || "Untitled") + "</span><small>" + n + " layer" + (n === 1 ? "" : "s") + (mid ? " · " + esc(String(mid).split("|").pop().split("/").pop()) : "") + "</small></span><button data-del title='Delete this session' aria-label='Delete'>✕</button></div>"; }).join("")
+    || "<p>" + (q ? "Nothing down there matches “" + esc(q) + "”." : "Nothing beneath yet. Every session you start settles here.") + "</p>";
 }
 $("hist").onclick = (e) => { const d = e.target.closest("[data-c]"); if (!d) return; if (e.target.closest("[data-del]")) { chats = chats.filter((c) => c.id !== d.dataset.c); if (chat && chat.id === d.dataset.c) newChat(); save(); return; } openChat(d.dataset.c); };
-function newChat() { chat = null; $("log").innerHTML = ""; $("empty").classList.remove("hidden"); greet(); drawHist(); if (location.hash !== "#studio") location.hash = "studio"; else route(); }
-function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) $("model").value = chat.model; $("empty").classList.add("hidden"); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i)); drawHist(); if (location.hash !== "#studio") location.hash = "studio"; else route(); scrollEnd(true); }
+$("hist").onkeydown = (e) => { if (e.key === "Enter" && e.target.matches("[data-c]")) openChat(e.target.dataset.c); };
+// an empty surface shows the greeting, the seams and the geode; a session shows its layers
+const ground = (empty) => { $("empty").classList.toggle("hidden", !empty); $("lede").classList.toggle("hidden", !empty); };
+function newChat() { chat = null; $("log").innerHTML = ""; ground(true); greet(); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
+function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) { $("model").value = chat.model; showPick(); } ground(false); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i, true)); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
 $("newchat").onclick = newChat; $("hsearch").oninput = drawHist;
 function greet() {
-  const ideas = [["COUNCIL", "Five models debate, one merges", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["RECON", "Live web, cited sources", "What are the most important AI developments this week?", true], ["IMAGINE", "Render an image from words", "A glowing honeycomb city at night, bees as tiny airships, cinematic", false, true], ["BUILD", "Code a working thing", "Write a tiny snake game in one HTML file."], ["SWARM", "Agents build a whole project", null, false, false, false, false, true], ["VOICE LINK", "Talk, hands-free", null, false, false, true]];
-  $("starters").innerHTML = ideas.map((x, i) => "<button data-i='" + i + "'><b>" + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></button>").join("");
+  const ideas = [["Council", "Several minds argue it out; one merges the best", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["Search", "The live web, with its sources in the margin", "What are the most important AI developments this week?", true], ["Imagine", "A picture from your words", "A geode split open on a riverbank at dawn, crystals catching the first light, macro photograph", false, true], ["Build", "Code a small working thing", "Write a tiny snake game in one HTML file."], ["Swarm", "Agents plan, build and review a whole project", null, false, false, false, false, true], ["Voice", "Talk with it, hands-free", null, false, false, true]];
+  const tint = ["var(--m-azurite)", "var(--m-malachite)", "var(--m-rhodo)", "var(--m-citrine)", "var(--m-jasper)", "var(--m-selenite)"];
+  $("starters").innerHTML = ideas.map((x, i) => "<li><button data-i='" + i + "'><i style='--c:" + tint[i] + "'></i><b>" + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></button></li>").join("");
   $("starters").onclick = (e) => { const b = e.target.closest("[data-i]"); if (!b) return; const x = ideas[+b.dataset.i]; if (x[7]) { location.hash = "swarm"; return; } if (x[5]) return Voice.start(); setTog("web", !!x[3]); setTog("draw", !!x[4]); setTog("council", !!x[6]); $("inp").value = x[2]; send(); }; }
 
 // ── markdown (small, safe: everything is escaped first) ──
@@ -119,31 +125,50 @@ function md(src, sources) {
 }
 const codeOf = (el, n) => { const m = chat && chat.msgs[+el.closest(".m").dataset.i]; const all = []; String(m && m.text || "").replace(/```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g, (_, l, b) => all.push(b.replace(/\n$/, ""))); return all[n] || ""; };
 
-// ── drawing messages ──
-function drawMsg(m, i) {
-  const d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
-  if (m.role === "user") d.innerHTML = "<div>" + (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools' style='justify-content:flex-end'>" + m.files.map((f) => "<span>📄 " + esc(f) + "</span>").join("") + "</div>" : "") + (m.show || m.text ? "<div class='b'>" + esc(m.show || m.text) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and resend' aria-label='Edit and resend'>✎</button><button data-uact='copy' title='Copy' aria-label='Copy'>⧉</button></div></div>";
-  else {
-    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='pollen' style='--pc:" + pollen(mid) + "'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "Hive") + (m.council ? " · council" : "") + "</span></div>";
-    const body = m.pending && !m.text ? who + (m.council ? "<div class='const'><svg><line x1='26' y1='16' x2='92' y2='62'/><line x1='156' y1='20' x2='92' y2='62'/><line x1='16' y1='96' x2='92' y2='62'/><line x1='162' y1='98' x2='92' y2='62'/><line x1='94' y1='8' x2='92' y2='62'/></svg><i class='lead'></i><i></i><i></i><i></i><i></i><i></i></div>" : "<div class='dots'><i></i><i></i><i></i></div>") + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
-      : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1")
-      : m.error ? "<p class='err'>" + esc(m.error) + "</p>"
-      : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:6px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) +
-        (m.drafts && m.drafts.length ? "<details class='drafts'><summary>⬡ " + m.drafts.filter((x) => x.text).length + " COUNCIL DRAFTS" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (tap to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
-        (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
-    d.innerHTML = "<div class='av" + (m.pending ? " think" : "") + "'>" + ICON + "</div><div style='flex:1;min-width:0'><div class='b'>" + body + "</div>" + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl' title='Download'>" + SV.dl + "</button>" : "<button data-act='copy' title='Copy'>" + SV.copy + "</button><button data-act='say' title='Read aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Try again'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + esc(m.model.split("|").pop().split("/").pop()) + (m.ttft ? " · first word " + (m.ttft / 1000).toFixed(2) + "s" : "") + (m.ms ? " · " + (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>") + "</div>";
+// ── drawing messages: each question and its answer are one layer; layers stack newest first, under the surface ──
+const when = (t) => { if (!t) return ""; const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], { month: "short", day: "numeric" }); };
+function layerOf(i) {
+  let k = i; while (k > 0 && chat.msgs[k] && chat.msgs[k].role !== "user") k--;
+  let ex = $("log").querySelector(".ex[data-x='" + k + "']");
+  if (!ex) {
+    ex = document.createElement("article"); ex.className = "ex core"; ex.dataset.x = k;
+    const n = chat.msgs.slice(0, k + 1).filter((m) => m.role === "user").length, u = chat.msgs[k];
+    ex.innerHTML = "<div class='rail'><b class='lyr'>" + String(n).padStart(2, "0") + "</b><time>" + esc(when(u && u.ts) || "") + "</time></div><div class='strip'></div><div class='bed'></div>";
+    const below = [...$("log").children].find((e) => +e.dataset.x < k); $("log").insertBefore(ex, below || null);
   }
-  const old = $("log").querySelector(".m[data-i='" + i + "']"); if (old) old.replaceWith(d); else $("log").appendChild(d);
+  return ex;
+}
+function drawMsg(m, i, quiet) {
+  const ex = layerOf(i), bed = ex.querySelector(".bed"), d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
+  if (!quiet && m.role === "user") { ex.classList.add("fresh"); }
+  if (m.role === "user") { const t = m.show || m.text || ""; if (t.length > 320 || t.split("\n").length > 6) d.classList.add("long");
+    d.innerHTML = (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools'>" + m.files.map((f) => "<span>" + esc(f) + "</span>").join("") + "</div>" : "") + (t ? "<div class='b'>" + esc(t) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and send again'>Edit</button><button data-uact='copy' title='Copy'>Copy</button></div>"; }
+  else {
+    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "Hive") + (m.council ? " · council" : "") + "</span></div>";
+    const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
+      : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1") + "</div>"
+      : m.error ? who + "<p class='err'>" + esc(m.error) + "</p>"
+      : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:8px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) + "</div>" +
+        (m.drafts && m.drafts.length ? "<details class='drafts'><summary>" + m.drafts.filter((x) => x.text).length + " council drafts" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (open to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "' style='--dm:" + pollen(x.model) + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
+        (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
+    d.innerHTML = body + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl'>" + SV.dl + "</button>" : m.error ? "" : "<button data-act='copy'>" + SV.copy + "</button><button data-act='say' title='Read it aloud'>" + SV.say + "</button>") + "<button data-act='redo' title='Ask again'>" + SV.redo + "</button>" + (m.image || m.error ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + (m.ttft ? "first word " + (m.ttft / 1000).toFixed(2) + "s · " : "") + (m.ms ? (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>");
+    // the strip: the mind's mineral; dashed when it searched, fine lines for a picture, banded by every member of a council
+    ex.style.setProperty("--m", pollen(mid)); ex.classList.toggle("pending", !!m.pending); ex.classList.toggle("failed", !!m.error); ex.classList.toggle("img", !!m.image || (m.pending && /paint/.test(m.status || "")));
+    const u = chat.msgs[+ex.dataset.x]; ex.classList.toggle("web", !!(u && u.web)); ex.classList.toggle("council", !!m.council);
+    if (m.drafts && m.drafts.length) { const ds = m.drafts.filter((x) => x.text), n = ds.length + 1, cols = [pollen(mid), ...ds.map((x) => pollen(x.model))]; ex.style.setProperty("--strata", "linear-gradient(180deg," + cols.map((c, k) => c + " " + (k * 100 / n).toFixed(1) + "% " + ((k + 1) * 100 / n).toFixed(1) + "%").join(",") + ")"); }
+  }
+  const old = bed.querySelector(".m[data-i='" + i + "']"); if (old) old.replaceWith(d); else bed.appendChild(d);
   return d;
 }
-const scrollEnd = (now) => { const s = $("scroll"); if (now || s.scrollHeight - s.scrollTop - s.clientHeight < 240) s.scrollTop = s.scrollHeight; };
+const scrollEnd = (now) => { if (now) $("scroll").scrollTo({ top: 0, behavior: "smooth" }); }; // the newest layer is just under the surface: nothing to chase
+const unlayer = (k) => { $("log").querySelectorAll(".m").forEach((n) => +n.dataset.i >= k && n.remove()); $("log").querySelectorAll(".ex").forEach((x) => !x.querySelector(".m") && x.remove()); };
 $("log").onclick = async (e) => {
   const c = e.target.closest("[data-copy]"), r = e.target.closest("[data-run]"), a = e.target.closest("[data-act]");
   if (c) { navigator.clipboard.writeText(codeOf(c, +c.dataset.copy)).then(() => { c.textContent = "Copied"; setTimeout(() => (c.textContent = "Copy"), 1400); }); return; }
   if (r) { const w = window.open("", "_blank"); if (w) { w.document.open(); w.document.write(codeOf(r, +r.dataset.run)); w.document.close(); } return; }
   const ua = e.target.closest("[data-uact]");
   if (ua && chat) { const k = +ua.closest(".m").dataset.i, um = chat.msgs[k]; if (ua.dataset.uact === "copy") { navigator.clipboard.writeText(um.show || um.text || ""); return toast("Copied"); }
-    if (busy) return toast("Wait for the reply to finish"); inp.value = um.show || um.text || ""; grow(); sync(); chat.msgs.splice(k); [...$("log").children].forEach((n) => +n.dataset.i >= k && n.remove()); save(); inp.focus(); return toast("Edit and send again"); }
+    if (busy) return toast("Wait for the reply to finish"); inp.value = um.show || um.text || ""; grow(); sync(); chat.msgs.splice(k); unlayer(k); save(); if (!chat.msgs.length) ground(true); inp.focus(); return toast("Edit and send again"); }
   if (!a || !chat) return; const i = +a.closest(".m").dataset.i, m = chat.msgs[i];
   if (a.dataset.act === "copy") { navigator.clipboard.writeText(m.text || ""); toast("Copied"); }
   if (a.dataset.act === "say") Voice.say(plain(m.text));
@@ -156,7 +181,7 @@ $("log").onclick = async (e) => {
     if (r < 0) { note = prompt("What should " + gname + " do differently? (optional, it reads this when it reflects)") ; if (note === null) return; }
     const j = await api("/genesis/rate", { turn: m.turn, rating: r, note: note || undefined }); if (j.error) return toast(j.error);
     m.rating = r; save(); drawMsg(m, i); if (r) toast(r > 0 ? "Noted: " + gname + " keeps doing that" : gname + " will learn from this", 2400); return; }
-  if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); [...$("log").children].forEach((n) => +n.dataset.i >= i && n.remove()); run(u.mode === "image"); }
+  if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); unlayer(i); run(u.mode === "image"); }
 };
 const SAY_AS = Object.fromEntries("NATO NASA NOAA GDACS OPEC UNESCO ASEAN UNICEF FEMA LIDAR RADAR SCUBA LASER COVID AIDS GIF JPEG ASCII CAPTCHA WIFI OK AM PM NOT AND THE YOU ARE BUT FOR NOW NEW ALL ONE TWO YES NO STOP GO NOTE WARNING ALERT HELP".split(" ").map((w) => [w, 1]));
 const speakable = (t) => String(t || "").replace(/https?:\/\/\S+/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/[\u2010\u2011\u2012]/g, "-").replace(/(\d)\s*[–—]\s*(\d)/g, "$1 to $2").replace(/(\w)–(\w)/g, "$1-$2").replace(/\s*—\s*|\s+–\s+/g, ", ")
@@ -199,7 +224,7 @@ const inp = $("inp"), grow = () => { inp.style.height = "auto"; inp.style.height
 const sync = () => { $("sendb").disabled = !busy && !inp.value.trim() && !att.length; };
 inp.addEventListener("input", () => { grow(); sync(); });
 inp.addEventListener("keydown", (e) => { if (e.key !== "Enter" || e.shiftKey || e.isComposing) return; const mod = e.metaKey || e.ctrlKey; if (mod || (S("enter") && !matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
-const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") inp.placeholder = v ? "Describe an image to render…" : "Ask anything…  ( / for commands )"; if (window.tele) tele(); };
+const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") { inp.placeholder = v ? "Describe a picture…" : "Ask anything…  ( / for commands )"; $("sendb").textContent = busy ? "Stop" : v ? "Paint" : "Ask"; } if (window.tele) tele(); };
 $("web").onclick = () => { setTog("web", $("web").getAttribute("aria-pressed") !== "true"); if ($("web").getAttribute("aria-pressed") === "true") setTog("draw", false); };
 $("council").onclick = () => { setTog("council", $("council").getAttribute("aria-pressed") !== "true"); if (on("council")) setTog("draw", false); };
 $("draw").onclick = () => { setTog("draw", $("draw").getAttribute("aria-pressed") !== "true"); if ($("draw").getAttribute("aria-pressed") === "true") setTog("web", false); };
@@ -222,10 +247,10 @@ function send(text, opts) {
     if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); text = rest; }
   }
   if (!$("model").value && !on("draw")) return toast("No model is available right now");
-  if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now() }; chats.unshift(chat); $("empty").classList.add("hidden"); }
+  if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now() }; chats.unshift(chat); ground(false); }
   const files = att.filter((a) => a.kind === "file"), imgs = att.filter((a) => a.kind === "image"), vid = att.find((a) => a.kind === "video");
   const full = text + files.map((f) => "\n\n" + f.name + ":\n```\n" + f.text.slice(0, 100000) + "\n```").join("");
-  const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), voice: !!opts.voice };
+  const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), voice: !!opts.voice, ts: Date.now() };
   u._images = opts.images || (vid ? vid.frames.map((f) => f.data) : imgs.map((a) => a.data)); u._frames = vid ? vid.frames.map((f) => f.t) : null;
   if (opts.images) { u.thumbs = opts.images.slice(); u.live = true; }
   chat.msgs.push(u); drawMsg(u, chat.msgs.length - 1); chat.ts = Date.now();
@@ -234,7 +259,7 @@ function send(text, opts) {
 }
 async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
-  chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><rect x='7' y='7' width='10' height='10' rx='2' fill='currentColor'/></svg>";
+  chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
   const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
     cid: chat.id, messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
@@ -243,7 +268,7 @@ async function run(image, opts) {
     else if (u.council) j = await api("/chat", body, busy.signal);
     else j = await stream(body, m, i, busy.signal);
   } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : m.text ? null : "Couldn't reach the Hive. Check your connection.", text: m.text && e.name !== "AbortError" ? m.text + "\n\n_(the connection dropped here)_" : m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; j.turn = m.turn; } }
-  busy = null; $("sendb").classList.remove("stop"); $("sendb").innerHTML = "<svg viewBox='0 0 24 24'><path d='M12 19V5M5.5 11.5 12 5l6.5 6.5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"; sync();
+  busy = null; $("sendb").classList.remove("stop"); $("sendb").textContent = on("draw") ? "Paint" : "Ask"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
   if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text + (j.cut && !body.voice ? "\n\n_(cut off at the model's length limit: say “continue” for the rest)_" : ""), cut: j.cut || undefined, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
@@ -277,7 +302,8 @@ async function stream(body, m, i, signal) {
 const CMDS = () => [
   ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what Hive knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
   ["Toggle search", "mode", () => $("web").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
-  ["Voice link", "voice", () => Voice.start()], ["Export session", "md", () => $("export").click()], ["Settings", "voice · theme · data", () => openSettings()], ["Cycle theme", "theme", () => $("theme").click()],
+  ["Voice link", "voice", () => Voice.start()], ["Export session", "markdown", () => $("export").click()], ["Settings", "voice · stone · data", () => openSettings()], ["Basalt or limestone", "light or dark", () => $("theme").click()],
+  ...chats.map((c) => [c.title || "Untitled", "session · " + new Date(c.ts).toLocaleDateString([], { month: "short", day: "numeric" }), () => openChat(c.id)]),
   ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
 ];
 let csel = 0, chits = [];
@@ -291,7 +317,7 @@ $("cq").oninput = () => { csel = 0; drawCmds(); };
 $("cq").onkeydown = (e) => { if (e.key === "ArrowDown") { csel = Math.min(chits.length - 1, csel + 1); drawCmds(); e.preventDefault(); } if (e.key === "ArrowUp") { csel = Math.max(0, csel - 1); drawCmds(); e.preventDefault(); } if (e.key === "Enter") { e.preventDefault(); runCmd(csel); } };
 $("clist").onclick = (e) => { const b = e.target.closest("[data-k]"); if (b) runCmd(+b.dataset.k); };
 $("cmdk").onclick = (e) => { if (e.target === $("cmdk")) $("cmdk").close(); };
-$("cmdk-btn").onclick = $("cmdk-top").onclick = openCmd;
+$("cmdk-btn").onclick = openCmd;
 document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openCmd(); } });
 window.HiveMD = md;
 $("export").onclick = () => { if (!chat) return toast("Nothing to export yet"); const t = "# " + chat.title + "\n\n" + chat.msgs.map((m) => (m.role === "user" ? "**You:** " : "**Hive:** ") + (m.image ? "![image](generated)" : m.text || m.error || "") + (m.sources && m.sources.length ? "\n\n" + m.sources.map((s, k) => "[" + (k + 1) + "] " + s.url).join("\n") : "")).join("\n\n---\n\n");
@@ -362,8 +388,8 @@ const Voice = (window.HiveVoice = {
   },
   ui() {
     const ptt = S("hands") === "0"; $("vptt").classList.toggle("hidden", !ptt); $("vmute").classList.toggle("hidden", ptt);
-    $("vmute").setAttribute("aria-pressed", Voice.paused ? "true" : "false"); $("vmutel").textContent = Voice.paused ? "PAUSED" : "LIVE";
-    $("vmodel").textContent = (voiceModel() || $("model").value || "").split("|").pop().split("/").pop() || "VOICE LINK";
+    $("vmute").setAttribute("aria-pressed", Voice.paused ? "true" : "false"); $("vmutel").textContent = Voice.paused ? "Paused" : "Live";
+    $("vmodel").textContent = (voiceModel() || $("model").value || "").split("|").pop().split("/").pop() || "Voice link";
     $("vhint").textContent = ptt ? "hold the button while you talk" : S("barge") ? "talk over it to interrupt" : "tap to interrupt";
     $("vscreen").classList.toggle("hidden", !(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) || matchMedia("(pointer:coarse)").matches);
   },
@@ -433,7 +459,7 @@ const Voice = (window.HiveVoice = {
   async play() {
     Voice.playing = true; if (Voice.on) Voice.set("Speaking…");
     while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue;
-      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "VOICE IN " + (Voice.first / 1000).toFixed(1) + "s" + (/flux/.test(Voice.heardBy || "") ? " · HEARD LIVE" + (Voice.heardBy !== "flux" ? " + CHECKED" : "") : Voice.sttMs ? " · HEARD " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used.toUpperCase() : ""); }
+      if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "voice in " + (Voice.first / 1000).toFixed(1) + "s" + (/flux/.test(Voice.heardBy || "") ? " · heard live" + (Voice.heardBy !== "flux" ? " + checked" : "") : Voice.sttMs ? " · heard in " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used : ""); }
       await new Promise((ok) => { if (c.url) { const a = (Voice.audio = c.audio || new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
     Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f());
   },
@@ -453,28 +479,14 @@ const voiceModel = () => { const v = S("vmodel"); if (!v) return ""; if (v !== "
   const fast = /(groq|cerebras|sambanova)/i, good = /gpt-oss-120b|llama-3\.3-70b|llama-4|qwen3|kimi|gpt-oss-20b/i; // fastest inference hosts, decent models
   const f = models.find((m) => fast.test(m.group) && good.test(m.id)) || models.find((m) => fast.test(m.group)) || models.find((m) => /llama-3\.1-8b-instruct-fast|gpt-oss-20b/.test(m.id)); return f ? f.id : ""; };
 
-// ── the live visual: the hum. Rings of wax that ripple with your voice while it listens (honey), swell softly while it
-// speaks (pale wax), and a small waggle dance while it thinks ──
-const viz = { raf: 0, start() { cancelAnimationFrame(viz.raf); const c = $("viz"), g = c.getContext("2d"), fd = new Uint8Array(128); let t0 = performance.now(), sm = 0;
-  const hexa = (h, a) => { const m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) return h; const n = parseInt(m[1], 16); return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; };
-  const draw = (t) => { if (!Voice.on) return; viz.raf = requestAnimationFrame(draw); if (document.hidden) return;
-    const d = Math.min(2, devicePixelRatio || 1), W = (c.width = c.clientWidth * d), H = (c.height = c.clientHeight * d), cx = W / 2, cy = H * .4, R = Math.min(W, H) * .15, time = (t - t0) / 1000, st = getComputedStyle(document.documentElement);
-    const honey = st.getPropertyValue("--cy").trim(), wax = st.getPropertyValue("--hn").trim(), col = Voice.mode === "talk" ? wax : honey;
-    const an = Voice.mode === "talk" ? Voice.outAn : Voice.micAn; let lv = 0; if (an && (Voice.mode === "talk" || Voice.mode === "listen")) { an.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) lv += fd[i]; lv /= 64 * 255; } else fd.fill(0);
-    const ml = Voice.ear ? Voice.ear.level : Voice.lv; if (Voice.mode === "listen" && ml) lv = Math.max(lv, ml * .6); sm += (lv - sm) * .22;
-    // the rings: each a closed line whose radius ripples with a band of the sound
-    for (let k = 0; k < 5; k++) { const r0 = R * (1.05 + k * .42) * (1 + sm * .25), band = k * 9 + 4, amp = R * .12 * ((fd[band] || 0) / 255 + sm * .6);
-      g.strokeStyle = hexa(col, .55 - k * .09); g.lineWidth = (k ? 1.1 : 1.8) * d; g.beginPath();
-      for (let i = 0; i <= 96; i++) { const a = (i / 96) * Math.PI * 2, w = Math.sin(a * (3 + k) + time * (1.4 - k * .18)) * amp + Math.sin(a * 7 - time * 2) * amp * .35, x = cx + Math.cos(a) * (r0 + w), y = cy + Math.sin(a) * (r0 + w); i ? g.lineTo(x, y) : g.moveTo(x, y); }
-      g.closePath(); g.stroke(); }
-    // the drop of wax in the middle: it breathes with the voice
-    const rr = R * (.62 + sm * .55), grd = g.createRadialGradient(cx - rr * .3, cy - rr * .35, rr * .1, cx, cy, rr); grd.addColorStop(0, hexa(col, .95)); grd.addColorStop(1, hexa(col, .55));
-    g.fillStyle = grd; g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.fill();
-    if (Voice.mode === "think") { // the waggle: a figure-eight run around the drop while the answer is found
-      const L = R * 1.6, p = (time / 1.6) % 1, run = (q) => [-L + 2 * L * q, Math.sin(q * Math.PI * 14) * 4 * d], loop = (q, sd) => [L * Math.cos(Math.PI * q), sd * L * .8 * Math.sin(Math.PI * q)];
-      const [x, y] = p < .25 ? run(p / .25) : p < .5 ? loop((p - .25) / .25, 1) : p < .75 ? run((p - .5) / .25) : loop((p - .75) / .25, -1);
-      g.fillStyle = honey; g.beginPath(); g.arc(cx + x, cy + y - R * 2.4, 4 * d, 0, 7); g.fill(); }
-  }; viz.raf = requestAnimationFrame(draw); }, stop() { cancelAnimationFrame(viz.raf); } };
+// ── the live visual: the geode listens. Its bands ripple with your voice, its crystals grow in turn while it thinks and
+// lengthen with the sound while it speaks (assets/hive/field.js) ──
+const viz = { start() { const fd = new Uint8Array(128); HiveFX.voice.start($("viz"), () => {
+    const an = Voice.mode === "talk" ? Voice.outAn : Voice.micAn; let lv = 0;
+    if (an && (Voice.mode === "talk" || Voice.mode === "listen")) { an.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) lv += fd[i]; lv /= 64 * 255; }
+    const ml = Voice.ear ? Voice.ear.level : Voice.lv; if (Voice.mode === "listen" && ml) lv = Math.max(lv, ml * .6);
+    return { mode: Voice.mode, level: Math.min(1, lv * 1.6), color: HiveFX.hex(HiveFX.mineralName(voiceModel() || $("model").value)) }; }); },
+  stop() { HiveFX.voice.stop(); } };
 
 $("voice").onclick = () => Voice.start(); $("vend").onclick = $("vx").onclick = () => Voice.end();
 $("vmute").onclick = () => { Voice.paused = !Voice.paused; Voice.ui(); if (Voice.paused) { Voice.hush(); if (Voice.h) Voice.h.stop(); if (Voice.ear) Voice.ear.cancel(); Voice.set("Paused", ""); } else Voice.loop(); };
@@ -564,8 +576,8 @@ const Agent = {
     const led = { online: "ok", waking: "warn", asleep: "", empty: "" }[st.state] || "", seed = st.seed;
     el.innerHTML = "<div class='ah'><i class='led " + led + "'></i><h3>Mentifaber Agent 1.0<small>" + (st.model ? esc(st.model.label) + " · " + gb(st.model.size) + " in R2" : "no model in R2 yet") + "</small></h3>" + (st.model ? "<label class='mtg' title='Keep it running around the clock; it restarts itself if it ever stops'><span>Always on</span><input type='checkbox' class='tg' data-ag='always'" + (st.always ? " checked" : "") + "></label>" : "") + "<span class='st " + (st.state === "online" ? "working" : st.state === "waking" ? "paused" : "") + "'>" + esc(st.state === "empty" ? "no model" : st.state) + "</span></div>" +
       (seed ? "<div class='prog'><div class='bar'><i style='width:" + (100 * seed.done / seed.size).toFixed(1) + "%'></i></div><p>" + (seed.error ? "⚠ " + esc(seed.error) : "copying " + esc(seed.label) + " into your R2 · " + gb(seed.done) + " of " + gb(seed.size)) + "</p></div>" : "") +
-      "<div class='facts'><div>RUNS ON<b>your domain</b></div><div>STORED IN<b>R2 · mentifaber-models</b></div><div>CONTAINER<b>4 vCPU · 12 GiB</b></div>" + (st.always ? "<div>RUNS<b>24/7 · always on</b></div>" + (st.upSince ? "<div>UP SINCE<b>" + esc(new Date(st.upSince).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) + "</b></div>" : "") + (st.restarts ? "<div>SELF-RESTARTS<b>" + st.restarts + "</b></div>" : "") : "<div>SLEEPS AFTER<b>20 idle min</b></div>") + (st.model && st.model.ctx ? "<div>MEMORY<b>" + Math.round(st.model.ctx / 1024) + "K tokens</b></div>" : "") + "</div>" +
-      "<div class='ab'>" + (st.model ? (st.state === "asleep" ? "<button class='pri' data-ag='wake'>Wake</button>" : st.state !== "empty" ? "<button class='ghost' data-ag='sleep'>Sleep now</button>" : "") : "") +
+      "<div class='facts'><div>runs on<b>your domain</b></div><div>stored in<b>R2 · mentifaber-models</b></div><div>container<b>4 vCPU · 12 GiB</b></div>" + (st.always ? "<div>runs<b>24/7 · always on</b></div>" + (st.upSince ? "<div>up since<b>" + esc(new Date(st.upSince).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) + "</b></div>" : "") + (st.restarts ? "<div>self-restarts<b>" + st.restarts + "</b></div>" : "") : "<div>sleeps after<b>20 idle min</b></div>") + (st.model && st.model.ctx ? "<div>memory<b>" + Math.round(st.model.ctx / 1024) + "K tokens</b></div>" : "") + "</div>" +
+      "<div class='ab'>" + (st.model ? (st.state === "asleep" ? "<button class='pri' data-ag='wake'>Wake</button>" : st.state !== "empty" ? "<button class='q' data-ag='sleep'>Sleep now</button>" : "") : "") +
       (!seed || seed.error ? "<button class='" + (st.model ? "ghost" : "pri") + "' data-ag='seed' data-m='14b'>Load Qwen3 14B · 9.0 GB · 16K memory (smartest)</button><button class='ghost' data-ag='seed' data-m='8b'>Load Qwen3 8B · 5.0 GB · 32K memory (2× faster)</button>" : "") + "</div>" +
       (!seed || seed.error ? "<div class='own'><input id='ag-url' placeholder='or your own model: https://…/model.gguf (up to 11 GB)'><button class='ghost' data-ag='seed-url'>Load</button></div>" : "") +
       (st.error ? "<p class='dim sm' style='color:var(--bad)'>" + esc(st.error) + "</p>" : "") +
@@ -610,8 +622,8 @@ const MindV = {
     $("m-sub").textContent = j.on ? (j.at ? "profile from " + agoT(j.at) + (j.model ? " · " + j.model.split("|").pop().split("/").pop() : "") + (j.fresh ? " · " + j.fresh + " new since" : "") : "no profile yet: analyze to build one") : "memory is off: nothing is noted or shared";
     $("m-at").textContent = st.total ? st.total + " notes" : "";
     const top = hrs.indexOf(Math.max(...hrs)), fmt = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");
-    const f = [["LAST 90 DAYS", (st.last90 || 0) + " actions"], ["ACTIVE DAYS", st.activeDays || 0], ["STREAK", st.streak ? st.streak + " day" + (st.streak > 1 ? "s" : "") : "—"], ["CHAT · VOICE", (k.chat || 0) + " · " + (k.voice || 0)], ["COUNCILS · PICTURES", (k.council || 0) + " · " + (k.image || 0)],
-      ["SWARM PROJECTS", Object.values(st.projects || {}).reduce((a, b) => a + b, 0)], ["PEAK HOUR", Math.max(...hrs) ? fmt(top) : "—"], ["FAVOURITE MODEL", (st.models && st.models[0] && st.models[0][0]) || "—"], ["MEMORIES", st.memories || 0], ["OPEN THREADS", st.threads || 0]];
+    const f = [["last 90 days", (st.last90 || 0) + " actions"], ["active days", st.activeDays || 0], ["streak", st.streak ? st.streak + " day" + (st.streak > 1 ? "s" : "") : "—"], ["chat · voice", (k.chat || 0) + " · " + (k.voice || 0)], ["councils · pictures", (k.council || 0) + " · " + (k.image || 0)],
+      ["swarm projects", Object.values(st.projects || {}).reduce((a, b) => a + b, 0)], ["peak hour", Math.max(...hrs) ? fmt(top) : "—"], ["favourite mind", (st.models && st.models[0] && st.models[0][0]) || "—"], ["memories", st.memories || 0], ["open threads", st.threads || 0]];
     $("m-facts").innerHTML = f.map(([a, b]) => "<div>" + a + "<b title='" + esc(b) + "'>" + esc(b) + "</b></div>").join("");
     // what Hive noticed, waiting for a yes
     const pm = (j.pending && j.pending.memories) || [], pt = (j.pending && j.pending.threads) || [], n = pm.length + pt.length;
@@ -655,7 +667,7 @@ const MindV = {
     $("m-grid").innerHTML = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, r) => "<span>" + d + "</span>" + (grid[r] || Array(24).fill(0)).map((n, h) => "<i style='--a:" + (n ? 0.18 + (0.82 * n) / gm : 0) + "' title='" + d + " " + fmt(h) + "m: " + n + "'></i>").join("")).join("") + "<span></span>" + Array.from({ length: 24 }, (_, h) => "<b>" + (h % 6 ? "" : fmt(h)) + "</b>").join("");
     const kinds = Object.entries(st.kinds || {}).sort((a, b) => b[1] - a[1]), km = Math.max(1, ...kinds.map((x) => x[1])), models = st.models || [], mm = Math.max(1, ...models.map((x) => x[1]));
     const bar = (l, n, m) => "<div class='kb'><span>" + esc(l) + "</span><i><u style='width:" + Math.max(2, (100 * n) / m) + "%'></u></i><b>" + n + "</b></div>";
-    $("m-kbars").innerHTML = (kinds.length ? "<h4>WHAT YOU DO · LAST 90 DAYS</h4>" + kinds.map(([k, n]) => bar(ACTK[k] || k, n, km)).join("") : "") + (models.length ? "<h4 class='mt'>MODELS YOU LEAN ON</h4>" + models.map(([k, n]) => bar(k, n, mm)).join("") : "");
+    $("m-kbars").innerHTML = (kinds.length ? "<h4>what you do · last 90 days</h4>" + kinds.map(([k, n]) => bar(ACTK[k] || k, n, km)).join("") : "") + (models.length ? "<h4 class='mt'>the minds you lean on</h4>" + models.map(([k, n]) => bar(k, n, mm)).join("") : "");
     const acts = j.recent || [], have = [...new Set(acts.map((a) => a.kind))], ak = $("m-akind");
     if (ak.dataset.k !== have.join()) { const v = ak.value; ak.innerHTML = "<option value=''>everything</option>" + have.map((k) => "<option value='" + esc(k) + "'>" + esc(ACTK[k] || k) + "</option>").join(""); ak.dataset.k = have.join(); ak.value = have.includes(v) ? v : ""; }
     $("m-act").innerHTML = acts.filter((a) => !ak.value || a.kind === ak.value).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + esc(String(a.text).slice(0, 400)) + "</p><button data-act='" + a.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet. Use Hive and it shows up here.</p>";
@@ -669,15 +681,15 @@ const MindV = {
   async search() {
     const q = $("m-q").value.trim(); MindV.searching = q.length >= 2; $("m-results").classList.toggle("hidden", !MindV.searching); MindV.show(MindV.tab);
     if (!MindV.searching) { $("m-results").innerHTML = ""; return; }
-    const j = await api("/mind/search", { q }); if ($("m-q").value.trim() !== q) return; if (j.error) { $("m-results").innerHTML = "<div class='card hud'><p class='dim'>" + esc(j.error) + "</p></div>"; return; }
+    const j = await api("/mind/search", { q }); if ($("m-q").value.trim() !== q) return; if (j.error) { $("m-results").innerHTML = "<div class='card'><p class='dim'>" + esc(j.error) + "</p></div>"; return; }
     const terms = q.toLowerCase().split(/\s+/).filter((w) => w.length > 2).map((w) => esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), rx = terms.length ? new RegExp("(" + terms.join("|") + ")", "gi") : null, hl = (t) => (rx ? esc(t).replace(rx, "<mark>$1</mark>") : esc(t));
-    const sec = (title, items) => (items.length ? "<div class='card hud mt sres'><h3>" + title + "<small class='dim sm mono'>" + items.length + "</small></h3><div class='mlist mt'>" + items.join("") + "</div></div>" : "");
+    const sec = (title, items) => (items.length ? "<div class='sres'><h3>" + title + "<small>" + items.length + "</small></h3><div class='mlist'>" + items.join("") + "</div></div>" : "");
     const local = new Set(chats.map((c) => c.id)), who = gname || "Hive";
-    const html = sec("MEMORIES", (j.memories || []).map((m) => "<div class='mi'><p><small>" + esc(MindV.kl(m.kind)) + (m.pin ? " · pinned" : "") + "</small>" + hl(m.text) + "</p></div>")) +
-      sec("THREADS", (j.threads || []).map((t) => "<div class='mi'><p><small>thread · " + esc(t.status) + " · " + agoT(t.ts) + "</small>" + hl(t.text) + "</p></div>")) +
-      sec("CONVERSATIONS", (j.turns || []).map((t) => { const can = t.cid && local.has(t.cid); return "<div class='mi turn'" + (can ? " data-cid='" + esc(t.cid) + "' tabindex='0' role='button'" : "") + "><p><small>" + agoT(t.ts) + (can ? " · open it" : "") + "</small><b>You:</b> " + hl(t.said) + "<br><span class='dim'>" + esc(who) + ":</span> " + hl(t.reply) + "</p></div>"; })) +
-      sec("ACTIVITY", (j.activity || []).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + hl(String(a.text).slice(0, 400)) + "</p></div>"));
-    $("m-results").innerHTML = html || "<div class='card hud'><p class='dim'>Nothing Hive knows matches “" + esc(q) + "”.</p></div>";
+    const html = sec("Memories", (j.memories || []).map((m) => "<div class='mi'><p><small>" + esc(MindV.kl(m.kind)) + (m.pin ? " · pinned" : "") + "</small>" + hl(m.text) + "</p></div>")) +
+      sec("Threads", (j.threads || []).map((t) => "<div class='mi'><p><small>thread · " + esc(t.status) + " · " + agoT(t.ts) + "</small>" + hl(t.text) + "</p></div>")) +
+      sec("Conversations", (j.turns || []).map((t) => { const can = t.cid && local.has(t.cid); return "<div class='mi turn'" + (can ? " data-cid='" + esc(t.cid) + "' tabindex='0' role='button'" : "") + "><p><small>" + agoT(t.ts) + (can ? " · open it" : "") + "</small><b>You:</b> " + hl(t.said) + "<br><span class='dim'>" + esc(who) + ":</span> " + hl(t.reply) + "</p></div>"; })) +
+      sec("Activity", (j.activity || []).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + hl(String(a.text).slice(0, 400)) + "</p></div>"));
+    $("m-results").innerHTML = html || "<div class='card'><p class='dim'>Nothing Hive knows matches “" + esc(q) + "”.</p></div>";
   },
   async exportAll(kind) {
     const j = await api("/mind/export?tz=" + -new Date().getTimezoneOffset()); if (j.error) return toast(j.error);
@@ -743,9 +755,9 @@ const GenV = {
     const j = await api("/genesis"); if (j.error) return; GenV.j = j;
     const s = j.self, st = j.stats || {}, ago = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
     const days = Math.max(1, Math.round((Date.now() - s.born) / 864e5)), name = esc(s.name);
-    $("g-name").textContent = s.name.toUpperCase(); gname = s.name; $("g-auto").checked = !!s.auto;
+    $("g-name").textContent = s.name; gname = s.name; $("g-auto").checked = !!s.auto;
     $("g-sub").textContent = "named by " + s.creator + " · " + new Date(s.born).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) + " · " + (s.reflected ? "last reflected " + ago(s.reflected) + (s.model ? " · " + s.model.split("|").pop().split("/").pop() : "") : "hasn't reflected yet") + (j.due ? " · ready to reflect" : "");
-    $("g-facts").innerHTML = [["DAYS ALIVE", days], ["CONVERSATIONS", st.turns || 0], ["REMEMBERED", st.remembered || 0], ["👍 · 👎", (st.up || 0) + " · " + (st.down || 0)], ["LESSONS", st.lessons || 0], ["REFLECTIONS", st.reflections || 0], ["IDEAS", st.ideas || 0], ["PHONE ALERTS", j.push && j.push.devices ? j.push.devices + " device" + (j.push.devices > 1 ? "s" : "") : "off"]].map(([a, b]) => "<div>" + a + "<b>" + esc(b) + "</b></div>").join("") +
+    $("g-facts").innerHTML = [["days alive", days], ["conversations", st.turns || 0], ["remembered", st.remembered || 0], ["good · off", (st.up || 0) + " · " + (st.down || 0)], ["lessons", st.lessons || 0], ["reflections", st.reflections || 0], ["ideas", st.ideas || 0], ["phone alerts", j.push && j.push.devices ? j.push.devices + " device" + (j.push.devices > 1 ? "s" : "") : "off"]].map(([a, b]) => "<div>" + a + "<b>" + esc(b) + "</b></div>").join("") +
       (s.auto ? "<div class='full own-build'><small>" + (s.next ? "Builds on its own time: next around <b>" + esc(new Date(s.next.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })) + "</b>" + (s.next.at - Date.now() > 20 * 3600e3 ? " tomorrow" : "") + (s.next.why ? " · " + esc(s.next.why) : "") : "Builds on its own time") +
         (s.today ? " · today " + s.today.builds + "/" + s.today.maxBuilds + " missions, " + s.today.calls + "/" + s.today.maxCalls + " calls" : "") + "</small><button class='ghost sm' id='g-buildnow' title='Ask " + esc(s.name) + " to start something of its own now; it still picks what'>Build something now</button></div>" : "") +
       "<div class='full'><small><a href='/vigil-app#system'>" + (j.push && j.push.devices ? "Phone alerts are on" + (j.push.lastSent ? " · last sent " + ago(j.push.lastSent) : "") + " · settings in Vigil ↗" : "Get " + esc(s.name) + "'s alerts on your phone: turn them on in Vigil → System ↗") + "</a></small></div>";
@@ -755,7 +767,7 @@ const GenV = {
     const st8 = (i) => i.status === "building" ? "the swarm is on it (" + (i.by_ === "genesis" ? "started by " + s.name : "started by you") + (i.ps ? " · " + i.ps : "") + ")" : i.status === "built" ? "built: the result is waiting for you" : i.status;
     // grouped by where they are, each a title and two lines (tap to read it all), so a long list stays a list
     const ideaRow = (i) => "<div class='mi idea'><p><small>" + esc(st8(i)) + " · " + ago(i.ts) + "</small><b>" + esc(i.title) + "</b><span class='more' data-more tabindex='0' role='button' title='Tap to read it all'>" + esc(i.detail) + "</span></p><div class='ib'>" + ((i.status === "building" || i.status === "built") && i.pid ? "<button data-iopen='" + esc(i.pid) + "'>" + (i.status === "built" ? "Result" : "Open") + "</button>" : "<button data-ib='" + i.id + "' title='Hand it to the Swarm to build'>Build</button>") + "<button data-idx='" + i.id + "' title='" + (i.status === "built" ? "Clear it from the list (the result stays in the Swarm)" : "Not now") + "'>✕</button></div></div>";
-    const groups = [["open", "ON ITS LIST"], ["building", "BEING BUILT"], ["built", "BUILT · RESULTS WAITING FOR YOU"]].map(([k, h]) => [k, h, (j.ideas || []).filter((i) => (i.status === k) || (k === "open" && !["building", "built"].includes(i.status)))]).filter((g) => g[2].length);
+    const groups = [["open", "on its list"], ["building", "being built"], ["built", "built · results waiting for you"]].map(([k, h]) => [k, h, (j.ideas || []).filter((i) => (i.status === k) || (k === "open" && !["building", "built"].includes(i.status)))]).filter((g) => g[2].length);
     $("g-ideas").innerHTML = groups.map(([k, h, is]) => "<div class='ig'><h4>" + h + " <i>" + is.length + "</i>" + (k === "built" && is.length > 1 ? "<button class='ghost sm' data-iclear>Clear all built</button>" : "") + "</h4>" + is.map(ideaRow).join("") + "</div>").join("") || "<p class='dim sm'>No ideas yet. " + name + " proposes them when it reflects.</p>";
     $("g-journal").innerHTML = (j.journal || []).map((e) => "<div class='je " + esc(e.kind) + "'><small>" + esc(e.kind === "milestone" ? "milestone" : e.kind === "watch" ? "on watch · vigil's board" : "reflection") + " · " + new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + (e.model ? " · " + esc(String(e.model).split("|").pop().split("/").pop()) : "") + "</small><p>" + esc(e.text) + "</p></div>").join("") || "<p class='dim sm'>Empty.</p>";
   },
@@ -778,7 +790,7 @@ $("g-check").onclick = async () => {
   toast(j.ok ? "All " + j.checks.length + " checks passed" : j.checks.filter((c) => !c.ok).length + " need attention", 3000); };
 $("g-add").onclick = async () => { const t = $("g-new").value.trim(); if (!t) return; const j = await api("/genesis/teach", { text: t }); if (j.error) return toast(j.error, 5000); $("g-new").value = ""; toast(gname + " learned it"); GenV.load(); };
 $("g-new").onkeydown = (e) => { if (e.key === "Enter") $("g-add").click(); };
-$("genp").closest(".pad").addEventListener("click", async (e) => {
+$("genp").closest(".pane").addEventListener("click", async (e) => {
   const mo = e.target.closest("[data-more]"); if (mo) return mo.classList.toggle("open");
   if (e.target.closest("[data-iclear]")) { const built = (GenV.j.ideas || []).filter((i) => i.status === "built"); if (!confirm("Clear all " + built.length + " built ideas from this list? Their results stay in the Swarm.")) return; for (const i of built) await api("/genesis/idea", { id: i.id, act: "dismiss" }); toast("Cleared " + built.length); return GenV.load(); }
   const t = e.target.closest("[data-les],[data-res],[data-ib],[data-idx],[data-iopen]"); if (!t) return;
@@ -793,6 +805,8 @@ $("genp").closest(".pad").addEventListener("click", async (e) => {
 });
 }
 
+// down in the layers the surface thins to one line until you touch it (with a little slack, so it doesn't flicker)
+$("scroll").addEventListener("scroll", () => { const t = $("scroll").scrollTop, deep = $("scroll").classList.contains("deep"); if (!deep && t > 140 && chat) $("scroll").classList.add("deep"); else if (deep && t < 24) $("scroll").classList.remove("deep"); }, { passive: true });
 // ── start ──
-greet(); drawHist(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); if (owner && !LS.get("mind-sync", 0)) MindV.importLocal(true); }); route(); sync();
+greet(); drawHist(); ground(true); stone(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); if (owner && !LS.get("mind-sync", 0)) MindV.importLocal(true); }); route(); sync();
 })();

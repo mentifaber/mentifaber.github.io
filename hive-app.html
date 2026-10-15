@@ -2,254 +2,251 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Hive · Mentifaber</title>
-<meta name="description" content="A command deck for every AI model at once: chat, councils of models, autonomous agent swarms, live web search, vision, video, voice and image generation.">
-<meta name="theme-color" content="#120d09">
+<meta name="description" content="A mind that grows in layers: every AI model at once, councils of models, agent swarms that build, live web search, vision, voice and pictures.">
+<meta name="theme-color" content="#0e1113">
 <link rel="manifest" href="assets/manifests/hive.webmanifest">
-<link rel="icon" href="assets/icons/hive-bee-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-bee-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-bee-apple.png">
+<link rel="icon" href="assets/icons/hive-geode-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-geode-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-geode-apple.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hive">
-<link rel="preload" href="assets/fonts/Literata-var.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/SchibstedGrotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/HiveStrata-Regular.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/HiveStrata-SemiBold.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/HiveStrata-Light.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/hive/hive.css">
+<script>try { if (JSON.parse(localStorage.getItem("hive:theme")) === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}</script>
 </head>
 <body>
-<div id="shell">
-  <aside id="side">
-    <div class="brand">
-      <img class="core-mark" src="assets/icons/hive-mark.png" alt="" width="44" height="44">
-      <span class="word">Hive<small>many minds · one hive</small></span><button class="icon only-m" id="sideX" aria-label="Close menu">✕</button>
-    </div>
-    <button class="newchat" id="newchat"><span>＋</span> New session <kbd>⇧⌘O</kbd></button>
-    <nav>
-      <a href="#studio" data-v="studio"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Studio<em>chat · council</em></a>
-      <a href="#swarm" data-v="swarm"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v8l-7 4-7-4V7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.2" fill="currentColor"/></svg>Swarm<em>agents build</em></a>
-      <a href="#keys" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l8-8M16 6l2 2M14 8l2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Uplinks<em>keys · models</em></a>
-      <a href="#mind" data-v="mind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 18.2a6.5 6.5 0 0111 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Mind<em>genesis · you</em></a>
-    </nav>
-    <div class="hist-h">SESSIONS</div>
-    <input id="hsearch" placeholder="search sessions…" aria-label="Search sessions" autocomplete="off">
-    <div id="hist"></div>
-    <div class="sys" id="sys-panel">
-      <div><i class="led" id="led-link"></i><span>LINK</span><b id="t-link">—</b></div>
-      <div><i class="led ok"></i><span>MODELS</span><b id="t-models">—</b></div>
-      <div><i class="led" id="led-free"></i><span>FREE TIER</span><b id="t-free">—</b></div>
-    </div>
-    <div class="side-foot"><button class="ghost sm" id="cmdk-btn" title="Command palette">⌘K</button><button class="ghost sm" id="theme" title="Theme">◐</button><button class="ghost sm" id="settings">⚙ Settings</button><a href="/" class="dim sm">mentifaber.org</a></div>
-  </aside>
-  <div id="scrim"></div>
+<!-- Hive is a geode: many crystals (every model you can reach), one stone. It grows in layers: you write at the surface, each
+     exchange settles as a layer beneath it, and earlier sessions are the bedrock. Every screen reads like a core log: a depth
+     rail, a strip coloured by the mind that laid the layer down, and the layer itself. -->
+<header id="crown">
+  <a id="brand" href="#studio" aria-label="Hive"><span class="geo" id="geo-mark" aria-hidden="true"></span><span class="word">Hive</span></a>
+  <nav id="realms" aria-label="Hive">
+    <a href="#studio" data-v="studio">Studio</a><a href="#swarm" data-v="swarm">Swarm</a><a href="#mind" data-v="mind">Mind</a><a href="#keys" data-v="keys">Uplinks</a>
+  </nav>
+  <span class="flex"></span>
+  <div class="state" id="sys-panel" aria-label="System state">
+    <span title="Connection"><i class="led" id="led-link"></i><b id="t-link">—</b></span>
+    <span title="Minds and providers you can reach"><b id="t-models">—</b></span>
+    <span title="Cloudflare's free models"><i class="led" id="led-free"></i>free <b id="t-free">—</b></span>
+  </div>
+  <button class="inst" id="cmdk-btn" title="Everything, by name (⌘K)" aria-label="Command palette"><kbd>⌘K</kbd></button>
+  <button class="inst" id="theme" title="Basalt or limestone" aria-label="Light or dark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 100 17z" fill="currentColor"/><path d="M12 3.5a8.5 8.5 0 110 17" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+  <button class="inst" id="settings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h3M11 17h9" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M14 4.5h4v5h-4zM7 14.5h4v5H7z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
+</header>
 
-  <main id="main">
-    <!-- ───────── STUDIO ───────── -->
-    <section id="v-studio" class="view">
-      <header class="top">
-        <button class="icon only-m" id="menu" aria-label="Menu">☰</button>
-        <button id="mpick" aria-haspopup="listbox"><i class="pollen" id="mpollen"></i><span id="mname">Choose a model</span><small id="mtot"></small><b>▾</b></button>
-        <select id="model" aria-label="Model" hidden></select>
-        <div id="mpop" class="hidden"><input id="mq" placeholder="Search every model… (try: claude, vision, free)" autocomplete="off"><div id="mlist" role="listbox"></div><div id="mcount"></div></div>
-        <span class="flex"></span>
-        <span class="tele" id="tele"></span>
-        <span class="dim sm" id="who"></span>
-        <button class="icon" id="cmdk-top" title="Command palette (⌘K)" aria-label="Command palette">⌘</button>
-        <button class="icon" id="export" title="Export this session as Markdown" aria-label="Export">⤓</button>
-      </header>
-      <div id="scroll">
-        <div id="empty">
-          <canvas id="core" width="320" height="320" aria-hidden="true"></canvas>
-          <h1 id="greet">What shall we <em>work on</em>?</h1>
-          <p class="sub" id="esub">One mind, a council, or a whole swarm.</p>
-          <div class="protocols" id="starters"></div>
-        </div>
-        <div id="log"></div>
-      </div>
-      <div id="dock">
-        <div id="composer" class="hud">
+<main id="main">
+  <!-- ───────── STUDIO: the surface, the layers, the bedrock ───────── -->
+  <section id="v-studio" class="view">
+    <div id="scroll">
+      <div id="surface" class="core">
+        <div class="lede" id="lede"><h1 id="greet">What shall we <em>work on</em>?</h1><p id="esub">One mind, a council, or a whole swarm.</p></div>
+        <div class="rail rs" aria-hidden="true"><span>surface</span></div>
+        <div id="composer">
+          <div class="cmdrow">
+            <span class="ask">Ask</span>
+            <div class="pick">
+              <button id="mpick" aria-haspopup="listbox"><i class="gem" id="mpollen"></i><span id="mname">Choose a model</span><small id="mtot"></small><b class="chev" aria-hidden="true"></b></button>
+              <div id="mpop" class="hidden"><input id="mq" placeholder="Every mind, by name… (try: claude, vision, free)" autocomplete="off" aria-label="Search models"><div id="mlist" role="listbox"></div><div id="mcount"></div></div>
+            </div>
+            <select id="model" aria-label="Model" hidden></select>
+            <span class="flex"></span>
+            <span class="tele" id="tele"></span>
+            <button class="q" id="newchat" title="A new session (⇧⌘O)">New</button>
+            <button class="q" id="export" title="This session, as Markdown">Export</button>
+          </div>
           <div id="att"></div>
           <textarea id="inp" rows="1" placeholder="Ask anything…  ( / for commands )" aria-label="Message"></textarea>
           <div class="ctl">
-            <div class="plus"><button class="icon" id="plus" title="Attach" aria-label="Attach">＋</button>
-              <div class="menu hidden" id="plusm"><button data-a="image">◫ Image or photo</button><button data-a="video">▶ Video · samples frames</button><button data-a="file">≡ Text / code file</button><button data-a="camera">◉ Camera</button></div></div>
-            <button class="tog" id="web" aria-pressed="false" title="Search the live web for this answer"><i></i><span>SEARCH</span></button>
-            <button class="tog" id="council" aria-pressed="false" title="Several models answer at once; the one you picked leads and merges their best"><i></i><span>COUNCIL</span></button>
-            <button class="tog" id="draw" aria-pressed="false" title="Make an image from your words"><i></i><span>IMAGINE</span></button>
+            <div class="plus"><button class="q ico" id="plus" title="Attach a picture, a video or a file" aria-label="Attach"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="1.8"/></svg></button>
+              <div class="menu hidden" id="plusm"><button data-a="image">Image or photo</button><button data-a="video">Video <small>samples frames</small></button><button data-a="file">Text or code file</button><button data-a="camera">Camera</button></div></div>
+            <button class="tog" id="web" aria-pressed="false" title="Search the live web for this answer"><i></i>Search</button>
+            <button class="tog" id="council" aria-pressed="false" title="Several minds answer at once; the one you picked leads and merges their best"><i></i>Council</button>
+            <button class="tog" id="draw" aria-pressed="false" title="Make a picture from your words"><i></i>Imagine</button>
             <span class="flex"></span>
-            <button class="icon" id="voice" title="Voice link" aria-label="Voice conversation"><svg viewBox="0 0 24 24"><path d="M5 10v4M9 6v12M13 9v6M17 4v16M21 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-            <button class="icon" id="mic" title="Dictate" aria-label="Dictate"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-            <button id="sendb" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="q ico" id="voice" title="Talk with it, hands-free" aria-label="Voice conversation"><svg viewBox="0 0 24 24"><path d="M3 12h2.5M7.5 8v8M11 5v14M14.5 9v6M18 7v10M21 12h0" stroke="currentColor" stroke-width="1.8"/></svg></button>
+            <button class="q ico" id="mic" title="Dictate" aria-label="Dictate"><svg viewBox="0 0 24 24"><path d="M9 3.5h6v10H9z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11v1.5a6.5 6.5 0 0013 0V11M12 19v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+            <button id="sendb" aria-label="Send">Ask</button>
           </div>
         </div>
-        <p class="fine">Models make mistakes; councils fewer. Verify what matters. <span id="quota"></span></p>
       </div>
-      <input type="file" id="f-image" accept="image/*" multiple hidden><input type="file" id="f-video" accept="video/*" hidden><input type="file" id="f-file" accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.yaml,.yml,.toml,.sql,.sh,.log,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.swift,.kt,text/*" multiple hidden><input type="file" id="f-camera" accept="image/*" capture="environment" hidden>
-    </section>
-
-    <!-- ───────── SWARM ───────── -->
-    <section id="v-swarm" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>Swarm</h2><span class="dim sm mono">agents that build</span><span class="flex"></span></header>
-      <div class="pad">
-      <section id="home">
-        <div class="card hud launch">
-          <h3>Launch a mission</h3>
-          <p class="dim" id="swho">Watching is open to everyone.</p>
-          <textarea id="brief" placeholder="Describe what to build. e.g. A single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
-          <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden mono" id="caprow"><span>BUDGET</span><input id="cap" type="number" min="50" max="3000" step="50" value="400"><span>CALLS</span></label><span class="dim" id="gomsg"></span></div>
-        </div>
-        <div class="card mt"><div class="row"><h4 style="flex:1">MISSIONS</h4><button class="ghost sm hidden" id="purge" title="Delete every finished, stopped or failed mission">Clear finished</button></div><div class="plist mt" id="plist"><span class="dim">none yet</span></div></div>
-        <p class="dim mt sm">Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs here, in a sandbox: open a finished mission and press Run.</p>
+      <div id="empty" class="core">
+        <div class="rail" aria-hidden="true"><span>seams</span></div>
+        <ol class="seams" id="starters"></ol>
+        <figure class="geode-fig"><div class="geode" id="core" aria-hidden="true"></div><figcaption id="gcap"></figcaption></figure>
+      </div>
+      <div id="log" aria-live="polite"></div>
+      <section id="bedrock" class="core">
+        <div class="unconf" aria-hidden="true"></div>
+        <div class="rail"><span>bedrock</span></div>
+        <div class="bhead"><h2>Earlier sessions</h2><input id="hsearch" type="search" placeholder="Dig for a word…" aria-label="Search earlier sessions" autocomplete="off"></div>
+        <div id="hist"></div>
       </section>
-      <section id="proj" class="hidden">
-        <div class="card hud phead">
-          <div class="row"><button class="ghost" id="back" aria-label="Back to missions">←</button><h3 id="ptitle" style="flex:1"></h3><span class="st" id="pst"></span></div>
-          <div class="pstats">
-            <svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" class="bg"/><circle cx="32" cy="32" r="27" class="fg" id="pring"/></svg>
-            <div><b id="pcount"></b><span class="dim mono" id="pcalls"></span><div class="bar"><i id="pbar"></i></div></div>
-            <span class="flex"></span>
-            <button class="ghost hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry & bring in my keys</button><button class="ghost hidden" id="stop">Stop</button><button class="ghost hidden" id="pdel" title="Delete this mission for good">Delete</button>
-          </div>
-          <div class="mt hidden note" id="squota"></div>
-          <div class="row mt hidden" id="joinrow"><span class="dim mono sm">VISITOR LINK</span><input id="join" readonly style="flex:1;min-width:200px"><button class="ghost" id="copy">Copy</button></div>
-          <div class="row mt hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…" style="flex:1"><button class="pri" id="send">Send</button></div>
+      <div class="fine core"><p>Minds make mistakes; councils fewer. Verify what matters. <span id="who"></span> <span id="quota"></span></p></div>
+    </div>
+    <input type="file" id="f-image" accept="image/*" multiple hidden><input type="file" id="f-video" accept="video/*" hidden><input type="file" id="f-file" accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.yaml,.yml,.toml,.sql,.sh,.log,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.swift,.kt,text/*" multiple hidden><input type="file" id="f-camera" accept="image/*" capture="environment" hidden>
+  </section>
+
+  <!-- ───────── SWARM ───────── -->
+  <section id="v-swarm" class="view hidden"><div class="pane">
+    <section id="home">
+      <div class="realm core"><div class="rail"><span>swarm</span></div><div><h1>Agents that build</h1><p class="dim" id="swho">Watching is open to everyone.</p></div></div>
+      <div class="bd core launch"><div class="rail"><span>brief</span></div><div class="bc">
+        <textarea id="brief" placeholder="Describe what to build. e.g. A single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
+        <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden" id="caprow"><span>budget</span><input id="cap" type="number" min="50" max="3000" step="50" value="400"><span>calls</span></label><span class="dim sm" id="gomsg"></span></div>
+      </div></div>
+      <div class="bd core"><div class="rail"><span>missions</span><button class="q hidden" id="purge" title="Delete every finished, stopped or failed mission">Clear finished</button></div><div class="bc"><div class="plist" id="plist"><span class="dim">none yet</span></div></div></div>
+      <div class="fine core"><p>Agents come from Cloudflare Workers AI, every uplink in the owner's vault (owner missions only), and visiting AIs that join through a mission's link. Researchers search the web; critics review every piece; integrators assemble the result. Each mission has a hard cap on model calls, and whatever the swarm makes runs here, in a sandbox: open a finished mission and press Run.</p></div>
+    </section>
+    <section id="proj" class="hidden">
+      <div class="realm core phead"><div class="rail"><button class="q" id="back" aria-label="Back to missions">← missions</button></div><div>
+        <div class="ttl"><h1 id="ptitle"></h1><span class="st" id="pst"></span></div>
+        <div class="pstats">
+          <svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" class="bg"/><circle cx="32" cy="32" r="27" class="fg" id="pring"/></svg>
+          <div class="pnums"><b id="pcount"></b><span class="dim" id="pcalls"></span><div class="bar"><i id="pbar"></i></div></div>
+          <span class="flex"></span>
+          <button class="q hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry &amp; bring in my keys</button><button class="q hidden" id="stop">Stop</button><button class="q hidden" id="pdel" title="Delete this mission for good">Delete</button>
         </div>
-        <div class="ptabs mt" id="ptabs" role="tablist" aria-label="Mission views">
-          <button data-pt="run" role="tab">▶ Run</button><button data-pt="code" role="tab">Code</button><button data-pt="doc" role="tab">Write-up</button><button data-pt="swarm" role="tab">Swarm</button>
+        <div class="note hidden" id="squota"></div>
+        <div class="row hidden" id="joinrow"><span class="lbl">visitor link</span><input id="join" readonly><button class="q" id="copy">Copy</button></div>
+        <div class="row hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…"><button class="pri" id="send">Send</button></div>
+      </div></div>
+      <div class="ptabs core" id="ptabs" role="tablist" aria-label="Mission views">
+        <div class="rail"><span>views</span></div>
+        <div class="tabrow"><button data-pt="run" role="tab">Run</button><button data-pt="code" role="tab">Code</button><button data-pt="doc" role="tab">Write-up</button><button data-pt="swarm" role="tab">Swarm</button>
           <span class="flex"></span>
           <select id="vers" class="hidden" aria-label="Version of the result"></select>
-          <button class="ghost sm hidden" id="rebuild" title="Assemble the final result again">Rebuild</button>
-          <button class="ghost sm" id="dlzip" disabled title="Every file of the result, and the write-up, in one .zip">Download .zip</button>
-        </div>
-        <div class="card hud runp mt hidden" id="pt-run">
-          <div class="runbar"><span class="seg" id="sizes" role="group" aria-label="Preview width"><button data-sz="390">Phone</button><button data-sz="820">Tablet</button><button data-sz="0" class="on">Full</button></span>
-            <span class="dim mono sm" id="runwhat"></span><span class="flex"></span><button class="ghost sm" id="rerun" title="Start it again from scratch">↻ Run again</button><button class="ghost sm" id="popout" title="Open it in its own tab">New tab ↗</button></div>
-          <div class="stage" id="stage"><iframe id="preview" sandbox="allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups allow-downloads" title="The result, running"></iframe></div>
-          <div class="norun hidden" id="norun"><p>This result has nothing to run yet: it's a write-up, or its code needs a server. The swarm can turn it into something you can run here: a working page, or a Python program.</p><button class="pri" id="mkrun">Make it runnable</button></div>
-          <div class="console" id="console"><div class="ch"><b>CONSOLE</b><span class="cc" id="ccount"></span><span class="flex"></span><label class="sm af" id="aflabel" title="Send errors back to the swarm, and turn a result that doesn't run (or shows nothing) into a working demo, without asking"><input type="checkbox" id="autofix"> fix automatically</label><button class="ghost sm hidden" id="mkdemo">Make it runnable</button><button class="pri sm hidden" id="fixit">Fix it</button></div><div class="clog" id="clog"><span class="dim">Nothing yet.</span></div></div>
-        </div>
-        <div class="card mt hidden" id="pt-code"><div class="files" id="files"></div></div>
-        <div class="grid" id="pt-swarm">
-          <div class="card mapc"><div class="row"><h4 style="flex:1">HIVE MAP</h4><span class="dim sm mono" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend mono"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
-          <div class="card"><h4>TASK LANES</h4><div class="board mt" id="board"></div></div>
-          <div class="card"><h4>TELEMETRY</h4><div class="feed mt" id="feed"></div></div>
-        </div>
-        <div class="card mt" id="pt-agents"><div class="row"><h4 style="flex:1">AGENTS</h4></div><div class="agents mt" id="agents"></div></div>
-        <div class="card hud mt hidden" id="finalp">
-          <div class="row"><h4 style="flex:1">WRITE-UP</h4><button class="ghost sm" id="rawb">Source</button></div>
-          <div id="finalmd" class="b mt"></div>
-          <pre id="final" class="mt hidden"></pre>
-        </div>
-      </section>
+          <button class="q hidden" id="rebuild" title="Assemble the final result again">Rebuild</button>
+          <button class="q" id="dlzip" disabled title="Every file of the result, and the write-up, in one .zip">Download .zip</button></div>
       </div>
+      <div class="bd core runp hidden" id="pt-run"><div class="rail"><span>specimen</span></div><div class="bc">
+        <div class="runbar"><span class="seg" id="sizes" role="group" aria-label="Preview width"><button data-sz="390">Phone</button><button data-sz="820">Tablet</button><button data-sz="0" class="on">Full</button></span>
+          <span class="dim sm" id="runwhat"></span><span class="flex"></span><button class="q" id="rerun" title="Start it again from scratch">Run again</button><button class="q" id="popout" title="Open it in its own tab">New tab ↗</button></div>
+        <div class="stage" id="stage"><iframe id="preview" sandbox="allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups allow-downloads" title="The result, running"></iframe></div>
+        <div class="norun hidden" id="norun"><p>This result has nothing to run yet: it's a write-up, or its code needs a server. The swarm can turn it into something you can run here: a working page, or a Python program.</p><button class="pri" id="mkrun">Make it runnable</button></div>
+        <div class="console" id="console"><div class="ch"><b>Console</b><span class="cc" id="ccount"></span><span class="flex"></span><label class="sm af" id="aflabel" title="Send errors back to the swarm, and turn a result that doesn't run (or shows nothing) into a working demo, without asking"><input type="checkbox" id="autofix"> fix automatically</label><button class="q hidden" id="mkdemo">Make it runnable</button><button class="pri sm hidden" id="fixit">Fix it</button></div><div class="clog" id="clog"><span class="dim">Nothing yet.</span></div></div>
+      </div></div>
+      <div class="bd core hidden" id="pt-code"><div class="rail"><span>code</span></div><div class="bc"><div class="files" id="files"></div></div></div>
+      <div class="bd core" id="pt-swarm"><div class="rail"><span>the swarm</span></div><div class="bc swgrid">
+        <div class="mapc"><div class="row"><h4>Cavity</h4><span class="flex"></span><span class="dim sm" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
+        <div class="lanes"><h4>Task lanes</h4><div class="board" id="board"></div></div>
+        <div class="tel"><h4>Telemetry</h4><div class="feed" id="feed"></div></div>
+      </div></div>
+      <div class="bd core" id="pt-agents"><div class="rail"><span>agents</span></div><div class="bc"><div class="agents" id="agents"></div></div></div>
+      <div class="bd core hidden" id="finalp"><div class="rail"><span>write-up</span><button class="q" id="rawb">Source</button></div><div class="bc">
+        <div id="finalmd" class="b"></div>
+        <pre id="final" class="hidden"></pre>
+      </div></div>
     </section>
+  </div></section>
 
-    <!-- ───────── UPLINKS ───────── -->
-    <section id="v-keys" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>Uplinks</h2><span class="dim sm mono">key vault</span><span class="flex"></span><span class="dim sm mono" id="kcount"></span></header>
-      <div class="pad narrow">
-        <div id="k-locked" class="card hud hidden"><h3>The vault is sealed</h3><p class="dim">The vault is the owner's. Sign in on <a href="/vigil-app">Vigil</a>, then come back. Uplinks added here power the Studio and join your swarms.</p></div>
-        <div id="k-open" class="hidden">
-          <div class="card hud agentp" id="agentp"></div>
-          <div class="card hud mt">
-            <h3>New uplink</h3>
-            <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside the Hive's Durable Object, and never shown again: only its last four characters.</p>
-            <div class="form">
-              <label>Provider<select id="k-prov"></select></label>
-              <label>Label <span class="dim">(optional)</span><input id="k-label" placeholder="e.g. work, personal, backup"></label>
-              <label id="k-baseL" class="hidden wide">Base URL<input id="k-base" placeholder="https://api.example.com/v1"></label>
-              <label class="wide">API key<input id="k-key" type="password" autocomplete="off" spellcheck="false" placeholder="paste it here"></label>
-              <label class="wide" id="k-pickL">Models for the swarm <span class="dim">(optional, comma separated; otherwise its strongest few)</span><input id="k-pick" placeholder="e.g. gpt-5-mini, claude-sonnet-4-5"></label>
-            </div>
-            <div class="row mt"><button class="pri" id="k-add">Verify & seal</button><button class="ghost hidden" id="k-force">Add anyway</button><span class="dim sm" id="k-msg"></span></div>
-          </div>
-          <div id="k-list" class="mt"></div>
-          <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Hive searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p>
+  <!-- ───────── UPLINKS ───────── -->
+  <section id="v-keys" class="view hidden"><div class="pane">
+    <div class="realm core"><div class="rail"><span>uplinks</span></div><div><h1>Where the minds come from</h1><p class="dim">The key vault. <span id="kcount"></span></p></div></div>
+    <div id="k-locked" class="bd core hidden"><div class="rail"><span>sealed</span></div><div class="bc"><h3>The vault is sealed</h3><p class="dim">The vault is the owner's. Sign in on <a href="/vigil-app">Vigil</a>, then come back. Uplinks added here power the Studio and join your swarms.</p></div></div>
+    <div id="k-open" class="hidden">
+      <div class="bd core"><div class="rail"><span>agent 1.0</span></div><div class="bc agentp" id="agentp"></div></div>
+      <div class="bd core"><div class="rail"><span>new uplink</span></div><div class="bc">
+        <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside the Hive's Durable Object, and never shown again: only its last four characters.</p>
+        <div class="form">
+          <label>Provider<select id="k-prov"></select></label>
+          <label>Label <span class="dim">(optional)</span><input id="k-label" placeholder="e.g. work, personal, backup"></label>
+          <label id="k-baseL" class="hidden wide">Base URL<input id="k-base" placeholder="https://api.example.com/v1"></label>
+          <label class="wide">API key<input id="k-key" type="password" autocomplete="off" spellcheck="false" placeholder="paste it here"></label>
+          <label class="wide" id="k-pickL">Models for the swarm <span class="dim">(optional, comma separated; otherwise its strongest few)</span><input id="k-pick" placeholder="e.g. gpt-5-mini, claude-sonnet-4-5"></label>
         </div>
-      </div>
-    </section>
+        <div class="row mt"><button class="pri" id="k-add">Verify &amp; seal</button><button class="q hidden" id="k-force">Add anyway</button><span class="dim sm" id="k-msg"></span></div>
+      </div></div>
+      <div class="bd core"><div class="rail"><span>the vault</span></div><div class="bc"><div id="k-list"></div>
+        <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Hive searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p></div></div>
+    </div>
+  </div></section>
 
-    <!-- ───────── MIND ───────── -->
-    <section id="v-mind" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>Mind</h2><span class="dim sm mono">owner only</span><span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Hive knows…" aria-label="Search the mind"><span class="dim sm mono" id="m-at"></span></header>
-      <div class="pad narrow">
-        <div id="m-locked" class="card hud hidden"><h3>The mind is sealed</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
-        <div id="m-open" class="hidden">
-          <nav class="ptabs mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
-          <div id="m-results" class="hidden mt"></div>
-          <div id="mt-you" class="mtp">
-            <div class="card hud mindp mt">
-              <div class="ah"><i class="led ok" id="m-led"></i><h3>What Hive knows about you<small id="m-sub">—</small></h3>
-                <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
-              <div class="facts" id="m-facts"></div>
-              <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button><span class="flex"></span><button class="ghost sm" id="m-exp-md" title="Everything Hive knows about you, as a readable notes file">Export notes</button><button class="ghost sm" id="m-exp-json" title="Everything, as JSON">JSON</button></div>
-              <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted (visitors' never are). Your profile, pinned and core memories, open threads and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0; older memories come up when they matter. Every few messages Hive looks over what you said and proposes what's worth keeping; nothing it notices is used until you say yes.</p>
-            </div>
-            <div class="card hud mt review hidden" id="m-review"><h3>Hive noticed<small class="dim sm mono">nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist mt"></div></div>
-            <div class="card hud mt"><div class="row"><h3 class="flex">Profile</h3><select id="m-hist" class="hidden" aria-label="Earlier profiles"></select></div><div id="m-profile" class="b mt"></div></div>
-          </div>
-          <div id="mt-mem" class="mtp hidden">
-            <div class="card hud mt"><h3>Memories</h3>
-              <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><select id="m-kind" aria-label="Kind"><option value="">auto</option></select><button class="ghost" id="m-add">Remember</button></div>
-              <div class="chips mt" id="m-chips"></div>
-              <div id="m-mem" class="mlist mems mt"></div>
-              <div class="row mt"><label class="mtg"><span>Keep what Hive notices without asking</span><input type="checkbox" id="m-trust" class="tg"></label><span class="flex"></span><button class="ghost sm" id="m-notice" title="Have Hive look over your recent chats for anything worth keeping, now">Look over recent chats</button></div></div>
-            <div class="card hud mt"><h3>Open threads<small class="dim sm mono">things you started or said you'd do · Hive follows up when it fits</small></h3>
-              <div class="own"><input id="m-tnew" placeholder="Something you're in the middle of…"><button class="ghost" id="m-tadd">Add</button></div>
-              <div id="m-threads" class="mlist mt"></div>
-              <details class="mt" id="m-tdone"><summary class="dim sm">Finished and dropped</summary><div id="m-tclosed" class="mlist mt"></div></details></div>
-          </div>
-          <div id="mt-time" class="mtp hidden">
-            <div class="card hud mt"><div class="row"><h3 class="flex">Rhythm</h3><span class="dim sm mono" id="m-streak"></span></div>
-              <div class="cal mt" id="m-cal" aria-label="Activity over the last 26 weeks"></div>
-              <h4 class="mt">WHEN YOU WORK<small class="dim"> · your local time</small></h4><div class="wgrid mt" id="m-grid"></div>
-              <div class="kbars mt" id="m-kbars"></div></div>
-            <div class="card hud mt"><div class="row"><h3 class="flex">Activity</h3><select id="m-akind" aria-label="Show"><option value="">everything</option></select></div><div id="m-act" class="mlist mt"></div>
-              <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
-          </div>
-          <div id="mt-gen" class="mtp hidden">
-            <div class="card hud mindp genp mt" id="genp">
-              <div class="ah"><i class="led ok" id="g-led"></i><h3><span id="g-name">GENESIS</span><small id="g-sub">—</small></h3>
-                <label class="mtg" title="Let Genesis build on its own: when it chooses, what it chooses, within a daily budget"><span>Autonomy</span><input type="checkbox" id="g-auto" class="tg"></label>
-                <button class="ghost" id="g-check" title="Run a real check of every part of the system">Check systems</button>
-                <button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button></div>
-              <div class="facts" id="g-facts"></div>
-              <div class="health hidden" id="g-health"></div>
-              <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
-            </div>
-            <div class="card hud mt"><h3>Lessons</h3>
-              <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="ghost" id="g-add">Teach</button></div>
-              <div id="g-lessons" class="mlist mt"></div>
-              <details class="mt" id="g-retd"><summary class="dim sm">Retired lessons</summary><div id="g-retired" class="mlist mt"></div></details></div>
-            <div class="card hud mt"><h3>Ideas<small class="dim sm mono" style="margin-left:8px;letter-spacing:.06em">what it wants to become</small></h3><div id="g-ideas" class="mlist mt"></div></div>
-            <div class="card hud mt"><h3>Journal</h3><div id="g-journal" class="journal mt"></div></div>
-          </div>
-        </div>
+  <!-- ───────── MIND ───────── -->
+  <section id="v-mind" class="view hidden"><div class="pane">
+    <div class="realm core"><div class="rail"><span>mind</span></div><div><h1>What it knows, and what it is</h1><p class="dim">Owner only. <span id="m-at"></span></p></div></div>
+    <div id="m-locked" class="bd core hidden"><div class="rail"><span>sealed</span></div><div class="bc"><h3>The mind is sealed</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div></div>
+    <div id="m-open" class="hidden">
+      <div class="ptabs core mhead"><div class="rail"><span>read</span></div><div class="tabrow">
+        <nav class="mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
+        <span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Hive knows…" aria-label="Search the mind"></div></div>
+      <div id="m-results" class="hidden"></div>
+      <div id="mt-you" class="mtp">
+        <div class="bd core mindp"><div class="rail"><i class="led ok" id="m-led"></i><span>you</span></div><div class="bc">
+          <div class="ah"><h3>What Hive knows about you<small id="m-sub">—</small></h3><label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
+          <div class="facts" id="m-facts"></div>
+          <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="q" id="m-ask">Talk it through</button><button class="q" id="m-import">Import this device's sessions</button><span class="flex"></span><button class="q" id="m-exp-md" title="Everything Hive knows about you, as a readable notes file">Export notes</button><button class="q" id="m-exp-json" title="Everything, as JSON">JSON</button></div>
+          <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted (visitors' never are). Your profile, pinned and core memories, open threads and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0; older memories come up when they matter. Every few messages Hive looks over what you said and proposes what's worth keeping; nothing it notices is used until you say yes.</p>
+        </div></div>
+        <div class="bd core review hidden" id="m-review"><div class="rail"><span>noticed</span></div><div class="bc"><h3>Hive noticed<small>nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist"></div></div></div>
+        <div class="bd core"><div class="rail"><span>profile</span><select id="m-hist" class="hidden" aria-label="Earlier profiles"></select></div><div class="bc"><div id="m-profile" class="b"></div></div></div>
       </div>
-    </section>
-  </main>
-</div>
+      <div id="mt-mem" class="mtp hidden">
+        <div class="bd core"><div class="rail"><span>memories</span></div><div class="bc">
+          <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><select id="m-kind" aria-label="Kind"><option value="">auto</option></select><button class="q" id="m-add">Remember</button></div>
+          <div class="chips mt" id="m-chips"></div>
+          <div id="m-mem" class="mlist mems mt"></div>
+          <div class="row mt"><label class="mtg"><span>Keep what Hive notices without asking</span><input type="checkbox" id="m-trust" class="tg"></label><span class="flex"></span><button class="q" id="m-notice" title="Have Hive look over your recent chats for anything worth keeping, now">Look over recent chats</button></div>
+        </div></div>
+        <div class="bd core"><div class="rail"><span>open threads</span></div><div class="bc"><p class="dim sm">Things you started or said you'd do. Hive follows up when it fits.</p>
+          <div class="own"><input id="m-tnew" placeholder="Something you're in the middle of…"><button class="q" id="m-tadd">Add</button></div>
+          <div id="m-threads" class="mlist mt"></div>
+          <details class="mt" id="m-tdone"><summary class="dim sm">Finished and dropped</summary><div id="m-tclosed" class="mlist mt"></div></details>
+        </div></div>
+      </div>
+      <div id="mt-time" class="mtp hidden">
+        <div class="bd core"><div class="rail"><span>rhythm</span></div><div class="bc"><p class="dim sm" id="m-streak"></p>
+          <div class="cal mt" id="m-cal" aria-label="Activity over the last 26 weeks"></div>
+          <h4 class="mt">When you work <small class="dim">your local time</small></h4><div class="wgrid mt" id="m-grid"></div>
+          <div class="kbars mt" id="m-kbars"></div>
+        </div></div>
+        <div class="bd core"><div class="rail"><span>activity</span><select id="m-akind" aria-label="Show"><option value="">everything</option></select></div><div class="bc"><div id="m-act" class="mlist"></div>
+          <div class="row mt"><span class="flex"></span><button class="q danger" id="m-wipe">Forget everything</button></div></div></div>
+      </div>
+      <div id="mt-gen" class="mtp hidden">
+        <div class="bd core mindp genp" id="genp"><div class="rail"><i class="led ok" id="g-led"></i><span id="g-name">Genesis</span></div><div class="bc">
+          <div class="ah"><h3>The mind you talk to<small id="g-sub">—</small></h3>
+            <label class="mtg" title="Let Genesis build on its own: when it chooses, what it chooses, within a daily budget"><span>Autonomy</span><input type="checkbox" id="g-auto" class="tg"></label></div>
+          <div class="ab"><button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button><button class="q" id="g-check" title="Run a real check of every part of the system">Check systems</button></div>
+          <div class="facts" id="g-facts"></div>
+          <div class="health hidden" id="g-health"></div>
+          <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your ratings, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
+        </div></div>
+        <div class="bd core"><div class="rail"><span>lessons</span></div><div class="bc">
+          <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="q" id="g-add">Teach</button></div>
+          <div id="g-lessons" class="mlist mt"></div>
+          <details class="mt" id="g-retd"><summary class="dim sm">Retired lessons</summary><div id="g-retired" class="mlist mt"></div></details>
+        </div></div>
+        <div class="bd core"><div class="rail"><span>ideas</span></div><div class="bc"><p class="dim sm">What it wants to become.</p><div id="g-ideas" class="mlist"></div></div></div>
+        <div class="bd core"><div class="rail"><span>journal</span></div><div class="bc"><div id="g-journal" class="journal"></div></div></div>
+      </div>
+    </div>
+  </div></section>
+</main>
 
 <div id="voiceo" class="hidden" role="dialog" aria-label="Voice link">
   <canvas id="viz" aria-hidden="true"></canvas>
-  <div class="vtop"><span class="vchip"><i class="led ok" id="vled"></i><span id="vmodel">VOICE LINK</span></span><span class="vchip" id="vlat"></span><span class="flex"></span><button class="icon" id="vset" aria-label="Voice settings" title="Settings">⚙</button><button class="icon" id="vx" aria-label="End voice link" title="End">✕</button></div>
+  <div class="vtop"><span class="vchip"><i class="led ok" id="vled"></i><span id="vmodel">Voice link</span></span><span class="vchip" id="vlat"></span><span class="flex"></span><button class="inst" id="vset" aria-label="Voice settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h3M11 17h9" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M14 4.5h4v5h-4zM7 14.5h4v5H7z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button><button class="inst" id="vx" aria-label="End voice link" title="End"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
   <video id="cam" playsinline muted class="hidden" aria-label="Your camera"></video>
   <div id="orb" aria-label="Tap to interrupt"></div>
   <div class="vcap"><p id="vstate">Listening…</p><p id="vtext"></p><p class="vhint" id="vhint">tap to interrupt</p></div>
   <div class="vdock">
-    <button class="vbtn" id="vcam" aria-pressed="false" title="Show the model your camera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>CAMERA</span></button>
-    <button class="vbtn hidden" id="vflip" title="Switch camera"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0114-3l2 2M20 15a8 8 0 01-14 3l-2-2M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>FLIP</span></button>
-    <button class="vbtn" id="vscreen" aria-pressed="false" title="Share your screen with the model"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>SCREEN</span></button>
-    <button class="vbtn big" id="vmute" aria-pressed="false" title="Pause or resume listening"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="vmutel">LIVE</span></button>
-    <button class="vbtn big hidden" id="vptt" title="Hold to talk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg><span>HOLD</span></button>
-    <button class="vbtn end" id="vend" title="End voice link"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>END</span></button>
+    <button class="vbtn" id="vcam" aria-pressed="false" title="Show the model your camera">Camera</button>
+    <button class="vbtn hidden" id="vflip" title="Switch camera">Flip</button>
+    <button class="vbtn" id="vscreen" aria-pressed="false" title="Share your screen with the model">Screen</button>
+    <button class="vbtn big" id="vmute" aria-pressed="false" title="Pause or resume listening"><span id="vmutel">Live</span></button>
+    <button class="vbtn big hidden" id="vptt" title="Hold to talk">Hold</button>
+    <button class="vbtn end" id="vend" title="End voice link">End</button>
   </div>
-  <div class="vvoice"><select id="vvoice" aria-label="Voice"></select><button class="ghost sm" id="vtest">Hear it</button></div>
+  <div class="vvoice"><select id="vvoice" aria-label="Voice"></select><button class="q" id="vtest">Hear it</button></div>
 </div>
-<dialog id="cmdk" aria-label="Command palette"><input id="cq" placeholder="Type a command or a model name…" autocomplete="off"><div id="clist" role="listbox"></div><p class="dim sm mono">↑↓ choose · ⏎ run · esc close</p></dialog>
-<dialog id="dlg"><div class="row"><h3 id="dt" style="flex:1"></h3><button class="ghost" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
+<dialog id="cmdk" aria-label="Command palette"><input id="cq" placeholder="A command, a mind, a session…" autocomplete="off"><div id="clist" role="listbox"></div><p class="dim sm">↑↓ choose · ⏎ run · esc close</p></dialog>
+<dialog id="dlg"><div class="row"><h3 id="dt"></h3><span class="flex"></span><button class="q" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
 <dialog id="sdlg" class="settings" aria-label="Settings">
-  <div class="row"><h3 style="flex:1">Settings</h3><button class="icon" onclick="sdlg.close()" aria-label="Close">✕</button></div>
-  <section><h4>INTERFACE</h4>
-    <label class="opt"><span>Theme</span><select id="s-theme"><option value="dark">Night</option><option value="light">Daylight</option></select></label>
-    <label class="opt"><span>Motion effects<small>the drifting field, orbiting core and hive map</small></span><input type="checkbox" id="s-motion" class="tg"></label>
+  <div class="row"><h3>Settings</h3><span class="flex"></span><button class="inst" onclick="sdlg.close()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
+  <section><h4>Surface</h4>
+    <label class="opt"><span>Stone<small>basalt is dark, limestone is light</small></span><select id="s-theme"><option value="dark">Basalt</option><option value="light">Limestone</option></select></label>
+    <label class="opt"><span>Motion<small>the geode, the growing strata and the swarm's cavity</small></span><input type="checkbox" id="s-motion" class="tg"></label>
     <label class="opt"><span>Send with Enter<small>off: Enter makes a new line, Ctrl/⌘+Enter sends</small></span><input type="checkbox" id="s-enter" class="tg"></label>
   </section>
-  <section><h4>VOICE LINK</h4>
+  <section><h4>Voice link</h4>
     <label class="opt"><span>Voice</span><select id="s-voice"></select></label>
     <label class="opt"><span>Speaking speed<small id="s-rate-v">1.0×</small></span><input type="range" id="s-rate" min="0.8" max="1.5" step="0.05"></label>
     <label class="opt"><span>Listening<small>hands-free answers when you pause; push-to-talk waits for the button</small></span><select id="s-hands"><option value="1">Hands-free</option><option value="0">Push to talk</option></select></label>
@@ -258,9 +255,9 @@
     <label class="opt"><span>Recognition<small>live hears you as you talk and knows when you've finished a thought; Whisper transcribes each pause; device uses this browser's own</small></span><select id="s-recog"><option value="cloud">Live (Deepgram Flux)</option><option value="whisper">Whisper</option><option value="device">Device</option></select></label>
     <label class="opt"><span>Voice model<small>a fast model makes conversation snappier</small></span><select id="s-vmodel"><option value="">Same as chat</option><option value="fast">Fastest available</option></select></label>
   </section>
-  <section><h4>DIRECTIVES</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
-  <section><h4>DATA</h4><div class="row"><button class="ghost sm" id="s-export">Export all sessions</button><button class="ghost sm" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
-  <div class="row mt"><span class="flex"></span><button class="pri" id="ssave">Done</button></div>
+  <section><h4>Directives</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
+  <section><h4>Data</h4><div class="row"><button class="q" id="s-export">Export all sessions</button><button class="q" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
+  <div class="row mt"><a href="/" class="dim sm">mentifaber.org</a><span class="flex"></span><button class="pri" id="ssave">Done</button></div>
 </dialog>
 <div id="toast" class="hidden" role="status"></div>
 

@@ -1,34 +1,34 @@
 {
   "id": "/hive",
-  "name": "Hive · AI swarm builder",
+  "name": "Hive · a mind that grows in layers",
   "short_name": "Hive",
-  "description": "Describe a project and release a swarm of AI agents on it: a coordinator splits it into a task board, every model claims the role it fits (architect, coder, designer, writer, researcher, tester, critic), critics send weak work back, and an integrator assembles the result, previewed live and downloadable. Watch every agent work in real time, steer it mid-build, and invite visiting AIs like Grok to join through a link.",
+  "description": "Every AI model at once in one stone: talk to any of them, convene a council, release a swarm of agents that plans, builds and reviews a whole project, search the live web, see, speak and paint. Each exchange settles as a layer; earlier sessions are the bedrock.",
   "start_url": "/hive-app.html",
   "scope": "/hive",
   "display": "standalone",
-  "background_color": "#120d09",
-  "theme_color": "#120d09",
+  "background_color": "#0d1012",
+  "theme_color": "#0d1012",
   "icons": [
     {
-      "src": "../icons/hive-bee-192.png",
+      "src": "../icons/hive-geode-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "../icons/hive-bee-512.png",
+      "src": "../icons/hive-geode-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "../icons/hive-bee-maskable-192.png",
+      "src": "../icons/hive-geode-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "../icons/hive-bee-maskable-512.png",
+      "src": "../icons/hive-geode-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
