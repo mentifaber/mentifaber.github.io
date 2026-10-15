@@ -52,7 +52,7 @@
     if (p.quota_until || p.status === "paused") $("squota").textContent = "⏸ Cloudflare's free AI allowance for today is used up. This project is paused and resumes on its own" + (p.quota_until ? " at " + new Date(p.quota_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " your time" : "") + (p.owner ? ", or bring in your own keys with “Retry & bring in my keys”." : ".");
     $("ptitle").textContent = p.title; $("pst").textContent = p.status; $("pst").className = "st " + p.status;
     $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
-    const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " TASKS COMPLETE";
+    const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks done";
     $("pring").style.strokeDashoffset = 170 - 170 * (j.tasks.length ? done / j.tasks.length : 0);
     if (window.HiveFX && tab === "swarm") HiveFX.map($("map"), j);
     $("recruit").classList.toggle("hidden", !p.owner || !LIVE.test(p.status)); $("pdel").classList.toggle("hidden", !p.join); $("stop").classList.toggle("hidden", !p.join || !LIVE.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join || !LIVE.test(p.status));

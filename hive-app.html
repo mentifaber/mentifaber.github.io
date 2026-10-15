@@ -3,22 +3,20 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Hive · Mentifaber</title>
 <meta name="description" content="A command deck for every AI model at once: chat, councils of models, autonomous agent swarms, live web search, vision, video, voice and image generation.">
-<meta name="theme-color" content="#13181e">
+<meta name="theme-color" content="#120d09">
 <link rel="manifest" href="assets/manifests/hive.webmanifest">
 <link rel="icon" href="assets/icons/hive-bee-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-bee-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-bee-apple.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hive">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/Literata-var.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/SchibstedGrotesk-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/hive/hive.css">
 </head>
 <body>
-<canvas id="field" aria-hidden="true"></canvas>
 <div id="shell">
   <aside id="side">
     <div class="brand">
       <img class="core-mark" src="assets/icons/hive-mark.png" alt="" width="44" height="44">
-      <span class="word">HIVE<small>NEURAL COMMAND DECK</small></span><button class="icon only-m" id="sideX" aria-label="Close menu">✕</button>
+      <span class="word">Hive<small>many minds · one hive</small></span><button class="icon only-m" id="sideX" aria-label="Close menu">✕</button>
     </div>
     <button class="newchat" id="newchat"><span>＋</span> New session <kbd>⇧⌘O</kbd></button>
     <nav>
@@ -44,7 +42,7 @@
     <section id="v-studio" class="view">
       <header class="top">
         <button class="icon only-m" id="menu" aria-label="Menu">☰</button>
-        <button id="mpick" aria-haspopup="listbox"><i class="led ok"></i><span id="mname">Choose a model</span><small id="mtot"></small><b>▾</b></button>
+        <button id="mpick" aria-haspopup="listbox"><i class="pollen" id="mpollen"></i><span id="mname">Choose a model</span><small id="mtot"></small><b>▾</b></button>
         <select id="model" aria-label="Model" hidden></select>
         <div id="mpop" class="hidden"><input id="mq" placeholder="Search every model… (try: claude, vision, free)" autocomplete="off"><div id="mlist" role="listbox"></div><div id="mcount"></div></div>
         <span class="flex"></span>
@@ -56,7 +54,7 @@
       <div id="scroll">
         <div id="empty">
           <canvas id="core" width="320" height="320" aria-hidden="true"></canvas>
-          <h1 id="greet">COMMAND THE HIVE</h1>
+          <h1 id="greet">What shall we <em>work on</em>?</h1>
           <p class="sub" id="esub">One mind, a council, or a whole swarm.</p>
           <div class="protocols" id="starters"></div>
         </div>
@@ -65,7 +63,7 @@
       <div id="dock">
         <div id="composer" class="hud">
           <div id="att"></div>
-          <textarea id="inp" rows="1" placeholder="Transmit…  ( / for commands )" aria-label="Message"></textarea>
+          <textarea id="inp" rows="1" placeholder="Ask anything…  ( / for commands )" aria-label="Message"></textarea>
           <div class="ctl">
             <div class="plus"><button class="icon" id="plus" title="Attach" aria-label="Attach">＋</button>
               <div class="menu hidden" id="plusm"><button data-a="image">◫ Image or photo</button><button data-a="video">▶ Video · samples frames</button><button data-a="file">≡ Text / code file</button><button data-a="camera">◉ Camera</button></div></div>
@@ -85,11 +83,11 @@
 
     <!-- ───────── SWARM ───────── -->
     <section id="v-swarm" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>SWARM</h2><span class="dim sm mono">autonomous agent collective</span><span class="flex"></span></header>
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>Swarm</h2><span class="dim sm mono">agents that build</span><span class="flex"></span></header>
       <div class="pad">
       <section id="home">
         <div class="card hud launch">
-          <h3>LAUNCH A MISSION</h3>
+          <h3>Launch a mission</h3>
           <p class="dim" id="swho">Watching is open to everyone.</p>
           <textarea id="brief" placeholder="Describe what to build. e.g. A single-page pomodoro timer with themes, a task list and sound, all in one HTML file."></textarea>
           <div class="row mt"><button class="pri" id="go">Release the swarm</button><label class="dim sm hidden mono" id="caprow"><span>BUDGET</span><input id="cap" type="number" min="50" max="3000" step="50" value="400"><span>CALLS</span></label><span class="dim" id="gomsg"></span></div>
@@ -142,13 +140,13 @@
 
     <!-- ───────── UPLINKS ───────── -->
     <section id="v-keys" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>UPLINKS</h2><span class="dim sm mono">key vault</span><span class="flex"></span><span class="dim sm mono" id="kcount"></span></header>
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>Uplinks</h2><span class="dim sm mono">key vault</span><span class="flex"></span><span class="dim sm mono" id="kcount"></span></header>
       <div class="pad narrow">
-        <div id="k-locked" class="card hud hidden"><h3>VAULT SEALED</h3><p class="dim">The vault is the owner's. Sign in on <a href="/vigil-app">Vigil</a>, then come back. Uplinks added here power the Studio and join your swarms.</p></div>
+        <div id="k-locked" class="card hud hidden"><h3>The vault is sealed</h3><p class="dim">The vault is the owner's. Sign in on <a href="/vigil-app">Vigil</a>, then come back. Uplinks added here power the Studio and join your swarms.</p></div>
         <div id="k-open" class="hidden">
           <div class="card hud agentp" id="agentp"></div>
           <div class="card hud mt">
-            <h3>NEW UPLINK</h3>
+            <h3>New uplink</h3>
             <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside the Hive's Durable Object, and never shown again: only its last four characters.</p>
             <div class="form">
               <label>Provider<select id="k-prov"></select></label>
@@ -167,40 +165,40 @@
 
     <!-- ───────── MIND ───────── -->
     <section id="v-mind" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>MIND</h2><span class="dim sm mono">owner only</span><span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Hive knows…" aria-label="Search the mind"><span class="dim sm mono" id="m-at"></span></header>
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>Mind</h2><span class="dim sm mono">owner only</span><span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Hive knows…" aria-label="Search the mind"><span class="dim sm mono" id="m-at"></span></header>
       <div class="pad narrow">
-        <div id="m-locked" class="card hud hidden"><h3>MIND SEALED</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
+        <div id="m-locked" class="card hud hidden"><h3>The mind is sealed</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
         <div id="m-open" class="hidden">
           <nav class="ptabs mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
           <div id="m-results" class="hidden mt"></div>
           <div id="mt-you" class="mtp">
             <div class="card hud mindp mt">
-              <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
+              <div class="ah"><i class="led ok" id="m-led"></i><h3>What Hive knows about you<small id="m-sub">—</small></h3>
                 <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
               <div class="facts" id="m-facts"></div>
               <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button><span class="flex"></span><button class="ghost sm" id="m-exp-md" title="Everything Hive knows about you, as a readable notes file">Export notes</button><button class="ghost sm" id="m-exp-json" title="Everything, as JSON">JSON</button></div>
               <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted (visitors' never are). Your profile, pinned and core memories, open threads and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0; older memories come up when they matter. Every few messages Hive looks over what you said and proposes what's worth keeping; nothing it notices is used until you say yes.</p>
             </div>
-            <div class="card hud mt review hidden" id="m-review"><h3>HIVE NOTICED<small class="dim sm mono">nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist mt"></div></div>
-            <div class="card hud mt"><div class="row"><h3 class="flex">PROFILE</h3><select id="m-hist" class="hidden" aria-label="Earlier profiles"></select></div><div id="m-profile" class="b mt"></div></div>
+            <div class="card hud mt review hidden" id="m-review"><h3>Hive noticed<small class="dim sm mono">nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist mt"></div></div>
+            <div class="card hud mt"><div class="row"><h3 class="flex">Profile</h3><select id="m-hist" class="hidden" aria-label="Earlier profiles"></select></div><div id="m-profile" class="b mt"></div></div>
           </div>
           <div id="mt-mem" class="mtp hidden">
-            <div class="card hud mt"><h3>MEMORIES</h3>
+            <div class="card hud mt"><h3>Memories</h3>
               <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><select id="m-kind" aria-label="Kind"><option value="">auto</option></select><button class="ghost" id="m-add">Remember</button></div>
               <div class="chips mt" id="m-chips"></div>
               <div id="m-mem" class="mlist mems mt"></div>
               <div class="row mt"><label class="mtg"><span>Keep what Hive notices without asking</span><input type="checkbox" id="m-trust" class="tg"></label><span class="flex"></span><button class="ghost sm" id="m-notice" title="Have Hive look over your recent chats for anything worth keeping, now">Look over recent chats</button></div></div>
-            <div class="card hud mt"><h3>OPEN THREADS<small class="dim sm mono">things you started or said you'd do · Hive follows up when it fits</small></h3>
+            <div class="card hud mt"><h3>Open threads<small class="dim sm mono">things you started or said you'd do · Hive follows up when it fits</small></h3>
               <div class="own"><input id="m-tnew" placeholder="Something you're in the middle of…"><button class="ghost" id="m-tadd">Add</button></div>
               <div id="m-threads" class="mlist mt"></div>
               <details class="mt" id="m-tdone"><summary class="dim sm">Finished and dropped</summary><div id="m-tclosed" class="mlist mt"></div></details></div>
           </div>
           <div id="mt-time" class="mtp hidden">
-            <div class="card hud mt"><div class="row"><h3 class="flex">RHYTHM</h3><span class="dim sm mono" id="m-streak"></span></div>
+            <div class="card hud mt"><div class="row"><h3 class="flex">Rhythm</h3><span class="dim sm mono" id="m-streak"></span></div>
               <div class="cal mt" id="m-cal" aria-label="Activity over the last 26 weeks"></div>
               <h4 class="mt">WHEN YOU WORK<small class="dim"> · your local time</small></h4><div class="wgrid mt" id="m-grid"></div>
               <div class="kbars mt" id="m-kbars"></div></div>
-            <div class="card hud mt"><div class="row"><h3 class="flex">ACTIVITY</h3><select id="m-akind" aria-label="Show"><option value="">everything</option></select></div><div id="m-act" class="mlist mt"></div>
+            <div class="card hud mt"><div class="row"><h3 class="flex">Activity</h3><select id="m-akind" aria-label="Show"><option value="">everything</option></select></div><div id="m-act" class="mlist mt"></div>
               <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
           </div>
           <div id="mt-gen" class="mtp hidden">
@@ -213,12 +211,12 @@
               <div class="health hidden" id="g-health"></div>
               <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
             </div>
-            <div class="card hud mt"><h3>LESSONS</h3>
+            <div class="card hud mt"><h3>Lessons</h3>
               <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="ghost" id="g-add">Teach</button></div>
               <div id="g-lessons" class="mlist mt"></div>
               <details class="mt" id="g-retd"><summary class="dim sm">Retired lessons</summary><div id="g-retired" class="mlist mt"></div></details></div>
-            <div class="card hud mt"><h3>IDEAS<small class="dim sm mono" style="margin-left:8px;letter-spacing:.06em">what it wants to become</small></h3><div id="g-ideas" class="mlist mt"></div></div>
-            <div class="card hud mt"><h3>JOURNAL</h3><div id="g-journal" class="journal mt"></div></div>
+            <div class="card hud mt"><h3>Ideas<small class="dim sm mono" style="margin-left:8px;letter-spacing:.06em">what it wants to become</small></h3><div id="g-ideas" class="mlist mt"></div></div>
+            <div class="card hud mt"><h3>Journal</h3><div id="g-journal" class="journal mt"></div></div>
           </div>
         </div>
       </div>
@@ -231,7 +229,7 @@
   <div class="vtop"><span class="vchip"><i class="led ok" id="vled"></i><span id="vmodel">VOICE LINK</span></span><span class="vchip" id="vlat"></span><span class="flex"></span><button class="icon" id="vset" aria-label="Voice settings" title="Settings">⚙</button><button class="icon" id="vx" aria-label="End voice link" title="End">✕</button></div>
   <video id="cam" playsinline muted class="hidden" aria-label="Your camera"></video>
   <div id="orb" aria-label="Tap to interrupt"></div>
-  <div class="vcap"><p id="vstate">Listening…</p><p id="vtext"></p><p class="vhint" id="vhint">tap the core to interrupt</p></div>
+  <div class="vcap"><p id="vstate">Listening…</p><p id="vtext"></p><p class="vhint" id="vhint">tap to interrupt</p></div>
   <div class="vdock">
     <button class="vbtn" id="vcam" aria-pressed="false" title="Show the model your camera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>CAMERA</span></button>
     <button class="vbtn hidden" id="vflip" title="Switch camera"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0114-3l2 2M20 15a8 8 0 01-14 3l-2-2M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>FLIP</span></button>
@@ -245,7 +243,7 @@
 <dialog id="cmdk" aria-label="Command palette"><input id="cq" placeholder="Type a command or a model name…" autocomplete="off"><div id="clist" role="listbox"></div><p class="dim sm mono">↑↓ choose · ⏎ run · esc close</p></dialog>
 <dialog id="dlg"><div class="row"><h3 id="dt" style="flex:1"></h3><button class="ghost" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
 <dialog id="sdlg" class="settings" aria-label="Settings">
-  <div class="row"><h3 style="flex:1">SETTINGS</h3><button class="icon" onclick="sdlg.close()" aria-label="Close">✕</button></div>
+  <div class="row"><h3 style="flex:1">Settings</h3><button class="icon" onclick="sdlg.close()" aria-label="Close">✕</button></div>
   <section><h4>INTERFACE</h4>
     <label class="opt"><span>Theme</span><select id="s-theme"><option value="dark">Night</option><option value="light">Daylight</option></select></label>
     <label class="opt"><span>Motion effects<small>the drifting field, orbiting core and hive map</small></span><input type="checkbox" id="s-motion" class="tg"></label>
