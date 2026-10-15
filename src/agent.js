@@ -5,7 +5,9 @@
 //   wake   : the container starts, pulls the file from R2 through /api/agent/weights (a one-time token proves it's
 //            ours), loads it into llama.cpp and serves an OpenAI-style API on port 8080.
 //   use    : Hive and any app call /api/agent/v1/chat/completions; requests are proxied into the container.
-//   sleep  : after 20 idle minutes the container is stopped, so it only costs while it's being used.
+//   sleep  : after 20 idle minutes the container is stopped, so it only costs while it's being used, unless the owner
+//            keeps it ALWAYS ON (the default since Oct 2026): then it never sleeps, and the alarm (every minute) and the
+//            15-minute cron bring it back on their own if it stops (a restart, an eviction, a deploy) or hangs loading.
 import { DurableObject } from "cloudflare:workers";
 
 export const AGENT = { name: "MENTIFABER AGENT 1.0", alias: "mentifaber-agent-1.0" };
@@ -13,7 +15,8 @@ export const AGENT_MODELS = { // the largest that fits a standard-4 container (4
   "14b": { label: "Qwen3 14B · Q4_K_M", url: "https://huggingface.co/Qwen/Qwen3-14B-GGUF/resolve/main/Qwen3-14B-Q4_K_M.gguf", size: 9001752960, key: "agent/qwen3-14b-q4_k_m.gguf" },
   "8b": { label: "Qwen3 8B · Q4_K_M", url: "https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf", size: 5027783488, key: "agent/qwen3-8b-q4_k_m.gguf" },
 };
-const IDLE = 20 * 60e3, READY_WAIT = 240e3, PUBLIC_DAY = 40, REPLY_MIN = 1024;
+const IDLE = 20 * 60e3, READY_WAIT = 240e3, PUBLIC_DAY = 40, REPLY_MIN = 1024, STUCK = 15 * 60e3;
+const alwaysOn = (st) => st.always !== false; // on unless the owner turned it off
 // How much conversation the model can hold: whatever the 12 GiB container has left after the weights. The memory per
 // token is halved by keeping it 8-bit (q8_0), so Qwen3 14B gets 16K tokens and 8B the full 32K.
 export const ctxFor = (size) => Math.max(4096, Math.min(32768, Math.floor((10.6e9 - size) / 87e3 / 2048) * 2048));
@@ -34,6 +37,7 @@ export class Agent extends DurableObject {
     if (run && !this.ready) try { const r = await this.port().fetch("http://agent/health"); this.ready = r.ok; } catch (e) {}
     return { name: AGENT.name, model: st.meta ? { ...st.meta, ctx: this.nctx || ctxFor(st.meta.size) } : null, public: this.env.AGENT_PUBLIC !== "0", container: !!this.box,
       state: !st.meta ? "empty" : !run ? "asleep" : this.ready ? "online" : "waking", idleMin: this.last ? Math.round((Date.now() - this.last) / 60e3) : null, error: this.err || null,
+      always: alwaysOn(st), upSince: run && this.upAt ? this.upAt : null, restarts: st.heals || 0, healed: this.healed || null,
       seed: s && !s.done ? { label: s.label, done: Math.min(s.size, s.next * this.part()), size: s.size, error: s.error || null } : null };
   }
 
@@ -44,7 +48,13 @@ export class Agent extends DurableObject {
     if (p === "/status") return J(await this.status());
     if (p === "/seed") { if (!owner) return J({ error: "only the owner can load a model" }, 401); return this.seedStart(await req.json().catch(() => ({}))); }
     if (p === "/wake") { if (!owner) return J({ error: "only the owner can wake the agent" }, 401); try { await this.boot(); } catch (e) { return J({ error: e.message }, 400); } return J(await this.status()); }
-    if (p === "/sleep") { if (!owner) return J({ error: "only the owner can put the agent to sleep" }, 401); await this.stop(); return J(await this.status()); }
+    if (p === "/sleep") { if (!owner) return J({ error: "only the owner can put the agent to sleep" }, 401); const st = await this.st(); if (alwaysOn(st)) { st.always = false; await this.save(st); } await this.stop(); return J(await this.status()); }
+    if (p === "/always") { // keep it running around the clock (or let it sleep when idle again)
+      if (!owner) return J({ error: "only the owner can change that" }, 401); const b = await req.json().catch(() => ({})), st = await this.st(); st.always = b.on !== false; await this.save(st);
+      if (st.always && st.meta) { try { await this.boot(); } catch (e) { return J({ error: e.message }, 400); } } else this.touch();
+      await this.ctx.storage.setAlarm(Date.now() + 1000); return J(await this.status());
+    }
+    if (p === "/keep") { await this.keep(); return J(await this.status()); } // the cron's nudge: only does anything while it's always on
     if (p === "/v1/models") { const st = await this.st(); return J({ object: "list", data: st.meta ? [{ id: AGENT.alias, object: "model", owned_by: "mentifaber", description: AGENT.name + " · " + st.meta.label }] : [] }); }
     if (p === "/v1/chat/completions") return this.chat(req, owner);
     return J({ error: "not found" }, 404);
@@ -58,6 +68,7 @@ export class Agent extends DurableObject {
     if (!this.box.running) {
       this.ready = false; this.err = null;
       this.nctx = 0; // asked from the server once it's up (it may hold less than requested)
+      this.upAt = Date.now();
       this.box.start({ enableInternet: true, env: { MODEL_URL: st.origin + "/api/agent/weights?t=" + (await this.token()), MODEL_SIZE: String(st.meta.size), CTX: String(ctxFor(st.meta.size)), THREADS: "4", ALIAS: AGENT.alias } });
       this.box.monitor().then(() => { this.ready = false; }).catch((e) => { this.ready = false; this.err = String(e && e.message || e).slice(0, 200); });
     }
@@ -192,11 +203,26 @@ export class Agent extends DurableObject {
       await this.save(st); return !s.error;
     }
   }
+  // always on: running, and not stuck loading. Anything else is put right: a stopped container (a restart, an eviction,
+  // a deploy) is started again, and one that hasn't answered /health STUCK after starting is started over
+  async keep() {
+    const st = await this.st(); if (!alwaysOn(st) || !st.meta || !this.box || !st.origin) return false;
+    if (this.box.running && !this.ready) { try { this.ready = (await this.port().fetch("http://agent/health")).ok; } catch (e) {} } // still loading, or loaded with nobody asking yet
+    if (this.box.running && !this.ready && this.upAt && Date.now() - this.upAt > STUCK && !this.busy) { this.healed = { why: "it hung while loading its model, so it was started over", at: Date.now() }; await this.stop(); }
+    if (this.box.running && this.ready && !this.busy && Date.now() - (this._pinged || 0) > 5 * 60e3) { // a health check now and then; two misses in a row and it's restarted
+      this._pinged = Date.now(); let ok = false; try { ok = (await this.port().fetch("http://agent/health")).ok; } catch (e) {}
+      this.misses = ok ? 0 : (this.misses || 0) + 1; if (this.misses >= 2) { this.healed = { why: "it stopped answering, so it was restarted", at: Date.now() }; this.misses = 0; await this.stop(); }
+    }
+    if (!this.box.running) { if (!this.healed || Date.now() - this.healed.at > 5e3) this.healed = { why: "it had stopped, so it was started again", at: Date.now() };
+      try { await this.boot(); st.heals = (st.heals || 0) + 1; await this.save(st); } catch (e) { this.err = String(e.message || e).slice(0, 200); } }
+    if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 60e3);
+    return true;
+  }
   async alarm() {
-    const more = await this.seedStep();
-    if (this.box && this.box.running && this.last && Date.now() - this.last > IDLE && !this.busy) await this.stop(); // asleep after 20 idle minutes (never mid-reply)
+    const more = await this.seedStep(), always = await this.keep().catch(() => false);
+    if (!always && this.box && this.box.running && this.last && Date.now() - this.last > IDLE && !this.busy) await this.stop(); // asleep after 20 idle minutes (never mid-reply)
     if (this.box && this.box.running && !this.last) this.last = Date.now(); // woke up after an eviction: start the idle clock
     if (more) await this.ctx.storage.setAlarm(Date.now() + 500);
-    else if (this.box && this.box.running) await this.ctx.storage.setAlarm(Date.now() + 60e3);
+    else if (always || (this.box && this.box.running)) await this.ctx.storage.setAlarm(Date.now() + 60e3);
   }
 }

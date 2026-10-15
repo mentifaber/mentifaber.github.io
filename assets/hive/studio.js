@@ -551,22 +551,26 @@ const Agent = {
     let st; try { st = await (await fetch("/api/agent/status", { cache: "no-store" })).json(); } catch (e) { st = null; }
     const el = $("agentp"); if (!st || st.error === "the agent isn't deployed") { el.innerHTML = "<div class='ah'><h3>MENTIFABER AGENT 1.0<small>not deployed on this site yet</small></h3></div>"; return; }
     const led = { online: "ok", waking: "warn", asleep: "", empty: "" }[st.state] || "", seed = st.seed;
-    el.innerHTML = "<div class='ah'><i class='led " + led + "'></i><h3>MENTIFABER AGENT 1.0<small>" + (st.model ? esc(st.model.label) + " · " + gb(st.model.size) + " in R2" : "no model in R2 yet") + "</small></h3><span class='st " + (st.state === "online" ? "working" : st.state === "waking" ? "paused" : "") + "'>" + esc(st.state === "empty" ? "no model" : st.state) + "</span></div>" +
+    el.innerHTML = "<div class='ah'><i class='led " + led + "'></i><h3>MENTIFABER AGENT 1.0<small>" + (st.model ? esc(st.model.label) + " · " + gb(st.model.size) + " in R2" : "no model in R2 yet") + "</small></h3>" + (st.model ? "<label class='mtg' title='Keep it running around the clock; it restarts itself if it ever stops'><span>Always on</span><input type='checkbox' class='tg' data-ag='always'" + (st.always ? " checked" : "") + "></label>" : "") + "<span class='st " + (st.state === "online" ? "working" : st.state === "waking" ? "paused" : "") + "'>" + esc(st.state === "empty" ? "no model" : st.state) + "</span></div>" +
       (seed ? "<div class='prog'><div class='bar'><i style='width:" + (100 * seed.done / seed.size).toFixed(1) + "%'></i></div><p>" + (seed.error ? "⚠ " + esc(seed.error) : "copying " + esc(seed.label) + " into your R2 · " + gb(seed.done) + " of " + gb(seed.size)) + "</p></div>" : "") +
-      "<div class='facts'><div>RUNS ON<b>your domain</b></div><div>STORED IN<b>R2 · mentifaber-models</b></div><div>CONTAINER<b>4 vCPU · 12 GiB</b></div><div>SLEEPS AFTER<b>20 idle min</b></div>" + (st.model && st.model.ctx ? "<div>MEMORY<b>" + Math.round(st.model.ctx / 1024) + "K tokens</b></div>" : "") + "</div>" +
+      "<div class='facts'><div>RUNS ON<b>your domain</b></div><div>STORED IN<b>R2 · mentifaber-models</b></div><div>CONTAINER<b>4 vCPU · 12 GiB</b></div>" + (st.always ? "<div>RUNS<b>24/7 · always on</b></div>" + (st.upSince ? "<div>UP SINCE<b>" + esc(new Date(st.upSince).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) + "</b></div>" : "") + (st.restarts ? "<div>SELF-RESTARTS<b>" + st.restarts + "</b></div>" : "") : "<div>SLEEPS AFTER<b>20 idle min</b></div>") + (st.model && st.model.ctx ? "<div>MEMORY<b>" + Math.round(st.model.ctx / 1024) + "K tokens</b></div>" : "") + "</div>" +
       "<div class='ab'>" + (st.model ? (st.state === "asleep" ? "<button class='pri' data-ag='wake'>Wake</button>" : st.state !== "empty" ? "<button class='ghost' data-ag='sleep'>Sleep now</button>" : "") : "") +
       (!seed || seed.error ? "<button class='" + (st.model ? "ghost" : "pri") + "' data-ag='seed' data-m='14b'>Load Qwen3 14B · 9.0 GB · 16K memory (smartest)</button><button class='ghost' data-ag='seed' data-m='8b'>Load Qwen3 8B · 5.0 GB · 32K memory (2× faster)</button>" : "") + "</div>" +
       (!seed || seed.error ? "<div class='own'><input id='ag-url' placeholder='or your own model: https://…/model.gguf (up to 11 GB)'><button class='ghost' data-ag='seed-url'>Load</button></div>" : "") +
       (st.error ? "<p class='dim sm' style='color:var(--bad)'>" + esc(st.error) + "</p>" : "") +
+      (st.always && st.healed ? "<p class='dim sm'>Last self-restart, " + esc(new Date(st.healed.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) + ": " + esc(st.healed.why) + ".</p>" : "") +
       "<p class='dim sm'>It appears as the first model in the Studio picker, joins your councils and swarms, works in voice, and any page can use it: <code>&lt;script src=\"/assets/agent.js\"&gt;</code> then <code>MentifaberAgent.chat(…)</code>.</p>";
     clearTimeout(Agent.timer); if ((seed && !seed.error) || st.state === "waking") Agent.timer = setTimeout(() => !$("v-keys").classList.contains("hidden") && Agent.draw(), 3000);
   },
 };
 $("agentp").onclick = async (e) => {
-  const b = e.target.closest("[data-ag]"); if (!b) return; const a = b.dataset.ag; b.disabled = true;
+  const b = e.target.closest("[data-ag]"); if (!b) return; const a = b.dataset.ag;
+  if (a === "sleep" && b.closest("#agentp").querySelector("[data-ag='always']:checked") && !confirm("Put it to sleep? That also turns Always on off: it will sleep after 20 idle minutes until you turn it back on.")) return;
+  b.disabled = true;
   const post = (p, body) => fetch("/api/agent/" + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }).then((r) => r.json());
-  const j = a === "seed" ? await post("seed", { model: b.dataset.m }) : a === "seed-url" ? await post("seed", { url: $("ag-url").value.trim() }) : await post(a);
+  const j = a === "seed" ? await post("seed", { model: b.dataset.m }) : a === "seed-url" ? await post("seed", { url: $("ag-url").value.trim() }) : a === "always" ? await post("always", { on: b.checked }) : await post(a);
   if (j.error) toast(j.error, 5000); else if (a === "wake") toast("Waking: the model loads from R2 in a minute or two", 5000); else if (a.startsWith("seed")) toast("Copying the model into your R2…", 4000);
+  else if (a === "always") toast(j.always ? "Always on: it runs around the clock and restarts itself if it ever stops" : "It sleeps after 20 idle minutes again", 5000);
   Agent.draw(); loadModels();
 };
 
