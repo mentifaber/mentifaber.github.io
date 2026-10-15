@@ -77,6 +77,21 @@ const ACT = "build|make|create|write|draft|fix|add|remove|delete|rename|change|u
 export const directive = (t) => { t = String(t || "").trim(); return t.length > 3 && !/\?\s*$/.test(t) && new RegExp("^(?:(?:hey\\s+)?(?:genesis|hive)[,:]?\\s+)?(?:(?:please|pls|now|ok(?:ay)?|go(?: ahead)?(?: and)?|can you|could you|i need you to|i want you to)[,]?\\s+)*(?:" + ACT + ")\\b", "i").test(t); };
 const clean = (t) => String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*<\/think>/i, "").trim(); // its thinking isn't the work
 
+// The team's source files under an assembled result, for reference: every approved code block of some size, once each, under
+// the task it came from. None is marked to run, so the runner keeps to the assembled file.
+export function teamFiles(rows) {
+  const seen = new Set(), parts = []; let room = 60000;
+  for (const r of rows) {
+    if (!/^(coder|optimizer|tester|security|designer|architect)$/.test(r.role)) continue;
+    for (const m of String(r.output || "").matchAll(/```([^\n]*)\n([\s\S]*?)```/g)) {
+      const code = m[2].replace(/\s+$/, ""), k = code.replace(/\s+/g, " ").slice(0, 400); if (code.length < 300 || seen.has(k) || code.length > room) continue; seen.add(k);
+      const block = "#### From #" + r.id + " " + r.role + ": " + r.title.slice(0, 90) + "\n\n```" + m[1].replace(/\brun\b/g, "").trim() + "\n" + code + "\n```"; parts.push(block); room -= block.length;
+      if (parts.length >= 14) break;
+    }
+    if (parts.length >= 14 || room < 300) break;
+  }
+  return parts.length ? "\n\n## The team's source files\n\n_As the team wrote and approved them. The Run it file above is the assembled, working version; these are for reference, and for building it into a real system._\n\n" + parts.join("\n\n") : "";
+}
 export class Hive extends DurableObject {
   sql() {
     const q = this.ctx.storage.sql;
@@ -198,14 +213,23 @@ export class Hive extends DurableObject {
       if (p.calls >= cap + 25) return J({ error: "this mission has used its call budget" }, 429);
       const mode = b.mode === "demo" ? "demo" : "fix", lang = /^(html|python|js)$/.test(b.lang) ? b.lang : "html", code = String(b.code || "").slice(0, 150000), errors = (Array.isArray(b.errors) ? b.errors : []).map((x) => String(x).slice(0, 600)).slice(0, 30).join("\n");
       if (mode === "fix" && (!code || !errors)) return J({ error: "send the code and what went wrong" }, 400);
-      const fixer = [...this.agentsFor(p.id, "integrator"), ...this.agentsFor(p.id, "coder"), ...this.agentsFor(p.id, "architect")].sort((x, y) => this.rank(x.model) - this.rank(y.model) || (y.score || 0) - (x.score || 0))[0]
-        || (this.env.AI && !(await this.resting()) ? { id: "fixer", src: "workers-ai", model: "@cf/openai/gpt-oss-120b", name: "GPT-OSS 120B" } : null);
-      if (!fixer) return J({ error: "no model is free to fix it right now" }, 503);
+      // the strongest models free on the mission, best first (small ones only if that's all there is), and Workers AI's
+      // GPT-OSS 120B as a stand-by: one that fails or can't take the size hands it to the next
+      const pool = new Map(); for (const r of ["integrator", "coder", "architect"]) for (const x of this.agentsFor(p.id, r)) pool.set(x.id, x);
+      const bigs = (this._tooBig && this._tooBig[p.id]) || new Set(), byRank = [...pool.values()].filter((x) => !bigs.has(x.id)).sort((x, y) => this.rank(x.model) - this.rank(y.model) || (y.score || 0) - (x.score || 0));
+      const fixers = [...byRank.filter((x) => this.rank(x.model) < 7), ...byRank.filter((x) => this.rank(x.model) >= 7)].slice(0, 3);
+      if (this.env.AI && !(await this.resting()) && !fixers.some((x) => x.model === "@cf/openai/gpt-oss-120b")) fixers.push({ id: "fixer", src: "workers-ai", model: "@cf/openai/gpt-oss-120b", name: "GPT-OSS 120B" });
+      if (!fixers.length) return J({ error: "no model is free to fix it right now" }, 503);
       const sys = mode === "fix" ? "You are fixing a runnable result that failed when it ran in a browser sandbox (no network except CDNs; storage works but doesn't persist). Return the COMPLETE corrected file as ONE ```" + lang + " run block and nothing else. Keep everything that works; fix exactly what the errors show, and anything that would obviously fail next. No placeholders, no TODOs."
         : "This result has nothing anyone can run. Make it runnable: return ONE block he can run as-is and nothing else: either a complete self-contained HTML page (```html run, inline CSS and JS, external scripts only from a CDN) that shows it working in the browser, with in-page fakes for any server, API or hardware and realistic sample data; or, for data or algorithm work better shown as a program, a Python program (```python run) that runs as-is with sample input and prints its results. Make it genuinely work, not a mock-up of a UI.";
       const user = "BRIEF:\n" + p.brief.slice(0, 6000) + (mode === "fix" ? "\n\nTHE FILE (" + lang + "):\n```" + lang + "\n" + code + "\n```\n\nWHAT HAPPENED WHEN IT RAN:\n" + errors : "\n\nTHE RESULT:\n" + p.final.slice(0, 40000));
-      const out = await this.call(p, fixer, sys, user, 8000).catch((e) => { this.say(p.id, "hive", "error", "fix failed: " + String(e.message || e).slice(0, 160)); return ""; });
-      const m = /```(html|python|py|js|javascript)[^\n]*\n([\s\S]*?)```/i.exec(out || ""); if (!m || m[2].trim().length < 40) return J({ error: "the fix didn't come back as a runnable file; try again" }, 502);
+      let m = null, fixer = null;
+      for (const f of fixers) {
+        if (p.calls >= cap + 25) break; fixer = f;
+        const out = await this.call(p, f, sys, user, 8000).catch((e) => { this.say(p.id, "hive", "error", "fix failed: " + String(e.message || e).slice(0, 160)); return ""; }); p.calls++;
+        m = /```(html|python|py|js|javascript)[^\n]*\n([\s\S]*?)```/i.exec(out || ""); if (m && m[2].trim().length >= 40) break; m = null;
+      }
+      if (!m) return J({ error: "the fix didn't come back as a runnable file; try again" }, 502);
       const nl = /^py/i.test(m[1]) ? "python" : /^j/i.test(m[1]) ? "js" : "html", block = "```" + nl + " run\n" + m[2].replace(/\s+$/, "") + "\n```";
       let fin = p.final, i = mode === "fix" ? fin.indexOf(code.trim()) : -1;
       if (i >= 0) { const a = fin.lastIndexOf("```", i), z = fin.indexOf("```", i + code.trim().length); if (a >= 0 && z > a) fin = fin.slice(0, a) + block + fin.slice(z + 3); else fin = "## Run it\n\n" + block + "\n\n" + fin; }
@@ -341,10 +365,14 @@ export class Hive extends DurableObject {
         return null;
       }
       // why it failed decides when it tries again: never (it can't chat), in hours (no credit), in a minute (busy), or in ten
-      const never = /not support chat|chat\/completions endpoint|cannot be used with|terms acceptance|does not exist|not.?found|no access|not allowed|unsupported|decommission|deprecated|reduce the length/i.test(msg) || [404].includes(e && e.status);
-      const broke = !never && /credit|billing|balance|insufficient|payment|quota exceeded|exceeded your current quota/i.test(msg);
-      const busy = !never && !broke && /429|rate.?limit|too many|overloaded|capacity|timeout|timed out|503|502/i.test(msg);
-      const wait = never ? "" : broke ? " (no credit; trying again in 6 hours)" : busy ? " (busy; retrying in a minute)" : " (retrying in 10 minutes)";
+      // too much to read in one go (a context window, or a per-minute token cap smaller than the prompt): not a reason to
+      // bench it for hours; it's noted so the big jobs (assembling the result) skip it, and it's back for small ones in a minute
+      const big = /request too large|too large for model|context.?length|context window|maximum context|too many (input )?tokens|prompt is too long|reduce the length|input is too long|tokens per minute|\bTPM\b/i.test(msg);
+      if (big) { this._tooBig = this._tooBig || {}; (this._tooBig[p.id] = this._tooBig[p.id] || new Set()).add(a.id); }
+      const never = !big && (/not support chat|chat\/completions endpoint|cannot be used with|terms acceptance|does not exist|not.?found|no access|not allowed|unsupported|decommission|deprecated/i.test(msg) || [404].includes(e && e.status));
+      const broke = !big && !never && /credit|billing|balance|insufficient|payment|quota exceeded|exceeded your current quota/i.test(msg);
+      const busy = big || (!never && !broke && /429|rate.?limit|too many|overloaded|capacity|timeout|timed out|503|502/i.test(msg));
+      const wait = never ? "" : broke ? " (no credit; trying again in 6 hours)" : big ? " (too much for it to read at once; it stays on smaller jobs)" : busy ? " (busy; retrying in a minute)" : " (retrying in 10 minutes)";
       q.exec("UPDATE agent SET status=?, task=NULL, last=?, err=? WHERE id=? AND pid=?", never ? "retired" : "offline", Date.now() + (broke ? 6 * 3600e3 - 600e3 : busy ? -540e3 : 0), msg.slice(0, 200), a.id, p.id);
       if (a.err !== msg.slice(0, 200)) this.say(p.id, a.name, never ? "retired" : "offline", msg.slice(0, 200) + (never ? " (this model can't do this job; it leaves the swarm)" : wait)); // same error again: don't repeat it in the feed
       return null;
@@ -422,37 +450,49 @@ export class Hive extends DurableObject {
     const left = q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c, total = q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c;
     if (total && !left && p.status !== "integrating") {
       q.exec("UPDATE proj SET status='integrating' WHERE id=?", p.id);
-      this._igTried = this._igTried || {}; const tried = (this._igTried[p.id] = this._igTried[p.id] || new Set());
+      this._igTried = this._igTried || {}; const tried = (this._igTried[p.id] = this._igTried[p.id] || new Set()), tooBig = (this._tooBig && this._tooBig[p.id]) || new Set();
       const rows = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray();
       const stitch = () => { // nobody could assemble it: hand over everything the swarm approved, in order
-        const t = "# " + p.title + "\n\n_The integrators couldn't finish, so here is every approved piece of work in order._\n\n" + rows.map((r) => "## #" + r.id + " " + r.role + ": " + r.title + "\n\n" + r.output).join("\n\n---\n\n");
+        const t = "# " + p.title + "\n\n_The integrators couldn't finish, so here is every approved piece of work in order. In the Run tab, Make it runnable turns it into something that runs._\n\n" + rows.map((r) => "## #" + r.id + " " + r.role + ": " + r.title + "\n\n" + r.output).join("\n\n---\n\n");
         q.exec("UPDATE proj SET status='done', final=? WHERE id=?", t.slice(0, 200000), p.id); this.say(p.id, "hive", "done", "put together the approved work as the result (" + t.length + " chars)"); delete this._igTried[p.id];
       };
-      const ig = [...new Map([...this.agentsFor(p.id, "integrator"), ...this.agentsFor(p.id, "coder"), ...this.agentsFor(p.id, "writer"), ...this.agentsFor(p.id, "architect")].map((a) => [a.id, a])).values()]
-        .sort((x, y) => this.rank(x.model) - this.rank(y.model) || (y.score || 0) - (x.score || 0)).find((a) => !tried.has(a.id)); // the strongest available model assembles
-      if (!ig || tried.size >= 3) { stitch(); return; }
+      // who assembles it: the strongest model free on the mission (integrators first among equals), never one that's already
+      // tried; small models only when nothing better is there. Up to four tries before the stitched fallback.
+      const pool = new Map(); for (const r of ["integrator", "coder", "architect", "writer"]) for (const x of this.agentsFor(p.id, r)) pool.set(x.id, x);
+      for (const x of q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx(), p.id).toArray()) if (!pool.has(x.id)) pool.set(x.id, x);
+      const isIg = (x) => (JSON.parse(x.roles || "[]").includes("integrator") ? 0 : 1);
+      const free = [...pool.values()].filter((x) => !tried.has(x.id) && !tooBig.has(x.id)).sort((x, y) => this.rank(x.model) - this.rank(y.model) || isIg(x) - isIg(y) || (y.score || 0) - (x.score || 0));
+      const ig = free.find((x) => this.rank(x.model) < 7) || free[0];
+      if (!ig || tried.size >= 4) { stitch(); return; }
       tried.add(ig.id);
-      const all = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.role + ": " + r.title + "\n" + r.output.slice(0, 9000)).join("\n\n").slice(0, 60000);
+      // what it reads: everything, unless a model already choked on the size; then the code and the gist of the prose
+      const room = tooBig.size ? 18000 : 56000, head = (r) => "#" + r.id + " " + r.role + ": " + r.title + "\n";
+      const squeeze = (t, n) => { if (t.length <= n) return t; const code = (t.match(/```[\s\S]*?```/g) || []).join("\n"), prose = t.replace(/```[\s\S]*?```/g, " ").replace(/\n{3,}/g, "\n\n").trim(), g = prose.slice(0, 700) + (code ? "\n" + code : ""); return g.length <= n ? g : g.slice(0, n) + "\n…(cut for length)"; };
+      let all = rows.map((r) => head(r) + r.output.slice(0, 9000)).join("\n\n");
+      if (all.length > room) { const per = Math.max(1200, Math.floor(room / Math.max(1, rows.length)) - 60); all = rows.map((r) => head(r) + squeeze(r.output, per)).join("\n\n").slice(0, room); }
       const open = q.exec("SELECT id,title,note FROM task WHERE pid=? AND note LIKE 'UNRESOLVED:%' ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.title + ": " + r.note.slice(12, 700)).join("\n");
-      let out = await this.call(p, ig, SYS("integrator") + " Deliver the whole thing, not a summary or an outline of it. Make it runnable: start with '## Run it' and ONE block he can run as-is. For anything a browser can show (apps, games, tools, visualisations, simulations, dashboards; and server, library or hardware code, demonstrated in a page with in-page fakes for the server, APIs or devices and realistic sample data), that's ONE complete self-contained HTML file in a ```html run block (inline CSS and JS; external scripts only from a CDN). For data or algorithm work better shown as a program, a Python program in a ```python run block that runs as-is with sample input and prints its results (standard library, or numpy/pandas/matplotlib). Then the rest: each further source file as its own block opening with its file name (```js file=worker.js), and short notes. A finished document with nothing to run is delivered in Markdown." +
-        " If it is a physical design (a building, floor plan, room, site, product, machine, circuit), the deliverable must include the drawings as inline SVG (plans, elevations, diagrams) drawn to a stated scale with labelled dimensions, and every number must agree: areas equal length × width, parts fit inside the footprint, counts and totals add up; where the team's numbers conflict, pick consistent ones and say so. Fix the reviewers' open points below. Start with the deliverable itself: no preamble.",
-        "BRIEF:\n" + p.brief + "\n\nALL APPROVED WORK:\n" + all + (open ? "\n\nREVIEWERS' OPEN POINTS (fix these in the final):\n" + open.slice(0, 8000) : ""), 8000);
-      if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; }
-      out = out.replace(/^\s*(here(?:'s| is| are)|below is|sure|okay|certainly)[^\n]{0,200}\n+(?=```)/i, ""); // "Here is the complete file:" adds nothing
-      // a big build runs past one reply's limit (a thinking model spends part of it thinking) and stops mid-code: rather than
-      // throwing the draft away for another integrator who'll hit the same wall, the same one carries on where it stopped
+      // one focused job: the single file that runs, plus a few lines of notes. The team's other files are attached to the result
+      // afterwards (no model call), so a reply never has to carry the whole project and run past its length limit
+      let out = await this.call(p, ig, SYS("integrator") + " Assemble the team's approved work into the finished deliverable. If it is software or anything a browser can show (apps, games, tools, visualisations, simulations, dashboards; and server, library or hardware code, demonstrated in a page with in-page fakes for the server, APIs or devices and realistic sample data), reply with '## Run it' and ONE complete file he can run as-is: a self-contained HTML page in a ```html run block (inline CSS and JS; external scripts only from a CDN), or, for data or algorithm work better shown as a program, a Python program in a ```python run block that runs with sample input and prints its results (standard library, or numpy/pandas/matplotlib). It must genuinely work: every control wired up, no placeholders, no TODOs, no stubs. Then '## Notes': at most 12 lines on what it does, how to use it and what is simulated. Don't repeat the team's other source files: they're attached below your reply automatically." +
+        " If it is a physical design (a building, floor plan, room, site, product, machine, circuit), the deliverable must include the drawings as inline SVG (plans, elevations, diagrams) drawn to a stated scale with labelled dimensions, and every number must agree: areas equal length × width, parts fit inside the footprint, counts and totals add up; where the team's numbers conflict, pick consistent ones and say so. A finished document with nothing to run (a report, plan or essay) is delivered whole in Markdown instead. Fix the reviewers' open points below. Start with the deliverable itself: no preamble.",
+        "BRIEF:\n" + p.brief + "\n\nTHE TEAM'S APPROVED WORK" + (all.length < rows.reduce((n, r) => n + r.output.length, 0) ? " (trimmed to fit)" : "") + ":\n" + all + (open ? "\n\nREVIEWERS' OPEN POINTS (fix these in the final):\n" + open.slice(0, 6000) : ""), 8000);
+      if (!out) { q.exec("UPDATE proj SET status='working' WHERE id=?", p.id); return; } // the next tick hands it to the next one
+      out = out.replace(/^\s*(here(?:'s| is| are)|below is|sure|okay|certainly)[^\n]{0,200}\n+(?=```|##)/i, ""); // "Here is the complete file:" adds nothing
+      // a big build can still run past one reply's limit (a thinking model spends part of it thinking) and stop mid-code:
+      // rather than throwing the draft away, the same model carries on where it stopped
       for (let more = 0; more < 2 && (out.match(/```/g) || []).length % 2; more++) {
         const rest = await this.call(p, ig, SYS("integrator") + " You were writing the final deliverable and your reply was cut off by its length limit. Continue exactly where it stopped, mid-line if need be: no repetition, no preamble, no summary. Close every code block you open.",
           "BRIEF (context only):\n" + p.brief.slice(0, 3000) + "\n\nTHE END OF WHAT YOU HAVE WRITTEN SO FAR (continue straight after its last character):\n" + out.slice(-5000), 8000);
         if (!rest) break; out += (/\n$/.test(out) || /^\n/.test(rest) ? "" : "\n") + rest; this.say(p.id, ig.name, "work", "the final draft ran past one reply; continued it (" + out.length + " chars so far)");
       }
-      const need = Math.min(2500, Math.round(all.length * 0.2)), fences = (out.match(/```/g) || []).length;
-      if (out.length < need || fences % 2) { // a stub or cut off mid-way: not a deliverable
+      const run = /```(?:html|python|py)\b[^\n]*\brun\b[^\n]*\n([\s\S]*?)```/i.exec(out), fences = (out.match(/```/g) || []).length, need = Math.min(2500, Math.round(all.length * 0.2));
+      if (fences % 2 || (run ? run[1].trim().length < 600 : out.length < need)) { // a stub or cut off mid-way: not a deliverable
         q.exec("UPDATE agent SET score=COALESCE(score,0)-2 WHERE id=? AND pid=?", ig.id, p.id); q.exec("UPDATE proj SET status='working' WHERE id=?", p.id);
-        this.say(p.id, ig.name, "redo", "final draft was " + (fences % 2 ? "cut off" : "too short (" + out.length + " chars)") + "; handing it to another integrator"); return;
+        this.say(p.id, ig.name, "redo", "final draft was " + (fences % 2 ? "cut off" : run ? "a stub (" + run[1].trim().length + " chars of code)" : "too short (" + out.length + " chars)") + "; handing it to another integrator"); return;
       }
       delete this._igTried[p.id];
-      q.exec("UPDATE proj SET status='done', final=? WHERE id=?", out.slice(0, 200000), p.id); this.say(p.id, ig.name, "done", "assembled the final deliverable (" + out.length + " chars)");
+      const fin = out.trim() + (run ? teamFiles(rows) : "");
+      q.exec("UPDATE proj SET status='done', final=? WHERE id=?", fin.slice(0, 200000), p.id); this.say(p.id, ig.name, "done", "assembled the final deliverable (" + out.length + " chars" + (fin.length > out.trim().length ? ", plus the team's source files" : "") + ")");
       return;
     }
     // stuck: nobody can take what's open (no idle agent with that role) → let any idle agent take it next tick
@@ -508,7 +548,11 @@ export class Hive extends DurableObject {
     this._envM = { at: Date.now(), list }; return list;
   }
   rank(id) { // rough strength of a model, by name: lower is stronger
-    const m = String(id).split("|").pop(), R = [/claude.*(opus|sonnet)/i, /gpt-5(?!.*nano)|o3(?!-mini)|o4/i, /gemini-(2\.5-pro|3)/i, /grok-4/i, /deepseek-(r1|v3|chat|reasoner)/i, /gpt-4\.1(?!-nano)|gpt-4o(?!-mini)|mistral-(large|medium)/i, /llama-4|llama-3\.[13]-(70|405)b|qwen3|kimi|gpt-oss-120b|qwq/i, /claude.*haiku|gemini.*flash|gpt-.*mini|command-a/i];
+    // tiers, strongest first. A distilled or small model doesn't pass for its namesake: "deepseek-r1-distill-qwen-32b" once
+    // outranked GPT-OSS 120B and was handed whole builds it couldn't finish
+    const m = String(id).split("|").pop(), R = [/claude.*(opus|sonnet)/i, /gpt-5(?!.*(nano|mini))|o3(?!-mini)/i, /gemini-(2\.5-pro|3)(?!.*(flash|lite))/i, /grok-4(?!.*(mini|fast))/i, /deepseek-(r1(?!-distill)|v3|chat|reasoner)|kimi-k2|qwen3-(235b|480b|coder-480)/i,
+      /gpt-oss-120b|gpt-4\.1(?!-(nano|mini))|gpt-4o(?!-mini)|mistral-(large|medium)|llama-3\.1-405b/i, /llama-4-maverick|llama-3\.[13]-70b|qwen3|kimi|gpt-5.*mini|o[34]-mini|qwen2\.5-coder-32b/i,
+      /llama-4|qwq|deepseek.*distill|claude.*haiku|gemini.*(flash|lite)|gpt-.*mini|command-a|mistral-small|gemma|gpt-oss-20b/i];
     if (m === "mentifaber-agent-1.0") return 5; const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
   }
   sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3; }
@@ -584,12 +628,13 @@ export class Hive extends DurableObject {
     const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
     msgs.forEach((m) => m !== last && (m.images = []));
     const t0 = Date.now(), sources = [], notes = [], tools = [];
-    let mind = ""; // the owner's profile, memories and recent activity ride along with every owner chat
+    let mind = "", mp0 = null; // the owner's profile, memories, open threads and recent activity ride along with every owner chat
     const mindOn = owner && b.mind !== false && (await Mind.state(this)).on, inChat = msgs.filter((m) => m.role === "user").map((m) => m.text), asked = last.text; // asked: his words, before any context is added
     if (mindOn) {
       const r = Mind.heard(last.text); if (r && Mind.remember(this, r, "you")) tools.push("saved to memory");
+      const fg = Mind.forgetHeard(last.text), gone = fg && Mind.forget(this, fg); if (gone) tools.push("forgot: " + gone.slice(0, 70));
       Mind.log(this, b.voice ? "voice" : b.swarm ? "council" : "chat", last.text + (last.images.length ? " [+" + last.images.length + (b.frames ? " video frames" : b.live ? " live camera/screen frame" : " image(s)") + "]" : ""), { model: b.model, web: b.web ? 1 : undefined });
-      mind = await Mind.brief(this, 12000, inChat); Mind.maybeAnalyze(this, new URL(req.url).origin);
+      mp0 = await Mind.parts(this, inChat, asked); mind = (mp0.stable + mp0.recent).slice(0, 12000); Mind.maybeAnalyze(this, new URL(req.url).origin); Mind.maybeNotice(this);
     }
     // Genesis: the owner talks to the mind that lives here, which remembers earlier conversations and learns from them
     const gName = owner ? (await Genesis.self(this)).name : "", lesson = owner && Genesis.taught(last.text);
@@ -644,7 +689,7 @@ export class Hive extends DurableObject {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
     // MENTIFABER AGENT keeps the start of the conversation cached between messages, so for it everything that changes
     // every message (the time, recent activity, gathered material) rides at the end of the newest message instead
-    const local = src === "agent", mp = owner && mind ? await Mind.parts(this, inChat) : { stable: "", recent: "" }, who = owner ? await Genesis.block(this, local ? "mentifaber-agent-1.0" : model.split("/").pop()) : "";
+    const local = src === "agent", mp = owner && mind && mp0 ? mp0 : { stable: "", recent: "" }, who = owner ? await Genesis.block(this, local ? "mentifaber-agent-1.0" : model.split("/").pop()) : "";
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
     const system = (owner ? "You are " + gName + ", the mind that lives in Hive on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Hive, the assistant of Hive on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +

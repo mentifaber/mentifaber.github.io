@@ -21,10 +21,12 @@ function files(text) {
   }
   return out;
 }
-// the one to run: marked "run", else a whole HTML page, else any HTML, else Python, else JavaScript
-function entry(fs) {
+// the one to run: marked "run", else a whole HTML page, else any HTML, else Python, else JavaScript that does something on
+// its own (not a module of exports, Node or Worker code: in a page those run and show nothing). strict: only one marked to run
+const LIBJS = /\bexport\s+(default|async|function|const|let|class|\{)|module\.exports|\brequire\(\s*["']|\bprocess\.(env|argv|exit)|addEventListener\(\s*["']fetch|\benv\.[A-Z_]{2,}|this\.(sql|ctx|env|state)\b|ctx\.storage|from\s+["'](node:|fs["']|path["']|http["']|express["'])/;
+function entry(fs, strict) {
   const by = (f) => fs.find(f);
-  return by((f) => f.run && /^(html|py|js)$/.test(f.lang)) || by((f) => f.lang === "html" && /<!doctype|<html[\s>]/i.test(f.code)) || by((f) => f.lang === "html") || by((f) => f.lang === "py" && !/^\s*(from \w+ import|import \w+)?\s*$/.test(f.code)) || by((f) => f.lang === "js" && !/\b(export default|module\.exports|addEventListener\("fetch"|env\.\w+)\b/.test(f.code)) || null;
+  return by((f) => f.run && /^(html|py|js)$/.test(f.lang)) || (strict ? null : by((f) => f.lang === "html" && /<!doctype|<html[\s>]/i.test(f.code)) || by((f) => f.lang === "html") || by((f) => f.lang === "py" && !/^\s*(from \w+ import|import \w+)?\s*$/.test(f.code)) || by((f) => f.lang === "js" && !LIBJS.test(f.code))) || null;
 }
 // local scripts and styles a page refers to by name are folded in, so a multi-file result runs from one document
 function inline(html, fs) {
@@ -42,22 +44,23 @@ const SHIM = (id) => "<script>(function(){var I=" + JSON.stringify(id) + ",send=
   "['log','info','warn','error','debug'].forEach(function(k){var o=console[k];console[k]=function(){send(k,[].slice.call(arguments).map(fmt).join(' '));return o&&o.apply(console,arguments)}});" +
   "addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href)){send('error','could not load '+(e.target.src||e.target.href));return}send('exception',(e.message||'error')+(e.lineno?' (line '+e.lineno+(e.colno?':'+e.colno:'')+')':''))},true);" +
   "addEventListener('unhandledrejection',function(e){var r=e.reason;send('exception','Unhandled promise rejection: '+(r&&(r.stack||r.message)||r))});" +
-  "addEventListener('load',function(){send('loaded','')})})();</script>";
+  "window.__hiveShape=function(){try{var b=document.body,o=document.getElementById('hive-out');send('shape',JSON.stringify({text:b?(b.innerText||'').trim().length:0,els:b?b.getElementsByTagName('*').length:0,media:document.querySelectorAll('canvas,svg,img,video,iframe,object,embed').length,out:o?o.childNodes.length:-1,py:!!document.getElementById('hive-py')}))}catch(e){}};" +
+  "addEventListener('load',function(){send('loaded','');if(!document.getElementById('hive-py'))setTimeout(window.__hiveShape,1500)})})();</script>";
 function page(f, fs, id) {
   if (f.lang === "html") { let h = inline(f.code, fs); if (!/<html[\s>]|<!doctype/i.test(h)) h = "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body>" + h + "</body></html>";
     return /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, (m) => m + SHIM(id)) : h.replace(/<html[^>]*>/i, (m) => m + "<head>" + SHIM(id) + "</head>"); }
-  const look = "<style>html{color-scheme:dark light}body{margin:0;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;background:#0d0f12;color:#d8dde3;padding:14px}#out{white-space:pre-wrap;word-break:break-word}.err{color:#ff7b72}.dim{color:#7d8590}img{max-width:100%;background:#fff;margin:8px 0}</style>";
-  if (f.lang === "js") return "<!doctype html><html><head><meta charset='utf-8'>" + SHIM(id) + look + "</head><body><div class='dim'>JavaScript · output below and in the console</div><div id='out'></div><script>(function(){var o=document.getElementById('out');['log','info','warn','error'].forEach(function(k){var c=console[k];console[k]=function(){var d=document.createElement('div');if(k==='error')d.className='err';d.textContent=[].slice.call(arguments).map(function(x){return typeof x==='string'?x:JSON.stringify(x)}).join(' ');o.appendChild(d);return c.apply(console,arguments)}})})()</script><script type='module'>\n" + f.code.replace(/<\/script/gi, "<\\/script") + "\n</script></body></html>";
+  const look = "<style>html{color-scheme:dark light}body{margin:0;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;background:#0d0f12;color:#d8dde3;padding:14px}#hive-out{white-space:pre-wrap;word-break:break-word}.err{color:#ff7b72}.dim{color:#7d8590}img{max-width:100%;background:#fff;margin:8px 0}</style>";
+  if (f.lang === "js") return "<!doctype html><html><head><meta charset='utf-8'>" + SHIM(id) + look + "</head><body><div class='dim'>JavaScript · output below and in the console</div><div id='hive-out'></div><script>(function(){var o=document.getElementById('hive-out');['log','info','warn','error'].forEach(function(k){var c=console[k];console[k]=function(){var d=document.createElement('div');if(k==='error')d.className='err';d.textContent=[].slice.call(arguments).map(function(x){return typeof x==='string'?x:JSON.stringify(x)}).join(' ');o.appendChild(d);return c.apply(console,arguments)}})})()</script><script type='module'>\n" + f.code.replace(/<\/script/gi, "<\\/script") + "\n</script></body></html>";
   // Python: Pyodide in the frame; packages it imports (numpy, pandas, matplotlib…) load on demand; matplotlib figures are shown as images
   const py = JSON.stringify(f.code), others = JSON.stringify(fs.filter((x) => x !== f && x.lang === "py").map((x) => [x.name, x.code]));
-  return "<!doctype html><html><head><meta charset='utf-8'>" + SHIM(id) + look + "</head><body><div class='dim' id='st'>Python · loading (first run takes a few seconds)…</div><div id='out'></div>" +
-    "<script src='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js'></script><script>(async function(){var o=document.getElementById('out'),st=document.getElementById('st'),line=function(t,c){var d=document.createElement('div');if(c)d.className=c;d.textContent=t;o.appendChild(d)};" +
+  return "<!doctype html><html><head><meta charset='utf-8'>" + SHIM(id) + look + "</head><body><div class='dim' id='st'>Python · loading (first run takes a few seconds)…</div><div id='hive-out'></div><i id='hive-py' hidden></i>" +
+    "<script src='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js'></script><script>(async function(){var o=document.getElementById('hive-out'),st=document.getElementById('st'),line=function(t,c){var d=document.createElement('div');if(c)d.className=c;d.textContent=t;o.appendChild(d)};" +
     "try{var py=await loadPyodide({stdout:function(s){line(s);console.log(s)},stderr:function(s){line(s,'err');console.warn(s)}});st.textContent='Python · running';" +
     "var files=" + others + ";files.forEach(function(f){try{py.FS.writeFile(f[0],f[1])}catch(e){}});var code=" + py + ";await py.loadPackagesFromImports(code);" +
     "py.runPython(\"import sys\\ntry:\\n import matplotlib\\n matplotlib.use('AGG')\\nexcept Exception: pass\");" +
     "var t0=performance.now();await py.runPythonAsync(code);" +
     "var img=py.runPython(\"import io,base64\\nres=''\\ntry:\\n import matplotlib.pyplot as plt\\n if plt.get_fignums():\\n  b=io.BytesIO(); plt.savefig(b, format='png', bbox_inches='tight'); res=base64.b64encode(b.getvalue()).decode()\\nexcept Exception: pass\\nres\");" +
-    "if(img){var i=document.createElement('img');i.src='data:image/png;base64,'+img;o.appendChild(i)}st.textContent='Python · finished in '+Math.round(performance.now()-t0)+' ms'}" +
+    "if(img){var i=document.createElement('img');i.src='data:image/png;base64,'+img;o.appendChild(i)}st.textContent='Python · finished in '+Math.round(performance.now()-t0)+' ms';window.__hiveShape&&window.__hiveShape()}" +
     "catch(e){st.textContent='Python · stopped with an error';line(String(e.message||e),'err');console.error(String(e.message||e).split('\\n').slice(-3).join('\\n'))}})()</script></body></html>";
 }
 // run f in the frame; onEvent(kind, text) for console lines, errors and "loaded"
