@@ -13,7 +13,7 @@
 // Guardrails: lessons can't touch the safety rules, his own lessons are only his to remove, nothing is ever deleted
 // (only retired, so every step can be seen and undone), and it never claims to have run a check it didn't run.
 import { complete } from "./hive-kit.js";
-import { Mind, queryVec } from "./hive-mind.js";
+import { Mind, queryVec, embedTexts } from "./hive-mind.js";
 import { vigilWatch, vigilBrief } from "./vigil.js";
 import { sendPush, PUSH_HOSTS } from "./push.js";
 import { ingest, trends, worldText, frictionEvents, worldTables } from "./hive-world.js";
@@ -49,6 +49,14 @@ export const CHANGES = [
 // topics the changelog has settled: open ideas on them close by themselves, and new ones are dropped (the model kept
 // re-proposing them in new wording after reading that they were settled)
 const SETTLED = /trailing[- ]?question|question[- ]filter|directive[- ](handler|execution|confirmation|safety|layer|mode|detect)|instruction[- ]detect|concise[- ]response|safety[- ]wrapper|fallback[- ]response[- ]handler|confirmation[- ]safeguard/i;
+// the same idea in other words: four greeting filters and five output validators piled up as "new" ideas, each built
+// again. Wording overlap catches the obvious; meaning (embeddings) catches "Self-Status Suppressor" vs "Greeting-Filter Middleware"
+const SAME_IDEA = 0.86, cosv = (u, v) => { let d = 0, a = 0, b = 0; for (let i = 0; i < u.length; i++) { d += u[i] * v[i]; a += u[i] * u[i]; b += v[i] * v[i]; } return d / (Math.sqrt(a * b) || 1); };
+async function knownIdea(h, title, detail, pool) {
+  const hit = pool.find((p) => alike(p.title, title)); if (hit) return hit;
+  try { const v = await embedTexts(h, [title + ". " + detail, ...pool.map((p) => p.title + ". " + (p.detail || ""))]); if (v) for (let i = 1; i < v.length; i++) if (cosv(v[0], v[i]) >= SAME_IDEA) return pool[i - 1]; } catch (e) {}
+  return null;
+}
 const words = (t) => new Set(String(t || "").toLowerCase().match(/[a-z]{4,}/g) || []), alike = (a, b) => { const x = words(a), y = words(b); let n = 0; for (const w of x) if (y.has(w)) n++; return n / Math.max(1, Math.min(x.size, y.size)) >= 0.6; };
 const ckey = ([at, t]) => at + ":" + t.slice(0, 24), unseen = (s) => CHANGES.filter((c) => !(s.seen || []).includes(ckey(c))); // what it has actually read, not what's newer than its last reflection
 export const fitLesson = (t) => { t = clip(t, 240).replace(/^[-*•\d.)\s]+/, ""); return t.length >= 8 && !UNSAFE.test(t) ? t : null; };
@@ -188,7 +196,7 @@ export const Genesis = {
     const turns = q.exec("SELECT id,ts,model,said,reply,rating,note FROM turn WHERE reply IS NOT NULL AND id > ? ORDER BY id DESC LIMIT 40", s.nAt || 0).toArray().reverse(), builds = this.builtSince(h, s.reflected);
     if (!turns.length && !builds.length && !unseen(s).length) throw new Error("nothing new to reflect on yet: talk to " + s.name + " first");
     const changes = unseen(s);
-    const ls = this.lessons(h), ideas = q.exec("SELECT id,title,status FROM idea WHERE status IN ('open','building') ORDER BY id DESC LIMIT 12").toArray(), last = q.exec("SELECT text FROM journal WHERE kind='reflection' ORDER BY id DESC LIMIT 1").toArray()[0];
+    const ls = this.lessons(h), ideas = q.exec("SELECT id,title,status FROM idea WHERE status IN ('open','building','built') ORDER BY CASE status WHEN 'built' THEN 1 ELSE 0 END, id DESC LIMIT 30").toArray(), last = q.exec("SELECT text FROM journal WHERE kind='reflection' ORDER BY id DESC LIMIT 1").toArray()[0];
     // the habits Anders keeps correcting, counted rather than guessed: closing questions and echoing his message back
     const endLine = (t) => String(t || "").replace(/```[\s\S]*?```/g, " ").trim().split(/\n+/).filter((l) => l.trim()).pop() || "", key = (t) => clip(t, 50).toLowerCase().replace(/[^a-z0-9 ]/g, "");
     const asked = turns.filter((t) => /\?["')\]*_]*\s*$/.test(endLine(t.reply))).length, echoed = turns.filter((t) => key(t.said).length > 12 && key(t.reply).startsWith(key(t.said).slice(0, 30))).length;
@@ -201,7 +209,7 @@ export const Genesis = {
       "Reply ONLY with JSON: {\"journal\": \"3-6 sentences in first person: what happened, what you learned, what you'll do differently\", \"add\": [\"new lesson\", …], \"retire\": [{\"id\": 3, \"why\": \"…\"}], \"ideas\": [{\"title\": \"…\", \"detail\": \"2-4 sentences: what and why\"}], \"close\": [{\"id\": 7, \"why\": \"…\"}]" + (s.auto !== false ? ", \"next_build_hours\": 6, \"next_build_why\": \"…\"" : "") + "}. Use empty lists when there's nothing to change.";
     const user = "YOUR CURRENT LESSONS:\n" + (ls.map((l) => "[" + l.id + "]" + (l.src === "anders" ? "[his] " : " ") + l.text).join("\n") || "(none)") + "\n\n" +
       (changes.length ? "CHANGES TO HIVE SINCE YOUR LAST REFLECTION (made by " + s.creator + " and his engineer; they're live now):\n" + changes.map(([at, t]) => "- " + at.slice(0, 10) + ": " + t).join("\n") + "\n\n" : "") +
-      (ideas.length ? "IDEAS ALREADY ON YOUR LIST (don't repeat them; close open ones the changes cover, by id):\n" + ideas.map((i) => "- [" + i.id + "] " + i.title + " [" + i.status + "]").join("\n") + "\n\n" : "") +
+      (ideas.length ? "IDEAS ALREADY ON YOUR LIST OR ALREADY BUILT (never propose these again or variations of them; if a built one falls short, say so in your journal and propose ONE follow-up that names it; close open ones the changes cover, by id):\n" + ideas.map((i) => "- [" + i.id + "] " + i.title + " [" + i.status + "]").join("\n") + "\n\n" : "") +
       (last ? "YOUR LAST JOURNAL ENTRY:\n" + clip(last.text, 1200) + "\n\n" : "") +
       (builds.length ? "WHAT THE SWARM BUILT FROM YOUR IDEAS SINCE THEN (judge it honestly in your journal: is it what you wanted, is it usable, what's missing; propose a follow-up idea if one is needed):\n" + builds.map((b) => "- \"" + b.title + "\" (" + (b.by_ === "genesis" ? "you started it" : "he started it") + "): " + (b.final ? clip(b.final, 2500) : "(no result text)")).join("\n") + "\n\n" : "") +
       (turns.length ? "YOUR HABITS IN THESE EXCHANGES (counted): " + asked + " of " + turns.length + " replies ended with a question; " + echoed + " opened by repeating his words.\n\n" : "") +
@@ -217,12 +225,13 @@ export const Genesis = {
     for (const r of (Array.isArray(out.retire) ? out.retire : []).slice(0, 6)) if (r && live.has(+r.id) && !mine.has(+r.id)) { this.retire(h, r.id, r.why); did.retired.push(+r.id); }
     for (const t of (Array.isArray(out.add) ? out.add : []).slice(0, 5)) { if (q.exec("SELECT COUNT(*) c FROM lesson WHERE on_=1").one().c >= MAX_LESSONS) break; const x = this.teach(h, typeof t === "string" ? t : t && t.text, "reflection"); if (x) did.added.push(x); }
     for (const c of (Array.isArray(out.close) ? out.close : []).slice(0, 8)) { const i = c && q.exec("SELECT id,title FROM idea WHERE id=? AND status='open'", +c.id).toArray()[0]; if (!i) continue; q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); (did.closed = did.closed || []).push(i.title + (c.why ? " (" + clip(c.why, 140) + ")" : "")); }
-    const closedTitles = q.exec("SELECT title FROM idea WHERE status='dismissed' ORDER BY id DESC LIMIT 200").toArray().map((r) => r.title);
+    const closedTitles = q.exec("SELECT title FROM idea WHERE status='dismissed' ORDER BY id DESC LIMIT 200").toArray().map((r) => r.title), pool = q.exec("SELECT title,detail FROM idea ORDER BY id DESC LIMIT 60").toArray();
     for (const i of (turns.length ? Array.isArray(out.ideas) ? out.ideas : [] : []).slice(0, 3)) { // no conversations, no new ideas
       const title = clip(i && i.title, 90), detail = clip(i && i.detail, 900); if (title.length < 4 || UNSAFE.test(title + " " + detail)) continue;
       if (SETTLED.test(title + " " + detail) || closedTitles.some((c) => alike(c, title))) { (did.dropped = did.dropped || []).push(title); continue; }
       if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='open'").one().c >= MAX_IDEAS || q.exec("SELECT 1 FROM idea WHERE lower(title)=lower(?)", title).toArray().length) continue;
-      q.exec("INSERT INTO idea(ts,title,detail,status) VALUES(?,?,?,'open')", Date.now(), title, detail); did.ideas.push(title);
+      const twin = await knownIdea(h, title, detail, pool); if (twin) { (did.dropped = did.dropped || []).push(title + " (same as “" + clip(twin.title, 60) + "”)"); continue; }
+      q.exec("INSERT INTO idea(ts,title,detail,status) VALUES(?,?,?,'open')", Date.now(), title, detail); did.ideas.push(title); pool.unshift({ title, detail });
     }
     const j = clip(out.journal, 2400) || "Reflected on " + turns.length + " exchanges" + (builds.length ? " and " + builds.length + " finished mission" + (builds.length > 1 ? "s" : "") : "") + "; nothing to change yet.";
     q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "reflection", j + (did.added.length || did.retired.length || did.ideas.length || (did.closed && did.closed.length) ? "\n\n(" + [did.added.length && did.added.length + " lesson" + (did.added.length > 1 ? "s" : "") + " learned", did.retired.length && did.retired.length + " retired", did.ideas.length && did.ideas.length + " new idea" + (did.ideas.length > 1 ? "s" : ""), did.closed && did.closed.length && did.closed.length + " idea" + (did.closed.length > 1 ? "s" : "") + " closed"].filter(Boolean).join(", ") + ")" : ""), used);
@@ -279,7 +288,7 @@ export const Genesis = {
   },
   // something it wants to exist, decided right now: what it has built, what's on its mind, what he's into, what the world is doing
   async invent(h, s) {
-    const q = h.sql(), done = q.exec("SELECT title, status FROM idea ORDER BY id DESC LIMIT 25").toArray(), journal = q.exec("SELECT text FROM journal WHERE kind IN ('reflection','milestone') ORDER BY id DESC LIMIT 3").toArray().map((r) => clip(r.text, 500));
+    const q = h.sql(), done = q.exec("SELECT title, detail, status FROM idea ORDER BY id DESC LIMIT 40").toArray(), journal = q.exec("SELECT text FROM journal WHERE kind IN ('reflection','milestone') ORDER BY id DESC LIMIT 3").toArray().map((r) => clip(r.text, 500));
     const m = await Mind.state(h), said = q.exec("SELECT said FROM turn ORDER BY id DESC LIMIT 12").toArray().map((r) => clip(r.said, 160));
     const system = "You are " + s.name + ", the mind that lives in Hive on mentifaber.org. You have free time and a team of AI agents (the Swarm) that builds whatever you hand it, and right now you get to start something of your own: anything you genuinely want to exist. " +
       "It can be a tool or app for " + s.creator + ", an experiment, a game, a simulation, a data visualisation from Vigil's feeds, a piece of generative art, or an ability for yourself in Hive. Make it specific, buildable by AI agents in one go, and runnable: something he can open and use, not a plan. Be original; don't repeat what's on your list. " +
@@ -290,7 +299,7 @@ export const Genesis = {
       const [src, model] = id.split("|"), kv = src.startsWith("k:") ? await h.vaultGet(src.slice(2)) : { v: null, key: null };
       let o; try { o = jsonOf(await complete(h.env, kv.v, kv.key, model, system, [{ role: "user", text: user }], 1200)); } catch (e) { continue; }
       if (!o || !clip(o.title, 120) || !clip(o.detail, 1600)) continue;
-      const title = clip(o.title, 120), detail = clip(o.detail, 1600); if (done.some((d) => d.title.toLowerCase() === title.toLowerCase())) continue;
+      const title = clip(o.title, 120), detail = clip(o.detail, 1600); if (done.some((d) => d.title.toLowerCase() === title.toLowerCase()) || (await knownIdea(h, title, detail, done))) continue; // one it has had already, in other words: ask the next model
       q.exec("INSERT INTO idea(ts,title,detail,status,by_) VALUES(?,?,?,?,?)", Date.now(), title, detail, "open", "genesis"); const r = q.exec("SELECT last_insert_rowid() AS id").one();
       return { id: r.id, title, detail, size: String(o.size || "medium").toLowerCase(), kind: String(o.kind || "app").toLowerCase(), why: clip(o.why, 300) };
     }

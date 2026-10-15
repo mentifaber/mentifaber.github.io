@@ -167,39 +167,59 @@
 
     <!-- ───────── MIND ───────── -->
     <section id="v-mind" class="view hidden">
-      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>MIND</h2><span class="dim sm mono">owner only</span><span class="flex"></span><span class="dim sm mono" id="m-at"></span></header>
+      <header class="top"><button class="icon only-m" data-menu aria-label="Menu">☰</button><h2>MIND</h2><span class="dim sm mono">owner only</span><span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Hive knows…" aria-label="Search the mind"><span class="dim sm mono" id="m-at"></span></header>
       <div class="pad narrow">
         <div id="m-locked" class="card hud hidden"><h3>MIND SEALED</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div>
         <div id="m-open" class="hidden">
-          <div class="card hud mindp genp" id="genp">
-            <div class="ah"><i class="led ok" id="g-led"></i><h3><span id="g-name">GENESIS</span><small id="g-sub">—</small></h3>
-              <label class="mtg" title="Let Genesis build on its own: when it chooses, what it chooses, within a daily budget"><span>Autonomy</span><input type="checkbox" id="g-auto" class="tg"></label>
-              <button class="ghost" id="g-check" title="Run a real check of every part of the system">Check systems</button>
-              <button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button></div>
-            <div class="facts" id="g-facts"></div>
-            <div class="health hidden" id="g-health"></div>
-            <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
+          <nav class="ptabs mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
+          <div id="m-results" class="hidden mt"></div>
+          <div id="mt-you" class="mtp">
+            <div class="card hud mindp mt">
+              <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
+                <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
+              <div class="facts" id="m-facts"></div>
+              <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button><span class="flex"></span><button class="ghost sm" id="m-exp-md" title="Everything Hive knows about you, as a readable notes file">Export notes</button><button class="ghost sm" id="m-exp-json" title="Everything, as JSON">JSON</button></div>
+              <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted (visitors' never are). Your profile, pinned and core memories, open threads and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0; older memories come up when they matter. Every few messages Hive looks over what you said and proposes what's worth keeping; nothing it notices is used until you say yes.</p>
+            </div>
+            <div class="card hud mt review hidden" id="m-review"><h3>HIVE NOTICED<small class="dim sm mono">nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist mt"></div></div>
+            <div class="card hud mt"><div class="row"><h3 class="flex">PROFILE</h3><select id="m-hist" class="hidden" aria-label="Earlier profiles"></select></div><div id="m-profile" class="b mt"></div></div>
           </div>
-          <div class="card hud mt"><h3>LESSONS</h3>
-            <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="ghost" id="g-add">Teach</button></div>
-            <div id="g-lessons" class="mlist mt"></div>
-            <details class="mt" id="g-retd"><summary class="dim sm">Retired lessons</summary><div id="g-retired" class="mlist mt"></div></details></div>
-          <div class="card hud mt"><h3>IDEAS<small class="dim sm mono" style="margin-left:8px;letter-spacing:.06em">what it wants to become</small></h3><div id="g-ideas" class="mlist mt"></div></div>
-          <div class="card hud mt"><h3>JOURNAL</h3><div id="g-journal" class="journal mt"></div></div>
-          <div class="card hud mindp mt">
-            <div class="ah"><i class="led ok" id="m-led"></i><h3>WHAT HIVE KNOWS ABOUT YOU<small id="m-sub">—</small></h3>
-              <label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
-            <div class="facts" id="m-facts"></div>
-            <div class="hours" id="m-hours" aria-label="When you use Hive (your local time)"></div>
-            <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="ghost" id="m-ask">Talk it through</button><button class="ghost" id="m-import">Import this device's sessions</button></div>
-            <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted here (visitors' never are). Your profile, memories and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0, so they know you. Owner mode is on: no hedging, no lectures, straight answers.</p>
+          <div id="mt-mem" class="mtp hidden">
+            <div class="card hud mt"><h3>MEMORIES</h3>
+              <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><select id="m-kind" aria-label="Kind"><option value="">auto</option></select><button class="ghost" id="m-add">Remember</button></div>
+              <div class="chips mt" id="m-chips"></div>
+              <div id="m-mem" class="mlist mems mt"></div>
+              <div class="row mt"><label class="mtg"><span>Keep what Hive notices without asking</span><input type="checkbox" id="m-trust" class="tg"></label><span class="flex"></span><button class="ghost sm" id="m-notice" title="Have Hive look over your recent chats for anything worth keeping, now">Look over recent chats</button></div></div>
+            <div class="card hud mt"><h3>OPEN THREADS<small class="dim sm mono">things you started or said you'd do · Hive follows up when it fits</small></h3>
+              <div class="own"><input id="m-tnew" placeholder="Something you're in the middle of…"><button class="ghost" id="m-tadd">Add</button></div>
+              <div id="m-threads" class="mlist mt"></div>
+              <details class="mt" id="m-tdone"><summary class="dim sm">Finished and dropped</summary><div id="m-tclosed" class="mlist mt"></div></details></div>
           </div>
-          <div class="card hud mt"><h3>PROFILE</h3><div id="m-profile" class="b mt"></div></div>
-          <div class="card hud mt"><h3>MEMORIES</h3>
-            <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><button class="ghost" id="m-add">Remember</button></div>
-            <div id="m-mem" class="mlist mt"></div></div>
-          <div class="card hud mt"><h3>ACTIVITY</h3><div id="m-act" class="mlist mt"></div>
-            <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
+          <div id="mt-time" class="mtp hidden">
+            <div class="card hud mt"><div class="row"><h3 class="flex">RHYTHM</h3><span class="dim sm mono" id="m-streak"></span></div>
+              <div class="cal mt" id="m-cal" aria-label="Activity over the last 26 weeks"></div>
+              <h4 class="mt">WHEN YOU WORK<small class="dim"> · your local time</small></h4><div class="wgrid mt" id="m-grid"></div>
+              <div class="kbars mt" id="m-kbars"></div></div>
+            <div class="card hud mt"><div class="row"><h3 class="flex">ACTIVITY</h3><select id="m-akind" aria-label="Show"><option value="">everything</option></select></div><div id="m-act" class="mlist mt"></div>
+              <div class="row mt"><span class="flex"></span><button class="ghost sm" id="m-wipe">Forget everything</button></div></div>
+          </div>
+          <div id="mt-gen" class="mtp hidden">
+            <div class="card hud mindp genp mt" id="genp">
+              <div class="ah"><i class="led ok" id="g-led"></i><h3><span id="g-name">GENESIS</span><small id="g-sub">—</small></h3>
+                <label class="mtg" title="Let Genesis build on its own: when it chooses, what it chooses, within a daily budget"><span>Autonomy</span><input type="checkbox" id="g-auto" class="tg"></label>
+                <button class="ghost" id="g-check" title="Run a real check of every part of the system">Check systems</button>
+                <button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button></div>
+              <div class="facts" id="g-facts"></div>
+              <div class="health hidden" id="g-health"></div>
+              <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your 👍/👎, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
+            </div>
+            <div class="card hud mt"><h3>LESSONS</h3>
+              <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="ghost" id="g-add">Teach</button></div>
+              <div id="g-lessons" class="mlist mt"></div>
+              <details class="mt" id="g-retd"><summary class="dim sm">Retired lessons</summary><div id="g-retired" class="mlist mt"></div></details></div>
+            <div class="card hud mt"><h3>IDEAS<small class="dim sm mono" style="margin-left:8px;letter-spacing:.06em">what it wants to become</small></h3><div id="g-ideas" class="mlist mt"></div></div>
+            <div class="card hud mt"><h3>JOURNAL</h3><div id="g-journal" class="journal mt"></div></div>
+          </div>
         </div>
       </div>
     </section>
