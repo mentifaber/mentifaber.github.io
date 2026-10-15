@@ -13,7 +13,7 @@
 // Guardrails: lessons can't touch the safety rules, his own lessons are only his to remove, nothing is ever deleted
 // (only retired, so every step can be seen and undone), and it never claims to have run a check it didn't run.
 import { complete } from "./hive-kit.js";
-import { Mind } from "./hive-mind.js";
+import { Mind, queryVec } from "./hive-mind.js";
 import { vigilWatch, vigilBrief } from "./vigil.js";
 import { sendPush, PUSH_HOSTS } from "./push.js";
 import { ingest, trends, worldText, frictionEvents, worldTables } from "./hive-world.js";
@@ -152,7 +152,7 @@ export const Genesis = {
   async recall(h, text, cid, k) {
     k = k || 4; const q = h.sql(); let hits = [];
     try {
-      const v = (await this.embed(h, ["Represent this sentence for searching relevant passages: " + clip(text, 1500)]) || [])[0]; // BGE's own query prefix
+      const v = await queryVec(h, text); // BGE's own query prefix; worked out once per message (Mind used it to pick memories)
       if (v) { const all = this.vecs(h), n = Math.hypot(...v); for (const [id, u] of all) { let d = 0, m = 0; for (let i = 0; i < u.length; i++) { d += u[i] * v[i]; m += u[i] * u[i]; } const s = d / (n * Math.sqrt(m) || 1); if (s > 0.62) hits.push([id, s]); } }
     } catch (e) {}
     if (!hits.length) { // no vectors yet (or the AI allowance is resting): shared words instead
@@ -236,8 +236,8 @@ export const Genesis = {
     const q = h.sql(), settled = q.exec("SELECT id,title,detail FROM idea WHERE status='open'").toArray().filter((i) => SETTLED.test(i.title + " " + i.detail));
     if (settled.length) { for (const i of settled) q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "Closed " + settled.length + " idea" + (settled.length > 1 ? "s" : "") + " on topics the changelog has settled: " + settled.map((i) => "\"" + i.title + "\"").join(", ") + ".", null); }
     for (const i of q.exec("SELECT i.id,i.title,i.pid,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='building'").toArray()) {
-      if (i.ps === "done") { q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm finished “" + clip(i.title, 60) + "”", body: "Its result is waiting for you in Hive (Mind → Genesis).", url: "/hive-app#mind" }); }
-      else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm didn't finish “" + clip(i.title, 60) + "”", body: "Mission " + (i.ps || "gone") + "; the idea is back on my list.", url: "/hive-app#mind" }); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
+      if (i.ps === "done") { q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm finished “" + clip(i.title, 60) + "”", body: "Its result is waiting for you in Hive (Mind → Genesis).", url: "/hive-app#mind/genesis" }); }
+      else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm didn't finish “" + clip(i.title, 60) + "”", body: "Mission " + (i.ps || "gone") + "; the idea is back on my list.", url: "/hive-app#mind/genesis" }); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
     }
   },
   // ── its own projects, on its own time ──

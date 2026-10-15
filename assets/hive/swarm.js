@@ -75,13 +75,21 @@
 
   // ── the result: files, the one that runs, the write-up ──
   function result(final) {
-    R.final = final; R.files = window.HiveRun ? HiveRun.files(final) : []; R.entry = window.HiveRun ? HiveRun.entry(R.files) : null; R.ran = 0;
+    // a stitched fallback is raw pieces: only a block marked to run counts as the thing to run, not some fragment of it
+    R.final = final; R.files = window.HiveRun ? HiveRun.files(final) : []; R.entry = window.HiveRun ? HiveRun.entry(R.files, /_The integrators couldn't finish/.test(final)) : null; R.ran = 0; R.silent = false;
     if ($("final").textContent !== final) { $("final").textContent = final; $("finalmd").innerHTML = window.HiveMD ? HiveMD(final.replace(/```[^\n]*\brun\b[^\n]*\n[\s\S]*?```/gi, "_(the runnable part is in the Run tab)_")) : esc(final); }
     $("files").innerHTML = R.files.length ? R.files.map((f, i) => "<div class='file'><div class='fh'><b>" + esc(f.name) + "</b><span class='dim mono sm'>" + esc(f.lang) + " · " + f.code.split("\n").length + " lines" + (f === R.entry ? " · runs" : "") + "</span><span class='flex'></span>" +
       (/^(html|py|js)$/.test(f.lang) ? "<button class='ghost sm' data-frun='" + i + "'>▶ Run this</button>" : "") + "<button class='ghost sm' data-fcopy='" + i + "'>Copy</button><button class='ghost sm' data-fdl='" + i + "'>Download</button></div><pre><code>" + esc(f.code) + "</code></pre></div>").join("") : "<p class='dim'>No code in this result: it's a write-up (see Write-up).</p>";
     $("stage").classList.toggle("hidden", !R.entry); $("norun").classList.toggle("hidden", !!R.entry); $("console").classList.toggle("hidden", !R.entry);
     $("runwhat").textContent = R.entry ? R.entry.name + (R.entry.lang === "py" ? " · Python in your browser" : R.entry.lang === "js" ? " · JavaScript" : "") : "";
     if (tab === "run" && R.entry) runIt();
+    else if (!R.entry) autoDemo("nothing in it runs");
+  }
+  // with auto-fix on, a result that doesn't run (nothing to run, or a run that shows nothing) is turned into a working demo,
+  // once per result
+  function autoDemo(why) {
+    if (!$("autofix").checked || R.fixing || R.view != null || R.demoed === R.final || !(last && last.project.join) || !R.final) return;
+    R.demoed = R.final; R.log.push({ kind: "info", text: why + ": asking the swarm to make it runnable (fix automatically is on)" }); con(); fix("demo");
   }
   function versions(p) {
     const vs = p.versions || [], sel = $("vers"); sel.classList.toggle("hidden", !vs.length);
@@ -96,12 +104,23 @@
   $("sizes").onclick = (e) => { const b = e.target.closest("[data-sz]"); if (!b) return; R.size = +b.dataset.sz; LSS("swarm-size", R.size); sized(); };
   function runIt(f) {
     f = f || R.entry; if (!f || !window.HiveRun) return; R.ran = Date.now(); R.log = R.note ? [{ kind: "info", text: R.note }] : []; R.note = null; R.errors = []; R.runFile = f; sized(); con();
-    HiveRun.run($("preview"), f, R.files, (kind, text) => { if (kind === "loaded") { R.log.push({ kind: "info", text: "loaded" }); } else { R.log.push({ kind, text }); if (kind === "exception" || kind === "error") R.errors.push(text); } con(); autofix(); });
+    HiveRun.run($("preview"), f, R.files, (kind, text) => {
+      if (kind === "shape") return shape(f, text);
+      if (kind === "loaded") { R.log.push({ kind: "info", text: "loaded" }); } else { R.log.push({ kind, text }); if (kind === "exception" || kind === "error") R.errors.push(text); } con(); autofix(); });
+  }
+  // the run settled: did it show anything? A script that only defines functions, or a blank page, isn't a demo
+  function shape(f, text) {
+    let s = {}; try { s = JSON.parse(text); } catch (e) { return; }
+    const said = R.log.some((l) => l.kind !== "info"), blank = f.lang === "html" ? s.text < 2 && !s.media : s.out === 0 && !s.media && !said;
+    if (!blank || R.errors.length) return;
+    R.silent = true; R.log.push({ kind: "warn", text: f.lang === "html" ? "The page loaded but shows nothing." : "It ran, but did nothing you can see: the code only defines functions, or it's meant for a server." }); con();
+    autoDemo("it showed nothing");
   }
   function con() {
     const n = R.errors.length; $("ccount").textContent = n ? n + " error" + (n > 1 ? "s" : "") : R.log.length ? "no errors" : ""; $("ccount").className = "cc" + (n ? " bad" : R.log.length ? " good" : "");
     $("clog").innerHTML = R.log.length ? R.log.slice(-200).map((l) => "<div class='l-" + esc(l.kind) + "'>" + esc(l.text) + "</div>").join("") : "<span class='dim'>Nothing yet.</span>";
     $("clog").scrollTop = 1e9; $("fixit").classList.toggle("hidden", !n || R.view != null || !(last && last.project.join)); $("fixit").disabled = R.fixing;
+    $("mkdemo").classList.toggle("hidden", !R.silent || !!n || R.view != null || !(last && last.project.join)); $("mkdemo").disabled = R.fixing;
   }
   $("rerun").onclick = () => runIt(R.runFile || R.entry);
   $("popout").onclick = () => { const f = R.runFile || R.entry; if (f && window.HiveRun) HiveRun.popout(f, R.files); };
@@ -112,7 +131,7 @@
     clearTimeout(afT); afT = setTimeout(() => { if (R.errors.length && !R.fixing) { R.auto++; fix("fix"); } }, 1800);
   }
   async function fix(mode) {
-    if (R.fixing) return; R.fixing = true; const btn = mode === "demo" ? $("mkrun") : $("fixit"), was = btn.textContent; btn.disabled = true; btn.textContent = mode === "demo" ? "Making it runnable…" : "Fixing…";
+    if (R.fixing) return; R.fixing = true; const btn = mode === "demo" ? (R.entry ? $("mkdemo") : $("mkrun")) : $("fixit"), was = btn.textContent; btn.disabled = true; btn.textContent = mode === "demo" ? "Making it runnable…" : "Fixing…";
     R.log.push({ kind: "info", text: mode === "demo" ? "asking the swarm to make it runnable…" : "sending " + R.errors.length + " error" + (R.errors.length > 1 ? "s" : "") + " to the swarm…" }); con();
     const f = R.runFile || R.entry, j = await api("/repair", { id: cur, ctok: mine()[cur], mode, lang: f ? (f.lang === "py" ? "python" : f.lang) : "html", code: f ? f.code : "", errors: R.errors });
     R.fixing = false; btn.disabled = false; btn.textContent = was;
@@ -121,7 +140,7 @@
     if (R.note) runIt(); // the result text came back unchanged (nothing new to run from poll): run what's there
   }
   $("fixit").onclick = () => fix("fix");
-  $("mkrun").onclick = () => fix("demo");
+  $("mkrun").onclick = $("mkdemo").onclick = () => fix("demo");
 
   // ── files: copy, download, run a particular one; everything as a .zip ──
   const save = (name, blob) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };

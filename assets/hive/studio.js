@@ -17,7 +17,7 @@ applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") ===
 // ── views ──
 let owner = false, gname = "", busyAt = 0; // gname: Genesis, the mind the owner talks to (visitors talk to plain Hive)
 function route() {
-  const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0];
+  const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0].split("/")[0]; // "#mind/genesis": a view and a part of it
   const view = ["studio", "swarm", "keys", "mind"].includes(v) ? v : "studio";
   for (const s of ["studio", "swarm", "keys", "mind"]) $("v-" + s).classList.toggle("hidden", s !== view);
   document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("on", a.dataset.v === view));
@@ -637,7 +637,7 @@ if ($("genp")) {
 $("g-reflect").onclick = () => GenV.reflect();
 $("g-facts").addEventListener("click", async (e) => { if (!e.target.closest("#g-buildnow")) return; const b = e.target.closest("#g-buildnow"); b.disabled = true; b.textContent = "Choosing…";
   const j = await api("/genesis/build-now", {}).catch(() => ({ error: "couldn't reach the Hive" })); toast(j.error ? j.error : j.started ? (gname || "Genesis") + " started “" + j.started + "” (" + j.size + ", " + j.how + ")" : j.rested ? (gname || "Genesis") + " is resting: it has used today's budget" : "Nothing started", 5000); MindV.load(); });
-$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }).catch(() => ({ error: "couldn't reach the Hive" })); if (j.error) { $("g-auto").checked = !on; return toast(j.error + ": autonomy unchanged", 4000); } toast(on ? gname + " can start one Swarm mission a day from its own ideas" : gname + "'s ideas wait for you", 3500); GenV.load(); };
+$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }).catch(() => ({ error: "couldn't reach the Hive" })); if (j.error) { $("g-auto").checked = !on; return toast(j.error + ": autonomy unchanged", 4000); } toast(on ? gname + " builds on its own now: when it chooses, at the size it chooses, within its daily budget" : gname + "'s ideas wait for you", 3500); GenV.load(); };
 $("g-check").onclick = async () => {
   const b = $("g-check"), box = $("g-health"); b.disabled = true; b.textContent = "Checking…";
   const j = await api("/genesis/health").catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Check systems";
