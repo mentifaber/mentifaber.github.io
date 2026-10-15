@@ -33,7 +33,7 @@ $("scrim").onclick = $("sideX").onclick = () => document.body.classList.remove("
 
 // ── models ──
 async function loadModels() {
-  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").textContent = gname.toUpperCase() + " IS LISTENING";
+  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").innerHTML = "<em>" + esc(gname) + "</em> is listening.";
   if (j.resting) { const t = new Date(j.resting).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); models.forEach((m) => { if (m.id.startsWith("workers-ai|")) m.group = "Cloudflare Workers AI (free) · resting until " + t; }); }
   const sel = $("model"), groups = {}; for (const m of models) (groups[m.group] = groups[m.group] || []).push(m);
   sel.innerHTML = Object.entries(groups).map(([g, ms]) => "<optgroup label='" + esc(g) + "'>" + ms.map((m) => "<option value='" + esc(m.id) + "'>" + esc(m.name) + "</option>").join("") + "</optgroup>").join("") || "<option value=''>No models available</option>";
@@ -41,7 +41,7 @@ async function loadModels() {
   if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so Hive switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
   const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: (() => { let x = k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, ""); if (x.includes(" · ")) x = x.split(" · ").pop(); x = x.replace(/^Cloudflare /, ""); return x.charAt(0).toUpperCase() + x.slice(1); })(), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
-  const gl = Object.values(pg); $("esub").textContent = "> " + models.length + " models · " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + (innerWidth > 600 ? " linked · council ready" : "");
+  const gl = Object.values(pg); $("esub").textContent = models.length + " minds · " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + (innerWidth > 600 ? " · council ready" : "");
   $("t-models").textContent = models.length + " / " + gl.length + " prov"; $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
   if (window.HiveFX) HiveFX.core($("core"), gl); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
@@ -58,11 +58,16 @@ const link = () => { const ok = navigator.onLine !== false; $("t-link").textCont
 addEventListener("online", link); addEventListener("offline", link); link();
 // the picker: thousands of models, searchable
 const nameOf = (id) => { const m = models.find((x) => x.id === id); return m ? m.name : "Choose a model"; };
-const showPick = () => { $("mname").textContent = nameOf($("model").value); };
+// pollen: each family of minds wears the colour of a real pollen load (sage, apricot, borage blue, rapeseed, poppy…), so
+// who answered is visible at a glance; the agent is pale new wax, anything unknown plain honey
+const POLLEN = [[/claude|anthropic/i, "#e8a06a"], [/gpt|openai|\bo[134]\b|o[134]-/i, "#8ccf9d"], [/gemini|gemma|google/i, "#7fb2ea"], [/llama|meta/i, "#e3c34a"], [/qwen|qwq/i, "#e0714f"], [/deepseek/i, "#7d93de"],
+  [/mistral|mixtral/i, "#c98bc2"], [/grok|xai/i, "#a7b3bf"], [/kimi|moonshot/i, "#b7d36a"], [/mentifaber-agent|agent\|/i, "#f3e3b0"], [/hermes|nous|granite|sea-lion|command/i, "#d7a77c"]];
+const pollen = (id) => { const s = String(id || ""); for (const [r, c] of POLLEN) if (r.test(s)) return c; return "#f2a516"; };
+const showPick = () => { $("mname").textContent = nameOf($("model").value); const pc = $("mpollen"); if (pc) pc.style.setProperty("--pc", pollen($("model").value)); };
 function drawPick() {
   const q = $("mq").value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean), hit = models.filter((m) => words.every((w) => (m.name + " " + m.group + " " + m.id).toLowerCase().includes(w)));
   const groups = {}; for (const m of hit) (groups[m.group] = groups[m.group] || []).push(m); let shown = 0;
-  $("mlist").innerHTML = Object.entries(groups).map(([g, ms]) => "<h6>" + esc(g) + " · " + ms.length + "</h6>" + ms.slice(0, q ? 200 : 60).map((m) => (shown++, "<button role='option' data-m='" + esc(m.id) + "' class='" + (m.id === $("model").value ? "on" : "") + "'>" + esc(m.name) + (m.vision ? "<span class='tg'>sees</span>" : "") + "</button>")).join("")).join("") || "<p class='dim sm' style='padding:10px'>No model matches.</p>";
+  $("mlist").innerHTML = Object.entries(groups).map(([g, ms]) => "<h6>" + esc(g) + " · " + ms.length + "</h6>" + ms.slice(0, q ? 200 : 60).map((m) => (shown++, "<button role='option' data-m='" + esc(m.id) + "' class='" + (m.id === $("model").value ? "on" : "") + "'><i class='pollen' style='--pc:" + pollen(m.id) + "'></i>" + esc(m.name) + (m.vision ? "<span class='tg'>sees</span>" : "") + "</button>")).join("")).join("") || "<p class='dim sm' style='padding:10px'>No model matches.</p>";
   $("mcount").textContent = hit.length + " of " + models.length + " models" + (shown < hit.length ? " · showing " + shown + ", search to narrow" : "");
 }
 $("mpick").onclick = (e) => { e.stopPropagation(); const o = $("mpop").classList.toggle("hidden"); if (!o) { $("mq").value = ""; drawPick(); $("mq").focus(); } };
@@ -119,7 +124,7 @@ function drawMsg(m, i) {
   const d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
   if (m.role === "user") d.innerHTML = "<div>" + (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools' style='justify-content:flex-end'>" + m.files.map((f) => "<span>📄 " + esc(f) + "</span>").join("") + "</div>" : "") + (m.show || m.text ? "<div class='b'>" + esc(m.show || m.text) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and resend' aria-label='Edit and resend'>✎</button><button data-uact='copy' title='Copy' aria-label='Copy'>⧉</button></div></div>";
   else {
-    const who = "<div class='who-line'>" + esc((gname || "Hive").toUpperCase()) + " // <b>" + esc(String(m.model || $("model").value || "").split("|").pop().split("/").pop()) + "</b>" + (m.council ? " · COUNCIL" : "") + (m.streaming ? " · STREAMING" : "") + "</div>";
+    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='pollen' style='--pc:" + pollen(mid) + "'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "Hive") + (m.council ? " · council" : "") + "</span></div>";
     const body = m.pending && !m.text ? who + (m.council ? "<div class='const'><svg><line x1='26' y1='16' x2='92' y2='62'/><line x1='156' y1='20' x2='92' y2='62'/><line x1='16' y1='96' x2='92' y2='62'/><line x1='162' y1='98' x2='92' y2='62'/><line x1='94' y1='8' x2='92' y2='62'/></svg><i class='lead'></i><i></i><i></i><i></i><i></i><i></i></div>" : "<div class='dots'><i></i><i></i><i></i></div>") + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
       : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1")
       : m.error ? "<p class='err'>" + esc(m.error) + "</p>"
@@ -194,7 +199,7 @@ const inp = $("inp"), grow = () => { inp.style.height = "auto"; inp.style.height
 const sync = () => { $("sendb").disabled = !busy && !inp.value.trim() && !att.length; };
 inp.addEventListener("input", () => { grow(); sync(); });
 inp.addEventListener("keydown", (e) => { if (e.key !== "Enter" || e.shiftKey || e.isComposing) return; const mod = e.metaKey || e.ctrlKey; if (mod || (S("enter") && !matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
-const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") inp.placeholder = v ? "Describe an image to render…" : "Transmit…  ( / for commands )"; if (window.tele) tele(); };
+const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") inp.placeholder = v ? "Describe an image to render…" : "Ask anything…  ( / for commands )"; if (window.tele) tele(); };
 $("web").onclick = () => { setTog("web", $("web").getAttribute("aria-pressed") !== "true"); if ($("web").getAttribute("aria-pressed") === "true") setTog("draw", false); };
 $("council").onclick = () => { setTog("council", $("council").getAttribute("aria-pressed") !== "true"); if (on("council")) setTog("draw", false); };
 $("draw").onclick = () => { setTog("draw", $("draw").getAttribute("aria-pressed") !== "true"); if ($("draw").getAttribute("aria-pressed") === "true") setTog("web", false); };
@@ -359,7 +364,7 @@ const Voice = (window.HiveVoice = {
     const ptt = S("hands") === "0"; $("vptt").classList.toggle("hidden", !ptt); $("vmute").classList.toggle("hidden", ptt);
     $("vmute").setAttribute("aria-pressed", Voice.paused ? "true" : "false"); $("vmutel").textContent = Voice.paused ? "PAUSED" : "LIVE";
     $("vmodel").textContent = (voiceModel() || $("model").value || "").split("|").pop().split("/").pop() || "VOICE LINK";
-    $("vhint").textContent = ptt ? "hold the button while you talk" : S("barge") ? "talk over it to interrupt" : "tap the core to interrupt";
+    $("vhint").textContent = ptt ? "hold the button while you talk" : S("barge") ? "talk over it to interrupt" : "tap to interrupt";
     $("vscreen").classList.toggle("hidden", !(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) || matchMedia("(pointer:coarse)").matches);
   },
   async listen() { // one turn of the user speaking → text (or null)
@@ -448,21 +453,27 @@ const voiceModel = () => { const v = S("vmodel"); if (!v) return ""; if (v !== "
   const fast = /(groq|cerebras|sambanova)/i, good = /gpt-oss-120b|llama-3\.3-70b|llama-4|qwen3|kimi|gpt-oss-20b/i; // fastest inference hosts, decent models
   const f = models.find((m) => fast.test(m.group) && good.test(m.id)) || models.find((m) => fast.test(m.group)) || models.find((m) => /llama-3\.1-8b-instruct-fast|gpt-oss-20b/.test(m.id)); return f ? f.id : ""; };
 
-// ── the live visual: a hexagon core in a ring of frequency bars, cyan while you talk, violet while it speaks ──
+// ── the live visual: the hum. Rings of wax that ripple with your voice while it listens (honey), swell softly while it
+// speaks (pale wax), and a small waggle dance while it thinks ──
 const viz = { raf: 0, start() { cancelAnimationFrame(viz.raf); const c = $("viz"), g = c.getContext("2d"), fd = new Uint8Array(128); let t0 = performance.now(), sm = 0;
+  const hexa = (h, a) => { const m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) return h; const n = parseInt(m[1], 16); return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; };
   const draw = (t) => { if (!Voice.on) return; viz.raf = requestAnimationFrame(draw); if (document.hidden) return;
-    const d = Math.min(2, devicePixelRatio || 1), W = (c.width = c.clientWidth * d), H = (c.height = c.clientHeight * d), cx = W / 2, cy = H * .4, R = Math.min(W, H) * .16, time = (t - t0) / 1000, st = getComputedStyle(document.documentElement);
-    const cyc = st.getPropertyValue("--cy").trim(), vic = st.getPropertyValue("--vi").trim(), hnc = st.getPropertyValue("--hn").trim(), col = Voice.mode === "talk" ? vic : Voice.mode === "think" ? hnc : cyc;
+    const d = Math.min(2, devicePixelRatio || 1), W = (c.width = c.clientWidth * d), H = (c.height = c.clientHeight * d), cx = W / 2, cy = H * .4, R = Math.min(W, H) * .15, time = (t - t0) / 1000, st = getComputedStyle(document.documentElement);
+    const honey = st.getPropertyValue("--cy").trim(), wax = st.getPropertyValue("--hn").trim(), col = Voice.mode === "talk" ? wax : honey;
     const an = Voice.mode === "talk" ? Voice.outAn : Voice.micAn; let lv = 0; if (an && (Voice.mode === "talk" || Voice.mode === "listen")) { an.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) lv += fd[i]; lv /= 64 * 255; } else fd.fill(0);
-    const ml = Voice.ear ? Voice.ear.level : Voice.lv; if (Voice.mode === "listen" && ml) lv = Math.max(lv, ml * .6); sm += (lv - sm) * .25;
-    const glow = g.createRadialGradient(cx, cy, R * .2, cx, cy, R * 3.2); glow.addColorStop(0, col + "55"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
-    const bars = 72; for (let i = 0; i < bars; i++) { const a = (i / bars) * Math.PI * 2 + time * .15, v = (fd[i % 64] || 0) / 255, len = R * (.12 + v * 1.1 + (Voice.mode === "think" ? .25 * (1 + Math.sin(time * 6 + i * .5)) / 2 : 0));
-      g.strokeStyle = col; g.globalAlpha = .35 + v * .65; g.lineWidth = 2.2 * d; g.lineCap = "round"; g.beginPath(); g.moveTo(cx + Math.cos(a) * R * 1.25, cy + Math.sin(a) * R * 1.25); g.lineTo(cx + Math.cos(a) * (R * 1.25 + len), cy + Math.sin(a) * (R * 1.25 + len)); g.stroke(); }
-    g.globalAlpha = 1; g.setLineDash([3 * d, 9 * d]); g.lineDashOffset = -time * 20; g.strokeStyle = col + "88"; g.lineWidth = d; g.beginPath(); g.arc(cx, cy, R * 2.55, 0, 7); g.stroke(); g.setLineDash([]);
-    const hx = (r, rot) => { g.beginPath(); for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k - Math.PI / 2 + rot; g[k ? "lineTo" : "moveTo"](cx + r * Math.cos(a), cy + r * Math.sin(a)); } g.closePath(); };
-    const r0 = R * (.78 + sm * .6 + (Voice.mode === "think" ? Math.sin(time * 4) * .05 : 0)), grd = g.createLinearGradient(cx - r0, cy - r0, cx + r0, cy + r0); grd.addColorStop(0, cyc); grd.addColorStop(1, vic);
-    g.shadowColor = col; g.shadowBlur = 40 * d; hx(r0, 0); g.fillStyle = grd; g.fill(); g.shadowBlur = 0;
-    g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1.2 * d; hx(r0 * 1.18, time * .2); g.stroke(); hx(r0 * .55, -time * .4); g.strokeStyle = "rgba(255,255,255,.5)"; g.stroke();
+    const ml = Voice.ear ? Voice.ear.level : Voice.lv; if (Voice.mode === "listen" && ml) lv = Math.max(lv, ml * .6); sm += (lv - sm) * .22;
+    // the rings: each a closed line whose radius ripples with a band of the sound
+    for (let k = 0; k < 5; k++) { const r0 = R * (1.05 + k * .42) * (1 + sm * .25), band = k * 9 + 4, amp = R * .12 * ((fd[band] || 0) / 255 + sm * .6);
+      g.strokeStyle = hexa(col, .55 - k * .09); g.lineWidth = (k ? 1.1 : 1.8) * d; g.beginPath();
+      for (let i = 0; i <= 96; i++) { const a = (i / 96) * Math.PI * 2, w = Math.sin(a * (3 + k) + time * (1.4 - k * .18)) * amp + Math.sin(a * 7 - time * 2) * amp * .35, x = cx + Math.cos(a) * (r0 + w), y = cy + Math.sin(a) * (r0 + w); i ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.closePath(); g.stroke(); }
+    // the drop of wax in the middle: it breathes with the voice
+    const rr = R * (.62 + sm * .55), grd = g.createRadialGradient(cx - rr * .3, cy - rr * .35, rr * .1, cx, cy, rr); grd.addColorStop(0, hexa(col, .95)); grd.addColorStop(1, hexa(col, .55));
+    g.fillStyle = grd; g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.fill();
+    if (Voice.mode === "think") { // the waggle: a figure-eight run around the drop while the answer is found
+      const L = R * 1.6, p = (time / 1.6) % 1, run = (q) => [-L + 2 * L * q, Math.sin(q * Math.PI * 14) * 4 * d], loop = (q, sd) => [L * Math.cos(Math.PI * q), sd * L * .8 * Math.sin(Math.PI * q)];
+      const [x, y] = p < .25 ? run(p / .25) : p < .5 ? loop((p - .25) / .25, 1) : p < .75 ? run((p - .5) / .25) : loop((p - .75) / .25, -1);
+      g.fillStyle = honey; g.beginPath(); g.arc(cx + x, cy + y - R * 2.4, 4 * d, 0, 7); g.fill(); }
   }; viz.raf = requestAnimationFrame(draw); }, stop() { cancelAnimationFrame(viz.raf); } };
 
 $("voice").onclick = () => Voice.start(); $("vend").onclick = $("vx").onclick = () => Voice.end();
@@ -549,9 +560,9 @@ const Agent = {
   timer: 0,
   async draw() {
     let st; try { st = await (await fetch("/api/agent/status", { cache: "no-store" })).json(); } catch (e) { st = null; }
-    const el = $("agentp"); if (!st || st.error === "the agent isn't deployed") { el.innerHTML = "<div class='ah'><h3>MENTIFABER AGENT 1.0<small>not deployed on this site yet</small></h3></div>"; return; }
+    const el = $("agentp"); if (!st || st.error === "the agent isn't deployed") { el.innerHTML = "<div class='ah'><h3>Mentifaber Agent 1.0<small>not deployed on this site yet</small></h3></div>"; return; }
     const led = { online: "ok", waking: "warn", asleep: "", empty: "" }[st.state] || "", seed = st.seed;
-    el.innerHTML = "<div class='ah'><i class='led " + led + "'></i><h3>MENTIFABER AGENT 1.0<small>" + (st.model ? esc(st.model.label) + " · " + gb(st.model.size) + " in R2" : "no model in R2 yet") + "</small></h3>" + (st.model ? "<label class='mtg' title='Keep it running around the clock; it restarts itself if it ever stops'><span>Always on</span><input type='checkbox' class='tg' data-ag='always'" + (st.always ? " checked" : "") + "></label>" : "") + "<span class='st " + (st.state === "online" ? "working" : st.state === "waking" ? "paused" : "") + "'>" + esc(st.state === "empty" ? "no model" : st.state) + "</span></div>" +
+    el.innerHTML = "<div class='ah'><i class='led " + led + "'></i><h3>Mentifaber Agent 1.0<small>" + (st.model ? esc(st.model.label) + " · " + gb(st.model.size) + " in R2" : "no model in R2 yet") + "</small></h3>" + (st.model ? "<label class='mtg' title='Keep it running around the clock; it restarts itself if it ever stops'><span>Always on</span><input type='checkbox' class='tg' data-ag='always'" + (st.always ? " checked" : "") + "></label>" : "") + "<span class='st " + (st.state === "online" ? "working" : st.state === "waking" ? "paused" : "") + "'>" + esc(st.state === "empty" ? "no model" : st.state) + "</span></div>" +
       (seed ? "<div class='prog'><div class='bar'><i style='width:" + (100 * seed.done / seed.size).toFixed(1) + "%'></i></div><p>" + (seed.error ? "⚠ " + esc(seed.error) : "copying " + esc(seed.label) + " into your R2 · " + gb(seed.done) + " of " + gb(seed.size)) + "</p></div>" : "") +
       "<div class='facts'><div>RUNS ON<b>your domain</b></div><div>STORED IN<b>R2 · mentifaber-models</b></div><div>CONTAINER<b>4 vCPU · 12 GiB</b></div>" + (st.always ? "<div>RUNS<b>24/7 · always on</b></div>" + (st.upSince ? "<div>UP SINCE<b>" + esc(new Date(st.upSince).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) + "</b></div>" : "") + (st.restarts ? "<div>SELF-RESTARTS<b>" + st.restarts + "</b></div>" : "") : "<div>SLEEPS AFTER<b>20 idle min</b></div>") + (st.model && st.model.ctx ? "<div>MEMORY<b>" + Math.round(st.model.ctx / 1024) + "K tokens</b></div>" : "") + "</div>" +
       "<div class='ab'>" + (st.model ? (st.state === "asleep" ? "<button class='pri' data-ag='wake'>Wake</button>" : st.state !== "empty" ? "<button class='ghost' data-ag='sleep'>Sleep now</button>" : "") : "") +

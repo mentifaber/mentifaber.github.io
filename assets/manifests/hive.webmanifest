@@ -6,8 +6,8 @@
   "start_url": "/hive-app.html",
   "scope": "/hive",
   "display": "standalone",
-  "background_color": "#13181e",
-  "theme_color": "#13181e",
+  "background_color": "#120d09",
+  "theme_color": "#120d09",
   "icons": [
     {
       "src": "../icons/hive-bee-192.png",
