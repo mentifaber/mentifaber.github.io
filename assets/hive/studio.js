@@ -574,42 +574,156 @@ $("agentp").onclick = async (e) => {
   Agent.draw(); loadModels();
 };
 
-// ── MIND: what Hive knows about the owner ──
+// ── MIND: what Hive knows about the owner. Tabs: You (profile, what Hive noticed), Memory (memories, open threads),
+// Timeline (rhythm, activity), Genesis; a search across all of it ──
+const agoT = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
+const MTABS = ["you", "mem", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
 const MindV = {
+  tab: LS.get("mind-tab", "you"), f: "all", searching: false, j: null,
+  kl(k) { return ((MindV.j && MindV.j.kinds) || {})[k] || "About you"; },
+  show(t) {
+    if (!MTABS.includes(t)) t = "you"; MindV.tab = t; LS.set("mind-tab", t);
+    document.querySelectorAll("#mtabs [data-mt]").forEach((b) => { const on = b.dataset.mt === t && !MindV.searching; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+    for (const k of MTABS) $("mt-" + k).classList.toggle("hidden", k !== t || MindV.searching);
+    if (/^#mind/.test(location.hash) && location.hash !== "#mind/" + t) history.replaceState(null, "", location.pathname + location.search + "#mind/" + t);
+  },
   async load() {
-    const j = await api("/mind"); $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); if (j.error) return; MindV.j = j; GenV.load();
-    const st = j.stats || {}, k = st.kinds || {}, ago = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
+    const h = location.hash.split("/")[1], sub = ({ genesis: "gen", memory: "mem", timeline: "time" })[h] || h; if (MTABS.includes(sub)) MindV.tab = sub; // "#mind/genesis" (the alerts' link) works too
+    const j = await api("/mind?tz=" + -new Date().getTimezoneOffset());
+    $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); $("m-q").classList.toggle("hidden", !!j.error); if (j.error) return;
+    MindV.j = j; MindV.show(MindV.tab); GenV.load(); MindV.you(j); MindV.mem(j); MindV.time(j);
+  },
+  you(j) {
+    const st = j.stats || {}, k = st.kinds || {}, hrs = Array(24).fill(0); (st.grid || []).forEach((row) => row.forEach((n, h) => { hrs[h] += n; }));
     $("m-on").checked = !!j.on; $("m-led").className = "led " + (j.on ? "ok" : "");
-    $("m-sub").textContent = j.on ? (j.at ? "profile from " + ago(j.at) + (j.model ? " · " + j.model.split("|").pop().split("/").pop() : "") + (j.fresh ? " · " + j.fresh + " new since" : "") : "no profile yet: analyze to build one") : "memory is off: nothing is noted or shared";
+    $("m-sub").textContent = j.on ? (j.at ? "profile from " + agoT(j.at) + (j.model ? " · " + j.model.split("|").pop().split("/").pop() : "") + (j.fresh ? " · " + j.fresh + " new since" : "") : "no profile yet: analyze to build one") : "memory is off: nothing is noted or shared";
     $("m-at").textContent = st.total ? st.total + " notes" : "";
-    const off = -new Date().getTimezoneOffset() / 60, hrs = Array(24).fill(0); (st.hoursUTC || []).forEach((n, h) => { hrs[(((h + off) % 24) + 24) % 24 | 0] += n; });
     const top = hrs.indexOf(Math.max(...hrs)), fmt = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");
-    const f = [["LAST 90 DAYS", (st.last90 || 0) + " actions"], ["ACTIVE DAYS", st.activeDays || 0], ["CHAT · VOICE", (k.chat || 0) + " · " + (k.voice || 0)], ["COUNCILS · PICTURES", (k.council || 0) + " · " + (k.image || 0)], ["SWARM PROJECTS", Object.values(st.projects || {}).reduce((a, b) => a + b, 0)], ["PEAK HOUR", Math.max(...hrs) ? fmt(top) : "—"], ["FAVOURITE MODEL", (st.models && st.models[0] && st.models[0][0]) || "—"], ["MEMORIES", st.memories || 0]];
+    const f = [["LAST 90 DAYS", (st.last90 || 0) + " actions"], ["ACTIVE DAYS", st.activeDays || 0], ["STREAK", st.streak ? st.streak + " day" + (st.streak > 1 ? "s" : "") : "—"], ["CHAT · VOICE", (k.chat || 0) + " · " + (k.voice || 0)], ["COUNCILS · PICTURES", (k.council || 0) + " · " + (k.image || 0)],
+      ["SWARM PROJECTS", Object.values(st.projects || {}).reduce((a, b) => a + b, 0)], ["PEAK HOUR", Math.max(...hrs) ? fmt(top) : "—"], ["FAVOURITE MODEL", (st.models && st.models[0] && st.models[0][0]) || "—"], ["MEMORIES", st.memories || 0], ["OPEN THREADS", st.threads || 0]];
     $("m-facts").innerHTML = f.map(([a, b]) => "<div>" + a + "<b title='" + esc(b) + "'>" + esc(b) + "</b></div>").join("");
-    const mx = Math.max(1, ...hrs); $("m-hours").innerHTML = hrs.map((n, h) => "<i style='height:" + Math.max(3, (100 * n) / mx) + "%' title='" + fmt(h) + ": " + n + "'></i>").join("") + [0, 6, 12, 18].map((h) => "<span style='left:" + (h / 24) * 100 + "%'>" + fmt(h) + "</span>").join("");
-    $("m-profile").innerHTML = j.outdated ? "<p class='dim'>⚠ This profile came from Hive's older analyst, which invented numbers. It's no longer used in your chats and is being rebuilt; hit <b>Analyze me now</b> to do it immediately.</p><details><summary class='dim'>show the old one</summary>" + md(j.profile) + "</details>" : j.profile ? md(j.profile) : "<p class='dim'>No analysis yet. Hit <b>Analyze me now</b>: the strongest model you have reads your activity, projects and memories and writes you up, frankly. It refreshes on its own as you keep using Hive.</p>";
-    $("m-mem").innerHTML = (j.memories || []).map((m) => "<div class='mi'><p><small>" + (m.src === "analysis" ? "from analysis" : "you") + " · " + ago(m.ts) + "</small>" + esc(m.text) + "</p><button data-mem='" + m.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet.</p>";
-    $("m-act").innerHTML = (j.recent || []).map((a) => "<div class='mi'><p><small>" + esc(a.kind) + " · " + ago(a.ts) + "</small>" + esc(String(a.text).slice(0, 400)) + "</p><button data-act='" + a.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet. Use Hive and it shows up here.</p>";
+    // what Hive noticed, waiting for a yes
+    const pm = (j.pending && j.pending.memories) || [], pt = (j.pending && j.pending.threads) || [], n = pm.length + pt.length;
+    $("m-review").classList.toggle("hidden", !n); $("m-badge").classList.toggle("hidden", !n); $("m-badge").textContent = n || "";
+    const row = (small, text, yes, no, key) => "<div class='mi rv'><p><small>" + small + "</small>" + esc(text) + "</p><div class='ib'><button data-rv='" + key + ":1'>" + yes + "</button><button data-rv='" + key + ":0'>" + no + "</button></div></div>";
+    $("m-rlist").innerHTML = [...pm.map((m) => row("remember · " + esc(MindV.kl(m.kind)) + " · " + (m.src === "analysis" ? "from the analysis" : "noticed") + " " + agoT(m.ts), m.text, "Keep", "Not right", "mem:" + m.id)),
+      ...pt.map((t) => t.ask === "done" ? row("did you finish this? · from your recent chats", t.text, "Yes, done", "Not yet", "thread:" + t.id) : row("open thread · " + (t.src === "analysis" ? "from the analysis" : "noticed") + " " + agoT(t.ts), t.text, "Track it", "No", "thread:" + t.id))].join("");
+    // the profile, and the ones before it
+    const hs = j.history || [], sel = $("m-hist"); sel.classList.toggle("hidden", !hs.length);
+    const day = (t) => new Date(t).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+    sel.innerHTML = "<option value=''>Current" + (j.at ? " · " + day(j.at) : "") + "</option>" + hs.map((h) => "<option value='" + h.at + "'>" + day(h.at) + (h.model ? " · " + esc(h.model.split("|").pop().split("/").pop()) : "") + (h.old ? " (older analyst)" : "") + "</option>").join("");
+    MindV.profile(j);
+  },
+  profile(j) {
+    $("m-profile").innerHTML = j.outdated ? "<p class='dim'>⚠ This profile came from Hive's older analyst, which invented numbers. It's no longer used in your chats and is being rebuilt; hit <b>Analyze me now</b> to do it immediately.</p><details><summary class='dim'>show the old one</summary>" + md(j.profile) + "</details>"
+      : j.profile ? md(j.profile) : "<p class='dim'>No analysis yet. Hit <b>Analyze me now</b>: the strongest model you have reads your activity, projects, memories and threads and writes you up, frankly. It refreshes on its own as you keep using Hive, and each new one says what changed.</p>";
+  },
+  mem(j) {
+    const ks = Object.keys(j.kinds || {}), ms = j.memories || [], opt = (sel) => ks.map((k) => "<option value='" + k + "'" + (k === sel ? " selected" : "") + ">" + esc(j.kinds[k]) + "</option>").join("");
+    if ($("m-kind").options.length < 2) $("m-kind").innerHTML = "<option value=''>auto</option>" + opt("");
+    const count = (f) => ms.filter(f).length, chips = [["all", "All", ms.length], ["pin", "★ Pinned", count((m) => m.pin)], ...ks.map((k) => [k, j.kinds[k], count((m) => (m.kind || "about") === k)])].filter((c) => c[0] === "all" || c[2]);
+    if (!chips.some((c) => c[0] === MindV.f)) MindV.f = "all";
+    $("m-chips").innerHTML = chips.map(([f, l, n]) => "<button class='chip" + (f === MindV.f ? " on" : "") + "' data-mf='" + f + "'>" + esc(l) + " <i>" + n + "</i></button>").join("");
+    const show = ms.filter((m) => MindV.f === "all" || (MindV.f === "pin" ? m.pin : (m.kind || "about") === MindV.f)), src = (s) => (s === "analysis" ? "from analysis" : s === "noticed" ? "noticed by Hive" : "you");
+    $("m-mem").innerHTML = show.map((m) => "<div class='mi mem'><button class='pin" + (m.pin ? " on" : "") + "' data-pin='" + m.id + "' aria-pressed='" + !!m.pin + "' title='" + (m.pin ? "Pinned: in every chat. Tap to unpin" : "Pin it: always in every chat") + "'>" + (m.pin ? "★" : "☆") + "</button>" +
+      "<p><small><select data-mk='" + m.id + "' aria-label='Kind'>" + opt(m.kind || "about") + "</select> · " + src(m.src) + " · " + agoT(m.upd || m.ts) + "</small><span class='mtx' data-edit='" + m.id + "' tabindex='0' role='button' title='Tap to edit'>" + esc(m.text) + "</span></p><button data-mem='" + m.id + "' title='Forget this'>✕</button></div>").join("")
+      || "<p class='dim sm'>" + (ms.length ? "None of that kind." : "Nothing yet. Say “remember …” in any chat, add one above, or let Hive notice things as you talk.") + "</p>";
+    $("m-trust").checked = !!j.trust;
+    const th = j.threads || [], open = th.filter((t) => t.status === "open"), closed = th.filter((t) => t.status !== "open"), from = (s) => (s === "analysis" ? "from the analysis" : s === "noticed" ? "noticed" : "you");
+    $("m-threads").innerHTML = open.map((t) => "<div class='mi'><p><small>" + from(t.src) + " · since " + agoT(t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":done'>Done</button><button data-th='" + t.id + ":dropped'>Drop</button></div></div>").join("") || "<p class='dim sm'>No open threads. Add what you're in the middle of, or let Hive notice it.</p>";
+    $("m-tdone").classList.toggle("hidden", !closed.length);
+    $("m-tclosed").innerHTML = closed.map((t) => "<div class='mi'><p><small>" + esc(t.status) + " · " + agoT(t.upd || t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":open'>Reopen</button></div></div>").join("");
+  },
+  time(j) {
+    const st = j.stats || {}, days = st.days || [], grid = st.grid || [], wd = (new Date().getDay() + 6) % 7, cols = Math.floor((6 - wd + days.length - 1) / 7) + 1, mx = Math.max(1, ...days);
+    $("m-cal").style.setProperty("--cols", cols);
+    $("m-cal").innerHTML = days.map((n, i) => { const k = days.length - 1 - i, p = 6 - wd + k, col = cols - Math.floor(p / 7), r = 6 - (p % 7), lv = n ? Math.min(4, Math.ceil((4 * n) / mx)) : 0;
+      return "<i class='l" + lv + "' style='grid-column:" + col + ";grid-row:" + (r + 1) + "' title='" + new Date(Date.now() - k * 864e5).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + ": " + n + "'></i>"; }).join("");
+    const act = days.filter(Boolean).length; $("m-streak").textContent = (act + " active day" + (act === 1 ? "" : "s") + " in 26 weeks") + (st.streak > 1 ? " · " + st.streak + "-day streak" : "");
+    const gm = Math.max(1, ...grid.flat()), fmt = (h) => (h % 12 || 12) + (h < 12 ? "a" : "p");
+    $("m-grid").innerHTML = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, r) => "<span>" + d + "</span>" + (grid[r] || Array(24).fill(0)).map((n, h) => "<i style='--a:" + (n ? 0.18 + (0.82 * n) / gm : 0) + "' title='" + d + " " + fmt(h) + "m: " + n + "'></i>").join("")).join("") + "<span></span>" + Array.from({ length: 24 }, (_, h) => "<b>" + (h % 6 ? "" : fmt(h)) + "</b>").join("");
+    const kinds = Object.entries(st.kinds || {}).sort((a, b) => b[1] - a[1]), km = Math.max(1, ...kinds.map((x) => x[1])), models = st.models || [], mm = Math.max(1, ...models.map((x) => x[1]));
+    const bar = (l, n, m) => "<div class='kb'><span>" + esc(l) + "</span><i><u style='width:" + Math.max(2, (100 * n) / m) + "%'></u></i><b>" + n + "</b></div>";
+    $("m-kbars").innerHTML = (kinds.length ? "<h4>WHAT YOU DO · LAST 90 DAYS</h4>" + kinds.map(([k, n]) => bar(ACTK[k] || k, n, km)).join("") : "") + (models.length ? "<h4 class='mt'>MODELS YOU LEAN ON</h4>" + models.map(([k, n]) => bar(k, n, mm)).join("") : "");
+    const acts = j.recent || [], have = [...new Set(acts.map((a) => a.kind))], ak = $("m-akind");
+    if (ak.dataset.k !== have.join()) { const v = ak.value; ak.innerHTML = "<option value=''>everything</option>" + have.map((k) => "<option value='" + esc(k) + "'>" + esc(ACTK[k] || k) + "</option>").join(""); ak.dataset.k = have.join(); ak.value = have.includes(v) ? v : ""; }
+    $("m-act").innerHTML = acts.filter((a) => !ak.value || a.kind === ak.value).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + esc(String(a.text).slice(0, 400)) + "</p><button data-act='" + a.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet. Use Hive and it shows up here.</p>";
+  },
+  edit(span) {
+    const id = +span.dataset.edit, old = span.textContent, inp = document.createElement("input"); inp.value = old; inp.className = "medit"; inp.setAttribute("aria-label", "Edit memory"); span.textContent = ""; span.appendChild(inp); inp.focus(); inp.select();
+    let done = false; const fin = async (save) => { if (done) return; done = true; const v = inp.value.trim();
+      if (save && v && v !== old) { const j = await api("/mind/edit", { id, text: v }); if (j.error) { toast(j.error); span.textContent = old; return; } toast("Memory updated"); return MindV.load(); } span.textContent = old; };
+    inp.onkeydown = (e) => { if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); }; inp.onblur = () => fin(true);
+  },
+  async search() {
+    const q = $("m-q").value.trim(); MindV.searching = q.length >= 2; $("m-results").classList.toggle("hidden", !MindV.searching); MindV.show(MindV.tab);
+    if (!MindV.searching) { $("m-results").innerHTML = ""; return; }
+    const j = await api("/mind/search", { q }); if ($("m-q").value.trim() !== q) return; if (j.error) { $("m-results").innerHTML = "<div class='card hud'><p class='dim'>" + esc(j.error) + "</p></div>"; return; }
+    const terms = q.toLowerCase().split(/\s+/).filter((w) => w.length > 2).map((w) => esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), rx = terms.length ? new RegExp("(" + terms.join("|") + ")", "gi") : null, hl = (t) => (rx ? esc(t).replace(rx, "<mark>$1</mark>") : esc(t));
+    const sec = (title, items) => (items.length ? "<div class='card hud mt sres'><h3>" + title + "<small class='dim sm mono'>" + items.length + "</small></h3><div class='mlist mt'>" + items.join("") + "</div></div>" : "");
+    const local = new Set(chats.map((c) => c.id)), who = gname || "Hive";
+    const html = sec("MEMORIES", (j.memories || []).map((m) => "<div class='mi'><p><small>" + esc(MindV.kl(m.kind)) + (m.pin ? " · pinned" : "") + "</small>" + hl(m.text) + "</p></div>")) +
+      sec("THREADS", (j.threads || []).map((t) => "<div class='mi'><p><small>thread · " + esc(t.status) + " · " + agoT(t.ts) + "</small>" + hl(t.text) + "</p></div>")) +
+      sec("CONVERSATIONS", (j.turns || []).map((t) => { const can = t.cid && local.has(t.cid); return "<div class='mi turn'" + (can ? " data-cid='" + esc(t.cid) + "' tabindex='0' role='button'" : "") + "><p><small>" + agoT(t.ts) + (can ? " · open it" : "") + "</small><b>You:</b> " + hl(t.said) + "<br><span class='dim'>" + esc(who) + ":</span> " + hl(t.reply) + "</p></div>"; })) +
+      sec("ACTIVITY", (j.activity || []).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + hl(String(a.text).slice(0, 400)) + "</p></div>"));
+    $("m-results").innerHTML = html || "<div class='card hud'><p class='dim'>Nothing Hive knows matches “" + esc(q) + "”.</p></div>";
+  },
+  async exportAll(kind) {
+    const j = await api("/mind/export?tz=" + -new Date().getTimezoneOffset()); if (j.error) return toast(j.error);
+    const today = new Date().toISOString().slice(0, 10), d = (t) => new Date(t).toISOString().slice(0, 16).replace("T", " ");
+    const save = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+    if (kind === "json") return save("hive-mind-" + today + ".json", JSON.stringify(j, null, 2), "application/json");
+    const K = (MindV.j && MindV.j.kinds) || {}, kept = (j.memories || []).filter((m) => m.ok === 1), th = (j.threads || []).filter((t) => t.ok === 1);
+    let s = "# What Hive knows about you\n\n_Exported " + d(Date.now()) + " UTC._\n\n";
+    if (j.profile) s += "## Profile\n\n" + (j.profileAt ? "_Written " + d(j.profileAt) + " UTC" + (j.profileModel ? " by " + j.profileModel.split("|").pop().split("/").pop() : "") + "._\n\n" : "") + j.profile.replace(/^## /gm, "### ") + "\n\n";
+    if (kept.length) { s += "## Memories\n\n"; for (const k of Object.keys(K)) { const g = kept.filter((m) => (m.kind || "about") === k); if (g.length) s += "### " + K[k] + "\n\n" + g.map((m) => "- " + (m.pin ? "★ " : "") + m.text).join("\n") + "\n\n"; } }
+    if (th.length) s += "## Threads\n\n" + th.map((t) => "- [" + (t.status === "done" ? "x" : " ") + "] " + t.text + (t.status === "dropped" ? " _(dropped)_" : "") + " (since " + d(t.ts).slice(0, 10) + ")").join("\n") + "\n\n";
+    if ((j.activity || []).length) s += "## Activity (" + j.activity.length + " notes)\n\n" + j.activity.map((a) => "- " + d(a.ts) + " **" + a.kind + "** " + String(a.text).replace(/\s+/g, " ").slice(0, 600)).join("\n") + "\n";
+    save("hive-mind-" + today + ".md", s, "text/markdown");
   },
   async analyze() {
-    const b = $("m-analyze"); b.disabled = true; b.textContent = "Analyzing…"; $("m-profile").innerHTML = "<p class='dim'>Reading everything you've done in Hive… this takes up to a minute.</p>";
+    const b = $("m-analyze"); b.disabled = true; b.textContent = "Analyzing…"; MindV.show("you"); $("m-profile").innerHTML = "<p class='dim'>Reading everything you've done in Hive… this takes up to a minute.</p>";
     const j = await api("/mind/analyze", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Analyze me now";
     if (j.error) toast(j.error, 6000); else toast("Profile updated"); MindV.load();
   },
   async importLocal(quiet) {
     const sessions = chats.map((c) => ({ id: c.id, title: c.title, ts: c.ts, model: c.model, said: c.msgs.filter((m) => m.role === "user").map((m) => m.show || m.text || "").filter(Boolean) })).filter((c) => c.said.length);
     if (!sessions.length) return quiet || toast("No sessions on this device");
-    const j = await api("/mind/import", { sessions }); if (!quiet) toast(j.error || "Imported " + j.imported + " sessions", 3000); LS.set("mind-sync", Date.now()); MindV.load();
+    const j = await api("/mind/import", { sessions }); if (!quiet) toast(j.error || "Imported " + j.imported + " sessions", 3000); LS.set("mind-sync", Date.now()); if (!$("v-mind").classList.contains("hidden")) MindV.load();
   },
 };
 $("m-analyze").onclick = () => MindV.analyze();
 $("m-import").onclick = () => MindV.importLocal();
+$("m-exp-md").onclick = () => MindV.exportAll("md"); $("m-exp-json").onclick = () => MindV.exportAll("json");
 $("m-ask").onclick = () => { location.hash = "studio"; newChat(); send("Analyze me and what I do, from everything you know about me. Be frank: what stands out, what I'm good at, where I'm stuck, and what I should do next."); };
 $("m-on").onchange = async () => { await api("/mind/set", { on: $("m-on").checked }); toast($("m-on").checked ? "Memory on" : "Memory off: nothing is noted or shared"); MindV.load(); };
-$("m-add").onclick = async () => { const t = $("m-new").value.trim(); if (!t) return; const j = await api("/mind/remember", { text: t }); if (j.error) return toast(j.error); $("m-new").value = ""; MindV.load(); };
+$("m-trust").onchange = async () => { const on = $("m-trust").checked; await api("/mind/set", { trust: on }); toast(on ? "What Hive notices is kept without asking (you can still edit or forget it)" : "Hive asks before keeping what it notices", 3500); };
+$("m-add").onclick = async () => { const t = $("m-new").value.trim(); if (!t) return; const j = await api("/mind/remember", { text: t, kind: $("m-kind").value || undefined }); if (j.error) return toast(j.error); $("m-new").value = ""; toast("Remembered, under " + MindV.kl(j.kind)); MindV.load(); };
 $("m-new").onkeydown = (e) => { if (e.key === "Enter") $("m-add").click(); };
-$("m-wipe").onclick = async () => { if (!confirm("Forget everything Hive knows about you: the profile, every memory and the whole activity log? This can't be undone.")) return; await api("/mind/forget", { all: true }); toast("Forgotten"); MindV.load(); };
-$("v-mind").onclick = async (e) => { const b = e.target.closest("[data-mem],[data-act]"); if (!b) return; await api("/mind/forget", b.dataset.mem ? { mem: b.dataset.mem } : { act: b.dataset.act }); b.closest(".mi").remove(); };
+$("m-tadd").onclick = async () => { const t = $("m-tnew").value.trim(); if (!t) return; const j = await api("/mind/thread", { text: t }); if (j.error) return toast(j.error); $("m-tnew").value = ""; MindV.load(); };
+$("m-tnew").onkeydown = (e) => { if (e.key === "Enter") $("m-tadd").click(); };
+$("m-notice").onclick = async () => { const b = $("m-notice"); b.disabled = true; b.textContent = "Looking…"; const j = await api("/mind/notice", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Look over recent chats";
+  if (j.error) return toast(j.error, 6000); const n = j.facts.length + j.threads.length + j.finished.length;
+  toast(j.none ? "Nothing new since it last looked" : !n ? "It looked: nothing worth keeping this time" : "Found " + [j.facts.length && j.facts.length + " to remember", j.threads.length && j.threads.length + " open thread" + (j.threads.length > 1 ? "s" : ""), j.finished.length && j.finished.length + " finished"].filter(Boolean).join(", ") + (MindV.j && MindV.j.trust ? "" : ": review under You"), 5000); MindV.load(); };
+$("m-wipe").onclick = async () => { if (!confirm("Forget everything Hive knows about you: the profile and its history, every memory and thread, and the whole activity log? This can't be undone.")) return; await api("/mind/forget", { all: true }); toast("Forgotten"); MindV.load(); };
+$("m-hist").onchange = async () => { const at = $("m-hist").value; if (!at) return MindV.profile(MindV.j); const x = await api("/mind/history", { at: +at }); if (x.error) return toast(x.error);
+  $("m-profile").innerHTML = "<p class='dim sm'>An earlier profile, from " + esc(new Date(x.at).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })) + ". Your chats use the current one.</p>" + md(x.profile); };
+$("m-akind").onchange = () => MindV.j && MindV.time(MindV.j);
+let mqT = 0; $("m-q").oninput = () => { clearTimeout(mqT); mqT = setTimeout(MindV.search, 300); };
+$("m-q").onkeydown = (e) => { if (e.key === "Escape") { $("m-q").value = ""; MindV.search(); } };
+$("v-mind").onclick = async (e) => {
+  const t = e.target, tb = t.closest("#mtabs [data-mt]");
+  if (tb) { if (MindV.searching) { $("m-q").value = ""; await MindV.search(); } return MindV.show(tb.dataset.mt); }
+  const rv = t.closest("[data-rv]"); if (rv) { const [kind, id, keep] = rv.dataset.rv.split(":"); rv.closest(".mi").remove(); await api("/mind/review", { [kind]: +id, keep: keep === "1" }); return MindV.load(); }
+  const pin = t.closest("[data-pin]"); if (pin) { const j = await api("/mind/edit", { id: +pin.dataset.pin, pin: !pin.classList.contains("on") }); if (j.error) return toast(j.error); return MindV.load(); }
+  const th = t.closest("[data-th]"); if (th) { const [id, status] = th.dataset.th.split(":"); await api("/mind/thread", { id: +id, status }); toast(status === "done" ? "Marked done" : status === "dropped" ? "Dropped" : "Reopened"); return MindV.load(); }
+  const chip = t.closest("[data-mf]"); if (chip) { MindV.f = chip.dataset.mf; return MindV.mem(MindV.j); }
+  const ed = t.closest("[data-edit]"); if (ed) { if (!ed.querySelector("input")) MindV.edit(ed); return; }
+  const turn = t.closest("[data-cid]"); if (turn) { $("m-q").value = ""; MindV.searching = false; return openChat(turn.dataset.cid); }
+  const b = t.closest("[data-mem],[data-act]"); if (!b) return; await api("/mind/forget", b.dataset.mem ? { mem: b.dataset.mem } : { act: b.dataset.act }); b.closest(".mi").remove();
+};
+$("v-mind").addEventListener("change", async (e) => { const s = e.target.closest("[data-mk]"); if (!s) return; await api("/mind/edit", { id: +s.dataset.mk, kind: s.value }); MindV.load(); });
+$("v-mind").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("[data-edit],[data-cid]")) { e.preventDefault(); e.target.click(); } });
 
 // ── GENESIS: the mind that lives in Hive (owner only) ──
 const GenV = {
@@ -628,7 +742,10 @@ const GenV = {
     $("g-retired").innerHTML = (j.retired || []).map((l) => "<div class='mi'><p><small>retired " + ago(l.off_ts) + (l.why ? " · " + esc(l.why) : "") + "</small>" + esc(l.text) + "</p><button data-res='" + l.id + "' title='Bring it back'>↺</button></div>").join("") || "<p class='dim sm'>None.</p>";
     $("g-retd").classList.toggle("hidden", !(j.retired || []).length);
     const st8 = (i) => i.status === "building" ? "the swarm is on it (" + (i.by_ === "genesis" ? "started by " + s.name : "started by you") + (i.ps ? " · " + i.ps : "") + ")" : i.status === "built" ? "built: the result is waiting for you" : i.status;
-    $("g-ideas").innerHTML = (j.ideas || []).map((i) => "<div class='mi'><p><small>" + esc(st8(i)) + " · " + ago(i.ts) + "</small><b>" + esc(i.title) + "</b><br>" + esc(i.detail) + "</p><div class='ib'>" + ((i.status === "building" || i.status === "built") && i.pid ? "<button data-iopen='" + esc(i.pid) + "'>" + (i.status === "built" ? "Result" : "Open") + "</button>" : "<button data-ib='" + i.id + "' title='Hand it to the Swarm to build'>Build</button>") + "<button data-idx='" + i.id + "' title='Not now'>✕</button></div></div>").join("") || "<p class='dim sm'>No ideas yet. " + name + " proposes them when it reflects.</p>";
+    // grouped by where they are, each a title and two lines (tap to read it all), so a long list stays a list
+    const ideaRow = (i) => "<div class='mi idea'><p><small>" + esc(st8(i)) + " · " + ago(i.ts) + "</small><b>" + esc(i.title) + "</b><span class='more' data-more tabindex='0' role='button' title='Tap to read it all'>" + esc(i.detail) + "</span></p><div class='ib'>" + ((i.status === "building" || i.status === "built") && i.pid ? "<button data-iopen='" + esc(i.pid) + "'>" + (i.status === "built" ? "Result" : "Open") + "</button>" : "<button data-ib='" + i.id + "' title='Hand it to the Swarm to build'>Build</button>") + "<button data-idx='" + i.id + "' title='" + (i.status === "built" ? "Clear it from the list (the result stays in the Swarm)" : "Not now") + "'>✕</button></div></div>";
+    const groups = [["open", "ON ITS LIST"], ["building", "BEING BUILT"], ["built", "BUILT · RESULTS WAITING FOR YOU"]].map(([k, h]) => [k, h, (j.ideas || []).filter((i) => (i.status === k) || (k === "open" && !["building", "built"].includes(i.status)))]).filter((g) => g[2].length);
+    $("g-ideas").innerHTML = groups.map(([k, h, is]) => "<div class='ig'><h4>" + h + " <i>" + is.length + "</i>" + (k === "built" && is.length > 1 ? "<button class='ghost sm' data-iclear>Clear all built</button>" : "") + "</h4>" + is.map(ideaRow).join("") + "</div>").join("") || "<p class='dim sm'>No ideas yet. " + name + " proposes them when it reflects.</p>";
     $("g-journal").innerHTML = (j.journal || []).map((e) => "<div class='je " + esc(e.kind) + "'><small>" + esc(e.kind === "milestone" ? "milestone" : e.kind === "watch" ? "on watch · vigil's board" : "reflection") + " · " + new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + (e.model ? " · " + esc(String(e.model).split("|").pop().split("/").pop()) : "") + "</small><p>" + esc(e.text) + "</p></div>").join("") || "<p class='dim sm'>Empty.</p>";
   },
   async reflect() {
@@ -651,6 +768,8 @@ $("g-check").onclick = async () => {
 $("g-add").onclick = async () => { const t = $("g-new").value.trim(); if (!t) return; const j = await api("/genesis/teach", { text: t }); if (j.error) return toast(j.error, 5000); $("g-new").value = ""; toast(gname + " learned it"); GenV.load(); };
 $("g-new").onkeydown = (e) => { if (e.key === "Enter") $("g-add").click(); };
 $("genp").closest(".pad").addEventListener("click", async (e) => {
+  const mo = e.target.closest("[data-more]"); if (mo) return mo.classList.toggle("open");
+  if (e.target.closest("[data-iclear]")) { const built = (GenV.j.ideas || []).filter((i) => i.status === "built"); if (!confirm("Clear all " + built.length + " built ideas from this list? Their results stay in the Swarm.")) return; for (const i of built) await api("/genesis/idea", { id: i.id, act: "dismiss" }); toast("Cleared " + built.length); return GenV.load(); }
   const t = e.target.closest("[data-les],[data-res],[data-ib],[data-idx],[data-iopen]"); if (!t) return;
   if (t.dataset.les) { await api("/genesis/retire", { id: t.dataset.les }); return GenV.load(); }
   if (t.dataset.res) { const j = await api("/genesis/restore", { id: t.dataset.res }); if (j.error) toast(j.error); return GenV.load(); }
