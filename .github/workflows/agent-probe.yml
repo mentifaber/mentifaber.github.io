@@ -1,0 +1,17 @@
+name: Agent probe
+on:
+  push:
+    branches: [claude/website-redesign-portfolio-9dci67]
+    paths: [.github/workflows/agent-probe.yml]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is MENTIFABER AGENT 1.0 up?
+        run: |
+          B=https://mentifaber-1.sonicnomad01.workers.dev/api/agent
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            s=$(curl -sS "$B/status"); echo "$(date -u +%H:%M:%S) $s" | cut -c1-600
+            echo "$s" | grep -q '"state":"online"' && break
+            sleep 60
+          done
