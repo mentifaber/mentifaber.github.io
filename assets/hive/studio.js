@@ -64,7 +64,8 @@ const nameOf = (id) => { const m = models.find((x) => x.id === id); return m ? m
 const pollen = (id) => (window.HiveFX ? HiveFX.mineral(id) : "var(--m-flint)");
 const showPick = () => { $("mname").textContent = nameOf($("model").value); const pc = $("mpollen"), m = pollen($("model").value); if (pc) pc.style.setProperty("--pc", m); document.documentElement.style.setProperty("--m", m); };
 function drawPick() {
-  const q = $("mq").value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean), hit = models.filter((m) => words.every((w) => (m.name + " " + m.group + " " + m.id).toLowerCase().includes(w)));
+  const q = $("mq").value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean), named = (m) => words.every((w) => m.name.toLowerCase().includes(w)) ? 0 : 1;
+  const hit = models.filter((m) => words.every((w) => (m.name + " " + m.group + " " + m.id).toLowerCase().includes(w))).map((m, i) => [m, i]).sort((a, b) => (words.length ? named(a[0]) - named(b[0]) : 0) || a[1] - b[1]).map((x) => x[0]); // names first: "gemma" means Gemma, not a model built on it
   const groups = {}; for (const m of hit) (groups[m.group] = groups[m.group] || []).push(m); let shown = 0;
   $("mlist").innerHTML = Object.entries(groups).map(([g, ms]) => "<h6>" + esc(g) + " · " + ms.length + "</h6>" + ms.slice(0, q ? 200 : 60).map((m) => (shown++, "<button role='option' data-m='" + esc(m.id) + "' class='" + (m.id === $("model").value ? "on" : "") + "'><i class='pollen' style='--pc:" + pollen(m.id) + "'></i>" + esc(m.name) + (m.vision ? "<span class='tg'>sees</span>" : "") + "</button>")).join("")).join("") || "<p class='dim sm' style='padding:10px'>No model matches.</p>";
   $("mcount").textContent = hit.length + " of " + models.length + " models" + (shown < hit.length ? " · showing " + shown + ", search to narrow" : "");

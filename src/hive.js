@@ -285,7 +285,7 @@ export class Hive extends DurableObject {
     if (loud) { const back = q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor')", pid).one().c; if (back) { q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor')", pid); this.say(pid, "hive", "info", back + " offline key agents are trying again"); n += back; } }
     for (const a of await this.roster(true)) { if (a.src === "workers-ai" || q.exec("SELECT 1 FROM agent WHERE id=? AND pid=?", a.src + ":" + a.model, pid).toArray().length) continue;
       q.exec("INSERT INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)", a.src + ":" + a.model, pid, a.name, a.src, a.model, JSON.stringify(a.roles), "idle", null, Date.now()); n++; }
-    if (n || loud) this.say(pid, "hive", "join", n ? n + " agents from your keys joined the swarm" : "no new agents: add keys under Keys first");
+    if (n || loud) this.say(pid, "hive", "join", n ? n + " agents from your keys joined the swarm" : "no new agents: add keys under Uplinks first");
     return n;
   }
   // A paused project with no plan yet gets the built-in task board, so visiting AIs have work right away.
@@ -623,7 +623,7 @@ export class Hive extends DurableObject {
     // chat
     let [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
     if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
-    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Keys and Hive will switch to it automatically." : "Come back then.");
+    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Uplinks and Hive will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
     if (src === "agent") { const ag = await this.agentInfo(); if (!ag || !ag.model) return J({ error: "MENTIFABER AGENT 1.0 has no model loaded yet" }, 400); if (!owner && !ag.public) return J({ error: "MENTIFABER AGENT 1.0 is private" }, 401); }
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
