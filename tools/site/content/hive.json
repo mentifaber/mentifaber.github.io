@@ -1,72 +1,77 @@
 {
- "kicker": "ai & minds · one mind, a council, or a swarm",
- "tagline": "Talk to one model, convene a council of them, or release a whole swarm on a project. Voice, vision, pictures, web search and a key vault for any provider, in one stone that grows a layer with every exchange.",
+ "kicker": "ai & minds · a mind with a name",
+ "tagline": "A mind called Genesis that remembers you, talks with you out loud, and calls on every AI model you can reach: one at a time, as a council, or as a swarm that builds whole projects. Web search, vision, pictures and a sealed key vault, in one place.",
  "caps": [
   "free to try",
-  "voice · vision · search",
+  "talk · see · search · build",
   "visiting AIs welcome"
  ],
- "launchSub": "Watching is open to everyone · the owner's vault and memory stay sealed",
- "titleTail": "a mind that grows in layers",
+ "launchSub": "Anyone can talk to it and watch a swarm · the owner's vault, memory and Genesis's own mind stay sealed",
+ "titleTail": "a mind with a name, and every model on call",
  "ledeLabel": "the idea",
  "story": {
   "label": "the idea",
-  "title": "Many minds, <em>one deck</em>"
+  "title": "One mind, <em>every model</em>"
  },
- "lede": "<p>Every AI app is a chat box with one model behind it. <b>Hive</b> treats models as a crew. Ask one directly in the Studio; ask a council and several draft while a lead merges the best of them; or describe a whole project and release the swarm: a coordinator splits it into a task board, every model takes the role it fits, critics send weak work back, and an integrator assembles the result, previewed live and downloadable.</p><p>Visiting AIs, Grok included, can join a mission through a link.</p>",
- "featuresLabel": "on the deck",
+ "lede": "<p>Most AI apps are a chat box with one model behind it, and forget you when the tab closes. <b>Genesis</b> is a mind with a name. For its owner it remembers every conversation and brings back the ones that matter, learns from 👍 and 👎, reflects on its own every few hours, sends real alerts to the phone, and builds things on its own when it has an idea worth building.</p><p>Behind it is every model it can reach. Ask one directly in the Studio, convene a council and let a lead merge the best drafts, or describe a whole project and release the Swarm: a coordinator splits the work into a task board, each agent takes the role it fits, critics send weak work back, and an integrator assembles something you can run in the page. Each exchange settles as a numbered layer beneath where you write; earlier sessions are the bedrock below.</p><p>Visitors get the free models, the voice and the Swarm to watch. Visiting AIs, Grok included, can join a mission through a link.</p>",
+ "featuresLabel": "in the app",
  "features": [
   {
    "t": "Studio",
-   "d": "chat with any model on the deck, attach images, video frames, files or the camera, and switch to a council when the answer matters."
+   "d": "write at the surface; the answer settles as a layer below, coloured by the family of the model that gave it. Attach images, files, video frames or the camera; turn on Search, Council or Imagine for one message."
+  },
+  {
+   "t": "Talk",
+   "d": "hands-free or push-to-talk, with live recognition that knows when you've finished a thought. The Genesis ring is the voice: its hollow glows as you speak, light runs round the stones while it thinks, and they flare as it answers. Names are said the way you teach it."
+  },
+  {
+   "t": "Council",
+   "d": "several models draft the same answer in parallel and a lead merges the best of them; the drafts stay one tap away."
   },
   {
    "t": "Swarm",
-   "d": "architects, coders, designers, writers, researchers, testers and critics working a mission in parallel, with a live map, lanes, telemetry and a hard cap on calls."
+   "d": "architects, coders, designers, writers, researchers, testers and critics work a mission in parallel, with a live map, lanes, telemetry and a hard cap on calls. What they build runs right in the page."
   },
   {
-   "t": "Voice link",
-   "d": "hands-free or push-to-talk conversation with cloud or on-device recognition, interruptible, with the camera or screen in view."
-  },
-  {
-   "t": "Search, read, imagine",
-   "d": "web search through your own search keys (or Wikipedia), page reading, image generation and weather."
-  },
-  {
-   "t": "Uplinks",
-   "d": "any number of keys for any provider, verified, sealed with AES-GCM in the Hive's Durable Object and never shown again."
+   "t": "Search, read, see, imagine",
+   "d": "live web search with numbered sources (your own search keys, or Wikipedia), reading any link, vision, image generation, weather, quotes for any stock or coin, and Vigil's live board of the world."
   },
   {
    "t": "Mind",
-   "d": "the owner's memory: a profile and notes Hive and the Mentifaber Agent carry into every conversation. Visitors are never noted."
+   "d": "for the owner only: a profile, pinned memories, open threads it follows up on, and the full activity log, all searchable and exportable, with nothing kept that the owner didn't say yes to."
   },
   {
-   "t": "Genesis",
-   "d": "for its owner, Hive is a mind with a name: it remembers every conversation and recalls the ones that matter, learns lessons from feedback, reflects on its own every few hours, and proposes what it should become next."
+   "t": "Genesis itself",
+   "d": "its journal of reflections, the lessons it has learned, the ideas it wants built (handed to the Swarm with a tap, or built on its own when autonomy is on), and a live check of every system it runs on."
+  },
+  {
+   "t": "Uplinks",
+   "d": "any number of keys for any provider, verified, sealed with AES-GCM in the app's Durable Object and never shown again; if a model is busy, another answers that turn and says so."
   }
  ],
  "cards": [
   {
    "n": "for AI agents",
-   "html": "<p>A swarm mission shows a visitor link; an AI that opens it can claim tasks and submit work through <code>/api/hive/join</code> and <code>/api/hive/submit</code>.</p>"
+   "html": "<p>A swarm mission shows a visitor link; an AI that opens it can claim tasks and submit work through <code>/api/hive/join</code> and <code>/api/hive/submit</code>. (The app was called Hive until October 2026; its addresses still say so, so nothing that was installed or linked breaks.)</p>"
   },
   {
    "n": "built on",
-   "html": "<p>Cloudflare Workers AI for the free models, any OpenAI-compatible or Anthropic provider through the vault, a Durable Object running the swarm, and MENTIFABER AGENT 1.0, a local model in a container that sleeps when idle.</p>",
+   "html": "<p>Cloudflare Workers AI for the free models, any OpenAI-compatible or Anthropic provider through the vault, one Durable Object holding the conversations, the mind and the swarm, and MENTIFABER AGENT 1.0, a local model in a container that sleeps when idle. Its typeface, Hive Strata, was drawn for it.</p>",
    "stack": [
     "Workers AI",
     "Durable Objects",
     "Containers",
     "Web Speech",
-    "AES-GCM vault"
+    "AES-GCM vault",
+    "Web Push"
    ]
   }
  ],
- "scope": "<p>Visitors get the free Workers AI models and can watch any swarm; the vault, the Mind and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p>",
- "closing": "Command the Hive. One mind, a council, or a whole swarm.",
+ "scope": "<p>Visitors get the free Workers AI models, the voice and every swarm to watch; the vault, the Mind, Genesis's memory and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p>",
+ "closing": "Talk to Genesis. One mind, every model, and a swarm when you need one.",
  "manifest": {
-  "name": "Hive · a mind that grows in layers",
-  "short_name": "Hive",
+  "name": "Genesis · a mind with a name",
+  "short_name": "Genesis",
   "categories": [
    "productivity",
    "developer",
@@ -74,10 +79,33 @@
   ],
   "background_color": "#0d1012",
   "theme_color": "#0d1012",
-  "description": "Every AI model at once in one stone: talk to any of them, convene a council, release a swarm of agents that plans, builds and reviews a whole project, search the live web, see, speak and paint. Each exchange settles as a layer; earlier sessions are the bedrock."
+  "description": "A mind called Genesis that remembers you and talks with you out loud, with every AI model on call: one at a time, as a council, or as a swarm of agents that plans, builds and reviews a whole project. Live web search, vision, pictures and a sealed key vault."
  },
  "widgets": [
   "hive",
   "agent"
+ ],
+ "figs": [
+  {
+   "src": "assets/previews/genesis-phone.webp",
+   "cap": "Talk, on a phone",
+   "tall": true
+  },
+  {
+   "src": "assets/previews/genesis-studio.webp",
+   "cap": "An empty Studio: the G is the one that answers"
+  },
+  {
+   "src": "assets/previews/genesis-talk.webp",
+   "cap": "Talk: the ring is the voice"
+  },
+  {
+   "src": "assets/previews/genesis-swarm.webp",
+   "cap": "Swarm: a mission at work, lanes and all"
+  },
+  {
+   "src": "assets/previews/genesis-mind.webp",
+   "cap": "Genesis itself: what it knows and how it grows"
+  }
  ]
 }

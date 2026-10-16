@@ -1,4 +1,4 @@
-// Hive · runner: what the Swarm makes, running. A result's fenced blocks become files; the one marked to run (or the
+// Genesis · runner: what the Swarm makes, running. A result's fenced blocks become files; the one marked to run (or the
 // best candidate) runs in a sandboxed frame: an HTML page as is, plain JavaScript in a blank page, Python through Pyodide.
 // A shim in the frame hands console output and every error back, so the page can show it and ask the Swarm to fix it,
 // and stands in for what a sandbox refuses (storage, service workers, cookies) so ordinary apps don't crash on load.

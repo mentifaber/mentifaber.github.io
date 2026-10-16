@@ -531,7 +531,7 @@ export default {
         }
         const h = new Headers(req.headers); h.delete("x-agent-owner"); h.set("x-origin", url.origin); const own = !!(await session(req, env, "vigil")); if (own) h.set("x-agent-owner", "1");
         let body = req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer();
-        if (own && sub === "/v1/chat/completions" && env.HIVE && body) try { // the owner's apps get Hive's owner mode and memory too
+        if (own && sub === "/v1/chat/completions" && env.HIVE && body) try { // the owner's apps get Genesis's owner mode and memory too
           const j = JSON.parse(new TextDecoder().decode(body)), hh = new Headers({ "x-hive-owner": "1" });
           const m = await (await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/mind/brief", { headers: hh }))).json();
           if (Array.isArray(j.messages) && j.mind !== false && m.owner) { // one system message (Qwen's template allows only one, first); only what rarely changes, so it stays cached

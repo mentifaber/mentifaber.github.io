@@ -1,4 +1,4 @@
-// Hive · Swarm: launch a mission, watch the agents build it, then run what they made (assets/hive/runner.js), read its
+// Genesis · Swarm: launch a mission, watch the agents build it, then run what they made (assets/hive/runner.js), read its
 // code, fix what breaks, and keep every version.
 (() => {
   const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

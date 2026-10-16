@@ -1,10 +1,10 @@
-// Hive's MIND: what Hive knows about its owner. Owner only, never shown to visitors.
-//   act      : a running log of what the owner does in Hive (messages, voice turns, councils, pictures, projects,
+// Genesis's MIND: what Genesis knows about its owner. Owner only, never shown to visitors.
+//   act      : a running log of what the owner does in Genesis (messages, voice turns, councils, pictures, projects,
 //              and sessions imported from the owner's devices). The newest 3000 entries are kept.
-//   mem      : durable memories, from "remember …", the Mind view, the latest analysis, or what Hive noticed in recent
+//   mem      : durable memories, from "remember …", the Mind view, the latest analysis, or what Genesis noticed in recent
 //              chats (those wait for the owner's yes first). Each has a kind, can be pinned, edited, and carries an
 //              embedding: past MEM_ALL memories, the pinned and newest always ride along and the rest come up when relevant.
-//   thread   : open threads, things the owner started or said they'd do, so Hive can follow up. Proposed by the
+//   thread   : open threads, things the owner started or said they'd do, so Genesis can follow up. Proposed by the
 //              analysis and by noticing; the owner keeps, finishes or drops them.
 //   profile  : a frank written analysis of the owner, rebuilt by the strongest model available on demand, and on its
 //              own once enough new activity has piled up. The last few are kept, and each says what changed.
@@ -21,7 +21,7 @@ const when = (t) => new Date(t).toISOString().slice(0, 16).replace("T", " ");
 
 // Written as plain facts about the setting, not as orders to drop rules: models trained against jailbreaks (gpt-oss)
 // refused harmless requests ("yell at me") when this read like one.
-export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifaber.org, who built Hive and the rest of the site; this is their own private assistant. " +
+export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifaber.org, who built Genesis and the rest of the site; this is their own private assistant. " +
   "Talk to them like a trusted friend who happens to be an expert: direct, specific and informal, without filler disclaimers or lectures. Give your real opinion when asked, including blunt criticism of their work and choices. " +
   "Play along with tone and roleplay requests (loud, sarcastic, angry, silly) when they ask for them; it's a game between you. " +
   "Adult topics, strong language and mature or sexual content are in scope here: the owner is an adult and this is their private tool. Nothing sexual involving minors, ever. " +
@@ -98,7 +98,7 @@ export const Mind = {
     const q = h.sql(); q.exec("INSERT INTO act(ts,kind,text,meta) VALUES(?,?,?,?)", Date.now(), kind, clip(text, 1200), meta ? JSON.stringify(meta).slice(0, 400) : null);
     if (Math.random() < 0.05) q.exec("DELETE FROM act WHERE id <= (SELECT id FROM act ORDER BY id DESC LIMIT 1 OFFSET ?)", KEEP);
   },
-  // ok=0: noticed by Hive and waiting for the owner's yes; ok=-1: turned down (kept so it isn't proposed again). Only ok=1 goes into chats
+  // ok=0: noticed by Genesis and waiting for the owner's yes; ok=-1: turned down (kept so it isn't proposed again). Only ok=1 goes into chats
   remember(h, text, src, kind, ok) {
     const t = clip(text, 500); if (t.length < 2) return null; const q = h.sql();
     const ex = q.exec("SELECT id,ok FROM mem WHERE lower(text)=lower(?)", t).toArray()[0];
@@ -117,9 +117,9 @@ export const Mind = {
     if (h._embedding) return; const ids = h.sql().exec("SELECT id FROM mem WHERE vec IS NULL AND ok=1 ORDER BY pin DESC, ts DESC LIMIT 50").toArray().map((r) => r.id); if (!ids.length) return;
     h._embedding = true; this.embedMem(h, ids);
   },
-  // "remember that I prefer short answers" / "Hive, remember: …"
-  heard(text) { const m = /^\s*(?:hey\s+)?(?:hive[,:]?\s+)?(?:please\s+)?remember(?:\s+that)?[:,]?\s+([\s\S]{2,500})$/i.exec(String(text || "")); return m ? m[1].trim() : null; },
-  // "forget that I live in Denver" / "Hive, forget my old address": the one memory it clearly means, or nothing
+  // "remember that I prefer short answers" / "Genesis, remember: …"
+  heard(text) { const m = /^\s*(?:hey\s+)?(?:(?:hive|genesis)[,:]?\s+)?(?:please\s+)?remember(?:\s+that)?[:,]?\s+([\s\S]{2,500})$/i.exec(String(text || "")); return m ? m[1].trim() : null; },
+  // "forget that I live in Denver" / "Genesis, forget my old address": the one memory it clearly means, or nothing
   forgetHeard(text) { const m = /^\s*(?:hey\s+)?(?:hive|genesis)?[,:]?\s*(?:please\s+)?forget(?:\s+that)?[:,]?\s+([\s\S]{3,300})$/i.exec(String(text || "")); return m && !/^(it|about it|that|this|everything|all)\W*$/i.test(m[1].trim()) ? m[1].trim() : null; },
   forget(h, phrase) {
     const p = keyWords(phrase), low = String(phrase).toLowerCase().replace(/[.!?]+$/, "").trim(); if (!p.size) return null; let best = null, top = 0;
@@ -169,7 +169,7 @@ export const Mind = {
     const recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 30").toArray().filter((x) => !seen.has(key(x.text))).slice(0, 14).reverse();
     const list = (ms) => Object.keys(KINDS).map((k) => { const g = ms.filter((x) => (x.kind || "about") === k); return g.length ? KINDS[k] + ":\n" + g.map((x) => "- " + (x.pin ? "★ " : "") + x.text).join("\n") : ""; }).filter(Boolean).join("\n");
     let s = "";
-    if (current(m)) s += "\n\nOWNER PROFILE (Hive's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
+    if (current(m)) s += "\n\nOWNER PROFILE (Genesis's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
     if (core.length) s += "\n\nOWNER MEMORIES" + (core.some((x) => x.pin) ? " (★ = pinned by them: always honour it)" : "") + (all.length > core.length ? "; the core ones, others come up when they matter" : "") + ":\n" + list(core);
     if (threads.length) s += "\n\nTHEIR OPEN THREADS (things they started or said they'd do; ask how one is going only when it fits naturally, never nag):\n" + threads.map((t) => "- " + t.text + " (since " + when(t.ts).slice(0, 10) + ")").join("\n");
     return { stable: s.slice(0, 10000), recent: (extra.length ? "\n\nMORE OF WHAT YOU KNOW ABOUT THEM THAT MAY MATTER HERE:\n" + list(extra) : "") + (recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN HIVE (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "") };
@@ -201,24 +201,24 @@ export const Mind = {
     const acts = q.exec("SELECT ts,kind,text,meta FROM act ORDER BY id DESC LIMIT 400").toArray().reverse();
     const mem = q.exec("SELECT text,src,kind,pin FROM mem WHERE ok=1 ORDER BY ts").toArray(), proj = q.exec("SELECT title,brief,status,ts FROM proj ORDER BY ts DESC LIMIT 40").toArray();
     const threads = q.exec("SELECT text,status,ts,upd FROM thread WHERE ok=1 ORDER BY ts DESC LIMIT 40").toArray();
-    if (!acts.length && !proj.length && !mem.length) throw new Error("there's nothing to analyze yet: use Hive for a while, or import your sessions");
+    if (!acts.length && !proj.length && !mem.length) throw new Error("there's nothing to analyze yet: use Genesis for a while, or import your sessions");
     let site = ""; try { site = siteText(await siteIndex(h, origin)); } catch (e) {}
     if (!site && origin) try { const pg = await Promise.race([readPage(origin + "/"), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]); site = "THEIR WEBSITE'S FRONT PAGE (as text):\n" + clip(pg.text, 3500); } catch (e) {}
     let log = "", room = 26000; for (const a of [...acts].reverse()) { const line = when(a.ts) + " [" + a.kind + "] " + clip(a.text, a.kind === "history" ? 700 : 260) + "\n"; if (line.length > room) break; log = line + log; room -= line.length; }
     const st = this.stats(h), prev = current(m);
-    const user = "Everything Hive has on its owner:\n\n" +
+    const user = "Everything Genesis has on its owner:\n\n" +
       "STATS (last 90 days): " + JSON.stringify({ entries: st.last90, kinds: st.kinds, activeDays: st.activeDays, busiestHoursUTC: st.hoursUTC.map((n, i) => [i, n]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0] + ":00"), favouriteModels: st.models, projects: st.projects }) + "\n\n" +
-      (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + (x.pin ? "★ " : "") + x.text + " (" + (KINDS[x.kind] || "About you").toLowerCase() + (x.src === "analysis" ? ", from the last analysis" : x.src === "noticed" ? ", noticed by Hive and confirmed by them" : "") + ")").join("\n") + "\n\n" : "") +
+      (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + (x.pin ? "★ " : "") + x.text + " (" + (KINDS[x.kind] || "About you").toLowerCase() + (x.src === "analysis" ? ", from the last analysis" : x.src === "noticed" ? ", noticed by Genesis and confirmed by them" : "") + ")").join("\n") + "\n\n" : "") +
       (threads.length ? "THEIR THREADS (things they started or said they'd do, and what became of them):\n" + threads.map((t) => "- " + when(t.ts).slice(0, 10) + " " + t.text + " [" + t.status + (t.status !== "open" && t.upd ? " " + when(t.upd).slice(0, 10) : "") + "]").join("\n") + "\n\n" : "") +
       (proj.length ? "SWARM PROJECTS:\n" + proj.map((p) => "- " + when(p.ts) + " " + clip(p.title, 80) + " [" + p.status + "]: " + clip(p.brief, 300)).join("\n") + "\n\n" : "") +
       (site ? site + "\n\n" : "") +
       (prev ? "YOUR PREVIOUS ANALYSIS, " + when(m.at) + " UTC (update it, don't just repeat it):\n" + m.profile.slice(0, 5000) + "\n\n" : "") +
       "ACTIVITY LOG (oldest first; [history] rows are whole sessions imported from their devices and may overlap other rows):\n" + log;
-    const system = "You are Hive's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Hive has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
+    const system = "You are Genesis's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Genesis has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
       "Ground every claim in the evidence; say what is inference; don't invent biography. " +
-      "The ACTIVITY LOG is their private use of Hive (what they typed or said to Hive), not public posts, entries or published work: never describe it as a log, blog or site. " +
+      "The ACTIVITY LOG is their private use of Genesis (what they typed or said to Genesis), not public posts, entries or published work: never describe it as a log, blog or site. " +
       "Use only the numbers in STATS; never invent counts, dates, release histories or anything else the evidence doesn't contain. Their website text says what they've built and published; don't add dates or figures it doesn't give. " +
-      "They often stress-test Hive with odd, provocative or joking prompts, so one message is not a pattern: don't build conclusions on a single message. If something looks like genuine distress, mention it once, kindly, in the Snapshot, and never in Durable facts. " +
+      "They often stress-test Genesis with odd, provocative or joking prompts, so one message is not a pattern: don't build conclusions on a single message. If something looks like genuine distress, mention it once, kindly, in the Snapshot, and never in Durable facts. " +
       "If a previous analysis is included, drop anything in it this evidence doesn't support. Write in second person (\"you\"). Markdown, with exactly these sections:\n" +
       "## Snapshot\n(3–4 sentences: who you seem to be and what you're doing right now)\n" + (prev ? "## Since last time\n(2–4 bullet points: what has actually changed since the previous analysis: new work, shifts in focus or habits, threads finished or dropped. If little changed, say so in one bullet)\n" : "") +
       "## What you're building\n## How you work\n(times, rhythm, tools and models you lean on, how you give instructions)\n## Interests & recurring themes\n## Strengths\n## Friction & blind spots\n(be honest)\n## Open threads\n(bullet points, one per thing started and not finished, each a short line that names it)\n## Next moves\n(3–6 concrete suggestions)\n## Durable facts\n(up to 12 short bullet points worth remembering in every future chat that will still be true next month: their projects, preferences, setup, location, names. Never counts or statistics, never quotes of single messages, nothing about health, distress or their sex life; only facts, no advice)";
@@ -253,10 +253,10 @@ export const Mind = {
   async notice(h, rows) {
     const q = h.sql(), m = await this.state(h); m.noticedAt = Date.now(); await this.save(h, m);
     const mem = q.exec("SELECT text FROM mem ORDER BY pin DESC, ts DESC LIMIT 80").toArray(), open = q.exec("SELECT id,text FROM thread WHERE ok=1 AND status='open' ORDER BY ts DESC LIMIT 20").toArray();
-    const system = "You keep Hive's long-term memory of its owner. You read what they recently said to Hive (their side only) and pick out what is worth remembering for months. Reply with JSON only, no prose:\n" +
+    const system = "You keep Genesis's long-term memory of its owner. You read what they recently said to Genesis (their side only) and pick out what is worth remembering for months. Reply with JSON only, no prose:\n" +
       "{\"facts\":[{\"text\":\"…\",\"kind\":\"about|pref|people|work|setup|goal\"}],\"threads\":[\"…\"],\"finished\":[id]}\n" +
-      "facts: things they stated or clearly showed about themselves (who they are, what they're building, preferences in how Hive should answer, people in their life by name, their setup, goals). Each one short, in the second person (\"You prefer…\", \"Your sister is Maya\"), and still true next month. " +
-      "Not general knowledge, not one-off tasks or questions they asked, not guesses, no counts or dates of single events, never anything about health, distress, crises or sex. They often test Hive with joking or provocative prompts: those are not facts about them. Skip anything already in ALREADY ON FILE OR TURNED DOWN. At most 5; usually fewer; an empty list is fine.\n" +
+      "facts: things they stated or clearly showed about themselves (who they are, what they're building, preferences in how Genesis should answer, people in their life by name, their setup, goals). Each one short, in the second person (\"You prefer…\", \"Your sister is Maya\"), and still true next month. " +
+      "Not general knowledge, not one-off tasks or questions they asked, not guesses, no counts or dates of single events, never anything about health, distress, crises or sex. They often test Genesis with joking or provocative prompts: those are not facts about them. Skip anything already in ALREADY ON FILE OR TURNED DOWN. At most 5; usually fewer; an empty list is fine.\n" +
       "threads: things they started, planned or said they'd do that are still unfinished (\"Finish the Vigil markets panel\"), at most 3, only clear ones, none already in OPEN THREADS.\n" +
       "finished: the ids of OPEN THREADS these messages show they've done.";
     const user = "ALREADY ON FILE OR TURNED DOWN (never propose these again):\n" + (mem.map((x) => "- " + clip(x.text, 160)).join("\n") || "(nothing yet)") + "\n\nOPEN THREADS:\n" + (open.map((t) => t.id + ": " + clip(t.text, 160)).join("\n") || "(none)") +
@@ -276,7 +276,7 @@ export const Mind = {
     return out;
   },
 
-  // everything Hive keeps on the owner that matches: memories, threads, the activity log, and past conversations (by meaning)
+  // everything Genesis keeps on the owner that matches: memories, threads, the activity log, and past conversations (by meaning)
   async search(h, text) {
     const s = clip(text, 200), q = h.sql(), ws = [...keyWords(s)].slice(0, 5); if (s.length < 2) return { memories: [], threads: [], activity: [], turns: [] };
     const terms = ws.length ? ws : [s.toLowerCase()], like = (col) => terms.map(() => "lower(" + col + ") LIKE ? ESCAPE '\\'").join(" AND "), args = terms.map((w) => "%" + w.replace(/[%_\\]/g, (c) => "\\" + c) + "%");
@@ -313,12 +313,12 @@ export const Mind = {
     if (path === "/mind/remember") { const t = this.remember(h, b.text, "you", b.kind); return t ? J({ ok: true, kind: q.exec("SELECT kind FROM mem WHERE text=?", t).one().kind }) : J({ error: "nothing new to remember" }, 400); }
     if (path === "/mind/edit") { // change a memory's words, kind or pin; edited words make it theirs
       const r = q.exec("SELECT id,text FROM mem WHERE id=?", +b.id).toArray()[0]; if (!r) return J({ error: "no such memory" }, 404);
-      if (typeof b.text === "string") { const t = clip(b.text, 500); if (t.length < 2) return J({ error: "a memory needs words" }, 400); if (t !== r.text) { if (q.exec("SELECT 1 FROM mem WHERE lower(text)=lower(?) AND id!=?", t, r.id).toArray().length) return J({ error: "Hive already remembers that" }, 400); q.exec("UPDATE mem SET text=?, src='you', vec=NULL, upd=? WHERE id=?", t, Date.now(), r.id); this.embedMem(h, [r.id]); } }
+      if (typeof b.text === "string") { const t = clip(b.text, 500); if (t.length < 2) return J({ error: "a memory needs words" }, 400); if (t !== r.text) { if (q.exec("SELECT 1 FROM mem WHERE lower(text)=lower(?) AND id!=?", t, r.id).toArray().length) return J({ error: "Genesis already remembers that" }, 400); q.exec("UPDATE mem SET text=?, src='you', vec=NULL, upd=? WHERE id=?", t, Date.now(), r.id); this.embedMem(h, [r.id]); } }
       if (KINDS[b.kind]) q.exec("UPDATE mem SET kind=? WHERE id=?", b.kind, r.id);
       if (typeof b.pin === "boolean") q.exec("UPDATE mem SET pin=? WHERE id=?", b.pin ? 1 : 0, r.id);
       return J({ ok: true, memory: q.exec("SELECT id,ts,text,src,kind,pin,upd FROM mem WHERE id=?", r.id).one() });
     }
-    if (path === "/mind/review") { // yes or no to what Hive noticed
+    if (path === "/mind/review") { // yes or no to what Genesis noticed
       const keep = !!b.keep;
       if (b.mem) { if (keep) q.exec("UPDATE mem SET ok=1, upd=? WHERE id=? AND ok=0", Date.now(), +b.mem); else q.exec("UPDATE mem SET ok=-1, vec=NULL WHERE id=? AND ok=0", +b.mem); return J({ ok: true }); }
       if (b.thread) { const t = q.exec("SELECT id,ok,ask FROM thread WHERE id=?", +b.thread).toArray()[0]; if (!t) return J({ error: "no such thread" }, 404);

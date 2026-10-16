@@ -1,7 +1,7 @@
 // /api/hive/listen: the voice link's live ears. The browser streams 16 kHz 16-bit PCM over a WebSocket; this relays it to
 // Deepgram Flux on Workers AI, which sends back the words as they're said (Update), and EndOfTurn when the speaker has
 // finished the thought rather than merely paused. One socket per turn (assets/hive/ears.js opens it at the first syllable).
-// Visitors get a daily allowance, metered by Hive like its other voice routes; the owner has none.
+// Visitors get a daily allowance, metered by Genesis like its other voice routes; the owner has none.
 const MAX_MS = 3 * 60e3, IDLE_MS = 20e3;
 export async function listen(req, env, owner, meter) {
   if ((req.headers.get("upgrade") || "").toLowerCase() !== "websocket") return new Response("expected a WebSocket", { status: 426 });

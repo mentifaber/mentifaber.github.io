@@ -1,5 +1,5 @@
-// Hive kit: the key vault's providers, one call shape for every model, and the tools (web search, page reading,
-// vision, speech, image generation). Keys live only in the Hive Durable Object, sealed with AES-GCM; the
+// Genesis kit: the key vault's providers, one call shape for every model, and the tools (web search, page reading,
+// vision, speech, image generation). Keys live only in the Genesis Durable Object (class Genesis), sealed with AES-GCM; the
 // browser never sees one again after it's added.
 
 // Providers a key can belong to. "compat" speaks the OpenAI chat API; "anthropic" and the search engines have their own.
@@ -56,7 +56,7 @@ async function jfetch(url, o, ms) {
   if (!r.ok) { const m = j && (j.error && (j.error.message || j.error) || j.message || j.detail); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
   return j == null ? t : j;
 }
-const hdr = (v, key) => v.kind === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" } : { ...(key ? { authorization: "Bearer " + key } : {}), "content-type": "application/json", "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Hive" };
+const hdr = (v, key) => v.kind === "anthropic" ? { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" } : { ...(key ? { authorization: "Bearer " + key } : {}), "content-type": "application/json", "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Genesis" };
 
 // What a key can run. Chat keys list their provider's models; search keys run one test query.
 export async function probe(v, key) {

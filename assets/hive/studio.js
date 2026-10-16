@@ -1,4 +1,4 @@
-// Hive · Studio: one conversation with any model, plus web search, page reading, images, video, voice and pictures.
+// Genesis · Studio: one conversation with any model, plus web search, page reading, images, video, voice and pictures.
 // Conversations stay on this device; keys stay on the server.
 (() => {
 "use strict";
@@ -14,7 +14,7 @@ const applyTheme = () => { const l = LS.get("theme", "dark") === "light"; docume
 applyTheme(); $("theme").onclick = () => { const t = LS.get("theme", "dark") === "light" ? "dark" : "light"; LS.set("theme", t); applyTheme(); toast(t === "light" ? "Limestone" : "Basalt"); };
 
 // ── views ──
-let owner = false, gname = "", busyAt = 0; // gname: Genesis, the mind the owner talks to (visitors talk to plain Hive)
+let owner = false, gname = "", busyAt = 0; // gname: Genesis, the mind the owner talks to (visitors talk to plain Genesis)
 function route() {
   const v = (location.hash.slice(1) || (new URLSearchParams(location.search).get("p") ? "swarm" : "studio")).split("?")[0].split("/")[0]; // "#mind/genesis": a view and a part of it
   const view = ["studio", "swarm", "keys", "mind"].includes(v) ? v : "studio";
@@ -34,7 +34,7 @@ async function loadModels() {
   const sel = $("model"), groups = {}; for (const m of models) (groups[m.group] = groups[m.group] || []).push(m);
   sel.innerHTML = Object.entries(groups).map(([g, ms]) => "<optgroup label='" + esc(g) + "'>" + ms.map((m) => "<option value='" + esc(m.id) + "'>" + esc(m.name) + "</option>").join("") + "</optgroup>").join("") || "<option value=''>No models available</option>";
   const want = (chat && chat.model) || LS.get("model", ""); if (models.some((m) => m.id === want)) sel.value = want; else { const d = models.find((m) => /gpt-oss-120b/.test(m.id)) || models[0]; if (d) sel.value = d.id; }
-  if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so Hive switched to " + nameOf(j.standIn), 5000); }
+  if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so Genesis switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
   const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: (() => { let x = k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, ""); if (x.includes(" · ")) x = x.split(" · ").pop(); x = x.replace(/^Cloudflare /, ""); return x.charAt(0).toUpperCase() + x.slice(1); })(), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
   const gl = Object.values(pg); $("esub").textContent = models.length + " minds from " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + ". One, a council, or a whole swarm.";
@@ -44,11 +44,10 @@ async function loadModels() {
   $("quota").textContent = owner ? "" : "Visitors get the free models and a daily allowance.";
 }
 let models = [];
-// the geode: a crystal for every mind it can reach, a band for every few sessions; the same stone, small, in the crown
-const stone = () => { if (!window.HiveFX) return; const seed = gname || "Hive", bands = Math.min(9, 3 + Math.floor(Math.log2(chats.length + 1)));
-  HiveFX.geode($("core"), { seed, minds: models, bands });
+// the Genesis mark on an empty Studio: the ring is every mind it can reach, the G the one that answers
+const stone = () => { if (!window.HiveFX) return;
   const fam = new Set(models.map((m) => HiveFX.mineralName(m.id))).size;
-  $("gcap").innerHTML = "<b>" + models.length + " minds</b>, " + fam + " mineral" + (fam === 1 ? "" : "s") + ".<br>Every crystal is a mind it can reach; a band forms as your sessions pile up."; };
+  $("gcap").innerHTML = "<b>" + models.length + " minds</b> on call, " + fam + " famil" + (fam === 1 ? "y" : "ies") + ".<br>The ring is every mind Genesis can reach; the G is the one that answers you."; };
 // live telemetry in the header and the side panel
 let lastMs = 0, lastTtft = 0, lastCps = 0; window.tele = () => tele();
 function tele() {
@@ -145,7 +144,7 @@ function drawMsg(m, i, quiet) {
   if (m.role === "user") { const t = m.show || m.text || ""; if (t.length > 320 || t.split("\n").length > 6) d.classList.add("long");
     d.innerHTML = (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools'>" + m.files.map((f) => "<span>" + esc(f) + "</span>").join("") + "</div>" : "") + (t ? "<div class='b'>" + esc(t) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and send again'>Edit</button><button data-uact='copy' title='Copy'>Copy</button></div>"; }
   else {
-    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "Hive") + (m.council ? " · council" : "") + "</span></div>";
+    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "Genesis") + (m.council ? " · council" : "") + "</span></div>";
     const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
       : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1") + "</div>"
       : m.error ? who + "<p class='err'>" + esc(m.error) + "</p>"
@@ -271,7 +270,7 @@ async function run(image, opts) {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
     else if (u.council) j = await api("/chat", body, busy.signal);
     else j = await stream(body, m, i, busy.signal);
-  } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : m.text ? null : "Couldn't reach the Hive. Check your connection.", text: m.text && e.name !== "AbortError" ? m.text + "\n\n_(the connection dropped here)_" : m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; j.turn = m.turn; } }
+  } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : m.text ? null : "Couldn't reach Genesis. Check your connection.", text: m.text && e.name !== "AbortError" ? m.text + "\n\n_(the connection dropped here)_" : m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; j.turn = m.turn; } }
   busy = null; $("sendb").classList.remove("stop"); $("sendb").textContent = on("draw") ? "Paint" : "Ask"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
@@ -308,7 +307,7 @@ async function stream(body, m, i, signal) {
 }
 // ── command palette (⌘K) ──
 const CMDS = () => [
-  ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what Hive knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
+  ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what Genesis knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
   ["Toggle search", "mode", () => $("web").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
   ["Voice link", "voice", () => Voice.start()], ["Export session", "markdown", () => $("export").click()], ["Settings", "voice · stone · data", () => openSettings()], ["Basalt or limestone", "light or dark", () => $("theme").click()],
   ...chats.map((c) => [c.title || "Untitled", "session · " + new Date(c.ts).toLocaleDateString([], { month: "short", day: "numeric" }), () => openChat(c.id)]),
@@ -328,7 +327,7 @@ $("cmdk").onclick = (e) => { if (e.target === $("cmdk")) $("cmdk").close(); };
 $("cmdk-btn").onclick = openCmd;
 document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openCmd(); } });
 window.HiveMD = md;
-$("export").onclick = () => { if (!chat) return toast("Nothing to export yet"); const t = "# " + chat.title + "\n\n" + chat.msgs.map((m) => (m.role === "user" ? "**You:** " : "**Hive:** ") + (m.image ? "![image](generated)" : m.text || m.error || "") + (m.sources && m.sources.length ? "\n\n" + m.sources.map((s, k) => "[" + (k + 1) + "] " + s.url).join("\n") : "")).join("\n\n---\n\n");
+$("export").onclick = () => { if (!chat) return toast("Nothing to export yet"); const t = "# " + chat.title + "\n\n" + chat.msgs.map((m) => (m.role === "user" ? "**You:** " : "**Genesis:** ") + (m.image ? "![image](generated)" : m.text || m.error || "") + (m.sources && m.sources.length ? "\n\n" + m.sources.map((s, k) => "[" + (k + 1) + "] " + s.url).join("\n") : "")).join("\n\n---\n\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([t], { type: "text/markdown" })); a.download = chat.title.replace(/[^\w-]+/g, "-").toLowerCase().slice(0, 50) + ".md"; a.click(); };
 $("settings").onclick = () => openSettings();
 $("ssave").onclick = () => { LS.set("sys", $("sys").value.trim()); $("sdlg").close(); };
@@ -407,7 +406,7 @@ const Voice = (window.HiveVoice = {
     if (ptt) { Voice.set("Hold to talk", ""); await new Promise((ok) => (Voice.pttGo = ok)); if (!Voice.on) return null; }
     Voice.set("Listening…", "");
     if (!Voice.ear) return Voice.listenRec();
-    const t = Voice.ear.turn({ engine: S("recog") === "whisper" ? "whisper" : "flux", ptt, silence: +S("sil") || 900, guard: ptt ? 0 : 450, keyterm: gname || "Hive", lang: (navigator.language || "en").slice(0, 2),
+    const t = Voice.ear.turn({ engine: S("recog") === "whisper" ? "whisper" : "flux", ptt, silence: +S("sil") || 900, guard: ptt ? 0 : 450, keyterm: gname || "Genesis", lang: (navigator.language || "en").slice(0, 2),
       onStart: () => Voice.set("Listening…", ""), onPartial: (x) => { $("vtext").textContent = x; }, onSend: () => Voice.set("Transcribing…"), onWait: () => Voice.set("Listening…", ""), onError: (m) => toast("Couldn't hear that: " + m) });
     if (ptt) Voice.pttStop = () => Voice.ear && Voice.ear.stop();
     const r = await t; Voice.pttStop = null;
@@ -610,7 +609,7 @@ $("agentp").onclick = async (e) => {
   Agent.draw(); loadModels();
 };
 
-// ── MIND: what Hive knows about the owner. Tabs: You (profile, what Hive noticed), Memory (memories, open threads),
+// ── MIND: what Genesis knows about the owner. Tabs: You (profile, what Genesis noticed), Memory (memories, open threads),
 // Timeline (rhythm, activity), Genesis; a search across all of it ──
 const agoT = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
 const MTABS = ["you", "mem", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
@@ -638,7 +637,7 @@ const MindV = {
     const f = [["last 90 days", (st.last90 || 0) + " actions"], ["active days", st.activeDays || 0], ["streak", st.streak ? st.streak + " day" + (st.streak > 1 ? "s" : "") : "—"], ["chat · voice", (k.chat || 0) + " · " + (k.voice || 0)], ["councils · pictures", (k.council || 0) + " · " + (k.image || 0)],
       ["swarm projects", Object.values(st.projects || {}).reduce((a, b) => a + b, 0)], ["peak hour", Math.max(...hrs) ? fmt(top) : "—"], ["favourite mind", (st.models && st.models[0] && st.models[0][0]) || "—"], ["memories", st.memories || 0], ["open threads", st.threads || 0]];
     $("m-facts").innerHTML = f.map(([a, b]) => "<div>" + a + "<b title='" + esc(b) + "'>" + esc(b) + "</b></div>").join("");
-    // what Hive noticed, waiting for a yes
+    // what Genesis noticed, waiting for a yes
     const pm = (j.pending && j.pending.memories) || [], pt = (j.pending && j.pending.threads) || [], n = pm.length + pt.length;
     $("m-review").classList.toggle("hidden", !n); $("m-badge").classList.toggle("hidden", !n); $("m-badge").textContent = n || "";
     const row = (small, text, yes, no, key) => "<div class='mi rv'><p><small>" + small + "</small>" + esc(text) + "</p><div class='ib'><button data-rv='" + key + ":1'>" + yes + "</button><button data-rv='" + key + ":0'>" + no + "</button></div></div>";
@@ -651,8 +650,8 @@ const MindV = {
     MindV.profile(j);
   },
   profile(j) {
-    $("m-profile").innerHTML = j.outdated ? "<p class='dim'>⚠ This profile came from Hive's older analyst, which invented numbers. It's no longer used in your chats and is being rebuilt; hit <b>Analyze me now</b> to do it immediately.</p><details><summary class='dim'>show the old one</summary>" + md(j.profile) + "</details>"
-      : j.profile ? md(j.profile) : "<p class='dim'>No analysis yet. Hit <b>Analyze me now</b>: the strongest model you have reads your activity, projects, memories and threads and writes you up, frankly. It refreshes on its own as you keep using Hive, and each new one says what changed.</p>";
+    $("m-profile").innerHTML = j.outdated ? "<p class='dim'>⚠ This profile came from Genesis's older analyst, which invented numbers. It's no longer used in your chats and is being rebuilt; hit <b>Analyze me now</b> to do it immediately.</p><details><summary class='dim'>show the old one</summary>" + md(j.profile) + "</details>"
+      : j.profile ? md(j.profile) : "<p class='dim'>No analysis yet. Hit <b>Analyze me now</b>: the strongest model you have reads your activity, projects, memories and threads and writes you up, frankly. It refreshes on its own as you keep using Genesis, and each new one says what changed.</p>";
   },
   mem(j) {
     const ks = Object.keys(j.kinds || {}), ms = j.memories || [], opt = (sel) => ks.map((k) => "<option value='" + k + "'" + (k === sel ? " selected" : "") + ">" + esc(j.kinds[k]) + "</option>").join("");
@@ -660,13 +659,13 @@ const MindV = {
     const count = (f) => ms.filter(f).length, chips = [["all", "All", ms.length], ["pin", "★ Pinned", count((m) => m.pin)], ...ks.map((k) => [k, j.kinds[k], count((m) => (m.kind || "about") === k)])].filter((c) => c[0] === "all" || c[2]);
     if (!chips.some((c) => c[0] === MindV.f)) MindV.f = "all";
     $("m-chips").innerHTML = chips.map(([f, l, n]) => "<button class='chip" + (f === MindV.f ? " on" : "") + "' data-mf='" + f + "'>" + esc(l) + " <i>" + n + "</i></button>").join("");
-    const show = ms.filter((m) => MindV.f === "all" || (MindV.f === "pin" ? m.pin : (m.kind || "about") === MindV.f)), src = (s) => (s === "analysis" ? "from analysis" : s === "noticed" ? "noticed by Hive" : "you");
+    const show = ms.filter((m) => MindV.f === "all" || (MindV.f === "pin" ? m.pin : (m.kind || "about") === MindV.f)), src = (s) => (s === "analysis" ? "from analysis" : s === "noticed" ? "noticed by Genesis" : "you");
     $("m-mem").innerHTML = show.map((m) => "<div class='mi mem'><button class='pin" + (m.pin ? " on" : "") + "' data-pin='" + m.id + "' aria-pressed='" + !!m.pin + "' title='" + (m.pin ? "Pinned: in every chat. Tap to unpin" : "Pin it: always in every chat") + "'>" + (m.pin ? "★" : "☆") + "</button>" +
       "<p><small><select data-mk='" + m.id + "' aria-label='Kind'>" + opt(m.kind || "about") + "</select> · " + src(m.src) + " · " + agoT(m.upd || m.ts) + "</small><span class='mtx' data-edit='" + m.id + "' tabindex='0' role='button' title='Tap to edit'>" + esc(m.text) + "</span></p><button data-mem='" + m.id + "' title='Forget this'>✕</button></div>").join("")
-      || "<p class='dim sm'>" + (ms.length ? "None of that kind." : "Nothing yet. Say “remember …” in any chat, add one above, or let Hive notice things as you talk.") + "</p>";
+      || "<p class='dim sm'>" + (ms.length ? "None of that kind." : "Nothing yet. Say “remember …” in any chat, add one above, or let Genesis notice things as you talk.") + "</p>";
     $("m-trust").checked = !!j.trust;
     const th = j.threads || [], open = th.filter((t) => t.status === "open"), closed = th.filter((t) => t.status !== "open"), from = (s) => (s === "analysis" ? "from the analysis" : s === "noticed" ? "noticed" : "you");
-    $("m-threads").innerHTML = open.map((t) => "<div class='mi'><p><small>" + from(t.src) + " · since " + agoT(t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":done'>Done</button><button data-th='" + t.id + ":dropped'>Drop</button></div></div>").join("") || "<p class='dim sm'>No open threads. Add what you're in the middle of, or let Hive notice it.</p>";
+    $("m-threads").innerHTML = open.map((t) => "<div class='mi'><p><small>" + from(t.src) + " · since " + agoT(t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":done'>Done</button><button data-th='" + t.id + ":dropped'>Drop</button></div></div>").join("") || "<p class='dim sm'>No open threads. Add what you're in the middle of, or let Genesis notice it.</p>";
     $("m-tdone").classList.toggle("hidden", !closed.length);
     $("m-tclosed").innerHTML = closed.map((t) => "<div class='mi'><p><small>" + esc(t.status) + " · " + agoT(t.upd || t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":open'>Reopen</button></div></div>").join("");
   },
@@ -683,7 +682,7 @@ const MindV = {
     $("m-kbars").innerHTML = (kinds.length ? "<h4>what you do · last 90 days</h4>" + kinds.map(([k, n]) => bar(ACTK[k] || k, n, km)).join("") : "") + (models.length ? "<h4 class='mt'>the minds you lean on</h4>" + models.map(([k, n]) => bar(k, n, mm)).join("") : "");
     const acts = j.recent || [], have = [...new Set(acts.map((a) => a.kind))], ak = $("m-akind");
     if (ak.dataset.k !== have.join()) { const v = ak.value; ak.innerHTML = "<option value=''>everything</option>" + have.map((k) => "<option value='" + esc(k) + "'>" + esc(ACTK[k] || k) + "</option>").join(""); ak.dataset.k = have.join(); ak.value = have.includes(v) ? v : ""; }
-    $("m-act").innerHTML = acts.filter((a) => !ak.value || a.kind === ak.value).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + esc(String(a.text).slice(0, 400)) + "</p><button data-act='" + a.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet. Use Hive and it shows up here.</p>";
+    $("m-act").innerHTML = acts.filter((a) => !ak.value || a.kind === ak.value).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + esc(String(a.text).slice(0, 400)) + "</p><button data-act='" + a.id + "' title='Forget this'>✕</button></div>").join("") || "<p class='dim sm'>Nothing yet. Use Genesis and it shows up here.</p>";
   },
   edit(span) {
     const id = +span.dataset.edit, old = span.textContent, inp = document.createElement("input"); inp.value = old; inp.className = "medit"; inp.setAttribute("aria-label", "Edit memory"); span.textContent = ""; span.appendChild(inp); inp.focus(); inp.select();
@@ -697,12 +696,12 @@ const MindV = {
     const j = await api("/mind/search", { q }); if ($("m-q").value.trim() !== q) return; if (j.error) { $("m-results").innerHTML = "<div class='card'><p class='dim'>" + esc(j.error) + "</p></div>"; return; }
     const terms = q.toLowerCase().split(/\s+/).filter((w) => w.length > 2).map((w) => esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), rx = terms.length ? new RegExp("(" + terms.join("|") + ")", "gi") : null, hl = (t) => (rx ? esc(t).replace(rx, "<mark>$1</mark>") : esc(t));
     const sec = (title, items) => (items.length ? "<div class='sres'><h3>" + title + "<small>" + items.length + "</small></h3><div class='mlist'>" + items.join("") + "</div></div>" : "");
-    const local = new Set(chats.map((c) => c.id)), who = gname || "Hive";
+    const local = new Set(chats.map((c) => c.id)), who = gname || "Genesis";
     const html = sec("Memories", (j.memories || []).map((m) => "<div class='mi'><p><small>" + esc(MindV.kl(m.kind)) + (m.pin ? " · pinned" : "") + "</small>" + hl(m.text) + "</p></div>")) +
       sec("Threads", (j.threads || []).map((t) => "<div class='mi'><p><small>thread · " + esc(t.status) + " · " + agoT(t.ts) + "</small>" + hl(t.text) + "</p></div>")) +
       sec("Conversations", (j.turns || []).map((t) => { const can = t.cid && local.has(t.cid); return "<div class='mi turn'" + (can ? " data-cid='" + esc(t.cid) + "' tabindex='0' role='button'" : "") + "><p><small>" + agoT(t.ts) + (can ? " · open it" : "") + "</small><b>You:</b> " + hl(t.said) + "<br><span class='dim'>" + esc(who) + ":</span> " + hl(t.reply) + "</p></div>"; })) +
       sec("Activity", (j.activity || []).map((a) => "<div class='mi'><p><small>" + esc(ACTK[a.kind] || a.kind) + " · " + agoT(a.ts) + "</small>" + hl(String(a.text).slice(0, 400)) + "</p></div>"));
-    $("m-results").innerHTML = html || "<div class='card'><p class='dim'>Nothing Hive knows matches “" + esc(q) + "”.</p></div>";
+    $("m-results").innerHTML = html || "<div class='card'><p class='dim'>Nothing Genesis knows matches “" + esc(q) + "”.</p></div>";
   },
   async exportAll(kind) {
     const j = await api("/mind/export?tz=" + -new Date().getTimezoneOffset()); if (j.error) return toast(j.error);
@@ -710,7 +709,7 @@ const MindV = {
     const save = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
     if (kind === "json") return save("hive-mind-" + today + ".json", JSON.stringify(j, null, 2), "application/json");
     const K = (MindV.j && MindV.j.kinds) || {}, kept = (j.memories || []).filter((m) => m.ok === 1), th = (j.threads || []).filter((t) => t.ok === 1);
-    let s = "# What Hive knows about you\n\n_Exported " + d(Date.now()) + " UTC._\n\n";
+    let s = "# What Genesis knows about you\n\n_Exported " + d(Date.now()) + " UTC._\n\n";
     if (j.profile) s += "## Profile\n\n" + (j.profileAt ? "_Written " + d(j.profileAt) + " UTC" + (j.profileModel ? " by " + j.profileModel.split("|").pop().split("/").pop() : "") + "._\n\n" : "") + j.profile.replace(/^## /gm, "### ") + "\n\n";
     if (kept.length) { s += "## Memories\n\n"; for (const k of Object.keys(K)) { const g = kept.filter((m) => (m.kind || "about") === k); if (g.length) s += "### " + K[k] + "\n\n" + g.map((m) => "- " + (m.pin ? "★ " : "") + m.text).join("\n") + "\n\n"; } }
     if (th.length) s += "## Threads\n\n" + th.map((t) => "- [" + (t.status === "done" ? "x" : " ") + "] " + t.text + (t.status === "dropped" ? " _(dropped)_" : "") + " (since " + d(t.ts).slice(0, 10) + ")").join("\n") + "\n\n";
@@ -718,8 +717,8 @@ const MindV = {
     save("hive-mind-" + today + ".md", s, "text/markdown");
   },
   async analyze() {
-    const b = $("m-analyze"); b.disabled = true; b.textContent = "Analyzing…"; MindV.show("you"); $("m-profile").innerHTML = "<p class='dim'>Reading everything you've done in Hive… this takes up to a minute.</p>";
-    const j = await api("/mind/analyze", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Analyze me now";
+    const b = $("m-analyze"); b.disabled = true; b.textContent = "Analyzing…"; MindV.show("you"); $("m-profile").innerHTML = "<p class='dim'>Reading everything you've done in Genesis… this takes up to a minute.</p>";
+    const j = await api("/mind/analyze", {}).catch(() => ({ error: "couldn't reach Genesis" })); b.disabled = false; b.textContent = "Analyze me now";
     if (j.error) toast(j.error, 6000); else toast("Profile updated"); MindV.load();
   },
   async importLocal(quiet) {
@@ -733,15 +732,15 @@ $("m-import").onclick = () => MindV.importLocal();
 $("m-exp-md").onclick = () => MindV.exportAll("md"); $("m-exp-json").onclick = () => MindV.exportAll("json");
 $("m-ask").onclick = () => { location.hash = "studio"; newChat(); send("Analyze me and what I do, from everything you know about me. Be frank: what stands out, what I'm good at, where I'm stuck, and what I should do next."); };
 $("m-on").onchange = async () => { await api("/mind/set", { on: $("m-on").checked }); toast($("m-on").checked ? "Memory on" : "Memory off: nothing is noted or shared"); MindV.load(); };
-$("m-trust").onchange = async () => { const on = $("m-trust").checked; await api("/mind/set", { trust: on }); toast(on ? "What Hive notices is kept without asking (you can still edit or forget it)" : "Hive asks before keeping what it notices", 3500); };
+$("m-trust").onchange = async () => { const on = $("m-trust").checked; await api("/mind/set", { trust: on }); toast(on ? "What Genesis notices is kept without asking (you can still edit or forget it)" : "Genesis asks before keeping what it notices", 3500); };
 $("m-add").onclick = async () => { const t = $("m-new").value.trim(); if (!t) return; const j = await api("/mind/remember", { text: t, kind: $("m-kind").value || undefined }); if (j.error) return toast(j.error); $("m-new").value = ""; toast("Remembered, under " + MindV.kl(j.kind)); MindV.load(); };
 $("m-new").onkeydown = (e) => { if (e.key === "Enter") $("m-add").click(); };
 $("m-tadd").onclick = async () => { const t = $("m-tnew").value.trim(); if (!t) return; const j = await api("/mind/thread", { text: t }); if (j.error) return toast(j.error); $("m-tnew").value = ""; MindV.load(); };
 $("m-tnew").onkeydown = (e) => { if (e.key === "Enter") $("m-tadd").click(); };
-$("m-notice").onclick = async () => { const b = $("m-notice"); b.disabled = true; b.textContent = "Looking…"; const j = await api("/mind/notice", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Look over recent chats";
+$("m-notice").onclick = async () => { const b = $("m-notice"); b.disabled = true; b.textContent = "Looking…"; const j = await api("/mind/notice", {}).catch(() => ({ error: "couldn't reach Genesis" })); b.disabled = false; b.textContent = "Look over recent chats";
   if (j.error) return toast(j.error, 6000); const n = j.facts.length + j.threads.length + j.finished.length;
   toast(j.none ? "Nothing new since it last looked" : !n ? "It looked: nothing worth keeping this time" : "Found " + [j.facts.length && j.facts.length + " to remember", j.threads.length && j.threads.length + " open thread" + (j.threads.length > 1 ? "s" : ""), j.finished.length && j.finished.length + " finished"].filter(Boolean).join(", ") + (MindV.j && MindV.j.trust ? "" : ": review under You"), 5000); MindV.load(); };
-$("m-wipe").onclick = async () => { if (!confirm("Forget everything Hive knows about you: the profile and its history, every memory and thread, and the whole activity log? This can't be undone.")) return; await api("/mind/forget", { all: true }); toast("Forgotten"); MindV.load(); };
+$("m-wipe").onclick = async () => { if (!confirm("Forget everything Genesis knows about you: the profile and its history, every memory and thread, and the whole activity log? This can't be undone.")) return; await api("/mind/forget", { all: true }); toast("Forgotten"); MindV.load(); };
 $("m-hist").onchange = async () => { const at = $("m-hist").value; if (!at) return MindV.profile(MindV.j); const x = await api("/mind/history", { at: +at }); if (x.error) return toast(x.error);
   $("m-profile").innerHTML = "<p class='dim sm'>An earlier profile, from " + esc(new Date(x.at).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })) + ". Your chats use the current one.</p>" + md(x.profile); };
 $("m-akind").onchange = () => MindV.j && MindV.time(MindV.j);
@@ -761,7 +760,7 @@ $("v-mind").onclick = async (e) => {
 $("v-mind").addEventListener("change", async (e) => { const s = e.target.closest("[data-mk]"); if (!s) return; await api("/mind/edit", { id: +s.dataset.mk, kind: s.value }); MindV.load(); });
 $("v-mind").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("[data-edit],[data-cid]")) { e.preventDefault(); e.target.click(); } });
 
-// ── GENESIS: the mind that lives in Hive (owner only) ──
+// ── GENESIS: the mind of the app (owner only) ──
 const GenV = {
   async load() {
     if (!$("genp")) return; // an older cached page without the Genesis panel
@@ -786,18 +785,18 @@ const GenV = {
   },
   async reflect() {
     const b = $("g-reflect"); b.disabled = true; b.textContent = "Reflecting…";
-    const j = await api("/genesis/reflect", {}).catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Reflect now";
+    const j = await api("/genesis/reflect", {}).catch(() => ({ error: "couldn't reach Genesis" })); b.disabled = false; b.textContent = "Reflect now";
     if (j.error) toast(j.error, 6000); else toast("Reflected: " + [j.added.length + " learned", j.retired.length + " retired", j.ideas.length + " ideas"].join(" · "), 4000); GenV.load();
   },
 };
 if ($("genp")) {
 $("g-reflect").onclick = () => GenV.reflect();
 $("g-facts").addEventListener("click", async (e) => { if (!e.target.closest("#g-buildnow")) return; const b = e.target.closest("#g-buildnow"); b.disabled = true; b.textContent = "Choosing…";
-  const j = await api("/genesis/build-now", {}).catch(() => ({ error: "couldn't reach the Hive" })); toast(j.error ? j.error : j.started ? (gname || "Genesis") + " started “" + j.started + "” (" + j.size + ", " + j.how + ")" : j.rested ? (gname || "Genesis") + " is resting: it has used today's budget" : "Nothing started", 5000); MindV.load(); });
-$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }).catch(() => ({ error: "couldn't reach the Hive" })); if (j.error) { $("g-auto").checked = !on; return toast(j.error + ": autonomy unchanged", 4000); } toast(on ? gname + " builds on its own now: when it chooses, at the size it chooses, within its daily budget" : gname + "'s ideas wait for you", 3500); GenV.load(); };
+  const j = await api("/genesis/build-now", {}).catch(() => ({ error: "couldn't reach Genesis" })); toast(j.error ? j.error : j.started ? (gname || "Genesis") + " started “" + j.started + "” (" + j.size + ", " + j.how + ")" : j.rested ? (gname || "Genesis") + " is resting: it has used today's budget" : "Nothing started", 5000); MindV.load(); });
+$("g-auto").onchange = async () => { const on = $("g-auto").checked, j = await api("/genesis/auto", { on }).catch(() => ({ error: "couldn't reach Genesis" })); if (j.error) { $("g-auto").checked = !on; return toast(j.error + ": autonomy unchanged", 4000); } toast(on ? gname + " builds on its own now: when it chooses, at the size it chooses, within its daily budget" : gname + "'s ideas wait for you", 3500); GenV.load(); };
 $("g-check").onclick = async () => {
   const b = $("g-check"), box = $("g-health"); b.disabled = true; b.textContent = "Checking…";
-  const j = await api("/genesis/health").catch(() => ({ error: "couldn't reach the Hive" })); b.disabled = false; b.textContent = "Check systems";
+  const j = await api("/genesis/health").catch(() => ({ error: "couldn't reach Genesis" })); b.disabled = false; b.textContent = "Check systems";
   if (j.error) return toast(j.error, 5000); box.classList.remove("hidden");
   box.innerHTML = j.checks.map((c) => "<div class='" + (c.wait ? "wait" : c.ok ? "ok" : "no") + "'><b>" + (c.wait ? "◷" : c.ok ? "✓" : "✗") + "</b><span>" + esc(c.name) + "<small>" + esc(c.detail || "") + " · " + c.ms + " ms</small></span></div>").join("");
   toast(j.ok ? "All " + j.checks.length + " checks passed" : j.checks.filter((c) => !c.ok).length + " need attention", 3000); };
@@ -812,7 +811,7 @@ $("genp").closest(".pane").addEventListener("click", async (e) => {
   if (t.dataset.idx) { await api("/genesis/idea", { id: t.dataset.idx, act: "dismiss" }); return GenV.load(); }
   if (t.dataset.iopen) { history.replaceState(null, "", "/hive-app?p=" + t.dataset.iopen + "#swarm"); return route(); }
   const i = (GenV.j.ideas || []).find((x) => String(x.id) === t.dataset.ib); if (!i || !confirm("Hand “" + i.title + "” to the Swarm? It plans, builds and reviews it; you decide what goes live.")) return;
-  const j = await api("/new", { brief: i.title + "\n\n" + i.detail + "\n\n(" + gname + "'s own idea for itself: something to add to Hive on mentifaber.org. Deliver code and notes Anders can review and add; nothing here deploys itself.)" + (GenV.j.arch ? "\n\n" + GenV.j.arch : "") }); if (j.error) return toast(j.error, 4000);
+  const j = await api("/new", { brief: i.title + "\n\n" + i.detail + "\n\n(" + gname + "'s own idea for itself: something to add to Genesis on mentifaber.org. Deliver code and notes Anders can review and add; nothing here deploys itself.)" + (GenV.j.arch ? "\n\n" + GenV.j.arch : "") }); if (j.error) return toast(j.error, 4000);
   try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {}
   await api("/genesis/idea", { id: i.id, act: "built", pid: j.id }); history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route();
 });

@@ -1,7 +1,7 @@
 /* Duely · the reminder desk. One overdue invoice in, a dated three-email sequence out: friendly, then firm, then final,
    and never a threat. Every draft is checked against hard guardrails (no legal action, no collections, no credit
    reports), because this is invoice-reminder software, not a collection agency, and collectors need licences. Nothing is
-   sent from here: each email opens in your own mail app, in your own name. Optional: polish a draft with Hive, which is
+   sent from here: each email opens in your own mail app, in your own name. Optional: polish a draft with Genesis, which is
    held to the same guardrails. */
 (() => {
 "use strict";
@@ -116,7 +116,7 @@ async function polish(inv, s, b) {
     if (flags.length) { alert("The AI draft broke a guardrail (“" + flags[0].hit + "” " + flags[0].why + "), so your draft stays as it was."); }
     else if (!facts) { alert("The AI draft dropped the invoice number or amount, so your draft stays as it was."); }
     else { s.body = text; s.ai = true; save(); }
-  } catch (err) { alert("Hive couldn't be reached just now. Your draft is unchanged, and it already passes the guardrails."); }
+  } catch (err) { alert("Genesis couldn't be reached just now. Your draft is unchanged, and it already passes the guardrails."); }
   draw();
 }
 if (!sel && INV[0]) sel = INV[0].id;

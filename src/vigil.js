@@ -321,7 +321,7 @@ async function headlines() {
 
 
 // ── the live board in words: what Genesis (src/hive.js) reads when Anders asks about the world right now ──
-// Each topic is a few lines of facts with their age; results are memoised in this isolate (the Worker's or Hive's)
+// Each topic is a few lines of facts with their age; results are memoised in this isolate (the Worker's or Genesis's)
 // so a burst of questions shares one upstream call per topic.
 const memoMap = new Map();
 async function memo(key, ttl, fn) {

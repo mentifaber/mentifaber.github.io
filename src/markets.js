@@ -1,7 +1,7 @@
 // Quotes for anything with a ticker, keyless: stocks, ETFs, indices, futures and crypto from Yahoo Finance's public chart
 // API (crypto falls back to CoinGecko, then Coinbase). The names people say ("Exxon", "the S&P", "gold", "XRP") map to
 // symbols; anything else with "stock"/"shares" after it is looked up by name. Used by Vigil (board, watchlist, lookup)
-// and by Hive's chat, so "what are XRP and XOM doing?" gets the numbers, not a promise to fetch them.
+// and by Genesis's chat, so "what are XRP and XOM doing?" gets the numbers, not a promise to fetch them.
 const UA = { "user-agent": "Mozilla/5.0 (compatible; mentifaber.org Vigil/1.0; +https://mentifaber.org/contact)", accept: "application/json" };
 async function getJSON(url, ms = 9000) {
   const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(ms) });

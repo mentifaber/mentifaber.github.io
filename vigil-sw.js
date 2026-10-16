@@ -1,5 +1,5 @@
 // Vigil service worker (scope /vigil): Genesis's phone alerts. A push carries no words (src/push.js), so on each
-// one this asks Hive which alerts went out and shows the ones this phone hasn't shown yet. Nothing is cached:
+// one this asks Genesis which alerts went out and shows the ones this phone hasn't shown yet. Nothing is cached:
 // Vigil is a sealed page and always comes fresh from the network.
 const ICON = "/assets/icons/vigil.png", BADGE = "/assets/icons/v2/vigil-badge.png", SEEN = "vigil-alerts";
 
@@ -38,7 +38,7 @@ self.addEventListener("notificationclick", (e) => {
   const url = new URL((e.notification.data && e.notification.data.url) || "/vigil-app#brief", self.location.origin);
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of all) { // an open Vigil (or Hive) switches to the right view instead of opening another copy
+    for (const c of all) { // an open Vigil (or Genesis) switches to the right view instead of opening another copy
       const cu = new URL(c.url);
       if (cu.pathname.replace(/\.html$/, "") === url.pathname) { await c.focus(); c.postMessage({ type: "vigil-go", hash: url.hash.slice(1) }); return; }
     }
@@ -46,7 +46,7 @@ self.addEventListener("notificationclick", (e) => {
   })());
 });
 
-// The push service can rotate a subscription; tell Hive about the new one so alerts keep arriving.
+// The push service can rotate a subscription; tell Genesis about the new one so alerts keep arriving.
 self.addEventListener("pushsubscriptionchange", (e) => {
   e.waitUntil((async () => {
     try {
