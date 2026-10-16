@@ -117,5 +117,44 @@ def main():
         print("made", os.path.relpath(p, ROOT), os.path.getsize(p) // 1024, "KB")
 
 
+
+# ── Genesis (the Hive app): the gold G in its ring of crystals, and the ring alone for the voice link ──
+G_ART = Image.open(os.path.join(ROOT, "assets/brand/genesis-logo.jpg")).convert("RGB")
+RING_ART = Image.open(os.path.join(ROOT, "assets/brand/genesis-ring.jpg")).convert("RGB")
+
+
+def crop(src, cx, cy, side):
+    out = Image.new("RGB", (side, side), BLACK)
+    out.paste(src, (round(side / 2 - cx), round(side / 2 - cy)))
+    return out
+
+
+def ring_png(px):
+    """The ring with its black outside the rim and its hollow centre cut away, so the voice link can light the hollow itself."""
+    im = sized(crop(RING_ART, 391.5, 565, 680), px).convert("RGBA")
+    m = Image.new("L", (px * 2, px * 2), 0)
+    d = ImageDraw.Draw(m)
+    d.ellipse([px * 2 * .008, px * 2 * .008, px * 2 * .992, px * 2 * .992], fill=255)
+    h = px * 2 * .175
+    d.ellipse([px - h, px * 1.02 - h, px + h, px * 1.02 + h], fill=0)
+    im.putalpha(m.resize((px, px), Image.LANCZOS).filter(ImageFilter.GaussianBlur(px / 160)))
+    return im
+
+
+def genesis():
+    G = crop(G_ART, 416, 605, 760)
+    made = [save(lean(tile(G, 512)), "assets/icons/hive-genesis-512.png"),
+            save(tile(G, 192), "assets/icons/hive-genesis-192.png"),
+            save(tile(G, 48, 0.2), "assets/icons/hive-genesis-48.png"),
+            save(sized(G, 180), "assets/icons/hive-genesis-apple.png"),
+            save(lean(safe(G, 512, 0.84)), "assets/icons/hive-genesis-maskable-512.png"),
+            save(safe(G, 192, 0.84), "assets/icons/hive-genesis-maskable-192.png"),
+            save(medallion(G, 96), "assets/hive/genesis-mark.png"),
+            save(ring_png(720), "assets/hive/genesis-ring.webp", quality=86, method=6)]
+    for p in made:
+        print("made", os.path.relpath(p, ROOT), os.path.getsize(p) // 1024, "KB")
+
+
 if __name__ == "__main__":
     main()
+    genesis()

@@ -19,9 +19,9 @@ def ver(path):  # cache-busting stamp from the file's contents
     except OSError: return "0"
 
 # apps whose icon was chosen by hand (not generated): their own images everywhere
-OWN_ICON = {"hive": {"tile": "assets/icons/hive-geode-192.png", "fav": "assets/icons/hive-geode-48.png", "apple": "assets/icons/hive-geode-apple.png",
-                     "manifest": [{"src": "../icons/hive-geode-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}, {"src": "../icons/hive-geode-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-                                  {"src": "../icons/hive-geode-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"}, {"src": "../icons/hive-geode-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}}
+OWN_ICON = {"hive": {"tile": "assets/icons/hive-genesis-192.png", "fav": "assets/icons/hive-genesis-48.png", "apple": "assets/icons/hive-genesis-apple.png",
+                     "manifest": [{"src": "../icons/hive-genesis-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}, {"src": "../icons/hive-genesis-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                                  {"src": "../icons/hive-genesis-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"}, {"src": "../icons/hive-genesis-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}}
 
 def glyph(a, cls="tile"):
     if a["id"] in OWN_ICON:
