@@ -224,11 +224,11 @@ export async function streamComplete(env, v, key, model, system, msgs, max, onDe
     body = { model, max_tokens: max, system, stream: true, messages: msgs.map((m) => ({ role: m.role, content: [...(m.images || []).map(parts).filter(Boolean).map((p) => ({ type: "image", source: { type: "base64", media_type: p.type, data: p.data } })), { type: "text", text: m.text || "…" }] })) };
   } else {
     url = v.base.replace(/\/$/, "") + "/chat/completions";
-    body = { model, max_tokens: max, stream: true, messages: [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))] };
+    body = { model, max_tokens: max, stream: true, ...(meta.effort && /groq\.com/.test(v.base) && /gpt-oss/.test(model) ? { reasoning_effort: meta.effort } : {}), messages: [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))] };
   }
   // no limit on how long a reply may run: only silence ends it (first word: 3 min, or 30 for a CPU model reading a long prompt)
   const ac = new AbortController(); let quiet; const wait = (ms) => { clearTimeout(quiet); quiet = setTimeout(() => ac.abort(new Error("the model went silent for " + Math.round(ms / 1000) + "s")), ms); };
-  wait(v.first || 180000);
+  wait(meta.first || v.first || 180000); // a voice turn won't wait minutes for a first word
   try {
   const r = await (v.fetcher || fetch)(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: ac.signal });
   if (!r.ok) { const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} const m = j && (j.error && (j.error.message || j.error) || j.message); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
