@@ -65,15 +65,16 @@
  "scope": "<p>Visitors get the free Workers AI models and can watch any swarm; the vault, the Mind and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p>",
  "closing": "Command the Hive. One mind, a council, or a whole swarm.",
  "manifest": {
-  "name": "Hive · AI swarm builder",
+  "name": "Hive · a mind that grows in layers",
   "short_name": "Hive",
   "categories": [
    "productivity",
    "developer",
    "utilities"
   ],
-  "background_color": "#13181e",
-  "theme_color": "#13181e"
+  "background_color": "#0d1012",
+  "theme_color": "#0d1012",
+  "description": "Every AI model at once in one stone: talk to any of them, convene a council, release a swarm of agents that plans, builds and reviews a whole project, search the live web, see, speak and paint. Each exchange settles as a layer; earlier sessions are the bedrock."
  },
  "widgets": [
   "hive",

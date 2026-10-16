@@ -7,7 +7,8 @@ from registry import ROOT, apps, CATS
 A = {a["id"]: a for a in apps()}
 CONTENT = os.path.join(ROOT, "tools/site/content")
 esc = lambda t: html.escape(str(t or ""), quote=True)
-MARK = open(os.path.join(ROOT, "assets/brand/mark.svg"), encoding="utf-8").read().replace('role="img" aria-label="Mentifaber"', 'aria-hidden="true"')
+# the Mentifaber logo (assets/brand/mentifaber-logo.jpg; every size made by tools/site/logo.py): the shield alone at header size
+MARK = '<img class="mf-logo" src="assets/brand/mentifaber-mark-96.png" alt="" width="32" height="32">'
 
 THEME = '<script>try{var t=localStorage.getItem("mf:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>'
 SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>'
@@ -18,9 +19,9 @@ def ver(path):  # cache-busting stamp from the file's contents
     except OSError: return "0"
 
 # apps whose icon was chosen by hand (not generated): their own images everywhere
-OWN_ICON = {"hive": {"tile": "assets/icons/hive-bee-192.png", "fav": "assets/icons/hive-bee-48.png", "apple": "assets/icons/hive-bee-apple.png",
-                     "manifest": [{"src": "../icons/hive-bee-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}, {"src": "../icons/hive-bee-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-                                  {"src": "../icons/hive-bee-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"}, {"src": "../icons/hive-bee-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}}
+OWN_ICON = {"hive": {"tile": "assets/icons/hive-geode-192.png", "fav": "assets/icons/hive-geode-48.png", "apple": "assets/icons/hive-geode-apple.png",
+                     "manifest": [{"src": "../icons/hive-geode-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}, {"src": "../icons/hive-geode-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                                  {"src": "../icons/hive-geode-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"}, {"src": "../icons/hive-geode-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}}
 
 def glyph(a, cls="tile"):
     if a["id"] in OWN_ICON:
@@ -221,20 +222,8 @@ def card(a):
             + (f'<a class="cover" href="{esc(ab or op)}" aria-label="{esc(a["name"])}"></a>' if (ab or op) else "")
             + f'<div class="top">{glyph(a, "tile")}{status_chip(a)}</div><h4>{esc(a["name"])}</h4><p>{esc(a["desc"])}</p><div class="go">{btns}</div></article>')
 
-def hero_mark():  # the brand mark, drawn in, with two slow orbits around it
-    core = MARK.replace('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">', '<svg class="core" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">')
-    core = core.replace('"mfg"', '"mfg2"').replace("#mfg)", "#mfg2)").replace('"mfc"', '"mfc2"').replace("#mfc)", "#mfc2)")
-    core = re.sub(r'(<path d="M32 3\.5[^"]*")', r'\1 class="hex" pathLength="160"', core)
-    core = re.sub(r'(<path d="M19\.5 43[^"]*")', r'\1 class="em" pathLength="70"', core)
-    k = [0]
-    def nd(m):
-        k[0] += 1; return m.group(0).replace("<circle", f'<circle class="nd" style="animation-delay:{.7 + k[0] * .16:.2f}s"')
-    core = re.sub(r'<circle cx="\d+(\.\d+)?" cy="\d+(\.\d+)?" r="2\.7"/>', nd, core)
-    core = core.replace('<circle cx="32" cy="34.5" r="3.6"', '<circle class="hub" cx="32" cy="34.5" r="3.6"')
-    orb = lambda cls, rx, ry, rot, dots: (f'<svg class="orb {cls}" viewBox="0 0 200 200" aria-hidden="true"><g transform="rotate({rot} 100 100)"><ellipse cx="100" cy="100" rx="{rx}" ry="{ry}" fill="none" stroke="url(#hmg)" stroke-width=".8" opacity=".55"/>'
-        + "".join(f'<circle cx="{100 + rx * c:.1f}" cy="{100 + ry * s_:.1f}" r="{r}" fill="#ffd27a"/>' for c, s_, r in dots) + '</g></svg>')
-    defs = '<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="hmg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE29A"/><stop offset="1" stop-color="#FF5A36"/></linearGradient></defs></svg>'
-    return f'<div class="h-mark">{defs}{orb("a", 96, 34, -24, [(1, 0, 2.6), (-.6, .8, 1.6)])}{orb("b", 92, 50, 38, [(-1, 0, 2), (.3, -.95, 1.4)])}{core}</div>'
+def hero_mark():  # the whole logo, floating; it carries its own gold orbits
+    return '<div class="h-mark"><img class="core" src="assets/brand/mentifaber-logo-640.webp" alt="Mentifaber" width="640" height="640" fetchpriority="high"></div>'
 
 def home():
     me = {"id": "mentifaber", "name": "Mentifaber", "hue": 34}
@@ -264,7 +253,7 @@ def home():
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">
 <meta name="theme-color" content="#05060a">
-<meta property="og:title" content="Mentifaber"><meta property="og:description" content="{esc(desc)}"><meta property="og:image" content="https://mentifaber.org/assets/brand/og.png"><meta property="og:url" content="https://mentifaber.org/"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:title" content="Mentifaber"><meta property="og:description" content="{esc(desc)}"><meta property="og:image" content="https://mentifaber.org/assets/brand/og.jpg"><meta property="og:url" content="https://mentifaber.org/"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/brand/mark.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/mentifaber-48.png" sizes="48x48"><link rel="apple-touch-icon" href="assets/icons/v2/mentifaber-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mentifaber"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="assets/manifests/mentifaber.webmanifest">
@@ -331,17 +320,7 @@ def home():
     open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8").write(page_)
     return "index.html"
 
-def brand_icons():  # the Mentifaber app icon: the mark on a dark tile (and full-bleed for maskable)
-    d = os.path.join(ROOT, "assets/icons/v2")
-    inner = re.sub(r"^<svg[^>]*>|</svg>\s*$", "", MARK.strip()).replace('id="mfg"', 'id="g1"').replace("url(#mfg)", "url(#g1)").replace('id="mfc"', 'id="g2"').replace("url(#mfc)", "url(#g2)")
-    for mask in (False, True):
-        sc = 5.0 if mask else 6.4
-        shape = '<rect width="512" height="512"/>' if mask else '<rect width="512" height="512" rx="116"/>'
-        svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a1a0c"/><stop offset=".6" stop-color="#0d0a12"/><stop offset="1" stop-color="#05060a"/></radialGradient><clipPath id="c">{shape}</clipPath></defs>
-<g clip-path="url(#c)"><rect width="512" height="512" fill="url(#bg)"/><circle cx="256" cy="262" r="{170 if mask else 200}" fill="#ff8a3a" opacity=".12"/></g>
-<g transform="translate(256 258) scale({sc}) translate(-32 -32)">{inner}</g>
-{"" if mask else '<rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#f0a63a" stroke-opacity=".3" stroke-width="3"/>'}</svg>"""
-        open(os.path.join(d, "mentifaber" + ("-mask" if mask else "") + ".svg"), "w").write(svg)
+def brand_icons():  # the Mentifaber app's manifest; its icons are the logo, made by tools/site/logo.py
     m = {"id": "/", "name": "Mentifaber", "short_name": "Mentifaber", "description": "Builder of minds and the systems that hold them: every Mentifaber app in one place.",
          "start_url": "/", "scope": "/", "display": "standalone", "background_color": "#05060a", "theme_color": "#05060a",
          "icons": [{"src": "../icons/v2/mentifaber-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
