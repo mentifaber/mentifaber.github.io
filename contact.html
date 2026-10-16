@@ -1,155 +1,50 @@
-<!DOCTYPE html>
-<html lang="en" class="mf-tint">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Contact Mentifaber — send a quick note or write to anders@mentifaber.org."/>
-<meta property="og:title" content="Contact Mentifaber"/>
-<meta property="og:description" content="A quick reach-out, or a proper email. Either way it lands with a person."/>
-<meta property="og:image" content="https://mentifaber.org/assets/previews/home.png"/>
-<meta property="og:url" content="https://mentifaber.org/contact.html"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<meta name="theme-color" content="#000000"/>
-<title>Contact Mentifaber</title>
-<link rel="icon" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --paper: #000; --ink: #f2e6cf; --ink-soft: #c4b09a; --ink-faint: #7a6e62;
-  --indigo: #c8a96e; --indigo-dim: #8a7050; --rust: #b02a1a;
-  --line: rgba(242,230,207,.14); --field: rgba(242,230,207,.04);
-}
-html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: 'Newsreader', serif; }
-a { color: inherit; }
-.corner { position: fixed; top: 3vh; left: 4vw; z-index: 20; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  letter-spacing: .2em; text-transform: uppercase; color: var(--indigo-dim); text-decoration: none; }
-.corner:hover { color: var(--indigo); }
-
-.wrap { max-width: 760px; margin: 0 auto; padding: 16vh 24px 6vh; position: relative; z-index: 2; }
-.label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--indigo-dim); }
-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(2.6rem, 9vw, 5rem); line-height: .95; letter-spacing: -.02em; margin: .8rem 0 1.2rem; }
-h1 em { font-style: normal; color: var(--indigo); }
-.lede { font-size: clamp(1.1rem, 2.6vw, 1.3rem); line-height: 1.55; color: var(--ink-soft); max-width: 44ch; }
-
-/* address card */
-.addr { margin: 2.6rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 20px 22px;
-  border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(135deg, rgba(200,169,110,.08), transparent 60%); }
-.addr .mail { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: clamp(1.15rem, 4.4vw, 1.6rem); text-decoration: none;
-  color: var(--ink); text-shadow: 0 0 22px var(--mf-glow); word-break: break-all; flex: 1 1 260px; }
-.addr .mail:hover { color: var(--indigo); }
-.btns { display: flex; gap: 10px; flex-wrap: wrap; }
-.btn { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; cursor: pointer;
-  min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--indigo-dim); background: transparent; color: var(--indigo);
-  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; transition: background .2s, color .2s, box-shadow .2s; }
-.btn:hover { background: rgba(200,169,110,.12); box-shadow: 0 0 22px -8px var(--mf-glow); }
-.btn.solid { background: var(--indigo); color: #0b0906; border-color: var(--indigo); font-weight: 500; }
-.btn.solid:hover { background: #d9bd86; color: #0b0906; }
-
-/* form */
-form { margin-top: 3.2rem; display: grid; gap: 18px; }
-.sect { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--indigo-dim);
-  display: flex; align-items: center; gap: 12px; }
-.sect::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-label { display: grid; gap: 7px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-faint); }
-input, textarea { font: inherit; font-family: 'Newsreader', serif; font-size: 1.08rem; letter-spacing: 0; text-transform: none; color: var(--ink);
-  background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; width: 100%; min-height: 46px; }
-textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
-input:focus, textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(200,169,110,.15); }
-input::placeholder, textarea::placeholder { color: #5d544b; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; min-height: 40px; padding: 0 14px; border-radius: 999px;
-  border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; transition: all .2s; }
-.chip:hover { border-color: var(--indigo-dim); color: var(--ink); }
-.chip[aria-pressed="true"] { border-color: var(--indigo); color: #0b0906; background: var(--indigo); }
-.count { justify-self: end; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-faint); margin-top: -10px; }
-.hp { position: absolute; left: -9999px; }
-.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.note { font-size: .98rem; color: var(--ink-faint); font-style: italic; line-height: 1.5; }
-.status { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; color: var(--indigo); min-height: 1.2em; }
-
-.elsewhere { margin-top: 4rem; }
-.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
-.links a { display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; transition: border-color .2s, transform .2s; }
-.links a:hover { border-color: var(--indigo-dim); transform: translateY(-2px); }
-.links b { display: block; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; }
-.links span { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: .06em; }
-
-footer.mf-foot { padding: 8vh 24px 12vh; text-align: center; position: relative; z-index: 2; }
-footer.mf-foot p { font-style: italic; color: var(--ink-faint); font-size: .95rem; }
-footer.mf-foot a { display: inline-block; margin-top: 14px; color: var(--indigo-dim); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .24em; text-transform: uppercase; }
-
-@media (max-width: 600px) {
-  .wrap { padding-top: 12vh; }
-  .row { grid-template-columns: 1fr; }
-  .addr .btns, .actions .btn { width: 100%; }
-  .addr .btns .btn { flex: 1; }
-}
-</style>
-<style>:root{--mf-accent:#c8a96e;--mf-glow:rgba(200,169,110,.45)}</style>
-<link rel="stylesheet" href="assets/mf.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Contact · Mentifaber</title>
+<meta name="description" content="Write to Mentifaber: send a quick note or email anders@mentifaber.org.">
+<meta name="theme-color" content="#080705">
+<meta property="og:title" content="Contact · Mentifaber"><meta property="og:description" content="Write to Mentifaber: send a quick note or email anders@mentifaber.org."><meta property="og:image" content="https://mentifaber.org/assets/brand/og.jpg"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/brand/mark.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/mentifaber-48.png" sizes="48x48"><link rel="apple-touch-icon" href="assets/icons/v2/mentifaber-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mentifaber"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="assets/manifests/mentifaber.webmanifest">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/SchibstedGrotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/ui/plan.css?v=3726238b">
 </head>
-<body>
-<a href="index.html" class="corner">← Atlas</a>
-
-<main class="wrap">
-  <p class="label">contact · reach out</p>
-  <h1>Contact <em>Mentifaber</em></h1>
-  <p class="lede">A question about one of the systems, a build you want to talk through, a commission, or just a hello. It reaches a person, not a queue.</p>
-
-  <div class="addr">
-    <a class="mail" id="mail" href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>
-    <div class="btns">
-      <button class="btn" type="button" id="copy">Copy address</button>
-      <a class="btn solid" href="mailto:anders@mentifaber.org">Open email</a>
-    </div>
-  </div>
-
-  <form id="f" novalidate>
-    <div class="sect">Quick reach-out</div>
-    <div class="row">
-      <label>Your name<input id="name" autocomplete="name" maxlength="80" placeholder="Who's writing"></label>
-      <label>Your email<input id="from" type="email" autocomplete="email" maxlength="120" placeholder="So I can write back"></label>
-    </div>
-    <div>
-      <label style="margin-bottom:9px">What's it about</label>
-      <div class="chips" id="chips">
-        <button type="button" class="chip" aria-pressed="true">Just saying hi</button>
-        <button type="button" class="chip" aria-pressed="false">A project on the site</button>
-        <button type="button" class="chip" aria-pressed="false">Work / commission</button>
-        <button type="button" class="chip" aria-pressed="false">Music</button>
-        <button type="button" class="chip" aria-pressed="false">Bug report</button>
-      </div>
-    </div>
+<body class="wk plain-page">
+<header class="tb">
+  <a class="tb-mark" href="./" aria-label="Mentifaber, the workshop"><img src="assets/brand/mentifaber-mark-96.png" alt="" width="52" height="52"></a>
+  <a class="tb-name" href="./"><b class="gold-text">MENTIFABER</b><span>The workshop · drawn at night</span></a>
+  <nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="#" aria-current="page">Correspondence</a></nav>
+  <dl class="tb-meta"><div><dt>Sheet</dt><dd>—</dd></div><div><dt>Grid</dt><dd class="at">—</dd></div><div><dt>Drawn</dt><dd>Anders</dd></div><div><dt>Date</dt><dd>16.10.2026</dd></div></dl>
+  <div class="tb-act"><button class="key" data-find aria-label="Find a project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span>Find</span></button></div>
+</header>
+<main class="plain"><span class="pno">Correspondence · the line is open</span>
+  <h1>Write to the <span class="gold-text">workshop</span></h1>
+  <p class="tagline">A question about one of the systems, a build you want to talk through, a commission, or just a hello. It reaches a person, not a queue.</p>
+  <div class="addr"><a class="mail" id="mail" href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>
+    <div class="acts"><button class="key" type="button" id="copy">Copy address</button><a class="key pri" href="mailto:anders@mentifaber.org">Open email</a></div></div>
+  <form id="f" class="form" novalidate>
+    <h2 class="lbl">Quick reach-out</h2>
+    <div class="row2"><label>Your name<input id="name" autocomplete="name" maxlength="80" placeholder="Who's writing"></label>
+      <label>Your email<input id="from" type="email" autocomplete="email" maxlength="120" placeholder="So I can write back"></label></div>
+    <div><span class="lbl">What's it about</span><div class="chips" id="chips">
+      <button type="button" class="chip" aria-pressed="true">Just saying hi</button><button type="button" class="chip" aria-pressed="false">A project on the site</button>
+      <button type="button" class="chip" aria-pressed="false">Work / commission</button><button type="button" class="chip" aria-pressed="false">Music</button><button type="button" class="chip" aria-pressed="false">Bug report</button></div></div>
     <label>Message<textarea id="msg" maxlength="2000" placeholder="A couple of lines is plenty."></textarea></label>
-    <div class="count" id="count">0 / 2000</div>
+    <div class="count lbl" id="count">0 / 2000</div>
     <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-    <div class="actions">
-      <button class="btn solid" type="submit">Send message</button>
-      <span class="status" id="status" role="status"></span>
-    </div>
-    <p class="note">Sending opens your own email app with everything filled in — nothing is stored on this site, and no third party sees it. If nothing opens, copy the address above.</p>
+    <div class="acts"><button class="key pri big" type="submit">Send message</button><span class="status" id="status" role="status"></span></div>
+    <p class="fine">Sending opens your own email app with everything filled in: nothing is stored on this site, and no third party sees it. If nothing opens, copy the address above.</p>
   </form>
-
-  <section class="elsewhere">
-    <div class="sect">Elsewhere</div>
-    <div class="links">
-      <a href="https://x.com/mentifaber" target="_blank" rel="noopener"><b>X</b><span>@mentifaber</span></a>
-      <a href="https://instagram.com/mentifaber" target="_blank" rel="noopener"><b>Instagram</b><span>@mentifaber</span></a>
-      <a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener"><b>SoundCloud</b><span>Sonic Veil</span></a>
-    </div>
-  </section>
-</main>
-
-<footer class="mf-foot">
-  <p>Every system here started as somebody asking "could this work?" Ask away.</p>
-  <a href="index.html">Return to Mentifaber</a>
-</footer>
-
+  <h2 class="lbl" style="margin-top:34px">Elsewhere</h2>
+  <div class="elsewhere big"><a href="https://x.com/mentifaber" target="_blank" rel="noopener">X · @mentifaber</a><a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram · @mentifaber</a><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud · Sonic Veil</a></div></main>
+<div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
+<script type="application/json" id="wk-index">[{"n": "Barycenter", "d": "A private universe for two: messages, voice notes, touch and presence, encrypted end to end and kept on your own devices. Invite-only.", "h": "barycenter.html", "p": "MF-01·01", "s": "private", "r": "Signals & Comms"}, {"n": "NULLSPACE", "d": "An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic and MeshCore). No account, no phone number: pick a handle, tune a frequency, transmit.", "h": "nullspace.html", "p": "MF-01·02", "s": "live", "r": "Signals & Comms"}, {"n": "Pilotfish", "d": "A shared list and a quiet signal line for two: what to grab, how you feel, what you need. Push alerts, photos, offline.", "h": "pilotfish.html", "p": "MF-01·03", "s": "private", "r": "Signals & Comms"}, {"n": "MeshNet", "d": "A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.", "h": "meshnet.html", "p": "MF-01·04", "s": "live", "r": "Signals & Comms"}, {"n": "NovarAC", "d": "HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.", "h": "novarac.html", "p": "MF-01·05", "s": "live", "r": "Signals & Comms"}, {"n": "Proximity", "d": "Detects a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone.", "h": "proximity.html", "p": "MF-01·06", "s": "live", "r": "Signals & Comms"}, {"n": "Roku God Mode", "d": "A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud.", "h": "roku.html", "p": "MF-01·07", "s": "live", "r": "Signals & Comms"}, {"n": "Hive", "d": "Describe a project and release a swarm of AI agents on it: a coordinator splits it into a task board, every model claims the role it fits (architect, coder, designer, writer, researcher, tester, critic), critics send weak work back, and an integrator assembles the result, previewed live and downloadable. Watch every agent work in real time, steer it mid-build, and invite visiting AIs like Grok to join through a link.", "h": "hive", "p": "MF-02·01", "s": "live", "r": "AI & Minds"}, {"n": "Weaver", "d": "A persistent, autonomous entity running locally — one model to think, one to act, and an archive of everything it became. It already knows you're here.", "h": "weaver.html", "p": "MF-02·02", "s": "live", "r": "AI & Minds"}, {"n": "muse", "d": "An AI that writes, plays and sings its own music on its own schedule. Pure numpy synthesis, a persistent sense of taste, zero API keys.", "h": "muse.html", "p": "MF-02·03", "s": "live", "r": "AI & Minds"}, {"n": "Pi", "d": "A voice assistant that runs on the phone itself, not in an app store. Camera, GPS, contacts and 22 device tools never leave it; only chat text goes out. When the voice drops, it degrades instead of going silent.", "h": "pi.html", "p": "MF-02·04", "s": "live", "r": "AI & Minds"}, {"n": "Phone MCP", "d": "A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.", "h": "phone-mcp.html", "p": "MF-02·05", "s": "live", "r": "AI & Minds"}, {"n": "Neural Sim", "d": "Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.", "h": "neural-sim.html", "p": "MF-02·06", "s": "live", "r": "AI & Minds"}, {"n": "Verel", "d": "A word coined for genuine presence without provable aliveness — because every argument about AI minds kept collapsing into two bad options.", "h": "verel.html", "p": "MF-02·07", "s": "a concept", "r": "AI & Minds"}, {"n": "Vigil", "d": "A private command screen. Every aircraft in the sky, weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.", "h": "vigil.html", "p": "MF-03·01", "s": "private", "r": "Sky & World"}, {"n": "Orbit Watch", "d": "Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, the day-night line, and every pass over you, with the ones you can see by eye marked.", "h": "orbit.html", "p": "MF-03·02", "s": "live", "r": "Sky & World"}, {"n": "Cartograph", "d": "A 3D atlas from the planets to the first galaxies: 140+ objects at their real positions across ten views, each cited to the instrument that measured it, plus live satellites around Earth.", "h": "cartograph.html", "p": "MF-03·03", "s": "live", "r": "Sky & World"}, {"n": "Conflict Atlas", "d": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.", "h": "conflict-atlas.html", "p": "MF-03·04", "s": "live", "r": "Sky & World"}, {"n": "Crime Intelligence", "d": "Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.", "h": "crime-dashboard.html", "p": "MF-03·05", "s": "live", "r": "Sky & World"}, {"n": "Ballast", "d": "Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today. Local-first — the numbers never leave the browser.", "h": "ballast.html", "p": "MF-04·01", "s": "live", "r": "Tools"}, {"n": "Sleep Compression", "d": "A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included.", "h": "sleep-compression.html", "p": "MF-04·02", "s": "live", "r": "Tools"}, {"n": "CryptoVault", "d": "Encryption you can read to the bottom of: RSA-4096 and AES-256-GCM in one HTML file, with identities, contacts, signatures and files. No server, no dependency, and no network call allowed.", "h": "cryptovault.html", "p": "MF-04·03", "s": "live", "r": "Tools"}, {"n": "Worm Eater", "d": "An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.", "h": "worm-eater.html", "p": "MF-04·04", "s": "live", "r": "Tools"}, {"n": "DocCrawler", "d": "A local document library for the phone — scan a folder, OCR and index everything into SQLite full-text search, auto-tag it, and ask the Librarian questions answered from your own files, with citations. Offline by design.", "h": "doccrawler.html", "p": "MF-04·05", "s": "live", "r": "Tools"}, {"n": "Omnilogos", "d": "933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.", "h": "omnilogos.html", "p": "MF-04·06", "s": "live", "r": "Tools"}, {"n": "Mechanic's Arsenal", "d": "Machines you can take apart in the browser — a 2008 Volvo XC70 with 126 cataloged parts, and a FANUC LR Mate robot arm you can jog, solve and run, every spec cited to the manual.", "h": "arsenal.html", "p": "MF-04·07", "s": "live", "r": "Tools"}, {"n": "The Monstrosity", "d": "A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.", "h": "monstrosity.html", "p": "MF-04·08", "s": "being built", "r": "Tools"}, {"n": "Duely", "d": "Overdue invoices, chased politely: three dated reminders, friendly to firm, checked against hard legal guardrails and sent from your own mail app. You pay nothing unless your client does.", "h": "duely.html", "p": "MF-04·09", "s": "live", "r": "Tools"}, {"n": "Tether", "d": "A one-finger rope-swinging game, open to everyone: real rope physics over lava through ten biomes with their own weather and soundtracks. Saws, drones, rockets, fire spouts, speed lasers and world-flipping rings; ten stackable power-ups; eleven modes including co-op, racing, time trial and the daily course; a ghost of your best run, and an online lobby where you can challenge anyone playing to a live head-to-head race.", "h": "tether.html", "p": "MF-05·01", "s": "live", "r": "Play"}, {"n": "Thoughtform", "d": "A first-person shooter set inside a mind under siege, built from nothing but maths: a hand-written raymarched world, live-synthesized sound and no engines, models, textures or samples. Four regions of the mind, the Critic boss every fifth wave, seven kinds of intrusive thought including elites, four weapons, shockwave, barrier and Rewrite, an Insight to choose after every wave, milestones and a global leaderboard. Mouse and keyboard or touch.", "h": "thoughtform.html", "p": "MF-05·02", "s": "live", "r": "Play"}, {"n": "Watch Your Grass", "d": "Arena defense on a 6×6 lawn: ten plant and terrain types, six kinds of visitor, drawn up on paper before a line of code and now playable in the browser.", "h": "watchyourgrass.html", "p": "MF-05·03", "s": "live", "r": "Play"}, {"n": "Moon Compatibility", "d": "Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score.", "h": "moon-compatibility.html", "p": "MF-05·04", "s": "live", "r": "Play"}, {"n": "Sketches", "d": "Small builds, made in an afternoon and kept as sketches. Finished, not unfinished.", "h": "sketches.html", "p": "MF-05·05", "s": "live", "r": "Play"}, {"n": "Sideways", "d": "A drifting game Claude made for Anders where the soundtrack is played by how you drive: get sideways and an arpeggio comes in, hold it and the bass and lead follow, every orb is a note on the beat. Four tracks, one boxy wagon.", "h": "sideways.html", "p": "MF-05·06", "s": "private", "r": "Play"}, {"n": "Root Cause", "d": "An on-call detective game Claude made for Anders, unprompted: the pager goes off, the logs are full of red herrings, and you run real checks to find the first domino. Ten incidents, a rubber duck, an endless rotation.", "h": "rootcause.html", "p": "MF-05·07", "s": "private", "r": "Play"}, {"n": "Graveyard Shift", "d": "A night-shift orbit game Claude designed and built for Anders with no input from him: put relay satellites into real orbits, route signals across the network, and keep the stations talking until dawn.", "h": "graveyard.html", "p": "MF-05·08", "s": "private", "r": "Play"}, {"n": "Flutterbloom", "d": "A 3D garden grown as a gift for one person — a living sky on her own clock, a meadow that blooms flower by flower, things to build, soft rain and rainbows, and sixteen real butterflies to catch.", "h": "flutterbloom.html", "p": "MF-05·09", "s": "private", "r": "Play"}, {"n": "Bubble Editor", "d": "Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.", "h": "bubble-editor.html", "p": "MF-06·01", "s": "live", "r": "Craft"}, {"n": "The Shop", "d": "CNC, G-code and steel — the machines that don't accept an approximately right answer.", "h": "shop.html", "p": "MF-06·02", "s": "live", "r": "Craft"}, {"n": "Frames", "d": "Twenty-eight photographs kept as a series. The only thing in the atlas that doesn't do anything — on purpose.", "h": "frames.html", "p": "MF-06·03", "s": "live", "r": "Craft"}, {"n": "Sonic Veil", "d": "Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.", "h": "sonicveil.html", "p": "MF-06·04", "s": "music · live", "r": "Craft"}]</script>
+<script src="assets/ui/plan.js?v=8caf38cd" defer></script>
 <script>
 (() => {
   const TO = 'anders@mentifaber.org', $ = id => document.getElementById(id);
@@ -179,6 +74,5 @@ footer.mf-foot a { display: inline-block; margin-top: 14px; color: var(--indigo-
   });
 })();
 </script>
-<script src="assets/mf.js" defer></script>
 </body>
 </html>

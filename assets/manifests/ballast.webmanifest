@@ -6,8 +6,8 @@
   "start_url": "/ballast-app.html",
   "scope": "/ballast",
   "display": "standalone",
-  "background_color": "#05060a",
-  "theme_color": "#05060a",
+  "background_color": "#080705",
+  "theme_color": "#080705",
   "icons": [
     {
       "src": "../icons/v2/ballast-192.png",

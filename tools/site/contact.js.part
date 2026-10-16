@@ -1,0 +1,29 @@
+<script>
+(() => {
+  const TO = 'anders@mentifaber.org', $ = id => document.getElementById(id);
+  const status = t => { $('status').textContent = t; };
+  let topic = 'Just saying hi';
+  $('chips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+    topic = b.textContent;
+  });
+  $('msg').addEventListener('input', () => { $('count').textContent = $('msg').value.length + ' / 2000'; });
+  $('copy').addEventListener('click', () => {
+    const done = () => { $('copy').textContent = 'Copied ✓'; setTimeout(() => $('copy').textContent = 'Copy address', 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(TO).then(done, () => prompt('Copy the address:', TO));
+    else prompt('Copy the address:', TO);
+  });
+  $('f').addEventListener('submit', e => {
+    e.preventDefault();
+    if ($('hp').value) return;                       // bots fill hidden fields
+    const name = $('name').value.trim(), from = $('from').value.trim(), msg = $('msg').value.trim();
+    if (!msg) { status('Add a message first.'); $('msg').focus(); return; }
+    if (from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from)) { status('That email looks off — check it or leave it blank.'); $('from').focus(); return; }
+    const subject = `[mentifaber.org] ${topic}${name ? ' — ' + name : ''}`;
+    const body = `${msg}\n\n—\n${name || 'Sent from mentifaber.org'}${from ? '\nReply to: ' + from : ''}`;
+    location.href = `mailto:${TO}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    status('Opening your email app…');
+  });
+})();
+</script>
