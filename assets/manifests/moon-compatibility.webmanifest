@@ -6,8 +6,8 @@
   "start_url": "/moon-compatibility-app.html",
   "scope": "/moon-compatibility",
   "display": "standalone",
-  "background_color": "#05060a",
-  "theme_color": "#05060a",
+  "background_color": "#080705",
+  "theme_color": "#080705",
   "icons": [
     {
       "src": "../icons/v2/moon-compatibility-192.png",
