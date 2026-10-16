@@ -1,6 +1,6 @@
 // Web Push (RFC 8030/8292) without a payload: the service worker picks the words (it asks the server what's
 // new), so nothing needs encrypting; the request only carries a VAPID JWT. Shared by the Worker (Flutterbloom,
-// List-It, Barycenter, Nullspace) and by Genesis in the Hive object (src/hive-genesis.js).
+// List-It, Barycenter, Nullspace) and by Genesis in the Genesis object (src/hive-genesis.js).
 export const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const b64urlStr = (str) => b64url(new TextEncoder().encode(str));
 async function vapidAuth(endpoint, v) {

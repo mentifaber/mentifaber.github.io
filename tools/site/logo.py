@@ -118,7 +118,7 @@ def main():
 
 
 
-# ── Genesis (the Hive app): the gold G in its ring of crystals, and the ring alone for the voice link ──
+# ── Genesis (the app once called Genesis): the gold G in its ring of crystals, and the ring alone for the voice link ──
 G_ART = Image.open(os.path.join(ROOT, "assets/brand/genesis-logo.jpg")).convert("RGB")
 RING_ART = Image.open(os.path.join(ROOT, "assets/brand/genesis-ring.jpg")).convert("RGB")
 
@@ -150,6 +150,7 @@ def genesis():
             save(lean(safe(G, 512, 0.84)), "assets/icons/hive-genesis-maskable-512.png"),
             save(safe(G, 192, 0.84), "assets/icons/hive-genesis-maskable-192.png"),
             save(medallion(G, 96), "assets/hive/genesis-mark.png"),
+            save(medallion(G, 420), "assets/hive/genesis-logo-420.webp", quality=86, method=6),
             save(ring_png(720), "assets/hive/genesis-ring.webp", quality=86, method=6)]
     for p in made:
         print("made", os.path.relpath(p, ROOT), os.path.getsize(p) // 1024, "KB")

@@ -1,6 +1,6 @@
-// Hive · ears: how the voice link hears.
+// Genesis · ears: how the voice link hears.
 // The microphone becomes 16 kHz speech in 20 ms frames. A detector that learns the room decides when someone is really
-// talking: hum, hiss, clicks and the tail of Hive's own voice never start a turn, so a recognizer is never handed silence
+// talking: hum, hiss, clicks and the tail of Genesis's own voice never start a turn, so a recognizer is never handed silence
 // to "hear" a phantom "you" in. One turn of speech then becomes words by either
 //   flux     Deepgram Flux over a WebSocket (/api/hive/listen): words appear while you talk, and it ends the turn when
 //            you've finished the thought, not merely paused
@@ -80,7 +80,7 @@ class Turn {
     if (o.ptt) this.begin([]);
   }
   frame(x) {
-    if (this.phase === "wait") { // hands-free: wait for real speech, but not while Hive's own voice may still be ringing in the room
+    if (this.phase === "wait") { // hands-free: wait for real speech, but not while Genesis's own voice may still be ringing in the room
       const e = this.ear; // speech that began inside the guard still counts once it has gone on too long to be an echo's tail
       if (x.n - this.t0 > this.guard && e.inSpeech && (e.onset > this.t0 + this.guard || x.n - e.onset > 30)) this.begin(e.ring.filter((r) => r.n >= e.onset - PRE));
       return;
@@ -168,14 +168,14 @@ class Turn {
     const clip = first < 0 ? [] : fr.slice(Math.max(0, first - 15), Math.min(fr.length, lastI + 13)).map((r) => r.f), t0 = performance.now(); // 300 ms before the first sound, 260 ms after the last
     if (this.o.onSend && !quiet) this.o.onSend();
     return fetch("/api/hive/stt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audio: wav(clip), lang: this.o.lang || "", ms: this.voiced * FMS, kt: this.o.keyterm || "" }), signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined }) // a transcription that never returns would leave it listening forever
-      .then((r) => r.json().catch(() => ({ error: "the server said " + r.status }))).then((j) => (j.error ? { error: j.error } : { text: String(j.text || "").trim(), ms: performance.now() - t0, dropped: j.dropped })).catch((e) => ({ error: e.name === "TimeoutError" ? "transcription took too long" : e.message || "couldn't reach the Hive" }));
+      .then((r) => r.json().catch(() => ({ error: "the server said " + r.status }))).then((j) => (j.error ? { error: j.error } : { text: String(j.text || "").trim(), ms: performance.now() - t0, dropped: j.dropped })).catch((e) => ({ error: e.name === "TimeoutError" ? "transcription took too long" : e.message || "couldn't reach Genesis" }));
   }
   finish(text, engine, r) {
     if (this.phase !== "speech") return; text = String(text || "").trim();
     if (phantom(text, this.voiced * FMS, engine)) { if (this.o.onNoise) this.o.onNoise(text); return this.o.ptt ? this.end() : this.reset(); }
     this.phase = "done"; this.drop(); this.done({ text, engine, voicedMs: this.voiced * FMS, sttMs: r && r.ms, openMs: this.openMs, why: this.why });
   }
-  reset() { // it was noise: keep waiting for real speech (no guard this time; Hive isn't talking)
+  reset() { // it was noise: keep waiting for real speech (no guard this time; Genesis isn't talking)
     this.drop(); Object.assign(this, { phase: "wait", frames: [], voiced: 0, partial: "", pieces: [], confs: [], words: [], eotAt: 0, since: 0, spec: null, specN: 0, extra: 0, extended: false, sent: 0, dead: false, deciding: false, flushAll: false, t0: this.ear.n, guard: 0 }); this.gen++;
     if (this.o.onWait) this.o.onWait();
   }

@@ -1,8 +1,8 @@
 {
   "id": "/hive",
-  "name": "Hive · a mind that grows in layers",
-  "short_name": "Hive",
-  "description": "Every AI model at once in one stone: talk to any of them, convene a council, release a swarm of agents that plans, builds and reviews a whole project, search the live web, see, speak and paint. Each exchange settles as a layer; earlier sessions are the bedrock.",
+  "name": "Genesis · a mind with a name",
+  "short_name": "Genesis",
+  "description": "A mind called Genesis that remembers you and talks with you out loud, with every AI model on call: one at a time, as a council, or as a swarm of agents that plans, builds and reviews a whole project. Live web search, vision, pictures and a sealed key vault.",
   "start_url": "/hive-app.html",
   "scope": "/hive",
   "display": "standalone",

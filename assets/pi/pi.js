@@ -1,6 +1,6 @@
-/* Pi · in the browser. The phone build runs in Termux with 22 device tools; this one talks through Hive's free models and
+/* Pi · in the browser. The phone build runs in Termux with 22 device tools; this one talks through Genesis's free models and
    keeps the same character: no persona, only capability. Listening is the device's own speech recognition where there is
-   one (Hive's Whisper otherwise); speaking degrades instead of going silent: Hive's neural voice, then the browser's
+   one (Genesis's Whisper otherwise); speaking degrades instead of going silent: Genesis's neural voice, then the browser's
    voices, then text. The orb rides the real output amplitude. Tools that touch the outside world sit behind a
    confirmation gate keyed to a token, so a stray "no" in a later sentence can't be misread as an answer. */
 (() => {
@@ -46,7 +46,7 @@ function tier(n) { S.tier = n; const el = $("tier"); el.className = "tier t" + n
 $("tools").innerHTML = TOOLS.map((t) => '<span data-t="' + t + '">' + t + "</span>").join("");
 const used = (t) => { const el = document.querySelector('#tools [data-t="' + t.replace(/_.*/, "") + '"]'); if (el) el.classList.add("used"); };
 
-// ── speaking: neural (Hive) → device voices → text ──
+// ── speaking: neural (Genesis) → device voices → text ──
 let audioCtx = null;
 async function speak(text) {
   if (!S.voice || !text) return tier(3);
@@ -68,7 +68,7 @@ async function speak(text) {
   tier(3);
 }
 
-// ── listening: the device's recognizer, or Hive's Whisper ──
+// ── listening: the device's recognizer, or Genesis's Whisper ──
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, mediaRec = null;
 async function listen() {

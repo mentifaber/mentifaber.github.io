@@ -1,4 +1,4 @@
-// Hive: you give it a project; a swarm of AI agents splits it into a task board, each agent claims the work
+// Genesis: you give it a project; a swarm of AI agents splits it into a task board, each agent claims the work
 // its role fits, critics review, an integrator assembles the result. Agents come only from sources this
 // site is allowed to use: Cloudflare Workers AI (env.AI), optional keyed providers (OpenRouter, Groq,
 // Gemini: Worker secrets), any number of keys the owner adds to the vault (src/hive-kit.js), and visiting AIs
@@ -148,7 +148,7 @@ export class Hive extends DurableObject {
       return textOf(r);
     }
     const k = KEYED.find((x) => x.id === agent.src); if (!k) throw new Error("no provider");
-    const res = await fetch(k.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + this.env[k.env], "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Hive" },
+    const res = await fetch(k.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + this.env[k.env], "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber Genesis" },
       body: JSON.stringify({ model: agent.model, max_tokens: max || 2048, messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
     if (!res.ok) throw new Error(k.id + " " + res.status);
     const j = await res.json(); return String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "").trim();
@@ -165,7 +165,7 @@ export class Hive extends DurableObject {
       return J({ ok: true, removed: ids.length });
     }
     if (path === "/mind/brief" && owner) { const p = await Mind.parts(this); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE, genesis: await Genesis.block(this, "mentifaber-agent-1.0") }); } // the owner's apps on MENTIFABER AGENT talk to Genesis too
-    if (path.startsWith("/mind")) { if (!owner) return J({ error: "Hive's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
+    if (path.startsWith("/mind")) { if (!owner) return J({ error: "Genesis's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "Genesis is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
       return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has FROM proj ORDER BY ts DESC LIMIT 40").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined })) }); }
@@ -379,7 +379,7 @@ export class Hive extends DurableObject {
     }
   }
   async advance(p) {
-    const q = this.sql(), SYS = (role) => "You are one agent in Mentifaber Hive, a swarm building a project together. Your role: " + role.toUpperCase() + ". " + ROLES[role] + " Stay inside your task; others handle the rest.";
+    const q = this.sql(), SYS = (role) => "You are one agent in the Swarm of Mentifaber Genesis, a team building a project together. Your role: " + role.toUpperCase() + ". " + ROLES[role] + " Stay inside your task; others handle the rest.";
     if (p.status === "planning" || p.status === "replanning") {
       this.fails = this.fails || {}; const nf = this.fails[p.id] || 0;
       const cands = [...this.agentsFor(p.id, "coordinator"), ...this.agentsFor(p.id, "architect"), ...this.agentsFor(p.id, "integrator"), ...q.exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx(), p.id).toArray()];
@@ -580,7 +580,7 @@ export class Hive extends DurableObject {
     }
     return out;
   }
-  async voices(owner) { // every voice Hive can speak with right now, most human first: ElevenLabs, then the free Aura-2, then OpenAI
+  async voices(owner) { // every voice Genesis can speak with right now, most human first: ElevenLabs, then the free Aura-2, then OpenAI
     const el = [], oa = [], a2 = [];
     if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND (kind='voice' OR provider='openai') ORDER BY ts").toArray()) {
       if (v.kind === "voice") for (const x of JSON.parse(v.models || "[]").slice(0, 60)) { const [name, id] = x.split("|"); el.push({ id: "el:" + v.id + ":" + id, name, group: "ElevenLabs" + (v.label ? " · " + v.label : "") }); }
@@ -608,7 +608,7 @@ export class Hive extends DurableObject {
     if (path === "/stt") {
       const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
       if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
-      const names = owner ? [(await Genesis.self(this)).name || "Genesis", "Anders", "Vigil", "Hive", "Mentifaber", "Swarm"] : ["Hive", "Mentifaber"];
+      const names = owner ? [(await Genesis.self(this)).name || "Genesis", "Anders", "Vigil", "Mentifaber", "Swarm"] : ["Genesis", "Mentifaber"];
       const h = await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase(), [...new Set(names.filter(Boolean))]);
       return J({ text: h.text, dropped: h.dropped, voiced: h.voiced });
     }
@@ -623,7 +623,7 @@ export class Hive extends DurableObject {
     // chat
     let [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
     if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
-    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Uplinks and Hive will switch to it automatically." : "Come back then.");
+    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Uplinks and Genesis will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
     if (src === "agent") { const ag = await this.agentInfo(); if (!ag || !ag.model) return J({ error: "MENTIFABER AGENT 1.0 has no model loaded yet" }, 400); if (!owner && !ag.public) return J({ error: "MENTIFABER AGENT 1.0 is private" }, 401); }
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
@@ -695,8 +695,8 @@ export class Hive extends DurableObject {
     const local = src === "agent", mp = owner && mind && mp0 ? mp0 : { stable: "", recent: "" }, who = owner ? await Genesis.block(this, local ? "mentifaber-agent-1.0" : model.split("/").pop()) : "";
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
-    const system = (owner ? "You are " + gName + ", the mind that lives in Hive on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Hive, the assistant of Hive on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
-      "Hive is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), live weather (when they ask about the weather, Hive looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
+    const system = (owner ? "You are " + gName + ", the mind of the Genesis app on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Genesis, the assistant on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
+      "Genesis is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), live weather (when they ask about the weather, Genesis looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." +
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") + (local ? "" : " Now: " + now + ".") +
@@ -716,7 +716,7 @@ export class Hive extends DurableObject {
       if (!crew.length) crew = ranked().slice(0, want);
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const draft = async (c, n) => { const [cs, cm] = c.split("|"), t1 = Date.now(); tried.add(c); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
-        try { const kv = cs === "agent" ? { v: this.agentV(150e3), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Hive's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
+        try { const kv = cs === "agent" ? { v: this.agentV(150e3), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on Genesis's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
         catch (e) { if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
       let drafts = (await Promise.all(crew.map((c) => draft(c, crew.length)))).filter(Boolean);
       for (let wave = 0; wave < 2 && !b.crew && drafts.filter((d) => d.text).length < Math.min(3, want); wave++) { // members failed: call in the next-best models
@@ -727,9 +727,9 @@ export class Hive extends DurableObject {
       const failed = drafts.filter((d) => d.error); tools.push("council of " + good.length + (failed.length ? " · " + failed.length + " couldn't answer" : ""));
       const brief = good.map((d, k) => "DRAFT " + String.fromCharCode(65 + k) + " (" + d.model.split("|").pop().split("/").pop() + "):\n" + d.text.slice(0, 7000)).join("\n\n");
       if (!v && (await this.resting()) && owner) await tryIn();
-      const leadSys = system + "\n\nYou are the LEAD of Hive's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Drafts sometimes invent specifics (numbers, statuses, files, repos, settings): keep a specific only if the MATERIAL, the profile or the user's own words support it, otherwise drop it or mark it as a guess. Finish the whole answer; if it would be very long, tighten it rather than stopping mid-way. Do not mention drafts by letter unless it helps the user.", leadMsgs = [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }];
+      const leadSys = system + "\n\nYou are the LEAD of Genesis's council: this is real. " + good.length + " other models (" + good.map((d) => d.model.split("|").pop().split("/").pop()).join(", ") + ") each drafted an answer to the user's last message. Write the single best answer yourself: keep what is right and well supported, fix what is wrong, merge the strongest ideas, and where they genuinely disagree say so briefly. Drafts sometimes invent specifics (numbers, statuses, files, repos, settings): keep a specific only if the MATERIAL, the profile or the user's own words support it, otherwise drop it or mark it as a guess. Finish the whole answer; if it would be very long, tighten it rather than stopping mid-way. Do not mention drafts by letter unless it helps the user.", leadMsgs = [...msgs.slice(0, -1), { role: "user", text: last.text + "\n\n---\nCOUNCIL DRAFTS:\n" + brief }];
       text = good.length ? await complete(this.env, v, key, model, leadSys, leadMsgs, Math.min(8192, +b.max || 6000)).catch(async (e) => { if (/max_tokens|max tokens|maximum|too large|context length/i.test(String(e.message || e))) return complete(this.env, v, key, model, leadSys, leadMsgs, 3000); throw e; }) : null; // some models cap a reply at 4096
-      if (!text) text = await complete(this.env, v, key, model, system + (failed.length ? "\n\nNOTE: the user asked for Hive's council, but none of the " + failed.length + " models called could answer right now (" + failed.map((d) => d.model.split("|").pop().split("/").pop() + ": " + d.error.slice(0, 80)).join("; ") + "). Say so in one sentence, then answer yourself." : ""), msgs, 3000);
+      if (!text) text = await complete(this.env, v, key, model, system + (failed.length ? "\n\nNOTE: the user asked for Genesis's council, but none of the " + failed.length + " models called could answer right now (" + failed.map((d) => d.model.split("|").pop().split("/").pop() + ": " + d.error.slice(0, 80)).join("; ") + "). Say so in one sentence, then answer yourself." : ""), msgs, 3000);
       Genesis.finishTurn(this, turn, text, used);
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used, turn: turn || undefined });
     }

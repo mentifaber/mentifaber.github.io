@@ -1,5 +1,5 @@
 """Every app on mentifaber.org, in one place: name, hue, glyph, category, status, where its page and its app live.
-The page generator (build.py) reads this; the home page it builds carries the list in the form Hive's site index parses."""
+The page generator (build.py) reads this; the home page it builds carries the list in the form Genesis's site index parses."""
 import json, re, os
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

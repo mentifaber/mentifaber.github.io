@@ -71,7 +71,7 @@
     },
     async hive() {
       const v = await cache("hive", () => get("/api/hive/models", 8000));
-      return { label: "Hive", value: (v.models || []).length, sub: "models on call" + (v.resting ? " · free tier resting" : ""), href: "hive" };
+      return { label: "Genesis", value: (v.models || []).length, sub: "models on call" + (v.resting ? " · free tier resting" : ""), href: "hive" };
     },
     async agent() {
       const v = await get("/api/agent/status", 8000);

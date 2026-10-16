@@ -248,6 +248,14 @@ kbd { font: 600 10px/1 var(--mono); color: var(--gold-hi); border: 1px solid var
 .part { margin-bottom: 22px; padding-left: 16px; border-left: 1px solid var(--line-2); }
 .prose h3 { margin: 0 0 8px; font: 400 20px/1.2 var(--display); letter-spacing: .05em; color: var(--gold-hi); }
 .prose code { font: .86em var(--mono); color: var(--gold-hi); }
+.figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.fig { margin: 0; }
+.fig img { display: block; width: 100%; height: auto; border: 1px solid var(--line-2); box-shadow: 0 0 0 4px #0d0b08, 0 0 0 5px var(--line); background: #000; }
+.fig figcaption { margin-top: 10px; }
+.fig a { display: block; cursor: zoom-in; transition: transform .3s var(--ease); } .fig a:hover { transform: translateY(-2px); } .fig a:hover img { box-shadow: 0 0 0 4px #0d0b08, 0 0 0 5px var(--gold); }
+.fig.tall { grid-row: span 2; }
+@media (max-width: 1100px) { .figs { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .figs { grid-template-columns: 1fr; } .fig.tall { max-width: 280px; } }
 .bom { list-style: none; margin: 0; padding: 0; counter-reset: b; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 26px; }
 .bom li { counter-increment: b; padding: 12px 0 12px 40px; border-top: 1px solid var(--line); position: relative; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
 .bom li::before { content: counter(b, decimal-leading-zero); position: absolute; left: 0; top: 13px; font: 500 11px var(--mono); color: var(--gold); }

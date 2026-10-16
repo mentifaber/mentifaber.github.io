@@ -187,6 +187,7 @@ def page(i):
     story = c.get("story") or {}
     body = "".join([
         S("Why it exists", (f'<h3 class="story">{story["title"]}</h3>' if story.get("title") else "") + f'<div class="prose">{c.get("lede", "")}</div>') if c.get("lede") else "",
+        S("Views", '<div class="figs">' + "".join(f'<figure class="fig{" tall" if f.get("tall") else ""}"><a href="{esc(f["src"])}" target="_blank" rel="noopener" aria-label="Open full size"><img src="{esc(f["src"])}" alt="{esc(a["name"])}: {esc(f["cap"])}" loading="lazy"></a><figcaption class="lbl">Fig. {n_ + 2} · {esc(f["cap"])}</figcaption></figure>' for n_, f in enumerate(c["figs"])) + "</div>") if c.get("figs") else "",
         S("Parts list", f'<ol class="bom">{feats}</ol>' + (f'<p class="prose" style="margin-top:14px">{c["featuresNote"]}</p>' if c.get("featuresNote") else "")) if feats else "",
         S("Instruments", f'<div class="instr">{instruments(c["widgets"])}</div>') if c.get("widgets") else "",
         S("Construction", cards) if cards else "",

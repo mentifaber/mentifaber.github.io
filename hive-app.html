@@ -1,24 +1,24 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<title>Hive · Mentifaber</title>
+<title>Genesis · Mentifaber</title>
 <meta name="description" content="A mind that grows in layers: every AI model at once, councils of models, agent swarms that build, live web search, vision, voice and pictures.">
 <meta name="theme-color" content="#0e1113">
 <link rel="manifest" href="assets/manifests/hive.webmanifest">
 <link rel="icon" href="assets/icons/hive-genesis-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-genesis-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-genesis-apple.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hive">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Genesis">
 <link rel="preload" href="assets/fonts/HiveStrata-Regular.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/HiveStrata-SemiBold.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/HiveStrata-Light.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/hive/hive.css">
 <script>try { if (JSON.parse(localStorage.getItem("hive:theme")) === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}</script>
 </head>
 <body>
-<!-- Hive is a geode: many crystals (every model you can reach), one stone. It grows in layers: you write at the surface, each
+<!-- Genesis is a geode: many crystals (every model you can reach), one stone. It grows in layers: you write at the surface, each
      exchange settles as a layer beneath it, and earlier sessions are the bedrock. Every screen reads like a core log: a depth
      rail, a strip coloured by the mind that laid the layer down, and the layer itself. -->
 <header id="crown">
-  <a id="brand" href="#studio" aria-label="Hive"><img class="geo" id="geo-mark" src="assets/hive/genesis-mark.png" alt="" width="32" height="32"><span class="word">Hive</span></a>
-  <nav id="realms" aria-label="Hive">
+  <a id="brand" href="#studio" aria-label="Genesis"><img class="geo" id="geo-mark" src="assets/hive/genesis-mark.png" alt="" width="32" height="32"><span class="word">Genesis</span></a>
+  <nav id="realms" aria-label="Genesis">
     <a href="#studio" data-v="studio">Studio</a><a href="#swarm" data-v="swarm">Swarm</a><a href="#mind" data-v="mind">Mind</a><a href="#keys" data-v="keys">Uplinks</a>
   </nav>
   <span class="flex"></span>
@@ -70,7 +70,7 @@
       <div id="empty" class="core">
         <div class="rail" aria-hidden="true"><span>seams</span></div>
         <ol class="seams" id="starters"></ol>
-        <figure class="geode-fig"><div class="geode" id="core" aria-hidden="true"></div><figcaption id="gcap"></figcaption></figure>
+        <figure class="geode-fig"><div class="geode" id="core" aria-hidden="true"><img src="assets/hive/genesis-logo-420.webp" alt="" width="420" height="420"></div><figcaption id="gcap"></figcaption></figure>
       </div>
       <div id="log" aria-live="polite"></div>
       <section id="bedrock" class="core">
@@ -144,7 +144,7 @@
     <div id="k-open" class="hidden">
       <div class="bd core"><div class="rail"><span>agent 1.0</span></div><div class="bc agentp" id="agentp"></div></div>
       <div class="bd core"><div class="rail"><span>new uplink</span></div><div class="bc">
-        <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside the Hive's Durable Object, and never shown again: only its last four characters.</p>
+        <p class="dim sm">Any number, any provider. Each key is verified with its provider, sealed with AES-GCM inside Genesis's Durable Object, and never shown again: only its last four characters.</p>
         <div class="form">
           <label>Provider<select id="k-prov"></select></label>
           <label>Label <span class="dim">(optional)</span><input id="k-label" placeholder="e.g. work, personal, backup"></label>
@@ -155,37 +155,37 @@
         <div class="row mt"><button class="pri" id="k-add">Verify &amp; seal</button><button class="q hidden" id="k-force">Add anyway</button><span class="dim sm" id="k-msg"></span></div>
       </div></div>
       <div class="bd core"><div class="rail"><span>the vault</span></div><div class="bc"><div id="k-list"></div>
-        <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Hive searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p></div></div>
+        <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, Genesis searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p></div></div>
     </div>
   </div></section>
 
   <!-- ───────── MIND ───────── -->
   <section id="v-mind" class="view hidden"><div class="pane">
     <div class="realm core"><div class="rail"><span>mind</span></div><div><h1>What it knows, and what it is</h1><p class="dim">Owner only. <span id="m-at"></span></p></div></div>
-    <div id="m-locked" class="bd core hidden"><div class="rail"><span>sealed</span></div><div class="bc"><h3>The mind is sealed</h3><p class="dim">Hive's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div></div>
+    <div id="m-locked" class="bd core hidden"><div class="rail"><span>sealed</span></div><div class="bc"><h3>The mind is sealed</h3><p class="dim">Genesis's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div></div>
     <div id="m-open" class="hidden">
       <div class="ptabs core mhead"><div class="rail"><span>read</span></div><div class="tabrow">
         <nav class="mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
-        <span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Hive knows…" aria-label="Search the mind"></div></div>
+        <span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Genesis knows…" aria-label="Search the mind"></div></div>
       <div id="m-results" class="hidden"></div>
       <div id="mt-you" class="mtp">
         <div class="bd core mindp"><div class="rail"><i class="led ok" id="m-led"></i><span>you</span></div><div class="bc">
-          <div class="ah"><h3>What Hive knows about you<small id="m-sub">—</small></h3><label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
+          <div class="ah"><h3>What Genesis knows about you<small id="m-sub">—</small></h3><label class="mtg"><span>Memory</span><input type="checkbox" id="m-on" class="tg"></label></div>
           <div class="facts" id="m-facts"></div>
-          <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="q" id="m-ask">Talk it through</button><button class="q" id="m-import">Import this device's sessions</button><span class="flex"></span><button class="q" id="m-exp-md" title="Everything Hive knows about you, as a readable notes file">Export notes</button><button class="q" id="m-exp-json" title="Everything, as JSON">JSON</button></div>
-          <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted (visitors' never are). Your profile, pinned and core memories, open threads and recent activity go with every chat you have with Hive and with MENTIFABER AGENT 1.0; older memories come up when they matter. Every few messages Hive looks over what you said and proposes what's worth keeping; nothing it notices is used until you say yes.</p>
+          <div class="ab"><button class="pri" id="m-analyze">Analyze me now</button><button class="q" id="m-ask">Talk it through</button><button class="q" id="m-import">Import this device's sessions</button><span class="flex"></span><button class="q" id="m-exp-md" title="Everything Genesis knows about you, as a readable notes file">Export notes</button><button class="q" id="m-exp-json" title="Everything, as JSON">JSON</button></div>
+          <p class="dim sm">Every message, voice turn, council, picture and swarm brief you send is noted (visitors' never are). Your profile, pinned and core memories, open threads and recent activity go with every chat you have with Genesis and with MENTIFABER AGENT 1.0; older memories come up when they matter. Every few messages Genesis looks over what you said and proposes what's worth keeping; nothing it notices is used until you say yes.</p>
         </div></div>
-        <div class="bd core review hidden" id="m-review"><div class="rail"><span>noticed</span></div><div class="bc"><h3>Hive noticed<small>nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist"></div></div></div>
+        <div class="bd core review hidden" id="m-review"><div class="rail"><span>noticed</span></div><div class="bc"><h3>Genesis noticed<small>nothing here is used until you keep it</small></h3><div id="m-rlist" class="mlist"></div></div></div>
         <div class="bd core"><div class="rail"><span>profile</span><select id="m-hist" class="hidden" aria-label="Earlier profiles"></select></div><div class="bc"><div id="m-profile" class="b"></div></div></div>
       </div>
       <div id="mt-mem" class="mtp hidden">
         <div class="bd core"><div class="rail"><span>memories</span></div><div class="bc">
-          <div class="own"><input id="m-new" placeholder="Something Hive should always know… (or say “remember …” in any chat)"><select id="m-kind" aria-label="Kind"><option value="">auto</option></select><button class="q" id="m-add">Remember</button></div>
+          <div class="own"><input id="m-new" placeholder="Something Genesis should always know… (or say “remember …” in any chat)"><select id="m-kind" aria-label="Kind"><option value="">auto</option></select><button class="q" id="m-add">Remember</button></div>
           <div class="chips mt" id="m-chips"></div>
           <div id="m-mem" class="mlist mems mt"></div>
-          <div class="row mt"><label class="mtg"><span>Keep what Hive notices without asking</span><input type="checkbox" id="m-trust" class="tg"></label><span class="flex"></span><button class="q" id="m-notice" title="Have Hive look over your recent chats for anything worth keeping, now">Look over recent chats</button></div>
+          <div class="row mt"><label class="mtg"><span>Keep what Genesis notices without asking</span><input type="checkbox" id="m-trust" class="tg"></label><span class="flex"></span><button class="q" id="m-notice" title="Have Genesis look over your recent chats for anything worth keeping, now">Look over recent chats</button></div>
         </div></div>
-        <div class="bd core"><div class="rail"><span>open threads</span></div><div class="bc"><p class="dim sm">Things you started or said you'd do. Hive follows up when it fits.</p>
+        <div class="bd core"><div class="rail"><span>open threads</span></div><div class="bc"><p class="dim sm">Things you started or said you'd do. Genesis follows up when it fits.</p>
           <div class="own"><input id="m-tnew" placeholder="Something you're in the middle of…"><button class="q" id="m-tadd">Add</button></div>
           <div id="m-threads" class="mlist mt"></div>
           <details class="mt" id="m-tdone"><summary class="dim sm">Finished and dropped</summary><div id="m-tclosed" class="mlist mt"></div></details>
@@ -207,7 +207,7 @@
           <div class="ab"><button class="pri" id="g-reflect" title="Read the latest conversations and decide what to change">Reflect now</button><button class="q" id="g-check" title="Run a real check of every part of the system">Check systems</button></div>
           <div class="facts" id="g-facts"></div>
           <div class="health hidden" id="g-health"></div>
-          <p class="dim sm">The mind you talk to in Hive. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your ratings, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
+          <p class="dim sm">The mind behind Genesis, and the one you talk to in it. It remembers your conversations (and recalls the ones that matter), learns lessons from them and from your ratings, and reflects on its own every few hours: a journal entry, lessons added or retired, ideas for what it should become. Lessons change how it talks at once. Ideas go to the Swarm when you tap Build, or, with Autonomy on, it builds on its own: no schedule, at moments it picks, at the size it picks (up to 3 missions and 450 calls a day), and it judges each result when it next reflects. What the Swarm makes is yours to review: nothing deploys on its own, and it can't learn its way around the safety rules.</p>
         </div></div>
         <div class="bd core"><div class="rail"><span>lessons</span></div><div class="bc">
           <div class="own"><input id="g-new" placeholder="Teach it something… (or say “from now on …” in any chat, or /teach …)"><button class="q" id="g-add">Teach</button></div>
@@ -243,7 +243,7 @@
   <div class="row"><h3>Settings</h3><span class="flex"></span><button class="inst" onclick="sdlg.close()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
   <section><h4>Surface</h4>
     <label class="opt"><span>Stone<small>basalt is dark, limestone is light</small></span><select id="s-theme"><option value="dark">Basalt</option><option value="light">Limestone</option></select></label>
-    <label class="opt"><span>Motion<small>the geode, the growing strata and the swarm's cavity</small></span><input type="checkbox" id="s-motion" class="tg"></label>
+    <label class="opt"><span>Motion<small>the glow of the mark, the growing strata and the swarm's cavity</small></span><input type="checkbox" id="s-motion" class="tg"></label>
     <label class="opt"><span>Send with Enter<small>off: Enter makes a new line, Ctrl/⌘+Enter sends</small></span><input type="checkbox" id="s-enter" class="tg"></label>
   </section>
   <section><h4>Voice link</h4>

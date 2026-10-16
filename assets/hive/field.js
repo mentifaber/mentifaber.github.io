@@ -1,4 +1,4 @@
-// Hive · drawings. Hive is a geode: one stone, many crystals. Every mind it can reach is a crystal growing in from the wall of
+// Genesis · drawings. Genesis is a geode: one stone, many crystals. Every mind it can reach is a crystal growing in from the wall of
 // the cavity, coloured by its mineral (each family of models has one: Claude copper, GPT malachite, Gemini azurite, Llama
 // citrine, Qwen jasper, DeepSeek lapis, Mistral rhodochrosite, Grok hematite, Kimi peridot, the Mentifaber agent selenite);
 // the wall is banded like agate, and it gains a band as sessions pile up. The same stone is the mark in the crown, the
@@ -103,7 +103,7 @@ function map(c, data) {
       g.globalAlpha = 1;
       if (a.status === "reviewing") { g.strokeStyle = az; g.lineWidth = 1.6 * D; g.beginPath(); [...cs.left.slice(0, 3), ...cs.right.slice(2)].forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke(); }
     });
-    // the centre: how far the mission is, as a closing ring and a count in Hive's own letters
+    // the centre: how far the mission is, as a closing ring and a count in Genesis's own letters
     const frac = tasks.length ? done / tasks.length : 0, RR = R * .2;
     g.strokeStyle = line2; g.lineWidth = 3 * D; g.beginPath(); g.arc(cx, cy, RR, 0, 7); g.stroke();
     g.strokeStyle = ink; g.beginPath(); g.arc(cx, cy, RR, -Math.PI / 2, -Math.PI / 2 + Math.max(.001, frac) * Math.PI * 2); g.stroke();
@@ -122,7 +122,7 @@ const voice = { raf: 0, start(c, read) {
   let sm = 0, glow = 0; const t0 = performance.now(), waves = []; let lastWave = 0;
   const draw = (t) => {
     voice.raf = requestAnimationFrame(draw); if (document.hidden) return; const st = read(); if (!st) return;
-    const D = fit(c), W = c.width, H = c.height, cx = W / 2, cy = H * .4, R = Math.min(W * .4, H * .3), time = still() ? 0 : (t - t0) / 1000;
+    const D = fit(c), W = c.width, H = c.height, cx = W / 2, cy = H * .36, R = Math.min(W * .4, H * .25), time = still() ? 0 : (t - t0) / 1000;
     const col = st.color || "#d6a647", gold = "#e9b75a", mode = st.mode;
     sm += ((st.level || 0) - sm) * .22; g.clearRect(0, 0, W, H);
     const want = mode === "idle" ? .18 : mode === "listen" ? .35 + sm * .65 : mode === "think" ? .45 + .15 * Math.sin(time * 3) : .5 + sm * .5;

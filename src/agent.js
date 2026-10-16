@@ -4,7 +4,7 @@
 //            this Durable Object's alarm, so it survives restarts and needs no keys or laptop).
 //   wake   : the container starts, pulls the file from R2 through /api/agent/weights (a one-time token proves it's
 //            ours), loads it into llama.cpp and serves an OpenAI-style API on port 8080.
-//   use    : Hive and any app call /api/agent/v1/chat/completions; requests are proxied into the container.
+//   use    : Genesis and any app call /api/agent/v1/chat/completions; requests are proxied into the container.
 //   sleep  : after 20 idle minutes the container is stopped, so it only costs while it's being used, unless the owner
 //            keeps it ALWAYS ON (the default since Oct 2026): then it never sleeps, and the alarm (every minute) and the
 //            15-minute cron bring it back on their own if it stops (a restart, an eviction, a deploy) or hangs loading.
@@ -84,7 +84,7 @@ export class Agent extends DurableObject {
 
   async chat(req, owner) {
     if (!owner && this.env.AGENT_PUBLIC === "0") return J({ error: AGENT.name + " is private" }, 401);
-    if (!owner) { // visitors get a daily allowance; the owner (and Hive, which meters its own visitors) has none
+    if (!owner) { // visitors get a daily allowance; the owner (and Genesis, which meters its own visitors) has none
       const k = "m:" + new Date().toISOString().slice(0, 10) + ":" + (req.headers.get("cf-connecting-ip") || "x"), n = (await this.ctx.storage.get(k)) || 0;
       if (n >= PUBLIC_DAY) return J({ error: "that's today's " + PUBLIC_DAY + " messages to " + AGENT.name + "; come back tomorrow" }, 429);
       await this.ctx.storage.put(k, n + 1);
