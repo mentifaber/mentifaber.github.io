@@ -582,6 +582,9 @@ dialog[open] { animation: drop .22s ease-out; }
 .opt select { max-width: 52%; font-size: 14px; }
 .opt input[type="range"] { accent-color: var(--ink); width: 160px; min-height: 0; padding: 0; border: 0; background: none; flex: none; }
 #sys { width: 100%; resize: vertical; margin-top: 8px; font-size: 14.5px; }
+.opt.say { align-items: flex-end; }
+.opt.say > span { flex: 1; }
+#s-say { width: 100%; margin-top: 8px; resize: vertical; font-size: 14.5px; min-height: 64px; }
 .settings section p { margin: 4px 0 8px; }
 
 /* ── the toast: a line of ink at the foot ── */

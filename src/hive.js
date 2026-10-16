@@ -555,7 +555,10 @@ export class Hive extends DurableObject {
       /llama-4|qwq|deepseek.*distill|claude.*haiku|gemini.*(flash|lite)|gpt-.*mini|command-a|mistral-small|gemma|gpt-oss-20b/i];
     if (m === "mentifaber-agent-1.0") return 5; const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
   }
-  sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3; }
+  sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3 || this.cooling(c); }
+  // busy, or over a per-minute limit (Groq's free tier allows 8,000 tokens a minute): sit out as long as the provider asks
+  cool(c, e) { const em = String(e && e.message || e), m = /try again in\s*(?:(\d+)m)?\s*([\d.]+)\s*s/i.exec(em), s = m ? (+m[1] || 0) * 60 + +m[2] : 20; this._cool = this._cool || {}; this._cool[c] = Date.now() + Math.min(120, Math.max(3, s + 1)) * 1000; }
+  cooling(c) { return !!(this._cool && this._cool[c] > Date.now()); }
   blame(c, e) { // remember why a model failed: the whole key (billing, bad key) or just this model (not allowed, not found)
     const em = String(e && e.message || e); this._bad = this._bad || {}; this._badM = this._badM || {};
     if (/billing|credit|insufficient|payment|invalid.*(api|x-api)?.?key|incorrect api key|unauthori[sz]ed/i.test(em) || [401, 402].includes(e && e.status)) this._bad[c.split("|")[0]] = Date.now();
@@ -731,17 +734,24 @@ export class Hive extends DurableObject {
       return J({ text: text || "(the model returned nothing)", sources, tools, drafts, ms: Date.now() - t0, model: used, turn: turn || undefined });
     }
     if (b.stream) { // words arrive as they're written: server-sent events meta → delta… → done (or error)
-      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? 2400 : local ? 8192 : 4096)), meta = {}; // the agent gets every token its memory leaves free; voice leaves a reasoning model room to think (its thinking counts)
+      const { readable, writable } = new TransformStream(), w = writable.getWriter(), enc = new TextEncoder(), max = Math.min(8192, +b.max || (b.voice ? (v && /groq\.com/.test(v.base || "") && /gpt-oss/.test(model) ? 1400 : 2400) : local ? 8192 : 4096)), meta = {}; // the agent gets every token its memory leaves free; voice leaves a reasoning model room to think (Groq's gpt-oss thinks briefly when asked, and its per-minute limit counts the room asked for)
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
       const ping = setInterval(() => w.write(enc.encode(": still thinking\n\n")).catch(() => {}), 15000); // keeps the line open while a slow model reads
       (async () => {
         let got = 0, said = ""; const onDelta = (t) => { got++; said += t; emit("delta", { t }); };
         try {
           emit("meta", { sources, tools, model: used, turn: turn || undefined });
-          let out;
-          try { out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta, meta); }
+          let out; if (b.voice) { meta.first = 25000; meta.effort = "low"; }
+          try { if (this.cooling(used)) throw Object.assign(new Error(model.split("/").pop() + " is cooling down after a rate limit"), { status: 429, cooled: true }); out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta, meta); }
           catch (e) {
             if (got) throw e;
+            if (BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { // busy or rate-limited: another mind answers this one
+              if (!e.cooled) this.cool(used, e); const alt = await this.fallback(used, owner); if (!alt) throw new Error(tidyErr(e, model));
+              tools.push(model.split("/").pop() + " was busy (" + (/per minute|TPM|RPM|rate.?limit|429/i.test(String(e.message || e) + e.status) ? "its per-minute limit" : "overloaded") + "), so " + alt.by + " answered"); emit("meta", { sources, tools, model: alt.id, turn: turn || undefined });
+              out = await streamComplete(this.env, alt.v, alt.key, alt.model, system, msgs, max, onDelta, meta).catch((e2) => { if (got) throw e2; throw new Error(tidyErr(e2, alt.model)); });
+              if (!got) onDelta(b.voice ? "Sorry, I lost that one. Could you say it again?" : "(no model could answer just now; try again in a moment)");
+              Genesis.finishTurn(this, turn, said, alt.id); emit("done", { ms: Date.now() - t0, model: alt.id, tools, turn: turn || undefined, cut: meta.cut || undefined }); clearInterval(ping); w.close().catch(() => {}); return;
+            }
             if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) throw new Error(outMsg(this.quota)); }
             else if (last.images.length) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); }
             else throw e;
@@ -755,13 +765,15 @@ export class Hive extends DurableObject {
           }
           Genesis.finishTurn(this, turn, said, used);
           emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined, cut: meta.cut || undefined });
-        } catch (e) { emit("error", { error: String(e && e.message || e).slice(0, 300) }); }
+        } catch (e) { emit("error", { error: tidyErr(e, model) }); }
         clearInterval(ping); w.close().catch(() => {});
       })();
       return new Response(readable, { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-accel-buffering": "no" } });
     }
-    try { text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 2400 : local ? 8192 : 4096))); }
+    try { if (this.cooling(used)) throw Object.assign(new Error(model.split("/").pop() + " is cooling down after a rate limit"), { status: 429, cooled: true }); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 2400 : local ? 8192 : 4096))); }
     catch (e) {
+      if (BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { if (!e.cooled) this.cool(used, e); const alt = await this.fallback(used, owner); if (!alt) return J({ error: tidyErr(e, model) }, 503);
+        text = await complete(this.env, alt.v, alt.key, alt.model, system, msgs, 3000).catch((e2) => { throw new Error(tidyErr(e2, alt.model)); }); tools.push(model.split("/").pop() + " was busy, so " + alt.by + " answered"); Genesis.finishTurn(this, turn, text, alt.id); return J({ text: text || "(no model could answer just now; try again in a moment)", sources, tools, ms: Date.now() - t0, model: alt.id, turn: turn || undefined }); }
       if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); Genesis.finishTurn(this, turn, text, used); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
     if (!text) { const r = await this.rescue(system, msgs, used, owner).catch(() => null); if (r && r.text) { text = r.text; tools.push(model.split("/").pop() + " returned nothing; " + r.by + " answered"); } }
@@ -769,6 +781,13 @@ export class Hive extends DurableObject {
     return J({ text: text || (b.voice ? "Sorry, I lost that one. Could you say it again?" : "(the model returned nothing; try again or pick another model)"), sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined });
   }
   // A model came back empty: the free fast Llama answers instead (or, while the free allowance rests, the owner's best key)
+  async fallback(used, owner) {
+    const alts = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/openai/gpt-oss-120b", "@cf/meta/llama-4-scout-17b-16e-instruct"].map((m) => "workers-ai|" + m).filter((c) => c !== used && !this.cooling(c));
+    if (this.env.AI && alts.length && !(await this.resting())) return { v: null, key: null, model: alts[0].split("|")[1], id: alts[0], by: alts[0].split("/").pop().replace(/-instruct.*$/, "") };
+    if (!owner) return null;
+    const s2 = await this.standIn(used); if (!s2 || s2 === used || this.cooling(s2)) return null; const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2));
+    return { v: kv.v, key: kv.key, model: m2, id: s2, by: m2.split("/").pop() };
+  }
   async rescue(system, msgs, used, owner) {
     const alt = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
     if (this.env.AI && !(await this.resting()) && used !== "workers-ai|" + alt) { const t = await complete(this.env, null, null, alt, system, msgs, 2000); if (t) return { text: t, by: "llama-3.3-70b" }; }
@@ -778,4 +797,13 @@ export class Hive extends DurableObject {
   }
 }
 const WORLD_Q = /\b(world ?war|ww ?(3|iii)|wars?|tensions?|escalat\w*|nuclear|brink|conflicts?|hostilit\w*|geopolitic\w*|patterns?|trends?|nato|russia|china|taiwan|iran|israel|ukraine|pakistan|north korea|great powers?)\b/i;
+const BUSY = /rate.?limit|too many requests|tokens per minute|requests per minute|\b[TR]PM\b|overloaded|over capacity|capacity|try again in|temporarily unavailable|service unavailable|bad gateway|gateway time|timed? ?out|went silent|cooling down/i;
+// a provider's error, said plainly: no organisation ids, no upsell links, the wait if there is one
+function tidyErr(e, model) {
+  const em = String(e && e.message || e), name = String(model || "the model").split("/").pop(), wait = /try again in\s*(?:(\d+)m)?\s*([\d.]+)\s*s/i.exec(em), secs = wait ? Math.ceil((+wait[1] || 0) * 60 + +wait[2]) : 0;
+  if (/tokens per minute|\bTPM\b|requests per minute|\bRPM\b|rate.?limit|too many requests/i.test(em)) return name + " hit its provider's per-minute limit" + (secs ? "; it's free again in about " + secs + " s" : "") + ", and no other model was free to answer. Try again" + (secs ? " then" : " in a moment") + ", or pick another model.";
+  if (/went silent|timed? ?out/i.test(em)) return name + " took too long to answer. Try again, or pick another model.";
+  if (/overloaded|capacity|unavailable|bad gateway|gateway/i.test(em)) return name + " is overloaded right now. Try again in a moment, or pick another model.";
+  return em.replace(/\b(org|organization)[_-][\w-]+/gi, "your account").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
+}
 const VOICE_RULE = "\n\nSPOKEN REPLY (this outranks every formatting habit above): your words will be read aloud to someone talking to you. Answer like a person talking: lead with the answer, usually two to four sentences; go longer only when asked for detail or a rundown, and then still in plain spoken sentences. No Markdown, no lists or headings, no bold, no emoji, no links or [n] source numbers. Say numbers and units the way you'd say them out loud. If the message looks misheard or makes no sense, say so in one short sentence and ask them to repeat it; never answer with nothing. Never offer to fetch or check something later.";

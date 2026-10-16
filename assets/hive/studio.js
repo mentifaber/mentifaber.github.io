@@ -4,7 +4,7 @@
 "use strict";
 const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const LS = { get(k, d) { try { const v = localStorage.getItem("hive:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("hive:" + k, JSON.stringify(v)); return true; } catch (e) { return false; } } };
-const api = async (path, body, signal) => { const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal } : { cache: "no-store", signal }); const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; };
+const api = async (path, body, signal, ms) => { if (ms && !signal && window.AbortSignal && AbortSignal.timeout) signal = AbortSignal.timeout(ms); const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal } : { cache: "no-store", signal }); const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; };
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hidden"), ms || 2600); };
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "#"); // only real web links leave the page
 const SV = { up: "Good", down: "Off", swarm: "Build it", copy: "Copy", say: "Listen", redo: "Again", dl: "Download" }; // the actions under an answer, in words
@@ -184,7 +184,10 @@ $("log").onclick = async (e) => {
   if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); unlayer(i); run(u.mode === "image"); }
 };
 const SAY_AS = Object.fromEntries("NATO NASA NOAA GDACS OPEC UNESCO ASEAN UNICEF FEMA LIDAR RADAR SCUBA LASER COVID AIDS GIF JPEG ASCII CAPTCHA WIFI OK AM PM NOT AND THE YOU ARE BUT FOR NOW NEW ALL ONE TWO YES NO STOP GO NOTE WARNING ALERT HELP".split(" ").map((w) => [w, 1]));
-const speakable = (t) => String(t || "").replace(/https?:\/\/\S+/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/[\u2010\u2011\u2012]/g, "-").replace(/(\d)\s*[–—]\s*(\d)/g, "$1 to $2").replace(/(\w)–(\w)/g, "$1-$2").replace(/\s*—\s*|\s+–\s+/g, ", ")
+// say it like this: "Anders = Onders", one per line (Settings → Voice link), so names come out the way their owners say them
+const sayAs = () => String(S("say") || "").split("\n").map((l) => l.split("=").map((x) => x.trim())).filter((x) => x.length === 2 && x[0] && x[1]);
+const respell = (t) => sayAs().reduce((s, [w, how]) => s.replace(new RegExp("\\b" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "gi"), how), t);
+const speakable = (t) => respell(String(t || "")).replace(/https?:\/\/\S+/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/[\u2010\u2011\u2012]/g, "-").replace(/(\d)\s*[–—]\s*(\d)/g, "$1 to $2").replace(/(\w)–(\w)/g, "$1-$2").replace(/\s*—\s*|\s+–\s+/g, ", ")
   .replace(/≈|~(?=\s?\d)/g, "about ").replace(/±/g, " plus or minus ").replace(/×/g, " times ").replace(/→|->/g, " to ").replace(/&/g, " and ").replace(/(\d)\s?%/g, "$1 percent")
   .replace(/°\s?F\b/g, " degrees Fahrenheit").replace(/°\s?C\b/g, " degrees Celsius").replace(/°/g, " degrees").replace(/\be\.g\./gi, "for example").replace(/\bi\.e\./gi, "that is").replace(/\betc\./gi, "et cetera").replace(/\bvs\.?\s/gi, "versus ")
   .replace(/(\d)\s?km\/h\b/g, "$1 kilometers per hour").replace(/(\d)\s?mph\b/g, "$1 miles per hour").replace(/(\d)\s?km\b/g, "$1 kilometers").replace(/(\d)\s?nm\b/g, "$1 nautical miles").replace(/(\d)\s?ft\b/g, "$1 feet").replace(/(\d)\s?kts?\b/g, "$1 knots").replace(/(\d)\s?h\b/g, "$1 hours").replace(/(\d)\s?min\b/g, "$1 minutes")
@@ -261,7 +264,7 @@ async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
-  const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: LS.get("sys", "") || undefined,
+  const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
     cid: chat.id, messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
@@ -283,19 +286,23 @@ async function stream(body, m, i, signal) {
   const tReq = performance.now();
   const r = await fetch("/api/hive/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, stream: true }), signal });
   if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; }
-  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", out = { text: "" }, raf = 0; const tStart = Date.now() - (performance.now() - tReq);
+  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", out = { text: "" }, raf = 0, lastWord = Date.now(), stalled = false; const tStart = Date.now() - (performance.now() - tReq);
+  const watch = setInterval(() => { if (Date.now() - lastWord > (body.voice ? 35000 : 150000)) { stalled = true; clearInterval(watch); rd.cancel().catch(() => {}); } }, 2000); // keep-alive pings don't count: only words do
   m.text = ""; m.streaming = true;
   const paint = () => { raf = 0; if (chat && chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } };
   for (;;) {
     const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
     let k; while ((k = buf.indexOf("\n\n")) >= 0) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
-      if (ev === "meta") { m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
-      else if (ev === "delta") { if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
+      if (ev === "meta") { lastWord = Date.now(); m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
+      else if (ev === "delta") { lastWord = Date.now(); if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
       else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; out.cut = !!d.cut; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
   }
+  clearInterval(watch);
+  if (stalled && !out.text) return { error: "The model went quiet and never answered. Try again, or pick another model." };
+  if (stalled) out.text += "\n\n_(the model went quiet here)_";
   return out;
 }
 // ── command palette (⌘K) ──
@@ -336,7 +343,7 @@ const toWav = async (blob) => { // any recording → 16 kHz mono WAV, which Whis
   return readAs(new Blob([dv], { type: "audio/wav" }), "readAsDataURL");
 };
 // ── settings (this device) ──
-const SET = { rate: 1, sil: 900, hands: "1", barge: false, recog: "cloud", vmodel: "", motion: true, enter: true };
+const SET = { rate: 1, sil: 900, hands: "1", barge: false, recog: "cloud", vmodel: "", motion: true, enter: true, say: "Anders = Onders" };
 const S = (k) => LS.get("set:" + k, SET[k]), setS = (k, v) => LS.set("set:" + k, v);
 const motion = () => document.body.classList.toggle("still", !S("motion")); motion();
 
@@ -424,7 +431,7 @@ const Voice = (window.HiveVoice = {
       $("vtext").textContent = "“" + text + "”"; Voice.set("Thinking…");
       const frame = await Voice.frame(); Voice.hush(); Voice.spoken = 0; Voice.live = true; Voice.t0 = performance.now(); Voice.first = 0;
       const m = await send(text, { voice: true, model: voiceModel(), images: frame ? [frame] : null, live: !!frame }); Voice.live = false; if (!Voice.on) return;
-      if (!m || m.error) { Voice.set("Something went wrong", m && m.error); await sleep(1800); continue; }
+      if (!m || m.error) { Voice.set("That one didn't go through", m && m.error); Voice.say(/per-minute|busy|overloaded/i.test(m && m.error || "") ? "Everyone's busy for a moment. Try me again in a few seconds." : "That one didn't go through. Say it again?"); await Voice.drained(); await sleep(400); continue; }
       Voice.feed(m.cut ? String(m.text || "").replace(/[^.!?…]*$/, "") || m.text : m.text || "", true); if (Voice.q.length || Voice.playing) Voice.set("Speaking…");
       if (S("barge") && S("hands") !== "0") Voice.watchBarge();
       await Voice.drained();
@@ -453,17 +460,20 @@ const Voice = (window.HiveVoice = {
   q: [], playing: false, gen: 0, spoken: 0,
   pick() { const s = LS.get("voice", ""); if (s && (s === "device" || !Voice.list || Voice.list.some((v) => v.id === s))) return s; return (Voice.list && Voice.list[0] && Voice.list[0].id) || "device"; }, // unchosen: ElevenLabs if you have it, else free Aura-2
   clip(text) { const g = Voice.gen; if (Voice.pick() === "device") return Promise.resolve({ device: text, g });
-    const once = () => api("/tts", { text, voice: Voice.pick() }).then((j) => { if (j.error) throw new Error(j.error); return j; });
+    const once = () => api("/tts", { text, voice: Voice.pick() }, null, 12000).then((j) => { if (j.error || !j.audio) throw new Error(j.error || "no audio came back"); return j; }); // a clip that never comes would stall the whole conversation
     return once().catch(() => sleep(250).then(once)).then((j) => { const a = new Audio(); a.preload = "auto"; a.src = j.audio; return { url: j.audio, audio: a, g, used: j.used }; }).catch((e) => ({ device: text, g, err: e.message })); },
   queue(text) { text = speakable(plain(text)); if (!text) return; Voice.q.push(Voice.clip(text)); if (!Voice.playing) Voice.play(); },
   async play() {
     Voice.playing = true; if (Voice.on) Voice.set("Speaking…");
     while (Voice.q.length) { const c = await Voice.q.shift(); if (c.g !== Voice.gen) continue;
       if (Voice.t0 && !Voice.first) { Voice.first = performance.now() - Voice.t0; $("vlat").textContent = "voice in " + (Voice.first / 1000).toFixed(1) + "s" + (/flux/.test(Voice.heardBy || "") ? " · heard live" + (Voice.heardBy !== "flux" ? " + checked" : "") : Voice.sttMs ? " · heard in " + (Voice.sttMs / 1000).toFixed(1) + "s" : "") + (c.used ? " · " + c.used : ""); }
-      await new Promise((ok) => { if (c.url) { const a = (Voice.audio = c.audio || new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} a.onended = a.onerror = ok; a.play().catch(ok); } else Voice.device(c.device).then(ok); }); }
+      await new Promise((ok) => { let to = 0; const fin = () => { clearTimeout(to); ok(); }; // a clip that never says it ended (it happens) can't hold the conversation up
+        if (c.url) { const a = (Voice.audio = c.audio || new Audio(c.url)); a.playbackRate = +S("rate") || 1; try { if (Voice.ac && Voice.outAn) Voice.ac.createMediaElementSource(a).connect(Voice.outAn); } catch (e) {} to = setTimeout(fin, 60000);
+          a.onloadedmetadata = () => { if (isFinite(a.duration)) { clearTimeout(to); to = setTimeout(fin, (a.duration * 1000) / (a.playbackRate || 1) + 4000); } }; a.onended = a.onerror = fin; a.play().catch(fin); }
+        else Voice.device(c.device).then(fin); }); }
     Voice.playing = false; (Voice.idle || []).splice(0).forEach((f) => f());
   },
-  device(text) { if (!window.speechSynthesis) return Promise.resolve(); return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03 * (+S("rate") || 1); u.onend = u.onerror = ok; speechSynthesis.speak(u); }); },
+  device(text) { text = String(text || ""); if (!window.speechSynthesis || !text) return Promise.resolve(); return new Promise((ok) => { const u = new SpeechSynthesisUtterance(text.slice(0, 3000)); const vs = speechSynthesis.getVoices(), pick = vs.find((v) => /natural|neural|premium|enhanced|samantha|google us english/i.test(v.name) && /^en/.test(v.lang)) || vs.find((v) => /^en/.test(v.lang)); if (pick) u.voice = pick; u.rate = 1.03 * (+S("rate") || 1); const to = setTimeout(() => { try { speechSynthesis.cancel(); } catch (e) {} ok(); }, 4000 + text.length * 95 / (+S("rate") || 1)); u.onend = u.onerror = () => { clearTimeout(to); ok(); }; speechSynthesis.speak(u); }); }, // Android's voice sometimes never says it finished
   drained() { return Voice.playing || Voice.q.length ? new Promise((ok) => (Voice.idle = Voice.idle || []).push(ok)) : Promise.resolve(); },
   // a growing reply: the first short sentence goes out at once, then fuller chunks
   feed(text, final) {
@@ -517,7 +527,7 @@ function openSettings() {
   const vm = S("vmodel"), cur = $("s-vmodel"); [...cur.querySelectorAll("option.pin")].forEach((o) => o.remove());
   const add = (id) => { const m = models.find((x) => x.id === id); if (!m) return; const o = document.createElement("option"); o.className = "pin"; o.value = id; o.textContent = "Pin: " + m.name; cur.appendChild(o); };
   add($("model").value); if (vm && vm !== "fast" && vm !== $("model").value) add(vm); cur.value = vm; if (cur.value !== vm) cur.value = "";
-  $("sys").value = LS.get("sys", ""); if (!$("sdlg").open) $("sdlg").showModal();
+  $("s-say").value = S("say"); $("sys").value = LS.get("sys", ""); if (!$("sdlg").open) $("sdlg").showModal();
 }
 $("s-theme").onchange = () => { LS.set("theme", $("s-theme").value); applyTheme(); };
 $("s-motion").onchange = () => { setS("motion", $("s-motion").checked); motion(); };
@@ -528,6 +538,8 @@ $("s-sil").oninput = () => { setS("sil", +$("s-sil").value); $("s-sil-v").textCo
 $("s-barge").onchange = () => { setS("barge", $("s-barge").checked); if (Voice.on) Voice.ui(); };
 $("s-recog").onchange = () => setS("recog", $("s-recog").value);
 $("s-vmodel").onchange = () => { setS("vmodel", $("s-vmodel").value); if (Voice.on) Voice.ui(); };
+$("s-say").onchange = () => setS("say", $("s-say").value.trim());
+$("s-sayt").onclick = () => { setS("say", $("s-say").value.trim()); const first = sayAs()[0]; Voice.say(first ? "Hi " + first[0] + ". Did I get your name right?" : "Add a line like: Anders = Onders."); };
 $("sys").onchange = () => LS.set("sys", $("sys").value.trim());
 $("s-export").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(chats, null, 1)], { type: "application/json" })); a.download = "hive-sessions-" + new Date().toISOString().slice(0, 10) + ".json"; a.click(); };
 $("s-clear").onclick = () => { if (!confirm("Delete every session on this device? This can't be undone.")) return; chats = []; LS.set("chats", chats); newChat(); toast("Sessions cleared"); };

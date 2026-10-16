@@ -254,6 +254,7 @@
     <label class="opt"><span>Interrupt by speaking<small>talk over the answer to cut it off (best with headphones)</small></span><input type="checkbox" id="s-barge" class="tg"></label>
     <label class="opt"><span>Recognition<small>live hears you as you talk and knows when you've finished a thought; Whisper transcribes each pause; device uses this browser's own</small></span><select id="s-recog"><option value="cloud">Live (Deepgram Flux)</option><option value="whisper">Whisper</option><option value="device">Device</option></select></label>
     <label class="opt"><span>Voice model<small>a fast model makes conversation snappier</small></span><select id="s-vmodel"><option value="">Same as chat</option><option value="fast">Fastest available</option></select></label>
+    <div class="opt say"><span>Say it like this<small>names it should pronounce your way, one per line: <b>name = how it sounds</b></small><textarea id="s-say" rows="3" spellcheck="false" placeholder="Anders = Onders"></textarea></span><button class="q" id="s-sayt" type="button">Hear it</button></div>
   </section>
   <section><h4>Directives</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
   <section><h4>Data</h4><div class="row"><button class="q" id="s-export">Export all sessions</button><button class="q" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
