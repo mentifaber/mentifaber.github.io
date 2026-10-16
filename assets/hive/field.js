@@ -113,32 +113,46 @@ function map(c, data) {
   map.draw = draw; if (still()) draw(0); else loops.add(draw);
 }
 
-// ── the voice link: the geode listens (its bands ripple with your voice), thinks (its crystals grow in turn) and speaks
-// (they lengthen with the sound) ──
+// ── the voice link: the Genesis ring (assets/hive/genesis-ring.webp, the logo without its G). Its hollow is the voice: it
+// glows with yours while it listens, a light runs round the crystals while it thinks, and the hollow and the stones flare
+// with the sound while it speaks ──
+const ringArt = new Image(); ringArt.decoding = "async";
 const voice = { raf: 0, start(c, read) {
-  voice.stop(); const g = c.getContext("2d"), seed = rng("voice"), ph = [seed() * 6, seed() * 6, seed() * 6]; let sm = 0; const t0 = performance.now();
+  voice.stop(); if (!ringArt.src) ringArt.src = "assets/hive/genesis-ring.webp";
+  let sm = 0, glow = 0; const t0 = performance.now(), waves = []; let lastWave = 0;
   const draw = (t) => {
     voice.raf = requestAnimationFrame(draw); if (document.hidden) return; const st = read(); if (!st) return;
-    const D = fit(c), W = c.width, H = c.height, cx = W / 2, cy = H * .4, R = Math.min(W * .34, H * .26), time = still() ? 0 : (t - t0) / 1000;
-    const ink = css("--ink", "#e9ebe5"), bg = css("--bg", "#0d1012"), col = st.color || ink;
+    const D = fit(c), W = c.width, H = c.height, cx = W / 2, cy = H * .4, R = Math.min(W * .4, H * .3), time = still() ? 0 : (t - t0) / 1000;
+    const col = st.color || "#d6a647", gold = "#e9b75a", mode = st.mode;
     sm += ((st.level || 0) - sm) * .22; g.clearRect(0, 0, W, H);
-    // the bands: each a closed pebble line; listening, they ripple with the voice
-    const nb = 7;
-    for (let k = 0; k < nb; k++) {
-      const rr = R * (1 - k * .055), amp = st.mode === "listen" ? R * .06 * sm * (1 - k / nb) : 0, pts = pebble(cx, cy, rr, [ph[0] + k * .3, ph[1], ph[2] + k * .2], .045, 140);
-      g.beginPath(); pts.forEach((p, i) => { const a = (i / pts.length) * Math.PI * 2, w = Math.sin(a * (4 + k) + time * (2.2 - k * .2)) * amp, dx = p[0] - cx, dy = p[1] - cy, d = Math.hypot(dx, dy) || 1, x = p[0] + (dx / d) * w, y = p[1] + (dy / d) * w; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
-      g.fillStyle = bg; g.fill(); g.fillStyle = k === 2 ? rgba(col, .26 + sm * .3) : rgba(ink, k % 2 ? .07 : .14); g.fill();
-    }
-    const cav = pebble(cx, cy, R * .6, ph, .07, 140); g.beginPath(); cav.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.fillStyle = bg; g.fill();
-    // the crystals: short and stout, each tilted its own way, two layers deep; they lengthen when it thinks or speaks
-    const N = 22;
-    for (let ly = 0; ly < 2; ly++) for (let i = 0; i < N; i++) {
-      const a = ((i + ly * .45) / N) * Math.PI * 2 + .2, rc = radAt(cav, cx, cy, a) + 2 - ly * 5 * D, tilt = Math.sin(i * 2.3 + ly) * .5, base = .13 + ((i * 7 + ly * 3) % 5) * .018 + (ly ? 0 : .03), w = rc * Math.PI / N * (.62 + ((i * 3) % 4) * .09);
-      let grow = base; if (st.mode === "talk") grow = base + sm * .2 * (.6 + .4 * Math.sin(i * 1.7 + time * 6)); else if (st.mode === "think") { const p2 = ((time * 1.2 - i / N) % 1 + 1) % 1; grow = base + Math.max(0, Math.sin(p2 * Math.PI)) * .12; } else if (st.mode === "listen") grow = base + sm * .05;
-      const cs = crystal(cx, cy, a + tilt, rc, w, rc * grow), fp = (pts) => { g.beginPath(); pts.forEach((p, k) => (k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.fill(); };
-      g.fillStyle = col; g.globalAlpha = st.mode === "idle" ? .5 : .95; fp(cs.left); g.globalAlpha *= .58; fp(cs.right); g.globalAlpha = 1;
-    }
+    const want = mode === "idle" ? .18 : mode === "listen" ? .35 + sm * .65 : mode === "think" ? .45 + .15 * Math.sin(time * 3) : .5 + sm * .5;
+    glow += (want - glow) * .12;
+    const s = R * (1 + (mode === "talk" ? sm * .025 : 0)), hx = cx, hy = cy + s * .02, hr = s * .35;
+    // the halo the ring sits in
+    let gr = g.createRadialGradient(cx, cy, s * .8, cx, cy, s * 1.5); gr.addColorStop(0, rgba(gold, .1 + glow * .14)); gr.addColorStop(1, rgba(gold, 0));
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    // the hollow: dark at rest, a gold fire when it speaks
+    gr = g.createRadialGradient(hx, hy + hr * .35, 0, hx, hy, hr * 1.15);
+    gr.addColorStop(0, rgba("#ffd98a", .15 + glow * .75)); gr.addColorStop(.45, rgba(gold, .08 + glow * .4)); gr.addColorStop(.8, rgba(col, glow * .18)); gr.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = "#000"; g.beginPath(); g.arc(hx, hy, hr * 1.1, 0, Math.PI * 2); g.fill(); g.fillStyle = gr; g.fill();
+    // listening: your voice sends rings in from the stones to the centre
+    if (mode === "listen" && !still() && sm > .08 && time - lastWave > .22 - sm * .12) { waves.push({ t: time, a: Math.min(1, sm * 1.4) }); lastWave = time; }
+    g.lineWidth = 1.5 * D;
+    for (let i = waves.length - 1; i >= 0; i--) { const w = waves[i], k = (time - w.t) / 1.1; if (k >= 1 || mode !== "listen") { waves.splice(i, 1); continue; }
+      g.strokeStyle = rgba("#ffe2a0", w.a * (1 - k) * .8); g.beginPath(); g.arc(hx, hy, hr * (1 - k * .85), 0, Math.PI * 2); g.stroke(); }
+    // the ring itself
+    if (ringArt.complete && ringArt.naturalWidth) g.drawImage(ringArt, cx - s, cy - s, s * 2, s * 2);
+    else { g.strokeStyle = rgba(gold, .6); g.lineWidth = 3 * D; g.beginPath(); g.arc(cx, cy, s * .97, 0, Math.PI * 2); g.stroke(); }
+    // light on the stones: a sweep round the ring while it thinks, a flare with the sound while it speaks
+    g.save(); g.globalCompositeOperation = "lighter"; g.beginPath(); g.arc(cx, cy, s * .9, 0, Math.PI * 2); g.arc(hx, hy, hr, 0, Math.PI * 2, true); g.clip("evenodd");
+    if (mode === "think") { const a = time * 2.4; for (let k = 0; k < 2; k++) { const aa = a + k * Math.PI;
+        gr = g.createRadialGradient(cx + Math.cos(aa) * s * .62, cy + Math.sin(aa) * s * .62, 0, cx + Math.cos(aa) * s * .62, cy + Math.sin(aa) * s * .62, s * .42);
+        gr.addColorStop(0, "rgba(255,240,210,.32)"); gr.addColorStop(1, "rgba(255,240,210,0)"); g.fillStyle = gr; g.fillRect(cx - s, cy - s, s * 2, s * 2); } }
+    else if (mode === "talk" || mode === "listen") { gr = g.createRadialGradient(hx, hy, hr, hx, hy, s * .9); gr.addColorStop(0, rgba("#ffd98a", sm * (mode === "talk" ? .45 : .22))); gr.addColorStop(1, "rgba(255,217,138,0)"); g.fillStyle = gr; g.fillRect(cx - s, cy - s, s * 2, s * 2); }
+    else { g.globalCompositeOperation = "source-over"; g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(cx - s, cy - s, s * 2, s * 2); }
+    g.restore();
   };
+  const g = c.getContext("2d");
   voice.raf = requestAnimationFrame(draw);
 }, stop() { cancelAnimationFrame(voice.raf); } };
 

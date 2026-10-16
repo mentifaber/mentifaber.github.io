@@ -46,7 +46,7 @@ async function loadModels() {
 let models = [];
 // the geode: a crystal for every mind it can reach, a band for every few sessions; the same stone, small, in the crown
 const stone = () => { if (!window.HiveFX) return; const seed = gname || "Hive", bands = Math.min(9, 3 + Math.floor(Math.log2(chats.length + 1)));
-  HiveFX.geode($("core"), { seed, minds: models, bands }); HiveFX.geode($("geo-mark"), { seed, minds: models, mark: true });
+  HiveFX.geode($("core"), { seed, minds: models, bands });
   const fam = new Set(models.map((m) => HiveFX.mineralName(m.id))).size;
   $("gcap").innerHTML = "<b>" + models.length + " minds</b>, " + fam + " mineral" + (fam === 1 ? "" : "s") + ".<br>Every crystal is a mind it can reach; a band forms as your sessions pile up."; };
 // live telemetry in the header and the side panel
@@ -490,8 +490,8 @@ const voiceModel = () => { const v = S("vmodel"); if (!v) return ""; if (v !== "
   const fast = /(groq|cerebras|sambanova)/i, good = /gpt-oss-120b|llama-3\.3-70b|llama-4|qwen3|kimi|gpt-oss-20b/i; // fastest inference hosts, decent models
   const f = models.find((m) => fast.test(m.group) && good.test(m.id)) || models.find((m) => fast.test(m.group)) || models.find((m) => /llama-3\.1-8b-instruct-fast|gpt-oss-20b/.test(m.id)); return f ? f.id : ""; };
 
-// ── the live visual: the geode listens. Its bands ripple with your voice, its crystals grow in turn while it thinks and
-// lengthen with the sound while it speaks (assets/hive/field.js) ──
+// ── the live visual: the Genesis ring. Its hollow glows with your voice, a light runs round its stones while it thinks and
+// they flare with the sound while it speaks (assets/hive/field.js) ──
 const viz = { start() { const fd = new Uint8Array(128); HiveFX.voice.start($("viz"), () => {
     const an = Voice.mode === "talk" ? Voice.outAn : Voice.micAn; let lv = 0;
     if (an && (Voice.mode === "talk" || Voice.mode === "listen")) { an.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) lv += fd[i]; lv /= 64 * 255; }
