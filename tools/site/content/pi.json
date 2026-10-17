@@ -18,7 +18,7 @@
  "features": [
   {
    "t": "It degrades, it doesn't go quiet",
-   "d": "three voices tried in order: a neural voice, the device's own voices, then text. Drop the signal and Pi keeps talking."
+   "d": "three voices tried in order: a neural voice, the device's own voices, then text. Drop the signal and Nobody keeps talking."
   },
   {
    "t": "It can touch the phone",
@@ -47,7 +47,7 @@
   },
   {
    "n": "the browser build",
-   "html": "<p>Speech recognition on the device where it exists (Whisper through Genesis otherwise), Genesis's free models with Pi's terse instructions, and Genesis's neural voice with the browser's voices as the fallback.</p>",
+   "html": "<p>Speech recognition on the device where it exists (Whisper through Genesis otherwise), Genesis's free models with Nobody's terse instructions, and Genesis's neural voice with the browser's voices as the fallback.</p>",
    "stack": [
     "Web Speech",
     "Genesis",

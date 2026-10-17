@@ -370,3 +370,29 @@ def lexicon():
     page_ = page_.replace("<head>", '<head>\n<link rel="canonical" href="' + base + '">', 1)
     open(os.path.join(ROOT, "lexicon.html"), "w", encoding="utf-8").write(page_)
     return "lexicon.html"
+
+
+# new names, old addresses: each renamed project keeps its page and app where they were (installed apps and links keep
+# working) and gets a short address under its new name that forwards there
+ALIASES = {"nobody": "pi", "eightysixty": "roku", "hopline": "meshnet", "skipline": "novarac", "bodywake": "proximity", "moodfield": "neural-sim",
+           "balloon": "bubble-editor", "per-capita": "crime-dashboard", "overhead": "orbit", "unlit": "conflict-atlas", "synodic": "moon-compatibility"}
+
+
+def aliases():
+    for new, old in ALIASES.items():
+        a = A[old]; to = "/" + (a["href"] if a.get("href") else old + ".html").removesuffix(".html")
+        open(os.path.join(ROOT, new + ".html"), "w", encoding="utf-8").write(f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{esc(a["name"])} · Mentifaber</title>
+<link rel="canonical" href="https://mentifaber.org{to}">
+<script>location.replace("{to}" + location.search + location.hash)</script>
+<meta http-equiv="refresh" content="0; url={to}">
+</head>
+<body style="background:#080705;color:#f1e8d4;font:16px system-ui;padding:24px"><a href="{to}" style="color:#f6dc94">{esc(a["name"])}</a></body>
+</html>
+""")
+    return f"{len(ALIASES)} short addresses"

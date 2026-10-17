@@ -1,4 +1,4 @@
-/* Conflict Atlas · the 28 entries as of June 2026, exactly as the write-up states them. Coordinates are approximate
+/* Unlit · the 28 entries as of June 2026, exactly as the write-up states them. Coordinates are approximate
    centres of the fighting, for the map only. */
 window.CA_DATA = [
 {

@@ -13,7 +13,7 @@
   "label": "why rates",
   "title": "Rates, not <em>raw counts</em>"
  },
- "lede": "<p>Counting incidents ranks cities by population and tells you nothing. Everything in <b>Crime Intelligence</b> is per 100,000 residents, with the year-over-year change beside it, so a bad year reads differently from a bad decade. It was built for someone who wanted to look at the numbers himself instead of reading someone's summary of them, and grew from 15 cities to 43.</p>",
+ "lede": "<p>Counting incidents ranks cities by population and tells you nothing. Everything in <b>Per Capita</b> is per 100,000 residents, with the year-over-year change beside it, so a bad year reads differently from a bad decade. It was built for someone who wanted to look at the numbers himself instead of reading someone's summary of them, and grew from 15 cities to 43.</p>",
  "featuresLabel": "inside",
  "features": [
   {

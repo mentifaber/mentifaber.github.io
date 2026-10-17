@@ -1,4 +1,4 @@
-/* Pi · black, bone and a red that only shows up when it's speaking */
+/* Nobody · black, bone and a red that only shows up when it's speaking */
 :root { --bg: #000; --ink: #f2e6cf; --dim: #a8987e; --mute: #6b5f4e; --line: rgba(242,230,207,.12); --hot: #d94030; --gold: #c8a96e; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 16px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }

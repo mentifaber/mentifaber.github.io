@@ -1,7 +1,7 @@
 {
   "id": "/orbit",
-  "name": "Orbit Watch · Mentifaber",
-  "short_name": "Orbit Watch",
+  "name": "Overhead · Mentifaber",
+  "short_name": "Overhead",
   "description": "Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, the day-night line, and every pass over you, with the ones you can see by eye marked.",
   "start_url": "/orbit-app.html",
   "scope": "/orbit",

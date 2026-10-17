@@ -1,7 +1,7 @@
 {
   "id": "/bubble-editor",
-  "name": "Bubble Editor",
-  "short_name": "Bubble Edito",
+  "name": "Balloon · Mentifaber",
+  "short_name": "Balloon",
   "description": "Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.",
   "start_url": "/bubble-editor-app.html",
   "scope": "/bubble-editor",

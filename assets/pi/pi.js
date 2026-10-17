@@ -1,4 +1,4 @@
-/* Pi · in the browser. The phone build runs in Termux with 22 device tools; this one talks through Genesis's free models and
+/* Nobody · in the browser. The phone build runs in Termux with 22 device tools; this one talks through Genesis's free models and
    keeps the same character: no persona, only capability. Listening is the device's own speech recognition where there is
    one (Genesis's Whisper otherwise); speaking degrades instead of going silent: Genesis's neural voice, then the browser's
    voices, then text. The orb rides the real output amplitude. Tools that touch the outside world sit behind a
@@ -7,7 +7,7 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const PERSONA = "You are Pi, a voice assistant running in the user's browser. Answer. Be brief: one to three short sentences, spoken aloud, so no lists or markdown. Don't apologize. Don't ask what they meant. Don't offer more help. Use a tool for device data instead of guessing.\n" +
+const PERSONA = "You are Nobody, a voice assistant running in the user's browser. Answer. Be brief: one to three short sentences, spoken aloud, so no lists or markdown. Don't apologize. Don't ask what they meant. Don't offer more help. Use a tool for device data instead of guessing.\n" +
   "TOOLS: to use one, reply with ONLY a line like TOOL: name {json args}. Available: time {} · battery {} · location {} · clipboard_read {} · clipboard_write {\"text\":...} · vibrate {\"ms\":...} · look {} (takes a camera photo and shows it to you) · timer {\"seconds\":...,\"label\":...} · open {\"url\":...} · share {\"text\":...}. " +
   "After a TOOL line you'll get a TOOL RESULT and then answer in plain words. Weather questions need no tool: just answer them.";
 const TOOLS = ["time", "battery", "location", "clipboard", "vibrate", "look", "timer", "open", "share"];
@@ -101,7 +101,7 @@ async function snap() {
 const OUTSIDE = new Set(["open", "share", "clipboard_write", "clipboard_read"]); // they touch something beyond this page: ask first
 function gate(name, args) {
   const token = Math.random().toString(36).slice(2, 8); S.gate = token;
-  $("gate").hidden = false; $("gate").innerHTML = "<span>Pi wants to <b>" + esc(name.replace("_", " ")) + "</b>" + (args.url ? " " + esc(args.url) : args.text ? ": “" + esc(String(args.text).slice(0, 60)) + "”" : "") + '</span><button class="yes" data-tok="' + token + '">Allow</button><button data-tok="' + token + '" data-no>Don\'t</button>';
+  $("gate").hidden = false; $("gate").innerHTML = "<span>Nobody wants to <b>" + esc(name.replace("_", " ")) + "</b>" + (args.url ? " " + esc(args.url) : args.text ? ": “" + esc(String(args.text).slice(0, 60)) + "”" : "") + '</span><button class="yes" data-tok="' + token + '">Allow</button><button data-tok="' + token + '" data-no>Don\'t</button>';
   return new Promise((ok) => { $("gate").onclick = (e) => { const b = e.target.closest("button"); if (!b || b.dataset.tok !== S.gate) return; S.gate = null; $("gate").hidden = true; ok(!b.hasAttribute("data-no")); }; });
 }
 async function tool(name, args) {
@@ -158,6 +158,6 @@ $("stage").addEventListener("click", listen); $("mic").addEventListener("click",
 $("say").addEventListener("submit", (e) => { e.preventDefault(); const t = $("txt").value.trim(); $("txt").value = ""; ask(t); });
 $("mute").addEventListener("click", () => { S.voice = !S.voice; $("mute").textContent = S.voice ? "🔊" : "🔇"; if (!S.voice && S.stop) S.stop(); });
 tier(0); $("tier").textContent = "voice: ready";
-say("sys", "Pi answers short, uses real device tools when it needs them, and asks before touching anything outside this page.");
+say("sys", "Nobody answers short, uses real device tools when it needs them, and asks before touching anything outside this page.");
 window.Pi = { ask, tool, S };
 })();

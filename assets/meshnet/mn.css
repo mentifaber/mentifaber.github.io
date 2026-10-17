@@ -1,4 +1,4 @@
-/* MeshNet · live console */
+/* Hopline · live console */
 :root { --bg: #07060b; --bg2: #0e0c16; --line: rgba(255,255,255,.08); --line2: rgba(255,255,255,.16); --ink: #f1eef8; --dim: #9a93ad; --mute: #635c77;
   --a: #ff4fa8; --a2: #ffa04f; --ok: #3dffa8; --warn: #ffcf4a; --bad: #ff5a5a; --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
 * { box-sizing: border-box; }

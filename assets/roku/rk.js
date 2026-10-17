@@ -1,4 +1,4 @@
-/* Roku God Mode · the remote, driving a demo TV. Every Roku listens on port 8060 for the External Control Protocol: plain
+/* Eightysixty · the remote, driving a demo TV. Every Roku listens on port 8060 for the External Control Protocol: plain
    HTTP, no pairing, no PIN. The real remote is a page plus a tiny Node relay on the home network (a browser can't send the
    SSDP multicast that finds the TV, and the TV doesn't send the headers a page would need). Here the relay and the TVs are
    simulated, but every request in the log is the one the real remote sends, and the TVs behave the way real ones do:

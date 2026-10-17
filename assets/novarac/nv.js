@@ -1,4 +1,4 @@
-/* NovarAC · operator console, demo mode. The real NovarAC runs on a mini-PC beside the rig: FastAPI talks to the VARA
+/* Skipline · operator console, demo mode. The real Skipline runs on a mini-PC beside the rig: FastAPI talks to the VARA
    modem over TCP and to the radio through Hamlib's rigctld, and a tablet drives it over a local hotspot with no internet
    at all. This page is that same operator screen with the modem and the far station simulated, so it can be tried
    anywhere: tune the VFO, key the transmitter, link to a callsign and have a (pretend) HF conversation. */
@@ -106,7 +106,7 @@ function frame() {
 }
 setInterval(() => ($("utc").textContent = utc()), 1000);
 tune(S.hz, true); $("utc").textContent = utc(); requestAnimationFrame(frame);
-line("NovarAC operator console · demo modem. On the box this screen drives the VARA modem over TCP and the rig through Hamlib.");
+line("Skipline operator console · demo modem. On the box this screen drives the VARA modem over TCP and the rig through Hamlib.");
 line("Try it: tune with a drag or the wheel, hold the red button (or Space) to key up, or link to a callsign like W8DLE.");
-window.NovarAC = { S, tune, link };
+window.Skipline = { S, tune, link };
 })();

@@ -1,7 +1,7 @@
 {
   "id": "/novarac",
-  "name": "NovarAC · Mentifaber",
-  "short_name": "NovarAC",
+  "name": "Skipline · Mentifaber",
+  "short_name": "Skipline",
   "description": "HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.",
   "start_url": "/novarac-app.html",
   "scope": "/novarac",

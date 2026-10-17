@@ -13,7 +13,7 @@
   "label": "why this exists",
   "title": "Look up at <em>the right minute</em>"
  },
- "lede": "<p>At its brightest the ISS outshines everything in the sky but the Sun and the Moon, and most people have never knowingly seen it, because nobody told them when to look. <b>Orbit Watch</b> takes the same element sets every tracker uses, runs the orbit model on your own device, and tells you the next time a satellite rises over you, where it comes from, how high it climbs, and whether you'll actually be able to see it.</p>",
+ "lede": "<p>At its brightest the ISS outshines everything in the sky but the Sun and the Moon, and most people have never knowingly seen it, because nobody told them when to look. <b>Overhead</b> takes the same element sets every tracker uses, runs the orbit model on your own device, and tells you the next time a satellite rises over you, where it comes from, how high it climbs, and whether you'll actually be able to see it.</p>",
  "featuresLabel": "what it does",
  "features": [
   {
@@ -47,7 +47,7 @@
   },
   {
    "n": "sibling to Cartograph",
-   "html": "<p>Cartograph is the wide view of everything out there. Orbit Watch follows one object in real time. The same propagation will feed Cartograph's live-satellite layer.</p>"
+   "html": "<p>Cartograph is the wide view of everything out there. Overhead follows one object in real time. The same propagation will feed Cartograph's live-satellite layer.</p>"
   }
  ],
  "scope": "<p>SGP4 is good to about a kilometre near the epoch and drifts a few kilometres a day after it, so the elements' age is shown next to every position. Pass times are good to a few seconds for fresh elements. Visibility uses a cylindrical Earth shadow and a low-precision sun, which is plenty for \"will I see it\" but not for timing an eclipse entry to the second. Reminders only fire while the page stays open; there's no push server behind them.</p>",
