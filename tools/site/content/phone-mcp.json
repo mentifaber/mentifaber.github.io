@@ -51,11 +51,11 @@
   },
   {
    "n": "this is a lot of access",
-   "html": "<p>Screen capture, input injection, app launching, file transfer and log access. ADB was built for developers holding their own hardware, and all of that is now reachable from a chat window.</p><p>The phone, the tunnel and the endpoint are all mine; none of this generalises to a device you don't own. Inspection tools are safe to call freely. Anything that sends, injects or moves files gets a gate, the same way Pi gates SMS.</p>"
+   "html": "<p>Screen capture, input injection, app launching, file transfer and log access. ADB was built for developers holding their own hardware, and all of that is now reachable from a chat window.</p><p>The phone, the tunnel and the endpoint are all mine; none of this generalises to a device you don't own. Inspection tools are safe to call freely. Anything that sends, injects or moves files gets a gate, the same way Nobody gates SMS.</p>"
   }
  ],
  "scope": "<p>The console is a simulation: the phone, the tunnel and the errors are scripted from the real command set, and every failure shown is one the real chain produced. An unauthenticated Quick Tunnel URL is a credential (anyone with the string has the phone), so the real answer is a named tunnel behind an access policy. The server holds no session state; killing the tunnel removes the whole capability, which is the intended off switch.</p>",
- "closing": "Pi is a model living on the phone reaching outward. This is a model living outside, reaching in.",
+ "closing": "Nobody, the assistant, is a model living on the phone reaching outward. This is a model living outside, reaching in.",
  "manifest": {
   "categories": [
    "utilities",

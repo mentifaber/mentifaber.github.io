@@ -30,7 +30,7 @@
   },
   {
    "t": "Local Group, deep space, Earth orbit",
-   "d": "Andromeda and the dwarfs, out to M87, the first quasar and JWST's most distant galaxies. Then back home: live satellites propagated with SGP4, the same engine Orbit Watch uses."
+   "d": "Andromeda and the dwarfs, out to M87, the first quasar and JWST's most distant galaxies. Then back home: live satellites propagated with SGP4, the same engine Overhead uses."
   }
  ],
  "cards": [
@@ -45,8 +45,8 @@
    ]
   },
   {
-   "n": "sibling to Orbit Watch",
-   "html": "<p>Orbit Watch follows one satellite in real time. Cartograph is the wide view of everything else, and its Earth-orbit view shares Orbit Watch's propagation and element sets.</p>"
+   "n": "sibling to Overhead",
+   "html": "<p>Overhead follows one satellite in real time. Cartograph is the wide view of everything else, and its Earth-orbit view shares Overhead's propagation and element sets.</p>"
   }
  ],
  "scope": "<p>Values are rounded, and a contested distance (Betelgeuse, Deneb, Rigel) is given as a range rather than one confident number. Beyond about a billion light-years distances are light-travel time, not where those galaxies are now. The Milky Way's spiral arms are schematic; nobody has a clean photograph of them from outside. Dwarf-planet positions come from approximate elements and are good to a few degrees. <em>Rebuilt from scratch in this revamp: 140+ objects and ten views, with more to come as they're checked.</em></p>",

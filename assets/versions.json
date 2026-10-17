@@ -24,7 +24,7 @@
   "page": "ballast-app.html"
  },
  "bubble-editor": {
-  "name": "Bubble Editor",
+  "name": "Balloon",
   "version": "1.4",
   "date": "2026-10-04",
   "notes": [
@@ -36,14 +36,14 @@
   "page": "bubble-editor-app.html"
  },
  "crime-dashboard": {
-  "name": "Crime Intelligence",
+  "name": "Per Capita",
   "version": "1.5",
   "date": "2026-10-04",
   "notes": [
    "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets"
+   "Mobile audit fixes: crime dashboard stacking, Moodfield v3 fit, viewport tags, tap targets"
   ],
   "page": "crime-dashboard-app.html"
  },
@@ -67,12 +67,12 @@
    "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets"
+   "Mobile audit fixes: crime dashboard stacking, Moodfield v3 fit, viewport tags, tap targets"
   ],
   "page": "monstrosity-log.html"
  },
  "moon-compatibility": {
-  "name": "Moon Compatibility",
+  "name": "Synodic",
   "version": "1.5",
   "date": "2026-10-04",
   "notes": [
@@ -84,14 +84,14 @@
   "page": "moon-compatibility-app.html"
  },
  "neural-sim": {
-  "name": "Neural Sim",
+  "name": "Moodfield",
   "version": "1.5",
   "date": "2026-10-04",
   "notes": [
    "Install-as-an-app prompt on every page that has an app manifest (real install prompt on Android/desktop, Add to Home Screen steps on iPhone/iPad)",
    "Apps now show their version and what's new after an update",
    "App icons and home-screen install for every live app; fresh Roku preview",
-   "Mobile audit fixes: crime dashboard stacking, Neural Sim v3 fit, viewport tags, tap targets"
+   "Mobile audit fixes: crime dashboard stacking, Moodfield v3 fit, viewport tags, tap targets"
   ],
   "page": "neural-sim-v3.html"
  },

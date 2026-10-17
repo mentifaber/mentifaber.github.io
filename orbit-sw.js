@@ -1,4 +1,4 @@
-// Orbit Watch service worker (scope /orbit): the tracker opens with no network and propagates from the element sets the
+// Overhead service worker (scope /orbit): the tracker opens with no network and propagates from the element sets the
 // page kept, so a pass can still be checked in a field with no signal. Leaflet comes from cdnjs and is kept too.
 const CACHE = "orbit-v1", SHELL = ["/orbit-app", "/assets/orbit/ow.js", "/assets/orbit/ow.css", "/assets/orbit/satellite.min.js", "/assets/orbit/land.js", "/assets/icons/v2/orbit-192.png", "/assets/manifests/orbit.webmanifest"];
 const CDN = ["https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js", "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"];

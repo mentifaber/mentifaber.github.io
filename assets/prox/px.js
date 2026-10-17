@@ -1,4 +1,4 @@
-/* Proximity · simulator. A fixed scanner (a laptop on a desk) watches five access points. A body is mostly water and
+/* Bodywake · simulator. A fixed scanner (a laptop on a desk) watches five access points. A body is mostly water and
    water absorbs 2.4 and 5 GHz, so a person on or near the line between an access point and the scanner knocks that
    signal down a dB or three, and a different access point each time depending on where they stand. Calibrate the
    empty house (mean and spread per access point), then every scan becomes a z-score; past 2.5σ the house is occupied,
@@ -73,5 +73,5 @@ cv.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse" || e.b
 $("cal").addEventListener("click", () => { const was = S.home; S.home = false; calibrate().then(() => { S.home = was || true; }); });
 $("auto").addEventListener("click", () => { S.auto = !S.auto; S.home = true; $("auto").textContent = "Autopilot: " + (S.auto ? "on" : "off"); });
 requestAnimationFrame(loop); setTimeout(() => { if (!S.cal) calibrate(); }, 600);
-window.Proximity = { S, calibrate };
+window.Bodywake = { S, calibrate };
 })();

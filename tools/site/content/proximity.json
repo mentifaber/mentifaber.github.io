@@ -13,7 +13,7 @@
   "label": "live perturbation",
   "title": "A body is <em>60% water</em>"
  },
- "lede": "<p>Water absorbs 2.4 and 5 GHz. Walking through a room shifts RSSI by one to three dBm, and it shifts each access point by a different amount depending on what's between it and the receiver. That difference is the signal. <b>Proximity</b> reads what the house was already broadcasting.</p>",
+ "lede": "<p>Water absorbs 2.4 and 5 GHz. Walking through a room shifts RSSI by one to three dBm, and it shifts each access point by a different amount depending on what's between it and the receiver. That difference is the signal. <b>Bodywake</b> reads what the house was already broadcasting.</p>",
  "featuresLabel": "the corrected model",
  "features": [
   {

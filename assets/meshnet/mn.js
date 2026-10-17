@@ -1,4 +1,4 @@
-/* MeshNet · live console. A browser front end for a LoRa mesh: a real Meshtastic or MeshCore node over Bluetooth or USB
+/* Hopline · live console. A browser front end for a LoRa mesh: a real Meshtastic or MeshCore node over Bluetooth or USB
    (the radio driver is NULLSPACE's, assets/ns/radio.js), or a simulated valley of radios that floods packets the way
    Meshtastic does: every node rebroadcasts what it hears once, until the hop limit runs out. Kill relays and watch the
    traffic take a longer road, or none. */
@@ -218,5 +218,5 @@ addEventListener("resize", size); new ResizeObserver(size).observe(cv);
 setInterval(() => { if (S.sel != null) card(); }, 5000);
 size(); left(); sim.start(); requestAnimationFrame(draw);
 setTimeout(() => { $("hint").style.transition = "opacity .8s"; $("hint").style.opacity = "0"; }, 7000); // the hint has said its piece
-window.MeshNet = { S, sim, connect };
+window.Hopline = { S, sim, connect };
 })();

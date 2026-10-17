@@ -13,7 +13,7 @@
   "label": "what is running",
   "title": "A network that models <em>feeling</em>"
  },
- "lede": "<p>Not classification: nodes carrying valence, propagating it and settling into configurations nobody specified in advance. Whether that resembles emotion or merely borrows its vocabulary is the open question. <b>Neural Sim</b> puts a biological network, a psilocybin brain, an inconsistent AI and a consistent AI side by side, then merges them.</p>",
+ "lede": "<p>Not classification: nodes carrying valence, propagating it and settling into configurations nobody specified in advance. Whether that resembles emotion or merely borrows its vocabulary is the open question. <b>Moodfield</b> puts a biological network, a psilocybin brain, an inconsistent AI and a consistent AI side by side, then merges them.</p>",
  "featuresLabel": "three passes",
  "features": [
   {

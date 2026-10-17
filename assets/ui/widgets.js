@@ -85,7 +85,7 @@
       const kp = Array.isArray(last) ? +last[1] : +(last.Kp != null ? last.Kp : last.kp_index != null ? last.kp_index : last.estimated_kp);
       if (!isFinite(kp)) throw new Error("no kp"); return { kp, at: Array.isArray(last) ? last[0] : last.time_tag }; });
   }
-  // ── the next ISS pass over you: Orbit Watch's engine, run here ──
+  // ── the next ISS pass over you: Overhead's engine, run here ──
   let satP = null;
   const loadSat = () => satP || (satP = new Promise((ok, no) => { if (window.satellite) return ok(); const s = document.createElement("script"); s.src = "assets/orbit/satellite.min.js"; s.onload = ok; s.onerror = no; document.head.appendChild(s); }));
   function nextPass(l1, l2, lat, lon) {

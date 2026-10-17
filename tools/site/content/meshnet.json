@@ -13,7 +13,7 @@
   "label": "how a mesh routes",
   "title": "No node is <em>load-bearing</em>"
  },
- "lede": "<p>A Meshtastic mesh has no router and no tower. Each radio rebroadcasts what it hears once, and a packet keeps spreading until its hop limit runs out. Hop count is the whole cost model: there's only a few hundred bits per second, so everything is built around text, position and telemetry.</p><p><b>MeshNet</b> started as a Python and Flask dashboard over an MQTT bridge. The live console below goes further: it talks to the radio straight from the browser, over Bluetooth or a USB cable, with no server in the path at all.</p>",
+ "lede": "<p>A Meshtastic mesh has no router and no tower. Each radio rebroadcasts what it hears once, and a packet keeps spreading until its hop limit runs out. Hop count is the whole cost model: there's only a few hundred bits per second, so everything is built around text, position and telemetry.</p><p><b>Hopline</b> started as a Python and Flask dashboard over an MQTT bridge. The live console below goes further: it talks to the radio straight from the browser, over Bluetooth or a USB cable, with no server in the path at all.</p>",
  "featuresLabel": "in the console",
  "features": [
   {
@@ -50,7 +50,7 @@
    ]
   }
  ],
- "scope": "<p>LoRa reaches a few miles per hop, further with height, for about $30 a node with no licence. It's the short-range sibling of NovarAC's HF radio. Radio support in the browser follows the published protocols but <em>hasn't been tested on real hardware yet</em>. iPhone browsers can't reach radios, so the simulator is the way in there.</p>",
+ "scope": "<p>LoRa reaches a few miles per hop, further with height, for about $30 a node with no licence. It's the short-range sibling of Skipline's HF radio. Radio support in the browser follows the published protocols but <em>hasn't been tested on real hardware yet</em>. iPhone browsers can't reach radios, so the simulator is the way in there.</p>",
  "closing": "Nothing in the path may require the internet to be up. MQTT is a convenience, never a dependency.",
  "manifest": {
   "orientation": "any",

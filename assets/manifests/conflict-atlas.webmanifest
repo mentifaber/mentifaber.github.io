@@ -1,7 +1,7 @@
 {
   "id": "/conflict-atlas",
-  "name": "Conflict Atlas",
-  "short_name": "Conflict Atl",
+  "name": "Unlit · Mentifaber",
+  "short_name": "Unlit",
   "description": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.",
   "start_url": "/conflict-atlas-app.html",
   "scope": "/conflict-atlas",

@@ -1,4 +1,4 @@
-/* Conflict Atlas · the map. Twenty-eight entries, tiered by cost rather than coverage; filter by tier, region or whether a
+/* Unlit · the map. Twenty-eight entries, tiered by cost rather than coverage; filter by tier, region or whether a
    ceasefire exists on paper (the badges say which: the agreement and the ground are different objects). */
 (() => {
 "use strict";

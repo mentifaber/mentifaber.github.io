@@ -1,7 +1,7 @@
 {
   "id": "/proximity",
-  "name": "Proximity · Mentifaber",
-  "short_name": "Proximity",
+  "name": "Bodywake · Mentifaber",
+  "short_name": "Bodywake",
   "description": "Detects a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone.",
   "start_url": "/proximity-app.html",
   "scope": "/proximity",

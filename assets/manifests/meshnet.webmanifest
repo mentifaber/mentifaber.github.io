@@ -1,7 +1,7 @@
 {
   "id": "/meshnet",
-  "name": "MeshNet · Mentifaber",
-  "short_name": "MeshNet",
+  "name": "Hopline · Mentifaber",
+  "short_name": "Hopline",
   "description": "A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.",
   "start_url": "/meshnet-app.html",
   "scope": "/meshnet",

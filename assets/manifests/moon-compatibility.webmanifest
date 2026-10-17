@@ -1,7 +1,7 @@
 {
   "id": "/moon-compatibility",
-  "name": "Moon Compatibility",
-  "short_name": "Moon Compati",
+  "name": "Synodic · Mentifaber",
+  "short_name": "Synodic",
   "description": "Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score.",
   "start_url": "/moon-compatibility-app.html",
   "scope": "/moon-compatibility",

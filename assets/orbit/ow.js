@@ -1,4 +1,4 @@
-/* Orbit Watch · live. Element sets come from CelesTrak (through the site's cached /api/orbit route, or straight from
+/* Overhead · live. Element sets come from CelesTrak (through the site's cached /api/orbit route, or straight from
    CelesTrak, or the last copy this browser kept), and SGP4 (satellite.js) propagates them right here: where each satellite
    is, where it's going, and when it next rises over you. A pass is "visible" when the satellite is in sunlight while your
    sky is dark (sun below −6°): that's when you can see one with your own eyes. */
@@ -216,7 +216,7 @@ function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false
 async function remind(p) {
   const at2 = p.rise - 2 * 60e3, name = S.sel.name;
   if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch (e) {} }
-  setTimeout(() => { const msg = name + " rises " + compass(p.riseAz) + " in 2 minutes · max " + Math.round(p.maxE) + "°"; toast(msg); try { if (Notification.permission === "granted") new Notification("Orbit Watch", { body: msg, icon: "assets/icons/v2/orbit-192.png" }); } catch (e) {} }, Math.max(0, at2 - Date.now()));
+  setTimeout(() => { const msg = name + " rises " + compass(p.riseAz) + " in 2 minutes · max " + Math.round(p.maxE) + "°"; toast(msg); try { if (Notification.permission === "granted") new Notification("Overhead", { body: msg, icon: "assets/icons/v2/orbit-192.png" }); } catch (e) {} }, Math.max(0, at2 - Date.now()));
   toast("Reminder set for " + hhmm(at2) + ". It works while this page stays open.");
 }
 $("group").innerHTML = GROUPS.map((g) => '<option value="' + g[0] + '">' + g[1] + "</option>").join(""); $("group").value = S.group;

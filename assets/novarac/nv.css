@@ -1,4 +1,4 @@
-/* NovarAC · operator console. Amber, deliberately: readable at 3am. */
+/* Skipline · operator console. Amber, deliberately: readable at 3am. */
 :root { --bg: #0b0703; --bg2: #140d05; --ink: #ffcf7a; --hi: #ffe7b0; --dim: #a8783a; --mute: #6b4c25; --line: rgba(255,176,0,.16); --line2: rgba(255,176,0,.32); --tx: #ff5a2a; --ok: #9cff6a; --mono: "Share Tech Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: radial-gradient(120% 80% at 50% 0%, #1a1006, var(--bg) 60%); color: var(--ink); font: 15px/1.45 var(--mono); }

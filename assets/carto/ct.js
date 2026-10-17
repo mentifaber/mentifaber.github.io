@@ -44,7 +44,7 @@ const VIEWS = [
   { id: "mw", n: "Milky Way", blurb: "The Galaxy from outside: the Sun sits 26,700 light-years from Sagittarius A*. Remnants, nebulae and clusters plotted at true distance. Spiral arms are schematic.", cam: [0.3, 0.85, 92] },
   { id: "local", n: "Local Group", blurb: "The Milky Way's neighbourhood: the Magellanic Clouds, Andromeda and the dwarfs. Logarithmic radius.", r: logR(4e4, 4), rings: [1e5, 1e6], unit: "ly", cam: [0.6, 0.45, 18], also: [] },
   { id: "deep", n: "Deep space", blurb: "Out to the first galaxies. Beyond a billion light-years, distances are light-travel time. Logarithmic radius.", r: logR(5e6, 3), rings: [1e7, 1e8, 1e9, 1e10], unit: "ly", cam: [0.6, 0.45, 23], also: [] },
-  { id: "earth", n: "Earth orbit · live", blurb: "Live satellites, propagated with SGP4 from CelesTrak elements (shared with Orbit Watch). Earth turns in real time.", cam: [0.4, 0.35, 70] },
+  { id: "earth", n: "Earth orbit · live", blurb: "Live satellites, propagated with SGP4 from CelesTrak elements (shared with Overhead). Earth turns in real time.", cam: [0.4, 0.35, 70] },
 ];
 const V = () => VIEWS.find((v) => v.id === S.view);
 const fmtD = (d, deep) => d === 0 ? "here" : d < 100 ? d.toFixed(d < 20 ? 2 : 1).replace(/\.?0+$/, "") + " light-years" : d < 1e6 ? Math.round(d).toLocaleString() + " light-years" : d < 1e9 ? +(d / 1e6).toPrecision(3) + " million light-years" : +(d / 1e9).toPrecision(3) + " billion light-years" + (deep ? " (light-travel)" : "");
@@ -118,7 +118,7 @@ const SPR = {};
 function sprite(c) { if (SPR[c]) return SPR[c]; const s = document.createElement("canvas"); s.width = s.height = 64; const g = s.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.12, c); gr.addColorStop(0.4, c + "55"); gr.addColorStop(1, c + "00"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return (SPR[c] = s); }
 const BG = (() => { let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; const a = []; for (let i = 0; i < 2200; i++) { const z = rnd() * 2 - 1, t = rnd() * 6.283, r = Math.sqrt(1 - z * z), m = Math.pow(rnd(), 3); a.push([r * Math.cos(t), r * Math.sin(t), z, 0.15 + m * 0.85, ["#ffffff", "#cfe0ff", "#ffe9c4", "#ffd0b0"][Math.floor(rnd() * 4)], rnd() * 6.28]); } return a; })();
 
-// ── Earth orbit: live satellites (satellite.js and the land outlines are Orbit Watch's) ──
+// ── Earth orbit: live satellites (satellite.js and the land outlines are Overhead's) ──
 const EARTH = { sats: [], loaded: false, src: "", land: null };
 async function loadSats() {
   if (EARTH.loaded || !window.satellite) return; EARTH.loaded = true;
@@ -128,7 +128,7 @@ async function loadSats() {
     if (!txt) try { const c = JSON.parse(localStorage.getItem("ow.tle." + g) || "null"); if (c) txt = c.txt; } catch (e) {}
     if (txt) parse(txt).forEach((s) => { s.g = g; EARTH.sats.push(s); });
   }
-  EARTH.src = EARTH.sats.length ? EARTH.sats.length + " satellites from CelesTrak" : "no element sets reachable (Orbit Watch keeps a copy once it has loaded)";
+  EARTH.src = EARTH.sats.length ? EARTH.sats.length + " satellites from CelesTrak" : "no element sets reachable (Overhead keeps a copy once it has loaded)";
   info();
 }
 function earthItems() {

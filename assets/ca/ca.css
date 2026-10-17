@@ -1,4 +1,4 @@
-/* Conflict Atlas · the map */
+/* Unlit · the map */
 :root { --bg: #0b0908; --bg2: #14110f; --ink: #efe6dc; --dim: #a8988a; --mute: #6f6258; --line: rgba(239,230,220,.1); --major: #d9543f; --sig: #e0883c; --act: #cbb04a; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }

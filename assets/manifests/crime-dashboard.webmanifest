@@ -1,7 +1,7 @@
 {
   "id": "/crime-dashboard-app.html",
-  "name": "Crime Intelligence",
-  "short_name": "Crime Intell",
+  "name": "Per Capita · Mentifaber",
+  "short_name": "Per Capita",
   "description": "Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.",
   "start_url": "/crime-dashboard-app.html",
   "scope": "/crime-dashboard",

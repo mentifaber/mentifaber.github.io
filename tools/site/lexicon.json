@@ -123,7 +123,7 @@
      "weaver.html"
     ],
     [
-     "Neural Sim",
+     "Moodfield",
      "neural-sim.html"
     ]
    ],
@@ -312,7 +312,7 @@
     "A short ingredient list ranked above a complete one: the scorer was lacunist, treating every ingredient it couldn’t read as a safe one."
    ],
    "notes": [
-    "<b>Found three times in this work.</b> <a href=\"worm-eater.html\">Worm Eater</a>’s scorer ranked truncated labels above complete ones, so it now shows the coverage a score stands on and refuses to score below half. In <a href=\"crime-dashboard.html\">Crime Intelligence</a>, a city that looks safe may simply have reported less. <a href=\"conflict-atlas.html\">Conflict Atlas</a> exists because wars missing from coverage read as wars that aren’t happening.",
+    "<b>Found three times in this work.</b> <a href=\"worm-eater.html\">Worm Eater</a>’s scorer ranked truncated labels above complete ones, so it now shows the coverage a score stands on and refuses to score below half. In <a href=\"crime-dashboard.html\">Per Capita</a>, a city that looks safe may simply have reported less. <a href=\"conflict-atlas.html\">Unlit</a> exists because wars missing from coverage read as wars that aren’t happening.",
     "<b>Not the argument from silence.</b> That concludes an event didn’t happen because no record mentions it. Lacunism is the quieter failure inside a system: the gap is rewarded, by a score, a rank or a default."
    ],
    "record": [
@@ -335,11 +335,11 @@
      "worm-eater.html"
     ],
     [
-     "Crime Intelligence",
+     "Per Capita",
      "crime-dashboard.html"
     ],
     [
-     "Conflict Atlas",
+     "Unlit",
      "conflict-atlas.html"
     ]
    ],

@@ -1,7 +1,7 @@
 {
   "id": "/pi",
-  "name": "Pi · Mentifaber",
-  "short_name": "Pi",
+  "name": "Nobody · Mentifaber",
+  "short_name": "Nobody",
   "description": "A voice assistant that runs on the phone itself, not in an app store. Camera, GPS, contacts and 22 device tools never leave it; only chat text goes out. When the voice drops, it degrades instead of going silent.",
   "start_url": "/pi-app.html",
   "scope": "/pi",
