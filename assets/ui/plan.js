@@ -42,6 +42,22 @@
     piece.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }));
 
+  // ── the lexicon: find a word, copy a citation or a link, light the entry you came for ──
+  const lex = $(".lex");
+  if (lex) {
+    const q = $(".lex-q input", lex), entries = $$(".lx-entry", lex), none = $(".lex-none", lex), idxA = $$(".lex-idx a", lex);
+    if (q) q.addEventListener("input", () => { const w = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean); let n = 0;
+      entries.forEach((e) => { const ok = w.every((x) => e.dataset.q.includes(x)); e.hidden = !ok; if (ok) n++; });
+      idxA.forEach((a) => { const e = document.getElementById(a.getAttribute("href").slice(1)); a.parentNode.hidden = e ? e.hidden : false; }); if (none) none.hidden = n > 0; });
+    const toast = (b, t) => { const was = b.textContent; b.textContent = t; setTimeout(() => (b.textContent = was), 1600); };
+    const copy = (b, text) => (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast(b, "Copied ✓"), () => prompt("Copy:", text));
+    $$("[data-cite]", lex).forEach((b) => (b.onclick = () => copy(b, b.dataset.cite)));
+    $$("[data-link]", lex).forEach((b) => (b.onclick = () => copy(b, b.dataset.link)));
+    const light = () => { const e = location.hash && document.getElementById(location.hash.slice(1)); entries.forEach((x) => x.classList.toggle("hl", x === e)); idxA.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === location.hash)); };
+    addEventListener("hashchange", light); light();
+    if ("IntersectionObserver" in window) { const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) idxA.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + x.target.id)); }), { rootMargin: "-30% 0px -60% 0px" }); entries.forEach((e) => io.observe(e)); }
+  }
+
   // ── the compass: north is up; the sun is where it is now, for roughly where you are (your time zone says) ──
   const comp = $(".compass");
   if (comp) {

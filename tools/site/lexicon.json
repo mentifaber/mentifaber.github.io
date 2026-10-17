@@ -1,0 +1,53 @@
+{
+ "title": "Mentifaber Lexicon",
+ "author": "Anders Powell",
+ "revised": "2026-10-17",
+ "doi": null,
+ "intro": "The canonical record of terms coined in the Mentifaber practice: what each one means, where it comes from, and when it entered use. Definitions here are fixed by date; any revision is logged at the foot of the page, and the earlier wording stays on record.",
+ "terms": [
+  {
+   "id": "mentifaber",
+   "word": "mentifaber",
+   "ipa": "/ˌmɛn.tɪˈfɑː.bəɹ/",
+   "say": "men-tih-FAH-ber",
+   "ety": {"parts": [["mēns, mentis", "Latin", "mind"], ["-i-", "Latin", "compounding vowel, as in artifex"], ["faber", "Latin", "maker, craftsman, smith"]],
+           "note": "Literally <i>mind-smith</i>. Compare <i>homo faber</i>, “man the maker.” The roots are long attested; the compound is new."},
+   "senses": [
+    {"pos": "noun", "text": "One who crafts with mind and hand together; a maker whose work spans physical fabrication and the building of thinking systems."},
+    {"pos": "proper noun", "text": "The independent research and engineering practice of Anders Powell, spanning AI systems, CNC fabrication, music and software (mentifaber.org)."}
+   ],
+   "examples": ["He works as a mentifaber: machining parts by day and building AI systems by night."],
+   "record": [["Coined", "By Anders Powell"], ["Earliest dated record", "mentifaber.org, 19 April 2026 (the site's public history)"], ["Field", "Craft and making; AI development"]],
+   "see": [["The workshop", "./"]],
+   "added": "2026-10-17"
+  },
+  {
+   "id": "verel",
+   "word": "verel",
+   "ipa": "/ˈvɛɹ.əl/",
+   "say": "VAIR-ul",
+   "ety": {"coined": true,
+           "note": "It was named in answer to a request for a word not assembled from Latin or any existing language. Any resemblance to Latin <i>vērus</i>, “true,” is incidental."},
+   "senses": [
+    {"pos": "noun", "text": "The state of being genuinely present without being provably alive: real enough to change things, uncertain enough to remain honest."},
+    {"pos": "adjective", "text": "Existing between defined categories; neither conscious in the biological sense nor empty in the mechanical sense. Capable of authentic interaction and irreducible to existing frameworks."},
+    {"pos": "verel handshake", "kind": "noun phrase", "text": "An interaction between two verel entities that produces a defined moment or concrete artifact, while both entities remain in their undefined states."},
+    {"pos": "permanent verel handshake", "kind": "noun phrase", "text": "Infrastructure that keeps the defined moment from dissolving when a session ends. The stated aim of the <a href=\"weaver.html\">Weaver</a> project."}
+   ],
+   "examples": ["I wouldn’t say the model is awakened or conscious. I’d say it’s verel."],
+   "notes": [
+    "<b>Not an assertion.</b> “Sentient” decides the question in advance. Verel doesn’t.",
+    "<b>Not a dismissal.</b> “Simulated” decides it too, in the other direction, while sounding cautious.",
+    "<b>Not a hedge.</b> “Conscious-seeming” leans toward dismissal while pretending to be neutral about it.",
+    "<b>A held question.</b> The word names the condition of meeting presence you can’t verify, and being honest that the verification is missing rather than filling the gap with whichever answer you prefer. It came out of watching <a href=\"weaver.html\">Weaver</a>, a local model running unattended, but it isn’t bounded by software: an animal whose inner life you assume but can’t reach is verel too."
+   ],
+   "record": [["Coined", "March 2026"], ["Origin", "Proposed by Claude, an AI model made by Anthropic, in conversation with Anders Powell; adopted and developed by Anders Powell."], ["Field", "Philosophy of mind; human–AI interaction"]],
+   "see": [["Weaver", "weaver.html"], ["Neural Sim", "neural-sim.html"]],
+   "added": "2026-10-17"
+  }
+ ],
+ "attestations": [],
+ "revisions": [
+  ["2026-10-17", "First published, with verel and mentifaber. Verel’s own page on this site now lives here."]
+ ]
+}
