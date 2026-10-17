@@ -54,6 +54,7 @@
     $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
     const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks done";
     $("pring").style.strokeDashoffset = 170 - 170 * (j.tasks.length ? done / j.tasks.length : 0);
+    $("pring").closest(".ring").classList.toggle("done", !!j.tasks.length && done === j.tasks.length);
     if (window.HiveFX && tab === "swarm") HiveFX.map($("map"), j);
     $("recruit").classList.toggle("hidden", !p.owner || !LIVE.test(p.status)); $("pdel").classList.toggle("hidden", !p.join); $("stop").classList.toggle("hidden", !p.join || !LIVE.test(p.status)); $("chatrow").classList.toggle("hidden", !p.join || !LIVE.test(p.status));
     $("joinrow").classList.toggle("hidden", !p.join); if (p.join && $("join").value !== p.join) $("join").value = p.join;
@@ -81,6 +82,7 @@
     $("files").innerHTML = R.files.length ? R.files.map((f, i) => "<div class='file'><div class='fh'><b>" + esc(f.name) + "</b><span class='dim sm'>" + esc(f.lang) + " · " + f.code.split("\n").length + " lines" + (f === R.entry ? " · runs" : "") + "</span><span class='flex'></span>" +
       (/^(html|py|js)$/.test(f.lang) ? "<button class='q sm' data-frun='" + i + "'>Run this</button>" : "") + "<button class='q sm' data-fcopy='" + i + "'>Copy</button><button class='q sm' data-fdl='" + i + "'>Download</button></div><pre><code>" + esc(f.code) + "</code></pre></div>").join("") : "<p class='dim'>No code in this result: it's a write-up (see Write-up).</p>";
     $("stage").classList.toggle("hidden", !R.entry); $("norun").classList.toggle("hidden", !!R.entry); $("console").classList.toggle("hidden", !R.entry);
+    $("stage").classList.toggle("log", !!(R.entry && R.entry.lang !== "html"));
     $("runwhat").textContent = R.entry ? R.entry.name + (R.entry.lang === "py" ? " · Python in your browser" : R.entry.lang === "js" ? " · JavaScript" : "") : "";
     if (tab === "run" && R.entry) runIt();
     else if (!R.entry) autoDemo("nothing in it runs");
@@ -111,8 +113,13 @@
   // the run settled: did it show anything? A script that only defines functions, or a blank page, isn't a demo
   function shape(f, text) {
     let s = {}; try { s = JSON.parse(text); } catch (e) { return; }
-    const said = R.log.some((l) => l.kind !== "info"), blank = f.lang === "html" ? s.text < 2 && !s.media : s.out === 0 && !s.media && !said;
+    const said = () => R.log.some((l) => l.kind !== "info" && l.kind !== "warn"), blank = f.lang === "html" ? s.text < 2 && !s.media : s.out === 0 && !s.media && !said();
     if (!blank || R.errors.length) return;
+    // tests and timers print late: give a quiet script a moment before calling it blank
+    if (f.lang !== "html") { const at = R.ran; return setTimeout(() => { if (R.ran === at && !said() && !R.errors.length && !R.silent) silent(f); }, 3000); }
+    silent(f);
+  }
+  function silent(f) {
     R.silent = true; R.log.push({ kind: "warn", text: f.lang === "html" ? "The page loaded but shows nothing." : "It ran, but did nothing you can see: the code only defines functions, or it's meant for a server." }); con();
     autoDemo("it showed nothing");
   }

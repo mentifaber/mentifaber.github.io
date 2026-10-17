@@ -20,6 +20,7 @@
   --m-copper: #e08a58; --m-malachite: #43b98c; --m-azurite: #6a9ff0; --m-citrine: #e6c24a; --m-jasper: #e86a52; --m-lapis: #8b9cf2;
   --m-rhodo: #e886ad; --m-hematite: #a9b1b9; --m-peridot: #b3d156; --m-selenite: #efe8d2; --m-tiger: #d2a252; --m-flint: #b9c3c9;
   --m: var(--m-flint);
+  --gold: #d9ad55; --gold-hi: #f3d68f;
   --ui: "Hive Strata", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --code: "Azeret Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   /* the core log */
@@ -34,6 +35,7 @@
   --ok: #2f7a1e; --warn: #8d6400; --bad: #b42a1c;
   --m-copper: #a4501f; --m-malachite: #157a55; --m-azurite: #2459b0; --m-citrine: #8c6d00; --m-jasper: #b0361f; --m-lapis: #3a4cc0;
   --m-rhodo: #ad3c6a; --m-hematite: #59636c; --m-peridot: #5d7a0c; --m-selenite: #6f6650; --m-tiger: #835a17; --m-flint: #4b565d;
+  --gold: #8a6414; --gold-hi: #a87b1c;
   color-scheme: light;
 }
 
@@ -130,6 +132,8 @@ input.tg:checked::after { left: 24px; background: var(--ink); }
 #surface .rs { padding-top: 18px; }
 .lede h1 { font-weight: 300; font-size: clamp(32px, 4.2vw, 50px); line-height: 1.08; letter-spacing: -.012em; max-width: 16em; }
 .lede h1 em { font-style: normal; color: var(--m); }
+.lede h1 em.gn { background: linear-gradient(180deg, var(--gold-hi), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#brand .word { background: linear-gradient(180deg, var(--gold-hi), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lede p { margin: 12px 0 0; color: var(--dim); font-size: 15px; }
 #composer { grid-column: main; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); padding: 10px 0; position: relative; transition: border-color .2s, box-shadow .2s; }
 #composer:focus-within { border-bottom-color: var(--m); box-shadow: 0 1px 0 var(--m); }
@@ -393,6 +397,8 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .ring circle { fill: none; stroke-width: 5; }
 .ring .bg { stroke: var(--line2); }
 .ring .fg { stroke: var(--ink); stroke-dasharray: 170; stroke-dashoffset: 170; transition: stroke-dashoffset .6s; }
+.ring .tick { fill: none; stroke: var(--ok); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity .4s; }
+.ring.done .fg { stroke: var(--ok); } .ring.done .tick { opacity: 1; }
 .pnums { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
 .pnums b { font-weight: 600; font-size: 15px; }
 .pnums span { font-size: 12.5px; }
@@ -408,6 +414,7 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .seg button.on { background: var(--ink); color: var(--bg); }
 .stage { --w: 100%; border: 1px solid var(--line2); background: repeating-linear-gradient(180deg, transparent 0 23px, var(--line) 23px 24px); display: flex; justify-content: center; }
 .stage iframe { width: var(--w); max-width: 100%; height: min(70vh, 640px); border: 0; background: #fff; display: block; }
+.stage.log iframe { height: min(42vh, 360px); }
 .norun { border: 1px dashed var(--line2); padding: 18px; }
 .norun p { margin-top: 0; color: var(--dim); }
 .console { margin-top: 14px; border: 1px solid var(--line2); background: var(--well); }
@@ -506,6 +513,18 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .mi p small select { font-size: 12px; min-height: 0; padding: 0 18px 0 4px; border: 0; background-color: transparent; color: var(--dim); background-position: right 9px top 55%, right 4px top 55%; }
 .mi > button { color: var(--faint); padding: 2px 6px; flex: none; }
 .mi > button:hover { color: var(--bad); }
+.mi.th { align-items: center; padding: 9px 0; }
+.mi.th p { font-size: 14.5px; }
+.mi .ic { display: flex; gap: 4px; flex: none; }
+.mi .ic button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line2); color: var(--dim); font-size: 15px; border-radius: 50%; padding: 0; }
+.mi .ic button:first-child:hover { color: var(--ok, #7fcf8f); border-color: currentColor; }
+.mi .ic button:last-child:hover { color: var(--bad); border-color: currentColor; }
+.mi p small .src { font-style: normal; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line2); color: var(--dim); }
+.mi p small .src.you { border-color: var(--m); color: var(--ink); }
+.tsugg { margin-top: 18px; padding: 10px 14px 4px; border: 1px dashed var(--line2); border-radius: 12px; }
+.tsugg .mi:first-of-type { border-top: 0; }
+.th-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-bottom: 6px; font-size: 12.5px; color: var(--faint); }
+.th-h b { color: var(--ink); font-weight: 600; }
 .mi .ib { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
 .mi .ib button { border: 1px solid var(--line2); padding: 3px 10px; font-size: 13px; white-space: nowrap; }
 .mi .ib button:hover { border-color: var(--ink); }
@@ -716,7 +735,23 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
   .key { grid-template-columns: 30px minmax(0, 1fr); }
   .key .badge { width: 30px; height: 30px; }
   .key .bt { grid-column: 2; }
+  .tabrow { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; min-height: 46px; }
+  .tabrow::-webkit-scrollbar { display: none; }
+  .tabrow button[data-pt] { padding: 12px 11px; flex: none; }
+  .tabrow .flex { flex: 1 0 8px; }
+  .tabrow select { max-width: 132px; flex: none; }
+  .tabrow .q { flex: none; }
+  .ptabs > .rail { display: none; }
+  .mtabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1 1 100%; }
+  .mtabs::-webkit-scrollbar { display: none; }
+  .mtabs button { flex: none; padding: 12px 11px; }
+  .msearch { width: 100%; flex-basis: 100%; }
+  .ptabs:not(.mhead) .tabrow { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); padding-right: 28px; }
+  .mhead .tabrow { flex-wrap: wrap; overflow: visible; }
+  .mhead .tabrow .flex { display: none; }
   .mi { flex-wrap: wrap; }
+  .mi.th { flex-wrap: nowrap; }
+  .mi.th p { flex-basis: auto; }
   .own { flex-wrap: wrap; }
   .own input { flex-basis: 100%; }
   .own select { flex: 1; }

@@ -29,7 +29,7 @@ addEventListener("hashchange", route);
 
 // ── models ──
 async function loadModels() {
-  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").innerHTML = "<em>" + esc(gname) + "</em> is listening.";
+  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").innerHTML = "<em class='gn'>" + esc(gname) + "</em> is listening.";
   if (j.resting) { const t = new Date(j.resting).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); models.forEach((m) => { if (m.id.startsWith("workers-ai|")) m.group = "Cloudflare Workers AI (free) · resting until " + t; }); }
   const sel = $("model"), groups = {}; for (const m of models) (groups[m.group] = groups[m.group] || []).push(m);
   sel.innerHTML = Object.entries(groups).map(([g, ms]) => "<optgroup label='" + esc(g) + "'>" + ms.map((m) => "<option value='" + esc(m.id) + "'>" + esc(m.name) + "</option>").join("") + "</optgroup>").join("") || "<option value=''>No models available</option>";
@@ -665,7 +665,11 @@ const MindV = {
       || "<p class='dim sm'>" + (ms.length ? "None of that kind." : "Nothing yet. Say “remember …” in any chat, add one above, or let Genesis notice things as you talk.") + "</p>";
     $("m-trust").checked = !!j.trust;
     const th = j.threads || [], open = th.filter((t) => t.status === "open"), closed = th.filter((t) => t.status !== "open"), from = (s) => (s === "analysis" ? "from the analysis" : s === "noticed" ? "noticed" : "you");
-    $("m-threads").innerHTML = open.map((t) => "<div class='mi'><p><small>" + from(t.src) + " · since " + agoT(t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":done'>Done</button><button data-th='" + t.id + ":dropped'>Drop</button></div></div>").join("") || "<p class='dim sm'>No open threads. Add what you're in the middle of, or let Genesis notice it.</p>";
+    // his own threads first; what Genesis noticed or the analysis suggested sits below, and can be cleared in one go
+    const trow = (t) => "<div class='mi th'><p><small><i class='src " + esc(t.src || "you") + "'>" + from(t.src) + "</i> · " + agoT(t.ts) + "</small>" + esc(t.text) + "</p><div class='ic'><button data-th='" + t.id + ":done' title='Done' aria-label='Mark done'>✓</button><button data-th='" + t.id + ":dropped' title='Drop' aria-label='Drop'>✕</button></div></div>";
+    const mine = open.filter((t) => (t.src || "you") === "you"), sugg = open.filter((t) => (t.src || "you") !== "you");
+    $("m-threads").innerHTML = (mine.map(trow).join("") || (sugg.length ? "" : "<p class='dim sm'>No open threads. Add what you're in the middle of, or let Genesis notice it.</p>")) +
+      (sugg.length ? "<div class='tsugg'><div class='th-h'><span>Suggested by Genesis <b>" + sugg.length + "</b></span><button class='q' data-thall='dropped'>Drop all suggestions</button></div>" + sugg.map(trow).join("") + "</div>" : "");
     $("m-tdone").classList.toggle("hidden", !closed.length);
     $("m-tclosed").innerHTML = closed.map((t) => "<div class='mi'><p><small>" + esc(t.status) + " · " + agoT(t.upd || t.ts) + "</small>" + esc(t.text) + "</p><div class='ib'><button data-th='" + t.id + ":open'>Reopen</button></div></div>").join("");
   },
@@ -751,6 +755,8 @@ $("v-mind").onclick = async (e) => {
   if (tb) { if (MindV.searching) { $("m-q").value = ""; await MindV.search(); } return MindV.show(tb.dataset.mt); }
   const rv = t.closest("[data-rv]"); if (rv) { const [kind, id, keep] = rv.dataset.rv.split(":"); rv.closest(".mi").remove(); await api("/mind/review", { [kind]: +id, keep: keep === "1" }); return MindV.load(); }
   const pin = t.closest("[data-pin]"); if (pin) { const j = await api("/mind/edit", { id: +pin.dataset.pin, pin: !pin.classList.contains("on") }); if (j.error) return toast(j.error); return MindV.load(); }
+  const tha = t.closest("[data-thall]"); if (tha) { const ids = [...document.querySelectorAll(".tsugg [data-th$=':dropped']")].map((b) => +b.dataset.th.split(":")[0]); if (!ids.length || !confirm("Drop all " + ids.length + " suggested threads? They stay under Finished and dropped, where you can reopen any of them.")) return;
+    tha.disabled = true; for (const id of ids) await api("/mind/thread", { id, status: "dropped" }).catch(() => {}); toast("Dropped " + ids.length); return MindV.load(); }
   const th = t.closest("[data-th]"); if (th) { const [id, status] = th.dataset.th.split(":"); await api("/mind/thread", { id: +id, status }); toast(status === "done" ? "Marked done" : status === "dropped" ? "Dropped" : "Reopened"); return MindV.load(); }
   const chip = t.closest("[data-mf]"); if (chip) { MindV.f = chip.dataset.mf; return MindV.mem(MindV.j); }
   const ed = t.closest("[data-edit]"); if (ed) { if (!ed.querySelector("input")) MindV.edit(ed); return; }
