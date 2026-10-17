@@ -203,7 +203,6 @@
    "added": "2026-10-17"
   },
   {
-   "draft": true,
    "id": "autozetesis",
    "word": "autozetesis",
    "ipa": "/ˌɔː.toʊ.zɪˈtiː.sɪs/",
@@ -230,8 +229,9 @@
     },
     {
      "pos": "scaffolded autozetesis",
-     "kind": "noun phrase",
-     "text": "The same cycle where the system was built to run it. It shows the loop works; it isn’t evidence that the loop arises on its own."
+     "kind": "noun phrase · secondary sense",
+     "text": "The same cycle where the system was built to run it: the loop is written into its design or its prompts. It shows the loop works; it isn’t evidence that the loop arises on its own. Genesis’s reflect, learn, propose, build and judge cycle is scaffolded autozetesis.",
+     "id": "scaffolded-autozetesis"
     },
     {
      "pos": "autozetetic",
@@ -249,8 +249,12 @@
    ],
    "record": [
     [
-     "Proposed",
+     "Coined",
      "17 October 2026"
+    ],
+    [
+     "Origin",
+     "Proposed by Claude, an AI model made by Anthropic, in conversation with Anders Powell, from a reading of the Mentifaber projects; adopted by Anders Powell."
     ],
     [
      "Field",
@@ -274,7 +278,6 @@
    "added": "2026-10-17"
   },
   {
-   "draft": true,
    "id": "lacunism",
    "word": "lacunism",
    "ipa": "/ləˈkjuː.nɪ.zəm/",
@@ -314,8 +317,12 @@
    ],
    "record": [
     [
-     "Proposed",
+     "Coined",
      "17 October 2026"
+    ],
+    [
+     "Origin",
+     "Proposed by Claude, an AI model made by Anthropic, in conversation with Anders Powell, from a reading of the Mentifaber projects; adopted by Anders Powell."
     ],
     [
      "Field",
@@ -348,6 +355,10 @@
   [
    "2026-10-17",
    "Added tediversion."
+  ],
+  [
+   "2026-10-17",
+   "Added autozetesis, with scaffolded autozetesis as its secondary sense, and lacunism."
   ]
  ]
 }

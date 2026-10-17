@@ -305,7 +305,9 @@ def lexicon():
     ld = {"@context": "https://schema.org", "@type": "DefinedTermSet", "@id": base, "name": L["title"], "url": base,
           "creator": {"@type": "Person", "name": L["author"]}, "dateModified": L["revised"],
           "hasDefinedTerm": [{"@type": "DefinedTerm", "@id": base + "#" + t["id"], "name": t["word"], "termCode": t["id"], "url": base + "#" + t["id"],
-                              "description": plain(t["senses"][0]["text"]), "inDefinedTermSet": base} for t in terms]}
+                              "description": plain(t["senses"][0]["text"]), "inDefinedTermSet": base} for t in terms]
+          + [{"@type": "DefinedTerm", "@id": base + "#" + x["id"], "name": x["pos"], "termCode": x["id"], "url": base + "#" + x["id"], "description": plain(x["text"]),
+              "inDefinedTermSet": base, "subjectOf": base + "#" + t["id"]} for t in terms for x in t["senses"] if x.get("id")]}
     if L.get("doi"): ld["identifier"] = "https://doi.org/" + L["doi"]
     when = lambda d: datetime.date.fromisoformat(d).strftime("%-d %B %Y")
     def ety(t):
@@ -314,7 +316,7 @@ def lexicon():
         parts = '<span class="op">+</span>'.join(f'<span class="root"><i>{esc(p[0])}</i><small>{esc(p[1])} · {esc(p[2])}</small></span>' for p in e["parts"])
         return f'<div class="formula"><span class="lbl">Etymology</span><p class="roots">{parts}</p><small>{e.get("note", "")}</small></div>'
     def entry(n, t):
-        senses = "".join(f'<li><span class="pos">{esc(s["pos"])}{"<small>" + esc(s["kind"]) + "</small>" if s.get("kind") else ""}</span><p>{s["text"]}</p></li>' for s in t["senses"])
+        senses = "".join(f'<li{" id=" + chr(34) + s["id"] + chr(34) if s.get("id") else ""}><span class="pos">{esc(s["pos"])}{"<small>" + esc(s["kind"]) + "</small>" if s.get("kind") else ""}</span><p>{s["text"]}</p></li>' for s in t["senses"])
         ex = "".join(f'<blockquote class="ex">“{esc(x)}”</blockquote>' for x in t.get("examples", []))
         notes = ("<h4 class=\"lbl\">Usage notes</h4><ul class=\"notes\">" + "".join(f"<li>{x}</li>" for x in t["notes"]) + "</ul>") if t.get("notes") else ""
         rec = "".join(f"<dt>{esc(k)}</dt><dd>{v}</dd>" for k, v in t["record"])

@@ -44,7 +44,7 @@
  "cards": [
   {
    "n": "the bugs it learned from",
-   "html": "<p><b>Self-substitution:</b> the substitute finder could recommend the scanned product as its own alternative. <b>Truncated data:</b> a short ingredient list looks like a clean product, so incomplete entries ranked above complete ones. Both were the scorer treating absence as good news, the instinct the app exists to argue against.</p>"
+   "html": "<p><b>Self-substitution:</b> the substitute finder could recommend the scanned product as its own alternative. <b>Truncated data:</b> a short ingredient list looks like a clean product, so incomplete entries ranked above complete ones. Both were the scorer treating absence as good news, the instinct the app exists to argue against (<a href=\"lexicon.html#lacunism\">lacunism</a>).</p>"
   },
   {
    "n": "built on",
