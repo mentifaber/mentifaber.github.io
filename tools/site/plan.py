@@ -299,7 +299,7 @@ def lexicon():
     that originate here. Adding a word is adding an entry to the JSON and running the build."""
     import re
     L = json.load(open(os.path.join(os.path.dirname(__file__), "lexicon.json"), encoding="utf-8"))
-    terms = sorted(L["terms"], key=lambda t: t["word"].lower())
+    terms = sorted([t for t in L["terms"] if not t.get("draft")], key=lambda t: t["word"].lower())  # drafts stay off the page until they're adopted
     plain = lambda h: re.sub(r"<[^>]+>", "", h)
     base = "https://mentifaber.org/lexicon"
     ld = {"@context": "https://schema.org", "@type": "DefinedTermSet", "@id": base, "name": L["title"], "url": base,
