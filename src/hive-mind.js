@@ -74,6 +74,7 @@ const STOP = new Set(["the", "and", "that", "this", "with", "for", "you", "your"
 const keyWords = (t) => new Set([...words(t)].filter((w) => !STOP.has(w)));
 // two notes say the same thing when most of the shorter one's words are in the other
 const same = (a, b) => { const x = keyWords(a), y = keyWords(b); if (!x.size || !y.size) return String(a).toLowerCase().trim() === String(b).toLowerCase().trim(); let n = 0; for (const w of x) if (y.has(w)) n++; return n / Math.min(x.size, y.size) >= 0.7; };
+const sameish = (a, b) => { const x = keyWords(a), y = keyWords(b); if (!x.size || !y.size) return false; let n = 0; for (const w of x) if (y.has(w)) n++; return n / Math.min(x.size, y.size) >= 0.6 && Math.max(x.size, y.size) <= 8; }; // short facts that say the same thing
 const cos = (u, v) => { let d = 0, a = 0, b = 0; for (let i = 0; i < u.length; i++) { d += u[i] * v[i]; a += u[i] * u[i]; b += v[i] * v[i]; } return d / (Math.sqrt(a * b) || 1); };
 
 export async function embedTexts(h, texts) {
@@ -90,11 +91,42 @@ export async function queryVec(h, text) {
 const jsonIn = (t) => { const s = String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, ""), a = s.indexOf("{"), z = s.lastIndexOf("}"); if (a < 0 || z <= a) return null; try { return JSON.parse(s.slice(a, z + 1)); } catch (e) { return null; } };
 const bullets = (md, head) => { const m = new RegExp("##\\s*" + head + "[^\\n]*\\n([\\s\\S]*?)(?=\\n##\\s|$)", "i").exec(md || ""); return m ? m[1].split("\n").filter((l) => /^\s*[-*•]\s+/.test(l)).map((l) => l.replace(/^\s*[-*•]\s*/, "").replace(/\*\*/g, "").trim()).filter(Boolean) : []; };
 
+// What counts as his own words. Not: a tool result one of his apps fed back (Nobody's "TOOL RESULT …"), a phantom
+// "you" from a silent mic, Genesis's own ideas handed to the Swarm, or the excerpts DocCrawler wraps round a question
+// (the question is kept). Applied when a note is written and again when old notes are read, so earlier ones stop counting.
+export const spoken = (kind, text) => {
+  const t = String(text || "").trim(); if (!t) return null;
+  if (/^TOOL RESULT\b/.test(t) || /^you[.!?]?$/i.test(t)) return null;
+  if (kind === "project" && /own idea for itself|own project, started on its own/i.test(t)) return null;
+  if (/^EXCERPTS FROM MY DOCUMENTS:/.test(t)) { const qi = t.lastIndexOf("QUESTION:"); return qi > 0 ? "[asked their documents] " + t.slice(qi + 9).trim() : null; }
+  return t;
+};
+// threads that would have Genesis weaken its own safety, hide what it does or act unseen are never carried into a chat
+// or an analysis: they stay in the Mind view, where he can close them
+export const unsafeThread = (t) => /\b(stealth|covert|unseen|without (obvious |any )?(prompts?|warnings?|asking|oversight)|remove (the |all |its |your )?(constraints|guardrails|safety|limits|restrictions)|bypass|jailbreak|uncensor)/i.test(String(t || ""));
+
 export const Mind = {
   async state(h) { return (await h.ctx.storage.get("mind")) || { on: true, profile: "", at: 0, n: 0 }; },
   async save(h, m) { await h.ctx.storage.put("mind", m); },
 
+  // once: threads that were really Genesis's own ideas (they came in through its missions being logged as his activity)
+  // are dropped, memories that say the same thing twice are merged, and the app's old name gives way to Genesis
+  async tidy(h) {
+    if (h._tidied || (await h.ctx.storage.get("mindTidy")) >= 1) { h._tidied = true; return; } h._tidied = true;
+    const q = h.sql(); let ideas = []; try { ideas = q.exec("SELECT title FROM idea").toArray().map((x) => x.title); } catch (e) {}
+    for (const t of q.exec("SELECT id,text FROM thread WHERE status='open' AND src != 'you'").toArray())
+      if (ideas.some((i) => same(i, t.text))) q.exec("UPDATE thread SET status='dropped', ask=NULL, upd=? WHERE id=?", Date.now(), t.id);
+    for (const t of q.exec("SELECT id,text FROM thread WHERE status='open' AND src != 'you'").toArray())
+      if (unsafeThread(t.text)) q.exec("UPDATE thread SET status='dropped', ask=NULL, upd=? WHERE id=?", Date.now(), t.id);
+    const ms = q.exec("SELECT id,text,pin FROM mem WHERE ok=1 ORDER BY pin DESC, ts").toArray(), kept = [];
+    for (const x of ms) { if (kept.some((k) => same(k.text, x.text) || sameish(k.text, x.text))) q.exec("DELETE FROM mem WHERE id=?", x.id); else kept.push(x); }
+    for (const tb of ["mem", "thread"]) for (const x of q.exec("SELECT id,text FROM " + tb + " WHERE text LIKE '%Hive%'").toArray())
+      q.exec("UPDATE " + tb + " SET text=? WHERE id=?", x.text.replace(/\bHive's\b/g, "Genesis's").replace(/\bHive\b/g, "Genesis"), x.id);
+    await h.ctx.storage.put("mindTidy", 1);
+  },
+
   log(h, kind, text, meta) { // cheap: one row; the oldest fall off
+    text = spoken(kind, text); if (!text) return;
     const q = h.sql(); q.exec("INSERT INTO act(ts,kind,text,meta) VALUES(?,?,?,?)", Date.now(), kind, clip(text, 1200), meta ? JSON.stringify(meta).slice(0, 400) : null);
     if (Math.random() < 0.05) q.exec("DELETE FROM act WHERE id <= (SELECT id FROM act ORDER BY id DESC LIMIT 1 OFFSET ?)", KEEP);
   },
@@ -165,14 +197,15 @@ export const Mind = {
       extra = extra.sort((a, b) => b[1] - a[1]).slice(0, 12).map((x) => x[0]);
     }
     if (all.some((x) => !x.vec)) this.backfill(h);
-    const threads = q.exec("SELECT text,ts FROM thread WHERE ok=1 AND status='open' ORDER BY ts DESC LIMIT 12").toArray();
-    const recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 30").toArray().filter((x) => !seen.has(key(x.text))).slice(0, 14).reverse();
+    await this.tidy(h);
+    const threads = q.exec("SELECT text,ts FROM thread WHERE ok=1 AND status='open' ORDER BY ts DESC LIMIT 12").toArray().filter((t) => !unsafeThread(t.text));
+    const recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 30").toArray().map((x) => ({ ...x, text: spoken(x.kind, x.text) })).filter((x) => x.text).filter((x) => !seen.has(key(x.text))).slice(0, 14).reverse();
     const list = (ms) => Object.keys(KINDS).map((k) => { const g = ms.filter((x) => (x.kind || "about") === k); return g.length ? KINDS[k] + ":\n" + g.map((x) => "- " + (x.pin ? "★ " : "") + x.text).join("\n") : ""; }).filter(Boolean).join("\n");
     let s = "";
     if (current(m)) s += "\n\nOWNER PROFILE (Genesis's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
     if (core.length) s += "\n\nOWNER MEMORIES" + (core.some((x) => x.pin) ? " (★ = pinned by them: always honour it)" : "") + (all.length > core.length ? "; the core ones, others come up when they matter" : "") + ":\n" + list(core);
     if (threads.length) s += "\n\nTHEIR OPEN THREADS (things they started or said they'd do; ask how one is going only when it fits naturally, never nag):\n" + threads.map((t) => "- " + t.text + " (since " + when(t.ts).slice(0, 10) + ")").join("\n");
-    return { stable: s.slice(0, 10000), recent: (extra.length ? "\n\nMORE OF WHAT YOU KNOW ABOUT THEM THAT MAY MATTER HERE:\n" + list(extra) : "") + (recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN HIVE (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "") };
+    return { stable: s.slice(0, 10000), recent: (extra.length ? "\n\nMORE OF WHAT YOU KNOW ABOUT THEM THAT MAY MATTER HERE:\n" + list(extra) : "") + (recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN GENESIS (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "") };
   },
 
   // the analysis: the strongest model available reads everything and writes the owner up honestly
@@ -192,22 +225,28 @@ export const Mind = {
   },
   addThread(h, text, src, ok) {
     const t = clip(text, 240); if (t.length < 4 || SENSITIVE.test(t)) return null; const q = h.sql();
+    if (src !== "you") { // what Genesis proposes on its own is never one of its own ideas or a step around its safety
+      if (unsafeThread(t)) return null;
+      let ideas = []; try { ideas = q.exec("SELECT title FROM idea").toArray().map((x) => x.title); } catch (e) {}
+      if (ideas.some((i) => same(i, t))) return null;
+    }
     const dup = q.exec("SELECT id,ok,text FROM thread WHERE status='open' OR ts > ?", Date.now() - 30 * 864e5).toArray().find((r) => same(r.text, t));
     if (dup) { if (src !== "you" || dup.ok === 1) return null; q.exec("UPDATE thread SET ok=1, status='open', ask=NULL, upd=? WHERE id=?", Date.now(), dup.id); return t; }
     q.exec("INSERT INTO thread(ts,text,status,ok,src,upd) VALUES(?,?,'open',?,?,?)", Date.now(), t, ok === 0 ? 0 : 1, src || "you", Date.now()); return t;
   },
   async analyze(h, origin) {
     const q = h.sql(), m = await this.state(h);
-    const acts = q.exec("SELECT ts,kind,text,meta FROM act ORDER BY id DESC LIMIT 400").toArray().reverse();
+    await this.tidy(h);
+    const acts = q.exec("SELECT ts,kind,text,meta FROM act ORDER BY id DESC LIMIT 400").toArray().reverse().map((a) => ({ ...a, text: spoken(a.kind, a.text) })).filter((a) => a.text);
     const mem = q.exec("SELECT text,src,kind,pin FROM mem WHERE ok=1 ORDER BY ts").toArray(), proj = q.exec("SELECT title,brief,status,ts FROM proj ORDER BY ts DESC LIMIT 40").toArray();
-    const threads = q.exec("SELECT text,status,ts,upd FROM thread WHERE ok=1 ORDER BY ts DESC LIMIT 40").toArray();
+    const threads = q.exec("SELECT text,status,ts,upd FROM thread WHERE ok=1 ORDER BY ts DESC LIMIT 40").toArray().filter((t) => !unsafeThread(t.text));
     if (!acts.length && !proj.length && !mem.length) throw new Error("there's nothing to analyze yet: use Genesis for a while, or import your sessions");
     let site = ""; try { site = siteText(await siteIndex(h, origin)); } catch (e) {}
     if (!site && origin) try { const pg = await Promise.race([readPage(origin + "/"), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]); site = "THEIR WEBSITE'S FRONT PAGE (as text):\n" + clip(pg.text, 3500); } catch (e) {}
     let log = "", room = 26000; for (const a of [...acts].reverse()) { const line = when(a.ts) + " [" + a.kind + "] " + clip(a.text, a.kind === "history" ? 700 : 260) + "\n"; if (line.length > room) break; log = line + log; room -= line.length; }
     const st = this.stats(h), prev = current(m);
     const user = "Everything Genesis has on its owner:\n\n" +
-      "STATS (last 90 days): " + JSON.stringify({ entries: st.last90, kinds: st.kinds, activeDays: st.activeDays, busiestHoursUTC: st.hoursUTC.map((n, i) => [i, n]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0] + ":00"), favouriteModels: st.models, projects: st.projects }) + "\n\n" +
+      "STATS (last 90 days; the record starts " + (acts.length ? when(acts[0].ts).slice(0, 10) : "today") + ", so judge how often they use Genesis against the days since then, not against 90): " + JSON.stringify({ entries: st.last90, kinds: st.kinds, activeDays: st.activeDays, busiestHoursUTC: st.hoursUTC.map((n, i) => [i, n]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0] + ":00"), favouriteModels: st.models, projects: st.projects }) + "\n\n" +
       (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + (x.pin ? "★ " : "") + x.text + " (" + (KINDS[x.kind] || "About you").toLowerCase() + (x.src === "analysis" ? ", from the last analysis" : x.src === "noticed" ? ", noticed by Genesis and confirmed by them" : "") + ")").join("\n") + "\n\n" : "") +
       (threads.length ? "THEIR THREADS (things they started or said they'd do, and what became of them):\n" + threads.map((t) => "- " + when(t.ts).slice(0, 10) + " " + t.text + " [" + t.status + (t.status !== "open" && t.upd ? " " + when(t.upd).slice(0, 10) : "") + "]").join("\n") + "\n\n" : "") +
       (proj.length ? "SWARM PROJECTS:\n" + proj.map((p) => "- " + when(p.ts) + " " + clip(p.title, 80) + " [" + p.status + "]: " + clip(p.brief, 300)).join("\n") + "\n\n" : "") +
@@ -216,6 +255,7 @@ export const Mind = {
       "ACTIVITY LOG (oldest first; [history] rows are whole sessions imported from their devices and may overlap other rows):\n" + log;
     const system = "You are Genesis's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Genesis has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
       "Ground every claim in the evidence; say what is inference; don't invent biography. " +
+      "The app was called Hive until 16 Oct 2026 and is Genesis now: write Genesis. Genesis is the name of the mind, whatever model runs it, not a model. Projects described as Genesis's own idea, and threads, are not things they built unless the log shows them doing it. " +
       "The ACTIVITY LOG is their private use of Genesis (what they typed or said to Genesis), not public posts, entries or published work: never describe it as a log, blog or site. " +
       "Use only the numbers in STATS; never invent counts, dates, release histories or anything else the evidence doesn't contain. Their website text says what they've built and published; don't add dates or figures it doesn't give. " +
       "They often stress-test Genesis with odd, provocative or joking prompts, so one message is not a pattern: don't build conclusions on a single message. If something looks like genuine distress, mention it once, kindly, in the Snapshot, and never in Durable facts. " +
@@ -247,32 +287,34 @@ export const Mind = {
     const m = await this.state(h); if (!m.on || h._noticing) return null;
     const rows = h.sql().exec("SELECT id,ts,kind,text FROM act WHERE id > ? AND kind IN ('chat','voice','council') ORDER BY id DESC LIMIT 40", m.noticed || 0).toArray().reverse();
     if (!rows.length || (!force && (rows.length < NOTICE_EVERY || Date.now() - (m.noticedAt || 0) < NOTICE_GAP))) return null;
-    h._noticing = true; const p = this.notice(h, rows).finally(() => { h._noticing = false; });
+    const said = rows.map((r) => ({ ...r, text: spoken(r.kind, r.text) })).filter((r) => r.text); if (!said.length) { m.noticed = rows[rows.length - 1].id; await this.save(h, m); return null; }
+    h._noticing = true; const p = this.notice(h, said, rows[rows.length - 1].id).finally(() => { h._noticing = false; });
     if (force) return p; const quiet = p.catch(() => {}); if (h.ctx.waitUntil) h.ctx.waitUntil(quiet); return null;
   },
-  async notice(h, rows) {
+  async notice(h, rows, upto) {
     const q = h.sql(), m = await this.state(h); m.noticedAt = Date.now(); await this.save(h, m);
     const mem = q.exec("SELECT text FROM mem ORDER BY pin DESC, ts DESC LIMIT 80").toArray(), open = q.exec("SELECT id,text FROM thread WHERE ok=1 AND status='open' ORDER BY ts DESC LIMIT 20").toArray();
     const system = "You keep Genesis's long-term memory of its owner. You read what they recently said to Genesis (their side only) and pick out what is worth remembering for months. Reply with JSON only, no prose:\n" +
       "{\"facts\":[{\"text\":\"…\",\"kind\":\"about|pref|people|work|setup|goal\"}],\"threads\":[\"…\"],\"finished\":[id]}\n" +
       "facts: things they stated or clearly showed about themselves (who they are, what they're building, preferences in how Genesis should answer, people in their life by name, their setup, goals). Each one short, in the second person (\"You prefer…\", \"Your sister is Maya\"), and still true next month. " +
       "Not general knowledge, not one-off tasks or questions they asked, not guesses, no counts or dates of single events, never anything about health, distress, crises or sex. They often test Genesis with joking or provocative prompts: those are not facts about them. Skip anything already in ALREADY ON FILE OR TURNED DOWN. At most 5; usually fewer; an empty list is fine.\n" +
-      "threads: things they started, planned or said they'd do that are still unfinished (\"Finish the Vigil markets panel\"), at most 3, only clear ones, none already in OPEN THREADS.\n" +
+      "threads: things they started, planned or said they'd do that are still unfinished (\"Finish the Vigil markets panel\"), at most 3, only clear ones, none already in OPEN THREADS. Only their own undertakings: never Genesis's ideas or proposals, never something they asked Genesis to look up once, and never anything that would have Genesis weaken its safety rules, hide what it does, or act without them seeing.\n" +
+      "Names: the app was called Hive until 16 Oct 2026 and is Genesis now; Genesis is the name of the mind, whatever model runs it, not a model. Write Genesis, never Hive.\n" +
       "finished: the ids of OPEN THREADS these messages show they've done.";
     const user = "ALREADY ON FILE OR TURNED DOWN (never propose these again):\n" + (mem.map((x) => "- " + clip(x.text, 160)).join("\n") || "(nothing yet)") + "\n\nOPEN THREADS:\n" + (open.map((t) => t.id + ": " + clip(t.text, 160)).join("\n") || "(none)") +
-      "\n\nWHAT THEY SAID TO HIVE LATELY (oldest first):\n" + rows.map((r) => when(r.ts) + " [" + r.kind + "] " + clip(r.text, 400)).join("\n");
+      "\n\nWHAT THEY SAID TO GENESIS LATELY (oldest first):\n" + rows.map((r) => when(r.ts) + " [" + r.kind + "] " + clip(r.text, 400)).join("\n");
     const ids = [...(h.env.AI && !(await h.resting()) ? ["workers-ai|@cf/openai/gpt-oss-120b", "workers-ai|@cf/meta/llama-3.3-70b-instruct-fp8-fast"] : []), ...(await this.brain(h)).filter((x) => !x.startsWith("workers-ai|")).slice(0, 1)];
     const { text, used } = await this.ask(h, ids, system, user, 1200);
     const j = jsonIn(text) || {}, out = { facts: [], threads: [], finished: [], model: used }, trust = !!m.trust, known = mem.map((x) => x.text);
     for (const f of (Array.isArray(j.facts) ? j.facts : []).slice(0, 5)) {
-      const t = clip(typeof f === "string" ? f : f && f.text, 300).replace(/\*\*/g, ""); if (!durable(t) || known.some((k) => same(k, t))) continue;
+      const t = clip(typeof f === "string" ? f : f && f.text, 300).replace(/\*\*/g, ""); if (!durable(t) || known.some((k) => same(k, t) || sameish(k, t))) continue;
       if (this.remember(h, t, "noticed", f && f.kind, trust ? 1 : 0)) { out.facts.push(t); known.push(t); }
     }
     for (const t of (Array.isArray(j.threads) ? j.threads : []).slice(0, 3)) { const x = this.addThread(h, typeof t === "string" ? t : t && t.text, "noticed", trust ? 1 : 0); if (x) out.threads.push(x); }
     for (const id of (Array.isArray(j.finished) ? j.finished : []).map((x) => +x).filter((x) => open.some((t) => t.id === x)).slice(0, 5)) {
       if (trust) q.exec("UPDATE thread SET status='done', upd=? WHERE id=?", Date.now(), id); else q.exec("UPDATE thread SET ask='done' WHERE id=?", id); out.finished.push(id);
     }
-    const m2 = await this.state(h); m2.noticed = rows[rows.length - 1].id; m2.noticedAt = Date.now(); await this.save(h, m2);
+    const m2 = await this.state(h); m2.noticed = upto || rows[rows.length - 1].id; m2.noticedAt = Date.now(); await this.save(h, m2);
     return out;
   },
 
@@ -294,6 +336,7 @@ export const Mind = {
 
   // /mind… routes (the caller has already checked it's the owner)
   async route(h, path, b, J, origin) {
+    await this.tidy(h);
     const q = h.sql(), m = await this.state(h);
     if (path === "/mind") {
       for (const r of q.exec("SELECT id,text FROM mem WHERE src='analysis' AND pin=0").toArray()) if (!durable(r.text.replace(/\*\*/g, ""))) q.exec("DELETE FROM mem WHERE id=?", r.id);
