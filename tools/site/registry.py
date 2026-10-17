@@ -14,6 +14,7 @@ GLYPH.update({  # glyphs for apps that never had one
   "pilotfish": '<path d="M3 12c3.2-4.4 9-5.6 13.4-2.4L21 6.5v11l-4.6-3.1C12 17.6 6.2 16.4 3 12z"/><circle cx="7.6" cy="11.4" r="1" fill="currentColor"/>',
   "thoughtform": '<circle cx="12" cy="12" r="8.5"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
   "angels": '<circle cx="12" cy="12" r="2.6"/><path d="M12 9.4V4M9.6 12C6 10 3.6 7 3 4c3.8.4 6.6 2.4 8 5M14.4 12c3.6-2 6-5 6.6-8-3.8.4-6.6 2.4-8 5"/><path d="M8.5 17.5c1.2 1.8 5.8 1.8 7 0"/>',
+  "lexicon": '<path d="M4 4.5h6.2c1 0 1.8.8 1.8 1.8V20c0-.9-.7-1.6-1.6-1.6H4z"/><path d="M20 4.5h-6.2c-1 0-1.8.8-1.8 1.8V20c0-.9.7-1.6 1.6-1.6H20z"/><path d="M6.5 8.5h3M6.5 11.5h3M14.5 8.5h3"/>',
   "mentifaber": '<path d="M12 2.6l8.1 4.7v9.4L12 21.4l-8.1-4.7V7.3z"/><path d="M8 15.5V9l4 4 4-4v6.5"/>',
 })
 
@@ -21,7 +22,7 @@ def _hues():
     s = open(os.path.join(ROOT, "assets/mf.js"), encoding="utf-8").read()
     d = json.loads(re.search(r"const MF_SYS = (\{.*?\});", s, re.S).group(1))
     return {k: v[1] for k, v in d.items()}
-HUE = _hues(); HUE.update({"hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "orbit": 205, "mentifaber": 34})
+HUE = _hues(); HUE.update({"hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34})
 
 CATS = [  # display order on the home page
   ("signals", "Signals & Comms", "Messengers, radios and things that talk without the usual pipes."),

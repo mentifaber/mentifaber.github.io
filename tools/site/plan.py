@@ -127,7 +127,7 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="lexicon.html">The lexicon</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
@@ -291,3 +291,80 @@ def notfound():
   <div class="acts" style="margin-top:22px"><a class="key pri big" href="./">Back to the workshop</a><button class="key big" data-find>Find a bench</button></div>"""
     shuffle = '<script>(function(){var u=document.getElementById("lost"),l=[].slice.call(u.children);l.sort(function(){return Math.random()-.5});u.innerHTML="";l.slice(0,6).forEach(function(x){u.appendChild(x)})})()</script>'
     return plain("404.html", "Not on the plan · Mentifaber", "This page isn't on the workshop's plan.", "404 · not on the plan", body, shuffle, base='<base href="/">')
+
+
+def lexicon():
+    """The lexicon: every term coined in this work, defined, dated and sourced (tools/site/lexicon.json). Each term has its
+    own anchor (lexicon#verel), and the page carries schema.org DefinedTermSet data so search engines read them as terms
+    that originate here. Adding a word is adding an entry to the JSON and running the build."""
+    import re
+    L = json.load(open(os.path.join(os.path.dirname(__file__), "lexicon.json"), encoding="utf-8"))
+    terms = sorted(L["terms"], key=lambda t: t["word"].lower())
+    plain = lambda h: re.sub(r"<[^>]+>", "", h)
+    base = "https://mentifaber.org/lexicon"
+    ld = {"@context": "https://schema.org", "@type": "DefinedTermSet", "@id": base, "name": L["title"], "url": base,
+          "creator": {"@type": "Person", "name": L["author"]}, "dateModified": L["revised"],
+          "hasDefinedTerm": [{"@type": "DefinedTerm", "@id": base + "#" + t["id"], "name": t["word"], "termCode": t["id"], "url": base + "#" + t["id"],
+                              "description": plain(t["senses"][0]["text"]), "inDefinedTermSet": base} for t in terms]}
+    if L.get("doi"): ld["identifier"] = "https://doi.org/" + L["doi"]
+    when = lambda d: datetime.date.fromisoformat(d).strftime("%-d %B %Y")
+    def ety(t):
+        e = t["ety"]
+        if e.get("coined"): return f'<div class="formula"><span class="lbl">Etymology</span><p class="roots">A coinage, with no source roots.</p><small>{e["note"]}</small></div>'
+        parts = '<span class="op">+</span>'.join(f'<span class="root"><i>{esc(p[0])}</i><small>{esc(p[1])} · {esc(p[2])}</small></span>' for p in e["parts"])
+        return f'<div class="formula"><span class="lbl">Etymology</span><p class="roots">{parts}</p><small>{e.get("note", "")}</small></div>'
+    def entry(n, t):
+        senses = "".join(f'<li><span class="pos">{esc(s["pos"])}{"<small>" + esc(s["kind"]) + "</small>" if s.get("kind") else ""}</span><p>{s["text"]}</p></li>' for s in t["senses"])
+        ex = "".join(f'<blockquote class="ex">“{esc(x)}”</blockquote>' for x in t.get("examples", []))
+        notes = ("<h4 class=\"lbl\">Usage notes</h4><ul class=\"notes\">" + "".join(f"<li>{x}</li>" for x in t["notes"]) + "</ul>") if t.get("notes") else ""
+        rec = "".join(f"<dt>{esc(k)}</dt><dd>{v}</dd>" for k, v in t["record"])
+        see = " · ".join(f'<a href="{esc(h)}">{esc(k)}</a>' for k, h in t.get("see", []))
+        cite = f'{L["author"].split()[-1]}, {L["author"].split()[0][0]}. ({L["revised"][:4]}). {t["word"]}. In {L["title"]}. {base}#{t["id"]}'
+        return f"""<article class="lx-entry" id="{t["id"]}" data-q="{esc((t["word"] + " " + " ".join(plain(s["text"]) + " " + s["pos"] for s in t["senses"]) + " " + plain(t["ety"].get("note", "")) + " " + " ".join(" ".join(x) for x in t["ety"].get("parts", []))).lower())}">
+      <header><span class="pno">L·{n:02d}</span><h2 class="headword"><a href="#{t["id"]}">{esc(t["word"])}</a></h2>
+        <p class="say"><span class="ipa">{esc(t["ipa"])}</span><span class="resp">{esc(t["say"])}</span></p></header>
+      {ety(t)}
+      <ol class="senses">{senses}</ol>
+      {ex}{notes}
+      <dl class="rec">{rec}{f"<dt>See also</dt><dd>{see}</dd>" if see else ""}</dl>
+      <div class="acts"><button class="key" data-cite="{esc(cite)}">Copy citation</button><button class="key" data-link="{base}#{t["id"]}">Copy link</button></div>
+    </article>"""
+    idx = "".join(f'<li><a href="#{t["id"]}"><b>{esc(t["word"])}</b><small>{esc(t["senses"][0]["pos"])} · {esc(plain(t["senses"][0]["text"]))}</small></a></li>' for t in terms)
+    att = L.get("attestations") or []
+    att_html = ("<table class=\"specs att\"><tr><th>Date</th><th>Term</th><th>Who</th><th>Where</th><th>Quote</th></tr>" + "".join(
+        f'<tr><td>{esc(a["date"])}</td><td><a href="#{esc(a["term"])}">{esc(a["term"])}</a></td><td>{esc(a["author"])}</td><td><a href="{esc(a["url"])}">{esc(a["where"])}</a></td><td>“{esc(a["quote"])}”</td></tr>' for a in att) + "</table>"
+        if att else '<p class="prose">None logged yet. When someone other than the coiner uses one of these words in durable, published work (a paper, a book, an article, an archived post), it is recorded here with the date and the quote. If you have used one, write to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>')
+    revs = "".join(f"<li><b>{when(d)}</b> {t}</li>" for d, t in L.get("revisions", []))
+    cite_all = f'{L["author"].split()[-1]}, {L["author"].split()[0][0]}. ({L["revised"][:4]}). <em>{esc(L["title"])}</em>. <code>{base}</code>' + (f' · <a href="https://doi.org/{esc(L["doi"])}">doi.org/{esc(L["doi"])}</a>' if L.get("doi") else "")
+    body = f"""<main class="lex">
+  <aside class="lex-side"><div class="stick">
+    <span class="pno">Lexicon · {len(terms)} term{"s" if len(terms) != 1 else ""}</span>
+    <h1>The <span class="gold-text">Lexicon</span></h1>
+    <p class="tagline">{L["intro"]}</p>
+    <label class="lex-q"><span class="lbl">Find a word</span><input type="search" placeholder="a word, or what it means" aria-label="Find a word"></label>
+    <ol class="lex-idx">{idx}</ol>
+    <p class="lbl lex-rev">Last revised {when(L["revised"])}</p>
+  </div></aside>
+  <section class="lex-body" aria-label="Entries">
+    {"".join(entry(n + 1, t) for n, t in enumerate(terms))}
+    <p class="prose lex-none" hidden>No word matches that.</p>
+    <section class="sec"><h2><i>A</i>Seen elsewhere</h2><div>{att_html}</div></section>
+    <section class="sec"><h2><i>B</i>Revisions</h2><div><ul class="revs">{revs}</ul></div></section>
+    <section class="sec"><h2><i>C</i>To cite</h2><div><p class="prose">{cite_all}</p><p class="prose fine">Each entry has its own address (<code>/lexicon#verel</code>) and its own citation above. The roots of a compound are documented in the usual dictionaries; what this page fixes is the compound, its meaning and its date.</p></div></section>
+  </section>
+</main>"""
+    title = "Lexicon · " + ", ".join(t["word"] for t in terms) + " · Mentifaber"
+    page_ = f"""{head(title, "Canonical definitions, etymology and coinage record for the terms coined in the Mentifaber practice: " + ", ".join(t["word"] for t in terms) + ".", og="https://mentifaber.org/assets/brand/og.jpg")}
+<body class="wk lex-page">
+{titleblock('<nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="#" aria-current="page">Lexicon</a></nav>', 0, "—", "")}
+{body}
+<div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
+<script type="application/json" id="wk-index">{index_json()}</script>
+<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False, indent=1)}</script>
+<script src="assets/ui/plan.js?v={ver("assets/ui/plan.js")}" defer></script>
+</body>
+</html>
+"""
+    page_ = page_.replace("<head>", '<head>\n<link rel="canonical" href="' + base + '">', 1)
+    open(os.path.join(ROOT, "lexicon.html"), "w", encoding="utf-8").write(page_)
+    return "lexicon.html"
