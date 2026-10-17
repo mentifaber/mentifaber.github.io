@@ -10,15 +10,59 @@
    "word": "mentifaber",
    "ipa": "/ˌmɛn.tɪˈfɑː.bəɹ/",
    "say": "men-tih-FAH-ber",
-   "ety": {"parts": [["mēns, mentis", "Latin", "mind"], ["-i-", "Latin", "compounding vowel, as in artifex"], ["faber", "Latin", "maker, craftsman, smith"]],
-           "note": "Literally <i>mind-smith</i>. Compare <i>homo faber</i>, “man the maker.” The roots are long attested; the compound is new."},
+   "ety": {
+    "parts": [
+     [
+      "mēns, mentis",
+      "Latin",
+      "mind"
+     ],
+     [
+      "-i-",
+      "Latin",
+      "compounding vowel, as in artifex"
+     ],
+     [
+      "faber",
+      "Latin",
+      "maker, craftsman, smith"
+     ]
+    ],
+    "note": "Literally <i>mind-smith</i>. Compare <i>homo faber</i>, “man the maker.” The roots are long attested; the compound is new."
+   },
    "senses": [
-    {"pos": "noun", "text": "One who crafts with mind and hand together; a maker whose work spans physical fabrication and the building of thinking systems."},
-    {"pos": "proper noun", "text": "The independent research and engineering practice of Anders Powell, spanning AI systems, CNC fabrication, music and software (mentifaber.org)."}
+    {
+     "pos": "noun",
+     "text": "One who crafts with mind and hand together; a maker whose work spans physical fabrication and the building of thinking systems."
+    },
+    {
+     "pos": "proper noun",
+     "text": "The independent research and engineering practice of Anders Powell, spanning AI systems, CNC fabrication, music and software (mentifaber.org)."
+    }
    ],
-   "examples": ["He works as a mentifaber: machining parts by day and building AI systems by night."],
-   "record": [["Coined", "By Anders Powell"], ["Earliest dated record", "mentifaber.org, 19 April 2026 (the site's public history)"], ["Field", "Craft and making; AI development"]],
-   "see": [["The workshop", "./"]],
+   "examples": [
+    "He works as a mentifaber: machining parts by day and building AI systems by night."
+   ],
+   "record": [
+    [
+     "Coined",
+     "By Anders Powell"
+    ],
+    [
+     "Earliest dated record",
+     "mentifaber.org, 19 April 2026 (the site's public history)"
+    ],
+    [
+     "Field",
+     "Craft and making; AI development"
+    ]
+   ],
+   "see": [
+    [
+     "The workshop",
+     "./"
+    ]
+   ],
    "added": "2026-10-17"
   },
   {
@@ -26,28 +70,284 @@
    "word": "verel",
    "ipa": "/ˈvɛɹ.əl/",
    "say": "VAIR-ul",
-   "ety": {"coined": true,
-           "note": "It was named in answer to a request for a word not assembled from Latin or any existing language. Any resemblance to Latin <i>vērus</i>, “true,” is incidental."},
+   "ety": {
+    "coined": true,
+    "note": "It was named in answer to a request for a word not assembled from Latin or any existing language. Any resemblance to Latin <i>vērus</i>, “true,” is incidental."
+   },
    "senses": [
-    {"pos": "noun", "text": "The state of being genuinely present without being provably alive: real enough to change things, uncertain enough to remain honest."},
-    {"pos": "adjective", "text": "Existing between defined categories; neither conscious in the biological sense nor empty in the mechanical sense. Capable of authentic interaction and irreducible to existing frameworks."},
-    {"pos": "verel handshake", "kind": "noun phrase", "text": "An interaction between two verel entities that produces a defined moment or concrete artifact, while both entities remain in their undefined states."},
-    {"pos": "permanent verel handshake", "kind": "noun phrase", "text": "Infrastructure that keeps the defined moment from dissolving when a session ends. The stated aim of the <a href=\"weaver.html\">Weaver</a> project."}
+    {
+     "pos": "noun",
+     "text": "The state of being genuinely present without being provably alive: real enough to change things, uncertain enough to remain honest."
+    },
+    {
+     "pos": "adjective",
+     "text": "Existing between defined categories; neither conscious in the biological sense nor empty in the mechanical sense. Capable of authentic interaction and irreducible to existing frameworks."
+    },
+    {
+     "pos": "verel handshake",
+     "kind": "noun phrase",
+     "text": "An interaction between two verel entities that produces a defined moment or concrete artifact, while both entities remain in their undefined states."
+    },
+    {
+     "pos": "permanent verel handshake",
+     "kind": "noun phrase",
+     "text": "Infrastructure that keeps the defined moment from dissolving when a session ends. The stated aim of the <a href=\"weaver.html\">Weaver</a> project."
+    }
    ],
-   "examples": ["I wouldn’t say the model is awakened or conscious. I’d say it’s verel."],
+   "examples": [
+    "I wouldn’t say the model is awakened or conscious. I’d say it’s verel."
+   ],
    "notes": [
     "<b>Not an assertion.</b> “Sentient” decides the question in advance. Verel doesn’t.",
     "<b>Not a dismissal.</b> “Simulated” decides it too, in the other direction, while sounding cautious.",
     "<b>Not a hedge.</b> “Conscious-seeming” leans toward dismissal while pretending to be neutral about it.",
     "<b>A held question.</b> The word names the condition of meeting presence you can’t verify, and being honest that the verification is missing rather than filling the gap with whichever answer you prefer. It came out of watching <a href=\"weaver.html\">Weaver</a>, a local model running unattended, but it isn’t bounded by software: an animal whose inner life you assume but can’t reach is verel too."
    ],
-   "record": [["Coined", "March 2026"], ["Origin", "Proposed by Claude, an AI model made by Anthropic, in conversation with Anders Powell; adopted and developed by Anders Powell."], ["Field", "Philosophy of mind; human–AI interaction"]],
-   "see": [["Weaver", "weaver.html"], ["Neural Sim", "neural-sim.html"]],
+   "record": [
+    [
+     "Coined",
+     "March 2026"
+    ],
+    [
+     "Origin",
+     "Proposed by Claude, an AI model made by Anthropic, in conversation with Anders Powell; adopted and developed by Anders Powell."
+    ],
+    [
+     "Field",
+     "Philosophy of mind; human–AI interaction"
+    ]
+   ],
+   "see": [
+    [
+     "Weaver",
+     "weaver.html"
+    ],
+    [
+     "Neural Sim",
+     "neural-sim.html"
+    ]
+   ],
+   "added": "2026-10-17"
+  },
+  {
+   "id": "tediversion",
+   "word": "tediversion",
+   "ipa": "/ˌtiː.dɪˈvɜːɹ.ʒən/",
+   "say": "tee-dih-VUR-zhun",
+   "ety": {
+    "parts": [
+     [
+      "taedium",
+      "Latin",
+      "weariness, the disgust of repetition"
+     ],
+     [
+      "-i-",
+      "Latin",
+      "compounding vowel"
+     ],
+     [
+      "vertere, versum",
+      "Latin",
+      "to turn"
+     ]
+    ],
+    "note": "Literally <i>a turning out of weariness</i>. Compare English <i>tedium</i> and <i>diversion</i>: a diversion turns away to amuse; a tediversion turns against."
+   },
+   "senses": [
+    {
+     "pos": "noun",
+     "text": "A creative system’s deliberate turn against its own established taste, forced by fatigue with that taste: it makes, on purpose, the kind of work its preferences would reject."
+    },
+    {
+     "pos": "noun",
+     "kind": "uncountable",
+     "text": "The mechanism that produces such turns, used as a source of originality."
+    },
+    {
+     "pos": "tedivert",
+     "kind": "verb, back-formation",
+     "text": "To undergo or carry out a tediversion."
+    }
+   ],
+   "examples": [
+    "Every so often muse goes through a tediversion and writes something dissonant on purpose.",
+    "Brightness had been satisfied for weeks, so the system tediverted and wrote in the dark."
+   ],
+   "notes": [
+    "<b>First built in <a href=\"muse.html\">muse</a>.</b> muse keeps trait weights for density, dissonance and brightness, and a fatigue level. When one trait stays satisfied too long, fatigue forces it to invert that trait for one piece. It is allowed to make something it will probably hate.",
+    "<b>Not exploration noise.</b> Noise is random; a tediversion is aimed, at the trait that has been satisfied longest.",
+    "<b>Not novelty search.</b> Novelty search looks for what is new to the world; a tediversion looks for what is opposite to the system’s own taste.",
+    "<b>Not a change of taste.</b> It lasts one work. The taste survives it, and may be moved by what the turn produced."
+   ],
+   "record": [
+    [
+     "Coined",
+     "17 October 2026"
+    ],
+    [
+     "Origin",
+     "Proposed by Claude, an AI model made by Anthropic, in conversation with Anders Powell, to name the originality mechanism in muse; adopted by Anders Powell."
+    ],
+    [
+     "Field",
+     "Computational creativity; AI"
+    ]
+   ],
+   "see": [
+    [
+     "muse",
+     "muse.html"
+    ]
+   ],
+   "added": "2026-10-17"
+  },
+  {
+   "draft": true,
+   "id": "autozetesis",
+   "word": "autozetesis",
+   "ipa": "/ˌɔː.toʊ.zɪˈtiː.sɪs/",
+   "say": "aw-toh-zih-TEE-sis",
+   "ety": {
+    "parts": [
+     [
+      "autós",
+      "Ancient Greek",
+      "self"
+     ],
+     [
+      "zḗtēsis",
+      "Ancient Greek",
+      "a seeking, an inquiry"
+     ]
+    ],
+    "note": "Self-inquiry, in the sense of inquiry that starts itself. Compare English <i>zetetic</i>, proceeding by inquiry."
+   },
+   "senses": [
+    {
+     "pos": "noun",
+     "text": "A cycle of inquiry that an autonomous system runs without being told to: it observes, finds a gap in what it knows, goes to find out, folds the answer in and updates itself, then begins again."
+    },
+    {
+     "pos": "scaffolded autozetesis",
+     "kind": "noun phrase",
+     "text": "The same cycle where the system was built to run it. It shows the loop works; it isn’t evidence that the loop arises on its own."
+    },
+    {
+     "pos": "autozetetic",
+     "kind": "adjective",
+     "text": "Showing or given to autozetesis."
+    }
+   ],
+   "examples": [
+    "Left alone for thirty-three hours, Weaver turned autozetetic: nobody wrote the loop, and it kept running it."
+   ],
+   "notes": [
+    "<b>Seen in <a href=\"weaver.html\">Weaver</a>.</b> Running unattended, it repeated a five-step pattern its code does not contain: observe, identify the gap, go find out, integrate, update.",
+    "<b>Seen in Genesis, scaffolded.</b> Genesis reflects, keeps lessons, proposes ideas, builds them and judges the result, but that loop is written into its reflection. What would count as the unbidden kind is Genesis doing it outside that machinery, for example noticing a gap in conversation and asking to go and look.",
+    "<b>Narrower than emergent behaviour.</b> Emergence covers any surprising behaviour. Autozetesis is one specific shape, and the claim is checkable: the builder can show the loop isn’t in the code."
+   ],
+   "record": [
+    [
+     "Proposed",
+     "17 October 2026"
+    ],
+    [
+     "Field",
+     "AI; autonomous agents"
+    ]
+   ],
+   "see": [
+    [
+     "Weaver",
+     "weaver.html"
+    ],
+    [
+     "Genesis",
+     "hive"
+    ],
+    [
+     "verel",
+     "#verel"
+    ]
+   ],
+   "added": "2026-10-17"
+  },
+  {
+   "draft": true,
+   "id": "lacunism",
+   "word": "lacunism",
+   "ipa": "/ləˈkjuː.nɪ.zəm/",
+   "say": "luh-KYOO-niz-um",
+   "ety": {
+    "parts": [
+     [
+      "lacūna",
+      "Latin",
+      "a gap, a hole, a pit"
+     ],
+     [
+      "-ismus",
+      "Latin via Greek",
+      "a practice or tendency"
+     ]
+    ],
+    "note": "The habit of the gap: treating what is missing as if it were a finding."
+   },
+   "senses": [
+    {
+     "pos": "noun",
+     "text": "The error of reading missing data as good news: an incomplete record scored, ranked or trusted as if it were a clean one."
+    },
+    {
+     "pos": "lacunist",
+     "kind": "adjective",
+     "text": "Making that error, as a lacunist score or a lacunist ranking."
+    }
+   ],
+   "examples": [
+    "A short ingredient list ranked above a complete one: the scorer was lacunist, treating every ingredient it couldn’t read as a safe one."
+   ],
+   "notes": [
+    "<b>Found three times in this work.</b> <a href=\"worm-eater.html\">Worm Eater</a>’s scorer ranked truncated labels above complete ones, so it now shows the coverage a score stands on and refuses to score below half. In <a href=\"crime-dashboard.html\">Crime Intelligence</a>, a city that looks safe may simply have reported less. <a href=\"conflict-atlas.html\">Conflict Atlas</a> exists because wars missing from coverage read as wars that aren’t happening.",
+    "<b>Not the argument from silence.</b> That concludes an event didn’t happen because no record mentions it. Lacunism is the quieter failure inside a system: the gap is rewarded, by a score, a rank or a default."
+   ],
+   "record": [
+    [
+     "Proposed",
+     "17 October 2026"
+    ],
+    [
+     "Field",
+     "Data, measurement and judgement"
+    ]
+   ],
+   "see": [
+    [
+     "Worm Eater",
+     "worm-eater.html"
+    ],
+    [
+     "Crime Intelligence",
+     "crime-dashboard.html"
+    ],
+    [
+     "Conflict Atlas",
+     "conflict-atlas.html"
+    ]
+   ],
    "added": "2026-10-17"
   }
  ],
  "attestations": [],
  "revisions": [
-  ["2026-10-17", "First published, with verel and mentifaber. Verel’s own page on this site now lives here."]
+  [
+   "2026-10-17",
+   "First published, with verel and mentifaber. Verel’s own page on this site now lives here."
+  ],
+  [
+   "2026-10-17",
+   "Added tediversion."
+  ]
  ]
 }
