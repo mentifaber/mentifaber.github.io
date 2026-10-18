@@ -1,0 +1,30 @@
+name: Tests
+
+# Genesis's server tests (its Durable Object under Node) and browser tests (the app in Chromium), on every push and PR.
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright and Chromium
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.56.1 >/dev/null
+          npx playwright install --with-deps chromium
+      - name: Run the tests
+        env:
+          PLAYWRIGHT: /tmp/pw/node_modules/playwright
+        run: tests/run.sh

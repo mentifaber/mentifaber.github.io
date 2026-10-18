@@ -1,0 +1,24 @@
+// A finished result's page is checked on the server before he opens it, and fixed once if it would break at load.
+import assert from "node:assert/strict";
+globalThis.fetch = async () => { throw new Error("offline in this test"); };
+const H = await import("./harness.mjs"); const { db, setResponder, calls } = H; H.hive.sql();
+const { pageProblem } = await import("./src/hive.js");
+let n = 0; const ok = (m) => console.log("  ✓ " + (++n) + " " + m);
+assert.equal(pageProblem("<!doctype html><html><body><div><p>hi</p></div><script>let a = '<div>'; if (a) { go({ x: [1, 2] }) } // }\n/* ) */ const t = `${a}}`;</script></body></html>"), null);
+assert.equal(pageProblem("<div class=a><section>x</section>"), null); assert.equal(pageProblem("<p>x</p><script>go()"), "a <script> is never closed");
+assert.equal(pageProblem("<script>function tick() { draw(); if (x) { y(</script>"), "a script is cut off: 3 brackets never close"); assert.equal(pageProblem("<script>go())</script>"), "a script has a stray )");
+assert.equal(pageProblem("<script type='application/json'>{\"a\": [</script><script src='x.js'></script>"), null); assert.equal(pageProblem("<style>.a{color:red"), "a <style> is never closed");
+ok("the checker: an unclosed <script> or <style>, and a script cut off part-way or with a stray bracket, are caught; brackets in strings, comments and templates, JSON blocks and an open <div> (browsers mend it) aren't");
+const mk = (id, page) => db.prepare("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,'t',?,200,'c',1)").run(id, "Clock", "a clock", "done", "# Clock\n\n```html run\n" + page + "\n```\n", Date.now());
+const agent = (pid) => db.prepare("INSERT INTO agent(id,pid,name,src,model,roles,status,task,done,last) VALUES(?,?,?,?,?,?,?,?,0,?)").run("workers-ai:@cf/openai/gpt-oss-120b", pid, "GPT-OSS 120B", "workers-ai", "@cf/openai/gpt-oss-120b", '["integrator","coder"]', "idle", null, Date.now());
+setResponder((sys) => /fixing a runnable result/.test(sys) ? "```html run\n<!doctype html><html><body><div id=c>12:00</div></body></html>\n```" : null);
+mk("bad", "<!doctype html><html><body><div id=c>12:00</div><script>function tick() { const d = new Date(); if (d) { c.textContent = d.toLocaleTimeString(</script></body></html>"); agent("bad");
+let r = await H.hive.precheck("bad"); assert.deepEqual(r, { ok: false, why: "a script is cut off: 3 brackets never close", fixed: true });
+const p = db.prepare("SELECT final FROM proj WHERE id='bad'").get(); assert.match(p.final, /<div id=c>12:00<\/div>/); assert.equal(db.prepare("SELECT COUNT(*) c FROM ver WHERE pid='bad'").get().c, 1);
+const fixCall = calls.find((c) => /fixing a runnable result/.test(c.sys)); assert.match(fixCall.user, /Found before it ran: a script is cut off: 3 brackets never close/);
+assert.ok(db.prepare("SELECT text FROM feed WHERE pid='bad'").all().some((f) => /checked the page before you open it: a script is cut off: 3 brackets never close; asking for a fix/.test(f.text)));
+ok("a page whose script was cut off is fixed before he opens it: v2 is the result, v1 is kept, and the feed says why");
+assert.equal(await H.hive.precheck("bad"), null); ok("once per mission: a second check does nothing");
+mk("good", "<!doctype html><html><body><div>fine</div></body></html>"); r = await H.hive.precheck("good"); assert.deepEqual(r, { ok: true });
+assert.equal(db.prepare("SELECT COUNT(*) c FROM ver WHERE pid='good'").get().c, 0); ok("a clean page is left alone, and the feed says it was checked");
+console.log("all " + n + " checks passed"); process.exit(0);

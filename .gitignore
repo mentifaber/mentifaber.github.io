@@ -4,3 +4,8 @@
 # Wrangler local dev state
 .wrangler/
 __pycache__/
+
+# test scratch (tests/run.sh)
+tests/gtest/src/
+tests/gtest/cf-shim.mjs
+tests/ui/shots/
