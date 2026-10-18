@@ -7,14 +7,15 @@
   <url><loc>https://mentifaber.org/ballast-app.html</loc><lastmod>2026-10-04</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/ballast.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/barycenter.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/bubble-editor-app.html</loc><lastmod>2026-10-04</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/bubble-editor-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/cartograph-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/cartograph.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/conflict-atlas-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/conflict-atlas-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/conflict-atlas.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/contact.html</loc><lastmod>2026-10-17</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/crime-dashboard-app.html</loc><lastmod>2026-10-04</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/credits.html</loc><lastmod>2026-10-18</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/crime-dashboard-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/crime-dashboard.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/cryptovault-app.html</loc><lastmod>2026-10-12</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/cryptovault.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
@@ -24,37 +25,37 @@
   <url><loc>https://mentifaber.org/duely.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/frames.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/graveyard.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/hive-app.html</loc><lastmod>2026-10-16</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/hive-app.html</loc><lastmod>2026-10-18</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/hive.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/</loc><lastmod>2026-10-17</lastmod><priority>1.0</priority></url>
   <url><loc>https://mentifaber.org/lexicon.html</loc><lastmod>2026-10-17</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/meshnet-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/meshnet-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/meshnet.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/monstrosity-app.html</loc><lastmod>2026-10-12</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/monstrosity-log.html</loc><lastmod>2026-10-04</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/monstrosity.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/moon-compatibility-app.html</loc><lastmod>2026-10-04</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/moon-compatibility-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/moon-compatibility.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/muse.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/neural-sim-v1.html</loc><lastmod>2026-10-04</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/neural-sim-v2.html</loc><lastmod>2026-10-04</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/neural-sim-v3.html</loc><lastmod>2026-10-04</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/neural-sim-v1.html</loc><lastmod>2026-10-17</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/neural-sim-v2.html</loc><lastmod>2026-10-17</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/neural-sim-v3.html</loc><lastmod>2026-10-17</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/neural-sim.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/novarac-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/novarac-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/novarac.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/nullspace-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/nullspace.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/omnilogos-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/omnilogos.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/orbit-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/orbit-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/orbit.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/phone-mcp-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/phone-mcp.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/pi-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/pi-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/pi.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/proximity-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/proximity-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/proximity.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/roku-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/roku-app.html</loc><lastmod>2026-10-17</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/roku.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/rootcause.html</loc><lastmod>2026-10-17</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/shop-app.html</loc><lastmod>2026-10-11</lastmod><priority>0.6</priority></url>

@@ -127,7 +127,7 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="lexicon.html">The lexicon</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
@@ -279,6 +279,63 @@ def contact():
   <div class="elsewhere big"><a href="https://x.com/mentifaber" target="_blank" rel="noopener">X · @mentifaber</a><a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram · @mentifaber</a><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud · Sonic Veil</a></div>"""
     js = open(os.path.join(os.path.dirname(__file__), "contact.js.part"), encoding="utf-8").read()
     return plain("contact.html", "Contact · Mentifaber", "Write to Mentifaber: send a quick note or email anders@mentifaber.org.", "Correspondence", body, js)
+
+
+CREDITS = [
+    ("Data", [
+        ("NOAA SWPC, the National Weather Service, USGS and NASA", "U.S. government work, public domain"),
+        ("Weather data by <a href=\"https://open-meteo.com\">Open-Meteo.com</a>", "CC BY 4.0"),
+        ("The GDELT Project", "world event records, cited as source"),
+        ("CelesTrak", "satellite element sets"),
+        ("The Space Devs, Launch Library 2", "rocket launches"),
+        ("Where the ISS at?", "ISS position"),
+        ("GDACS, European Commission Joint Research Centre", "disaster alerts"),
+        ("adsb.lol", "aircraft positions, ODbL 1.0"),
+        ("adsb.fi and the OpenSky Network", "aircraft positions"),
+        ("Planespotters.net", "aircraft photos © their photographers, credited on each photo"),
+        ("Data provided by <a href=\"https://www.coingecko.com\">CoinGecko</a>; Coinbase; Yahoo Finance; Frankfurter (ECB rates)", "prices and currencies"),
+        ("Open Food Facts and Open Beauty Facts", "database ODbL 1.0, images CC BY-SA"),
+        ("Wikipedia", "text CC BY-SA 4.0, quoted with links"),
+        ("arXiv and OpenAlex", "paper metadata, CC0"),
+        ("Hugging Face Hub", "each dataset and model under its own licence"),
+    ]),
+    ("Maps", [
+        ("© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors", "ODbL 1.0"),
+        ("© CARTO", "basemap tiles"),
+        ("Esri World Imagery", "satellite imagery"),
+        ("Natural Earth", "public domain"),
+        ("RainViewer", "weather radar"),
+    ]),
+    ("AI models", [
+        ("Built with Llama", "Meta Llama 3.1, 3.2, 3.3 and 4, under the Llama Community License"),
+        ("Gemma and SEA-LION", "Gemma Terms of Use"),
+        ("Qwen, Mistral, GPT-OSS, Granite, FLUX.1 [schnell], Hermes 2 Pro", "Apache-2.0"),
+        ("DeepSeek R1 Distill, Whisper, MeloTTS, BGE", "MIT"),
+        ("Deepgram Aura and Flux", "voices and listening, via Cloudflare Workers AI"),
+        ("Cloudflare Workers AI", "the platform most of these run on"),
+    ]),
+    ("Software", [
+        ("Leaflet", "BSD-2-Clause"), ("three.js", "MIT"), ("GSAP", "GreenSock Standard License"),
+        ("PDF.js", "Apache-2.0"), ("Mammoth", "BSD-2-Clause"), ("Tesseract.js", "Apache-2.0"),
+        ("Pyodide", "MPL-2.0"), ("satellite.js", "MIT"), ("Font Awesome Free", "icons CC BY 4.0, fonts OFL, code MIT"), ("llama.cpp", "MIT"),
+    ]),
+    ("Type", [
+        ("Literata, Schibsted Grotesk, Martian Mono, Azeret Mono", "SIL Open Font License 1.1"),
+        ("Typefaces from Google Fonts", "SIL Open Font License 1.1 or Apache-2.0"),
+        ("Mentifaber Display and Hive Strata", "drawn here, by our own scripts"),
+    ]),
+]
+
+
+def credits():
+    rows = "".join(f'<h2 class="lbl" style="margin-top:30px">{h}</h2><ul class="credits">' + "".join(f"<li><span>{a}</span><span>{b}</span></li>" for a, b in items) + "</ul>" for h, items in CREDITS)
+    body = f"""<span class="pno">Credits · standing on shoulders</span>
+  <h1>What this workshop <span class="gold-text">runs on</span></h1>
+  <p class="tagline">Mentifaber's own work is all rights reserved. These parts are other people's, used under their licences and terms, with thanks.</p>
+  {rows}
+  <p class="fine" style="margin-top:30px">The full list with versions is in THIRD_PARTY_NOTICES.md alongside the code. Something missing or credited wrongly? Write to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>"""
+    css = "<style>.credits{list-style:none;margin:10px 0 0;padding:0}.credits li{display:flex;justify-content:space-between;gap:18px;padding:9px 0;border-top:1px solid var(--line)}.credits li span:last-child{color:var(--dim,#8d877a);text-align:right}@media(max-width:600px){.credits li{flex-direction:column;gap:2px}.credits li span:last-child{text-align:left}}</style>"
+    return plain("credits.html", "Credits · Mentifaber", "The libraries, data, maps, fonts and AI models Mentifaber runs on, and their licences.", "Credits", body, css)
 
 
 def notfound():
