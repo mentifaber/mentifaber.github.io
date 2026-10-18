@@ -13,6 +13,7 @@ import { vigilBrief, briefTopics } from "./vigil.js";
 import { trends, worldText } from "./hive-world.js";
 import { gather, wiki, papers, paperLine, hfSearch, hfText, hfRows, rowsText } from "./hive-know.js";
 import { worthPlanning, plannerPrompt, plannerInput, parseCalls } from "./hive-agent.js";
+import { Library, libraryTables } from "./hive-library.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -109,7 +110,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
-      mindTables(q); genesisTables(q);
+      mindTables(q); genesisTables(q); libraryTables(q);
       // indexes for the lookups every view and every agent step makes (each runs once; cheap if already there)
       for (const ix of ["task(pid, status)", "agent(pid)", "feed(pid, ts)", "proj(ts)", "act(kind, id)", "act(ts)", "thread(status, ok)", "mem(ok, pin)", "turn(cid)", "idea(status)", "journal(kind, id)", "alert(state, id)", "gdh(k, h)"])
         try { q.exec("CREATE INDEX IF NOT EXISTS ix_" + ix.replace(/\W+/g, "_").replace(/_$/, "") + " ON " + ix); } catch (e) {}
@@ -175,6 +176,7 @@ export class Hive extends DurableObject {
     }
     if (path === "/mind/brief" && owner) { const p = await Mind.parts(this); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE, genesis: await Genesis.block(this, "mentifaber-agent-1.0") }); } // the owner's apps on MENTIFABER AGENT talk to Genesis too
     if (path.startsWith("/mind")) { if (!owner) return J({ error: "Genesis's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
+    if (path.startsWith("/library")) { if (!owner) return J({ error: "the library is the owner's: sign in on Vigil first" }, 401); return Library.route(this, path, b, J); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "Genesis is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
       return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
@@ -664,6 +666,7 @@ export class Hive extends DurableObject {
     if (!ctx.owner) throw new Error("that tool is the owner's");
     if (c.tool === "vigil") { const topics = a.split(/[,\s]+/).map((x) => x.toLowerCase()).filter(Boolean).slice(0, 6), vb = await vigilBrief(this.env, topics, null, a); if (!vb.text) throw new Error("the board had nothing on " + a); return { label: "read Vigil's live board (" + vb.ok.join(", ") + ")", items: [{ title: "Vigil · live board", url: origin + "/vigil-app", text: "VIGIL LIVE BOARD (read just now):\n" + vb.text }] }; }
     if (c.tool === "world") { const t = trends(this); return { label: "read its world record", items: [{ title: "Genesis's world record (GDELT, counted hourly)", url: origin + "/vigil-app#world", text: worldText(t) }] }; }
+    if (c.tool === "library") { const lh = await Library.search(this, a, 5, 0.5); if (!lh.length) throw new Error("nothing in the library matches " + a); return { label: "searched your library: " + a.slice(0, 50), items: lh.map((x, i) => ({ title: x.title + " · passage " + x.n, url: x.src || origin + "/hive-app#mind/library", text: Library.text([x])[0] })) }; }
     if (c.tool === "site") { const st = siteText(await siteIndex(this, origin)); return { label: "read your site's project index", note: st || null, items: [] }; }
     throw new Error("unknown tool");
   }
@@ -725,6 +728,8 @@ export class Hive extends DurableObject {
     // pasted links get read
     const urls = [...new Set((last.text.match(/https?:\/\/[^\s<>"')\]]+/g) || []))].slice(0, 3);
     for (const u of urls) try { const pg = await readPage(u); sources.push({ title: pg.title, url: pg.url }); notes.push("[" + sources.length + "] PAGE " + pg.title + " — " + pg.url + "\n" + pg.text); tools.push("read " + new URL(pg.url).hostname); } catch (e) { notes.push("(could not read " + u + ": " + e.message + ")"); }
+    // his library: passages from documents he saved that match this message by meaning
+    if (owner) try { const lh = await Library.search(this, last.text, 4); if (lh.length) { Library.text(lh).forEach((t, i) => { sources.push({ title: lh[i].title + " · passage " + lh[i].n, url: lh[i].src || new URL(req.url).origin + "/hive-app#mind/library" }); notes.push("[" + sources.length + "] " + t); }); tools.push("read your library: " + [...new Set(lh.map((x) => x.title))].join(", ").slice(0, 80)); } } catch (e) {}
     // the weather, from the same source as mentifaber.org/wx: wherever they name, or where they are (a place said on its own
     // right after a weather question counts, which is how it goes in voice)
     const said = msgs.filter((m) => m.role === "user"), prevAsk = said.length > 1 && asksWeather(said[said.length - 2].text);
@@ -774,7 +779,7 @@ export class Hive extends DurableObject {
         doing(round === 1 ? "deciding what to look up" : "checking whether anything is missing");
         const calls = await this.planTools(msgs, [...tools, ...sources.map((x) => x.title + " — " + x.url)], owner, round, made);
         doing(null); if (!calls.length) break;
-        doing(calls.map((c) => ({ web: "searching the web", read: "reading " + c.arg.replace(/^https?:\/\/(www\.)?/, "").split("/")[0], wiki: "reading Wikipedia", papers: "searching papers", hf: "searching Hugging Face", rows: "reading a dataset", weather: "checking the weather", quotes: "checking prices", vigil: "reading Vigil", world: "reading the world record", site: "reading your site" })[c.tool] || c.tool).join(", "));
+        doing(calls.map((c) => ({ web: "searching the web", read: "reading " + c.arg.replace(/^https?:\/\/(www\.)?/, "").split("/")[0], wiki: "reading Wikipedia", papers: "searching papers", hf: "searching Hugging Face", rows: "reading a dataset", weather: "checking the weather", quotes: "checking prices", vigil: "reading Vigil", world: "reading the world record", site: "reading your site", library: "searching your library" })[c.tool] || c.tool).join(", "));
         const got = await Promise.all(calls.map((c) => this.useTool(c, ctx).catch((e) => ({ label: null, note: "(" + c.tool + " failed: " + String(e.message || e).slice(0, 120) + ")" }))));
         for (const [i, g] of got.entries()) { made.add(calls[i].tool + ":" + calls[i].arg.toLowerCase()); if (g.note) notes.push(g.note); for (const x of g.items || []) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } if (g.label) tools.push(g.label); }
       }
