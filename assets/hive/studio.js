@@ -100,14 +100,30 @@ function greet() {
   $("starters").onclick = (e) => { const b = e.target.closest("[data-i]"); if (!b) return; const x = ideas[+b.dataset.i]; if (x[7]) { location.hash = "swarm"; return; } if (x[5]) return Voice.start(); setTog("web", !!x[3]); setTog("draw", !!x[4]); setTog("council", !!x[6]); $("inp").value = x[2]; send(); }; }
 
 // ── markdown (small, safe: everything is escaped first) ──
-function md(src, sources) {
-  const blocks = [], code = [];
+// a finished answer's code is checked where it can be, in the browser: JavaScript and JSON parse, HTML tags close,
+// CSS braces balance. Nothing is run; a ✓ means it parses, a ⚠ says what doesn't.
+function checkCode(lang, body) {
+  const l = String(lang || "").toLowerCase(), t = String(body || "");
+  try {
+    if (/^(js|javascript|mjs|cjs|node)$/.test(l)) {
+      const src = /^\s*(import|export)\b/m.test(t) ? t.replace(/^\s*import\b[^\n;]*;?|^\s*export\s+(default\s+)?/gm, "") : t; // a module: its imports and exports set aside
+      try { new Function(src); } catch (e) { if (/await/.test(e.message)) new (Object.getPrototypeOf(async function () {}).constructor)(src); else throw e; } return [1, "parses"];
+    }
+    if (l === "json") { JSON.parse(t); return [1, "valid JSON"]; }
+    if (/^html?$/.test(l)) { const st = []; for (const m of t.replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "").matchAll(/<(\/?)(html|head|body|div|section|main|header|footer|nav|article|aside|ul|ol|table|form|svg|button|select|textarea|template)\b[^>]*?(\/?)>/gi)) { if (m[3]) continue; if (!m[1]) st.push(m[2].toLowerCase()); else { const k = st.lastIndexOf(m[2].toLowerCase()); if (k < 0) return [0, "a stray </" + m[2] + ">"]; st.length = k; } }
+      if ((t.match(/<script\b/gi) || []).length !== (t.match(/<\/script>/gi) || []).length) return [0, "a <script> isn't closed"]; return st.length ? [0, "<" + st[st.length - 1] + "> isn't closed"] : [1, "tags close"]; }
+    if (l === "css") { let d = 0; for (const c of t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/"[^"]*"|'[^']*'/g, "")) { if (c === "{") d++; else if (c === "}" && --d < 0) break; } return d ? [0, "braces don't balance"] : [1, "braces balance"]; }
+  } catch (e) { return [0, String(e.message || e).slice(0, 120)]; }
+  return null;
+}
+function md(src, sources, done) {
+  const blocks = [], code = []; md.bad = 0;
   let s = String(src || "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g, (_, lang, body) => { code.push([lang, body.replace(/\n$/, "")]); return "\u0000C" + (code.length - 1) + "\u0000"; });
   s = esc(s);
   const inline = (t) => t.replace(/`([^`\n]+)`/g, (_, c) => "<code>" + c + "</code>").replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<i>$2</i>").replace(/~~([^~\n]+)~~/g, "<s>$1</s>")
     .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, a, u) => "<a href='" + u + "' target='_blank' rel='noopener noreferrer'>" + a + "</a>")
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_, p, u) => p + "<a href='" + u + "' target='_blank' rel='noopener'>" + u + "</a>")
-    .replace(/\[(\d{1,2})\]/g, (m, n) => { const x = sources && sources[n - 1]; return x ? "<a class='cite' href='" + esc(safeUrl(x.url)) + "' target='_blank' rel='noopener' title='" + esc(x.title) + "'>" + n + "</a>" : m; });
+    .replace(/\[(\d{1,2})\]/g, (m, n) => { const x = sources && sources[n - 1]; if (x) return "<a class='cite' href='" + esc(safeUrl(x.url)) + "' target='_blank' rel='noopener' title='" + esc(x.title) + "'>" + n + "</a>"; md.bad = (md.bad || 0) + 1; return ""; }); // a citation with no source behind it is dropped, and counted
   const lines = s.split("\n"); let i = 0, out = "";
   while (i < lines.length) {
     const l = lines[i];
@@ -121,7 +137,8 @@ function md(src, sources) {
     let p = []; while (i < lines.length && lines[i].trim() && !/^(#{1,4} |&gt;|\s*([-*+]|\d+[.)]) |\u0000C)/.test(lines[i])) p.push(lines[i++]); if (!p.length) p.push(lines[i++]);
     out += "<p>" + inline(p.join("<br>")) + "</p>";
   }
-  return out.replace(/\u0000C(\d+)\u0000/g, (_, n) => { const [lang, body] = code[n]; return "<div class='pre'><header><span>" + esc(lang || "code") + "</span><span>" + (/^html?$/i.test(lang) ? "<button data-run='" + n + "'>Preview</button>" : "") + "<button data-copy='" + n + "'>Copy</button></span></header><pre><code>" + esc(body) + "</code></pre></div>"; });
+  const note = done && md.bad ? "<div class='cknote' title='The model cited sources that weren&#39;t gathered for this answer'>⚠ " + md.bad + " citation" + (md.bad > 1 ? "s" : "") + " pointed at no source and " + (md.bad > 1 ? "were" : "was") + " removed</div>" : "";
+  return note + out.replace(/\u0000C(\d+)\u0000/g, (_, n) => { const [lang, body] = code[n]; return "<div class='pre'><header><span>" + esc(lang || "code") + "</span><span>" + (/^html?$/i.test(lang) ? "<button data-run='" + n + "'>Preview</button>" : "") + "<button data-copy='" + n + "'>Copy</button></span></header>" + ((ck) => ck ? "<div class='ck " + (ck[0] ? "ok" : "bad") + "' title='Checked in your browser, not run'>" + (ck[0] ? "✓ " : "⚠ ") + esc(ck[1]) + (ck[0] ? "" : " <button data-fixck='" + n + "' data-err='" + esc(ck[1]) + "' data-lang='" + esc(lang || "code") + "'>Fix it</button>") + "</div>" : "")(done ? checkCode(lang, body) : null) + "<pre><code>" + esc(body) + "</code></pre></div>"; });
 }
 const codeOf = (el, n) => { const m = chat && chat.msgs[+el.closest(".m").dataset.i]; const all = []; String(m && m.text || "").replace(/```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g, (_, l, b) => all.push(b.replace(/\n$/, ""))); return all[n] || ""; };
 
@@ -148,7 +165,7 @@ function drawMsg(m, i, quiet) {
     const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.steps && m.steps.length || m.status ? "<div class='tools'>" + (m.steps || []).map((t) => "<span class='did'>" + esc(t) + "</span>").join("") + (m.status ? "<span class='now'>" + esc(m.status) + "</span>" : "") + "</div>" : "")
       : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1") + "</div>"
       : m.error ? who + "<p class='err'>" + esc(m.error) + "</p>"
-      : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:8px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) + "</div>" +
+      : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:8px'>" + esc(m.text) + "</p>" : md(m.text, m.sources, true)) + "</div>" +
         (m.drafts && m.drafts.length ? "<details class='drafts'><summary>" + m.drafts.filter((x) => x.text).length + " council drafts" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (open to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "' style='--dm:" + pollen(x.model) + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
         (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
     d.innerHTML = body + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl'>" + SV.dl + "</button>" : m.error ? "" : "<button data-act='copy'>" + SV.copy + "</button><button data-act='say' title='Read it aloud'>" + SV.say + "</button>") + (m.cut && !m.error ? "<button data-act='more' class='more' title='Pick up exactly where it stopped'>Continue</button>" : "") + "<button data-act='redo' title='Ask again'>" + SV.redo + "</button>" + (m.image || m.error ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + (m.ttft ? "first word " + (m.ttft / 1000).toFixed(2) + "s · " : "") + (m.ms ? (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>");
@@ -165,6 +182,8 @@ const unlayer = (k) => { $("log").querySelectorAll(".m").forEach((n) => +n.datas
 $("log").onclick = async (e) => {
   const c = e.target.closest("[data-copy]"), r = e.target.closest("[data-run]"), a = e.target.closest("[data-act]");
   if (c) { navigator.clipboard.writeText(codeOf(c, +c.dataset.copy)).then(() => { c.textContent = "Copied"; setTimeout(() => (c.textContent = "Copy"), 1400); }); return; }
+  const fk = e.target.closest("[data-fixck]"); // a block that failed its check: ask for it corrected, in full
+  if (fk) { if (busy) return toast("Wait for the current answer first"); return send("The " + fk.dataset.lang + " block (number " + (+fk.dataset.fixck + 1) + " in your last answer) doesn't check out: " + fk.dataset.err + ". Send the corrected block in full, nothing else."); }
   if (r) { const w = window.open("", "_blank"); if (w) { w.document.open(); w.document.write(codeOf(r, +r.dataset.run)); w.document.close(); } return; }
   const ua = e.target.closest("[data-uact]");
   if (ua && chat) { const k = +ua.closest(".m").dataset.i, um = chat.msgs[k]; if (ua.dataset.uact === "copy") { navigator.clipboard.writeText(um.show || um.text || ""); return toast("Copied"); }
