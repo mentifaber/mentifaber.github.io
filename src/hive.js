@@ -104,7 +104,11 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
-      mindTables(q); genesisTables(q); this._init = 1;
+      mindTables(q); genesisTables(q);
+      // indexes for the lookups every view and every agent step makes (each runs once; cheap if already there)
+      for (const ix of ["task(pid, status)", "agent(pid)", "feed(pid, ts)", "proj(ts)", "act(kind, id)", "act(ts)", "thread(status, ok)", "mem(ok, pin)", "turn(cid)", "idea(status)", "journal(kind, id)", "alert(state, id)", "gdh(k, h)"])
+        try { q.exec("CREATE INDEX IF NOT EXISTS ix_" + ix.replace(/\W+/g, "_").replace(/_$/, "") + " ON " + ix); } catch (e) {}
+      this._init = 1;
     }
     return q;
   }
