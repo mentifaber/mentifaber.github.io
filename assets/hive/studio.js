@@ -145,7 +145,7 @@ function drawMsg(m, i, quiet) {
     d.innerHTML = (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools'>" + m.files.map((f) => "<span>" + esc(f) + "</span>").join("") + "</div>" : "") + (t ? "<div class='b'>" + esc(t) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and send again'>Edit</button><button data-uact='copy' title='Copy'>Copy</button></div>"; }
   else {
     const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "Genesis") + (m.council ? " · council" : "") + "</span></div>";
-    const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.status ? "<div class='tools'><span>" + esc(m.status) + "</span></div>" : "")
+    const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.steps && m.steps.length || m.status ? "<div class='tools'>" + (m.steps || []).map((t) => "<span class='did'>" + esc(t) + "</span>").join("") + (m.status ? "<span class='now'>" + esc(m.status) + "</span>" : "") + "</div>" : "")
       : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1") + "</div>"
       : m.error ? who + "<p class='err'>" + esc(m.error) + "</p>"
       : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:8px'>" + esc(m.text) + "</p>" : md(m.text, m.sources)) + "</div>" +
@@ -275,12 +275,20 @@ async function run(image, opts) {
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
   const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
-    cid: chat.id, messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
+    cid: chat.id, sid: Math.random().toString(36).slice(2) + Date.now().toString(36), messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
+  // while the answer is being prepared, show what Genesis is doing (planning, searching, reading…) as it happens
+  let polls = 0; const was = m.status, watchSteps = image ? 0 : setInterval(async () => {
+    if (!m.pending || m.text || ++polls > 120) return clearInterval(watchSteps);
+    const s = await api("/steps?sid=" + body.sid).catch(() => null); if (!s || !m.pending || m.text) return;
+    const st = s.now ? s.now + "…" : (s.steps.length ? null : was); if (JSON.stringify([s.steps, st]) === JSON.stringify([m.steps, m.status])) return;
+    m.steps = s.steps; m.status = st; if (chat.msgs[i] === m) drawMsg(m, i);
+  }, 700);
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
     else if (u.council) j = await api("/chat", body, busy.signal);
     else j = await stream(body, m, i, busy.signal);
   } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : m.text ? null : "Couldn't reach Genesis. Check your connection.", text: m.text && e.name !== "AbortError" ? m.text + "\n\n_(the connection dropped here)_" : m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; j.turn = m.turn; } }
+  clearInterval(watchSteps); delete m.steps;
   busy = null; $("sendb").classList.remove("stop"); $("sendb").textContent = on("draw") ? "Paint" : "Ask"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
