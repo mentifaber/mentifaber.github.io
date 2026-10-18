@@ -513,6 +513,11 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
+    if (/^\/p\/[\w-]{3,60}\/?$/.test(path)) { // a published Swarm result: build.html reads the slug from the address and runs it sandboxed
+      const r = await env.ASSETS.fetch(new Request(url.origin + "/build", { headers: req.headers })), h = new Headers(r.headers);
+      h.set("x-robots-tag", "noindex"); h.set("cache-control", "no-cache");
+      return new Response(r.body, { status: r.status, headers: h });
+    }
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "vigil") return vigil(req, env, ctx, !!(await session(req, env, "vigil")), json); // Vigil's relay for feeds a browser can't read directly (src/vigil.js)

@@ -771,3 +771,12 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
   .ctl .q.ico { width: 28px; }
 }
 .acts button.more { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, transparent); }
+
+.runbar .q.gold, .runbar a.q { color: var(--gold); }
+.runbar a.q { text-decoration: none; display: inline-flex; align-items: center; }
+.trialf { position: fixed; left: -12000px; top: 0; width: 1024px; height: 720px; opacity: 0; pointer-events: none; border: 0; }
+.auditp { margin: 0 0 12px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+.auditp .ah { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; } .auditp .ah .dim { flex: 1; }
+.auditp .ar { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.auditp .ar span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .auditp .ar span:last-child { flex: none; color: var(--dim); }
+.auditp .ar.good span:last-child { color: #7ccf8a; } .auditp .ar.bad span:last-child { color: #ff7b72; } .auditp .ar.wait span:last-child { color: var(--gold); }

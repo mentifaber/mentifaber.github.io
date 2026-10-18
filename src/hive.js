@@ -11,6 +11,7 @@ import { asksWeather, placeIn, weather } from "./hive-kit.js";
 import { Genesis, genesisTables, asksSystems } from "./hive-genesis.js";
 import { vigilBrief, briefTopics } from "./vigil.js";
 import { trends, worldText } from "./hive-world.js";
+import { gather } from "./hive-know.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -101,6 +102,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
       q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
+      q.exec("CREATE TABLE IF NOT EXISTS pub(slug TEXT PRIMARY KEY, pid TEXT UNIQUE, ts INTEGER, by_ TEXT, views INTEGER DEFAULT 0, live INTEGER DEFAULT 1)"); // results with a link (/p/<slug>): live = anyone can open it, else only the owner
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
@@ -164,15 +166,15 @@ export class Hive extends DurableObject {
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
     if (path === "/purge") { // the owner clears every finished, stopped or failed project at once
       if (!owner) return J({ error: "only the owner can clear projects" }, 401);
-      const ids = q.exec("SELECT id FROM proj WHERE status IN ('done','stopped','failed')").toArray().map((r) => r.id);
+      const ids = q.exec("SELECT id FROM proj WHERE status IN ('done','stopped','failed') AND id NOT IN (SELECT pid FROM pub)").toArray().map((r) => r.id); // published ones keep their link
       for (const id of ids) { for (const t of ["task", "agent", "feed"]) q.exec("DELETE FROM " + t + " WHERE pid=?", id); q.exec("DELETE FROM proj WHERE id=?", id); }
-      return J({ ok: true, removed: ids.length });
+      return J({ ok: true, removed: ids.length, kept: q.exec("SELECT COUNT(*) c FROM pub").one().c });
     }
     if (path === "/mind/brief" && owner) { const p = await Mind.parts(this); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE, genesis: await Genesis.block(this, "mentifaber-agent-1.0") }); } // the owner's apps on MENTIFABER AGENT talk to Genesis too
     if (path.startsWith("/mind")) { if (!owner) return J({ error: "Genesis's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "Genesis is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
-      return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has FROM proj ORDER BY ts DESC LIMIT 40").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined })) }); }
+      return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
     if (path === "/listen-ok" && req.method === "POST") return J({ ok: owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
@@ -199,17 +201,26 @@ export class Hive extends DurableObject {
       await this.ctx.storage.setAlarm(Date.now() + 200);
       return J({ id, ctok });
     }
+    if (path.startsWith("/pub/")) { // a published result, for its public page (build.html): always the latest version
+      const r = q.exec("SELECT u.slug, u.ts, u.by_, u.live, p.id, p.title, p.final, p.status FROM pub u JOIN proj p ON p.id = u.pid WHERE u.slug=?", path.slice(5)).toArray()[0];
+      if (!r || !r.final || (!r.live && !owner)) return J({ error: "nothing is published here" }, 404); // a private preview reads as nothing to anyone else
+      q.exec("UPDATE pub SET views=views+1 WHERE slug=?", r.slug);
+      return J({ slug: r.slug, title: r.title, final: r.final, ts: r.ts, by: r.by_ || "you", live: !!r.live, id: owner ? r.id : undefined, v: q.exec("SELECT COUNT(*) c FROM ver WHERE pid=?", r.id).one().c + 1 });
+    }
+    if (path === "/pubs") { if (!owner) return J({ error: "only the owner can list these" }, 401); return J({ pubs: q.exec("SELECT u.slug, u.pid, u.ts, u.by_ by, u.views, u.live, p.title FROM pub u JOIN proj p ON p.id = u.pid ORDER BY u.ts DESC LIMIT 100").toArray().map((r) => ({ ...r, url: url.origin + "/p/" + r.slug })) }); }
     const p = b.id || b.project ? q.exec("SELECT * FROM proj WHERE id=?", String(b.id || b.project)).toArray()[0] : null;
     if (!p) return J({ error: "no such project" }, 404);
     const ctl = owner || (b.ctok && p.ctok && b.ctok === p.ctok), cap = p.cap || MAX_CALLS;
     if (path === "/state") {
       const since = +b.since || 0;
       return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, owner,
-        versions: q.exec("SELECT v, ts, note FROM ver WHERE pid=? ORDER BY v DESC LIMIT 20", p.id).toArray(), join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
+        versions: q.exec("SELECT v, ts, note FROM ver WHERE pid=? ORDER BY v DESC LIMIT 20", p.id).toArray(), pub: ((u) => (u ? { url: url.origin + "/p/" + u.slug, live: !!u.live } : undefined))(q.exec("SELECT slug, live FROM pub WHERE pid=?", p.id).toArray()[0]), join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
         agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last,COALESCE(score,0) score,err FROM agent WHERE pid=? ORDER BY COALESCE(score,0) DESC, done DESC, name", p.id).toArray(),
         feed: q.exec("SELECT ts,who,kind,text FROM feed WHERE pid=? AND ts>? ORDER BY ts DESC LIMIT 80", p.id, since).toArray() });
     }
+    if (path === "/publish") { if (!owner) return J({ error: "only the owner can publish" }, 401); const r = this.publish(p, "you", true); return r.error ? J(r, 400) : J({ ...r, url: url.origin + "/p/" + r.slug }); } // his tap makes it public, a private preview included
+    if (path === "/unpublish") { if (!owner) return J({ error: "only the owner can unpublish" }, 401); q.exec("DELETE FROM pub WHERE pid=?", p.id); return J({ ok: true }); }
     if (path === "/version") { const v = q.exec("SELECT v, ts, final, note FROM ver WHERE pid=? AND v=?", p.id, +b.v).toArray()[0]; return v ? J(v) : J({ error: "no such version" }, 404); }
     if (path === "/repair") { // the runner hit errors, or the result has nothing to run: one call to the strongest model on the mission fixes it, as a new version
       if (!ctl) return J({ error: "only whoever started this project can ask for a fix" }, 401);
@@ -508,6 +519,17 @@ export class Hive extends DurableObject {
   }
 
   // ── the key vault: unlimited keys, any provider, sealed at rest, owner only ──
+  // a public link for a finished result: runnable code only (a page, a script or Python), served sandboxed by build.html
+  // live: public; otherwise a private preview only the owner can open (what Genesis makes for its own builds: he decides what goes public)
+  publish(p, by, live) {
+    const q = this.sql(), had = q.exec("SELECT slug, live FROM pub WHERE pid=?", p.id).toArray()[0];
+    if (had) { if (live && !had.live) q.exec("UPDATE pub SET live=1, ts=? WHERE pid=?", Date.now(), p.id); return { slug: had.slug, live: !!(live || had.live), already: true }; }
+    if (p.status !== "done" || !p.final) return { error: "only a finished result can be published" };
+    if (!/```\s*(html|htm|js|javascript|py|python)\b/i.test(p.final)) return { error: "this result has nothing that runs in a browser" };
+    const base = String(p.title || "build").toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 40).replace(/-$/, "") || "build", slug = base + "-" + crypto.randomUUID().slice(0, 4);
+    q.exec("INSERT INTO pub(slug,pid,ts,by_,views,live) VALUES(?,?,?,?,0,?)", slug, p.id, Date.now(), by || "you", live ? 1 : 0);
+    return { slug, live: !!live };
+  }
   async vk() { return (this._vk = this._vk || (await vaultKey(this.env, this.ctx.storage))); }
   async vaultGet(id) {
     if (id.startsWith("env-")) { const k = KEYED.find((x) => "env-" + x.id === id && this.env[x.env]); if (!k) throw new Error("that provider's secret isn't set"); return { v: { id, provider: k.id, kind: "compat", base: k.url.replace(/\/chat\/completions$/, "") }, key: this.env[k.env] }; }
@@ -595,7 +617,10 @@ export class Hive extends DurableObject {
   }
   async searchKey(own) { if (!own) return null; const v = this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind='search' ORDER BY COALESCE(used,0) LIMIT 1").toArray()[0]; return v ? this.vaultGet(v.id) : null; }
   async web(q, own) { const k = await this.searchKey(own).catch(() => null); try { return await search(k && k.v, k && k.key, q); } catch (e) { if (k) return search(null, null, q); throw e; } }
-  async webContext(q, own) { try { const r = await this.web(q.slice(0, 300), own); return r.length ? "\n\nWEB SEARCH RESULTS:\n" + r.map((x, i) => "[" + (i + 1) + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 900)).join("\n\n") : ""; } catch (e) { return ""; } }
+  async webContext(q, own) {
+    const [r, kn] = await Promise.all([this.web(q.slice(0, 300), own).catch(() => []), gather(q, true).catch(() => ({ out: [] }))]), all = [...r.map((x) => ({ title: x.title, url: x.url, text: String(x.text || "").slice(0, 900) })), ...kn.out.filter((x) => !x.note).map((x) => ({ title: x.title, url: x.url, text: x.text.slice(0, 1400) }))];
+    return all.length ? "\n\nRESEARCH MATERIAL (web, Wikipedia, Hugging Face, papers; read just now):\n" + all.map((x, i) => "[" + (i + 1) + "] " + x.title + " — " + x.url + "\n" + x.text).join("\n\n") : "";
+  }
   meter(req, kind, max) { // the public's daily allowance per visitor; the owner has none
     const q = this.sql(), day = new Date().toISOString().slice(0, 10), k = kind + ":" + day + ":" + (req.headers.get("cf-connecting-ip") || "x").slice(0, 45);
     const n = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n; if (n >= max) return false;
@@ -684,6 +709,8 @@ export class Hive extends DurableObject {
     } catch (e) { notes.push("(Genesis's world record couldn't be read: " + e.message + ")"); }
     // prices for anyone: any ticker, coin or name in the message (public data; the owner gets them through Vigil's board above)
     if (!owner) try { const syms = await symbolsFor(last.text); if (syms.length) { const qs = await quotes(syms); sources.push({ title: "Market quotes", url: "https://finance.yahoo.com/quote/" + encodeURIComponent(qs[0].sym) }); notes.push("[" + sources.length + "] LIVE QUOTES, read just now:\n" + qs.map(quoteText).join("\n")); tools.push("checked prices for " + syms.join(", ")); } } catch (e) {}
+    // open knowledge: Hugging Face datasets, their rows and models, papers (arXiv, OpenAlex), Wikipedia; when the message is about them
+    try { const kn = await gather(last.text, b.web); for (const x of kn.out) { if (x.note) { notes.push(x.note); continue; } sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } tools.push(...kn.used); } catch (e) {}
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
@@ -700,7 +727,7 @@ export class Hive extends DurableObject {
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
     const system = (owner ? "You are " + gName + ", the mind of the Genesis app on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Genesis, the assistant on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
-      "Genesis is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), live weather (when they ask about the weather, Genesis looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
+      "Genesis is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), open knowledge (when a message is about datasets, models, papers or research, or asks what or who something is, Genesis looks it up on the Hugging Face Hub, inside a named dataset\'s actual rows, on arXiv and OpenAlex, and on Wikipedia, and hands it to you as MATERIAL), live weather (when they ask about the weather, Genesis looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." +
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") + (local ? "" : " Now: " + now + ".") +
