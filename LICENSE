@@ -1,11 +1,35 @@
-Copyright (c) 2026 Anders Powell (Mentifaber). All rights reserved.
+Mentifaber Proprietary Licence
+Copyright (c) 2026 Anders Powell (Mentifaber, Mentifaber Industries). All rights reserved.
 
-This repository, including the Genesis software, its server code, prompts, designs,
-artwork and content, is proprietary. No licence is granted to copy, modify, distribute,
-host, sublicense, or create derivative works from any part of it, in whole or in part,
-by any means, without prior written permission from the copyright holder.
+1. What this covers. Everything in this repository that Anders Powell created, unless a file
+   says otherwise: the Genesis software (including its server code, prompts, memory and
+   reflection systems, Swarm, routing and autonomy), Vigil, every app and game on
+   mentifaber.org, their source code, page designs, layouts, artwork, logos, icons, the
+   Mentifaber Display and Hive Strata typefaces and the scripts that draw them, the writing,
+   the Lexicon's definitions and text, music, images, video and data compiled here.
 
-Viewing this code does not grant any right to use it. Using the public services at
-mentifaber.org is governed by the terms published there, not by this file.
+2. No licence is granted. You may not copy, modify, translate, distribute, publish, host,
+   mirror, sell, sublicense, or make derivative works from any part of it, in whole or in
+   part, by any means, or use it to train or evaluate a machine-learning model, without prior
+   written permission from the copyright holder. Being able to see the code, on GitHub or in
+   a browser, grants no right to use it.
 
-Contact: mentifaber.org/contact
+3. Third-party components keep their own licences. Libraries, fonts, map tiles, data,
+   AI models and services made by others are listed in THIRD_PARTY_NOTICES.md and are used
+   under their own terms. Nothing here changes those terms or claims them as ours.
+
+4. Names and marks. Mentifaber, Genesis (as the name of this software), Vigil, the gold G
+   mark, the project names and their logos identify this work. You may not use them in a way
+   that suggests your product is ours, or endorsed by us.
+
+5. The public services. Using the apps at mentifaber.org is governed by the terms published
+   there, not by this file. Using a service does not grant any right in its code.
+
+6. No warranty. Everything is provided "as is", without warranty of any kind. The copyright
+   holder is not liable for any claim, damage or loss arising from it, to the extent the law
+   allows.
+
+Earlier versions of some Mentifaber projects were published elsewhere under other terms;
+those terms apply only to the copies that were published with them.
+
+Permission requests: anders@mentifaber.org · mentifaber.org/contact
