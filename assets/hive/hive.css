@@ -770,3 +770,4 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
   .tog i { width: 7px; height: 10px; }
   .ctl .q.ico { width: 28px; }
 }
+.acts button.more { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, transparent); }

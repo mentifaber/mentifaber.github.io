@@ -78,8 +78,9 @@ button:disabled{opacity:.6}.msg{min-height:1.4em;margin-top:10px;font-size:14px}
   function unlocked() { $("c-add").classList.remove("hidden"); status().then(render); }
   function render(st) {
     if (!st) return; $("c-list").classList.remove("hidden");
-    $("list").innerHTML = st.accounts.length ? "" : "<p>No extra accounts yet.</p>";
-    for (const a of st.accounts) { const row = document.createElement("div"); row.className = "acct";
+    const accts = Array.isArray(st.accounts) ? st.accounts : [];
+    $("list").innerHTML = accts.length ? "" : "<p>No extra accounts yet.</p>";
+    for (const a of accts) { const row = document.createElement("div"); row.className = "acct";
       row.innerHTML = "<span><b></b><br><small style='color:var(--dim)'>added " + new Date(a.at).toLocaleDateString() + "</small></span><button class='ghost'>Remove</button>";
       row.querySelector("b").textContent = a.name;
       row.querySelector("button").onclick = async () => { if (!confirm("Remove “" + a.name + "”? Its garden stays on the server but it can't sign in.")) return;
