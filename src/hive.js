@@ -103,7 +103,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS proj(id TEXT PRIMARY KEY, title TEXT, brief TEXT, status TEXT, final TEXT, calls INTEGER, tok TEXT, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS task(id INTEGER PRIMARY KEY AUTOINCREMENT, pid TEXT, role TEXT, title TEXT, detail TEXT, deps TEXT, status TEXT, agent TEXT, output TEXT, note TEXT, tries INTEGER, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
-      q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
+      q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ran TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
       q.exec("CREATE TABLE IF NOT EXISTS perf(model TEXT PRIMARY KEY, ok INTEGER DEFAULT 0, fail INTEGER DEFAULT 0, ms REAL)"); // how each model actually does, for routing
       q.exec("CREATE TABLE IF NOT EXISTS pub(slug TEXT PRIMARY KEY, pid TEXT UNIQUE, ts INTEGER, by_ TEXT, views INTEGER DEFAULT 0, live INTEGER DEFAULT 1)"); // results with a link (/p/<slug>): live = anyone can open it, else only the owner
@@ -228,6 +228,10 @@ export class Hive extends DurableObject {
     }
     if (path === "/publish") { if (!owner) return J({ error: "only the owner can publish" }, 401); const r = this.publish(p, "you", true); return r.error ? J(r, 400) : J({ ...r, url: url.origin + "/p/" + r.slug }); } // his tap makes it public, a private preview included
     if (path === "/unpublish") { if (!owner) return J({ error: "only the owner can unpublish" }, 401); q.exec("DELETE FROM pub WHERE pid=?", p.id); return J({ ok: true }); }
+    if (path === "/ran") { // how the result did when it last ran in a browser: Genesis learns from its builds' record
+      if (!ctl) return J({ error: "only whoever started this project can report a run" }, 401);
+      q.exec("UPDATE proj SET ran=? WHERE id=?", JSON.stringify({ ts: Date.now(), ok: !!b.ok, why: String(b.why || "").slice(0, 300) }), p.id); return J({ ok: true });
+    }
     if (path === "/version") { const v = q.exec("SELECT v, ts, final, note FROM ver WHERE pid=? AND v=?", p.id, +b.v).toArray()[0]; return v ? J(v) : J({ error: "no such version" }, 404); }
     if (path === "/repair") { // the runner hit errors, or the result has nothing to run: one call to the strongest model on the mission fixes it, as a new version
       if (!ctl) return J({ error: "only whoever started this project can ask for a fix" }, 401);
