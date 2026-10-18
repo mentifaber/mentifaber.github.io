@@ -48,13 +48,14 @@
     for (const [n, p] of todo.entries()) {
       const row = { id: p.id, title: p.title, cls: "wait", text: "running…" }; rows.push(row); draw((n + 1) + " of " + todo.length);
       const st = await api("/state?id=" + p.id); if (!st.project || !st.project.final) { row.cls = "bad"; row.text = "couldn't load"; continue; }
-      let t = await trial(st.project.final); row.cls = t.ok ? "good" : "bad"; row.text = t.why; draw((n + 1) + " of " + todo.length);
+      let t = await trial(st.project.final); row.cls = t.ok ? "good" : "bad"; row.text = t.why; draw((n + 1) + " of " + todo.length); api("/ran", { id: p.id, ok: t.ok, why: t.ok ? "ran clean" : t.errors[0] || t.why }).catch(() => {});
       if (t.ok || !mend) continue;
       row.cls = "wait"; row.text = t.why + " · fixing…"; draw((n + 1) + " of " + todo.length);
       const lang = t.f ? (t.f.lang === "py" ? "python" : t.f.lang) : "html", mode = t.none || (t.blank && !t.errors.length) ? "demo" : "fix";
       const r = await api("/repair", { id: p.id, mode, lang, code: t.f ? t.f.code : "", errors: t.errors.length ? t.errors : ["The result " + t.why + " when it runs."] });
       if (r.error) { row.cls = "bad"; row.text = t.why + " · fix failed: " + r.error; continue; }
       const st2 = await api("/state?id=" + p.id), t2 = st2.project && st2.project.final ? await trial(st2.project.final) : { ok: false, why: "couldn't load" };
+      api("/ran", { id: p.id, ok: !!t2.ok, why: t2.ok ? "ran clean" : (t2.errors && t2.errors[0]) || t2.why }).catch(() => {});
       row.cls = t2.ok ? "good" : "bad"; row.text = t2.ok ? "fixed (v" + r.version + ") · runs clean" : "v" + r.version + " still " + t2.why;
     }
     const good = rows.filter((r) => r.cls === "good").length; draw(good + " of " + rows.length + " run clean" + (rows.length - good ? " · tap one to open it" : "")); $("audit").disabled = false;
@@ -154,8 +155,11 @@
   // ── running it ──
   function sized() { const w = R.size; $("stage").style.setProperty("--w", w ? w + "px" : "100%"); document.querySelectorAll("#sizes [data-sz]").forEach((b) => b.classList.toggle("on", +b.dataset.sz === w)); }
   $("sizes").onclick = (e) => { const b = e.target.closest("[data-sz]"); if (!b) return; R.size = +b.dataset.sz; LSS("swarm-size", R.size); sized(); };
+  // how the current result did, reported once it settles: Genesis reads its builds' record when it reflects and plans
+  function report(at) { if (R.ran !== at || R.view != null || !cur || !(last && last.project.join)) return;
+    const ok = !R.errors.length && !R.silent; api("/ran", { id: cur, ctok: mine()[cur], ok, why: ok ? "ran clean" : R.errors[0] || "showed nothing" }).catch(() => {}); }
   function runIt(f) {
-    f = f || R.entry; if (!f || !window.HiveRun) return; R.ran = Date.now(); R.log = R.note ? [{ kind: "info", text: R.note }] : []; R.note = null; R.errors = []; R.runFile = f; sized(); con();
+    f = f || R.entry; if (!f || !window.HiveRun) return; R.ran = Date.now(); { const at = R.ran; setTimeout(() => report(at), f.lang === "py" ? 30000 : 6000); } R.log = R.note ? [{ kind: "info", text: R.note }] : []; R.note = null; R.errors = []; R.runFile = f; sized(); con();
     HiveRun.run($("preview"), f, R.files, (kind, text) => {
       if (kind === "shape") return shape(f, text);
       if (kind === "loaded") { R.log.push({ kind: "info", text: "loaded" }); } else { R.log.push({ kind, text }); if (kind === "exception" || kind === "error") R.errors.push(text); } con(); autofix(); });
