@@ -37,6 +37,27 @@ const CF_MODELS = [
   ["@hf/google/gemma-7b-it", "Gemma 7B", []],
   ["@cf/mistral/mistral-7b-instruct-v0.1", "Mistral 7B", []],
 ];
+// what would break a page the moment it loads: a <script> or <style> left open, or a script cut off part-way (its
+// brackets never close: what a reply stopped by a length limit looks like). An unclosed <div> doesn't count: browsers mend those.
+export function pageProblem(html) {
+  const t = String(html || "");
+  if ((t.match(/<script\b/gi) || []).length > (t.match(/<\/script>/gi) || []).length) return "a <script> is never closed";
+  if ((t.match(/<style\b/gi) || []).length > (t.match(/<\/style>/gi) || []).length) return "a <style> is never closed";
+  for (const m of t.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) { if (/\bsrc=|type=["']?(application\/(ld\+)?json|text\/(template|x-|plain))/i.test(m[1])) continue; const b = unbalanced(m[2]); if (b) return "a script " + b; }
+  return null;
+}
+function unbalanced(js) { // brackets outside strings, template literals and comments
+  const st = [], pair = { ")": "(", "]": "[", "}": "{" }; let q = null;
+  for (let i = 0; i < js.length; i++) {
+    const c = js[i], d = js[i + 1];
+    if (q) { if (c === "\\") { i++; continue; } if (c === q) q = null; continue; }
+    if (c === "/" && d === "/") { const e = js.indexOf("\n", i); i = e < 0 ? js.length : e; continue; }
+    if (c === "/" && d === "*") { const e = js.indexOf("*/", i + 2); if (e < 0) return "ends inside a comment"; i = e + 1; continue; }
+    if (c === "'" || c === '"' || c === "`") { q = c; continue; }
+    if ("([{".includes(c)) st.push(c); else if (")]}".includes(c)) { if (st.pop() !== pair[c]) return "has a stray " + c; }
+  }
+  return q ? "ends inside a string" : st.length ? "is cut off: " + st.length + " bracket" + (st.length > 1 ? "s" : "") + " never close" : null;
+}
 const PLANNER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"; // decides which tools a message needs (src/hive-agent.js)
 // Keyed providers: OpenAI-compatible chat endpoints, used only when their secret is set.
 const KEYED = [
@@ -520,6 +541,7 @@ export class Hive extends DurableObject {
       delete this._igTried[p.id];
       const fin = out.trim() + (run ? teamFiles(rows) : "");
       q.exec("UPDATE proj SET status='done', final=? WHERE id=?", fin.slice(0, 200000), p.id); this.say(p.id, ig.name, "done", "assembled the final deliverable (" + out.length + " chars" + (fin.length > out.trim().length ? ", plus the team's source files" : "") + ")");
+      const chk = this.precheck(p.id).catch(() => {}); if (this.ctx.waitUntil) this.ctx.waitUntil(chk);
       return;
     }
     // stuck: nobody can take what's open (no idle agent with that role) → let any idle agent take it next tick
@@ -531,6 +553,17 @@ export class Hive extends DurableObject {
   }
 
   // ── the key vault: unlimited keys, any provider, sealed at rest, owner only ──
+  // before he opens it: the page a result runs is checked for what would break it at once (an unclosed tag, a script
+  // cut off), and if it would, the strongest model on the mission fixes it as a new version. Once per mission.
+  async precheck(pid) {
+    const p = this.sql().exec("SELECT id, final, note FROM proj WHERE id=?", pid).toArray()[0]; if (!p || !p.final || /prechecked/.test(p.note || "")) return null;
+    this.sql().exec("UPDATE proj SET note=COALESCE(note,'') || ' prechecked' WHERE id=?", pid);
+    const blocks = [...p.final.matchAll(/```html?([^\n]*)\n([\s\S]*?)```/gi)], page = blocks.find((m) => /\brun\b/.test(m[1])) || blocks.find((m) => /<!doctype|<html[\s>]/i.test(m[2])); if (!page) return null;
+    const why = pageProblem(page[2]); if (!why) { this.say(pid, "hive", "info", "checked the page before you open it: tags and scripts close"); return { ok: true }; }
+    this.say(pid, "hive", "info", "checked the page before you open it: " + why + "; asking for a fix");
+    const r = await (await this.fetch(new Request("https://mentifaber.org/api/hive/repair", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ id: pid, mode: "fix", lang: "html", code: page[2], errors: ["Found before it ran: " + why + ". Return the whole page with it fixed."] }) }))).json().catch(() => ({}));
+    return { ok: false, why, fixed: !!r.version };
+  }
   // a public link for a finished result: runnable code only (a page, a script or Python), served sandboxed by build.html
   // live: public; otherwise a private preview only the owner can open (what Genesis makes for its own builds: he decides what goes public)
   publish(p, by, live) {
