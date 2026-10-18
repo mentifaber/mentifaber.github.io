@@ -20,12 +20,45 @@
     $("go").disabled = false; $("caprow").classList.toggle("hidden", !owner);
     const mineNow = mine(), canDel = (p) => owner || mineNow[p.id];
     $("purge").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => /done|stopped|failed/.test(p.status)));
+    $("audit").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => p.status === "done" && p.has)); home.list = j.projects || [];
     $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + esc(p.id) + "' class='pl'><span class='pt'><b>" + esc(p.title) + "</b>" + (p.by === "genesis" ? "<i class='byg' title='Started by Genesis on its own'>by Genesis</i>" : "") + "<span class='dim'>" + ago(p.ts) + " ago · " + p.calls + " calls</span></span>" +
       (p.has ? "<button class='q sm' data-run title='Run what it made'>Run</button>" : "") + "<span class='st " + esc(p.status) + "'>" + esc(p.status) + "</span>" + (canDel(p) ? "<button class='x' data-del title='Delete this mission' aria-label='Delete'>✕</button>" : "") + "</div>").join("") : "<span class='dim'>none yet</span>";
   }
   const del = async (id, title) => { if (!confirm("Delete “" + (title || "this mission") + "” for good? Its tasks, agents, log and result all go.")) return false; const j = await api("/delete", { id, ctok: mine()[id] }); if (j.error) { alert(j.error); return false; } try { const m = mine(); delete m[id]; localStorage.setItem("hive-mine", JSON.stringify(m)); } catch (e) {} return true; };
   $("plist").onclick = async (e) => { const d = e.target.closest("[data-id]"); if (!d) return; if (e.target.closest("[data-del]")) { e.stopPropagation(); if (await del(d.dataset.id, d.querySelector("b").textContent)) home(); return; } open(d.dataset.id, e.target.closest("[data-run]") ? "run" : null); };
   $("purge").onclick = async () => { if (!confirm("Delete every finished, stopped and failed mission? Running ones stay.")) return; const j = await api("/purge", {}); if (j.error) return alert(j.error); home(); };
+  // ── check every build: run each finished result unseen, and send what fails (or shows nothing) to be fixed ──
+  function trial(final, ms) { // run a result in a hidden sandbox: { ok, why, errors, what }
+    return new Promise((done) => {
+      const fs = HiveRun.files(final), f = HiveRun.entry(fs, /_The integrators couldn't finish/.test(final)); if (!f) return done({ ok: false, why: "nothing to run", errors: [], none: true });
+      const fr = document.createElement("iframe"); fr.setAttribute("sandbox", "allow-scripts allow-modals allow-forms"); fr.className = "trialf"; document.body.appendChild(fr);
+      const errors = []; let shape = null, loaded = false;
+      const end = () => { fr.remove(); const blank = shape && (f.lang === "html" ? shape.text < 2 && !shape.media : shape.out === 0 && !shape.media);
+        done({ ok: !errors.length && loaded && !blank, why: errors.length ? errors.length + " error" + (errors.length > 1 ? "s" : "") : !loaded ? "never finished loading" : blank ? "shows nothing" : "runs clean", errors, f, blank: !!blank }); };
+      HiveRun.run(fr, f, fs, (kind, text) => { if (kind === "loaded") loaded = true; else if (kind === "shape") { try { shape = JSON.parse(text); } catch (e) {} } else if (kind === "exception" || kind === "error") errors.push(text); });
+      setTimeout(end, ms || (f.lang === "py" ? 30000 : 7000));
+    });
+  }
+  $("audit").onclick = async () => {
+    const todo = (home.list || []).filter((p) => p.status === "done" && p.has); if (!todo.length || !window.HiveRun) return;
+    const mend = confirm("Check " + todo.length + " finished build" + (todo.length > 1 ? "s" : "") + "? Each runs unseen for a few seconds.\n\nOK: also send the broken ones to the Swarm to fix (a model call or two each).\nCancel: just check them.");
+    const box = $("auditp"); box.classList.remove("hidden"); $("audit").disabled = true; const rows = [];
+    const draw = (msg) => { box.innerHTML = "<div class='ah'><b>Build check</b><span class='dim'>" + esc(msg) + "</span><button class='x' id='auditx' aria-label='Close'>✕</button></div>" + rows.map((r) => "<div class='ar " + r.cls + "' data-id='" + esc(r.id) + "'><span>" + esc(r.title) + "</span><span>" + esc(r.text) + "</span></div>").join(""); $("auditx").onclick = () => box.classList.add("hidden"); };
+    box.onclick = (e) => { const d = e.target.closest(".ar[data-id]"); if (d) open(d.dataset.id, "run"); };
+    for (const [n, p] of todo.entries()) {
+      const row = { id: p.id, title: p.title, cls: "wait", text: "running…" }; rows.push(row); draw((n + 1) + " of " + todo.length);
+      const st = await api("/state?id=" + p.id); if (!st.project || !st.project.final) { row.cls = "bad"; row.text = "couldn't load"; continue; }
+      let t = await trial(st.project.final); row.cls = t.ok ? "good" : "bad"; row.text = t.why; draw((n + 1) + " of " + todo.length);
+      if (t.ok || !mend) continue;
+      row.cls = "wait"; row.text = t.why + " · fixing…"; draw((n + 1) + " of " + todo.length);
+      const lang = t.f ? (t.f.lang === "py" ? "python" : t.f.lang) : "html", mode = t.none || (t.blank && !t.errors.length) ? "demo" : "fix";
+      const r = await api("/repair", { id: p.id, mode, lang, code: t.f ? t.f.code : "", errors: t.errors.length ? t.errors : ["The result " + t.why + " when it runs."] });
+      if (r.error) { row.cls = "bad"; row.text = t.why + " · fix failed: " + r.error; continue; }
+      const st2 = await api("/state?id=" + p.id), t2 = st2.project && st2.project.final ? await trial(st2.project.final) : { ok: false, why: "couldn't load" };
+      row.cls = t2.ok ? "good" : "bad"; row.text = t2.ok ? "fixed (v" + r.version + ") · runs clean" : "v" + r.version + " still " + t2.why;
+    }
+    const good = rows.filter((r) => r.cls === "good").length; draw(good + " of " + rows.length + " run clean" + (rows.length - good ? " · tap one to open it" : "")); $("audit").disabled = false;
+  };
   $("pdel").onclick = async () => { if (await del(cur, last && last.project.title)) home(); };
   $("go").onclick = async () => { const brief = $("brief").value.trim(); if (!brief) return; $("go").disabled = true; $("gomsg").textContent = "assembling the swarm…";
     const j = await api("/new", { brief, cap: +$("cap").value || undefined }); $("go").disabled = false; if (j.error) { $("gomsg").textContent = j.error; return; } remember(j.id, j.ctok); $("gomsg").textContent = ""; $("brief").value = ""; open(j.id); };
@@ -71,7 +104,24 @@
     versions(p);
     if (p.final && R.view == null && p.final !== R.final) result(p.final);
     if (!tab) show(p.final ? "run" : "swarm"); else if (!p.final && tab !== "swarm") show("swarm"); else show(tab);
+    pubbar(p);
     $("dlzip").disabled = !R.final; $("aflabel").classList.toggle("hidden", !p.join); $("mkrun").classList.toggle("hidden", !p.join);
+  }
+
+  // ── its own link: a private preview (what Genesis's builds get) or public; the owner decides ──
+  function pubbar(p) {
+    const can = p.owner && p.status === "done" && !!R.entry, pb = p.pub;
+    $("publink").classList.toggle("hidden", !can || !pb); $("pubbtn").classList.toggle("hidden", !can);
+    if (!can) return;
+    if (pb) { $("publink").href = pb.url; $("publink").textContent = (pb.live ? "Public link" : "Private preview") + " ↗"; $("publink").title = pb.url; }
+    $("pubbtn").textContent = !pb ? "Publish" : pb.live ? "Unpublish" : "Make public"; $("pubbtn").classList.toggle("gold", !pb || !pb.live);
+    $("pubbtn").onclick = async () => {
+      if (pb && pb.live && !confirm("Take this build down? Its link stops working for everyone.")) return;
+      $("pubbtn").disabled = true; const r = await api(pb && pb.live ? "/unpublish" : "/publish", { id: p.id }); $("pubbtn").disabled = false;
+      if (r.error) return alert(r.error);
+      if (r.url && navigator.clipboard) navigator.clipboard.writeText(r.url).catch(() => {});
+      $("pubbtn").textContent = r.url ? "Link copied" : "Taken down"; setTimeout(poll, 400);
+    };
   }
 
   // ── the result: files, the one that runs, the write-up ──

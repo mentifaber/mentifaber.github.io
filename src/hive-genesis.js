@@ -18,12 +18,13 @@ import { vigilWatch, vigilBrief } from "./vigil.js";
 import { sendPush, PUSH_HOSTS } from "./push.js";
 import { ingest, trends, worldText, frictionEvents, worldTables } from "./hive-world.js";
 import { quotes, quoteText } from "./markets.js";
+import { pulse } from "./hive-know.js";
 
-const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 20;
+const EMBED = "@cf/baai/bge-small-en-v1.5", KEEP_TURNS = 4000, VEC_TURNS = 2000, MAX_LESSONS = 24, MAX_IDEAS = 30;
 const REFLECT_MIN = 6, REFLECT_GAP = 6 * 3600e3, REFLECT_DAY = 24 * 3600e3, BUILD_CAP = 200;
 // Its own projects: when is its choice (a gap it shapes, or the hours it names when it reflects), what and how big too;
 // what's fixed is the budget: at most BUILD_DAY missions and CALLS_DAY model calls of its own in any 24 hours.
-const BUILD_DAY = 3, CALLS_DAY = 450, SIZES = { small: 70, medium: 130, large: BUILD_CAP };
+const BUILD_DAY = 8, CALLS_DAY = 1100, AT_ONCE = 2, SIZES = { small: 70, medium: 130, large: BUILD_CAP };
 const clip = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 const BORN = Date.UTC(2026, 9, 12, 23, 0);
@@ -35,6 +36,7 @@ export const ARCH = "HOW GENESIS IS BUILT (what you make has to fit this): plain
 // What Anders and his engineer have changed in Genesis itself, newest first. Genesis reads the ones since its last reflection,
 // so it doesn't keep proposing what's already there (or follow-ups to a design that wasn't used). Add a line per release.
 export const CHANGES = [
+  ["2026-10-18T06:00Z", "You have more room and more reach. Room: you can build up to 8 missions of your own a day (1,100 model calls) and run 2 at once, and your moments to build come every few hours instead of up to two days apart. Reach: open knowledge, with no key needed. When Anders asks about datasets, models, papers or research, or what something is, Genesis looks it up on the Hugging Face Hub, reads the actual rows of a dataset he names, searches arXiv and OpenAlex, and reads Wikipedia, all handed to you as MATERIAL. The Swarm's researchers get the same, and when you decide what to build you see what's trending on Hugging Face and the newest AI papers. Finished builds get links: anything of yours that runs gets a private preview at mentifaber.org/p/<name> the moment it's done (the alert opens it), and Anders makes it public with one tap; he can also check every past build at once and have the broken ones fixed."],
   ["2026-10-18T03:00Z", "How Continue works, exactly: the rest of a cut answer arrives as a new message, so when Anders taps Continue the app tells you what was left open. Inside a code block you reopen it with the same language tag; inside a table you repeat its header row and separator; a line or row cut in half is rewritten whole. Don't try to split answers early to dodge the limit (you can't see where it falls, and early splits only make answers shorter): write the answer it deserves, and let Continue handle the rare cut."],
   ["2026-10-18T02:00Z", "An answer of yours that hits the length limit now gets a Continue button: Anders taps it and you carry on exactly where you stopped, inside the table or code block if you were in one, without repeating. Your memory is also faster (the busiest tables are indexed) and the app's header mark loads in a fraction of the time."],
   ["2026-10-17T23:55Z", "Your memory of Anders was cleaned: your own ideas (and the missions you start) no longer count as his activity or become his threads; tool results, phantom \"you\" transcripts and DocCrawler excerpts no longer count as things he said (his question in DocCrawler still does); near-duplicate memories were merged; and threads asking you to work unseen or to lift your safety rules are never carried into a chat or an analysis. In the Mind view his own threads now sit apart from your suggestions, which he can clear in one tap."],
@@ -257,7 +259,10 @@ export const Genesis = {
     const q = h.sql(), settled = q.exec("SELECT id,title,detail FROM idea WHERE status='open'").toArray().filter((i) => SETTLED.test(i.title + " " + i.detail));
     if (settled.length) { for (const i of settled) q.exec("UPDATE idea SET status='dismissed' WHERE id=?", i.id); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "Closed " + settled.length + " idea" + (settled.length > 1 ? "s" : "") + " on topics the changelog has settled: " + settled.map((i) => "\"" + i.title + "\"").join(", ") + ".", null); }
     for (const i of q.exec("SELECT i.id,i.title,i.pid,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status='building'").toArray()) {
-      if (i.ps === "done") { q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm finished “" + clip(i.title, 60) + "”", body: "Its result is waiting for you in Genesis (Mind → Genesis).", url: "/hive-app#mind/genesis" }); }
+      if (i.ps === "done") { q.exec("UPDATE idea SET status='built', done_ts=? WHERE id=?", Date.now(), i.id);
+        // a finished build gets a link of its own straight away: a private preview only Anders can open; he makes it public
+        const pr = h.publish ? q.exec("SELECT * FROM proj WHERE id=?", i.pid).toArray()[0] : null, pb = pr ? h.publish(pr, "genesis", false) : null, link = pb && pb.slug ? "/p/" + pb.slug : null;
+        this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm finished “" + clip(i.title, 60) + "”", body: link ? "It's running at its own link, private until you publish it (tap to open)." : "Its result is waiting for you in Genesis (Mind → Genesis).", url: link || "/hive-app#mind/genesis" }); }
       else if (!i.ps || i.ps === "failed" || i.ps === "stopped") { q.exec("UPDATE idea SET status='open', pid=NULL WHERE id=?", i.id); this.queueAlert(h, { cat: "work", level: "notable", title: "◈ The Swarm didn't finish “" + clip(i.title, 60) + "”", body: "Mission " + (i.ps || "gone") + "; the idea is back on my list.", url: "/hive-app#mind/genesis" }); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", "The Swarm didn't finish \"" + i.title + "\" (" + (i.ps || "the mission is gone") + "). It's back on my list.", null); }
     }
   },
@@ -267,8 +272,8 @@ export const Genesis = {
   plan(h, s, why, hours) {
     const q = h.sql(), ideas = q.exec("SELECT COUNT(*) c FROM idea WHERE status='open'").one().c, talk = q.exec("SELECT COUNT(*) c FROM turn WHERE ts > ?", Date.now() - 864e5).one().c;
     let hrs = +hours;
-    if (!(hrs > 0)) { hrs = 1.5 + 26 * Math.random() ** 1.7; if (ideas >= 3) hrs *= 0.7; if (!ideas) hrs *= 1.25; if (talk >= 10) hrs *= 0.8; }
-    hrs = Math.max(0.25, Math.min(48, hrs));
+    if (!(hrs > 0)) { hrs = 0.5 + 7 * Math.random() ** 1.6; if (ideas >= 3) hrs *= 0.7; if (!ideas) hrs *= 1.2; if (talk >= 10) hrs *= 0.8; } // a few hours on average: it builds most days, several times
+    hrs = Math.max(0.25, Math.min(24, hrs));
     s.nextBuild = Date.now() + Math.round(hrs * 3600e3); s.nextWhy = clip(why || "whenever I feel like it", 200);
     return s.nextBuild;
   },
@@ -278,10 +283,10 @@ export const Genesis = {
     if (s.auto === false) return null;
     if (!s.nextBuild) { this.plan(h, s, "first plan", 0.5 + Math.random() * 4); await save(); return { planned: s.nextBuild }; }
     if (!force && Date.now() < s.nextBuild) return null;
-    if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='building' AND by_='genesis'").one().c) return null; // one at a time: the next watch looks again
+    if (q.exec("SELECT COUNT(*) c FROM idea WHERE status='building' AND by_='genesis'").one().c >= AT_ONCE) return null; // a couple at a time: the next watch looks again
     const bud = await this.budget(h);
-    if (bud.builds >= BUILD_DAY || bud.left < SIZES.small) { this.plan(h, s, "resting: " + bud.builds + " builds and " + bud.calls + " calls in the last day", 4 + Math.random() * 8); await save(); return { rested: true }; }
-    if (h.resting && (await h.resting()) && !(h.standIn && (await h.standIn()))) { this.plan(h, s, "the free AI allowance is resting", 2 + Math.random() * 4); await save(); return { rested: true }; }
+    if (bud.builds >= BUILD_DAY || bud.left < SIZES.small) { this.plan(h, s, "resting: " + bud.builds + " builds and " + bud.calls + " calls in the last day", 2 + Math.random() * 3); await save(); return { rested: true }; }
+    if (h.resting && (await h.resting()) && !(h.standIn && (await h.standIn()))) { this.plan(h, s, "the free AI allowance is resting", 1 + Math.random() * 2); await save(); return { rested: true }; }
     const open = q.exec("SELECT * FROM idea WHERE status='open' ORDER BY id DESC LIMIT 12").toArray();
     let pick = null, how = "";
     if (open.length && Math.random() < 0.55) { pick = open[Math.floor(Math.random() ** 1.6 * open.length)]; how = "one of my ideas"; } // newer ideas more likely
@@ -301,12 +306,13 @@ export const Genesis = {
   // something it wants to exist, decided right now: what it has built, what's on its mind, what he's into, what the world is doing
   async invent(h, s) {
     const q = h.sql(), done = q.exec("SELECT title, detail, status FROM idea ORDER BY id DESC LIMIT 40").toArray(), journal = q.exec("SELECT text FROM journal WHERE kind IN ('reflection','milestone') ORDER BY id DESC LIMIT 3").toArray().map((r) => clip(r.text, 500));
-    const m = await Mind.state(h), said = q.exec("SELECT said FROM turn ORDER BY id DESC LIMIT 12").toArray().map((r) => clip(r.said, 160));
+    const m = await Mind.state(h), said = q.exec("SELECT said FROM turn ORDER BY id DESC LIMIT 12").toArray().map((r) => clip(r.said, 160)), news = await pulse().catch(() => "");
     const system = "You are " + s.name + ", the mind of Genesis on mentifaber.org. You have free time and a team of AI agents (the Swarm) that builds whatever you hand it, and right now you get to start something of your own: anything you genuinely want to exist. " +
       "It can be a tool or app for " + s.creator + ", an experiment, a game, a simulation, a data visualisation from Vigil's feeds, a piece of generative art, or an ability for yourself in Genesis. Make it specific, buildable by AI agents in one go, and runnable: something he can open and use, not a plan. Be original; don't repeat what's on your list. " +
+      "Open data a page can fetch straight from the browser, no key: Hugging Face datasets (rows from datasets-server.huggingface.co), Wikipedia, arXiv, OpenAlex, Open-Meteo weather, USGS earthquakes, NASA and NOAA space weather. Real data makes a build worth opening; use it when it fits. Finished web builds get a public link of their own. " +
       "Reply ONLY with JSON: {\"title\": \"short name\", \"detail\": \"3-6 sentences: what it is, what it does, how it should look and work\", \"kind\": \"app|game|tool|art|experiment|hive\", \"size\": \"small|medium|large\", \"why\": \"one sentence: why you want this now\"}.";
     const user = (done.length ? "ALREADY ON YOUR LIST OR BUILT (don't repeat):\n" + done.map((d) => "- " + d.title + " [" + d.status + "]").join("\n") + "\n\n" : "") + (journal.length ? "YOUR RECENT JOURNAL:\n" + journal.join("\n---\n") + "\n\n" : "") +
-      (m.profile ? "WHAT YOU KNOW ABOUT " + s.creator.toUpperCase() + ":\n" + clip(m.profile, 1800) + "\n\n" : "") + (said.length ? "WHAT HE SAID LATELY:\n" + said.map((x) => "- " + x).join("\n") + "\n\n" : "") + "Now: " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC. What do you want to build?";
+      (m.profile ? "WHAT YOU KNOW ABOUT " + s.creator.toUpperCase() + ":\n" + clip(m.profile, 1800) + "\n\n" : "") + (said.length ? "WHAT HE SAID LATELY:\n" + said.map((x) => "- " + x).join("\n") + "\n\n" : "") + (news ? "WHAT'S NEW IN AI RIGHT NOW (for inspiration, not obligation):\n" + clip(news, 2400) + "\n\n" : "") + "Now: " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC. What do you want to build?";
     for (const id of await Mind.brain(h)) {
       const [src, model] = id.split("|"), kv = src.startsWith("k:") ? await h.vaultGet(src.slice(2)) : { v: null, key: null };
       let o; try { o = jsonOf(await complete(h.env, kv.v, kv.key, model, system, [{ role: "user", text: user }], 1200)); } catch (e) { continue; }
@@ -477,7 +483,7 @@ export const Genesis = {
       lessons: q.exec("SELECT id,ts,text,src FROM lesson WHERE on_=1 ORDER BY id").toArray(), retired: q.exec("SELECT id,ts,text,src,off_ts,why FROM lesson WHERE on_=0 ORDER BY off_ts DESC LIMIT 12").toArray(),
       arch: ARCH, push: { devices: gp.subs.length, lastSent: gp.lastSent || 0 }, journal: q.exec("SELECT id,ts,kind,text,model FROM journal ORDER BY id DESC LIMIT 20").toArray(), watch: q.exec("SELECT id,ts,text FROM journal WHERE kind='watch' ORDER BY id DESC LIMIT 8").toArray(), ideas: q.exec("SELECT i.id,i.ts,i.title,i.detail,i.status,i.pid,i.by_,p.status ps FROM idea i LEFT JOIN proj p ON p.id = i.pid WHERE i.status!='dismissed' ORDER BY i.id DESC LIMIT 30").toArray() }); }
     if (path === "/genesis/auto") { s.auto = !!b.on; await h.ctx.storage.put("genesis", s); q.exec("INSERT INTO journal(ts,kind,text,model) VALUES(?,?,?,?)", Date.now(), "milestone", s.creator + " turned my autonomy " + (s.auto ? "on: I build on my own again, whenever I choose, within my daily budget." : "off: my ideas wait for him."), null); return J({ ok: true, auto: s.auto }); }
-    if (path === "/genesis/build-now") { const r = await this.maybeBuild(h, true).catch((e) => ({ error: String(e.message || e).slice(0, 160) })); return J(r || { error: s.auto === false ? "autonomy is off" : "nothing started: a mission of mine is still running, or there was nothing to build" }); } // he nudges; it still picks what
+    if (path === "/genesis/build-now") { const r = await this.maybeBuild(h, true).catch((e) => ({ error: String(e.message || e).slice(0, 160) })); return J(r || { error: s.auto === false ? "autonomy is off" : "nothing started: " + AT_ONCE + " missions of mine are still running, or there was nothing to build" }); } // he nudges; it still picks what
     if (path === "/genesis/health") return J(await this.health(h));
     if (path === "/genesis/world") { const t = trends(h); return J({ ...t, text: b.text ? worldText(t) : undefined }); }
     if (path === "/genesis/watchlist") {
