@@ -1,0 +1,26 @@
+// Checks on a finished answer, in Chromium: code blocks parsed in the browser (✓ / ⚠), citations with no source removed.
+import { createRequire } from "node:module"; import assert from "node:assert/strict";
+const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
+const DEV = process.argv[3] || "desktop";
+globalThis.fetch = async () => { throw new Error("offline"); };
+const H = await import("../gtest/harness.mjs"); H.hive.sql();
+const ANSWER = "Here you go, as the docs say [3].\n\n```js\nfunction add(a, b) { return a + b\nconsole.log(add(1, 2))\n```\n\n```json\n{\"ok\": true, \"n\": [1, 2]}\n```\n\n```html\n<div class=\"card\"><p>Hi</p>\n```\n\n```css\n.a { color: red; }\n```\n\n```js\nexport const twice = (x) => x * 2;\nawait Promise.resolve(1);\n```";
+H.setResponder((sys) => /You decide which tools Genesis/.test(sys) ? JSON.stringify({ calls: [] }) : ANSWER);
+const b = await chromium.launch({ args: ["--no-proxy-server"] });
+const ctx = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" });
+await ctx.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: req.postData() || undefined }));
+  const h = {}; res.headers.forEach((v, k) => (h[k] = v)); return route.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) }); });
+await ctx.route(/\/api\/(?!hive)/, (rt) => rt.fulfill({ contentType: "application/json", body: "{}" }));
+await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
+const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => { if (!/Service worker is disabled/.test(e.message)) errs.push(e.message); });
+await p.goto("http://localhost:8099/hive-app.html#studio"); await p.waitForTimeout(900);
+await p.fill("#inp", "write me a few snippets"); await p.click("#sendb");
+const end = Date.now() + 15000; while (Date.now() < end && !(await p.$(".ex:not(.pending) .m.ai .pre .ck"))) await p.waitForTimeout(150);
+const ck = await p.$$eval(".m.ai .pre", (ps) => ps.map((x) => (x.querySelector("header span") || {}).textContent + " → " + ((x.querySelector(".ck") || {}).className || "none") + ": " + ((x.querySelector(".ck") || {}).textContent || "")));
+console.log("   " + ck.join("\n   "));
+assert.match(ck[0], /^js → ck bad: ⚠ /); assert.match(ck[1], /^json → ck ok: ✓ valid JSON/); assert.match(ck[2], /^html → ck bad: ⚠ <div> isn't closed/); assert.match(ck[3], /^css → ck ok: ✓ braces balance/); assert.match(ck[4], /^js → ck ok: ✓ parses/);
+console.log("ok", DEV, "code blocks are checked once the answer is in: broken JS and an unclosed <div> flagged; JSON, CSS and a module with top-level await pass");
+const t = await p.textContent(".ex:not(.pending) .m.ai"); assert.match(t, /1 citation pointed at no source and was removed/); assert.doesNotMatch(t, /\[3\]/); console.log("ok", DEV, "a citation with no source behind it is removed, and the answer says so");
+await p.click(".m.ai .pre .ck.bad [data-fixck]"); await p.waitForTimeout(600);
+const asked = await p.$$eval(".m.user .b", (x) => x.map((e) => e.textContent)); assert.ok(asked.some((t) => /^The js block \(number 1 in your last answer\) doesn't check out: Unexpected token[^.]*\. Send the corrected block in full/.test(t)), JSON.stringify(asked)); console.log("ok", DEV, "“Fix it” on a flagged block asks for the corrected block, naming the error");
+assert.deepEqual(errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);

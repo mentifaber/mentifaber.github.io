@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
+writeFileSync(new URL("./src/agent.js", import.meta.url), readFileSync(process.argv[2] + "/src/agent.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-shim.mjs"'));
+const { Agent } = await import("./src/agent.js");
+const mk = (failFirst, failMid) => {
+  let asks = 0; const store = new Map([["st", { meta: { label: "Qwen3 14B", key: "k", size: 9e9 }, origin: "https://mentifaber.org" }]]);
+  const port = { fetch: async (req) => { const u = new URL(typeof req === "string" ? req : req.url);
+    if (u.pathname === "/health") return new Response("ok"); if (u.pathname === "/props") return Response.json({ n_ctx: 16384 });
+    if (u.pathname === "/apply-template") return Response.json({ prompt: "x" }); if (u.pathname === "/tokenize") return Response.json({ tokens: [1, 2, 3] });
+    asks++; if (failFirst && asks === 1) throw new Error("Container port connection closed unexpectedly");
+    const enc = new TextEncoder(); return new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n\n')); if (failMid && asks === 1) { setTimeout(() => c.error(new Error("closed mid-reply")), 20); return; } c.enqueue(enc.encode("data: [DONE]\n\n")); c.close(); } }), { headers: { "content-type": "text/event-stream" } }); } };
+  const ctx = { container: { running: true, start() {}, monitor: () => new Promise(() => {}), getTcpPort: () => port, destroy: async () => {} }, storage: { get: async (k) => store.get(k), put: async (k, v) => store.set(k, v), getAlarm: async () => 1, setAlarm: async () => {} } };
+  const a = new Agent(ctx, { AGENT_PUBLIC: "1" }); a.ready = true; return { a, asks: () => asks };
+};
+const req = (stream) => new Request("http://agent/v1/chat/completions", { method: "POST", headers: { "x-agent-owner": "1" }, body: JSON.stringify({ messages: [{ role: "user", content: "hello" }], stream }) });
+let t = mk(true); let r = await t.a.fetch(req(true)); let s = await r.text();
+assert.match(s, /restarted; asking again/); assert.match(s, /"content":"hi"/); assert.doesNotMatch(s, /couldn't answer/); assert.equal(t.asks(), 2); console.log("  ✓ stream: container dropped before replying → it waits, asks again, the reply arrives");
+t = mk(true); r = await t.a.fetch(req(false)); s = await r.text(); assert.match(s, /"content":"hi"/); assert.equal(t.asks(), 2); console.log("  ✓ non-stream: same, one retry");
+t = mk(false, true); r = await t.a.fetch(req(true)); s = await r.text(); assert.match(s, /"content":"hi"/); assert.match(s, /couldn't answer: closed mid-reply/); assert.equal(t.asks(), 1); console.log("  ✓ dropped mid-reply: no retry (it would repeat itself); the error is reported after what arrived");
+t = mk(false); r = await t.a.fetch(req(true)); s = await r.text(); assert.equal(t.asks(), 1); assert.doesNotMatch(s, /restarted|couldn't/); console.log("  ✓ healthy path unchanged");

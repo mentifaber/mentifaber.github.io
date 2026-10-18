@@ -1,0 +1,48 @@
+// The Swarm page in Chromium with a real Hive behind it: a finished mission's result runs, its errors show, "Fix it"
+// brings v2 which runs clean, sizes, code tab, zip, versions, and the list.   node swarm-ui.mjs <repo> mobile|desktop
+import { createRequire } from "node:module"; import { mkdirSync, readFileSync, writeFileSync } from "node:fs"; import assert from "node:assert/strict"; import { execSync } from "node:child_process";
+const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
+const DEV = process.argv[3] || "desktop", OUT = new URL("./shots/", import.meta.url).pathname; mkdirSync(OUT, { recursive: true });
+const H = await import("../gtest/harness.mjs");
+let r = await H.call("/new", { brief: "A tiny counter app with a reset button" }); const id = r.id;
+const broken = "<!doctype html><html><head><style>body{font:16px system-ui;padding:20px}</style></head><body><h1>Counter</h1><button id=b>+1</button><script>localStorage.setItem('seen','1');console.log('booted, storage says', localStorage.getItem('seen'));document.getElementById('b').onclick=()=>count++;undefinedThing();</script></body></html>";
+H.db.prepare("UPDATE proj SET status='done', final=? WHERE id=?").run("# Counter\n\n## Run it\n\n```html run\n" + broken + "\n```\n\n```js file=extra.js\nexport function add(a, b) { return a + b }\n```\n\nNotes: it counts.", id);
+H.db.prepare("INSERT INTO idea(ts,title,detail,status,pid,by_) VALUES(?,?,?,?,?,?)").run(Date.now(), "Counter", "x", "built", id, "genesis");
+H.setResponder((sys) => /fixing a runnable result/.test(sys) ? "```html\n<!doctype html><html><head><style>body{font:16px system-ui;padding:20px}</style></head><body><h1>Counter</h1><button id=b>+1</button> <b id=n>0</b><script>let count=Number(localStorage.getItem('n')||0);const n=document.getElementById('n');n.textContent=count;document.getElementById('b').onclick=()=>{count++;localStorage.setItem('n',count);n.textContent=count;console.log('count',count)};console.log('ready')</script></body></html>\n```" : null);
+const b = await chromium.launch({ args: ["--no-proxy-server"] });
+const ctx = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block", acceptDownloads: true });
+await ctx.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: req.method() === "POST" ? req.postData() : undefined }));
+  const h = {}; res.headers.forEach((v, k) => (h[k] = v)); return route.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) }); });
+await ctx.route(/\/api\/(?!hive)/, (rt) => rt.fulfill({ contentType: "application/json", body: "{}" }));
+await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
+const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => { if (!/Service worker is disabled because the context is sandboxed|undefinedThing|count is not defined/.test(e.message)) errs.push(e.message); }); // that one is Playwright's own service-worker blocking, run inside every frame
+const ok = (m) => console.log("ok", DEV, m), until = async (fn, ms = 10000, what = "") => { const end = Date.now() + ms; while (Date.now() < end) { if (await p.evaluate(fn)) return; await p.waitForTimeout(120); } throw new Error("timed out: " + what + " · console: " + (await p.textContent("#clog")) + " · errs " + JSON.stringify(errs)); };
+await p.goto("http://localhost:8099/hive-app.html#swarm"); await p.waitForTimeout(600);
+await until(() => /counter app/i.test(document.getElementById("plist").textContent), 8000, "list");
+assert.match(await p.textContent("#plist"), /by Genesis/); assert.ok(await p.$("#plist [data-run]")); ok("list: the finished mission has ▶ Run and says Genesis started it");
+await p.click("#plist [data-run]");
+await until(() => !document.getElementById("pt-run").classList.contains("hidden"), 8000, "run tab");
+await until(() => /1 error/.test(document.getElementById("ccount").textContent), 8000, "the load error");
+const log = await p.textContent("#clog"); assert.match(log, /booted, storage says 1/); assert.match(log, /undefinedThing is not defined/); assert.doesNotMatch(log, /SecurityError|sandboxed/);
+ok("it runs at once: storage works in the sandbox (“storage says 1”), and the console caught the crash: " + (await p.textContent("#ccount")));
+await p.click('#sizes [data-sz="390"]'); await p.waitForTimeout(450); assert.equal(await p.$eval("#preview", (f) => Math.round(f.getBoundingClientRect().width)), DEV === "mobile" ? await p.$eval("#stage", (s) => Math.round(Math.min(390, s.clientWidth))) : 390); ok("phone width: the frame is 390 px");
+await p.click('#sizes [data-sz="0"]');
+await p.screenshot({ path: OUT + "swarm-" + DEV + "-broken.png" });
+assert.equal(await p.isVisible("#fixit"), true); p.on("request", (r) => /repair/.test(r.url()) && console.log("REQ", r.url())); console.log("BOX", JSON.stringify(await p.$eval("#fixit", (e) => { const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return [r.x, r.y, r.width, r.height, t && (t.id || t.className || t.tagName), innerHeight]; }))); await p.$eval("#fixit", (e) => e.scrollIntoView({ block: "center" })); await p.waitForTimeout(300); console.log("BOX2", JSON.stringify(await p.$eval("#fixit", (e) => { const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return [r.y, t && (t.id || t.className || t.tagName)]; }))); await p.click("#fixit"); await p.waitForTimeout(600); console.log("AFTER", await p.evaluate(() => [document.getElementById("fixit").textContent, document.getElementById("fixit").disabled, document.getElementById("clog").textContent.slice(-120)]));
+await until(() => /v2 is ready/.test(document.getElementById("clog").textContent), 15000, "fixed").catch(async (e) => { console.log("CLOG:", await p.textContent("#clog"), "TAB:", await p.evaluate(() => document.querySelector("#ptabs .on")?.textContent)); throw e; });
+await until(() => /ready/.test(document.getElementById("clog").textContent) && /no errors/.test(document.getElementById("ccount").textContent), 10000, "clean run");
+const frame = p.frameLocator("#preview"); await frame.locator("#b").click(); await frame.locator("#b").click(); assert.equal(await frame.locator("#n").textContent(), "2");
+ok("Fix it → the swarm fixed it → v2 runs clean, and the button counts (2)");
+assert.equal(await p.isVisible("#vers"), true); const opts = await p.$$eval("#vers option", (o) => o.map((x) => x.textContent)); assert.match(opts[0], /Current \(v2\)/); assert.match(opts[1], /^v1 · .* · before fixing: (Uncaught )?ReferenceError/); ok("versions: " + opts.join(" | "));
+await p.selectOption("#vers", "1"); await until(() => /undefinedThing/.test(document.getElementById("final").textContent), 6000, "v1 shown");
+await until(() => /error/.test(document.getElementById("ccount").textContent), 8000, "v1 rerun"); assert.equal(await p.isVisible("#fixit"), false); ok("v1 can be looked at and run again, but not “fixed” (only the current one)");
+await p.selectOption("#vers", ""); await until(() => !/undefinedThing/.test(document.getElementById("final").textContent), 6000, "back to current");
+await p.click('#ptabs [data-pt="code"]'); const files = await p.$$eval("#files .fh b", (x) => x.map((e) => e.textContent)); assert.deepEqual(files, ["index.html", "extra.js"]); ok("code tab: " + files.join(", ") + ", each with copy / download (index.html also ▶)");
+const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#dlzip")]); const zp = OUT + "swarm.zip"; await dl.saveAs(zp);
+const z = execSync("python3 -c \"import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; print(sorted(z.namelist()))\" " + zp).toString().trim(); assert.equal(z, "['README.md', 'extra.js', 'index.html']"); ok("Download .zip: " + z);
+await p.click('#ptabs [data-pt="doc"]'); assert.match(await p.textContent("#finalmd"), /runnable part is in the Run tab/); assert.match(await p.textContent("#finalmd"), /Notes: it counts/);
+await p.click('#ptabs [data-pt="swarm"]'); assert.equal(await p.isVisible("#board"), true); ok("write-up and swarm tabs show the rest");
+await p.click('#ptabs [data-pt="run"]'); await p.waitForTimeout(400); await p.screenshot({ path: OUT + "swarm-" + DEV + "-fixed.png" });
+const sw = await p.evaluate(() => document.documentElement.scrollWidth), vw = await p.evaluate(() => innerWidth); assert.ok(sw <= vw + 1, "sideways scroll " + sw);
+assert.deepEqual(errs, []); ok("no page errors (the sandbox ones are gone), no sideways scroll");
+await b.close(); console.log("all passed", DEV);
