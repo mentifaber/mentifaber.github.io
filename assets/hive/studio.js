@@ -181,7 +181,7 @@ $("log").onclick = async (e) => {
     if (r < 0) { note = prompt("What should " + gname + " do differently? (optional, it reads this when it reflects)") ; if (note === null) return; }
     const j = await api("/genesis/rate", { turn: m.turn, rating: r, note: note || undefined }); if (j.error) return toast(j.error);
     m.rating = r; save(); drawMsg(m, i); if (r) toast(r > 0 ? "Noted: " + gname + " keeps doing that" : gname + " will learn from this", 2400); return; }
-  if (a.dataset.act === "more") { if (i !== chat.msgs.length - 1) return toast("Continue works on the latest answer"); return send("Continue exactly where you stopped. Don't repeat anything; if you were inside a code block or table, carry on inside it."); }
+  if (a.dataset.act === "more") { if (i !== chat.msgs.length - 1) return toast("Continue works on the latest answer"); return send(resume(chat.msgs[i].text)); }
   if (a.dataset.act === "redo") { const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; chat.msgs.splice(i); unlayer(i); run(u.mode === "image"); }
 };
 const SAY_AS = Object.fromEntries("NATO NASA NOAA GDACS OPEC UNESCO ASEAN UNICEF FEMA LIDAR RADAR SCUBA LASER COVID AIDS GIF JPEG ASCII CAPTCHA WIFI OK AM PM NOT AND THE YOU ARE BUT FOR NOW NEW ALL ONE TWO YES NO STOP GO NOTE WARNING ALERT HELP".split(" ").map((w) => [w, 1]));
@@ -237,6 +237,15 @@ const on = (id) => $(id).getAttribute("aria-pressed") === "true";
 let busy = null; // AbortController while a reply is coming
 $("sendb").onclick = () => (busy ? Date.now() - busyAt > 1500 && busy.abort() : send()); // a quick second tap on send isn't a stop
 
+// The continuation arrives as its own message, so it must reopen whatever the cut left open or it renders as loose text.
+function resume(t) {
+  t = String(t || ""); const fences = t.match(/^\s*```.*$/gm) || [], last = t.trimEnd().split("\n").slice(-1)[0] || "";
+  let how = "Don't repeat anything you already wrote and don't add a preamble.";
+  if (fences.length % 2) how += " You stopped inside a code block: start your reply with " + fences[fences.length - 1].trim() + " on its own line, then carry on from the next line of code (rewrite the last line whole if it was cut mid-line), and close the block when it's done.";
+  else if (/^\s*\|/.test(last)) { const rows = t.trimEnd().split("\n"); let h = -1; for (let k = rows.length - 1; k > 0; k--) if (/^\s*\|?\s*:?-{3,}/.test(rows[k]) && /^\s*\|/.test(rows[k - 1])) { h = k; break; }
+    if (h > 0) how += " You stopped inside a table: start your reply with its header row and separator again (" + rows[h - 1].trim() + " / " + rows[h].trim() + "), then carry on from the next row" + (/\|\s*$/.test(last) ? "" : ", rewriting the last, unfinished row whole") + "."; }
+  return "Continue exactly where you stopped. " + how;
+}
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
   const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /council /imagine /swarm /model /new
