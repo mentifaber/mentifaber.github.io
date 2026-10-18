@@ -17,6 +17,7 @@ export const TOOLS = {
   world: ["Genesis's own hourly record of world conflict and great-power tension, with trends over days", "", true],
   site: ["the owner's projects as listed on mentifaber.org (names, status, what each is)", "", true],
   library: ["search the documents the owner saved in Genesis's library (his own papers, notes, manuals, pages) by meaning", "what to look for", true],
+  build: ["start a Swarm mission (Genesis's team of AI agents) that builds what the owner asked for and hands back a runnable result. ONLY when he explicitly asks you to build, make or create an app, tool, game, page or program right now; never for questions, advice or code he wants to read in chat", "a complete brief: what to build, what it must do, how it should look and work", true],
 };
 export const toolsFor = (owner) => Object.keys(TOOLS).filter((k) => owner || !TOOLS[k][2]);
 
@@ -53,6 +54,7 @@ export function parseCalls(out, owner, made) {
     if (!ok.has(tool) || seen.has(key) || seen.has(tool + ":*")) continue;
     if (TOOLS[tool][1] && !arg) continue; // a tool that needs an argument didn't get one
     if (tool === "read" && !/^https?:\/\/\S+\.\S+/.test(arg)) continue;
+    if (tool === "build" && calls.some((x) => x.tool === "build")) continue; // one mission per message
     seen.add(key); calls.push({ tool, arg }); if (calls.length >= 4) break;
   }
   return calls;

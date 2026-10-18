@@ -703,6 +703,12 @@ export class Hive extends DurableObject {
     if (!ctx.owner) throw new Error("that tool is the owner's");
     if (c.tool === "vigil") { const topics = a.split(/[,\s]+/).map((x) => x.toLowerCase()).filter(Boolean).slice(0, 6), vb = await vigilBrief(this.env, topics, null, a); if (!vb.text) throw new Error("the board had nothing on " + a); return { label: "read Vigil's live board (" + vb.ok.join(", ") + ")", items: [{ title: "Vigil · live board", url: origin + "/vigil-app", text: "VIGIL LIVE BOARD (read just now):\n" + vb.text }] }; }
     if (c.tool === "world") { const t = trends(this); return { label: "read its world record", items: [{ title: "Genesis's world record (GDELT, counted hourly)", url: origin + "/vigil-app#world", text: worldText(t) }] }; }
+    if (c.tool === "build") { // he asked for something built: the Swarm starts on it, and the answer carries the link
+      if (!/\b(build|make|create|code|develop|program|write)\b/i.test(ctx.text || "")) throw new Error("only when he asks for something to be built");
+      const r = await (await this.fetch(new Request(origin + "/api/hive/new", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ brief: a.slice(0, 6000) }) }))).json().catch(() => ({}));
+      if (!r.id) throw new Error(r.error || "the Swarm couldn't start");
+      return { label: "started a Swarm mission", items: [{ title: "Swarm mission: " + a.split(/[.\n]/)[0].slice(0, 80), url: origin + "/hive-app?p=" + r.id, text: "SWARM MISSION STARTED just now for this request (id " + r.id + "): the team is planning and building it; he can watch it and run the result at " + origin + "/hive-app?p=" + r.id + ". Tell him it's under way and give him that link; don't write the whole thing out yourself as well." }] };
+    }
     if (c.tool === "library") { const lh = await Library.search(this, a, 5, 0.5); if (!lh.length) throw new Error("nothing in the library matches " + a); return { label: "searched your library: " + a.slice(0, 50), items: lh.map((x, i) => ({ title: x.title + " · passage " + x.n, url: x.src || origin + "/hive-app#mind/library", text: Library.text([x])[0] })) }; }
     if (c.tool === "site") { const st = siteText(await siteIndex(this, origin)); return { label: "read your site's project index", note: st || null, items: [] }; }
     throw new Error("unknown tool");
@@ -810,15 +816,15 @@ export class Hive extends DurableObject {
     // after seeing the results it may ask once more (read the best page in full, say). Voice skips it: every second counts there.
     if (planning) try {
       const made = new Set([...urls.map((u) => "read:" + u.toLowerCase()), ...(tools.some((t) => /^checked the weather/.test(t)) ? ["weather:*"] : []), ...(tools.some((t) => /^read Vigil/.test(t)) ? ["vigil:*"] : []), ...(tools.some((t) => /world record/.test(t)) ? ["world:*"] : []), ...(tools.some((t) => /project index/.test(t)) ? ["site:*"] : [])]);
-      const ctx = { owner, req, geo: req.headers.get("x-geo") };
+      const ctx = { owner, req, geo: req.headers.get("x-geo"), text: last.text };
       for (let round = 1; round <= 2; round++) {
         if (Date.now() - t0 > 12000) break; // the answer matters more than one more lookup
         doing(round === 1 ? "deciding what to look up" : "checking whether anything is missing");
         const calls = await this.planTools(msgs, [...tools, ...sources.map((x) => x.title + " — " + x.url)], owner, round, made);
         doing(null); if (!calls.length) break;
-        doing(calls.map((c) => ({ web: "searching the web", read: "reading " + c.arg.replace(/^https?:\/\/(www\.)?/, "").split("/")[0], wiki: "reading Wikipedia", papers: "searching papers", hf: "searching Hugging Face", rows: "reading a dataset", weather: "checking the weather", quotes: "checking prices", vigil: "reading Vigil", world: "reading the world record", site: "reading your site", library: "searching your library" })[c.tool] || c.tool).join(", "));
+        doing(calls.map((c) => ({ web: "searching the web", read: "reading " + c.arg.replace(/^https?:\/\/(www\.)?/, "").split("/")[0], wiki: "reading Wikipedia", papers: "searching papers", hf: "searching Hugging Face", rows: "reading a dataset", weather: "checking the weather", quotes: "checking prices", vigil: "reading Vigil", world: "reading the world record", site: "reading your site", library: "searching your library", build: "starting a Swarm mission" })[c.tool] || c.tool).join(", "));
         const got = await Promise.all(calls.map((c) => this.useTool(c, ctx).catch((e) => ({ label: null, note: "(" + c.tool + " failed: " + String(e.message || e).slice(0, 120) + ")" }))));
-        for (const [i, g] of got.entries()) { made.add(calls[i].tool + ":" + calls[i].arg.toLowerCase()); if (g.note) notes.push(g.note); for (const x of g.items || []) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } if (g.label) tools.push(g.label); }
+        for (const [i, g] of got.entries()) { made.add(calls[i].tool + ":" + calls[i].arg.toLowerCase()); if (calls[i].tool === "build") made.add("build:*"); if (g.note) notes.push(g.note); for (const x of g.items || []) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } if (g.label) tools.push(g.label); }
       }
     } catch (e) {}
     // eyes: Workers AI and models without vision get descriptions instead of pixels
