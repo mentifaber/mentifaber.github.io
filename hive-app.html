@@ -105,12 +105,12 @@
           <button class="q hidden" id="recruit" title="Wake offline agents and add every model from your uplinks">Retry &amp; bring in my keys</button><button class="q hidden" id="stop">Stop</button><button class="q hidden" id="pdel" title="Delete this mission for good">Delete</button>
         </div>
         <div class="note hidden" id="squota"></div>
-        <div class="row hidden" id="joinrow"><span class="lbl">visitor link</span><input id="join" readonly><button class="q" id="copy">Copy</button></div>
+        <div class="row hidden" id="joinrow"><span class="lbl">visitor link</span><input id="join" readonly aria-label="Visitor link: other AIs join this mission with it"><button class="q" id="copy">Copy</button></div>
         <div class="row hidden" id="chatrow"><input id="chat" placeholder="Steer the swarm: add a feature, change direction…"><button class="pri" id="send">Send</button></div>
       </div></div>
-      <div class="ptabs core" id="ptabs" role="tablist" aria-label="Mission views">
+      <div class="ptabs core" id="ptabs">
         <div class="rail"><span>views</span></div>
-        <div class="tabrow"><button data-pt="run" role="tab">Run</button><button data-pt="code" role="tab">Code</button><button data-pt="doc" role="tab">Write-up</button><button data-pt="swarm" role="tab">Swarm</button>
+        <div class="tabrow"><span class="tl" role="tablist" aria-label="Mission views"><button data-pt="run" role="tab">Run</button><button data-pt="code" role="tab">Code</button><button data-pt="doc" role="tab">Write-up</button><button data-pt="swarm" role="tab">Swarm</button></span>
           <span class="flex"></span>
           <select id="vers" class="hidden" aria-label="Version of the result"></select>
           <button class="q hidden" id="rebuild" title="Assemble the final result again">Rebuild</button>

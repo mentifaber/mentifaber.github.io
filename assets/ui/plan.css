@@ -459,3 +459,18 @@ html.docked .suitebar { bottom: calc(76px + env(safe-area-inset-bottom)); }
   .note { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; } }
+
+/* docked: an app owns the screen; the dock (back · its name · full page · install) is hidden until then */
+html.docked, html.docked body { overflow: hidden; overscroll-behavior: none; }
+html.docked .frame { position: fixed; inset: 0; width: 100vw; height: 100dvh; aspect-ratio: auto; z-index: 60; border: 0; box-shadow: none; }
+html.docked .frame iframe { pointer-events: auto; }
+.dock, body.wk > .dock { position: fixed; z-index: 70; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translate(-50%, -160%); opacity: 0; display: flex; align-items: center; gap: 4px; padding: 5px; background: rgba(10, 9, 7, .9); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1.5px solid var(--gold); box-shadow: 0 12px 40px rgba(0, 0, 0, .55); transition: transform .32s cubic-bezier(.2, .8, .2, 1), opacity .2s; }
+html.docked .dock { transform: translate(-50%, 0); opacity: 1; }
+html.docked .dock.tuck { transform: translate(-50%, calc(-100% + 8px)); opacity: .55; }
+.dock button, .dock a { all: unset; display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px; cursor: pointer; color: var(--ink); white-space: nowrap; }
+.dock button:hover, .dock a:hover, .dock button:focus-visible, .dock a:focus-visible { background: var(--line); outline: 1px solid var(--gold); }
+.dock .lbl { color: var(--ink); }
+.dock svg { width: 16px; height: 16px; } .dock .name { padding: 0 8px 0 4px; display: inline-flex; align-items: center; gap: 8px; color: var(--gold-hi, #e6c46e); }
+.dock .tile { --s: 24px; } .dock .tile svg { filter: none; }
+@media (max-width: 520px) { .dock .lbl { display: none; } .dock button, .dock a { padding: 0 10px; } }
+@media (prefers-reduced-motion: reduce) { .dock { transition: none; } }

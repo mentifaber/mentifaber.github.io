@@ -13,7 +13,7 @@
 
 :root {
   /* basalt */
-  --bg: #0d1012; --bed: #12161a; --bed2: #0f1315; --well: #0a0d0f; --ink: #e9ebe5; --ink2: #c3c8c1; --dim: #8b938e; --faint: #5f6864;
+  --bg: #0d1012; --bed: #12161a; --bed2: #0f1315; --well: #0a0d0f; --ink: #e9ebe5; --ink2: #c3c8c1; --dim: #8b938e; --faint: #7b827e;
   --line: #20272a; --line2: #313a3d; --veil: rgba(9, 11, 13, .74);
   --ok: #84c26b; --warn: #e0b23c; --bad: #ec5f4f;
   /* minerals: one per family of minds */
@@ -30,7 +30,7 @@
 }
 :root[data-theme="light"] {
   /* limestone */
-  --bg: #e9eae4; --bed: #f2f3ee; --bed2: #e1e3dc; --well: #f8f9f5; --ink: #121618; --ink2: #30373a; --dim: #56605c; --faint: #848d89;
+  --bg: #e9eae4; --bed: #f2f3ee; --bed2: #e1e3dc; --well: #f8f9f5; --ink: #121618; --ink2: #30373a; --dim: #56605c; --faint: #5d6563;
   --line: #ced2ca; --line2: #b6bcb3; --veil: rgba(233, 234, 228, .8);
   --ok: #2f7a1e; --warn: #8d6400; --bad: #b42a1c;
   --m-copper: #a4501f; --m-malachite: #157a55; --m-azurite: #2459b0; --m-citrine: #8c6d00; --m-jasper: #b0361f; --m-lapis: #3a4cc0;
@@ -790,3 +790,4 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
 .pre .ck { font-size: 11.5px; padding: 3px 10px; border-top: 1px solid var(--line); } .pre .ck.ok { color: #7ccf8a; } .pre .ck.bad { color: #ff9b72; }
 .cknote { font-size: 12px; color: #ff9b72; margin: 0 0 6px; }
 .pre .ck button { font: inherit; font-size: 11px; margin-left: 8px; padding: 1px 8px; color: var(--gold); background: none; border: 1px solid var(--line2); cursor: pointer; }
+.tabrow > .tl { display: contents; }

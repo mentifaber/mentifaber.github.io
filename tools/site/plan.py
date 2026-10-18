@@ -110,7 +110,7 @@ def home():
     <div class="floor">
       <div class="lantern" aria-hidden="true"></div>
       <div class="row top">{"".join(room(k) for k in LAYOUT[0])}</div>
-      <div class="hall"><div class="entry"><img src="assets/brand/mentifaber-mark-96.png" alt="" width="44" height="44"><span class="in">IN</span><p>MENS · FABER</p></div><div class="instruments" aria-label="Instruments: live readings">{instruments(k for k, _ in NOW)}</div></div>
+      <div class="hall"><div class="entry"><img src="assets/brand/mentifaber-mark-96.png" alt="" width="44" height="44"><span class="in">IN</span><p>MENS · FABER</p></div><div class="instruments" role="region" tabindex="0" aria-label="Instruments: live readings">{instruments(k for k, _ in NOW)}</div></div>
       <div class="row bot">{"".join(room(k) for k in LAYOUT[1])}</div>
     </div>
     {COMPASS}
@@ -160,7 +160,7 @@ def keyplan(a):
                 out.append(f'<a href="{esc(href(b))}"><title>{esc(b["name"])}</title><circle class="kd{" here" if b is a else ""}" cx="{cx:.1f}" cy="{cy:.1f}" r="{3.6 if b is a else 2.6}"/></a>')
             x0 += w
     out.append(f'<path d="M1 {top + hall / 2}h-8m4 -3l4 3-4 3" fill="none" stroke="#d6a647"/>')
-    return f'<figure class="keyplan"><svg viewBox="-10 0 {W + 11} {top + hall + bot + 1}" role="img" aria-label="Key plan: where {esc(a["name"])} is in the workshop">{"".join(out)}</svg><figcaption class="lbl">Key plan · room {ROOMNO[a["cat"]]:02d}, {esc(NAMES[a["cat"]][0])}</figcaption></figure>'
+    return f'<figure class="keyplan"><svg viewBox="-10 0 {W + 11} {top + hall + bot + 1}" role="group" aria-label="Key plan: where {esc(a["name"])} is in the workshop">{"".join(out)}</svg><figcaption class="lbl">Key plan · room {ROOMNO[a["cat"]]:02d}, {esc(NAMES[a["cat"]][0])}</figcaption></figure>'
 
 
 def page(i):
