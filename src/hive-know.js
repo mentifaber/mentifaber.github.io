@@ -13,12 +13,12 @@ const HF_Q = /\b(hugging ?face|hf hub|datasets?|training (set|data)|corpus|corpo
 const PAPER_Q = /\b(papers?|arxiv|preprints?|research(ers)?|studies|study (on|of|about)|literature|citations?|peer[- ]reviewed|state[- ]of[- ]the[- ]art|sota|journal articles?)\b/i;
 const WIKI_Q = /^\s*(what|who|when|where) (is|was|are|were)\b|\b(history of|explain|definition of|define|tell me about|background on)\b/i;
 export const DATASET_ID = /(?:huggingface\.co\/datasets\/|\bdataset\s+)([\w.-]+\/[\w.-]+)/i;
-export function wants(text, web) {
+export function wants(text, web, planned) { // planned: Genesis's planner decides about Wikipedia itself
   const t = String(text || ""), w = [];
   if (DATASET_ID.test(t)) w.push("rows");
   else if (HF_Q.test(t)) w.push("hf"); // a named dataset is the subject: no need to search the Hub as well
   if (PAPER_Q.test(t)) w.push("papers");
-  if (web || WIKI_Q.test(t)) w.push("wiki");
+  if (web || (!planned && WIKI_Q.test(t))) w.push("wiki");
   return w;
 }
 // the words worth searching for: the message minus the asking
@@ -89,8 +89,8 @@ export async function papers(q, n = 4) {
 export const paperLine = (p) => p.title + " (" + [p.authors.join(", ") + (p.authors.length >= 4 ? " et al." : ""), p.date, p.venue, p.cites != null ? p.cites + " citations" : ""].filter(Boolean).join("; ") + ")" + (p.text ? ": " + p.text : "");
 
 // Everything a message asked about, as numbered material: [{title, url, text}] plus what was used.
-export async function gather(text, web) {
-  const w = wants(text, web), q = topic(text), out = [], used = [];
+export async function gather(text, web, planned) {
+  const w = wants(text, web, planned), q = topic(text), out = [], used = [];
   if (!w.length) return { out, used };
   const jobs = [];
   if (w.includes("rows")) { const id = DATASET_ID.exec(text)[1], ask = clip(String(text).replace(DATASET_ID, " ").replace(/\b(show|look at|sample|rows?|examples?|from|in|inside|search|the|dataset|me|about|with|for|of|on|any|some|please|give|find|get|can you|could you|that|are|is|where|which|mention|mentions|containing|contain)\b/gi, " ").replace(/[?!.,;:"]+/g, " "), 80);

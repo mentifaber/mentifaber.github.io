@@ -11,7 +11,8 @@ import { asksWeather, placeIn, weather } from "./hive-kit.js";
 import { Genesis, genesisTables, asksSystems } from "./hive-genesis.js";
 import { vigilBrief, briefTopics } from "./vigil.js";
 import { trends, worldText } from "./hive-world.js";
-import { gather } from "./hive-know.js";
+import { gather, wiki, papers, paperLine, hfSearch, hfText, hfRows, rowsText } from "./hive-know.js";
+import { worthPlanning, plannerPrompt, plannerInput, parseCalls } from "./hive-agent.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -35,6 +36,7 @@ const CF_MODELS = [
   ["@hf/google/gemma-7b-it", "Gemma 7B", []],
   ["@cf/mistral/mistral-7b-instruct-v0.1", "Mistral 7B", []],
 ];
+const PLANNER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"; // decides which tools a message needs (src/hive-agent.js)
 // Keyed providers: OpenAI-compatible chat endpoints, used only when their secret is set.
 const KEYED = [
   { env: "OPENROUTER_KEY", id: "openrouter", url: "https://openrouter.ai/api/v1/chat/completions", list: "https://openrouter.ai/api/v1/models", free: true },
@@ -102,6 +104,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS agent(id TEXT, pid TEXT, name TEXT, src TEXT, model TEXT, roles TEXT, status TEXT, task INTEGER, done INTEGER, last INTEGER, PRIMARY KEY(id,pid))");
       q.exec("CREATE TABLE IF NOT EXISTS limits(k TEXT PRIMARY KEY, n INTEGER)"); try { q.exec("ALTER TABLE proj ADD COLUMN cap INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN ctok TEXT"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN note TEXT"); } catch (e) {}
       q.exec("CREATE TABLE IF NOT EXISTS feed(pid TEXT, ts INTEGER, who TEXT, kind TEXT, text TEXT)");
+      q.exec("CREATE TABLE IF NOT EXISTS perf(model TEXT PRIMARY KEY, ok INTEGER DEFAULT 0, fail INTEGER DEFAULT 0, ms REAL)"); // how each model actually does, for routing
       q.exec("CREATE TABLE IF NOT EXISTS pub(slug TEXT PRIMARY KEY, pid TEXT UNIQUE, ts INTEGER, by_ TEXT, views INTEGER DEFAULT 0, live INTEGER DEFAULT 1)"); // results with a link (/p/<slug>): live = anyone can open it, else only the owner
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
@@ -207,6 +210,7 @@ export class Hive extends DurableObject {
       q.exec("UPDATE pub SET views=views+1 WHERE slug=?", r.slug);
       return J({ slug: r.slug, title: r.title, final: r.final, ts: r.ts, by: r.by_ || "you", live: !!r.live, id: owner ? r.id : undefined, v: q.exec("SELECT COUNT(*) c FROM ver WHERE pid=?", r.id).one().c + 1 });
     }
+    if (path === "/perf") { if (!owner) return J({ error: "owner only" }, 401); this._perf = null; return J({ models: q.exec("SELECT model, ok, fail, ROUND(ms) ms FROM perf ORDER BY ok + fail DESC LIMIT 200").toArray().map((r) => ({ ...r, rank: this.rank(r.model) })) }); }
     if (path === "/pubs") { if (!owner) return J({ error: "only the owner can list these" }, 401); return J({ pubs: q.exec("SELECT u.slug, u.pid, u.ts, u.by_ by, u.views, u.live, p.title FROM pub u JOIN proj p ON p.id = u.pid ORDER BY u.ts DESC LIMIT 100").toArray().map((r) => ({ ...r, url: url.origin + "/p/" + r.slug })) }); }
     const p = b.id || b.project ? q.exec("SELECT * FROM proj WHERE id=?", String(b.id || b.project)).toArray()[0] : null;
     if (!p) return J({ error: "no such project" }, 404);
@@ -366,11 +370,11 @@ export class Hive extends DurableObject {
   full(pid) { return this.flying(pid) >= PARALLEL || Object.values(this._fly || {}).reduce((a, n) => a + n, 0) >= ALL_PARALLEL; } // this mission's share, and everyone's
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
-    let room = THINKS.test(a.model) ? Math.min(8000, Math.max(max * 3, 4000)) : max;
+    let room = THINKS.test(a.model) ? Math.min(8000, Math.max(max * 3, 4000)) : max; const c0 = Date.now();
     try {
       let out = clean(await this.ask(a, system, user, room));
       if (!out && room < 8000) { room = Math.min(8000, room * 2); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id); out = clean(await this.ask(a, system, user, room)); } // it spent everything thinking: once more with room to answer
-      if (!out) throw new Error("empty reply"); if (a.err) q.exec("UPDATE agent SET err=NULL WHERE id=? AND pid=?", a.id, p.id); return out;
+      if (!out) throw new Error("empty reply"); if (a.err) q.exec("UPDATE agent SET err=NULL WHERE id=? AND pid=?", a.id, p.id); this.note(a.model, true, Date.now() - c0); return out;
     }
     catch (e) {
       const msg = String(e && e.message || e);
@@ -382,6 +386,7 @@ export class Hive extends DurableObject {
       // why it failed decides when it tries again: never (it can't chat), in hours (no credit), in a minute (busy), or in ten
       // too much to read in one go (a context window, or a per-minute token cap smaller than the prompt): not a reason to
       // bench it for hours; it's noted so the big jobs (assembling the result) skip it, and it's back for small ones in a minute
+      this.note(a.model, false);
       const big = /request too large|too large for model|context.?length|context window|maximum context|too many (input )?tokens|prompt is too long|reduce the length|input is too long|tokens per minute|\bTPM\b/i.test(msg);
       if (big) { this._tooBig = this._tooBig || {}; (this._tooBig[p.id] = this._tooBig[p.id] || new Set()).add(a.id); }
       const never = !big && (/not support chat|chat\/completions endpoint|cannot be used with|terms acceptance|does not exist|not.?found|no access|not allowed|unsupported|decommission|deprecated/i.test(msg) || [404].includes(e && e.status));
@@ -579,14 +584,28 @@ export class Hive extends DurableObject {
     const m = String(id).split("|").pop(), R = [/claude.*(opus|sonnet)/i, /gpt-5(?!.*(nano|mini))|o3(?!-mini)/i, /gemini-(2\.5-pro|3)(?!.*(flash|lite))/i, /grok-4(?!.*(mini|fast))/i, /deepseek-(r1(?!-distill)|v3|chat|reasoner)|kimi-k2|qwen3-(235b|480b|coder-480)/i,
       /gpt-oss-120b|gpt-4\.1(?!-(nano|mini))|gpt-4o(?!-mini)|mistral-(large|medium)|llama-3\.1-405b/i, /llama-4-maverick|llama-3\.[13]-70b|qwen3|kimi|gpt-5.*mini|o[34]-mini|qwen2\.5-coder-32b/i,
       /llama-4|qwq|deepseek.*distill|claude.*haiku|gemini.*(flash|lite)|gpt-.*mini|command-a|mistral-small|gemma|gpt-oss-20b/i];
-    if (m === "mentifaber-agent-1.0") return 5; const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i;
+    if (m === "mentifaber-agent-1.0") return 5; const i = R.findIndex((r) => r.test(m)); return i < 0 ? 99 : i + this.track(m);
+  }
+  // what a model has shown, on top of its name: failing often or drawing his 👎 moves it down; his 👍 moves it up
+  track(m) {
+    if (!this._perf || Date.now() - this._perf.at > 60e3) { const q = this.sql(), by = {};
+      for (const r of q.exec("SELECT model, ok, fail FROM perf").toArray()) by[r.model] = { ok: r.ok, fail: r.fail, up: 0, down: 0 };
+      try { for (const r of q.exec("SELECT model, SUM(rating > 0) up, SUM(rating < 0) down FROM turn WHERE rating IS NOT NULL AND model IS NOT NULL GROUP BY model").toArray()) { const k = String(r.model).split("|").pop(); by[k] = by[k] || { ok: 0, fail: 0, up: 0, down: 0 }; by[k].up += r.up || 0; by[k].down += r.down || 0; } } catch (e) {}
+      this._perf = { at: Date.now(), by }; }
+    const x = this._perf.by[m]; if (!x) return 0;
+    const n = x.ok + x.fail, fr = n >= 8 ? x.fail / n : 0, net = x.up - x.down;
+    return (fr > 0.4 ? 2 : fr > 0.2 ? 1 : 0) + (net >= 3 ? -1 : net <= -3 ? 1 : 0);
+  }
+  note(id, ok, ms) { // one call's outcome, by model name
+    const m = String(id || "").split("|").pop(); if (!m) return;
+    try { this.sql().exec("INSERT INTO perf(model, ok, fail, ms) VALUES(?,?,?,?) ON CONFLICT(model) DO UPDATE SET ok=ok+excluded.ok, fail=fail+excluded.fail, ms=CASE WHEN excluded.ms IS NULL THEN ms WHEN ms IS NULL THEN excluded.ms ELSE ms*0.8+excluded.ms*0.2 END", m, ok ? 1 : 0, ok ? 0 : 1, ok && ms ? ms : null); } catch (e) {}
   }
   sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3 || this.cooling(c); }
   // busy, or over a per-minute limit (Groq's free tier allows 8,000 tokens a minute): sit out as long as the provider asks
   cool(c, e) { const em = String(e && e.message || e), m = /try again in\s*(?:(\d+)m)?\s*([\d.]+)\s*s/i.exec(em), s = m ? (+m[1] || 0) * 60 + +m[2] : 20; this._cool = this._cool || {}; this._cool[c] = Date.now() + Math.min(120, Math.max(3, s + 1)) * 1000; }
   cooling(c) { return !!(this._cool && this._cool[c] > Date.now()); }
   blame(c, e) { // remember why a model failed: the whole key (billing, bad key) or just this model (not allowed, not found)
-    const em = String(e && e.message || e); this._bad = this._bad || {}; this._badM = this._badM || {};
+    this.note(c, false); const em = String(e && e.message || e); this._bad = this._bad || {}; this._badM = this._badM || {};
     if (/billing|credit|insufficient|payment|invalid.*(api|x-api)?.?key|incorrect api key|unauthori[sz]ed/i.test(em) || [401, 402].includes(e && e.status)) this._bad[c.split("|")[0]] = Date.now();
     else if (/not.?found|does not exist|not allowed|no access|permission|unsupported|invalid model|model_not|decommission|deprecated/i.test(em) || [400, 403, 404].includes(e && e.status)) this._badM[c] = Date.now();
   } // keys that just failed (no credit, bad key) sit out an hour
@@ -620,6 +639,32 @@ export class Hive extends DurableObject {
   async webContext(q, own) {
     const [r, kn] = await Promise.all([this.web(q.slice(0, 300), own).catch(() => []), gather(q, true).catch(() => ({ out: [] }))]), all = [...r.map((x) => ({ title: x.title, url: x.url, text: String(x.text || "").slice(0, 900) })), ...kn.out.filter((x) => !x.note).map((x) => ({ title: x.title, url: x.url, text: x.text.slice(0, 1400) }))];
     return all.length ? "\n\nRESEARCH MATERIAL (web, Wikipedia, Hugging Face, papers; read just now):\n" + all.map((x, i) => "[" + (i + 1) + "] " + x.title + " — " + x.url + "\n" + x.text).join("\n\n") : "";
+  }
+  // the planning call: a fast, capable model that follows a JSON format well; another model when the free allowance rests
+  async planTools(msgs, gathered, owner, round, made) {
+    const sys = plannerPrompt(owner, new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"), user = plannerInput(msgs, gathered, round);
+    const timed = (p) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("planner took too long")), 7000))]);
+    let out = null;
+    if (this.env.AI && !(await this.resting())) out = await timed(complete(this.env, null, null, PLANNER, sys, [{ role: "user", text: user }], 300)).catch(() => null);
+    if (out == null && owner) { const s2 = await this.standIn().catch(() => null); if (s2) { const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2)); out = await timed(complete(this.env, kv.v, kv.key, m2, sys, [{ role: "user", text: user }], 300)).catch(() => null); } }
+    return parseCalls(out, owner, made);
+  }
+  // run one tool from hive-agent.js's registry: { label (for the tools line), items: [{title, url, text}], note }
+  async useTool(c, ctx) {
+    const a = c.arg, origin = new URL(ctx.req.url).origin;
+    if (c.tool === "web") { const r = await this.web(a, ctx.owner); return { label: "searched the web: " + a.slice(0, 60), items: r.map((x) => ({ title: x.title, url: x.url, text: x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200) })) }; }
+    if (c.tool === "read") { const pg = await readPage(a); return { label: "read " + new URL(pg.url).hostname, items: [{ title: pg.title, url: pg.url, text: "PAGE " + pg.title + " — " + pg.url + "\n" + pg.text }] }; }
+    if (c.tool === "wiki") { const ws = await wiki(a); return { label: "read Wikipedia: " + a.slice(0, 50), items: ws.map((x) => ({ title: x.title + " · Wikipedia", url: x.url, text: "WIKIPEDIA: " + x.text })) }; }
+    if (c.tool === "papers") { const ps = await papers(a); return { label: "searched papers: " + a.slice(0, 50), items: ps.map((p) => ({ title: p.title, url: p.url, text: "PAPER: " + paperLine(p) })) }; }
+    if (c.tool === "hf") { const r = await hfSearch(a); return { label: "searched Hugging Face: " + a.slice(0, 50), items: [{ title: "Hugging Face Hub · " + a, url: "https://huggingface.co/datasets?search=" + encodeURIComponent(a), text: hfText(r, a) }] }; }
+    if (c.tool === "rows") { const [id, q] = a.split("|").map((x) => x.trim()); if (!/^[\w.-]+\/[\w.-]+$/.test(id || "")) throw new Error("a dataset is named owner/name"); const r = await hfRows(id, q || ""); return { label: "read rows of " + id, items: [{ title: "Hugging Face dataset " + id, url: "https://huggingface.co/datasets/" + id, text: rowsText(r) }] }; }
+    if (c.tool === "weather") { let geo = null; try { geo = JSON.parse(ctx.geo || "null"); } catch (e) {} const w = await weather(a, geo), link = origin + "/wx/?lat=" + (+w.lat).toFixed(4) + "&lon=" + (+w.lon).toFixed(4) + "&name=" + encodeURIComponent(w.name); return { label: "checked the weather for " + w.name, items: [{ title: "Quick Weather · " + w.name, url: link, text: "LIVE WEATHER from Open-Meteo (" + link + "):\n" + w.text }] }; }
+    if (c.tool === "quotes") { const syms = await symbolsFor(a, true); if (!syms.length) throw new Error("no symbols found in " + a); const qs = await quotes(syms); return { label: "checked prices for " + syms.join(", "), items: [{ title: "Market quotes", url: "https://finance.yahoo.com/quote/" + encodeURIComponent(qs[0].sym), text: "LIVE QUOTES, read just now:\n" + qs.map(quoteText).join("\n") }] }; }
+    if (!ctx.owner) throw new Error("that tool is the owner's");
+    if (c.tool === "vigil") { const topics = a.split(/[,\s]+/).map((x) => x.toLowerCase()).filter(Boolean).slice(0, 6), vb = await vigilBrief(this.env, topics, null, a); if (!vb.text) throw new Error("the board had nothing on " + a); return { label: "read Vigil's live board (" + vb.ok.join(", ") + ")", items: [{ title: "Vigil · live board", url: origin + "/vigil-app", text: "VIGIL LIVE BOARD (read just now):\n" + vb.text }] }; }
+    if (c.tool === "world") { const t = trends(this); return { label: "read its world record", items: [{ title: "Genesis's world record (GDELT, counted hourly)", url: origin + "/vigil-app#world", text: worldText(t) }] }; }
+    if (c.tool === "site") { const st = siteText(await siteIndex(this, origin)); return { label: "read your site's project index", note: st || null, items: [] }; }
+    throw new Error("unknown tool");
   }
   meter(req, kind, max) { // the public's daily allowance per visitor; the owner has none
     const q = this.sql(), day = new Date().toISOString().slice(0, 10), k = kind + ":" + day + ":" + (req.headers.get("cf-connecting-ip") || "x").slice(0, 45);
@@ -710,9 +755,23 @@ export class Hive extends DurableObject {
     // prices for anyone: any ticker, coin or name in the message (public data; the owner gets them through Vigil's board above)
     if (!owner) try { const syms = await symbolsFor(last.text); if (syms.length) { const qs = await quotes(syms); sources.push({ title: "Market quotes", url: "https://finance.yahoo.com/quote/" + encodeURIComponent(qs[0].sym) }); notes.push("[" + sources.length + "] LIVE QUOTES, read just now:\n" + qs.map(quoteText).join("\n")); tools.push("checked prices for " + syms.join(", ")); } } catch (e) {}
     // open knowledge: Hugging Face datasets, their rows and models, papers (arXiv, OpenAlex), Wikipedia; when the message is about them
-    try { const kn = await gather(last.text, b.web); for (const x of kn.out) { if (x.note) { notes.push(x.note); continue; } sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } tools.push(...kn.used); } catch (e) {}
+    const planning = !b.voice && b.agent !== false && worthPlanning(last.text); // Genesis plans its own lookups below
+    try { const kn = await gather(last.text, b.web, planning); for (const x of kn.out) { if (x.note) { notes.push(x.note); continue; } sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } tools.push(...kn.used); } catch (e) {}
     // the web
     if (b.web) { const r = await this.web((b.query || last.text).slice(0, 300), owner).catch((e) => (notes.push("(search failed: " + e.message + ")"), [])); for (const x of r) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + String(x.text || "").slice(0, 1200)); } if (r.length) tools.push("searched the web"); }
+    // Genesis picks its own tools: a planning call reads the message and what's already here, and asks for what's missing;
+    // after seeing the results it may ask once more (read the best page in full, say). Voice skips it: every second counts there.
+    if (planning) try {
+      const made = new Set([...urls.map((u) => "read:" + u.toLowerCase()), ...(tools.some((t) => /^checked the weather/.test(t)) ? ["weather:*"] : []), ...(tools.some((t) => /^read Vigil/.test(t)) ? ["vigil:*"] : []), ...(tools.some((t) => /world record/.test(t)) ? ["world:*"] : []), ...(tools.some((t) => /project index/.test(t)) ? ["site:*"] : [])]);
+      const ctx = { owner, req, geo: req.headers.get("x-geo") };
+      for (let round = 1; round <= 2; round++) {
+        if (Date.now() - t0 > 12000) break; // the answer matters more than one more lookup
+        const calls = await this.planTools(msgs, [...tools, ...sources.map((x) => x.title + " — " + x.url)], owner, round, made);
+        if (!calls.length) break;
+        const got = await Promise.all(calls.map((c) => this.useTool(c, ctx).catch((e) => ({ label: null, note: "(" + c.tool + " failed: " + String(e.message || e).slice(0, 120) + ")" }))));
+        for (const [i, g] of got.entries()) { made.add(calls[i].tool + ":" + calls[i].arg.toLowerCase()); if (g.note) notes.push(g.note); for (const x of g.items || []) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } if (g.label) tools.push(g.label); }
+      }
+    } catch (e) {}
     // eyes: Workers AI and models without vision get descriptions instead of pixels
     let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
     if (src === "workers-ai" && (await this.resting()) && !(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
@@ -727,7 +786,7 @@ export class Hive extends DurableObject {
     const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
     const system = (owner ? "You are " + gName + ", the mind of the Genesis app on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are Genesis, the assistant on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
-      "Genesis is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), open knowledge (when a message is about datasets, models, papers or research, or asks what or who something is, Genesis looks it up on the Hugging Face Hub, inside a named dataset\'s actual rows, on arXiv and OpenAlex, and on Wikipedia, and hands it to you as MATERIAL), live weather (when they ask about the weather, Genesis looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
+      "Genesis is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), open knowledge (when a message is about datasets, models, papers or research, or asks what or who something is, Genesis looks it up on the Hugging Face Hub, inside a named dataset\'s actual rows, on arXiv and OpenAlex, and on Wikipedia, and hands it to you as MATERIAL), live weather (when they ask about the weather, Genesis looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). Before you answer, Genesis plans its own lookups: a planning step reads each message and chooses which of these tools to use (web search, reading pages, Wikipedia, papers, Hugging Face, weather, prices and, for the owner, Vigil, the world record and his site), sometimes in two rounds; everything it found is in MATERIAL. If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
       "Reply in the language the user writes in" + (b.lang ? " (their device is set to " + String(b.lang).slice(0, 12) + ")" : "") + ". Messages can come from voice dictation, which sometimes mishears English as another language or as nonsense; if a message looks like that, reply in the device's language and briefly ask what they meant. " +
       "Be warm, direct and genuinely helpful: lead with the answer, think carefully, admit uncertainty plainly, and never invent facts or sources. Use Markdown (headings sparingly, lists, fenced code with a language)." +
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") + (local ? "" : " Now: " + now + ".") +
@@ -781,7 +840,7 @@ export class Hive extends DurableObject {
               tools.push(model.split("/").pop() + " was busy (" + (/per minute|TPM|RPM|rate.?limit|429/i.test(String(e.message || e) + e.status) ? "its per-minute limit" : "overloaded") + "), so " + alt.by + " answered"); emit("meta", { sources, tools, model: alt.id, turn: turn || undefined });
               out = await streamComplete(this.env, alt.v, alt.key, alt.model, system, msgs, max, onDelta, meta).catch((e2) => { if (got) throw e2; throw new Error(tidyErr(e2, alt.model)); });
               if (!got) onDelta(b.voice ? "Sorry, I lost that one. Could you say it again?" : "(no model could answer just now; try again in a moment)");
-              Genesis.finishTurn(this, turn, said, alt.id); emit("done", { ms: Date.now() - t0, model: alt.id, tools, turn: turn || undefined, cut: meta.cut || undefined }); clearInterval(ping); w.close().catch(() => {}); return;
+              Genesis.finishTurn(this, turn, said, alt.id); this.note(alt.id, true, Date.now() - t0); emit("done", { ms: Date.now() - t0, model: alt.id, tools, turn: turn || undefined, cut: meta.cut || undefined }); clearInterval(ping); w.close().catch(() => {}); return;
             }
             if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) throw new Error(outMsg(this.quota)); }
             else if (last.images.length) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); }
@@ -795,7 +854,7 @@ export class Hive extends DurableObject {
             onDelta(t || (b.voice ? "Sorry, I lost that one. Could you say it again?" : "(the model returned nothing, twice; try again or pick another model)")); meta.cut = false;
           }
           Genesis.finishTurn(this, turn, said, used);
-          emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined, cut: meta.cut || undefined });
+          this.note(used, true, Date.now() - t0); emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined, cut: meta.cut || undefined });
         } catch (e) { emit("error", { error: tidyErr(e, model) }); }
         clearInterval(ping); w.close().catch(() => {});
       })();
@@ -809,6 +868,7 @@ export class Hive extends DurableObject {
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
     if (!text) { const r = await this.rescue(system, msgs, used, owner).catch(() => null); if (r && r.text) { text = r.text; tools.push(model.split("/").pop() + " returned nothing; " + r.by + " answered"); } }
     Genesis.finishTurn(this, turn, text, used);
+    if (text) this.note(used, true, Date.now() - t0);
     return J({ text: text || (b.voice ? "Sorry, I lost that one. Could you say it again?" : "(the model returned nothing; try again or pick another model)"), sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined });
   }
   // A model came back empty: the free fast Llama answers instead (or, while the free allowance rests, the owner's best key)

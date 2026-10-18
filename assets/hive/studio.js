@@ -561,7 +561,13 @@ const Keys = {
     const j = await api("/keys"); $("k-locked").classList.toggle("hidden", !j.error); $("k-open").classList.toggle("hidden", !!j.error); if (j.error) return;
     Agent.draw(); Keys.presets = j.presets; const sel = $("k-prov");
     if (!sel.options.length) { const g = { compat: "Models", anthropic: "Models", search: "Web search", voice: "Voices" }, by = {}; for (const [k, p] of Object.entries(j.presets)) (by[g[p.kind]] = by[g[p.kind]] || []).push("<option value='" + k + "'>" + esc(p.name) + "</option>"); sel.innerHTML = Object.entries(by).map(([n, o]) => "<optgroup label='" + n + "'>" + o.join("") + "</optgroup>").join(""); sel.onchange(); }
-    Keys.draw(j.keys);
+    Keys.draw(j.keys); Keys.perf();
+  },
+  async perf() {
+    const j = await api("/perf").catch(() => ({})), ms = (j.models || []).filter((m) => m.ok + m.fail > 0).slice(0, 24);
+    $("k-perf").innerHTML = ms.length ? "<table><thead><tr><th>Model</th><th>Calls</th><th>Failed</th><th>Avg time</th><th>Order</th></tr></thead><tbody>" + ms.map((m) => { const n = m.ok + m.fail, fr = m.fail / n;
+      return "<tr><td>" + esc(m.model.split("/").pop()) + "</td><td>" + n + "</td><td class='" + (fr > 0.2 ? "bad" : "") + "'>" + Math.round(fr * 100) + "%</td><td>" + (m.ms ? (m.ms / 1000).toFixed(1) + " s" : "—") + "</td><td>" + (m.rank >= 99 ? "—" : m.rank + 1) + "</td></tr>"; }).join("") + "</tbody></table>"
+      : "<p class='dim' style='margin:0'>Nothing counted yet: talk to Genesis or run a mission.</p>";
   },
   draw(keys) {
     Keys.keys = keys; $("kcount").textContent = keys.length + " key" + (keys.length === 1 ? "" : "s");
