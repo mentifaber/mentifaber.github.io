@@ -267,11 +267,13 @@ function resume(t) {
 }
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
-  const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /council /imagine /swarm /model /new
+  const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /council /imagine /swarm /model /new /keep /teach /remember
   if (sl) { const [, c, rest] = sl;
     if (c === "new") { inp.value = ""; return newChat(); }
     if (c === "me" || c === "mind") { inp.value = ""; grow(); location.hash = "mind"; return; }
     if (c === "teach" && rest) { inp.value = ""; grow(); return api("/genesis/teach", { text: rest }).then((j) => toast(j.error || (gname || "Genesis") + " learned it", 3000)); }
+    if (c === "keep" && rest) { inp.value = ""; grow(); const r = rest.trim(), isUrl = /^https?:\/\/\S+$/.test(r); toast("Keeping it in your library…", 2000); // into the library, by link or as text
+      return api("/library/add", isUrl ? { url: r } : { text: r }).then((j) => toast(j.error || "Kept “" + j.title + "” in your library (" + j.chunks + " passage" + (j.chunks === 1 ? "" : "s") + ")", 4000)); }
     if (c === "remember" && rest) { inp.value = ""; grow(); return api("/mind/remember", { text: rest }).then((j) => toast(j.error || "Remembered", 2500)); }
     if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
     if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); }); }
