@@ -167,7 +167,7 @@
     <div id="m-locked" class="bd core hidden"><div class="rail"><span>sealed</span></div><div class="bc"><h3>The mind is sealed</h3><p class="dim">Genesis's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div></div>
     <div id="m-open" class="hidden">
       <div class="ptabs core mhead"><div class="rail"><span>read</span></div><div class="tabrow">
-        <nav class="mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
+        <nav class="mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="lib" role="tab">Library</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">Genesis</button></nav>
         <span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything Genesis knows…" aria-label="Search the mind"></div></div>
       <div id="m-results" class="hidden"></div>
       <div id="mt-you" class="mtp">
@@ -191,6 +191,22 @@
           <div class="own"><input id="m-tnew" placeholder="Something you're in the middle of…"><button class="q" id="m-tadd">Add</button></div>
           <div id="m-threads" class="mlist mt"></div>
           <details class="mt" id="m-tdone"><summary class="dim sm">Finished and dropped</summary><div id="m-tclosed" class="mlist mt"></div></details>
+        </div></div>
+      </div>
+      <div id="mt-lib" class="mtp hidden">
+        <div class="bd core"><div class="rail"><span>add</span></div><div class="bc">
+          <p class="dim sm">Documents Genesis keeps for good: papers, manuals, notes, pages. Each is split into passages and read by meaning, so any later question can draw on it, with the passage cited.</p>
+          <div class="form">
+            <label class="wide">Title <span class="dim">(optional)</span><input id="l-title" placeholder="e.g. Haas ST-10 manual"></label>
+            <label class="wide">A link<input id="l-url" type="url" placeholder="https://… (Genesis reads the page)"></label>
+            <label class="wide">Or paste text<textarea id="l-text" rows="4" placeholder="Paste notes, an article, a transcript…"></textarea></label>
+          </div>
+          <div class="row mt"><button class="pri" id="l-add">Keep it</button><label class="q filebtn">Add files<input id="l-files" type="file" multiple accept=".pdf,.docx,.txt,.md,.markdown,.csv,.json,.html,.htm" hidden></label><span class="dim sm" id="l-msg" role="status"></span></div>
+        </div></div>
+        <div class="bd core"><div class="rail"><span>library</span></div><div class="bc">
+          <div class="own"><input id="l-q" type="search" placeholder="Search the library by meaning…" aria-label="Search the library"></div>
+          <div id="l-hits" class="mlist mt hidden"></div>
+          <div id="l-docs" class="mlist mt"></div><p class="dim sm mt" id="l-used"></p>
         </div></div>
       </div>
       <div id="mt-time" class="mtp hidden">

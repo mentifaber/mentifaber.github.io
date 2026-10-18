@@ -636,7 +636,34 @@ $("agentp").onclick = async (e) => {
 // ── MIND: what Genesis knows about the owner. Tabs: You (profile, what Genesis noticed), Memory (memories, open threads),
 // Timeline (rhythm, activity), Genesis; a search across all of it ──
 const agoT = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
-const MTABS = ["you", "mem", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
+const MTABS = ["you", "mem", "lib", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
+// ── the library: documents Genesis keeps (src/hive-library.js) ──
+const LIBJS = { pdf: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", pdfw: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js", docx: "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" };
+const loadJS = (src) => new Promise((ok, no) => { if (document.querySelector("script[src='" + src + "']")) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the reader for this file")); document.head.appendChild(s); });
+const LibV = {
+  async load() {
+    const j = await api("/library").catch(() => ({ docs: [] })); if (j.error) return;
+    $("l-docs").innerHTML = (j.docs || []).length ? j.docs.map((d) => "<div class='mi'><div class='tx'><b>" + esc(d.title) + "</b><small class='dim'>" + d.chunks + " passage" + (d.chunks === 1 ? "" : "s") + " · " + Math.round(d.chars / 1000) + "k characters · " + new Date(d.ts).toLocaleDateString() + (d.src ? " · <a href='" + esc(d.src) + "' target='_blank' rel='noopener'>source</a>" : "") + "</small></div><button class='ic' data-ldel='" + d.id + "' title='Remove from the library' aria-label='Remove'>✕</button></div>").join("")
+      : "<p class='dim' style='margin:0'>Nothing kept yet. Add a link, paste text, or add files above.</p>";
+    $("l-used").textContent = j.docs && j.docs.length ? j.used + " of " + j.max + " passages used" : "";
+  },
+  async read(f) {
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    if (ext === "pdf") { await loadJS(LIBJS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = LIBJS.pdfw; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = ""; for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); out += (await pg.getTextContent()).items.map((x) => x.str).join(" ") + "\n\n"; } return out; }
+    if (ext === "docx") { await loadJS(LIBJS.docx); return (await mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() })).value; }
+    const t = await f.text(); return /^html?$/.test(ext) ? new DOMParser().parseFromString(t, "text/html").body.innerText : t;
+  },
+  async add(body) { $("l-add").disabled = true; $("l-msg").textContent = "Reading and indexing…"; const r = await api("/library/add", body).catch((e) => ({ error: e.message })); $("l-add").disabled = false;
+    $("l-msg").textContent = r.error ? r.error : "Kept “" + r.title + "” (" + r.chunks + " passages)."; if (!r.error) LibV.load(); return !r.error; },
+};
+$("l-add").onclick = async () => { const url = $("l-url").value.trim(), text = $("l-text").value; if (!url && !text.trim()) return ($("l-msg").textContent = "Give a link or paste some text.");
+  if (await LibV.add({ title: $("l-title").value.trim(), url: url || undefined, text: text.trim() ? text : undefined })) { $("l-title").value = ""; $("l-url").value = ""; $("l-text").value = ""; } };
+$("l-files").onchange = async (e) => { for (const f of [...e.target.files]) { try { $("l-msg").textContent = "Reading " + f.name + "…"; await LibV.add({ title: f.name.replace(/\.[^.]+$/, ""), text: await LibV.read(f), src: f.name }); } catch (x) { $("l-msg").textContent = "Couldn't read " + f.name + ": " + (x.message || x); } } e.target.value = ""; };
+$("l-docs").onclick = async (e) => { const b = e.target.closest("[data-ldel]"); if (!b || !confirm("Remove this document from the library? Genesis forgets its passages.")) return; await api("/library/remove", { id: +b.dataset.ldel }); LibV.load(); };
+let lqT = 0; $("l-q").oninput = () => { clearTimeout(lqT); lqT = setTimeout(async () => { const q = $("l-q").value.trim(); $("l-hits").classList.toggle("hidden", q.length < 3); if (q.length < 3) return;
+  const j = await api("/library/search?q=" + encodeURIComponent(q)).catch(() => ({ hits: [] }));
+  $("l-hits").innerHTML = (j.hits || []).length ? j.hits.map((h) => "<div class='mi hit'><div class='tx'><small class='dim'>" + esc(h.title) + " · passage " + h.n + " · match " + Math.round(h.score * 100) + "%</small><span>" + esc(h.text.slice(0, 360)) + (h.text.length > 360 ? "…" : "") + "</span></div></div>").join("") : "<p class='dim' style='margin:0'>Nothing in the library matches that.</p>"; }, 350); };
+
 const MindV = {
   tab: LS.get("mind-tab", "you"), f: "all", searching: false, j: null,
   kl(k) { return ((MindV.j && MindV.j.kinds) || {})[k] || "About you"; },
@@ -647,10 +674,10 @@ const MindV = {
     if (/^#mind/.test(location.hash) && location.hash !== "#mind/" + t) history.replaceState(null, "", location.pathname + location.search + "#mind/" + t);
   },
   async load() {
-    const h = location.hash.split("/")[1], sub = ({ genesis: "gen", memory: "mem", timeline: "time" })[h] || h; if (MTABS.includes(sub)) MindV.tab = sub; // "#mind/genesis" (the alerts' link) works too
+    const h = location.hash.split("/")[1], sub = ({ genesis: "gen", memory: "mem", timeline: "time", library: "lib" })[h] || h; if (MTABS.includes(sub)) MindV.tab = sub; // "#mind/genesis" (the alerts' link) works too
     const j = await api("/mind?tz=" + -new Date().getTimezoneOffset());
     $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); $("m-q").classList.toggle("hidden", !!j.error); if (j.error) return;
-    MindV.j = j; MindV.show(MindV.tab); GenV.load(); MindV.you(j); MindV.mem(j); MindV.time(j);
+    MindV.j = j; MindV.show(MindV.tab); GenV.load(); LibV.load(); MindV.you(j); MindV.mem(j); MindV.time(j);
   },
   you(j) {
     const st = j.stats || {}, k = st.kinds || {}, hrs = Array(24).fill(0); (st.grid || []).forEach((row) => row.forEach((n, h) => { hrs[h] += n; }));

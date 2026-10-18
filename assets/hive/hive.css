@@ -785,3 +785,5 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
 .perf td:first-child { white-space: normal; word-break: break-word; } .perf td.bad { color: #ff7b72; }
 .m.ai .tools span.did::before { content: "✓ "; color: var(--gold); } .m.ai .tools span.now { color: var(--gold); animation: stepglow 1.4s ease-in-out infinite; }
 @keyframes stepglow { 50% { opacity: .55; } } @media (prefers-reduced-motion: reduce) { .m.ai .tools span.now { animation: none; } }
+.filebtn { cursor: pointer; display: inline-flex; align-items: center; } #l-hits .mi.hit .tx span { display: block; margin-top: 3px; font-size: 13px; }
+#mt-lib .mi .tx small { display: block; margin-top: 2px; }
