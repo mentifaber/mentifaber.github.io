@@ -16,6 +16,7 @@ export const TOOLS = {
   vigil: ["the owner's live board: aircraft and emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets", "topics, comma-separated: air, quakes, space, conflict, alerts, volcanoes, launches, iss, markets, summary", true],
   world: ["Genesis's own hourly record of world conflict and great-power tension, with trends over days", "", true],
   site: ["the owner's projects as listed on mentifaber.org (names, status, what each is)", "", true],
+  library: ["search the documents the owner saved in Genesis's library (his own papers, notes, manuals, pages) by meaning", "what to look for", true],
 };
 export const toolsFor = (owner) => Object.keys(TOOLS).filter((k) => owner || !TOOLS[k][2]);
 

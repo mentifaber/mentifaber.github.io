@@ -123,14 +123,14 @@ export async function pullModel(v, key, model) {
   const j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || "HTTP " + r.status); return j.status || "success";
 }
 // Read a public web page as plain text (links the user pastes).
-export async function readPage(u) {
+export async function readPage(u, max) { // max: characters of text kept (12,000 for a chat; a library document keeps more)
   const url = new URL(u); if (!/^https?:$/.test(url.protocol) || /^(localhost|127\.|10\.|192\.168\.|169\.254\.|\[)/.test(url.hostname)) throw new Error("not a public page");
   const r = await fetch(url, { headers: { "user-agent": "MentifaberHive/2 (+https://mentifaber.org/hive)", accept: "text/html,text/plain,application/json" }, signal: T(15000), redirect: "follow" });
-  if (!r.ok) throw new Error("HTTP " + r.status); const t = (await r.text()).slice(0, 600000);
+  if (!r.ok) throw new Error("HTTP " + r.status); const t = (await r.text()).slice(0, Math.max(600000, (max || 0) * 3));
   const title = (/<title[^>]*>([\s\S]*?)<\/title>/i.exec(t) || [])[1] || url.hostname;
   const body = t.replace(/<(script|style|noscript|svg|nav|footer|header)[\s\S]*?<\/\1>/gi, " ").replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr)>/gi, "\n").replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n\n").trim();
-  return { title: title.trim().slice(0, 200), url: url.href, text: body.slice(0, 12000) };
+  return { title: title.trim().slice(0, 200), url: url.href, text: body.slice(0, max || 12000) };
 }
 // Eyes for models that have none: Workers AI describes the picture, the description goes into the prompt.
 export async function describe(env, dataUrl, ask) {
