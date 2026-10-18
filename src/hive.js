@@ -182,6 +182,7 @@ export class Hive extends DurableObject {
     if (path === "/voices") return J({ voices: await this.voices(owner) });
     if (path === "/listen-ok" && req.method === "POST") return J({ ok: owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
     if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
+    if (path === "/steps") { const k = String(b.sid || ""), x = this._steps && this._steps.get(k); return J(x && x.owner === owner ? { steps: x.list, now: x.now || null } : { steps: [] }); } // what a reply in the making is doing (keyed by a random id from the sender)
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
       const brief = String(b.brief || "").trim().slice(0, 6000); if (brief.length < 8) return J({ error: "describe the project" }, 400);
@@ -705,6 +706,10 @@ export class Hive extends DurableObject {
     const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
     msgs.forEach((m) => m !== last && (m.images = []));
     const t0 = Date.now(), sources = [], notes = [], tools = [];
+    // live progress: each step shows in the app while the answer is still being prepared (GET /steps?sid=…)
+    const sid = /^[\w-]{8,40}$/.test(String(b.sid || "")) ? String(b.sid) : null, steps = sid ? (this._steps = this._steps || new Map()) : null;
+    if (steps) { for (const [k, x] of steps) if (Date.now() - x.at > 120e3) steps.delete(k); steps.set(sid, { at: Date.now(), owner, list: [], now: null }); const push0 = tools.push.bind(tools); tools.push = (...a) => { const x = steps.get(sid); if (x) { x.list.push(...a); x.now = null; } return push0(...a); }; }
+    const doing = (t) => { const x = steps && steps.get(sid); if (x) x.now = t; };
     let mind = "", mp0 = null; // the owner's profile, memories, open threads and recent activity ride along with every owner chat
     const mindOn = owner && b.mind !== false && (await Mind.state(this)).on, inChat = msgs.filter((m) => m.role === "user").map((m) => m.text), asked = last.text; // asked: his words, before any context is added
     if (mindOn) {
@@ -766,8 +771,10 @@ export class Hive extends DurableObject {
       const ctx = { owner, req, geo: req.headers.get("x-geo") };
       for (let round = 1; round <= 2; round++) {
         if (Date.now() - t0 > 12000) break; // the answer matters more than one more lookup
+        doing(round === 1 ? "deciding what to look up" : "checking whether anything is missing");
         const calls = await this.planTools(msgs, [...tools, ...sources.map((x) => x.title + " — " + x.url)], owner, round, made);
-        if (!calls.length) break;
+        doing(null); if (!calls.length) break;
+        doing(calls.map((c) => ({ web: "searching the web", read: "reading " + c.arg.replace(/^https?:\/\/(www\.)?/, "").split("/")[0], wiki: "reading Wikipedia", papers: "searching papers", hf: "searching Hugging Face", rows: "reading a dataset", weather: "checking the weather", quotes: "checking prices", vigil: "reading Vigil", world: "reading the world record", site: "reading your site" })[c.tool] || c.tool).join(", "));
         const got = await Promise.all(calls.map((c) => this.useTool(c, ctx).catch((e) => ({ label: null, note: "(" + c.tool + " failed: " + String(e.message || e).slice(0, 120) + ")" }))));
         for (const [i, g] of got.entries()) { made.add(calls[i].tool + ":" + calls[i].arg.toLowerCase()); if (g.note) notes.push(g.note); for (const x of g.items || []) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } if (g.label) tools.push(g.label); }
       }
