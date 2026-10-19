@@ -44,10 +44,10 @@ async function loadModels() {
   $("quota").textContent = owner ? "" : "Visitors get the free models and a daily allowance.";
 }
 let models = [];
-// the Genesis mark on an empty Studio: the ring is every mind it can reach, the G the one that answers
+// the AutoFaber mark on an empty Studio: the orbits are every mind it can reach, the AF the one that answers
 const stone = () => { if (!window.HiveFX) return;
   const fam = new Set(models.map((m) => HiveFX.mineralName(m.id))).size;
-  $("gcap").innerHTML = "<b>" + models.length + " minds</b> on call, " + fam + " famil" + (fam === 1 ? "y" : "ies") + ".<br>The ring is every mind AutoFaber can reach; the G is the one that answers you."; };
+  $("gcap").innerHTML = "<b>" + models.length + " minds</b> on call, " + fam + " famil" + (fam === 1 ? "y" : "ies") + ".<br>The orbits are every mind AutoFaber can reach; the AF at their heart is the one that answers you."; };
 // live telemetry in the header and the side panel
 let lastMs = 0, lastTtft = 0, lastCps = 0; window.tele = () => tele();
 function tele() {
