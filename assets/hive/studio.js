@@ -29,7 +29,7 @@ addEventListener("hashchange", route);
 
 // ── models ──
 async function loadModels() {
-  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").innerHTML = "<em class='gn'>" + esc(gname) + "</em> is listening.";
+  const j = await api("/models").catch(() => ({ models: [] })); owner = !!j.owner; models = j.models || []; gname = owner && j.genesis || ""; if (gname) $("greet").innerHTML = "<em class='gn'>" + esc(gname) + "</em> is listening."; else named();
   if (j.resting) { const t = new Date(j.resting).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); models.forEach((m) => { if (m.id.startsWith("workers-ai|")) m.group = "Cloudflare Workers AI (free) · resting until " + t; }); }
   const sel = $("model"), groups = {}; for (const m of models) (groups[m.group] = groups[m.group] || []).push(m);
   sel.innerHTML = Object.entries(groups).map(([g, ms]) => "<optgroup label='" + esc(g) + "'>" + ms.map((m) => "<option value='" + esc(m.id) + "'>" + esc(m.name) + "</option>").join("") + "</optgroup>").join("") || "<option value=''>No models available</option>";
@@ -89,7 +89,17 @@ function drawHist() {
 $("hist").onclick = (e) => { const d = e.target.closest("[data-c]"); if (!d) return; if (e.target.closest("[data-del]")) { chats = chats.filter((c) => c.id !== d.dataset.c); if (chat && chat.id === d.dataset.c) newChat(); save(); return; } openChat(d.dataset.c); };
 $("hist").onkeydown = (e) => { if (e.key === "Enter" && e.target.matches("[data-c]")) openChat(e.target.dataset.c); };
 // an empty surface shows the greeting, the seams and the geode; a session shows its layers
-const ground = (empty) => { $("empty").classList.toggle("hidden", !empty); $("lede").classList.toggle("hidden", !empty); };
+const ground = (empty) => { $("empty").classList.toggle("hidden", !empty); $("lede").classList.toggle("hidden", !empty); $("welcome").classList.toggle("hidden", !empty || !!LS.get("intro", 0)); };
+// who they are, in their own words: a name, a line about them, how long they like answers. Kept on this device, sent with each message.
+const me = () => LS.get("me", {}), hello = () => { const h = new Date().getHours(); return h < 5 ? "Up late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
+function named() { const n = me().name; if (!gname && n) $("greet").innerHTML = esc(hello()) + ", <em>" + esc(n) + "</em>."; }
+function setMe(m) { const o = { name: String(m.name || "").trim().slice(0, 40), about: String(m.about || "").trim().slice(0, 200), len: m.len === "short" || m.len === "long" ? m.len : "" }; LS.set("me", o); named(); return o; }
+{ const m = me(); $("w-name").value = m.name || ""; $("w-about").value = m.about || "";
+  const lens = [...document.querySelectorAll("#welcome .wlen button")], pickLen = (v) => lens.forEach((b) => { b.classList.toggle("on", b.dataset.len === v); b.setAttribute("aria-checked", b.dataset.len === v); }); pickLen(m.len || "");
+  lens.forEach((b) => (b.onclick = () => pickLen(b.dataset.len)));
+  const done = () => { LS.set("intro", 1); $("welcome").classList.add("hidden"); $("inp").focus(); };
+  $("w-form").onsubmit = (e) => { e.preventDefault(); setMe({ name: $("w-name").value, about: $("w-about").value, len: (lens.find((b) => b.classList.contains("on")) || {}).dataset?.len }); done(); };
+  $("w-skip").onclick = done; }
 function newChat() { chat = null; $("log").innerHTML = ""; ground(true); greet(); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
 function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) { $("model").value = chat.model; showPick(); } ground(false); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i, true)); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
 $("newchat").onclick = newChat; $("hsearch").oninput = drawHist;
@@ -295,7 +305,7 @@ async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
-  const body = { lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
+  const body = { me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
     cid: chat.id, sid: Math.random().toString(36).slice(2) + Date.now().toString(36), messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   // while the answer is being prepared, show what Genesis is doing (planning, searching, reading…) as it happens
   let polls = 0; const was = m.status, watchSteps = image ? 0 : setInterval(async () => {
@@ -566,8 +576,11 @@ function openSettings() {
   const vm = S("vmodel"), cur = $("s-vmodel"); [...cur.querySelectorAll("option.pin")].forEach((o) => o.remove());
   const add = (id) => { const m = models.find((x) => x.id === id); if (!m) return; const o = document.createElement("option"); o.className = "pin"; o.value = id; o.textContent = "Pin: " + m.name; cur.appendChild(o); };
   add($("model").value); if (vm && vm !== "fast" && vm !== $("model").value) add(vm); cur.value = vm; if (cur.value !== vm) cur.value = "";
+  $("s-name").value = me().name || ""; $("s-about").value = me().about || ""; $("s-len").value = me().len || "";
   $("s-say").value = S("say"); $("sys").value = LS.get("sys", ""); if (!$("sdlg").open) $("sdlg").showModal();
 }
+["s-name", "s-about", "s-len"].forEach((id) => ($(id).onchange = () => setMe({ name: $("s-name").value, about: $("s-about").value, len: $("s-len").value })));
+$("s-intro").onclick = () => { LS.set("intro", 0); $("sdlg").close(); newChat(); };
 $("s-theme").onchange = () => { LS.set("theme", $("s-theme").value); applyTheme(); };
 $("s-motion").onchange = () => { setS("motion", $("s-motion").checked); motion(); };
 $("s-enter").onchange = () => setS("enter", $("s-enter").checked);
