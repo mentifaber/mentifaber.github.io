@@ -118,8 +118,9 @@ def main():
 
 
 
-# ── Genesis (the app once called Genesis): the gold G in its ring of crystals, and the ring alone for the voice link ──
-G_ART = Image.open(os.path.join(ROOT, "assets/brand/genesis-logo.jpg")).convert("RGB")
+# ── AutoFaber (the app once called Hive, then Genesis): the glowing AF on a gold shield in its orbits; the voice link
+#    still uses the ring of crystals from the Genesis mark (assets/brand/genesis-ring.jpg). File names keep "genesis".
+G_ART = Image.open(os.path.join(ROOT, "assets/brand/autofaber-logo.jpg")).convert("RGB")
 RING_ART = Image.open(os.path.join(ROOT, "assets/brand/genesis-ring.jpg")).convert("RGB")
 
 
@@ -142,15 +143,16 @@ def ring_png(px):
 
 
 def genesis():
-    G = crop(G_ART, 416, 605, 760)
+    G = crop(G_ART, 515, 773, 1210)   # the whole emblem: orbits from x 12 to 1018, y 179 to 1368
+    S = crop(G_ART, 515, 728, 880)    # the shield and its AF, for sizes where the orbits would be noise
     made = [save(lean(tile(G, 512)), "assets/icons/hive-genesis-512.png"),
-            save(tile(G, 192), "assets/icons/hive-genesis-192.png"),
-            save(tile(G, 48, 0.2), "assets/icons/hive-genesis-48.png"),
-            save(sized(G, 180), "assets/icons/hive-genesis-apple.png"),
+            save(tile(S, 192), "assets/icons/hive-genesis-192.png"),
+            save(tile(S, 48, 0.2), "assets/icons/hive-genesis-48.png"),
+            save(sized(S, 180), "assets/icons/hive-genesis-apple.png"),
             save(lean(safe(G, 512, 0.84)), "assets/icons/hive-genesis-maskable-512.png"),
-            save(safe(G, 192, 0.84), "assets/icons/hive-genesis-maskable-192.png"),
-            save(medallion(G, 96), "assets/hive/genesis-mark.png"),
-            save(medallion(G, 64), "assets/hive/genesis-mark-64.webp", quality=88, method=6),
+            save(safe(S, 192, 0.84), "assets/icons/hive-genesis-maskable-192.png"),
+            save(medallion(S, 96), "assets/hive/genesis-mark.png"),
+            save(medallion(S, 64), "assets/hive/genesis-mark-64.webp", quality=88, method=6),
             save(medallion(G, 420), "assets/hive/genesis-logo-420.webp", quality=86, method=6),
             save(ring_png(720), "assets/hive/genesis-ring.webp", quality=86, method=6)]
     for p in made:
