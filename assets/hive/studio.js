@@ -79,11 +79,14 @@ $("model").onchange = () => { showPick(); LS.set("model", $("model").value); if 
 // ── chats ──
 let chats = LS.get("chats", []), chat = null;
 const save = () => { chats.sort((a, b) => b.ts - a.ts); chats = chats.slice(0, 80); if (!LS.set("chats", chats)) { for (const c of chats.slice(10)) for (const m of c.msgs) { delete m.image; m.thumbs = []; } LS.set("chats", chats); } drawHist(); };
+// the lattice behind the app hears what happens here (assets/hive/lattice.js)
+const fx = (name, detail) => { try { dispatchEvent(new CustomEvent("af:" + name, { detail })); } catch (e) {} };
+const turns = () => (chat ? chat.msgs.filter((x) => x.role !== "user" && !x.pending && !x.error).length : 0);
 function drawHist() {
   const q = ($("hsearch").value || "").trim().toLowerCase(), list = q ? chats.filter((c) => (c.title + " " + c.msgs.map((m) => m.text || "").join(" ")).toLowerCase().includes(q)) : chats;
   const day = (t) => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], d.getFullYear() === n.getFullYear() ? { month: "short", day: "numeric" } : { month: "short", year: "numeric" }); };
   $("hist").innerHTML = list.map((c) => { const n = c.msgs.filter((m) => m.role === "user").length, last = [...c.msgs].reverse().find((m) => m.role !== "user" && m.model), mid = (last && last.model) || c.model || "";
-    return "<div data-c='" + esc(c.id) + "' class='sess" + (chat && chat.id === c.id ? " on" : "") + "' style='--m:" + pollen(mid) + "' tabindex='0' role='button'><time>" + esc(day(c.ts)) + "</time><span class='strip'></span><span class='t'><span>" + esc(c.title || "Untitled") + "</span><small>" + n + " layer" + (n === 1 ? "" : "s") + (mid ? " · " + esc(String(mid).split("|").pop().split("/").pop()) : "") + "</small></span><button data-del title='Delete this session' aria-label='Delete'>✕</button></div>"; }).join("")
+    return "<div data-c='" + esc(c.id) + "' class='sess" + (chat && chat.id === c.id ? " on" : "") + "' style='--m:" + pollen(mid) + "' tabindex='0' role='button'><time>" + esc(day(c.ts)) + "</time><span class='strip'></span><span class='t'>" + (window.Lattice ? Lattice.sigil(c.id, n + 2) : "") + "<span>" + esc(c.title || "Untitled") + "</span><small>" + n + " layer" + (n === 1 ? "" : "s") + (mid ? " · " + esc(String(mid).split("|").pop().split("/").pop()) : "") + "</small></span><button data-del title='Delete this session' aria-label='Delete'>✕</button></div>"; }).join("")
     || "<p>" + (q ? "Nothing down there matches “" + esc(q) + "”." : "Nothing beneath yet. Every session you start settles here.") + "</p>";
 }
 $("hist").onclick = (e) => { const d = e.target.closest("[data-c]"); if (!d) return; if (e.target.closest("[data-del]")) { chats = chats.filter((c) => c.id !== d.dataset.c); if (chat && chat.id === d.dataset.c) newChat(); save(); return; } openChat(d.dataset.c); };
@@ -100,11 +103,11 @@ function setMe(m) { const o = { name: String(m.name || "").trim().slice(0, 40), 
   const done = () => { LS.set("intro", 1); $("welcome").classList.add("hidden"); $("inp").focus(); };
   $("w-form").onsubmit = (e) => { e.preventDefault(); setMe({ name: $("w-name").value, about: $("w-about").value, len: (lens.find((b) => b.classList.contains("on")) || {}).dataset?.len }); done(); };
   $("w-skip").onclick = done; }
-function newChat() { chat = null; $("log").innerHTML = ""; ground(true); greet(); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
-function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) { $("model").value = chat.model; showPick(); } ground(false); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i, true)); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
+function newChat() { if (window.Lattice) Lattice.grow(0); chat = null; $("log").innerHTML = ""; ground(true); greet(); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
+function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) { $("model").value = chat.model; showPick(); } ground(false); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i, true)); drawHist(); tele(); if (window.Lattice) Lattice.grow(turns(), chat.id); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
 $("newchat").onclick = newChat; $("hsearch").oninput = drawHist;
 function greet() {
-  const ideas = [["Council", "Several minds argue it out; one merges the best", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["Search", "The live web, with its sources in the margin", "What are the most important AI developments this week?", true], ["Imagine", "A picture from your words", "A geode split open on a riverbank at dawn, crystals catching the first light, macro photograph", false, true], ["Build", "Code a small working thing", "Write a tiny snake game in one HTML file."], ["Swarm", "Agents plan, build and review a whole project", null, false, false, false, false, true], ["Voice", "Talk with it, hands-free", null, false, false, true]];
+  const ideas = [["Council", "Several minds argue it out; one merges the best", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["Search", "The live web, with its sources in the margin", "What are the most important AI developments this week?", true], ["Imagine", "A picture from your words", "A forge in the dark where gold filament is spun into a glowing lattice, sparks drifting up, cinematic macro photograph", false, true], ["Build", "Code a small working thing", "Write a tiny snake game in one HTML file."], ["Swarm", "Agents plan, build and review a whole project", null, false, false, false, false, true], ["Voice", "Talk with it, hands-free", null, false, false, true]];
   const tint = ["var(--m-azurite)", "var(--m-malachite)", "var(--m-rhodo)", "var(--m-citrine)", "var(--m-jasper)", "var(--m-selenite)"];
   $("starters").innerHTML = ideas.map((x, i) => "<li><button data-i='" + i + "'><i style='--c:" + tint[i] + "'></i><b>" + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></button></li>").join("");
   $("starters").onclick = (e) => { const b = e.target.closest("[data-i]"); if (!b) return; const x = ideas[+b.dataset.i]; if (x[7]) { location.hash = "swarm"; return; } if (x[5]) return Voice.start(); setTog("web", !!x[3]); setTog("draw", !!x[4]); setTog("council", !!x[6]); $("inp").value = x[2]; send(); }; }
@@ -255,7 +258,7 @@ const cmp = $("composer"); ["dragenter", "dragover"].forEach((t) => document.add
 // ── composer ──
 const inp = $("inp"), grow = () => { inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, innerHeight * .4) + "px"; };
 const sync = () => { $("sendb").disabled = !busy && !inp.value.trim() && !att.length; };
-inp.addEventListener("input", () => { grow(); sync(); });
+inp.addEventListener("input", () => { grow(); sync(); fx("type"); });
 inp.addEventListener("keydown", (e) => { if (e.key !== "Enter" || e.shiftKey || e.isComposing) return; const mod = e.metaKey || e.ctrlKey; if (mod || (S("enter") && !matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
 const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") { inp.placeholder = v ? "Describe a picture…" : "Ask anything…  ( / for commands )"; $("sendb").textContent = busy ? "Stop" : v ? "Paint" : "Ask"; } if (window.tele) tele(); };
 $("web").onclick = () => { setTog("web", $("web").getAttribute("aria-pressed") !== "true"); if ($("web").getAttribute("aria-pressed") === "true") setTog("draw", false); };
@@ -314,12 +317,13 @@ async function run(image, opts) {
     const st = s.now ? s.now + "…" : (s.steps.length ? null : was); if (JSON.stringify([s.steps, st]) === JSON.stringify([m.steps, m.status])) return;
     m.steps = s.steps; m.status = st; if (chat.msgs[i] === m) drawMsg(m, i);
   }, 700);
+  fx("think", { at: $("composer") });
   try {
     if (image) j = await api("/imagine", { prompt: u.text }, busy.signal);
     else if (u.council) j = await api("/chat", body, busy.signal);
     else j = await stream(body, m, i, busy.signal);
   } catch (e) { j = { error: e.name === "AbortError" ? (m.text ? null : "Stopped.") : m.text ? null : "Couldn't reach AutoFaber. Check your connection.", text: m.text && e.name !== "AbortError" ? m.text + "\n\n_(the connection dropped here)_" : m.text }; if (j.error === null) { delete j.error; j.tools = m.tools; j.sources = m.sources; j.turn = m.turn; } }
-  clearInterval(watchSteps); delete m.steps;
+  clearInterval(watchSteps); delete m.steps; if (chat) fx("done", { n: turns() + 1, seed: chat.id });
   busy = null; $("sendb").classList.remove("stop"); $("sendb").textContent = on("draw") ? "Paint" : "Ask"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
@@ -344,7 +348,7 @@ async function stream(body, m, i, signal) {
     let k; while ((k = buf.indexOf("\n\n")) >= 0) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
       if (ev === "meta") { lastWord = Date.now(); m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
-      else if (ev === "delta") { lastWord = Date.now(); if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
+      else if (ev === "delta") { lastWord = Date.now(); if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; fx("token"); if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
       else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; out.cut = !!d.cut; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }

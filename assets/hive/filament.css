@@ -1,0 +1,251 @@
+/* AutoFaber · Filament.
+   The emblem is an AF drawn as lit nodes joined by gold filament, on a black shield, held in gold orbits. The app is the inside of
+   that emblem. Black glass; light only where something is alive. A lattice of nodes drifts behind every screen (lattice.js) and
+   grows a star for every finished exchange. Surfaces are plates: a hairline frame with brighter machined corners. Things that are
+   on are lit nodes; lines that join things are filament. Gold is AutoFaber's own colour; each family of minds keeps a metal of
+   its own for the strip beside what it said. One typeface (Hive Strata), Azeret Mono for code. Loaded after hive.css. */
+:root {
+  --bg: #060607; --bed: #0d0c0a; --bed2: #0a0908; --well: rgba(0, 0, 0, .42); --glass: rgba(14, 12, 9, .72); --glass2: rgba(20, 16, 10, .86);
+  --ink: #f2e9d8; --ink2: #cfc3ad; --dim: #a1937b; --faint: #857862;
+  --line: rgba(217, 164, 65, .13); --line2: rgba(217, 164, 65, .26); --hair: rgba(217, 164, 65, .2); --veil: rgba(3, 3, 4, .66);
+  --fil: #d9a441; --fil-hi: #ffd27a; --ember: #ff9a3c; --gold: #d9a441; --gold-hi: #ffd98a;
+  --ok: #9ad46e; --warn: #f2b33d; --bad: #ff6a4d;
+  /* each family of minds keeps a metal: warm, luminous on black */
+  --m-copper: #e8925a; --m-malachite: #4fd1a0; --m-azurite: #78a8ff; --m-citrine: #f0cf5a; --m-jasper: #ff7a5c; --m-lapis: #9aa6ff;
+  --m-rhodo: #ff8fbd; --m-hematite: #b8c0c8; --m-peridot: #c2e05c; --m-selenite: #fff2d6; --m-tiger: #e7b45c; --m-flint: #d9a441;
+  --m: var(--fil);
+  --spine: 98px;
+  --glow: 0 0 0 1px rgba(255, 210, 122, .14), 0 0 28px rgba(255, 170, 60, .12);
+  --corner: color-mix(in srgb, var(--fil) 78%, transparent);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  /* vellum: the same lattice in bronze ink on warm paper */
+  --bg: #f3ede1; --bed: #f8f3e9; --bed2: #ece4d4; --well: rgba(255, 255, 255, .6); --glass: rgba(250, 245, 235, .8); --glass2: rgba(252, 248, 240, .94);
+  --ink: #1e170b; --ink2: #3d321f; --dim: #6c5c40; --faint: #7a6a4d;
+  --line: rgba(138, 96, 20, .16); --line2: rgba(138, 96, 20, .32); --hair: rgba(138, 96, 20, .26); --veil: rgba(243, 237, 225, .7);
+  --fil: #9a6b12; --fil-hi: #c4891c; --ember: #b8561a; --gold: #9a6b12; --gold-hi: #b98318;
+  --ok: #2f7a1e; --warn: #8d6400; --bad: #b42a1c;
+  --m-copper: #a4501f; --m-malachite: #157a55; --m-azurite: #2459b0; --m-citrine: #8c6d00; --m-jasper: #b0361f; --m-lapis: #3a4cc0;
+  --m-rhodo: #ad3c6a; --m-hematite: #59636c; --m-peridot: #5d7a0c; --m-selenite: #6f6650; --m-tiger: #835a17; --m-flint: #9a6b12;
+  --glow: 0 0 0 1px rgba(154, 107, 18, .18), 0 8px 26px rgba(120, 80, 10, .12);
+  color-scheme: light;
+}
+
+html { background: var(--bg); }
+body { background: radial-gradient(120% 80% at 72% 38%, color-mix(in srgb, var(--fil) 9%, transparent), transparent 62%), radial-gradient(60% 50% at 8% 100%, color-mix(in srgb, var(--ember) 6%, transparent), transparent 70%), var(--bg); }
+#lattice { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+#crown, #main { position: relative; z-index: 1; }
+::selection { background: color-mix(in srgb, var(--fil) 40%, transparent); color: var(--ink); }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fil) 40%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--fil) 35%, transparent); } ::-webkit-scrollbar-track { background: transparent; }
+:focus-visible { outline: 1px solid var(--fil-hi); outline-offset: 3px; box-shadow: 0 0 14px color-mix(in srgb, var(--fil-hi) 45%, transparent); }
+a { text-decoration-color: color-mix(in srgb, var(--fil) 60%, transparent); }
+
+/* ── plates: a hairline frame with bright machined corners ── */
+#composer, #welcome .wc, .seams button, #mpop, .menu, dialog, .pre, .stage, .console, .file, #toast, .norun, .grid-d .d, .key, .opt input, .wform input {
+  --pc: var(--corner);
+  background:
+    linear-gradient(var(--pc), var(--pc)) top left / 13px 1px no-repeat, linear-gradient(var(--pc), var(--pc)) top left / 1px 13px no-repeat,
+    linear-gradient(var(--pc), var(--pc)) top right / 13px 1px no-repeat, linear-gradient(var(--pc), var(--pc)) top right / 1px 13px no-repeat,
+    linear-gradient(var(--pc), var(--pc)) bottom left / 13px 1px no-repeat, linear-gradient(var(--pc), var(--pc)) bottom left / 1px 13px no-repeat,
+    linear-gradient(var(--pc), var(--pc)) bottom right / 13px 1px no-repeat, linear-gradient(var(--pc), var(--pc)) bottom right / 1px 13px no-repeat,
+    var(--glass);
+  background-origin: border-box; border: 1px solid var(--hair);
+}
+.opt input, .wform input { --pc: color-mix(in srgb, var(--fil) 45%, transparent); background-color: var(--well); }
+
+/* ── controls ── */
+.q, .ghost { border-color: var(--line2); }
+.q:hover:not(:disabled), .ghost:hover:not(:disabled) { border-color: var(--fil); color: var(--ink); box-shadow: 0 0 16px color-mix(in srgb, var(--fil) 18%, transparent); }
+.q.ico:hover, .inst:hover { border-color: transparent; color: var(--fil-hi); box-shadow: none; }
+.pri, #sendb:not(:disabled):not(.stop), .welcome-go {
+  background: linear-gradient(180deg, var(--gold-hi), var(--fil) 58%, color-mix(in srgb, var(--fil) 70%, #3a2400)); color: #140c00; border: 0;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+  text-shadow: 0 1px 0 rgba(255, 236, 190, .45); letter-spacing: .02em; transition: filter .15s, transform .15s; }
+.pri:hover:not(:disabled), #sendb:not(:disabled):not(.stop):hover { background: linear-gradient(180deg, #fff0c4, var(--fil-hi) 55%, var(--fil)); filter: drop-shadow(0 0 10px rgba(255, 190, 80, .5)); }
+.pri:active:not(:disabled), #sendb:active:not(:disabled) { transform: translateY(1px); }
+:root[data-theme="light"] .pri, :root[data-theme="light"] #sendb:not(:disabled):not(.stop) { color: #fff8e8; text-shadow: none; background: linear-gradient(180deg, #c4891c, #9a6b12 60%, #6e4a08); }
+#sendb { min-width: 74px; }
+#sendb:disabled { border-color: var(--line2); color: var(--faint); background: transparent; }
+#sendb.stop { border-color: var(--ember); color: var(--ember); background: transparent; box-shadow: 0 0 18px color-mix(in srgb, var(--ember) 30%, transparent); }
+input, select, textarea { background-color: var(--well); border-color: var(--line2); }
+input:focus, select:focus, textarea:focus { border-color: var(--fil); box-shadow: 0 0 0 1px color-mix(in srgb, var(--fil) 30%, transparent), 0 0 18px color-mix(in srgb, var(--fil) 16%, transparent); }
+/* switches: a node that slides along a filament and lights when on */
+input.tg { border-radius: 10px; background: var(--well); border-color: var(--line2); }
+input.tg::after { clip-path: none; border-radius: 50%; width: 12px; height: 12px; top: 3px; background: var(--faint); }
+input.tg:checked { border-color: var(--fil); background: color-mix(in srgb, var(--fil) 16%, var(--well)); }
+input.tg:checked::after { left: 23px; background: var(--fil-hi); box-shadow: 0 0 10px var(--fil-hi); }
+/* every on-light is a node */
+.led, .gem, .pollen, .st::before, .legend i { clip-path: none !important; border-radius: 50%; width: 8px !important; height: 8px !important; }
+.led.ok { box-shadow: 0 0 8px var(--ok); } .led.bad { box-shadow: 0 0 8px var(--bad); } .led.warn { box-shadow: 0 0 8px var(--warn); }
+.gem, .pollen { box-shadow: 0 0 8px var(--pc, var(--m)); }
+
+/* ── the crown: on a phone a band across the top; on a wide screen the spine down the left ── */
+#crown { background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border-bottom: 1px solid var(--hair); }
+#brand .geo { border-radius: 50%; filter: drop-shadow(0 0 10px rgba(255, 180, 70, .45)); }
+#brand .word { letter-spacing: .02em; }
+#realms a { gap: 8px; color: var(--dim); transition: color .2s; }
+#realms a::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--fil) 60%, transparent); flex: none; transition: background .25s, box-shadow .25s; }
+#realms a:hover::before { border-color: var(--fil-hi); }
+#realms a.on { color: var(--ink); }
+#realms a.on::before { background: var(--fil-hi); border-color: var(--fil-hi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fil-hi) 18%, transparent), 0 0 14px var(--fil-hi); }
+#realms a.on::after { display: none; }
+@media (min-width: 1000px) {
+  body { display: grid; grid-template-columns: var(--spine) minmax(0, 1fr); grid-template-rows: 100dvh; }
+  #crown { grid-column: 1; grid-row: 1; height: 100dvh; flex-direction: column; align-items: stretch; gap: 4px; padding: 20px 0 14px; border-bottom: 0; border-right: 1px solid var(--hair);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 55%, transparent), color-mix(in srgb, var(--bg) 85%, transparent)); }
+  #main { grid-column: 2; grid-row: 1; min-height: 0; }
+  #brand { flex-direction: column; gap: 8px; margin: 0 0 26px; align-items: center; }
+  #brand .geo { width: 54px; height: 54px; }
+  #brand .word { font-size: 12px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; }
+  #realms { flex-direction: column; height: auto; position: relative; gap: 2px; padding: 6px 0; }
+  #realms::before { content: ""; position: absolute; left: 24.5px; top: 0; bottom: 0; width: 1px; background: linear-gradient(transparent, var(--fil) 12%, var(--fil) 88%, transparent); opacity: .55; }
+  #realms a { padding: 12px 6px 12px 21px; font-size: 13.5px; letter-spacing: .02em; }
+  #realms a::before { background: var(--bg); position: relative; z-index: 1; }
+  #realms a:hover { color: var(--ink); background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fil) 8%, transparent)); }
+  .state { flex-direction: column; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 0 10px 0 18px; white-space: normal; font-size: 11.5px; line-height: 1.3; }
+  #crown > .inst { align-self: center; }
+  #cmdk-btn kbd { font-size: 10.5px; }
+  dialog { margin: 7vh auto 0; }
+}
+
+/* ── STUDIO ── */
+#surface { background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent) 75%, color-mix(in srgb, var(--bg) 0%, transparent)); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); padding-bottom: 6px; }
+.lede h1 { font-weight: 300; letter-spacing: -.018em; color: var(--ink); }
+.lede h1 em, .lede h1 em.gn { font-style: normal; color: transparent; background: linear-gradient(180deg, #fff3cf 0%, var(--gold-hi) 30%, var(--fil) 70%, color-mix(in srgb, var(--fil) 60%, var(--ember))); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 22px rgba(255, 180, 70, .3)); }
+:root[data-theme="light"] .lede h1 em { filter: none; }
+.lede p { color: var(--dim); letter-spacing: .01em; }
+.rail { color: var(--faint); text-transform: lowercase; letter-spacing: .14em; font-size: 11.5px; }
+/* the forge: where you write. Its corners light when you're in it, and a spark runs along its top edge */
+#composer { padding: 12px 18px 12px; transition: box-shadow .25s, border-color .25s; }
+#composer::after { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, var(--fil-hi), transparent) -40% 0 / 40% 100% no-repeat; opacity: 0; pointer-events: none; }
+#composer:focus-within { --pc: var(--fil-hi); border-color: color-mix(in srgb, var(--fil) 55%, transparent); box-shadow: var(--glow); }
+#composer:focus-within::after { opacity: 1; animation: scan 2.8s linear infinite; }
+@keyframes scan { to { background-position: 140% 0; } }
+#composer.drag { --pc: var(--fil-hi); background-color: color-mix(in srgb, var(--fil) 10%, var(--glass)); }
+#mpick { font-weight: 600; letter-spacing: .01em; }
+#mpick .gem { box-shadow: 0 0 10px currentColor; }
+#mlist button:hover, #mlist button.on { background: color-mix(in srgb, var(--fil) 10%, transparent); }
+#inp { font-weight: 300; letter-spacing: .005em; caret-color: var(--fil-hi); }
+.tog { border: 1px solid transparent; transition: color .15s, border-color .15s, box-shadow .2s; }
+.tog i { clip-path: none !important; border-radius: 50%; width: 7px; height: 7px; background: transparent; border: 1px solid currentColor; }
+.tog:hover { border-color: var(--line2); }
+.tog[aria-pressed="true"] { color: var(--ink); border-color: color-mix(in srgb, var(--fil) 55%, transparent); background: color-mix(in srgb, var(--fil) 9%, transparent); }
+.tog[aria-pressed="true"] i { background: var(--fil-hi); border-color: var(--fil-hi); box-shadow: 0 0 9px var(--fil-hi); }
+/* the empty surface: the seams as plates, and the emblem held in turning orbits */
+.seams { border: 0; gap: 10px; }
+.seams li, .seams li:nth-child(odd) { border: 0; }
+.seams button, .seams li:nth-child(even) button { padding: 15px 16px; height: 100%; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.seams button:hover { --pc: var(--fil-hi); border-color: color-mix(in srgb, var(--fil) 50%, transparent); box-shadow: var(--glow); transform: translateY(-1px); }
+.seams button:hover b { text-decoration: none; color: var(--gold-hi); }
+.seams button i { clip-path: none; border-radius: 50%; width: 8px; height: 8px; background: var(--c, var(--fil)); box-shadow: 0 0 10px var(--c, var(--fil)); margin-top: 7px; }
+.geode { position: relative; }
+.geode img { position: relative; z-index: 1; animation: afglow 5s ease-in-out infinite; border-radius: 50%; }
+.geode::before, .geode::after { content: ""; position: absolute; inset: -6% -14%; border: 1px solid color-mix(in srgb, var(--fil) 45%, transparent); border-radius: 50%; transform: rotate(-18deg) scaleY(.42); animation: orbit 18s linear infinite; }
+.geode::after { inset: -2% -6%; transform: rotate(32deg) scaleY(.36); animation-duration: 26s; animation-direction: reverse; border-color: color-mix(in srgb, var(--fil-hi) 30%, transparent); }
+@keyframes orbit { from { rotate: 0deg; } to { rotate: 360deg; } }
+@keyframes afglow { 0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 170, 60, .25)); } 50% { filter: drop-shadow(0 0 34px rgba(255, 190, 80, .5)); } }
+.still .geode img, .still .geode::before, .still .geode::after { animation: none; }
+#welcome .wc { --pc: var(--fil-hi); box-shadow: var(--glow); }
+#welcome .wlen button.on { box-shadow: 0 0 12px color-mix(in srgb, var(--fil) 30%, transparent); }
+
+/* the exchanges: each answer hangs from a filament, lit at the node where it begins */
+.ex { border-top: 1px solid var(--line); }
+.ex .lyr { font-weight: 300; color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--m) 80%, transparent); letter-spacing: .02em; }
+:root[data-theme="light"] .ex .lyr { -webkit-text-stroke: 1px var(--m); }
+.ex > .strip { background: linear-gradient(var(--m), var(--m)) center / 1px 100% no-repeat !important; position: relative; opacity: .9; }
+.ex > .strip::before { content: ""; position: absolute; left: 50%; top: 0; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: var(--m); box-shadow: 0 0 12px var(--m); }
+.ex > .strip::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; border: 1px solid var(--m); background: var(--bg); }
+.ex.web > .strip { background: repeating-linear-gradient(180deg, var(--m) 0 6px, transparent 6px 10px) center / 1px 100% no-repeat !important; }
+.ex.pending > .strip { background: linear-gradient(180deg, transparent, var(--fil-hi), transparent) center 0 / 1px 40% no-repeat, linear-gradient(color-mix(in srgb, var(--m) 30%, transparent), color-mix(in srgb, var(--m) 30%, transparent)) center / 1px 100% no-repeat !important; animation: spark 1.3s linear infinite; }
+@keyframes spark { from { background-position: center -40%, center; } to { background-position: center 140%, center; } }
+.ex.failed > .strip { background: repeating-linear-gradient(180deg, var(--bad) 0 3px, transparent 3px 7px) center / 1px 100% no-repeat !important; }
+.m.user .b { color: var(--ink); font-weight: 300; }
+.who-line b { color: var(--gold-hi); letter-spacing: .02em; }
+.m.ai .b { color: var(--ink); }
+.b ul > li::before { clip-path: none; border-radius: 50%; width: 5px; height: 5px; top: .62em; background: var(--fil); box-shadow: 0 0 6px var(--fil); }
+.b a.cite { background: var(--fil); color: #140c00; border-radius: 0; clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px); }
+.b code { background: color-mix(in srgb, var(--fil) 9%, transparent); border-color: var(--line2); }
+.b blockquote { border-left: 1px solid var(--fil); box-shadow: -1px 0 10px color-mix(in srgb, var(--fil) 30%, transparent); }
+.pre header { border-bottom-color: var(--line); }
+.pre { background-color: rgba(0, 0, 0, .5); }
+:root[data-theme="light"] .pre { background-color: rgba(255, 255, 255, .7); }
+.tools span { border-color: var(--line2); background: color-mix(in srgb, var(--fil) 5%, transparent); }
+.acts .rate.on { color: var(--fil-hi); }
+.caret { clip-path: none; border-radius: 50%; width: 7px; height: 7px; background: var(--fil-hi); box-shadow: 0 0 10px var(--fil-hi); vertical-align: 1px; }
+/* thinking: nodes along a filament, lit in turn */
+.dots { position: relative; gap: 14px; }
+.dots::before { content: ""; position: absolute; left: 3px; right: 3px; top: 50%; height: 1px; background: color-mix(in srgb, var(--fil) 35%, transparent); }
+.dots i { clip-path: none; border-radius: 50%; width: 7px; height: 7px; background: var(--fil-hi); position: relative; animation: node 1.3s ease-in-out infinite; }
+@keyframes node { 0%, 100% { opacity: .2; box-shadow: none; transform: scale(.7); } 40% { opacity: 1; box-shadow: 0 0 12px var(--fil-hi); transform: scale(1); } }
+.srcs a b { color: var(--gold-hi); }
+
+/* bedrock: earlier sessions, each with its sigil (its constellation, small) */
+#bedrock .unconf { background: color-mix(in srgb, var(--fil) 55%, transparent); height: 9px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='9'%3E%3Cpath d='M0 4.5H60' stroke='black' stroke-width='1'/%3E%3Ccircle cx='30' cy='4.5' r='2.4'/%3E%3C/svg%3E") repeat-x center / 60px 9px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='9'%3E%3Cpath d='M0 4.5H60' stroke='black' stroke-width='1'/%3E%3Ccircle cx='30' cy='4.5' r='2.4'/%3E%3C/svg%3E") repeat-x center / 60px 9px; }
+.bhead h2 { font-weight: 300; }
+.sess { border-top-color: var(--line); transition: background .2s; }
+.sess:last-child { border-bottom-color: var(--line); }
+.sess > .strip { background: linear-gradient(var(--m), var(--m)) center / 1px 100% no-repeat; }
+.sess > .t { align-items: center; }
+.sess:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--fil) 8%, transparent), transparent 70%); }
+.sigil { width: 30px; height: 30px; flex: none; overflow: visible; }
+.sigil path { fill: none; stroke: color-mix(in srgb, var(--fil) 70%, transparent); stroke-width: .8; }
+.sigil circle { fill: var(--fil-hi); filter: drop-shadow(0 0 2px var(--fil-hi)); }
+.sess:hover .sigil path, .sess.on .sigil path { stroke: var(--fil-hi); }
+.sess.on > time { color: var(--fil-hi); }
+
+/* ── the other realms ── */
+.realm h1 { font-weight: 300; letter-spacing: -.015em; }
+.bd { border-top-color: var(--line); }
+.ptabs { background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-color: var(--line); }
+.tabrow button[data-pt].on::after, .mtabs button.on::after { background: var(--fil-hi); height: 1px; box-shadow: 0 0 10px var(--fil-hi); }
+.badge { background: var(--fil); color: #140c00; }
+.seg { border-color: var(--line2); }
+.seg button.on { background: var(--fil); color: #140c00; }
+.pl { border-color: var(--line); }
+.pl::before { width: 1px; justify-self: center; box-shadow: 0 0 8px var(--sc, transparent); }
+.pl:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--fil) 8%, transparent), transparent 70%); }
+.ring .fg { stroke: var(--fil-hi); filter: drop-shadow(0 0 4px var(--fil-hi)); }
+.bar i { background: linear-gradient(90deg, var(--fil), var(--fil-hi)); box-shadow: 0 0 10px var(--fil-hi); }
+.note { border-left: 1px solid var(--warn); box-shadow: -1px 0 10px color-mix(in srgb, var(--warn) 30%, transparent); }
+
+/* ── dialogs, menus, toast ── */
+dialog { border-top: 1px solid var(--hair); background-color: var(--glass2); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 30px 80px rgba(0, 0, 0, .55), var(--glow); }
+dialog::backdrop { background: var(--veil); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+#mpop, .menu { background-color: var(--glass2); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.settings h4 { text-transform: lowercase; letter-spacing: .14em; }
+#toast { color: var(--ink); background-color: var(--glass2); box-shadow: var(--glow); }
+#toast::before { clip-path: none; border-radius: 50%; width: 7px; height: 7px; background: var(--fil-hi); box-shadow: 0 0 10px var(--fil-hi); }
+
+/* ── the voice link: black, and the orbits (field.js draws them) ── */
+#voiceo { background: radial-gradient(70% 55% at 50% 36%, color-mix(in srgb, var(--fil) 10%, transparent), transparent 70%), var(--bg); }
+
+@media (max-width: 999px) {
+  #crown { background: color-mix(in srgb, var(--bg) 78%, transparent); }
+}
+@media (max-width: 760px) {
+  #composer { padding: 8px 12px; }
+  .seams { gap: 8px; }
+  #realms a { gap: 6px; }
+  #realms a::before { width: 6px; height: 6px; }
+  .geode::before { inset: -6% -20%; }
+}
+@media (prefers-reduced-motion: reduce) { #composer:focus-within::after, .geode img, .geode::before, .geode::after, .ex.pending > .strip, .dots i { animation: none !important; } }
+@media (min-width: 1000px) { #brand .word { font-size: 10.5px; letter-spacing: .14em; } }
+#welcome .wlen, #welcome .wgo { grid-column: 1 / -1; }
+#welcome .wlen { flex-wrap: nowrap; }
+@media (max-width: 760px) {
+  #composer { padding: 8px 10px; }
+  #sendb { min-width: 0; padding: 6px 13px; margin-left: 2px; }
+  .tog { padding: 6px 4px; }
+  .ctl .q.ico { width: 30px; }
+}
+/* a phone's crown is narrow: only the realm you're in wears its node */
+@media (max-width: 760px) {
+  #realms a { padding: 0 7px; gap: 5px; }
+  #realms a:not(.on)::before { display: none; }
+  #realms a.on::before { width: 5px; height: 5px; }
+}

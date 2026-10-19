@@ -3,13 +3,13 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>AutoFaber · Mentifaber</title>
 <meta name="description" content="A mind that grows in layers: every AI model at once, councils of models, agent swarms that build, live web search, vision, voice and pictures.">
-<meta name="theme-color" content="#0e1113">
+<meta name="theme-color" content="#060607">
 <link rel="manifest" href="assets/manifests/hive.webmanifest">
 <link rel="icon" href="assets/icons/hive-genesis-48.png" sizes="48x48"><link rel="icon" href="assets/icons/hive-genesis-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/hive-genesis-apple.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="AutoFaber">
 <link rel="preload" href="assets/fonts/HiveStrata-Regular.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/HiveStrata-SemiBold.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="assets/fonts/HiveStrata-Light.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/hive/hive.css">
+<link rel="stylesheet" href="assets/hive/hive.css"><link rel="stylesheet" href="assets/hive/filament.css">
 <script>try { if (JSON.parse(localStorage.getItem("hive:theme")) === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}</script>
 </head>
 <body>
@@ -38,7 +38,7 @@
     <div id="scroll">
       <div id="surface" class="core">
         <div class="lede" id="lede"><h1 id="greet">What shall we <em>work on</em>?</h1><p id="esub">One mind, a council, or a whole swarm.</p></div>
-        <div class="rail rs" aria-hidden="true"><span>surface</span></div>
+        <div class="rail rs" aria-hidden="true"><span>forge</span></div>
         <div id="composer">
           <div class="cmdrow">
             <span class="ask">Ask</span>
@@ -86,14 +86,14 @@
         </div>
       </div>
       <div id="empty" class="core">
-        <div class="rail" aria-hidden="true"><span>seams</span></div>
+        <div class="rail" aria-hidden="true"><span>start here</span></div>
         <ol class="seams" id="starters"></ol>
         <figure class="geode-fig"><div class="geode" id="core" aria-hidden="true"><img src="assets/hive/genesis-logo-420.webp" alt="" width="420" height="420" fetchpriority="high" decoding="async"></div><figcaption id="gcap"></figcaption></figure>
       </div>
       <div id="log" aria-live="polite"></div>
       <section id="bedrock" class="core">
         <div class="unconf" aria-hidden="true"></div>
-        <div class="rail"><span>bedrock</span></div>
+        <div class="rail"><span>constellations</span></div>
         <div class="bhead"><h2>Earlier sessions</h2><input id="hsearch" type="search" placeholder="Dig for a word…" aria-label="Search earlier sessions" autocomplete="off"></div>
         <div id="hist"></div>
       </section>
@@ -143,7 +143,7 @@
       </div></div>
       <div class="bd core hidden" id="pt-code"><div class="rail"><span>code</span></div><div class="bc"><div class="files" id="files"></div></div></div>
       <div class="bd core" id="pt-swarm"><div class="rail"><span>the swarm</span></div><div class="bc swgrid">
-        <div class="mapc"><div class="row"><h4>Cavity</h4><span class="flex"></span><span class="dim sm" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
+        <div class="mapc"><div class="row"><h4>Constellation</h4><span class="flex"></span><span class="dim sm" id="acount"></span></div><canvas id="map" aria-label="Live map of the swarm's agents"></canvas><div class="legend"><span><i class="w"></i>working</span><span><i class="v"></i>reviewing</span><span><i class="i"></i>idle</span><span><i class="o"></i>offline</span></div></div>
         <div class="lanes"><h4>Task lanes</h4><div class="board" id="board"></div></div>
         <div class="tel"><h4>Telemetry</h4><div class="feed" id="feed"></div></div>
       </div></div>
@@ -304,6 +304,7 @@
 </dialog>
 <div id="toast" class="hidden" role="status"></div>
 
+<script src="assets/hive/lattice.js"></script>
 <script src="assets/hive/field.js"></script>
 <script src="assets/hive/runner.js"></script>
 <script src="assets/hive/swarm.js"></script>
