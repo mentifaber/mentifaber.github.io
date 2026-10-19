@@ -76,8 +76,8 @@ function geode(el, o) { if (el) el.innerHTML = geodeSVG(o); }
 // ── a shared animation clock ──
 const loops = new Set(); const tick = (t) => { if (!document.hidden) loops.forEach((f) => f(t)); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
 
-// ── the swarm's cavity: each agent a crystal in the wall, coloured by its model; working crystals lengthen and thread to
-// the centre, reviewers are outlined, idle ones dim, offline ones hollow ──
+// ── the swarm's constellation: each agent a node in its model's metal on a gold ring, joined to its neighbours by filament;
+// working ones glow and send sparks to the centre, reviewers wear a ring, idle ones dim, offline ones hollow ──
 let mapState = null;
 function map(c, data) {
   mapState = { c, data }; if (map.on) { if (still()) map.draw(0); return; } map.on = true; const g = c.getContext("2d");
@@ -86,39 +86,58 @@ function map(c, data) {
     const ink = css("--ink", "#e9ebe5"), faint = css("--faint", "#5f6864"), line2 = css("--line2", "#313a3d"), bad = css("--bad", "#ec5f4f"), az = hex("azurite"), bg = css("--bg", "#0d1012");
     g.clearRect(0, 0, W, H);
     const ags = (s.data && s.data.agents) || [], tasks = (s.data && s.data.tasks) || [], done = tasks.filter((x) => x.status === "done").length, R = Math.min(W, H) * .44;
-    // the wall
-    const wall = pebble(cx, cy, R, [1.1, 2.3, .7], .04, 120); g.beginPath(); wall.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath();
-    g.fillStyle = bg; g.fill(); g.strokeStyle = line2; g.lineWidth = 1.2 * D; g.stroke();
-    const inner = pebble(cx, cy, R * .93, [2.1, .4, 1.9], .05, 120); g.beginPath(); inner.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.setLineDash([2 * D, 5 * D]); g.stroke(); g.setLineDash([]);
-    const N = Math.max(ags.length, 1), hw = Math.min(.26, (Math.PI / N) * .8), fillPoly = (pts) => { g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.fill(); };
+    // the constellation: two faint orbits, every agent a node on the outer one, joined to its neighbours by filament
+    const fil = css("--fil", "#d9a441"), hot = css("--fil-hi", "#ffd27a"), N = Math.max(ags.length, 1), rot = time * .04;
+    g.lineWidth = D; for (const [rr, sq, tl] of [[R * .98, .36, -.3], [R * .9, .3, .6]]) { g.strokeStyle = rgba(fil, .22); g.beginPath(); g.ellipse(cx, cy, rr, rr * sq, tl + rot, 0, 7); g.stroke(); }
+    g.strokeStyle = rgba(fil, .35); g.beginPath(); g.arc(cx, cy, R * .78, 0, 7); g.stroke();
+    const at = ags.map((a, i) => { const ang = -Math.PI / 2 + (i / N) * Math.PI * 2 + rot * .5; return [cx + Math.cos(ang) * R * .78, cy + Math.sin(ang) * R * .78]; });
+    if (at.length > 1) { g.strokeStyle = rgba(fil, .5); g.lineWidth = 1.1 * D; g.beginPath(); at.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.stroke(); }
     ags.forEach((a, i) => {
-      const ang = -Math.PI / 2 + (i / N) * Math.PI * 2, busy = a.status === "working" || a.status === "reviewing", col = hex(mineralName(a.model || a.name)), rc = radAt(inner, cx, cy, ang);
-      const len = rc * (busy ? .42 + (still() ? 0 : Math.sin(time * 2.4 + i) * .04) : a.status === "offline" || a.status === "retired" ? .2 : .3);
-      const b1 = [cx + Math.cos(ang - hw) * rc, cy + Math.sin(ang - hw) * rc], b2 = [cx + Math.cos(ang + hw) * rc, cy + Math.sin(ang + hw) * rc], tip = [cx + Math.cos(ang) * (rc - len), cy + Math.sin(ang) * (rc - len)], bm = [cx + Math.cos(ang) * rc, cy + Math.sin(ang) * rc];
-      if (a.status === "working") { g.strokeStyle = rgba(ink, .35); g.lineWidth = D; g.setLineDash([3 * D, 5 * D]); g.lineDashOffset = -time * 24; g.beginPath(); g.moveTo(tip[0], tip[1]); g.lineTo(cx, cy); g.stroke(); g.setLineDash([]); }
-      const alpha = a.status === "retired" ? .25 : busy ? 1 : .55;
-      const cs = crystal(cx, cy, ang, rc, rc * Math.tan(hw) * .8, len);
-      if (a.status === "offline") { g.globalAlpha = .9; g.strokeStyle = bad; g.lineWidth = 1.2 * D; g.beginPath(); [...cs.left.slice(0, 3), ...cs.right.slice(2)].forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke(); }
-      else { g.globalAlpha = alpha; g.fillStyle = col; fillPoly(cs.left); g.globalAlpha = alpha * .58; fillPoly(cs.right); }
+      const [x, y] = at[i], col = hex(mineralName(a.model || a.name)), busy = a.status === "working" || a.status === "reviewing", off = a.status === "offline", gone = a.status === "retired";
+      // working: sparks run down the filament to the centre
+      if (a.status === "working") { g.strokeStyle = rgba(hot, .35); g.lineWidth = D; g.beginPath(); g.moveTo(x, y); g.lineTo(cx, cy); g.stroke();
+        const k = still() ? .5 : (time * .9 + i * .37) % 1, sx = x + (cx - x) * k, sy = y + (cy - y) * k, gr = g.createRadialGradient(sx, sy, 0, sx, sy, 9 * D);
+        gr.addColorStop(0, rgba(hot, .95)); gr.addColorStop(1, rgba(hot, 0)); g.fillStyle = gr; g.beginPath(); g.arc(sx, sy, 9 * D, 0, 7); g.fill(); }
+      const r = (busy ? 7.5 + (still() ? 0 : Math.sin(time * 3 + i) * 1.2) : 5.5) * D;
+      if (!off && !gone) { const gr = g.createRadialGradient(x, y, 0, x, y, r * 4); gr.addColorStop(0, rgba(col, busy ? .55 : .25)); gr.addColorStop(1, rgba(col, 0)); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r * 4, 0, 7); g.fill(); }
+      g.globalAlpha = gone ? .3 : 1; g.fillStyle = off ? bg : col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+      if (off) { g.strokeStyle = bad; g.lineWidth = 1.4 * D; g.stroke(); }
+      if (a.status === "reviewing") { g.strokeStyle = az; g.lineWidth = 1.6 * D; g.beginPath(); g.arc(x, y, r + 5 * D, 0, 7); g.stroke(); }
       g.globalAlpha = 1;
-      if (a.status === "reviewing") { g.strokeStyle = az; g.lineWidth = 1.6 * D; g.beginPath(); [...cs.left.slice(0, 3), ...cs.right.slice(2)].forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke(); }
     });
     // the centre: how far the mission is, as a closing ring and a count in Genesis's own letters
     const frac = tasks.length ? done / tasks.length : 0, RR = R * .2;
     g.strokeStyle = line2; g.lineWidth = 3 * D; g.beginPath(); g.arc(cx, cy, RR, 0, 7); g.stroke();
-    g.strokeStyle = ink; g.beginPath(); g.arc(cx, cy, RR, -Math.PI / 2, -Math.PI / 2 + Math.max(.001, frac) * Math.PI * 2); g.stroke();
+    g.strokeStyle = css("--fil-hi", "#ffd27a"); g.beginPath(); g.arc(cx, cy, RR, -Math.PI / 2, -Math.PI / 2 + Math.max(.001, frac) * Math.PI * 2); g.stroke();
     g.fillStyle = ink; g.textAlign = "center"; g.textBaseline = "middle"; g.font = "300 " + 19 * D + "px 'Hive Strata', system-ui, sans-serif"; g.fillText(done + "/" + tasks.length, cx, cy);
     g.fillStyle = faint; g.font = "400 " + 10 * D + "px 'Hive Strata', system-ui, sans-serif"; g.fillText("tasks", cx, cy + 15 * D); g.textBaseline = "alphabetic";
   };
   map.draw = draw; if (still()) draw(0); else loops.add(draw);
 }
 
-// ── the voice link: the Genesis ring (assets/hive/genesis-ring.webp, the logo without its G). Its hollow is the voice: it
-// glows with yours while it listens, a light runs round the crystals while it thinks, and the hollow and the stones flare
-// with the sound while it speaks ──
-const ringArt = new Image(); ringArt.decoding = "async";
+// ── the voice link's orbits: the emblem's gold rings around the hollow, each carrying lit nodes. At rest they turn slowly; while
+// it listens they tighten with your voice; while it thinks the nodes race; while it speaks the rings breathe with the sound ──
+function orbits(g, cx, cy, s, time, mode, sm, glow, D) {
+  const speed = mode === "think" ? 1.6 : mode === "talk" ? .55 + sm : mode === "listen" ? .35 + sm * .8 : .18;
+  const rings = [[1.0, .38, -.32, 5], [.9, .3, .55, 4], [.8, .46, 1.35, 3], [.68, .24, -1.1, 3]];
+  g.save(); g.lineCap = "round";
+  rings.forEach(([r, sq, tilt, n], k) => {
+    const R = s * r * (1 + (mode === "talk" ? sm * .05 : 0) - (mode === "listen" ? sm * .04 : 0)), ry = R * sq, rot = tilt + time * .05 * (k % 2 ? -1 : 1);
+    g.strokeStyle = "rgba(233,183,90," + (.38 + glow * .4).toFixed(3) + ")"; g.lineWidth = (2.2 - k * .3) * D;
+    g.beginPath(); g.ellipse(cx, cy, R, ry, rot, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = "rgba(255,226,160," + (.12 + glow * .25).toFixed(3) + ")"; g.lineWidth = (6 - k) * D; g.beginPath(); g.ellipse(cx, cy, R, ry, rot, 0, Math.PI * 2); g.stroke();
+    for (let i = 0; i < n; i++) { const a = time * speed * (1 + k * .2) * (k % 2 ? -1 : 1) + (i / n) * Math.PI * 2 + k, x = Math.cos(a) * R, y = Math.sin(a) * ry,
+        px = cx + x * Math.cos(rot) - y * Math.sin(rot), py = cy + x * Math.sin(rot) + y * Math.cos(rot), rr = (2.6 + glow * 2.2) * D;
+      const gr = g.createRadialGradient(px, py, 0, px, py, rr * 5); gr.addColorStop(0, "rgba(255,214,140," + (.55 + glow * .4).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,214,140,0)");
+      g.fillStyle = gr; g.beginPath(); g.arc(px, py, rr * 5, 0, 7); g.fill(); g.fillStyle = "#fff1cc"; g.beginPath(); g.arc(px, py, rr, 0, 7); g.fill(); }
+  });
+  g.restore();
+}
+
+// ── the voice link: the orbits above, round a hollow that is the voice: it glows with yours while it listens, a light runs
+// round while it thinks, and the hollow flares with the sound while it speaks ──
 const voice = { raf: 0, start(c, read) {
-  voice.stop(); if (!ringArt.src) ringArt.src = "assets/hive/genesis-ring.webp";
+  voice.stop();
   let sm = 0, glow = 0; const t0 = performance.now(), waves = []; let lastWave = 0;
   const draw = (t) => {
     voice.raf = requestAnimationFrame(draw); if (document.hidden) return; const st = read(); if (!st) return;
@@ -141,8 +160,7 @@ const voice = { raf: 0, start(c, read) {
     for (let i = waves.length - 1; i >= 0; i--) { const w = waves[i], k = (time - w.t) / 1.1; if (k >= 1 || mode !== "listen") { waves.splice(i, 1); continue; }
       g.strokeStyle = rgba("#ffe2a0", w.a * (1 - k) * .8); g.beginPath(); g.arc(hx, hy, hr * (1 - k * .85), 0, Math.PI * 2); g.stroke(); }
     // the ring itself
-    if (ringArt.complete && ringArt.naturalWidth) g.drawImage(ringArt, cx - s, cy - s, s * 2, s * 2);
-    else { g.strokeStyle = rgba(gold, .6); g.lineWidth = 3 * D; g.beginPath(); g.arc(cx, cy, s * .97, 0, Math.PI * 2); g.stroke(); }
+    orbits(g, cx, cy, s, time, mode, sm, glow, D);
     // light on the stones: a sweep round the ring while it thinks, a flare with the sound while it speaks
     g.save(); g.globalCompositeOperation = "lighter"; g.beginPath(); g.arc(cx, cy, s * .9, 0, Math.PI * 2); g.arc(hx, hy, hr, 0, Math.PI * 2, true); g.clip("evenodd");
     if (mode === "think") { const a = time * 2.4; for (let k = 0; k < 2; k++) { const aa = a + k * Math.PI;
