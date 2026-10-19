@@ -67,6 +67,24 @@
           </div>
         </div>
       </div>
+      <div id="welcome" class="core hidden" role="region" aria-label="Quick start">
+        <div class="rail" aria-hidden="true"><span>first light</span></div>
+        <div class="wc">
+          <div class="wh"><h2>Welcome to <em>AutoFaber</em></h2><button class="q" id="w-skip">Skip</button></div>
+          <ol class="wsteps">
+            <li><b>Ask anything.</b> Type below, or press <kbd>/</kbd> for commands. It plans its own lookups and cites what it read.</li>
+            <li><b>Turn on a power.</b> <i>Search</i> for the live web, <i>Council</i> for several minds at once, <i>Imagine</i> for pictures, <b>+</b> to show it a photo, video or file.</li>
+            <li><b>Talk out loud.</b> The wave button starts a hands-free conversation; speak over it to interrupt.</li>
+            <li><b>Hand it a build.</b> The Swarm tab sends a team of agents to make a working app you can open and run.</li>
+          </ol>
+          <form id="w-form" class="wform" autocomplete="off">
+            <label>What should it call you?<input id="w-name" maxlength="40" placeholder="Your name" autocomplete="given-name"></label>
+            <label><span>Anything it should know about you? <small>optional</small></span><input id="w-about" maxlength="200" placeholder="e.g. I'm a nurse learning to code"></label>
+            <div class="wlen" role="radiogroup" aria-label="How long should answers be?"><span>Answers</span><button type="button" role="radio" data-len="short">Short</button><button type="button" role="radio" data-len="" class="on">Balanced</button><button type="button" role="radio" data-len="long">Thorough</button></div>
+            <div class="wgo"><small class="dim">Kept on this device and sent only with your messages.</small><button class="pri" id="w-go">Start</button></div>
+          </form>
+        </div>
+      </div>
       <div id="empty" class="core">
         <div class="rail" aria-hidden="true"><span>seams</span></div>
         <ol class="seams" id="starters"></ol>
@@ -259,6 +277,12 @@
 <dialog id="dlg"><div class="row"><h3 id="dt"></h3><span class="flex"></span><button class="q" onclick="dlg.close()">Close</button></div><p class="dim" id="dd"></p><pre id="dout">…</pre><p class="dim" id="dnote"></p></dialog>
 <dialog id="sdlg" class="settings" aria-label="Settings">
   <div class="row"><h3>Settings</h3><span class="flex"></span><button class="inst" onclick="sdlg.close()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
+  <section><h4>You</h4>
+    <label class="opt"><span>Your name<small>what AutoFaber calls you</small></span><input id="s-name" maxlength="40" autocomplete="given-name"></label>
+    <label class="opt"><span>About you<small>a line it keeps in mind, sent only with your messages</small></span><input id="s-about" maxlength="200"></label>
+    <label class="opt"><span>Answers</span><select id="s-len"><option value="short">Short</option><option value="">Balanced</option><option value="long">Thorough</option></select></label>
+    <div class="row"><button class="q" id="s-intro">Show the quick start again</button></div>
+  </section>
   <section><h4>Surface</h4>
     <label class="opt"><span>Stone<small>basalt is dark, limestone is light</small></span><select id="s-theme"><option value="dark">Basalt</option><option value="light">Limestone</option></select></label>
     <label class="opt"><span>Motion<small>the glow of the mark, the growing strata and the swarm's cavity</small></span><input type="checkbox" id="s-motion" class="tg"></label>
