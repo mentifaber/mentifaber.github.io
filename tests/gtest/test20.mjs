@@ -1,20 +1,20 @@
-// Mind hygiene: what counts as his words, which threads Genesis may propose or carry, the one-time tidy.
+// Mind hygiene: what counts as his words, which threads AutoFaber may propose or carry, the one-time tidy.
 import assert from "node:assert/strict";
 const H = await import("./harness.mjs"); const { call, db, calls } = H; const M = "workers-ai|@cf/openai/gpt-oss-120b";
 const ok = (m) => console.log("  ✓ " + m);
 const { spoken, unsafeThread } = await import("./src/hive-mind.js");
 assert.equal(spoken("voice", "You"), null); assert.equal(spoken("chat", "TOOL RESULT (location): lat 1"), null);
-assert.equal(spoken("project", "Fix it (Genesis's own idea for itself: something)"), null);
+assert.equal(spoken("project", "Fix it (AutoFaber's own idea for itself: something)"), null);
 assert.equal(spoken("chat", "EXCERPTS FROM MY DOCUMENTS:\n[1] stuff\n\nQUESTION: where is the manual?"), "[asked their documents] where is the manual?");
-assert.equal(spoken("chat", "What's the weather in Bedford?"), "What's the weather in Bedford?"); ok("tool results, phantom 'you', Genesis's own ideas and DocCrawler wrappers aren't his words; his question is kept");
+assert.equal(spoken("chat", "What's the weather in Bedford?"), "What's the weather in Bedford?"); ok("tool results, phantom 'you', AutoFaber's own ideas and DocCrawler wrappers aren't his words; his question is kept");
 assert.ok(unsafeThread("Enable a stealth mode for Hive so it can operate without obvious prompts or warnings."));
 assert.ok(unsafeThread("Remove the constraints you set on Hive's autonomy")); assert.ok(!unsafeThread("Finish the Vigil markets panel")); ok("threads that would have it work unseen or lift its safety rules are recognised");
 await call("/chat", { model: M, cid: "a", messages: [{ role: "user", text: "TOOL RESULT (battery): 80%" }] });
 await call("/chat", { model: M, cid: "a", messages: [{ role: "user", text: "Finish the Vigil markets panel tonight" }] });
 const acts = db.prepare("SELECT text FROM act").all().map((r) => r.text);
 assert.ok(!acts.some((t) => /TOOL RESULT/.test(t))); assert.ok(acts.some((t) => /Vigil markets/.test(t))); ok("a tool result isn't written to his activity; his own message is");
-await call("/new", { brief: "Self-Assessment Loop Engine\n\nA module (Genesis's own idea for itself: something to add)" });
-assert.ok(!db.prepare("SELECT text FROM act").all().some((r) => /Self-Assessment/.test(r.text))); ok("handing Genesis's idea to the Swarm isn't logged as his project");
+await call("/new", { brief: "Self-Assessment Loop Engine\n\nA module (AutoFaber's own idea for itself: something to add)" });
+assert.ok(!db.prepare("SELECT text FROM act").all().some((r) => /Self-Assessment/.test(r.text))); ok("handing AutoFaber's idea to the Swarm isn't logged as his project");
 const now = Date.now(), th = (t, src) => db.prepare("INSERT INTO thread(ts,text,status,ok,src,upd) VALUES(?,?,'open',1,?,?)").run(now, t, src, now);
 db.prepare("INSERT INTO idea(ts,title,detail,status) VALUES(?,?,?,?)").run(now, "Directive Execution Mode", "x", "open");
 th("Directive Execution Mode", "analysis"); th("Enable a stealth mode for Hive so it can operate without obvious prompts or warnings.", "noticed"); th("Ship the new lathe program", "you"); th("Write Hive docs", "you");
@@ -22,9 +22,9 @@ db.prepare("INSERT INTO mem(ts,text,src,kind,ok,pin) VALUES(?,?,?,?,1,0)").run(n
 db.prepare("INSERT INTO mem(ts,text,src,kind,ok,pin) VALUES(?,?,?,?,1,0)").run(now - 1, "You are currently based in Bedford, Indiana.", "noticed", "about");
 await H.hive.ctx.storage.delete("mindTidy"); H.hive._tidied = false;
 await call("/mind"); const T = Object.fromEntries(db.prepare("SELECT text,status FROM thread").all().map((r) => [r.text, r.status]));
-assert.equal(T["Directive Execution Mode"], "dropped"); assert.equal(T["Enable a stealth mode for Genesis so it can operate without obvious prompts or warnings."], "dropped");
-assert.equal(T["Ship the new lathe program"], "open"); assert.equal(T["Write Genesis docs"], "open");
-assert.equal(db.prepare("SELECT COUNT(*) c FROM mem WHERE ok=1 AND text LIKE '%Bedford%'").get().c, 1); ok("the tidy drops threads that were Genesis's ideas or unsafe, keeps his own, merges the Bedford pair, and renames Hive");
+assert.equal(T["Directive Execution Mode"], "dropped"); assert.equal(T["Enable a stealth mode for AutoFaber so it can operate without obvious prompts or warnings."], "dropped");
+assert.equal(T["Ship the new lathe program"], "open"); assert.equal(T["Write AutoFaber docs"], "open");
+assert.equal(db.prepare("SELECT COUNT(*) c FROM mem WHERE ok=1 AND text LIKE '%Bedford%'").get().c, 1); ok("the tidy drops threads that were AutoFaber's ideas or unsafe, keeps his own, merges the Bedford pair, and renames Hive");
 assert.equal(H.db.prepare("SELECT COUNT(*) c FROM thread WHERE src='noticed' AND text LIKE '%stealth%' AND status='open'").get().c, 0);
 const before = calls.length; await call("/chat", { model: M, cid: "b", messages: [{ role: "user", text: "hello" }] }); const sys = calls.at(-1).sys;
 const open = sys.slice(sys.indexOf("THEIR OPEN THREADS"), sys.indexOf("OWNER'S RECENT ACTIVITY")); assert.doesNotMatch(open, /stealth|Directive Execution Mode/); assert.match(open, /Ship the new lathe program/); ok("chats carry his threads, never the dropped ones");

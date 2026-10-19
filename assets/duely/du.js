@@ -116,7 +116,7 @@ async function polish(inv, s, b) {
     if (flags.length) { alert("The AI draft broke a guardrail (“" + flags[0].hit + "” " + flags[0].why + "), so your draft stays as it was."); }
     else if (!facts) { alert("The AI draft dropped the invoice number or amount, so your draft stays as it was."); }
     else { s.body = text; s.ai = true; save(); }
-  } catch (err) { alert("Genesis couldn't be reached just now. Your draft is unchanged, and it already passes the guardrails."); }
+  } catch (err) { alert("AutoFaber couldn't be reached just now. Your draft is unchanged, and it already passes the guardrails."); }
   draw();
 }
 if (!sel && INV[0]) sel = INV[0].id;

@@ -11,7 +11,7 @@ async function remember(ids) { try { await (await caches.open(SEEN)).put("/seen"
 
 self.addEventListener("push", (e) => {
   e.waitUntil((async () => {
-    let list = null, name = "Genesis";
+    let list = null, name = "AutoFaber";
     try {
       const r = await fetch("/api/hive/genesis/alerts", { credentials: "same-origin", cache: "no-store" });
       const j = await r.json();

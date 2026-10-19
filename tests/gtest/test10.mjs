@@ -1,4 +1,4 @@
-// Genesis reads Vigil's live board, keeps watch, and checks it in the system check.
+// AutoFaber reads Vigil's live board, keeps watch, and checks it in the system check.
 import assert from "node:assert/strict";
 import { upstream } from "../vg/mocks.mjs";
 globalThis.fetch = async (u, o) => upstream(typeof u === "string" ? u : u.url, o);
@@ -26,7 +26,7 @@ const j = db.prepare("SELECT text FROM journal WHERE kind='watch'").all();
 assert.equal(j.length, 1); assert.match(j[0].text, /TAM3054.*7700/); ok("watch notes the emergency squawk once: " + j[0].text.slice(0, 90));
 r = await call("/genesis/watch", {}); assert.equal(r.noted, 0); assert.equal(db.prepare("SELECT COUNT(*) c FROM journal WHERE kind='watch'").get().c, 1); ok("…and not again");
 await call("/chat", { model: M, cid: "y", messages: [{ role: "user", text: "hey" }] });
-assert.match(calls.at(-1).sys, /What you noticed on Vigil's live board lately[^\n]*TAM3054/); ok("Genesis knows what it noticed");
+assert.match(calls.at(-1).sys, /What you noticed on Vigil's live board lately[^\n]*TAM3054/); ok("AutoFaber knows what it noticed");
 r = await call("/genesis/health"); const v = r.checks.find((c) => c.name === "Vigil live board"); assert.ok(v && v.ok, JSON.stringify(v)); ok("system check: " + v.detail);
 r = await call("/genesis"); assert.ok(r.watch.length === 1); ok("panel data carries the watch notes");
 console.log("all passed");

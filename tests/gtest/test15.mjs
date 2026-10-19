@@ -24,6 +24,6 @@ const demo = db.prepare("SELECT final FROM proj WHERE id=?").get(id).final; asse
 setResponder(() => "I can't do that."); r = await call("/repair", { id, mode: "demo" }); assert.equal(r.status, 502); assert.match(r.error, /didn't come back as a runnable file/); ok("a reply without a runnable file changes nothing");
 r = await call("/repair", { id, ctok, mode: "fix", lang: "html", code: "", errors: [] }, false); assert.equal(r.status, 400); ok("a fix needs the code and what went wrong");
 db.prepare("INSERT INTO idea(ts,title,detail,status,pid,by_) VALUES(?,?,?,?,?,?)").run(Date.now(), "Counter", "x", "built", id, "genesis");
-const list = await call("/list", null, false); const row = list.projects.find((p) => p.id === id); assert.equal(row.has, true); assert.equal(row.by, "genesis"); ok("the mission list says which have something to run, and which Genesis started");
+const list = await call("/list", null, false); const row = list.projects.find((p) => p.id === id); assert.equal(row.has, true); assert.equal(row.by, "genesis"); ok("the mission list says which have something to run, and which AutoFaber started");
 db.prepare("UPDATE proj SET calls=cap+30 WHERE id=?").run(id); r = await call("/repair", { id, mode: "demo" }); assert.equal(r.status, 429); ok("a mission over its budget gets no more fixes");
 console.log("all passed");

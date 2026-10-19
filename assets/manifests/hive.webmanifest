@@ -1,8 +1,8 @@
 {
   "id": "/hive",
-  "name": "Genesis · a mind with a name",
-  "short_name": "Genesis",
-  "description": "A mind called Genesis that remembers you and talks with you out loud, with every AI model on call: one at a time, as a council, or as a swarm of agents that plans, builds and reviews a whole project. Live web search, vision, pictures and a sealed key vault.",
+  "name": "AutoFaber · a mind that makes",
+  "short_name": "AutoFaber",
+  "description": "A mind called AutoFaber that remembers you and talks with you out loud, with every AI model on call: one at a time, as a council, or as a swarm of agents that plans, builds and reviews a whole project. Live web search, vision, pictures and a sealed key vault.",
   "start_url": "/hive-app.html",
   "scope": "/hive",
   "display": "standalone",

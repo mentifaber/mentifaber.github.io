@@ -168,7 +168,7 @@ class Turn {
     const clip = first < 0 ? [] : fr.slice(Math.max(0, first - 15), Math.min(fr.length, lastI + 13)).map((r) => r.f), t0 = performance.now(); // 300 ms before the first sound, 260 ms after the last
     if (this.o.onSend && !quiet) this.o.onSend();
     return fetch("/api/hive/stt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audio: wav(clip), lang: this.o.lang || "", ms: this.voiced * FMS, kt: this.o.keyterm || "" }), signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined }) // a transcription that never returns would leave it listening forever
-      .then((r) => r.json().catch(() => ({ error: "the server said " + r.status }))).then((j) => (j.error ? { error: j.error } : { text: String(j.text || "").trim(), ms: performance.now() - t0, dropped: j.dropped })).catch((e) => ({ error: e.name === "TimeoutError" ? "transcription took too long" : e.message || "couldn't reach Genesis" }));
+      .then((r) => r.json().catch(() => ({ error: "the server said " + r.status }))).then((j) => (j.error ? { error: j.error } : { text: String(j.text || "").trim(), ms: performance.now() - t0, dropped: j.dropped })).catch((e) => ({ error: e.name === "TimeoutError" ? "transcription took too long" : e.message || "couldn't reach AutoFaber" }));
   }
   finish(text, engine, r) {
     if (this.phase !== "speech") return; text = String(text || "").trim();

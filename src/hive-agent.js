@@ -14,10 +14,10 @@ export const TOOLS = {
   weather: ["current weather and forecast for a place", "town or city"],
   quotes: ["live prices for stocks, crypto, indices or currencies", "tickers or names, comma-separated"],
   vigil: ["the owner's live board: aircraft and emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets", "topics, comma-separated: air, quakes, space, conflict, alerts, volcanoes, launches, iss, markets, summary", true],
-  world: ["Genesis's own hourly record of world conflict and great-power tension, with trends over days", "", true],
+  world: ["AutoFaber's own hourly record of world conflict and great-power tension, with trends over days", "", true],
   site: ["the owner's projects as listed on mentifaber.org (names, status, what each is)", "", true],
-  library: ["search the documents the owner saved in Genesis's library (his own papers, notes, manuals, pages) by meaning", "what to look for", true],
-  build: ["start a Swarm mission (Genesis's team of AI agents) that builds what the owner asked for and hands back a runnable result. ONLY when he explicitly asks you to build, make or create an app, tool, game, page or program right now; never for questions, advice or code he wants to read in chat", "a complete brief: what to build, what it must do, how it should look and work", true],
+  library: ["search the documents the owner saved in AutoFaber's library (his own papers, notes, manuals, pages) by meaning", "what to look for", true],
+  build: ["start a Swarm mission (AutoFaber's team of AI agents) that builds what the owner asked for and hands back a runnable result. ONLY when he explicitly asks you to build, make or create an app, tool, game, page or program right now; never for questions, advice or code he wants to read in chat", "a complete brief: what to build, what it must do, how it should look and work", true],
 };
 export const toolsFor = (owner) => Object.keys(TOOLS).filter((k) => owner || !TOOLS[k][2]);
 
@@ -29,7 +29,7 @@ export function worthPlanning(text) {
 }
 
 export function plannerPrompt(owner, now) {
-  return "You decide which tools Genesis (an AI assistant) uses before it answers. You never answer the user yourself. " +
+  return "You decide which tools AutoFaber (an AI assistant) uses before it answers. You never answer the user yourself. " +
     "Tools:\n" + toolsFor(owner).map((k) => "- " + k + (TOOLS[k][1] ? " (" + TOOLS[k][1] + ")" : "") + ": " + TOOLS[k][0]).join("\n") +
     "\n\nUse tools when the answer depends on facts that change (news, prices, weather, live events), specific facts or numbers that could be misremembered, sources or citations the user wants, or a link they gave. Use none for conversation, opinions, advice, creative writing, explaining well-known ideas, or writing code from scratch. " +
     "Prefer few, precise calls: at most 4. Write arguments as a good search engine query, not a sentence. Never repeat a call listed under ALREADY GATHERED. " +
@@ -38,7 +38,7 @@ export function plannerPrompt(owner, now) {
 
 // what the planner sees: the recent conversation, the newest message, and what's already in hand
 export function plannerInput(msgs, gathered, round) {
-  const hist = msgs.slice(-5, -1).map((m) => (m.role === "user" ? "USER: " : "GENESIS: ") + clip(m.text, 400)).join("\n");
+  const hist = msgs.slice(-5, -1).map((m) => (m.role === "user" ? "USER: " : "AUTOFABER: ") + clip(m.text, 400)).join("\n");
   const last = msgs[msgs.length - 1];
   return (hist ? "EARLIER IN THE CONVERSATION:\n" + hist + "\n\n" : "") + "THE MESSAGE TO ANSWER:\n" + clip(last.text, 2000) +
     (gathered.length ? "\n\nALREADY GATHERED" + (round > 1 ? " (round " + (round - 1) + " results; add calls only if something essential is still missing, e.g. read the most relevant page in full)" : "") + ":\n" + gathered.map((g) => "- " + clip(g, 300)).join("\n") : "");

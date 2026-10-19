@@ -13,7 +13,7 @@
   "label": "the split",
   "title": "What leaves <em>the phone</em>"
  },
- "lede": "<p>The phone build runs in Termux on Android. Chat text goes to a large model because a 70B model won't fit in a pocket; everything else stays put. Camera frames and vision run locally on moondream, and GPS, the clipboard, contacts, the call log and every device action never leave the device.</p><p>The browser version below keeps the character with what a browser can do: a handful of real device tools, Genesis's free models for the thinking, and the same orb.</p>",
+ "lede": "<p>The phone build runs in Termux on Android. Chat text goes to a large model because a 70B model won't fit in a pocket; everything else stays put. Camera frames and vision run locally on moondream, and GPS, the clipboard, contacts, the call log and every device action never leave the device.</p><p>The browser version below keeps the character with what a browser can do: a handful of real device tools, AutoFaber's free models for the thinking, and the same orb.</p>",
  "featuresLabel": "how it holds together",
  "features": [
   {
@@ -47,15 +47,15 @@
   },
   {
    "n": "the browser build",
-   "html": "<p>Speech recognition on the device where it exists (Whisper through Genesis otherwise), Genesis's free models with Nobody's terse instructions, and Genesis's neural voice with the browser's voices as the fallback.</p>",
+   "html": "<p>Speech recognition on the device where it exists (Whisper through AutoFaber otherwise), AutoFaber's free models with Nobody's terse instructions, and AutoFaber's neural voice with the browser's voices as the fallback.</p>",
    "stack": [
     "Web Speech",
-    "Genesis",
+    "AutoFaber",
     "Web Audio"
    ]
   }
  ],
- "scope": "<p>The browser version can't read contacts or run shell actions, and its voice and chat run on Genesis's daily free allowance. <em>The phone build is the full thing.</em></p>",
+ "scope": "<p>The browser version can't read contacts or run shell actions, and its voice and chat run on AutoFaber's daily free allowance. <em>The phone build is the full thing.</em></p>",
  "closing": "No self. Only capability.",
  "manifest": {
   "categories": [

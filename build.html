@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0b0b0c">
-<title>Genesis build</title>
+<title>AutoFaber build</title>
 <link rel="icon" href="/assets/hive/genesis-mark-64.webp">
 <style>
 :root { --bg: #0b0b0c; --ink: #e9e4d8; --dim: #8d877a; --gold: #c9a24a; --gold-hi: #e6c46e; --line: #26231e; --bad: #ff7b72; }
@@ -33,9 +33,9 @@ body.bare #show { display: block; }
 </style>
 </head>
 <body>
-<div id="bar"><img src="/assets/hive/genesis-mark-64.webp" alt=""><div class="t"><b id="title">Loading…</b><small id="sub">A Genesis build · mentifaber.org</small></div>
-  <button id="errs" class="err" hidden></button><a id="edit" hidden>Open in Genesis</a><button id="hide" title="Hide this bar">Full screen</button></div>
-<div id="priv"><span>Private preview: only you can open this link. Genesis built it; you decide if it goes public.</span><button id="pub">Make public</button></div>
+<div id="bar"><img src="/assets/hive/genesis-mark-64.webp" alt=""><div class="t"><b id="title">Loading…</b><small id="sub">A AutoFaber build · mentifaber.org</small></div>
+  <button id="errs" class="err" hidden></button><a id="edit" hidden>Open in AutoFaber</a><button id="hide" title="Hide this bar">Full screen</button></div>
+<div id="priv"><span>Private preview: only you can open this link. AutoFaber built it; you decide if it goes public.</span><button id="pub">Make public</button></div>
 <div id="msg" hidden></div>
 <button id="show" title="Show the bar">◈</button>
 <script src="/assets/hive/runner.js"></script>
@@ -44,17 +44,17 @@ body.bare #show { display: block; }
   const $ = (id) => document.getElementById(id), slug = (location.pathname.match(/^\/p\/([\w-]+)/) || [])[1] || new URLSearchParams(location.search).get("s");
   const say = (h, t) => { $("msg").hidden = false; $("msg").innerHTML = "<h1></h1><p></p>"; $("msg").querySelector("h1").textContent = h; $("msg").querySelector("p").textContent = t; };
   $("hide").onclick = () => document.body.classList.add("bare"); $("show").onclick = () => document.body.classList.remove("bare");
-  if (!slug) { $("title").textContent = "Genesis"; return say("No build here", "This address doesn't name a build."); }
+  if (!slug) { $("title").textContent = "AutoFaber"; return say("No build here", "This address doesn't name a build."); }
   let j; try { const r = await fetch("/api/hive/pub/" + encodeURIComponent(slug), { credentials: "same-origin", cache: "no-store" }); j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); }
-  catch (e) { $("title").textContent = "Genesis"; return say("Nothing here", "This build isn't published, or it was taken down."); }
-  document.title = j.title + " · Genesis"; $("title").textContent = j.title;
-  $("sub").textContent = (j.by === "genesis" ? "Built by Genesis, on its own" : "Built with Genesis's Swarm") + " · " + new Date(j.ts).toLocaleDateString() + (j.v > 1 ? " · version " + j.v : "");
+  catch (e) { $("title").textContent = "AutoFaber"; return say("Nothing here", "This build isn't published, or it was taken down."); }
+  document.title = j.title + " · AutoFaber"; $("title").textContent = j.title;
+  $("sub").textContent = (j.by === "genesis" ? "Built by AutoFaber, on its own" : "Built with AutoFaber's Swarm") + " · " + new Date(j.ts).toLocaleDateString() + (j.v > 1 ? " · version " + j.v : "");
   if (j.id) { $("edit").hidden = false; $("edit").href = "/hive-app?p=" + encodeURIComponent(j.id); } // the owner: straight to the mission
   if (j.id && !j.live) { $("priv").style.display = "flex"; $("pub").onclick = async () => {
     $("pub").disabled = true; const r = await fetch("/api/hive/publish", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: j.id }) }).then((x) => x.json()).catch(() => ({ error: "offline" }));
     if (r.error) { $("pub").disabled = false; $("pub").textContent = "Try again"; return; } $("priv").querySelector("span").textContent = "Public now: anyone with this link can open it."; $("pub").remove(); }; }
   const R = window.HiveRun, fs = R.files(j.final), f = R.entry(fs);
-  if (!f) return say("Nothing to run", "This result is code or writing without a page to run. Open it in Genesis to read it.");
+  if (!f) return say("Nothing to run", "This result is code or writing without a page to run. Open it in AutoFaber to read it.");
   const frame = document.createElement("iframe"); frame.title = j.title;
   frame.setAttribute("sandbox", "allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups allow-downloads"); // no allow-same-origin: it can't touch this site or its sign-in
   frame.setAttribute("allow", "fullscreen; clipboard-write; autoplay"); document.body.insertBefore(frame, $("show"));

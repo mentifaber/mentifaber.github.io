@@ -103,9 +103,9 @@ export function trends(h) {
 }
 // the record in words, for Genesis to reason from
 export function worldText(t) {
-  if (!t || t.empty) return "GENESIS'S WORLD RECORD: nothing on file yet (Genesis starts counting GDELT's world-news events on its next 15-minute watch).";
+  if (!t || t.empty) return "AUTOFABER'S WORLD RECORD: nothing on file yet (AutoFaber starts counting GDELT's world-news events on its next 15-minute watch).";
   const pct = (a, b) => (b ? " vs " + F(b) + "/day before (" + P(a / b - 1) + ")" : "");
-  const lines = ["GENESIS'S OWN WORLD RECORD (Genesis counts GDELT's 15-minute world-news event files itself and keeps hourly tallies; " + t.files + " of the last " + t.week + " files on file, about " + t.days + " days" + (t.fb ? "" : "; no baseline yet, so no trends") + "):",
+  const lines = ["AUTOFABER'S OWN WORLD RECORD (AutoFaber counts GDELT's 15-minute world-news event files itself and keeps hourly tallies; " + t.files + " of the last " + t.week + " files on file, about " + t.days + " days" + (t.fb ? "" : "; no baseline yet, so no trends") + "):",
     "Violence reported worldwide: " + F(t.global.day) + " events in the last 24 h" + (t.global.base ? pct(t.global.day, t.global.base) + (Math.abs(t.global.day / t.global.base - 1) < 0.12 ? ": roughly level" : t.global.day > t.global.base ? ": up" : ": down") : "") + ".",
     "Where, last 24 h: " + t.countries.slice(0, 10).map((c) => c.name + " " + F(c.day) + (c.base ? " (" + P(c.change) + ")" : "")).join(", ") + "."];
   if (t.movers.length && t.fb) lines.push("Rising fastest against their own baseline: " + t.movers.slice(0, 5).map((c) => c.name + " " + F(c.day) + "/day vs " + F(c.base)).join(", ") + (t.easing.length ? ". Easing: " + t.easing.map((c) => c.name + " " + F(c.day) + " vs " + F(c.base)).join(", ") : "") + ".");
@@ -120,5 +120,5 @@ export function frictionEvents(t) {
   if (!t || t.empty || t.days < 3) return [];
   return t.dyads.filter((d) => d.great && d.trend === "rising" && d.n >= 25 && (d.hostile - (d.hostileBase || 0) >= 0.12 || d.violent >= 3)).map((d) => ({
     key: "fr:" + d.k + ":" + new Date().toISOString().slice(0, 10), cat: "world", level: "notable", view: "world", title: "⚑ " + d.label + ": friction above normal",
-    text: d.label + ": " + Math.round(d.hostile * 100) + "% of reported dealings hostile in the last 24 h (baseline " + Math.round((d.hostileBase || 0) * 100) + "%), " + d.threats + " threats or shows of force, " + d.violent + " violent (GDELT, Genesis's own count)" }));
+    text: d.label + ": " + Math.round(d.hostile * 100) + "% of reported dealings hostile in the last 24 h (baseline " + Math.round((d.hostileBase || 0) * 100) + "%), " + d.threats + " threats or shows of force, " + d.violent + " violent (GDELT, AutoFaber's own count)" }));
 }

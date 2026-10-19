@@ -1,5 +1,5 @@
 // Links and the build check in Chromium, with a real Hive behind them: "Check all builds" runs every finished result unseen
-// and gets the broken one fixed; Publish gives a link; build.html runs it sandboxed for anyone; Genesis's private preview is
+// and gets the broken one fixed; Publish gives a link; build.html runs it sandboxed for anyone; AutoFaber's private preview is
 // the owner's alone until he makes it public.   node pub-ui.mjs <repo> mobile|desktop
 import { createRequire } from "node:module"; import { mkdirSync } from "node:fs"; import assert from "node:assert/strict";
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
@@ -22,8 +22,8 @@ const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => { if (!/Servi
 p.on("dialog", (d) => d.accept());
 const ok = (m) => console.log("ok", DEV, m), until = async (fn, ms = 10000, what = "") => { const end = Date.now() + ms; while (Date.now() < end) { if (await p.evaluate(fn)) return; await p.waitForTimeout(150); } throw new Error("timed out: " + what); };
 
-// 1 · Genesis's build finishes: a private preview link
-await H.call("/genesis"); const priv = H.db.prepare("SELECT slug, live FROM pub WHERE pid='a3'").get(); assert.ok(priv && priv.live === 0); ok("Genesis's finished build got a private preview: /p/" + priv.slug);
+// 1 · AutoFaber's build finishes: a private preview link
+await H.call("/genesis"); const priv = H.db.prepare("SELECT slug, live FROM pub WHERE pid='a3'").get(); assert.ok(priv && priv.live === 0); ok("AutoFaber's finished build got a private preview: /p/" + priv.slug);
 
 // 2 · check every build
 await p.goto("http://localhost:8099/hive-app.html#swarm"); await until(() => /Broken counter/.test(document.getElementById("plist").textContent), 8000, "list");
@@ -53,7 +53,7 @@ await p.goto("http://localhost:8099/build.html?s=" + priv.slug); await until(() 
 // 5 · the private preview, as the owner
 asOwner = true; await p.goto("http://localhost:8099/build.html?s=" + priv.slug);
 await until(() => !!document.querySelector("iframe") && getComputedStyle(document.getElementById("priv")).display === "flex", 8000, "owner preview");
-assert.match(await p.textContent("#sub"), /Built by Genesis, on its own/); assert.equal(await p.getAttribute("#edit", "href"), "/hive-app?p=a3");
+assert.match(await p.textContent("#sub"), /Built by AutoFaber, on its own/); assert.equal(await p.getAttribute("#edit", "href"), "/hive-app?p=a3");
 await p.click("#pub"); await until(() => /Public now/.test(document.getElementById("priv").textContent), 6000, "made public"); assert.equal(H.db.prepare("SELECT live FROM pub WHERE pid='a3'").get().live, 1);
 ok("the owner sees the private preview with “Make public” and a way into the mission; one tap and it's public");
 assert.deepEqual(errs, []); ok("no page errors");

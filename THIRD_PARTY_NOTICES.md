@@ -13,7 +13,7 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 | PDF.js | 3.11.174 | Apache-2.0 | DocCrawler |
 | Mammoth | 1.6.0 | BSD-2-Clause | DocCrawler (.docx) |
 | Tesseract.js | 5.0.4 | Apache-2.0 | text recognition (Worm Eater) |
-| Pyodide | 0.26.4 | MPL-2.0 | Python in Genesis's runner |
+| Pyodide | 0.26.4 | MPL-2.0 | Python in AutoFaber's runner |
 | satellite.js | 5.0.0 | MIT (bundled: `assets/orbit/satellite.min.js`, notice kept in the file) | Overhead |
 | Font Awesome Free | 6.5.0 | icons CC BY 4.0, fonts SIL OFL 1.1, code MIT | icons |
 | llama.cpp | — | MIT | MENTIFABER AGENT container |
@@ -37,7 +37,7 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 |---|---|---|
 | NOAA SWPC, NWS (api.weather.gov), USGS earthquakes and volcanoes, NASA | U.S. government work, public domain | credited as sources |
 | Open-Meteo (weather, geocoding) | data CC BY 4.0; free API for non-commercial use | attribution required; commercial use needs their paid plan |
-| GDELT Project | free to use with citation | Vigil, Genesis's world record |
+| GDELT Project | free to use with citation | Vigil, AutoFaber's world record |
 | CelesTrak | free, with attribution | Overhead |
 | The Space Devs (Launch Library 2) | free tier, with attribution | launches |
 | Where the ISS at? | free API | ISS position |
@@ -51,9 +51,9 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 | Frankfurter | open (European Central Bank rates) | currency |
 | Open Food Facts, Open Beauty Facts | database ODbL 1.0, images CC BY-SA | Worm Eater |
 | Wikipedia | text CC BY-SA 4.0 | excerpts, with links |
-| arXiv | metadata CC0; papers under their own licences | Genesis knowledge |
-| OpenAlex | CC0 | Genesis knowledge |
-| Hugging Face Hub | each dataset and model under its own licence, shown on its page | Genesis knowledge |
+| arXiv | metadata CC0; papers under their own licences | AutoFaber knowledge |
+| OpenAlex | CC0 | AutoFaber knowledge |
+| Hugging Face Hub | each dataset and model under its own licence, shown on its page | AutoFaber knowledge |
 
 ## AI models and services
 

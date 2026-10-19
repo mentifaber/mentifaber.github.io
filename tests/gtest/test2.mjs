@@ -10,14 +10,14 @@ for (const t of ["what's the weather", "write me a test for this function", "I'm
 ok("asks for a system check are recognised (and ordinary 'test' talk isn't)");
 let r = await call("/chat", { model: M, cid: "a", messages: [{ role: "user", text: "Test system functionality after upgrades" }] });
 let sys = calls.at(-1).sys; assert.ok(r.tools.some((t) => /^ran a system check/.test(t)), JSON.stringify(r.tools));
-assert.match(sys, /LIVE SYSTEM CHECK, run by Genesis just now \(11 checks/); assert.match(sys, /✓ Durable Object storage: wrote a value and read it back/); assert.match(sys, /✓ Workers AI: embedding model answered \(384 dimensions\)/);
+assert.match(sys, /LIVE SYSTEM CHECK, run by AutoFaber just now \(11 checks/); assert.match(sys, /✓ Durable Object storage: wrote a value and read it back/); assert.match(sys, /✓ Workers AI: embedding model answered \(384 dimensions\)/);
 assert.match(sys, /✗ MENTIFABER AGENT 1\.0: no status/); assert.match(sys, /✗ Site files: assets not bound/); assert.match(sys, /anything not listed was not checked/);
 ok("the reply gets real results: what passed, what didn't (no agent or assets bound in this test), nothing made up");
 assert.match(sys, /never present a test run, check, measurement or action as done unless its results appear below/); assert.match(sys, /WHAT YOU CAN'T DO: change your own code or model weights, deploy, push to GitHub/); ok("and it's told plainly what it can't do or claim");
 r = await call("/genesis/health"); assert.equal(r.checks.length, 11); ok("the Check systems button gets the same live results");
 
 // 2 · it knows how it grows, and its state
-assert.match(sys, /HOW YOU GROW \(this is real/); assert.match(sys, /YOUR STATE RIGHT NOW: Latest changes to Genesis: [^\n]*? \d+ exchanges remembered; 3 lessons; 0 reflections; autonomy on\. No open ideas yet\./); ok("it can describe its own growth loop and current state truthfully");
+assert.match(sys, /HOW YOU GROW \(this is real/); assert.match(sys, /YOUR STATE RIGHT NOW: Latest changes to AutoFaber: [^\n]*? \d+ exchanges remembered; 3 lessons; 0 reflections; autonomy on\. No open ideas yet\./); ok("it can describe its own growth loop and current state truthfully");
 
 // 3 · autonomy: its own timing and its own pick (randomness pinned so the test can say which)
 const rnd = Math.random; Math.random = () => 0.1; // < 0.55: one of its ideas, newest first

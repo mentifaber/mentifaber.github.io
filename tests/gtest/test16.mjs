@@ -23,7 +23,7 @@ ok("pin, edit (a re-embed), and no duplicate by editing");
 // a chat carries them grouped, pinned marked; small sets ride whole
 r = await call("/chat", { model: M, cid: "a1", messages: [{ role: "user", text: "What should I do this weekend?" }] }); let sys = calls.at(-1).sys;
 assert.match(sys, /OWNER MEMORIES \(★ = pinned by them: always honour it\):\nPreferences:\n- I prefer short answers without filler\nPeople:\n- ★ Your sister Maya lives in Lisbon\nSetup:\n- I run everything on Cloudflare Workers\nGoals:\n- Ship the Vigil markets panel/);
-assert.equal(bge, 1, "one query embedding per message, shared with Genesis's recall"); ok("chats get memories grouped by kind, pinned starred; one query vector serves memory and recall");
+assert.equal(bge, 1, "one query embedding per message, shared with AutoFaber's recall"); ok("chats get memories grouped by kind, pinned starred; one query vector serves memory and recall");
 
 // past MEM_ALL: core (pinned + newest) always, the rest only when relevant
 db.prepare("UPDATE mem SET ts=ts-86400000*30").run();
@@ -45,13 +45,13 @@ db.prepare("DELETE FROM mem WHERE text LIKE 'Filler%'").run();
 
 // noticing: every 10 messages, proposals wait for a yes
 let noticeUser = ""; setResponder((s, u) => {
-  if (/keep Genesis's long-term memory/.test(s)) { noticeUser = u; return '```json\n{"facts":[{"text":"You live in Porto","kind":"about"},{"text":"Your partner is Sam","kind":"people"},{"text":"You prefer short answers without filler","kind":"pref"},{"text":"You were in a crisis last night","kind":"about"},{"text":"You asked 14 times about the weather"}],"threads":["Finish the Vigil markets panel","Write the Hive voice docs"],"finished":[]}\n```'; }
+  if (/keep AutoFaber's long-term memory/.test(s)) { noticeUser = u; return '```json\n{"facts":[{"text":"You live in Porto","kind":"about"},{"text":"Your partner is Sam","kind":"people"},{"text":"You prefer short answers without filler","kind":"pref"},{"text":"You were in a crisis last night","kind":"about"},{"text":"You asked 14 times about the weather"}],"threads":["Finish the Vigil markets panel","Write the Hive voice docs"],"finished":[]}\n```'; }
   return null; });
 db.prepare("DELETE FROM act").run();
 for (let i = 0; i < 9; i++) await call("/chat", { model: M, cid: "n" + i, messages: [{ role: "user", text: "Note " + i + ": I live in Porto now and Sam and I are fixing the flat." }] });
 await settle(); assert.equal(noticeUser, ""); ok("no noticing before 10 new messages");
 await call("/chat", { model: M, cid: "n9", messages: [{ role: "user", text: "I still need to finish the Vigil markets panel." }] }); await settle();
-assert.match(noticeUser, /ALREADY ON FILE OR TURNED DOWN[\s\S]*I prefer short answers/); assert.match(noticeUser, /WHAT THEY SAID TO GENESIS LATELY[\s\S]*Note 0[\s\S]*Vigil markets panel/);
+assert.match(noticeUser, /ALREADY ON FILE OR TURNED DOWN[\s\S]*I prefer short answers/); assert.match(noticeUser, /WHAT THEY SAID TO AUTOFABER LATELY[\s\S]*Note 0[\s\S]*Vigil markets panel/);
 mind = await call("/mind"); assert.deepEqual(mind.pending.memories.map((m) => m.text).sort(), ["You live in Porto", "Your partner is Sam"]);
 assert.deepEqual(mind.pending.threads.map((t) => t.text).sort(), ["Finish the Vigil markets panel", "Write the Hive voice docs"]); assert.equal(mind.pending.memories.find((m) => /Sam/.test(m.text)).kind, "people");
 r = await call("/chat", { model: M, cid: "n10", messages: [{ role: "user", text: "hi" }] }); assert.doesNotMatch(calls.at(-1).sys, /- You live in Porto|- Your partner is Sam|THEIR OPEN THREADS/);
@@ -61,14 +61,14 @@ await call("/mind/review", { mem: porto.id, keep: true }); await call("/mind/rev
 r = await call("/chat", { model: M, cid: "n11", messages: [{ role: "user", text: "hello again" }] }); sys = calls.at(-1).sys;
 assert.match(sys, /About you:\n- You live in Porto/); assert.doesNotMatch(sys, /- Your partner is Sam|voice docs/); assert.match(sys, /THEIR OPEN THREADS[^\n]*\n- Finish the Vigil markets panel \(since \d{4}-\d\d-\d\d\)/);
 ok("kept ones go into chats (open threads too); turned-down ones don't");
-setResponder((s, u) => /keep Genesis's long-term memory/.test(s) ? JSON.stringify({ facts: [{ text: "Your partner is Sam", kind: "people" }, { text: "You build synths on weekends", kind: "about" }], threads: ["Write the Hive voice docs"], finished: [panel.id] }) : null);
+setResponder((s, u) => /keep AutoFaber's long-term memory/.test(s) ? JSON.stringify({ facts: [{ text: "Your partner is Sam", kind: "people" }, { text: "You build synths on weekends", kind: "about" }], threads: ["Write the Hive voice docs"], finished: [panel.id] }) : null);
 r = await call("/mind/notice", {}); assert.equal(r.ok, true); assert.deepEqual(r.facts, ["You build synths on weekends"]); assert.deepEqual(r.threads, []); assert.deepEqual(r.finished, [panel.id]);
 mind = await call("/mind"); assert.equal(mind.pending.threads.find((t) => t.id === panel.id).ask, "done");
 await call("/mind/review", { thread: panel.id, keep: true }); assert.equal(db.prepare("SELECT status FROM thread WHERE id=?").get(panel.id).status, "done");
 ok("turned-down proposals aren't made again; a finished thread is asked about, then closed on a yes");
 r = await call("/mind/notice", {}); assert.equal(r.none, true); ok("\"look again\" with nothing new says so");
 await call("/mind/set", { trust: true }); await call("/chat", { model: M, cid: "n12", messages: [{ role: "user", text: "I build synths every weekend with my nephew" }] });
-setResponder((s) => /keep Genesis's long-term memory/.test(s) ? JSON.stringify({ facts: [{ text: "Your nephew Leo builds synths with you", kind: "people" }], threads: [], finished: [] }) : null);
+setResponder((s) => /keep AutoFaber's long-term memory/.test(s) ? JSON.stringify({ facts: [{ text: "Your nephew Leo builds synths with you", kind: "people" }], threads: [], finished: [] }) : null);
 await call("/mind/notice", {}); assert.equal(db.prepare("SELECT ok FROM mem WHERE text LIKE 'Your nephew Leo%'").get().ok, 1); ok("with trust on, what Hive notices is kept at once");
 await call("/mind/set", { trust: false });
 
@@ -78,7 +78,7 @@ const ep = db.prepare("SELECT id FROM thread WHERE text='Record the new EP'").ge
 r = await call("/mind/thread", { text: "Write the Hive voice docs" }); assert.equal(r.ok, true); assert.equal(db.prepare("SELECT ok FROM thread WHERE text='Write the Hive voice docs'").get().ok, 1); ok("threads by hand: added, no duplicates, dropped; one turned down earlier comes back when they add it themselves");
 
 // analysis: open threads proposed, history kept, the second one says what changed, pinned analysis facts survive
-const analyst = (s) => /Genesis's analyst/.test(s) ? "## Snapshot\nYou build things.\n" + (/## Since last time/.test(s) ? "## Since last time\n- You moved to Porto.\n" : "") + "## What you're building\nHive.\n## Open threads\n- **Hive voice docs** — started, not done\n- Sonic Veil mastering\n## Next moves\n- Ship.\n## Durable facts\n- You build Hive on Cloudflare\n- You make music as Sonic Veil" : null;
+const analyst = (s) => /AutoFaber's analyst/.test(s) ? "## Snapshot\nYou build things.\n" + (/## Since last time/.test(s) ? "## Since last time\n- You moved to Porto.\n" : "") + "## What you're building\nHive.\n## Open threads\n- **Hive voice docs** — started, not done\n- Sonic Veil mastering\n## Next moves\n- Ship.\n## Durable facts\n- You build Hive on Cloudflare\n- You make music as Sonic Veil" : null;
 setResponder(analyst);
 r = await call("/mind/analyze", {}); assert.equal(r.ok, true); assert.doesNotMatch(calls.at(-1).sys, /## Since last time/);
 mind = await call("/mind"); assert.deepEqual(mind.pending.threads.map((t) => t.text), ["Sonic Veil mastering"]); assert.equal(mind.history.length, 0);

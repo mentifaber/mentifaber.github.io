@@ -2,7 +2,7 @@
 // OpenAlex. Chat reaches for them when a message is about research, papers, datasets or models; the Swarm's researchers
 // get them as material; and Genesis reads what's new in AI when it decides what to build next.
 const T = (ms) => AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined;
-const UA = { "user-agent": "MentifaberGenesis/1.0 (+https://mentifaber.org/hive)", accept: "application/json" };
+const UA = { "user-agent": "Mentifaber-AutoFaber/1.0 (+https://mentifaber.org/hive)", accept: "application/json" };
 const clip = (s, n) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n);
 const strip = (s) => String(s || "").replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
 const k = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n || 0);
