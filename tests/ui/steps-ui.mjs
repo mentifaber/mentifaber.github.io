@@ -1,4 +1,4 @@
-// Live steps in Chromium: while Genesis plans and looks things up, the pending message shows what it's doing.
+// Live steps in Chromium: while AutoFaber plans and looks things up, the pending message shows what it's doing.
 import { createRequire } from "node:module"; import assert from "node:assert/strict";
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const DEV = process.argv[3] || "desktop";
@@ -7,8 +7,8 @@ globalThis.fetch = async (u) => { u = typeof u === "string" ? u : String(u.url |
   if (u.includes("en.wikipedia.org/w/api.php")) { await new Promise((r) => setTimeout(r, 1500)); return J({ query: { pages: { 1: { index: 1, title: "Tidal power", fullurl: "https://en.wikipedia.org/wiki/Tidal_power", extract: "Tidal power converts energy from tides." } } } }); }
   throw new Error("offline: " + u); };
 const H = await import("../gtest/harness.mjs"); H.hive.sql();
-H.setResponder((sys) => /You decide which tools Genesis/.test(sys) ? JSON.stringify({ calls: [{ tool: "web", arg: "tidal power output 2026" }] }) : null);
-H.setDelayFn((sys) => /You decide which tools Genesis/.test(sys) ? 1500 : 1500);
+H.setResponder((sys) => /You decide which tools AutoFaber/.test(sys) ? JSON.stringify({ calls: [{ tool: "web", arg: "tidal power output 2026" }] }) : null);
+H.setDelayFn((sys) => /You decide which tools AutoFaber/.test(sys) ? 1500 : 1500);
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const ctx = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" });
 await ctx.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: req.postData() || undefined }));

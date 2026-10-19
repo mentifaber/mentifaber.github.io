@@ -19,7 +19,7 @@ const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => { if (!/Servi
 const ok = (m) => console.log("ok", DEV, m), until = async (fn, ms = 10000, what = "") => { const end = Date.now() + ms; while (Date.now() < end) { if (await p.evaluate(fn)) return; await p.waitForTimeout(120); } throw new Error("timed out: " + what + " · console: " + (await p.textContent("#clog")) + " · errs " + JSON.stringify(errs)); };
 await p.goto("http://localhost:8099/hive-app.html#swarm"); await p.waitForTimeout(600);
 await until(() => /counter app/i.test(document.getElementById("plist").textContent), 8000, "list");
-assert.match(await p.textContent("#plist"), /by Genesis/); assert.ok(await p.$("#plist [data-run]")); ok("list: the finished mission has ▶ Run and says Genesis started it");
+assert.match(await p.textContent("#plist"), /by AutoFaber/); assert.ok(await p.$("#plist [data-run]")); ok("list: the finished mission has ▶ Run and says AutoFaber started it");
 await p.click("#plist [data-run]");
 await until(() => !document.getElementById("pt-run").classList.contains("hidden"), 8000, "run tab");
 await until(() => /1 error/.test(document.getElementById("ccount").textContent), 8000, "the load error");

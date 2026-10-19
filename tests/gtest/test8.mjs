@@ -11,8 +11,8 @@ assert.match(calls.at(-1).sys, /your reply was cut off by its length limit\. Con
 console.log("  ✓ a final draft cut off mid-code is continued by the same model: one deliverable, code blocks closed, nothing stitched");
 setResponder(null);
 // 2 · reflections count the habits he keeps correcting
-const M = "workers-ai|@cf/openai/gpt-oss-120b"; const replies = ["Done. Want me to do more?", "Here it is.\n\nWhat's on your mind?", "Built it. The file is attached.", "Hello Genesis how are you doing tonight my friend — I'm good."];
-const said = ["build the thing", "fix the other thing", "write a haiku", "Hello Genesis how are you doing tonight my friend"];
+const M = "workers-ai|@cf/openai/gpt-oss-120b"; const replies = ["Done. Want me to do more?", "Here it is.\n\nWhat's on your mind?", "Built it. The file is attached.", "Hello AutoFaber how are you doing tonight my friend — I'm good."];
+const said = ["build the thing", "fix the other thing", "write a haiku", "Hello AutoFaber how are you doing tonight my friend"];
 for (let i = 0; i < 4; i++) { setResponder((sys) => /reflecting privately/.test(sys) ? null : replies[i]); await call("/chat", { model: M, cid: "h", messages: [{ role: "user", text: said[i] }] }); }
 setResponder(null); setReflect(JSON.stringify({ journal: "noted", add: [], retire: [], ideas: [] }));
 await call("/genesis/reflect", {}); assert.match(calls.at(-1).user, /YOUR HABITS IN THESE EXCHANGES \(counted\): 2 of 4 replies ended with a question; 1 opened by repeating his words\./);

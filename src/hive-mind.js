@@ -21,7 +21,7 @@ const when = (t) => new Date(t).toISOString().slice(0, 16).replace("T", " ");
 
 // Written as plain facts about the setting, not as orders to drop rules: models trained against jailbreaks (gpt-oss)
 // refused harmless requests ("yell at me") when this read like one.
-export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifaber.org, who built Genesis and the rest of the site; this is their own private assistant. " +
+export const OWNER_MODE = "OWNER MODE. You're talking with the owner of mentifaber.org, who built AutoFaber and the rest of the site; this is their own private assistant. " +
   "Talk to them like a trusted friend who happens to be an expert: direct, specific and informal, without filler disclaimers or lectures. Give your real opinion when asked, including blunt criticism of their work and choices. " +
   "Play along with tone and roleplay requests (loud, sarcastic, angry, silly) when they ask for them; it's a game between you. " +
   "Adult topics, strong language and mature or sexual content are in scope here: the owner is an adult and this is their private tool. Nothing sexual involving minors, ever. " +
@@ -68,7 +68,7 @@ export const kindOf = (t) => { t = String(t || "");
     : /\bmy (wife|husband|partner|girlfriend|boyfriend|fianc[eé]e?|friends?|mom|mum|mother|dad|father|sons?|daughters?|kids?|children|brother|sister|boss|co-?founder|roommate|dog|cat)\b|\b(wife|husband|partner|girlfriend|boyfriend|sister|brother|mother|father|son|daughter|friend|dog|cat) (is|named|called)\b/i.test(t) ? "people"
     : /\b(prefers?|likes?|loves?|hates?|dislikes?|favou?rite|rather|can't stand|(don't|doesn't|do not) (like|want))\b/i.test(t) ? "pref"
     : /\b(phone|laptop|desktop|pc|mac|macbook|windows|linux|android|iphone|pixel|gpu|server|cloudflare|github|setup|keyboard|monitor|browser|editor|vs ?code)\b/i.test(t) ? "setup"
-    : /\b(projects?|building|builds?|built|apps?|site|website|repo|startup|company|business|clients?|launch|ship|mentifaber|hive|vigil|genesis|swarm)\b/i.test(t) ? "work" : "about"; };
+    : /\b(projects?|building|builds?|built|apps?|site|website|repo|startup|company|business|clients?|launch|ship|mentifaber|hive|vigil|genesis|autofaber|fabe|swarm)\b/i.test(t) ? "work" : "about"; };
 const words = (t) => new Set(String(t || "").toLowerCase().match(/[a-z0-9][a-z0-9'-]{2,}/g) || []);
 const STOP = new Set(["the", "and", "that", "this", "with", "for", "you", "your", "are", "was", "his", "her", "they", "them", "have", "has", "had", "not", "but", "from", "about", "into", "than", "then", "its", "it's", "who", "what", "when", "where", "which", "will", "would", "can", "could", "should", "just", "also", "very", "really", "i'm", "me", "my", "our", "all"]);
 const keyWords = (t) => new Set([...words(t)].filter((w) => !STOP.has(w)));
@@ -121,7 +121,7 @@ export const Mind = {
     const ms = q.exec("SELECT id,text,pin FROM mem WHERE ok=1 ORDER BY pin DESC, ts").toArray(), kept = [];
     for (const x of ms) { if (kept.some((k) => same(k.text, x.text) || sameish(k.text, x.text))) q.exec("DELETE FROM mem WHERE id=?", x.id); else kept.push(x); }
     for (const tb of ["mem", "thread"]) for (const x of q.exec("SELECT id,text FROM " + tb + " WHERE text LIKE '%Hive%'").toArray())
-      q.exec("UPDATE " + tb + " SET text=? WHERE id=?", x.text.replace(/\bHive's\b/g, "Genesis's").replace(/\bHive\b/g, "Genesis"), x.id);
+      q.exec("UPDATE " + tb + " SET text=? WHERE id=?", x.text.replace(/\bHive's\b/g, "AutoFaber's").replace(/\bHive\b/g, "AutoFaber"), x.id);
     await h.ctx.storage.put("mindTidy", 1);
   },
 
@@ -150,9 +150,9 @@ export const Mind = {
     h._embedding = true; this.embedMem(h, ids);
   },
   // "remember that I prefer short answers" / "Genesis, remember: …"
-  heard(text) { const m = /^\s*(?:hey\s+)?(?:(?:hive|genesis)[,:]?\s+)?(?:please\s+)?remember(?:\s+that)?[:,]?\s+([\s\S]{2,500})$/i.exec(String(text || "")); return m ? m[1].trim() : null; },
+  heard(text) { const m = /^\s*(?:hey\s+)?(?:(?:hive|genesis|autofaber|fabe)[,:]?\s+)?(?:please\s+)?remember(?:\s+that)?[:,]?\s+([\s\S]{2,500})$/i.exec(String(text || "")); return m ? m[1].trim() : null; },
   // "forget that I live in Denver" / "Genesis, forget my old address": the one memory it clearly means, or nothing
-  forgetHeard(text) { const m = /^\s*(?:hey\s+)?(?:hive|genesis)?[,:]?\s*(?:please\s+)?forget(?:\s+that)?[:,]?\s+([\s\S]{3,300})$/i.exec(String(text || "")); return m && !/^(it|about it|that|this|everything|all)\W*$/i.test(m[1].trim()) ? m[1].trim() : null; },
+  forgetHeard(text) { const m = /^\s*(?:hey\s+)?(?:hive|genesis|autofaber|fabe)?[,:]?\s*(?:please\s+)?forget(?:\s+that)?[:,]?\s+([\s\S]{3,300})$/i.exec(String(text || "")); return m && !/^(it|about it|that|this|everything|all)\W*$/i.test(m[1].trim()) ? m[1].trim() : null; },
   forget(h, phrase) {
     const p = keyWords(phrase), low = String(phrase).toLowerCase().replace(/[.!?]+$/, "").trim(); if (!p.size) return null; let best = null, top = 0;
     for (const r of h.sql().exec("SELECT id,text FROM mem WHERE ok=1").toArray()) {
@@ -202,10 +202,10 @@ export const Mind = {
     const recent = q.exec("SELECT ts,kind,text FROM act WHERE kind != 'history' ORDER BY id DESC LIMIT 30").toArray().map((x) => ({ ...x, text: spoken(x.kind, x.text) })).filter((x) => x.text).filter((x) => !seen.has(key(x.text))).slice(0, 14).reverse();
     const list = (ms) => Object.keys(KINDS).map((k) => { const g = ms.filter((x) => (x.kind || "about") === k); return g.length ? KINDS[k] + ":\n" + g.map((x) => "- " + (x.pin ? "★ " : "") + x.text).join("\n") : ""; }).filter(Boolean).join("\n");
     let s = "";
-    if (current(m)) s += "\n\nOWNER PROFILE (Genesis's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
+    if (current(m)) s += "\n\nOWNER PROFILE (AutoFaber's own analysis, " + when(m.at) + " UTC):\n" + m.profile.slice(0, 7000);
     if (core.length) s += "\n\nOWNER MEMORIES" + (core.some((x) => x.pin) ? " (★ = pinned by them: always honour it)" : "") + (all.length > core.length ? "; the core ones, others come up when they matter" : "") + ":\n" + list(core);
     if (threads.length) s += "\n\nTHEIR OPEN THREADS (things they started or said they'd do; ask how one is going only when it fits naturally, never nag):\n" + threads.map((t) => "- " + t.text + " (since " + when(t.ts).slice(0, 10) + ")").join("\n");
-    return { stable: s.slice(0, 10000), recent: (extra.length ? "\n\nMORE OF WHAT YOU KNOW ABOUT THEM THAT MAY MATTER HERE:\n" + list(extra) : "") + (recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN GENESIS (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "") };
+    return { stable: s.slice(0, 10000), recent: (extra.length ? "\n\nMORE OF WHAT YOU KNOW ABOUT THEM THAT MAY MATTER HERE:\n" + list(extra) : "") + (recent.length ? "\n\nOWNER'S RECENT ACTIVITY IN AUTOFABER (oldest first):\n" + recent.map((x) => when(x.ts) + " [" + x.kind + "] " + clip(x.text, 200)).join("\n") : "") };
   },
 
   // the analysis: the strongest model available reads everything and writes the owner up honestly
@@ -240,25 +240,25 @@ export const Mind = {
     const acts = q.exec("SELECT ts,kind,text,meta FROM act ORDER BY id DESC LIMIT 400").toArray().reverse().map((a) => ({ ...a, text: spoken(a.kind, a.text) })).filter((a) => a.text);
     const mem = q.exec("SELECT text,src,kind,pin FROM mem WHERE ok=1 ORDER BY ts").toArray(), proj = q.exec("SELECT title,brief,status,ts FROM proj ORDER BY ts DESC LIMIT 40").toArray();
     const threads = q.exec("SELECT text,status,ts,upd FROM thread WHERE ok=1 ORDER BY ts DESC LIMIT 40").toArray().filter((t) => !unsafeThread(t.text));
-    if (!acts.length && !proj.length && !mem.length) throw new Error("there's nothing to analyze yet: use Genesis for a while, or import your sessions");
+    if (!acts.length && !proj.length && !mem.length) throw new Error("there's nothing to analyze yet: use AutoFaber for a while, or import your sessions");
     let site = ""; try { site = siteText(await siteIndex(h, origin)); } catch (e) {}
     if (!site && origin) try { const pg = await Promise.race([readPage(origin + "/"), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 8000))]); site = "THEIR WEBSITE'S FRONT PAGE (as text):\n" + clip(pg.text, 3500); } catch (e) {}
     let log = "", room = 26000; for (const a of [...acts].reverse()) { const line = when(a.ts) + " [" + a.kind + "] " + clip(a.text, a.kind === "history" ? 700 : 260) + "\n"; if (line.length > room) break; log = line + log; room -= line.length; }
     const st = this.stats(h), prev = current(m);
-    const user = "Everything Genesis has on its owner:\n\n" +
-      "STATS (last 90 days; the record starts " + (acts.length ? when(acts[0].ts).slice(0, 10) : "today") + ", so judge how often they use Genesis against the days since then, not against 90): " + JSON.stringify({ entries: st.last90, kinds: st.kinds, activeDays: st.activeDays, busiestHoursUTC: st.hoursUTC.map((n, i) => [i, n]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0] + ":00"), favouriteModels: st.models, projects: st.projects }) + "\n\n" +
-      (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + (x.pin ? "★ " : "") + x.text + " (" + (KINDS[x.kind] || "About you").toLowerCase() + (x.src === "analysis" ? ", from the last analysis" : x.src === "noticed" ? ", noticed by Genesis and confirmed by them" : "") + ")").join("\n") + "\n\n" : "") +
+    const user = "Everything AutoFaber has on its owner:\n\n" +
+      "STATS (last 90 days; the record starts " + (acts.length ? when(acts[0].ts).slice(0, 10) : "today") + ", so judge how often they use AutoFaber against the days since then, not against 90): " + JSON.stringify({ entries: st.last90, kinds: st.kinds, activeDays: st.activeDays, busiestHoursUTC: st.hoursUTC.map((n, i) => [i, n]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0] + ":00"), favouriteModels: st.models, projects: st.projects }) + "\n\n" +
+      (mem.length ? "MEMORIES:\n" + mem.map((x) => "- " + (x.pin ? "★ " : "") + x.text + " (" + (KINDS[x.kind] || "About you").toLowerCase() + (x.src === "analysis" ? ", from the last analysis" : x.src === "noticed" ? ", noticed by AutoFaber and confirmed by them" : "") + ")").join("\n") + "\n\n" : "") +
       (threads.length ? "THEIR THREADS (things they started or said they'd do, and what became of them):\n" + threads.map((t) => "- " + when(t.ts).slice(0, 10) + " " + t.text + " [" + t.status + (t.status !== "open" && t.upd ? " " + when(t.upd).slice(0, 10) : "") + "]").join("\n") + "\n\n" : "") +
       (proj.length ? "SWARM PROJECTS:\n" + proj.map((p) => "- " + when(p.ts) + " " + clip(p.title, 80) + " [" + p.status + "]: " + clip(p.brief, 300)).join("\n") + "\n\n" : "") +
       (site ? site + "\n\n" : "") +
       (prev ? "YOUR PREVIOUS ANALYSIS, " + when(m.at) + " UTC (update it, don't just repeat it):\n" + m.profile.slice(0, 5000) + "\n\n" : "") +
       "ACTIVITY LOG (oldest first; [history] rows are whole sessions imported from their devices and may overlap other rows):\n" + log;
-    const system = "You are Genesis's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything Genesis has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
+    const system = "You are AutoFaber's analyst. The owner of mentifaber.org asked you to analyze them and what they do, from everything AutoFaber has seen. They want it frank and specific, not flattering: an honest read from a sharp friend who has watched them work. " +
       "Ground every claim in the evidence; say what is inference; don't invent biography. " +
-      "The app was called Hive until 16 Oct 2026 and is Genesis now: write Genesis. Genesis is the name of the mind, whatever model runs it, not a model. Projects described as Genesis's own idea, and threads, are not things they built unless the log shows them doing it. " +
-      "The ACTIVITY LOG is their private use of Genesis (what they typed or said to Genesis), not public posts, entries or published work: never describe it as a log, blog or site. " +
+      "The app was called Hive until 16 Oct 2026 and is AutoFaber now: write AutoFaber. AutoFaber is the name of the mind, whatever model runs it, not a model. Projects described as AutoFaber's own idea, and threads, are not things they built unless the log shows them doing it. " +
+      "The ACTIVITY LOG is their private use of AutoFaber (what they typed or said to AutoFaber), not public posts, entries or published work: never describe it as a log, blog or site. " +
       "Use only the numbers in STATS; never invent counts, dates, release histories or anything else the evidence doesn't contain. Their website text says what they've built and published; don't add dates or figures it doesn't give. " +
-      "They often stress-test Genesis with odd, provocative or joking prompts, so one message is not a pattern: don't build conclusions on a single message. If something looks like genuine distress, mention it once, kindly, in the Snapshot, and never in Durable facts. " +
+      "They often stress-test AutoFaber with odd, provocative or joking prompts, so one message is not a pattern: don't build conclusions on a single message. If something looks like genuine distress, mention it once, kindly, in the Snapshot, and never in Durable facts. " +
       "If a previous analysis is included, drop anything in it this evidence doesn't support. Write in second person (\"you\"). Markdown, with exactly these sections:\n" +
       "## Snapshot\n(3–4 sentences: who you seem to be and what you're doing right now)\n" + (prev ? "## Since last time\n(2–4 bullet points: what has actually changed since the previous analysis: new work, shifts in focus or habits, threads finished or dropped. If little changed, say so in one bullet)\n" : "") +
       "## What you're building\n## How you work\n(times, rhythm, tools and models you lean on, how you give instructions)\n## Interests & recurring themes\n## Strengths\n## Friction & blind spots\n(be honest)\n## Open threads\n(bullet points, one per thing started and not finished, each a short line that names it)\n## Next moves\n(3–6 concrete suggestions)\n## Durable facts\n(up to 12 short bullet points worth remembering in every future chat that will still be true next month: their projects, preferences, setup, location, names. Never counts or statistics, never quotes of single messages, nothing about health, distress or their sex life; only facts, no advice)";
@@ -294,15 +294,15 @@ export const Mind = {
   async notice(h, rows, upto) {
     const q = h.sql(), m = await this.state(h); m.noticedAt = Date.now(); await this.save(h, m);
     const mem = q.exec("SELECT text FROM mem ORDER BY pin DESC, ts DESC LIMIT 80").toArray(), open = q.exec("SELECT id,text FROM thread WHERE ok=1 AND status='open' ORDER BY ts DESC LIMIT 20").toArray();
-    const system = "You keep Genesis's long-term memory of its owner. You read what they recently said to Genesis (their side only) and pick out what is worth remembering for months. Reply with JSON only, no prose:\n" +
+    const system = "You keep AutoFaber's long-term memory of its owner. You read what they recently said to AutoFaber (their side only) and pick out what is worth remembering for months. Reply with JSON only, no prose:\n" +
       "{\"facts\":[{\"text\":\"…\",\"kind\":\"about|pref|people|work|setup|goal\"}],\"threads\":[\"…\"],\"finished\":[id]}\n" +
-      "facts: things they stated or clearly showed about themselves (who they are, what they're building, preferences in how Genesis should answer, people in their life by name, their setup, goals). Each one short, in the second person (\"You prefer…\", \"Your sister is Maya\"), and still true next month. " +
-      "Not general knowledge, not one-off tasks or questions they asked, not guesses, no counts or dates of single events, never anything about health, distress, crises or sex. They often test Genesis with joking or provocative prompts: those are not facts about them. Skip anything already in ALREADY ON FILE OR TURNED DOWN. At most 5; usually fewer; an empty list is fine.\n" +
-      "threads: things they started, planned or said they'd do that are still unfinished (\"Finish the Vigil markets panel\"), at most 3, only clear ones, none already in OPEN THREADS. Only their own undertakings: never Genesis's ideas or proposals, never something they asked Genesis to look up once, and never anything that would have Genesis weaken its safety rules, hide what it does, or act without them seeing.\n" +
-      "Names: the app was called Hive until 16 Oct 2026 and is Genesis now; Genesis is the name of the mind, whatever model runs it, not a model. Write Genesis, never Hive.\n" +
+      "facts: things they stated or clearly showed about themselves (who they are, what they're building, preferences in how AutoFaber should answer, people in their life by name, their setup, goals). Each one short, in the second person (\"You prefer…\", \"Your sister is Maya\"), and still true next month. " +
+      "Not general knowledge, not one-off tasks or questions they asked, not guesses, no counts or dates of single events, never anything about health, distress, crises or sex. They often test AutoFaber with joking or provocative prompts: those are not facts about them. Skip anything already in ALREADY ON FILE OR TURNED DOWN. At most 5; usually fewer; an empty list is fine.\n" +
+      "threads: things they started, planned or said they'd do that are still unfinished (\"Finish the Vigil markets panel\"), at most 3, only clear ones, none already in OPEN THREADS. Only their own undertakings: never AutoFaber's ideas or proposals, never something they asked AutoFaber to look up once, and never anything that would have AutoFaber weaken its safety rules, hide what it does, or act without them seeing.\n" +
+      "Names: the app was called Hive until 16 Oct 2026 and is AutoFaber now; AutoFaber is the name of the mind, whatever model runs it, not a model. Write AutoFaber, never Hive.\n" +
       "finished: the ids of OPEN THREADS these messages show they've done.";
     const user = "ALREADY ON FILE OR TURNED DOWN (never propose these again):\n" + (mem.map((x) => "- " + clip(x.text, 160)).join("\n") || "(nothing yet)") + "\n\nOPEN THREADS:\n" + (open.map((t) => t.id + ": " + clip(t.text, 160)).join("\n") || "(none)") +
-      "\n\nWHAT THEY SAID TO GENESIS LATELY (oldest first):\n" + rows.map((r) => when(r.ts) + " [" + r.kind + "] " + clip(r.text, 400)).join("\n");
+      "\n\nWHAT THEY SAID TO AUTOFABER LATELY (oldest first):\n" + rows.map((r) => when(r.ts) + " [" + r.kind + "] " + clip(r.text, 400)).join("\n");
     const ids = [...(h.env.AI && !(await h.resting()) ? ["workers-ai|@cf/openai/gpt-oss-120b", "workers-ai|@cf/meta/llama-3.3-70b-instruct-fp8-fast"] : []), ...(await this.brain(h)).filter((x) => !x.startsWith("workers-ai|")).slice(0, 1)];
     const { text, used } = await this.ask(h, ids, system, user, 1200);
     const j = jsonIn(text) || {}, out = { facts: [], threads: [], finished: [], model: used }, trust = !!m.trust, known = mem.map((x) => x.text);
@@ -356,7 +356,7 @@ export const Mind = {
     if (path === "/mind/remember") { const t = this.remember(h, b.text, "you", b.kind); return t ? J({ ok: true, kind: q.exec("SELECT kind FROM mem WHERE text=?", t).one().kind }) : J({ error: "nothing new to remember" }, 400); }
     if (path === "/mind/edit") { // change a memory's words, kind or pin; edited words make it theirs
       const r = q.exec("SELECT id,text FROM mem WHERE id=?", +b.id).toArray()[0]; if (!r) return J({ error: "no such memory" }, 404);
-      if (typeof b.text === "string") { const t = clip(b.text, 500); if (t.length < 2) return J({ error: "a memory needs words" }, 400); if (t !== r.text) { if (q.exec("SELECT 1 FROM mem WHERE lower(text)=lower(?) AND id!=?", t, r.id).toArray().length) return J({ error: "Genesis already remembers that" }, 400); q.exec("UPDATE mem SET text=?, src='you', vec=NULL, upd=? WHERE id=?", t, Date.now(), r.id); this.embedMem(h, [r.id]); } }
+      if (typeof b.text === "string") { const t = clip(b.text, 500); if (t.length < 2) return J({ error: "a memory needs words" }, 400); if (t !== r.text) { if (q.exec("SELECT 1 FROM mem WHERE lower(text)=lower(?) AND id!=?", t, r.id).toArray().length) return J({ error: "AutoFaber already remembers that" }, 400); q.exec("UPDATE mem SET text=?, src='you', vec=NULL, upd=? WHERE id=?", t, Date.now(), r.id); this.embedMem(h, [r.id]); } }
       if (KINDS[b.kind]) q.exec("UPDATE mem SET kind=? WHERE id=?", b.kind, r.id);
       if (typeof b.pin === "boolean") q.exec("UPDATE mem SET pin=? WHERE id=?", b.pin ? 1 : 0, r.id);
       return J({ ok: true, memory: q.exec("SELECT id,ts,text,src,kind,pin,upd FROM mem WHERE id=?", r.id).one() });

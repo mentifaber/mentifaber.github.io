@@ -1,5 +1,5 @@
 """Every app on mentifaber.org, in one place: name, hue, glyph, category, status, where its page and its app live.
-The page generator (build.py) reads this; the home page it builds carries the list in the form Genesis's site index parses."""
+The page generator (build.py) reads this; the home page it builds carries the list in the form AutoFaber's site index parses."""
 import json, re, os
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -8,7 +8,7 @@ def _icons():  # the line glyphs from assets/icons.js, keyed by app id
     return {k: json.loads('"' + v + '"') for k, v in re.findall(r'"([a-z-]+)": "((?:[^"\\]|\\.)*)"', s)}
 GLYPH = _icons()
 GLYPH.update({  # glyphs for apps that never had one
-  "hive": '<circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="12" r="3.3"/><path d="M12 3.6l1.4 3.1L12 8.6l-1.4-1.9zM12 20.4l1.4-3.1L12 15.4l-1.4 1.9zM3.6 12l3.1-1.4L8.6 12l-1.9 1.4zM20.4 12l-3.1 1.4L15.4 12l1.9-1.4z"/>',  # the Genesis ring
+  "hive": '<circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="12" r="3.3"/><path d="M12 3.6l1.4 3.1L12 8.6l-1.4-1.9zM12 20.4l1.4-3.1L12 15.4l-1.4 1.9zM3.6 12l3.1-1.4L8.6 12l-1.9 1.4zM20.4 12l-3.1 1.4L15.4 12l1.9-1.4z"/>',  # the AutoFaber ring
   "barycenter": '<circle cx="12" cy="12" r="1.6" fill="currentColor"/><ellipse cx="12" cy="12" rx="9" ry="4.2" transform="rotate(-28 12 12)"/><circle cx="19.1" cy="8.3" r="1.9"/><circle cx="4.9" cy="15.7" r="1.9"/>',
   "nullspace": '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3.4v3M12 17.6v3M3.4 12h3M17.6 12h3"/>',
   "pilotfish": '<path d="M3 12c3.2-4.4 9-5.6 13.4-2.4L21 6.5v11l-4.6-3.1C12 17.6 6.2 16.4 3 12z"/><circle cx="7.6" cy="11.4" r="1" fill="currentColor"/>',

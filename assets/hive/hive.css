@@ -1,10 +1,10 @@
-/* Genesis · Strata.
-   Genesis is a geode: many crystals (every mind you can reach) in one stone, growing in layers. The page is a core log: a depth
+/* AutoFaber · Strata.
+   AutoFaber is a geode: many crystals (every mind you can reach) in one stone, growing in layers. The page is a core log: a depth
    rail, a strip coloured by the mind that laid each layer down, and the layer. You write at the surface; what is said settles
    beneath it, newest nearest the top; earlier sessions are the bedrock, under an unconformity.
    Rules: colour means a mind (each family is a mineral, and the page takes the mineral of the mind you are talking to).
    Everything else is stone and ink. No cards, no bubbles, no rounded boxes, no glow: hairline contacts between layers, flat
-   cuts, crystals. One typeface, Hive Strata (assets/fonts/hive-strata.py), drawn for Genesis and used nowhere else; Azeret Mono
+   cuts, crystals. One typeface, Hive Strata (assets/fonts/hive-strata.py), drawn for AutoFaber and used nowhere else; Azeret Mono
    for code. */
 @font-face { font-family: "Hive Strata"; src: url("../fonts/HiveStrata-Light.woff2") format("woff2"); font-weight: 300; font-display: swap; }
 @font-face { font-family: "Hive Strata"; src: url("../fonts/HiveStrata-Regular.woff2") format("woff2"); font-weight: 400 500; font-display: swap; }
@@ -640,7 +640,7 @@ dialog[open] { animation: drop .22s ease-out; }
 .vvoice select { font-size: 13px; min-height: 32px; max-width: 60vw; }
 .vvoice .q { min-height: 32px; padding: 3px 10px; font-size: 13px; }
 
-/* the install pill (shared across the site) wears Genesis's stone here */
+/* the install pill (shared across the site) wears AutoFaber's stone here */
 body #mf-inst { border-radius: 0; background: var(--ink); color: var(--bg); border: 0; box-shadow: 0 14px 30px rgba(0, 0, 0, .35); font-family: var(--ui); font-weight: 400; letter-spacing: 0; }
 body #mf-inst .go { border-radius: 0; background: var(--bg); color: var(--ink); font-weight: 600; }
 body #mf-inst .x { color: var(--faint); }

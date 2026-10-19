@@ -1,4 +1,4 @@
-// Genesis doesn't keep proposing what it already has: built ideas are in front of it when it reflects, and a new idea that
+// AutoFaber doesn't keep proposing what it already has: built ideas are in front of it when it reflects, and a new idea that
 // says the same thing (in other words) is dropped.
 import assert from "node:assert/strict";
 const H = await import("./harness.mjs"); const { call, calls, db, setReflect } = H; let n = 0; const ok = (m) => console.log("  ✓ " + (++n) + " " + m);

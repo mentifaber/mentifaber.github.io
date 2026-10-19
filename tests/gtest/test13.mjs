@@ -1,4 +1,4 @@
-// Markets (any ticker, crypto fallback, chat material for owner and visitors, watchlist + big-move alerts) and Genesis's
+// Markets (any ticker, crypto fallback, chat material for owner and visitors, watchlist + big-move alerts) and AutoFaber's
 // world record (GDELT ingest over a simulated week, trends, great-power friction, alerts, chat material, health check).
 import assert from "node:assert/strict";
 import { deflateRawSync } from "node:zlib";
@@ -71,9 +71,9 @@ assert.equal(t.movers[0].name, "Sudan"); ok("countries: Sudan ~4× its baseline 
 const ur = t.dyads.find((d) => d.k === "USA-RUS"), uc = t.dyads.find((d) => d.k === "USA-CHN"), nr = t.dyads.find((d) => d.k === "NATO-RUS");
 assert.equal(ur.trend, "rising"); assert.ok(ur.hostile > 0.6 && ur.hostileBase < 0.4, JSON.stringify(ur)); assert.ok(ur.threats > 150); assert.ok(ur.tone < 0 && ur.toneBase > 0);
 assert.equal(uc.trend, "steady"); assert.equal(nr.trend, "rising"); assert.equal(t.dyads.find((d) => d.k === "CHN-TWN").trend, "quiet"); ok("pairs: US–Russia rising (" + Math.round(ur.hostile * 100) + "% hostile vs " + Math.round(ur.hostileBase * 100) + "%), US–China steady, China–Taiwan quiet");
-const text = W.worldText(t); assert.match(text, /^GENESIS'S OWN WORLD RECORD .*6[67]\d of the last 672 files/); assert.match(text, /United States – Russia: \d+ interactions .*% hostile \(baseline \d+%\).*: rising\./); assert.match(text, /How to read it/); ok("the record in words, with baselines and a caution about news attention");
+const text = W.worldText(t); assert.match(text, /^AUTOFABER'S OWN WORLD RECORD .*6[67]\d of the last 672 files/); assert.match(text, /United States – Russia: \d+ interactions .*% hostile \(baseline \d+%\).*: rising\./); assert.match(text, /How to read it/); ok("the record in words, with baselines and a caution about news attention");
 const fe = W.frictionEvents(t); assert.ok(fe.some((e) => e.key.startsWith("fr:USA-RUS:"))); assert.ok(fe.every((e) => e.cat === "world" && e.level === "notable")); ok("friction well above baseline becomes an alert (notable, never critical)");
-// Genesis's watch: the record, friction and watchlist moves become journal notes and alerts
+// AutoFaber's watch: the record, friction and watchlist moves become journal notes and alerts
 const before = db.prepare("SELECT COUNT(*) c FROM alert").get().c;
 const wr = await Genesis.watch(hive); assert.ok(wr.world && !wr.world.error, JSON.stringify(wr));
 const al = db.prepare("SELECT cat, title FROM alert ORDER BY id DESC LIMIT 10").all(); assert.ok(al.some((a) => a.cat === "world" && /Russia: friction above normal/.test(a.title)), JSON.stringify(al)); assert.ok(al.some((a) => a.cat === "markets" && /▲ NVDA \+8\.3%/.test(a.title)), JSON.stringify(al));
@@ -82,7 +82,7 @@ const again = await Genesis.watch(hive); assert.equal(db.prepare("SELECT COUNT(*
 r = await call("/genesis/push"); assert.ok(r.cats.world && r.cats.markets); assert.equal(r.prefs.cats.world, true); ok("the two new alert kinds appear in his alert settings, on by default");
 // owner chat on war: the record comes along
 r = await call("/chat", { model: "workers-ai|@cf/openai/gpt-oss-120b", messages: [{ role: "user", text: "Do you predict us having a world war anytime soon? Based on current events." }] });
-sys = calls[calls.length - 1].sys; assert.match(sys, /GENESIS'S OWN WORLD RECORD/); assert.match(sys, /United States – Russia/); assert.ok(r.tools.some((x) => /world record \(7 days\)/.test(x)), JSON.stringify(r.tools)); ok("“world war?” brings the record: numbers and baselines to reason from");
+sys = calls[calls.length - 1].sys; assert.match(sys, /AUTOFABER'S OWN WORLD RECORD/); assert.match(sys, /United States – Russia/); assert.ok(r.tools.some((x) => /world record \(7 days\)/.test(x)), JSON.stringify(r.tools)); ok("“world war?” brings the record: numbers and baselines to reason from");
 r = await call("/genesis/world?text=1"); assert.ok(r.dyads.length >= 10 && r.countries.length === 2 && /WORLD RECORD/.test(r.text)); ok("/genesis/world serves the record for Vigil's panels");
 r = await call("/genesis/health"); const wc = r.checks.find((c) => c.name === "World record (GDELT)"); assert.ok(wc && wc.ok, JSON.stringify(wc)); assert.match(wc.detail, /6[67]\d of 672 files/); ok("health check: " + wc.detail);
 console.log("all passed");

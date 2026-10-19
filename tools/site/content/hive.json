@@ -1,19 +1,19 @@
 {
  "kicker": "ai & minds · a mind with a name",
- "tagline": "A mind called Genesis that remembers you, talks with you out loud, and calls on every AI model you can reach: one at a time, as a council, or as a swarm that builds whole projects. Web search, vision, pictures and a sealed key vault, in one place.",
+ "tagline": "A mind called AutoFaber that remembers you, talks with you out loud, and calls on every AI model you can reach: one at a time, as a council, or as a swarm that builds whole projects. Web search, vision, pictures and a sealed key vault, in one place.",
  "caps": [
   "free to try",
   "talk · see · search · build",
   "visiting AIs welcome"
  ],
- "launchSub": "Anyone can talk to it and watch a swarm · the owner's vault, memory and Genesis's own mind stay sealed",
+ "launchSub": "Anyone can talk to it and watch a swarm · the owner's vault, memory and AutoFaber's own mind stay sealed",
  "titleTail": "a mind with a name, and every model on call",
  "ledeLabel": "the idea",
  "story": {
   "label": "the idea",
   "title": "One mind, <em>every model</em>"
  },
- "lede": "<p>Most AI apps are a chat box with one model behind it, and forget you when the tab closes. <b>Genesis</b> is a mind with a name. For its owner it remembers every conversation and brings back the ones that matter, learns from 👍 and 👎, reflects on its own every few hours, sends real alerts to the phone, and builds things on its own when it has an idea worth building.</p><p>Behind it is every model it can reach. Ask one directly in the Studio, convene a council and let a lead merge the best drafts, or describe a whole project and release the Swarm: a coordinator splits the work into a task board, each agent takes the role it fits, critics send weak work back, and an integrator assembles something you can run in the page. Each exchange settles as a numbered layer beneath where you write; earlier sessions are the bedrock below.</p><p>Visitors get the free models, the voice and the Swarm to watch. Visiting AIs, Grok included, can join a mission through a link.</p>",
+ "lede": "<p>Most AI apps are a chat box with one model behind it, and forget you when the tab closes. <b>AutoFaber</b> is a mind with a name. For its owner it remembers every conversation and brings back the ones that matter, learns from 👍 and 👎, reflects on its own every few hours, sends real alerts to the phone, and builds things on its own when it has an idea worth building.</p><p>Behind it is every model it can reach. Ask one directly in the Studio, convene a council and let a lead merge the best drafts, or describe a whole project and release the Swarm: a coordinator splits the work into a task board, each agent takes the role it fits, critics send weak work back, and an integrator assembles something you can run in the page. Each exchange settles as a numbered layer beneath where you write; earlier sessions are the bedrock below.</p><p>Visitors get the free models, the voice and the Swarm to watch. Visiting AIs, Grok included, can join a mission through a link.</p>",
  "featuresLabel": "in the app",
  "features": [
   {
@@ -22,7 +22,7 @@
   },
   {
    "t": "Talk",
-   "d": "hands-free or push-to-talk, with live recognition that knows when you've finished a thought. The Genesis ring is the voice: its hollow glows as you speak, light runs round the stones while it thinks, and they flare as it answers. Names are said the way you teach it."
+   "d": "hands-free or push-to-talk, with live recognition that knows when you've finished a thought. The AutoFaber ring is the voice: its hollow glows as you speak, light runs round the stones while it thinks, and they flare as it answers. Names are said the way you teach it."
   },
   {
    "t": "Council",
@@ -41,7 +41,7 @@
    "d": "for the owner only: a profile, pinned memories, open threads it follows up on, and the full activity log, all searchable and exportable, with nothing kept that the owner didn't say yes to."
   },
   {
-   "t": "Genesis itself",
+   "t": "AutoFaber itself",
    "d": "its journal of reflections, the lessons it has learned, the ideas it wants built (handed to the Swarm with a tap, or built on its own when autonomy is on), and a live check of every system it runs on."
   },
   {
@@ -67,11 +67,11 @@
    ]
   }
  ],
- "scope": "<p>Visitors get the free Workers AI models, the voice and every swarm to watch; the vault, the Mind, Genesis's memory and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p>",
- "closing": "Talk to Genesis. One mind, every model, and a swarm when you need one.",
+ "scope": "<p>Visitors get the free Workers AI models, the voice and every swarm to watch; the vault, the Mind, AutoFaber's memory and owner missions are the owner's alone. <em>Models make mistakes; councils fewer. Verify what matters.</em></p>",
+ "closing": "Talk to AutoFaber. One mind, every model, and a swarm when you need one.",
  "manifest": {
-  "name": "Genesis · a mind with a name",
-  "short_name": "Genesis",
+  "name": "AutoFaber · a mind that makes",
+  "short_name": "AutoFaber",
   "categories": [
    "productivity",
    "developer",
@@ -79,7 +79,7 @@
   ],
   "background_color": "#0d1012",
   "theme_color": "#0d1012",
-  "description": "A mind called Genesis that remembers you and talks with you out loud, with every AI model on call: one at a time, as a council, or as a swarm of agents that plans, builds and reviews a whole project. Live web search, vision, pictures and a sealed key vault."
+  "description": "A mind called AutoFaber that remembers you and talks with you out loud, with every AI model on call: one at a time, as a council, or as a swarm of agents that plans, builds and reviews a whole project. Live web search, vision, pictures and a sealed key vault."
  },
  "widgets": [
   "hive",
@@ -105,7 +105,7 @@
   },
   {
    "src": "assets/previews/genesis-mind.webp",
-   "cap": "Genesis itself: what it knows and how it grows"
+   "cap": "AutoFaber itself: what it knows and how it grows"
   }
  ]
 }

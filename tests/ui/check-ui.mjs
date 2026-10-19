@@ -5,7 +5,7 @@ const DEV = process.argv[3] || "desktop";
 globalThis.fetch = async () => { throw new Error("offline"); };
 const H = await import("../gtest/harness.mjs"); H.hive.sql();
 const ANSWER = "Here you go, as the docs say [3].\n\n```js\nfunction add(a, b) { return a + b\nconsole.log(add(1, 2))\n```\n\n```json\n{\"ok\": true, \"n\": [1, 2]}\n```\n\n```html\n<div class=\"card\"><p>Hi</p>\n```\n\n```css\n.a { color: red; }\n```\n\n```js\nexport const twice = (x) => x * 2;\nawait Promise.resolve(1);\n```";
-H.setResponder((sys) => /You decide which tools Genesis/.test(sys) ? JSON.stringify({ calls: [] }) : ANSWER);
+H.setResponder((sys) => /You decide which tools AutoFaber/.test(sys) ? JSON.stringify({ calls: [] }) : ANSWER);
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const ctx = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" });
 await ctx.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: req.postData() || undefined }));

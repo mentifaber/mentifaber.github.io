@@ -1,4 +1,4 @@
-// Genesis picks its own tools (a planning call, two rounds), and models are ranked by how they actually do.
+// AutoFaber picks its own tools (a planning call, two rounds), and models are ranked by how they actually do.
 import assert from "node:assert/strict";
 const hits = [];
 const J = (o) => new Response(JSON.stringify(o), { status: 200, headers: { "content-type": "application/json" } });
@@ -14,7 +14,7 @@ const H = await import("./harness.mjs"); const { call, calls, setResponder } = H
 const M = "workers-ai|@cf/openai/gpt-oss-120b"; let n = 0; const ok = (m) => console.log("  ✓ " + (++n) + " " + m);
 let plans = 0, reply = null;
 setResponder((sys, user) => {
-  if (!/You decide which tools Genesis/.test(sys)) return null; plans++;
+  if (!/You decide which tools AutoFaber/.test(sys)) return null; plans++;
   if (reply) return reply(user);
   if (/ALREADY GATHERED \(round 1 results/.test(user)) return JSON.stringify({ calls: [{ tool: "read", arg: "https://developers.cloudflare.com/durable-objects/platform/pricing/" }] });
   return "Sure! ```json\n" + JSON.stringify({ calls: [{ tool: "web", arg: "Durable Objects pricing 2026" }, { tool: "wiki", arg: "Cloudflare" }, { tool: "vigil", arg: "markets" }, { tool: "teleport", arg: "x" }] }) + "\n```";
@@ -23,12 +23,12 @@ const chat = async (text, extra, owner = true) => { const p0 = plans; const r = 
 
 // 1 · it plans, runs what it chose, then reads the best page in a second round
 let { r, sys, planned } = await chat("How much do Cloudflare Durable Objects cost these days, and who makes them?", {}, false);
-assert.equal(planned, 2); const pc = calls.find((c) => /You decide which tools Genesis/.test(c.sys)); assert.equal(pc.model, "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
+assert.equal(planned, 2); const pc = calls.find((c) => /You decide which tools AutoFaber/.test(c.sys)); assert.equal(pc.model, "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
 assert.match(pc.sys, /- web \(search query\)/); assert.doesNotMatch(pc.sys, /- vigil/); ok("a visitor's planner sees the public tools only, on Llama 3.3 70B");
 assert.match(sys, /Durable Objects are billed by requests and duration/); assert.match(sys, /WIKIPEDIA: Cloudflare, Inc\. is an American company/); assert.match(sys, /PAGE Pricing · Durable Objects[\s\S]*Requests: \$0\.15 per million/);
 assert.ok(r.tools.some((t) => /^searched the web: Durable Objects pricing/.test(t)) && r.tools.includes("read Wikipedia: Cloudflare") && r.tools.includes("read developers.cloudflare.com"), JSON.stringify(r.tools));
 assert.ok(!r.tools.some((t) => /Vigil|teleport/.test(t))); ok("round 1: web + Wikipedia; round 2: it read the pricing page in full; an owner-only tool and an unknown one were refused");
-assert.ok(r.sources.some((x) => x.url === "https://developers.cloudflare.com/durable-objects/platform/pricing/")); assert.match(sys, /Genesis plans its own lookups/); ok("what it read is cited as a source, and Genesis knows it planned its own lookups");
+assert.ok(r.sources.some((x) => x.url === "https://developers.cloudflare.com/durable-objects/platform/pricing/")); assert.match(sys, /AutoFaber plans its own lookups/); ok("what it read is cited as a source, and AutoFaber knows it planned its own lookups");
 
 // 2 · no planning where it isn't worth it
 for (const [t, ex] of [["thanks!", {}], ["ok", {}], ["what's the weather like in Leeds tomorrow and should I bring a coat", { voice: true }], ["write me a haiku about rain please", { agent: false }]]) assert.equal((await chat(t, ex)).planned, 0, t);
@@ -54,9 +54,9 @@ reply = () => JSON.stringify({ calls: [{ tool: "build", arg: "A pomodoro timer w
 const before = H.db.prepare("SELECT COUNT(*) c FROM proj").get().c;
 r = (await chat("Build me a pomodoro timer with a task list and sounds")).r; const after = H.db.prepare("SELECT COUNT(*) c FROM proj").get().c;
 assert.equal(after - before, 1); assert.ok(r.tools.includes("started a Swarm mission"), JSON.stringify(r.tools)); const pj = H.db.prepare("SELECT * FROM proj ORDER BY ts DESC LIMIT 1").get(); assert.match(pj.brief, /^A pomodoro timer with a task list/);
-assert.match(calls.at(-1).sys, new RegExp("SWARM MISSION STARTED just now for this request \\(id " + pj.id + "\\)[^]*hive-app\\?p=" + pj.id)); ok("asked to build something, Genesis starts one Swarm mission itself and the answer carries its link");
+assert.match(calls.at(-1).sys, new RegExp("SWARM MISSION STARTED just now for this request \\(id " + pj.id + "\\)[^]*hive-app\\?p=" + pj.id)); ok("asked to build something, AutoFaber starts one Swarm mission itself and the answer carries its link");
 const b2 = H.db.prepare("SELECT COUNT(*) c FROM proj").get().c; await chat("What's the best way to structure a pomodoro timer?"); assert.equal(H.db.prepare("SELECT COUNT(*) c FROM proj").get().c, b2); ok("a question that merely mentions it starts nothing, even if the planner asks");
-const b3 = H.db.prepare("SELECT COUNT(*) c FROM proj").get().c; await chat("Build me a pomodoro timer", {}, false); assert.equal(H.db.prepare("SELECT COUNT(*) c FROM proj").get().c, b3); ok("a visitor can't make Genesis start missions");
+const b3 = H.db.prepare("SELECT COUNT(*) c FROM proj").get().c; await chat("Build me a pomodoro timer", {}, false); assert.equal(H.db.prepare("SELECT COUNT(*) c FROM proj").get().c, b3); ok("a visitor can't make AutoFaber start missions");
 reply = null;
 // 5 · ranking by results: failures and 👎 move a model down, 👍 up
 const h = H.hive, id = "workers-ai|@cf/meta/llama-4-scout-17b-16e-instruct", base = h.rank(id);

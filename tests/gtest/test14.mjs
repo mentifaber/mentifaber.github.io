@@ -1,4 +1,4 @@
-// Genesis builds on its own time: random moments it shapes, projects it invents, sizes it picks, a daily budget.
+// AutoFaber builds on its own time: random moments it shapes, projects it invents, sizes it picks, a daily budget.
 import assert from "node:assert/strict";
 globalThis.fetch = async () => { throw new Error("offline in this test"); }; // Vigil's feeds and GDELT are down: building must not depend on them
 const H = await import("./harness.mjs"); const { call, calls, db, hive, setResponder } = H;
@@ -44,6 +44,6 @@ r = await call("/genesis/tick", {}); assert.ok(r.build && r.build.rested); asser
 await put({ nextBuild: Date.now() + 9 * 3600e3 }); r = await call("/genesis/build-now", {}); assert.ok(r.started, JSON.stringify(r)); ok("“build something now”: it starts right away (“" + r.started.slice(0, 20) + "…”, its pick)");
 r = await call("/genesis/build-now", {}); assert.ok(r.started, JSON.stringify(r)); r = await call("/genesis/build-now", {}); assert.ok(r.error && /2 missions of mine are still running/.test(r.error), JSON.stringify(r)); ok("…a second too, but never more than two at once");
 db.prepare("UPDATE proj SET status='done'").run(); await call("/genesis/auto", { on: false }); r = await call("/genesis/build-now", {}); assert.match(r.error, /autonomy is off/); ok("autonomy off: not even a nudge starts one");
-const health = await call("/genesis/health"); assert.match(health.checks.find((c) => c.name === "Genesis loop").detail, /autonomy off/);
-await call("/genesis/auto", { on: true }); assert.match((await call("/genesis/health")).checks.find((c) => c.name === "Genesis loop").detail, /autonomy on, next build of its own around \d\d:\d\d UTC/); ok("the health check says when it plans to build next");
+const health = await call("/genesis/health"); assert.match(health.checks.find((c) => c.name === "AutoFaber loop").detail, /autonomy off/);
+await call("/genesis/auto", { on: true }); assert.match((await call("/genesis/health")).checks.find((c) => c.name === "AutoFaber loop").detail, /autonomy on, next build of its own around \d\d:\d\d UTC/); ok("the health check says when it plans to build next");
 Math.random = rnd; console.log("all passed");

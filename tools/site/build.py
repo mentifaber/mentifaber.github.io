@@ -68,7 +68,7 @@ def icons(ids):
 
 
 # ── the home page ─────────────────────────────────────────────────────────────────────────────────────────────────────
-NOW = [("weather", "Weather"), ("moon", "Moon"), ("pass", "Next ISS pass"), ("iss", "ISS"), ("quakes", "Quakes"), ("kp", "Space weather"), ("btc", "Bitcoin"), ("hive", "Genesis"), ("agent", "Mentifaber Agent"), ("suite", "Your suite")]
+NOW = [("weather", "Weather"), ("moon", "Moon"), ("pass", "Next ISS pass"), ("iss", "ISS"), ("quakes", "Quakes"), ("kp", "Space weather"), ("btc", "Bitcoin"), ("hive", "AutoFaber"), ("agent", "Mentifaber Agent"), ("suite", "Your suite")]
 WIDGET_EXTRA = [("hf", "HF conditions")]  # kinds used on app pages only
 def has_page(i): return os.path.exists(os.path.join(CONTENT, i + ".json"))
 

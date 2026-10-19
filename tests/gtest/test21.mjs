@@ -1,5 +1,5 @@
-// Open knowledge (Hugging Face, papers, Wikipedia) in chat, the Swarm and Genesis's ideas; links for results (public, and
-// the private previews Genesis's own builds get).
+// Open knowledge (Hugging Face, papers, Wikipedia) in chat, the Swarm and AutoFaber's ideas; links for results (public, and
+// the private previews AutoFaber's own builds get).
 import assert from "node:assert/strict";
 const hits = [];
 const J = (o) => new Response(JSON.stringify(o), { status: 200, headers: { "content-type": "application/json" } });
@@ -32,10 +32,10 @@ r = await chat("are there any recent papers on autonomous agents that start thei
 assert.match(r.sys, /PAPER: Gap-Seeking Behaviour in Language Agents \(B\. Scholar; 2025; 42 citations\): Agents seek gaps/); assert.match(r.sys, /PAPER: Self-Starting Inquiry in Unattended Agents \(A\. Researcher; 2026-10-01\)/);
 ok("a research question searches arXiv and OpenAlex, with authors, dates and citations");
 r = await chat("what is a durable object?", { agent: false }); // with the planner off, the keyword trigger reads Wikipedia
-assert.match(r.sys, /WIKIPEDIA: A Durable Object is a stateful serverless unit/); assert.match(r.sys, /open knowledge \(when a message is about datasets/); ok("“what is…” reads Wikipedia, and Genesis knows it has this ability");
+assert.match(r.sys, /WIKIPEDIA: A Durable Object is a stateful serverless unit/); assert.match(r.sys, /open knowledge \(when a message is about datasets/); ok("“what is…” reads Wikipedia, and AutoFaber knows it has this ability");
 r = await chat("thanks, that was great"); assert.equal(r.got.filter((u) => /huggingface|wikipedia|arxiv|openalex/.test(u)).length, 0); ok("small talk looks nothing up");
 
-// 2 · Genesis reads what's new in AI when it invents something to build
+// 2 · AutoFaber reads what's new in AI when it invents something to build
 setResponder((sys) => /You have free time/.test(sys) ? JSON.stringify({ title: "Bird Call Atlas", detail: "A map of bird calls from the acme/bird-calls dataset; click a region to hear what lives there.", kind: "app", size: "small", why: "it's trending" }) : null);
 await H.hive.ctx.storage.put("genesis", { ...((await H.hive.ctx.storage.get("genesis")) || {}), nextBuild: Date.now() - 1000 });
 const rnd = Math.random; Math.random = () => 0.9; r = await call("/genesis/tick", {}); Math.random = rnd;
@@ -55,14 +55,14 @@ const ls = await call("/list"); assert.equal(ls.projects.find((p) => p.id === "p
 await call("/purge", {}); assert.ok(db.prepare("SELECT 1 FROM proj WHERE id='p1'").get()); assert.ok(!db.prepare("SELECT 1 FROM proj WHERE id='p2'").get()); ok("“Clear finished” keeps published missions (their links keep working)");
 await call("/unpublish", { id: "p1" }); assert.equal((await call("/pub/" + pb.slug, null, false)).error, "nothing is published here"); ok("unpublished: the link stops working");
 
-// 4 · Genesis's own finished build gets a private preview, for Anders only; he makes it public
+// 4 · AutoFaber's own finished build gets a private preview, for Anders only; he makes it public
 const idea = db.prepare("SELECT * FROM idea WHERE title='Bird Call Atlas'").get(); assert.equal(idea.status, "building");
 db.prepare("UPDATE proj SET status='done', final=? WHERE id=?").run("```html run\n<!doctype html><html><body>birds</body></html>\n```", idea.pid);
 const g = await call("/genesis"); const slug = db.prepare("SELECT slug FROM pub WHERE pid=?").get(idea.pid).slug;
 assert.equal(db.prepare("SELECT live, by_ FROM pub WHERE pid=?").get(idea.pid).live, 0);
 const al = db.prepare("SELECT * FROM alert WHERE title LIKE '%Bird Call Atlas%' ORDER BY id DESC").get(); assert.equal(al.url, "/p/" + slug); assert.match(al.body, /private until you publish it/);
 assert.equal((await call("/pub/" + slug, null, false)).error, "nothing is published here"); const mine = await call("/pub/" + slug); assert.equal(mine.live, false); assert.equal(mine.id, idea.pid); assert.equal(mine.by, "genesis");
-ok("Genesis's finished build gets a private preview: the alert opens it; to anyone else the link is nothing");
+ok("AutoFaber's finished build gets a private preview: the alert opens it; to anyone else the link is nothing");
 pb = await call("/publish", { id: idea.pid }); assert.equal(pb.slug, slug); assert.equal(pb.live, true); assert.equal((await call("/pub/" + slug, null, false)).title, idea.title.split(/[.\n]/)[0].slice(0, 80) || (await call("/pub/" + slug, null, false)).title);
 ok("one tap from him makes it public, at the same link");
 

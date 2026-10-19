@@ -8,7 +8,7 @@ for (const t of ["I live in Porto now and I'm fixing the flat", "What does XRP t
 db.prepare("INSERT INTO mem(ts,text,src,kind,ok,pin,upd) VALUES(?,?,?,?,0,0,?)").run(Date.now(), "You live in Porto", "noticed", "about", Date.now());
 db.prepare("INSERT INTO thread(ts,text,status,ok,src,upd) VALUES(?,?,'open',0,'noticed',?)").run(Date.now(), "Finish the synth sequencer", Date.now());
 db.prepare("INSERT INTO thread(ts,text,status,ok,src,upd) VALUES(?,?,'open',1,'you',?)").run(Date.now() - 864e5 * 3, "Record the new EP", Date.now());
-H.setResponder((s) => /Genesis's analyst/.test(s) ? "## Snapshot\nYou build Hive and make music.\n" + (/## Since last time/.test(s) ? "## Since last time\n- You moved to Porto.\n" : "") + "## What you're building\nHive.\n## Open threads\n- Record the new EP\n## Durable facts\n- You build Hive on Cloudflare" : null);
+H.setResponder((s) => /AutoFaber's analyst/.test(s) ? "## Snapshot\nYou build Hive and make music.\n" + (/## Since last time/.test(s) ? "## Since last time\n- You moved to Porto.\n" : "") + "## What you're building\nHive.\n## Open threads\n- Record the new EP\n## Durable facts\n- You build Hive on Cloudflare" : null);
 await call("/mind/analyze", {}); await call("/mind/analyze", {});
 for (const [t, st] of [["Greeting-Filter Middleware", "built"], ["Self-Status Suppressor", "built"], ["Output Completeness Verifier", "built"], ["A tide-clock widget", "open"]]) db.prepare("INSERT INTO idea(ts,title,detail,status,pid) VALUES(?,?,?,?,?)").run(Date.now(), t, "A long description that goes on for a while. ".repeat(6), st, st === "built" ? "p-" + t.length : null);
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
@@ -47,16 +47,16 @@ await p.click("#mtabs [data-mt='time']"); assert.equal(await p.$$eval("#m-cal i"
 assert.match(await txt("#m-streak"), /active day/); assert.match(await txt("#m-kbars"), /Chat/); const n0 = await p.$$eval("#m-act .mi", (x) => x.length); await p.selectOption("#m-akind", "chat"); assert.ok((await p.$$eval("#m-act .mi", (x) => x.length)) <= n0);
 const today = await p.$eval("#m-cal", (c) => [...c.children].at(-1).className); assert.notEqual(today, "l0"); ok("Timeline: 26-week calendar (today lit), weekday × hour grid, what you do, activity filter");
 await p.screenshot({ path: OUT + DEV + "-time.png", fullPage: true });
-// Genesis
+// AutoFaber
 await p.click("#mtabs [data-mt='gen']"); await until(() => /built · results waiting for you 3/i.test(document.getElementById("g-ideas").textContent), 5000, "ideas grouped");
 const h0 = await p.$eval("#g-ideas .more", (e) => e.offsetHeight); await p.click("#g-ideas .more"); assert.ok((await p.$eval("#g-ideas .more", (e) => e.offsetHeight)) > h0);
-await p.click("[data-iclear]"); await until(() => !/built ·/i.test(document.getElementById("g-ideas").textContent), 6000, "cleared"); assert.match(await txt("#g-ideas"), /on its list 1[\s\S]*tide-clock/i); ok("Genesis: ideas grouped, two lines each (tap for all), Clear all built");
+await p.click("[data-iclear]"); await until(() => !/built ·/i.test(document.getElementById("g-ideas").textContent), 6000, "cleared"); assert.match(await txt("#g-ideas"), /on its list 1[\s\S]*tide-clock/i); ok("AutoFaber: ideas grouped, two lines each (tap for all), Clear all built");
 // search
 await p.fill("#m-q", "Porto"); await until(() => /memories[\s\S]*You live in Porto/i.test(document.getElementById("m-results").textContent), 6000, "search");
 assert.equal(await vis("#mt-gen"), false); assert.match(await txt("#m-results"), /conversations|activity/i); assert.ok(await p.$("#m-results mark")); await p.fill("#m-q", ""); await p.waitForTimeout(500); assert.equal(await vis("#mt-gen"), true); ok("search across memories, threads, conversations and activity, highlighted; clearing it brings the tab back");
 // export
 const [dl] = await Promise.all([p.waitForEvent("download"), p.evaluate(() => { location.hash = "mind/you"; }).then(() => p.waitForTimeout(300)).then(() => p.click("#m-exp-md"))]);
 const md = readFileSync(await dl.path(), "utf8"); assert.match(dl.suggestedFilename(), /^hive-mind-\d{4}-\d\d-\d\d\.md$/); assert.match(md, /## Memories[\s\S]*### People[\s\S]*★ Your sister Maya lives in Lisbon/); assert.match(md, /## Threads[\s\S]*\[x\] Mix the synth demo/); ok("Export notes: a readable .md with memories by kind, threads and activity");
-await p.goto("http://localhost:8099/hive-app.html#mind/genesis"); await until(() => !document.getElementById("mt-gen").classList.contains("hidden"), 6000, "deep link"); ok("#mind/genesis opens the Genesis tab (the alert link)");
+await p.goto("http://localhost:8099/hive-app.html#mind/genesis"); await until(() => !document.getElementById("mt-gen").classList.contains("hidden"), 6000, "deep link"); ok("#mind/genesis opens the AutoFaber tab (the alert link)");
 const wide = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth); assert.ok(wide <= 1, "sideways scroll " + wide); assert.deepEqual(errs, []); ok("no page errors, no sideways scroll");
 await b.close(); console.log("all passed", DEV); process.exit(0);

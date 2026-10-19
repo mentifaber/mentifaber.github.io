@@ -1,4 +1,4 @@
-// Genesis's library: documents kept for good, cut into passages, found by meaning, cited in chat; owner only.
+// AutoFaber's library: documents kept for good, cut into passages, found by meaning, cited in chat; owner only.
 import assert from "node:assert/strict";
 globalThis.fetch = async (u) => { u = typeof u === "string" ? u : String(u.url || u);
   if (u.startsWith("https://example.org/lathe")) return new Response("<html><title>Haas ST-10 manual</title><body>" + "<p>Spindle warm-up: run the spindle at 500 rpm for ten minutes before cutting, then step up to 2000 rpm.</p>".repeat(3) + "<p>" + "Coolant concentration should sit between six and eight percent on the refractometer. ".repeat(40) + "</p></body></html>", { status: 200, headers: { "content-type": "text/html" } });
@@ -34,7 +34,7 @@ await call("/chat", { model: M, cid: "l", messages: [{ role: "user", text: "writ
 const vr = await call("/chat", { model: M, cid: "v", messages: [{ role: "user", text: "how long is the spindle warm-up on the lathe" }], agent: false }, false); assert.doesNotMatch(calls.at(-1).sys, /FROM HIS LIBRARY/); ok("a visitor's chat never sees his library");
 
 // the planner can search it too
-setResponder((sys) => /You decide which tools Genesis/.test(sys) ? (/- library/.test(sys) ? JSON.stringify({ calls: [{ tool: "library", arg: "Swansea lagoon strike price" }] }) : JSON.stringify({ calls: [] })) : null);
+setResponder((sys) => /You decide which tools AutoFaber/.test(sys) ? (/- library/.test(sys) ? JSON.stringify({ calls: [{ tool: "library", arg: "Swansea lagoon strike price" }] }) : JSON.stringify({ calls: [] })) : null);
 r = await call("/chat", { model: M, cid: "p", messages: [{ role: "user", text: "What did my notes say critics thought of the lagoon's economics?" }] });
 assert.ok(r.tools.some((t) => /^searched your library: Swansea lagoon strike price/.test(t)), JSON.stringify(r.tools)); assert.match(calls.at(-1).sys, /strike price, which was higher than offshore wind/); ok("the planner can search the library by itself");
 

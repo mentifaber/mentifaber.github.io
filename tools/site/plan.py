@@ -432,7 +432,8 @@ def lexicon():
 # new names, old addresses: each renamed project keeps its page and app where they were (installed apps and links keep
 # working) and gets a short address under its new name that forwards there
 ALIASES = {"nobody": "pi", "eightysixty": "roku", "hopline": "meshnet", "skipline": "novarac", "bodywake": "proximity", "moodfield": "neural-sim",
-           "balloon": "bubble-editor", "per-capita": "crime-dashboard", "overhead": "orbit", "unlit": "conflict-atlas", "synodic": "moon-compatibility"}
+           "balloon": "bubble-editor", "per-capita": "crime-dashboard", "overhead": "orbit", "unlit": "conflict-atlas", "synodic": "moon-compatibility",
+           "autofaber": "hive", "fabe": "hive", "genesis": "hive"}
 
 
 def aliases():

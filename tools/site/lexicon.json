@@ -230,7 +230,7 @@
     {
      "pos": "scaffolded autozetesis",
      "kind": "noun phrase · secondary sense",
-     "text": "The same cycle where the system was built to run it: the loop is written into its design or its prompts. It shows the loop works; it isn’t evidence that the loop arises on its own. Genesis’s reflect, learn, propose, build and judge cycle is scaffolded autozetesis.",
+     "text": "The same cycle where the system was built to run it: the loop is written into its design or its prompts. It shows the loop works; it isn’t evidence that the loop arises on its own. AutoFaber’s reflect, learn, propose, build and judge cycle is scaffolded autozetesis.",
      "id": "scaffolded-autozetesis"
     },
     {
@@ -244,7 +244,7 @@
    ],
    "notes": [
     "<b>Seen in <a href=\"weaver.html\">Weaver</a>.</b> Running unattended, it repeated a five-step pattern its code does not contain: observe, identify the gap, go find out, integrate, update.",
-    "<b>Seen in Genesis, scaffolded.</b> Genesis reflects, keeps lessons, proposes ideas, builds them and judges the result, but that loop is written into its reflection. What would count as the unbidden kind is Genesis doing it outside that machinery, for example noticing a gap in conversation and asking to go and look.",
+    "<b>Seen in AutoFaber, scaffolded.</b> AutoFaber reflects, keeps lessons, proposes ideas, builds them and judges the result, but that loop is written into its reflection. What would count as the unbidden kind is AutoFaber doing it outside that machinery, for example noticing a gap in conversation and asking to go and look.",
     "<b>Narrower than emergent behaviour.</b> Emergence covers any surprising behaviour. Autozetesis is one specific shape, and the claim is checkable: the builder can show the loop isn’t in the code."
    ],
    "record": [
@@ -267,7 +267,7 @@
      "weaver.html"
     ],
     [
-     "Genesis",
+     "AutoFaber",
      "hive"
     ],
     [

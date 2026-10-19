@@ -1,4 +1,4 @@
-// Genesis learns from how its builds ran: runs are reported, its reflection reads them, and so does its next choice.
+// AutoFaber learns from how its builds ran: runs are reported, its reflection reads them, and so does its next choice.
 import assert from "node:assert/strict";
 globalThis.fetch = async () => { throw new Error("offline in this test"); };
 const H = await import("./harness.mjs"); const { call, calls, db, setResponder, setReflect } = H; H.hive.sql();

@@ -1,4 +1,4 @@
-// Genesis phone alerts: subscriptions, VAPID-signed pushes, preferences, quiet hours + summary, rate limit, dead devices.
+// AutoFaber phone alerts: subscriptions, VAPID-signed pushes, preferences, quiet hours + summary, rate limit, dead devices.
 import assert from "node:assert/strict";
 import { webcrypto as wc } from "node:crypto";
 import { upstream } from "../vg/mocks.mjs";
@@ -22,7 +22,7 @@ const EP = "https://fcm.googleapis.com/fcm/send/phone-1";
 let r = await call("/genesis/push"); assert.equal(r.key, V.pub); assert.equal(r.devices.length, 0); assert.equal(r.prefs.quiet.on, true); assert.equal(r.prefs.level, "all"); ok("status: push key, defaults, no devices");
 r = await call("/genesis/push/subscribe", { sub: { endpoint: "https://evil.example/collect" } }); assert.ok(r.error); ok("a subscription to an unknown push service is refused");
 r = await call("/genesis/push/subscribe", { sub: { endpoint: EP }, label: "Android · Chrome", tz: midday() }); assert.equal(r.devices, 1);
-assert.match(db.prepare("SELECT text FROM journal WHERE kind='milestone' ORDER BY id DESC LIMIT 1").get().text, /turned on phone alerts \(Android · Chrome\)/); ok("subscribe: one device, and Genesis notes it");
+assert.match(db.prepare("SELECT text FROM journal WHERE kind='milestone' ORDER BY id DESC LIMIT 1").get().text, /turned on phone alerts \(Android · Chrome\)/); ok("subscribe: one device, and AutoFaber notes it");
 r = await call("/genesis/push/subscribe", { sub: { endpoint: EP }, label: "Android · Chrome" }); assert.equal(r.devices, 1); ok("subscribing again doesn't duplicate");
 r = await call("/genesis/push", null, false); assert.equal(r.error && r.error.length > 0, true); ok("visitors can't see or change it");
 
@@ -83,9 +83,9 @@ pushes.length = 0; r = await call("/genesis/tick", {});
 const w = db.prepare("SELECT * FROM alert WHERE cat='work' ORDER BY id DESC LIMIT 1").get();
 assert.match(w.title, /The Swarm didn't finish “Voice memos”/); assert.equal(w.state, "sent"); assert.equal(w.url, "/hive-app#mind/genesis"); ok("a failed mission alerts him on the next tick");
 
-// Genesis knows
+// AutoFaber knows
 await call("/chat", { model: "workers-ai|@cf/openai/gpt-oss-120b", cid: "p", messages: [{ role: "user", text: "hey" }] });
-const sys = calls.at(-1).sys; assert.match(sys, /PHONE ALERTS: when Anders has them on/); assert.match(sys, /You sent him \d+ phone alerts? in the last day/); ok("Genesis knows about its phone alerts");
+const sys = calls.at(-1).sys; assert.match(sys, /PHONE ALERTS: when Anders has them on/); assert.match(sys, /You sent him \d+ phone alerts? in the last day/); ok("AutoFaber knows about its phone alerts");
 r = await call("/genesis"); assert.equal(r.push.devices, 1); ok("panel data carries the alert status");
 r = await call("/genesis/push/unsubscribe", { endpoint: EP }); assert.equal(r.devices, 0); ok("unsubscribe");
 Genesis.queueAlert(H.hive, { cat: "air", level: "critical", title: "x", body: "b" }); pushes.length = 0; r = await Genesis.flush(H.hive); assert.equal(pushes.length, 0); assert.equal(r.devices, 0); ok("no devices → nothing sent, nothing piles up");

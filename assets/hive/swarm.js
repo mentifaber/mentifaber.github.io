@@ -21,7 +21,7 @@
     const mineNow = mine(), canDel = (p) => owner || mineNow[p.id];
     $("purge").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => /done|stopped|failed/.test(p.status)));
     $("audit").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => p.status === "done" && p.has)); home.list = j.projects || [];
-    $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + esc(p.id) + "' class='pl'><span class='pt'><b>" + esc(p.title) + "</b>" + (p.by === "genesis" ? "<i class='byg' title='Started by Genesis on its own'>by Genesis</i>" : "") + "<span class='dim'>" + ago(p.ts) + " ago · " + p.calls + " calls</span></span>" +
+    $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + esc(p.id) + "' class='pl'><span class='pt'><b>" + esc(p.title) + "</b>" + (p.by === "genesis" ? "<i class='byg' title='Started by AutoFaber on its own'>by AutoFaber</i>" : "") + "<span class='dim'>" + ago(p.ts) + " ago · " + p.calls + " calls</span></span>" +
       (p.has ? "<button class='q sm' data-run title='Run what it made'>Run</button>" : "") + "<span class='st " + esc(p.status) + "'>" + esc(p.status) + "</span>" + (canDel(p) ? "<button class='x' data-del title='Delete this mission' aria-label='Delete'>✕</button>" : "") + "</div>").join("") : "<span class='dim'>none yet</span>";
   }
   const del = async (id, title) => { if (!confirm("Delete “" + (title || "this mission") + "” for good? Its tasks, agents, log and result all go.")) return false; const j = await api("/delete", { id, ctok: mine()[id] }); if (j.error) { alert(j.error); return false; } try { const m = mine(); delete m[id]; localStorage.setItem("hive-mine", JSON.stringify(m)); } catch (e) {} return true; };
