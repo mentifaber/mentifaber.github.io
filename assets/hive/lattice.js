@@ -56,16 +56,16 @@ function frame(t) {
   for (let i = pulses.length - 1; i >= 0; i--) { const p = pulses[i]; p.r += 9; p.a *= .975; if (p.a < .03 || p.r > Math.max(W, H) * 1.2) { pulses.splice(i, 1); continue; }
     for (const n of nodes) { const d = Math.hypot(n.x - p.x, n.y - p.y); if (Math.abs(d - p.r) < 14) n.lit = Math.max(n.lit, p.a); } }
   // filament between near nodes
-  const all = nodes.concat(grown.map((p) => ({ x: p.x, y: p.y, z: 2, lit: W > 1240 ? .55 : .25, tw: 0, own: 1 }))), max = W > 760 ? 150 : 110;
+  const all = nodes.concat(grown.map((p) => ({ x: p.x, y: p.y, z: 2, lit: W > 1240 ? .55 : W > 760 ? .25 : .08, tw: 0, own: W > 760 ? 1 : .35 }))), max = W > 760 ? 150 : 110;
   for (let i = 0; i < all.length; i++) { const a = all[i];
     for (let j = i + 1; j < all.length; j++) { const b = all[j], dx = a.x - b.x, dy = a.y - b.y; if (dx > max || dx < -max || dy > max || dy < -max) continue;
       const d = Math.hypot(dx, dy); if (d > max) continue; const k = 1 - d / max, l = Math.max(a.lit, b.lit);
       g.strokeStyle = rgba(l > .2 ? hot : gold, k * ((light ? .22 : .16) + l * .55 + heat * .05) * (a.own && b.own ? 1.8 : 1)); g.lineWidth = a.own && b.own ? 1.2 : .8; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } }
   // the session's constellation, joined in the order it grew
-  if (grown.length > 1) { g.strokeStyle = rgba(hot, (light ? .5 : .38) * (W > 1240 ? 1 : .5)); g.lineWidth = 1.1; g.beginPath(); grown.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
+  if (grown.length > 1) { g.strokeStyle = rgba(hot, (light ? .5 : .38) * (W > 1240 ? 1 : W > 760 ? .5 : .22)); g.lineWidth = 1.1; g.beginPath(); grown.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
   // nodes
-  for (const n of all) { const tw = s ? .6 : .55 + .45 * Math.sin(time * (.6 + n.z * .3) + n.tw), r = (n.own ? 2.3 : .7 + n.z * .55) + n.lit * 1.6, a = (light ? .55 : .45) * tw + n.lit * .55 + (n.own ? .4 : 0);
-    if (n.lit > .15 || n.own) { const gl = g.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 6); gl.addColorStop(0, rgba(hot, (n.own ? .35 : n.lit * .4))); gl.addColorStop(1, rgba(hot, 0)); g.fillStyle = gl; g.beginPath(); g.arc(n.x, n.y, r * 6, 0, 7); g.fill(); }
+  for (const n of all) { const tw = s ? .6 : .55 + .45 * Math.sin(time * (.6 + n.z * .3) + n.tw), r = (n.own ? 2.3 : .7 + n.z * .55) + n.lit * 1.6, a = (light ? .55 : .45) * tw + n.lit * .55 + (n.own || 0) * .4;
+    if (n.lit > .15 || n.own) { const gl = g.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 6); gl.addColorStop(0, rgba(hot, (n.own ? n.own * .35 : n.lit * .4))); gl.addColorStop(1, rgba(hot, 0)); g.fillStyle = gl; g.beginPath(); g.arc(n.x, n.y, r * 6, 0, 7); g.fill(); }
     g.fillStyle = rgba(n.lit > .2 || n.own ? hot : gold, a); g.beginPath(); g.arc(n.x, n.y, r, 0, 7); g.fill(); }
   // sparks from the composer
   for (let i = sparks.length - 1; i >= 0; i--) { const p = sparks[i]; p.x += p.vx; p.y += p.vy; p.vy *= .99; p.life -= .018; if (p.life <= 0) { sparks.splice(i, 1); continue; }
