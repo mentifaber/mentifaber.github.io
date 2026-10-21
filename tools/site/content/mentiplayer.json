@@ -33,6 +33,10 @@
    "d": "Shows that sit on another site (live news channels, Mixcloud sets, Dailymotion and YouTube videos, the Archive's own player) play right here, in that host's official player. Nothing is copied: the show stays with its owner."
   },
   {
+   "t": "Movie night",
+   "d": "A featured film every day with Play and Surprise me, shelves by genre (comedy, westerns, mystery, romance, adventure, drama, war, musicals, noir, sci-fi), fullscreen with keyboard keys (F, M, arrows to skip ten seconds), and shelves that scroll with arrows on a big screen."
+  },
+  {
    "t": "Ranked by Rotten Tomatoes",
    "d": "The film shelves lead with the best-reviewed: when the site has an OMDb key, public-domain films are ordered by their Rotten Tomatoes score, shown on each card with IMDb's. Without a key they are ordered by how many people watch them."
   },

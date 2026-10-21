@@ -41,15 +41,32 @@ function card(it, onOpen) {
   heart.addEventListener("click", () => { toggleSave(it); heart.classList.toggle("on", isSaved(it)); heart.setAttribute("aria-pressed", String(isSaved(it))); if (S.type === "saved") showSaved(); });
   return el("article", { class: "card t-" + it.type }, open, heart);
 }
-const shelf = (title, note) => { const rail = el("div", { class: "rail" }, el("div", { class: "skel" })); return { sec: el("section", { class: "shelf" }, el("h2", { text: title }, note ? el("small", { text: note }) : null), rail), rail }; };
-const fill = (rail, items) => { rail.replaceChildren(...items.filter(okItem).map((i) => card(i))); };
+const shelf = (title, note, id) => {
+  const rail = el("div", { class: "rail" }, el("div", { class: "skel" }), el("div", { class: "skel" }), el("div", { class: "skel" })), go_ = (d) => rail.scrollBy({ left: d * rail.clientWidth * 0.85, behavior: "smooth" });
+  const nav = el("div", { class: "snav" }, el("button", { class: "ic", type: "button", "aria-label": "Scroll " + title + " back", text: "‹", onclick: () => go_(-1) }), el("button", { class: "ic", type: "button", "aria-label": "Scroll " + title + " on", text: "›", onclick: () => go_(1) }));
+  return { sec: el("section", { class: "shelf", ...(id ? { id: "shelf-" + id } : {}) }, el("h2", { text: title }, note ? el("small", { text: note }) : null), nav, rail), rail };
+};
+const films = new Map(); // films seen on this screen, for the featured pick and Surprise me
+const fill = (rail, items) => { for (const i of items) if (i.type === "movie" && okItem(i)) films.set(i.id, i); rail.replaceChildren(...items.filter(okItem).map((i) => card(i))); };
+// the featured film: a different one each day from the best shelf there is, with Play, More and Surprise me
+function hero(items) {
+  const h = $("hero"); if (!h || h.dataset.done) return; const withPic = items.filter((i) => https(i.thumb) && okItem(i)); if (!withPic.length) return;
+  const day = Math.floor(Date.now() / 864e5), it = withPic[day % Math.min(6, withPic.length)]; h.dataset.done = "1";
+  const bg = el("div", { class: "hbg", "aria-hidden": "true" }); bg.style.setProperty("--bd", "url(\"" + it.thumb.replace(/["\\\n]/g, encodeURIComponent) + "\")");
+  const play = el("button", { class: "btn pri", type: "button", text: "▶ Play", onclick: () => openItem(it) });
+  const surprise = el("button", { class: "btn", type: "button", text: "🎲 Surprise me", onclick: () => { const all = [...films.values()]; if (all.length) openItem(all[Math.floor(Math.random() * all.length)]); } });
+  h.replaceChildren(bg, el("div", { class: "hin" }, pic(it.thumb, it.type, { class: "hpost" }), el("div", { class: "htxt" }, el("small", { class: "kick", text: "Tonight's pick" + (it.rating && it.rating.rt != null ? " · 🍅 " + it.rating.rt + "%" : "") }), el("h2", { text: it.title }), el("div", { class: "meta", text: [it.year, it.creator].filter(Boolean).join(" · ") }), it.description ? el("p", { text: it.description }) : null, el("div", { class: "acts" }, play, surprise))));
+  h.hidden = false;
+}
 async function loadHome() {
   const home = $("home"), tok = ++S.tok; home.replaceChildren(); $("results").hidden = true; home.hidden = false; $("status").textContent = "";
-  const want = S.type;
-  if (!want || want === "all") { const rec = S.recent.filter(okItem); if (rec.length) { const s = shelf("Continue"); home.append(s.sec); fill(s.rail, rec); } }
+  const want = S.type; films.clear();
+  if (!want || want === "movie") home.append(el("section", { id: "hero", class: "hero", hidden: true }));
+  if (!want || want === "all") { const rec = S.recent.filter(okItem); if (rec.length) { const s = shelf("Continue", "", "continue"); home.append(s.sec); fill(s.rail, rec); } }
   let rails = []; try { rails = (await api("/featured")).rails; } catch (e) { if (tok === S.tok) $("status").textContent = "The media gateway isn't answering right now. Try again in a moment."; return; }
-  if (tok !== S.tok) return; rails = rails.filter((r) => (!want || r.type === want) && !(S.safe && OPEN_ONLY.has(r.id)));
-  const jobs = rails.map((r) => { const s = shelf(r.title); home.append(s.sec); return () => api("/featured?rail=" + encodeURIComponent(r.id)).then((j) => { if (tok !== S.tok) return; const shown = (j.items || []).filter(okItem); if (shown.length) fill(s.rail, shown); else s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "Nothing from this one right now." })); }).catch(() => { if (tok === S.tok) s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "This source didn't answer. It may be resting; it'll be back." })); }); });
+  if (tok !== S.tok) return; rails = rails.filter((r) => (!want || r.type === want) && !(S.safe && OPEN_ONLY.has(r.id)) && !(r.more && !want));
+  if (want === "movie") home.append(el("nav", { class: "jump", "aria-label": "Jump to a shelf" }, rails.map((r) => el("button", { type: "button", text: r.title.replace(/^Top-rated /, "").replace(/ classics$/, ""), onclick: () => { const t = document.getElementById("shelf-" + r.id); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); } }))));
+  const jobs = rails.map((r) => { const s = shelf(r.title, "", r.id); home.append(s.sec); return () => api("/featured?rail=" + encodeURIComponent(r.id)).then((j) => { if (tok !== S.tok) return; const shown = (j.items || []).filter(okItem); if (shown.length) { fill(s.rail, shown); if (r.type === "movie" && ["toprated", "films", "noir", "silent"].includes(r.id)) hero(shown); } else s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "Nothing from this one right now." })); }).catch(() => { if (tok === S.tok) s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "This source didn't answer. It may be resting; it'll be back." })); }); });
   const pool = async () => { while (jobs.length) await jobs.shift()(); }; await Promise.all([pool(), pool(), pool(), pool()]);
 }
 async function runSearch(more) {
@@ -111,6 +128,7 @@ function session() { if (!("mediaSession" in navigator) || !window.MediaMetadata
 // ── an item ──
 const dlg = $("dlg");
 let video = null;
+function full(v) { try { (v.requestFullscreen || v.webkitRequestFullscreen || v.webkitEnterFullscreen).call(v); } catch (e) {} }
 function stopVideo() { if (video) { try { video.pause(); } catch (e) {} video = null; } }
 function closeItem() { stopVideo(); if (dlg.open) dlg.close(); }
 dlg.addEventListener("close", () => { document.body.append($("deck")); $("deck").classList.remove("in-dlg"); stopVideo(); stopFrames(); $("dbody").replaceChildren(); S.openId = ""; if (/(^#|&)i=/.test(location.hash)) syncUrl(true); });
@@ -121,13 +139,14 @@ async function openItem(it, back) {
   const tok = ++S.tok2; S.openId = RESOLVABLE.test(it.id) ? it.id : ""; stopVideo(); $("dtitle").textContent = it.title || "…"; $("dbody").replaceChildren(el("div", { class: "spin", text: "Loading…" })); if (!dlg.open) dlg.showModal(); dlg.append($("deck")); $("deck").classList.add("in-dlg"); // the player rides inside the window, above its backdrop
   if (S.openId) syncUrl(true);
   let d = { item: it, play: it.play || null };
-  if (!it.play || it.type === "tv" && it.source === "tvmaze") { try { d = await api("/item?id=" + encodeURIComponent(it.id)); } catch (e) { if (tok !== S.tok2) return; if (!it.play) { $("dbody").replaceChildren(el("div", { class: "note", text: "This one couldn't be opened right now (" + e.message + ")." }), it.page ? el("p", {}, el("a", { href: https(it.page), target: "_blank", rel: "noopener noreferrer", text: "Open it on its own site →" })) : null); return; } } }
+  if (!it.play || it.type === "tv" && it.source === "tvmaze") { try { d = await api("/item?id=" + encodeURIComponent(it.id)); } catch (e) { if (tok !== S.tok2) return; if (!it.play) { $("dbody").replaceChildren(...[el("div", { class: "note", text: "This one couldn't be opened right now (" + e.message + ")." }), https(it.page) ? el("p", {}, el("a", { href: https(it.page), target: "_blank", rel: "noopener noreferrer", text: "Open it on its own site →" })) : null].filter(Boolean)); return; } } }
   if (tok !== S.tok2) return; if (!okItem({ ...it, ...(d.item || {}) })) { $("dbody").replaceChildren(el("div", { class: "note", text: "Hidden by Safe mode." })); return; } renderItem({ ...it, ...(d.item || {}), thumb: (d.item && d.item.thumb) || it.thumb }, d, back);
 }
 // a show that lives on someone else's player is shown in that player, in a frame that can run it and nothing more
 function frame(url, m, height) { return el("iframe", { src: url, title: m.title, ...(height ? { height: String(height) } : {}), allow: "autoplay; fullscreen; picture-in-picture; encrypted-media", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", sandbox: "allow-scripts allow-same-origin allow-popups allow-presentation" }); }
 function stopFrames() { dlg.querySelectorAll("iframe").forEach((f) => f.remove()); }
 function renderItem(m, d, back) {
+  const bdu = https(m.thumb); dlg.style.setProperty("--bd", bdu ? "url(\"" + bdu.replace(/["\\\n]/g, encodeURIComponent) + "\")" : "none");
   $("dtitle").textContent = m.title; const body = $("dbody"), p = d.play || { kind: "none" }, parts = [], chips = [LABEL[m.type], scoreOf(m.rating) ? scoreOf(m.rating) + (m.rating.rt != null && m.rating.imdb != null ? " · IMDb " + m.rating.imdb : "") : "", m.creator, m.year, m.meta && m.meta !== m.creator ? m.meta : "", d.status].filter(Boolean);
   const heart = el("button", { class: "btn sm", type: "button", text: isSaved(m) ? "♥ Saved" : "♡ Save" }); heart.addEventListener("click", () => { toggleSave(m); heart.textContent = isSaved(m) ? "♥ Saved" : "♡ Save"; if (S.type === "saved") showSaved(); });
   const acts = el("div", { class: "acts" }); const info = el("div", {}, el("div", { class: "chips" }, chips.map((c) => el("span", { text: c }))), m.description ? el("p", { class: "desc", text: m.description }) : null);
@@ -136,7 +155,7 @@ function renderItem(m, d, back) {
     const v = el("video", { controls: true, playsinline: true, preload: "metadata", poster: https(m.thumb) || false }); v.src = p.url; for (const s of (p.subtitles || []).filter((s) => https(s.url))) v.append(el("track", { kind: "subtitles", label: s.label || "Subtitles", srclang: "en", src: s.url })); video = v; stopAudio();
     const key = posKey(p.url), saved = LS.get(key, 0); if (saved > 5) v.addEventListener("loadedmetadata", () => { if (v.duration - saved > 10) v.currentTime = saved; }, { once: true });
     let t0 = 0; v.addEventListener("timeupdate", () => { if (Date.now() - t0 > 5000) { t0 = Date.now(); LS.set(key, Math.floor(v.currentTime)); } }); v.addEventListener("play", () => { pushRecent(m); if (!A.paused) A.pause(); });
-    const stage = el("div", { class: "stage" }, v); parts.push(stage);
+    const stage = el("div", { class: "stage" }, v); parts.push(stage); acts.append(el("button", { class: "btn sm", type: "button", text: "⛶ Fullscreen", onclick: () => full(v) }));
     if (https(p.embed)) { // the host's own player, for when the file won't play here (or when you'd rather)
       const swap = () => { stopVideo(); stage.replaceChildren(frame(p.embed, m, 0)); swap.b.remove(); pushRecent(m); }; swap.b = el("button", { class: "btn sm", type: "button", text: "Use the Archive's own player", onclick: swap }); acts.append(swap.b); v.addEventListener("error", (e) => { if (e.target === v && stage.contains(v)) { toast("That file wouldn't play here. Trying the Archive's own player."); swap(); } }, true);
     }
@@ -184,7 +203,8 @@ $("srcsave").addEventListener("click", () => { const ids = [...srcdlg.querySelec
   if (!ids.length) return toast("Keep at least one source on"); S.src = ids.slice().sort().join() === def.slice().sort().join() ? null : ids; LS.set("src", S.src); srcdlg.close(); go(true); });
 
 // ── start-up, shortcuts, links ──
-document.addEventListener("keydown", (e) => { const t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA"); if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); } else if (e.key === " " && !typing && t.tagName !== "BUTTON" && t.tagName !== "VIDEO" && S.q2.length) { e.preventDefault(); A.paused ? A.play().catch(() => {}) : A.pause(); } });
+document.addEventListener("keydown", (e) => { const t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA");
+  if (video && dlg.open && !typing && !e.metaKey && !e.ctrlKey) { const k = e.key.toLowerCase(); if (k === "f") { e.preventDefault(); return full(video); } if (k === "m") { video.muted = !video.muted; return toast(video.muted ? "Muted" : "Sound on"); } if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime + (e.key === "ArrowRight" ? 10 : -10)); return; } if (k === "k" || (e.key === " " && t.tagName !== "BUTTON" && t.tagName !== "VIDEO")) { e.preventDefault(); return video.paused ? video.play().catch(() => {}) : video.pause(); } } if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); } else if (e.key === " " && !typing && t.tagName !== "BUTTON" && t.tagName !== "VIDEO" && S.q2.length) { e.preventDefault(); A.paused ? A.play().catch(() => {}) : A.pause(); } });
 async function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1)); S.q = h.get("q") || ""; S.type = ["movie", "tv", "music", "radio", "audiobook", "podcast", "video", "live", "saved"].includes(h.get("t")) ? h.get("t") : ""; $("q").value = S.q;
   [...$("tabs").children].forEach((x) => x.classList.toggle("on", x.dataset.t === S.type)); const id = h.get("i");
