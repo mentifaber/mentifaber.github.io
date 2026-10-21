@@ -19,19 +19,21 @@ if (matchMedia("(hover: none)").matches) document.body.classList.add("touch");
 
 const S = { safe: LS.get("safe", true) !== false, type: "", q: "", page: 1, src: LS.get("src", null), saved: LS.get("saved", []), recent: LS.get("recent", []), names: {}, tok: 0, tok2: 0, openId: "", q2: [], qi: -1, cur: null, live: false, rate: LS.get("rate", 1) };
 // what an earlier version showed in Continue and Saved is looked at again: from user-upload sources, or with suggestive words, it goes while Safe mode is on
-const UNSAFE = new Set(["commons", "audius", "mixcloud", "ccmixter", "jamendo", "dailymotion", "peertube"]), RISKY = /\b(sex\w*|porn\w*|xxx+|erotic\w*|nude\w*|nudity|naked|topless|hentai|nsfw|adult\w*|sensual\w*|seduc\w*|bikini|lingerie|boob\w*|breasts?|strip\w*|fetish\w*|kinky|horny|naughty|hardcore|softcore|explicit|uncensored|mature|burlesque|18\+)\b/i;
+const UNSAFE = new Set(["commons", "audius", "mixcloud", "ccmixter", "jamendo", "dailymotion", "peertube"]), RISKY = /\b(sex\w*|porn\w*|xxx+|erotic\w*|nude\w*|nudity|naked|topless|hentai|nsfw|adult\w*|sensual\w*|seduc\w*|bikini|lingerie|boob\w*|breasts?|strip\w*|fetish\w*|kinky|horny|naughty|hardcore|softcore|explicit|uncensored|mature|burlesque|18\+|poop\w*|shit\w*|fuck\w*|medical|surger\w+|autopsy|gore|gory|bloody|prank\w*|meme|parody|twerk\w*|harlem shake)\b/i;
 const okItem = (it) => !S.safe || (!UNSAFE.has(it.source) && !RISKY.test([it.title, it.creator, it.description, it.meta].join(" ")));
 if (LS.get("v", 0) < 3) { S.recent = []; LS.set("recent", []); LS.set("v", 3); } // Continue starts clean once, for everyone
-const compact = (it) => ({ id: it.id, source: it.source, type: it.type, title: it.title, creator: it.creator, year: it.year, description: it.description, thumb: it.thumb, page: it.page, license: it.license, meta: it.meta, ...(it.play ? { play: it.play } : {}) });
+const compact = (it) => ({ id: it.id, source: it.source, type: it.type, title: it.title, creator: it.creator, year: it.year, description: it.description, thumb: it.thumb, page: it.page, license: it.license, meta: it.meta, ...(it.rating ? { rating: it.rating } : {}), ...(it.play ? { play: it.play } : {}) });
 const isSaved = (it) => S.saved.some((s) => s.id === it.id);
 const toggleSave = (it) => { if (isSaved(it)) { S.saved = S.saved.filter((s) => s.id !== it.id); toast("Removed from Saved"); } else { S.saved = [compact(it), ...S.saved].slice(0, 200); toast("Saved ♥"); } LS.set("saved", S.saved); };
 const pushRecent = (it) => { S.recent = [compact(it), ...S.recent.filter((r) => r.id !== it.id)].slice(0, 20); LS.set("recent", S.recent); };
+// Rotten Tomatoes' score where the site has one (through OMDb), else IMDb's
+const scoreOf = (r) => (r ? (r.rt != null ? "🍅 " + r.rt + "%" : r.imdb != null ? "★ " + r.imdb : "") : "");
 const metaOf = (it) => [it.type === "tv" || it.type === "radio" ? it.meta || it.creator : it.creator, it.year].filter(Boolean).join(" · ");
 
 // ── cards and shelves ──
 function card(it, onOpen) {
   const img = pic(it.thumb, it.type);
-  const art = el("div", { class: "art" }, img, el("span", { class: "badge" + (it.type === "radio" || it.type === "live" ? " live" : ""), text: it.type === "radio" ? "Live" : LABEL[it.type] || it.type }));
+  const art = el("div", { class: "art" }, img, el("span", { class: "badge" + (it.type === "radio" || it.type === "live" ? " live" : ""), text: it.type === "radio" ? "Live" : LABEL[it.type] || it.type }), scoreOf(it.rating) ? el("span", { class: "score", title: it.rating.rt != null ? "Rotten Tomatoes" + (it.rating.imdb != null ? " · IMDb " + it.rating.imdb : "") : "IMDb", text: scoreOf(it.rating) }) : null);
   const open = el("button", { class: "open", type: "button", "aria-label": "Open " + it.title }, art, el("h3", { text: it.title }), el("div", { class: "meta", text: metaOf(it) }));
   open.addEventListener("click", () => (onOpen || openItem)(it));
   const heart = el("button", { class: "heart" + (isSaved(it) ? " on" : ""), type: "button", "aria-label": "Save to your list", "aria-pressed": String(isSaved(it)), text: "♥" });
@@ -124,7 +126,7 @@ async function openItem(it, back) {
 function frame(url, m, height) { return el("iframe", { src: url, title: m.title, ...(height ? { height: String(height) } : {}), allow: "autoplay; fullscreen; picture-in-picture; encrypted-media", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", sandbox: "allow-scripts allow-same-origin allow-popups allow-presentation" }); }
 function stopFrames() { dlg.querySelectorAll("iframe").forEach((f) => f.remove()); }
 function renderItem(m, d, back) {
-  $("dtitle").textContent = m.title; const body = $("dbody"), p = d.play || { kind: "none" }, parts = [], chips = [LABEL[m.type], m.creator, m.year, m.meta && m.meta !== m.creator ? m.meta : "", d.status].filter(Boolean);
+  $("dtitle").textContent = m.title; const body = $("dbody"), p = d.play || { kind: "none" }, parts = [], chips = [LABEL[m.type], scoreOf(m.rating) ? scoreOf(m.rating) + (m.rating.rt != null && m.rating.imdb != null ? " · IMDb " + m.rating.imdb : "") : "", m.creator, m.year, m.meta && m.meta !== m.creator ? m.meta : "", d.status].filter(Boolean);
   const heart = el("button", { class: "btn sm", type: "button", text: isSaved(m) ? "♥ Saved" : "♡ Save" }); heart.addEventListener("click", () => { toggleSave(m); heart.textContent = isSaved(m) ? "♥ Saved" : "♡ Save"; if (S.type === "saved") showSaved(); });
   const acts = el("div", { class: "acts" }); const info = el("div", {}, el("div", { class: "chips" }, chips.map((c) => el("span", { text: c }))), m.description ? el("p", { class: "desc", text: m.description }) : null);
   if (back) parts.push(el("button", { class: "btn sm back", type: "button", text: "← Back to " + back.m.title, onclick: () => { stopVideo(); stopFrames(); renderItem(back.m, back.d); } }));
