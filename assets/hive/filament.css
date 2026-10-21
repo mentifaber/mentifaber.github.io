@@ -249,3 +249,20 @@ dialog::backdrop { background: var(--veil); -webkit-backdrop-filter: blur(4px); 
   #realms a:not(.on)::before { display: none; }
   #realms a.on::before { width: 5px; height: 5px; }
 }
+
+/* voice links: the owner's panel in Settings */
+.vlnew { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin: 6px 0 4px; }
+.vlnew > input { grid-column: 1 / -1; }
+.vlnew label { display: grid; gap: 4px; font-size: 12.5px; color: var(--dim); }
+.vlnew .pri { grid-column: 1 / -1; justify-self: start; }
+.vllist { display: grid; gap: 12px; margin-top: 10px; }
+.vl { border: 1px solid var(--line2); padding: 12px 14px; display: grid; gap: 9px; background: var(--well); }
+.vlh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.vls { font-size: 12.5px; color: var(--faint); }
+.vls.on { color: var(--ok); } .vls.exp { color: var(--warn); }
+.vlu { display: flex; gap: 6px; } .vlu input { flex: 1; min-width: 0; font: 12.5px var(--code); }
+.vla { display: flex; flex-wrap: wrap; gap: 6px; }
+.vlg { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vlg li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; border-top: 1px solid var(--line); padding-top: 6px; }
+.vlg li span { font-weight: 500; } .vlg li small { color: var(--faint); flex: 1; }
+@media (max-width: 760px) { .vlnew { grid-template-columns: 1fr 1fr; } .vlnew label:nth-of-type(3) { grid-column: 1 / -1; } }

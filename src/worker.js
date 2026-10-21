@@ -562,7 +562,8 @@ export default {
       }
       if (route === "hive" && app === "listen") { // the voice link's live ears: a WebSocket to Deepgram Flux (src/listen.js)
         const own = !!(await session(req, env, "vigil"));
-        return listen(req, env, own, async () => { const h = new Headers({ "cf-connecting-ip": req.headers.get("cf-connecting-ip") || "" }); const r = await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/listen-ok", { method: "POST", headers: h })); return !!(await r.json().catch(() => ({}))).ok; });
+        const vg = url.searchParams.get("g") || ""; // a voice-link guest's token (src/hive-voice.js): the guest's own limits apply, not the address's
+        return listen(req, env, own, async () => { const h = new Headers({ "cf-connecting-ip": req.headers.get("cf-connecting-ip") || "", "content-type": "application/json" }); const r = await env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(url.origin + "/api/hive/listen-ok", { method: "POST", headers: h, body: JSON.stringify({ vg }) })); return !!(await r.json().catch(() => ({}))).ok; });
       }
       if (route === "hive") { // the owner (Vigil session) runs projects; anyone may watch; visitors join with a project key
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");

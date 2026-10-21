@@ -101,6 +101,7 @@ class Turn {
   connect() {
     const sil = this.o.silence || 900, q = new URLSearchParams({ rate: String(RATE), eot: Math.max(0.6, Math.min(0.9, 0.7 + (sil - 800) / 6000)).toFixed(2), wait: String(Math.max(3000, Math.min(8000, sil * 4))) }); // "pause before answering" makes Flux surer, and more patient
     if (this.o.keyterm) q.set("kt", this.o.keyterm);
+    if (this.o.guest) q.set("g", this.o.guest); // a voice-link guest: their own token, so their own limits apply (src/hive-voice.js)
     let s; try { s = this.sock = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/hive/listen?" + q); } catch (e) { return this.fail("no socket: " + e.message); }
     s.binaryType = "arraybuffer"; const t0 = performance.now();
     s.onopen = () => { this.openMs = performance.now() - t0; this.flush(); };
@@ -167,7 +168,7 @@ class Turn {
     const fr = this.frames, first = fr.findIndex((r) => r.on), lastI = fr.length - 1 - [...fr].reverse().findIndex((r) => r.on);
     const clip = first < 0 ? [] : fr.slice(Math.max(0, first - 15), Math.min(fr.length, lastI + 13)).map((r) => r.f), t0 = performance.now(); // 300 ms before the first sound, 260 ms after the last
     if (this.o.onSend && !quiet) this.o.onSend();
-    return fetch("/api/hive/stt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audio: wav(clip), lang: this.o.lang || "", ms: this.voiced * FMS, kt: this.o.keyterm || "" }), signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined }) // a transcription that never returns would leave it listening forever
+    return fetch(this.o.guest ? "/api/hive/voice/stt" : "/api/hive/stt", { method: "POST", headers: { "content-type": "application/json", ...(this.o.guest ? { authorization: "Bearer " + this.o.guest } : {}) }, body: JSON.stringify({ audio: wav(clip), lang: this.o.lang || "", ms: this.voiced * FMS, kt: this.o.keyterm || "" }), signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined }) // a transcription that never returns would leave it listening forever
       .then((r) => r.json().catch(() => ({ error: "the server said " + r.status }))).then((j) => (j.error ? { error: j.error } : { text: String(j.text || "").trim(), ms: performance.now() - t0, dropped: j.dropped })).catch((e) => ({ error: e.name === "TimeoutError" ? "transcription took too long" : e.message || "couldn't reach AutoFaber" }));
   }
   finish(text, engine, r) {
