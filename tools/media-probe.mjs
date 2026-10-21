@@ -55,8 +55,12 @@ if (process.env.LIVE_SITE) {
   try {
     const f = await g("/featured"), ids = (f.rails || []).map((r) => r.id);
     row("live site · Safe shelves", ids.length > 8 && !ids.some((x) => ["classictv", "trending", "mixes", "remixes"].includes(x)), ids.length + " shelves: " + ids.join(", "));
-    const badItems = [];
-    for (const r of f.rails || []) { const j = await g("/featured?rail=" + r.id).catch(() => ({ items: [] })), items = j.items || []; console.log("     " + r.title.padEnd(32) + items.slice(0, 7).map((i) => i.title.slice(0, 26)).join(" · ")); for (const i of items) if (unsafe(i)) badItems.push(r.id + ": " + i.title); }
+    const badItems = [], thumbs = [];
+    for (const r of f.rails || []) { const j = await g("/featured?rail=" + r.id).catch(() => ({ items: [] })), items = j.items || []; console.log("     " + r.title.padEnd(32) + items.slice(0, 7).map((i) => i.title.slice(0, 26)).join(" · ")); for (const i of items) if (unsafe(i)) badItems.push(r.id + ": " + i.title); for (const i of items.slice(0, 2)) thumbs.push([r.id, i.thumb]); }
+    // do the pictures load, the way a phone asks for them (no referrer)?
+    const tr = await Promise.all(thumbs.map(async ([id, u]) => { if (!u) return [id, "none", ""]; try { const r = await fetch(u, { headers: { "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36", accept: "image/avif,image/webp,image/*,*/*" }, redirect: "follow", signal: AbortSignal.timeout(15000) }); await r.body.cancel().catch(() => {}); return [id, r.status, r.headers.get("content-type") || "", u]; } catch (e) { return [id, "error " + String(e.cause && e.cause.code || e.message).slice(0, 40), "", u]; } }));
+    const badT = tr.filter(([, st, ct]) => !(st === 200 && /^image\//.test(ct)));
+    row("live site · thumbnails load", badT.length <= tr.length * 0.2, (tr.length - badT.length) + " of " + tr.length + " load" + (badT.length ? " · failing: " + badT.slice(0, 6).map(([id, st, ct, u]) => id + " " + st + " " + ct + " " + String(u || "").slice(0, 70)).join(" | ") : ""));
     row("live site · every shelf item Safe", badItems.length === 0, badItems.length ? badItems.slice(0, 8).join(" | ") : "all pass");
     for (const q of ["love", "girls", "sex", "shake", "medical", "party", "naked", "funny"]) { const j = await g("/search?q=" + q), b = (j.items || []).filter(unsafe); row("live site · Safe search “" + q + "”", b.length === 0, (j.items || []).length + " results" + (b.length ? " · UNSAFE: " + b.slice(0, 4).map((i) => i.title).join(" | ") : "")); }
   } catch (e) { row("live site", false, "threw: " + String(e.message || e).slice(0, 100)); }
