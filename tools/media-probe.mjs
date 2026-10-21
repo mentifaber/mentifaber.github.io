@@ -31,7 +31,7 @@ for (const [label, it, want] of [["archive film", pick("archive|movie", "rail|fi
     const u = d.play && d.play.url, s = u ? await serves(u, want) : { ok: false, status: 0, ct: "no url" }; row("plays · " + label, !!u && s.ok, (d.play.tracks ? d.play.tracks.length + " tracks · " : "") + "file " + s.status + " " + s.ct); } catch (e) { row("plays · " + label, false, "threw: " + String(e.message || e).slice(0, 100)); }
 }
 for (const [label, key, want] of [["radio station", "radio|radio", "audio|mpeg|ogg|aac|octet"], ["Audius track", "audius|music", "audio"], ["Openverse track", "openverse|music", "audio"], ["Commons video", "commons|video", "video|ogg|webm"], ["SomaFM station", "somafm|radio", "audio|mpeg|ogg|aac|octet"], ["ccMixter remix", "ccmixter|music", "audio"], ["Jamendo track", "jamendo|music", "audio"], ["PeerTube embed", "peertube|video", null]]) {
-  const it = (sample[key] || []).find((x) => x.play); if (!it) { row("plays · " + label, false, "no sample item to try"); continue; }
+  const it = (sample[key] || []).find((x) => x.play); if (!it && /jamendo/.test(key) && !process.env.JAMENDO_CLIENT_ID) { console.log("SKIP " + ("plays · " + label).padEnd(34) + "needs JAMENDO_CLIENT_ID"); continue; } if (!it) { row("plays · " + label, false, "no sample item to try"); continue; }
   if (!want) { row("plays · " + label, /^https:\/\//.test(it.play.url), it.play.url.slice(0, 60)); continue; }
   const s = await serves(it.play.url, want); row("plays · " + label, s.ok, "file " + s.status + " " + s.ct);
 }
@@ -39,11 +39,11 @@ for (const [label, key, want] of [["radio station", "radio|radio", "audio|mpeg|o
 // shows that play in a host's own player: the player has to load, and has to allow being framed here
 async function framable(url) {
   try { const r = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 MentiPlayer probe", accept: "text/html" }, redirect: "follow", signal: AbortSignal.timeout(12000) }); const xfo = r.headers.get("x-frame-options") || "", csp = r.headers.get("content-security-policy") || "", fa = /frame-ancestors\s+([^;]*)/i.exec(csp); await r.body.cancel().catch(() => {});
-    const blocked = /deny|sameorigin/i.test(xfo) || (fa && !/\*|https:(?!\/)|mentifaber/i.test(fa[1])); return { ok: r.status === 200 && !blocked, why: r.status + (blocked ? " blocks framing (" + (xfo || "frame-ancestors " + fa[1]) + ")" : "") }; } catch (e) { return { ok: false, why: String(e.message || e).slice(0, 60) }; }
+    if (r.status === 403 || r.status === 429) return { skip: true, why: r.status + " (the host turns scripts away, so this can't be checked from here; embeds are what it is built for)" }; const blocked = /deny|sameorigin/i.test(xfo) || (fa && !/\*|https:(?!\/)|mentifaber/i.test(fa[1])); return { ok: r.status === 200 && !blocked, why: r.status + (blocked ? " blocks framing (" + (xfo || "frame-ancestors " + fa[1]) + ")" : "") }; } catch (e) { return { ok: false, why: String(e.message || e).slice(0, 60) }; }
 }
 const embeds = [["Mixcloud widget", (sample["mixcloud|podcast"] || [])[0]], ["Dailymotion player", (sample["dailymotion|video"] || [])[0]], ["YouTube player", (sample["youtube|video"] || [])[0]], ["PeerTube player", (sample["peertube|video"] || [])[0]]];
-for (const [label, it] of embeds) { if (!it || !it.play) { console.log("SKIP " + ("embed · " + label).padEnd(34) + "no sample"); continue; } const f = await framable(it.play.url); row("embed · " + label, f.ok, f.why); }
-{ const f = await framable("https://archive.org/embed/Nosferatu"); row("embed · Archive player", f.ok, f.why); }
+for (const [label, it] of embeds) { if (!it || !it.play) { console.log("SKIP " + ("embed · " + label).padEnd(34) + "no sample"); continue; } const f = await framable(it.play.url); if (f.skip) console.log("SKIP " + ("embed · " + label).padEnd(34) + f.why); else row("embed · " + label, f.ok, f.why); }
+{ const a = (sample["archive|movie"] || [])[0], f = a ? await framable("https://archive.org/embed/" + a.id.split("|")[2]) : { ok: false, why: "no sample" }; row("embed · Archive player", f.ok, f.why); }
 // every live channel: does its channel still exist (a wrong or retired id would show a dead player)?
 for (const [name, ch] of LIVE_TV) { try { const r = await fetch("https://www.youtube.com/channel/" + ch, { headers: { "user-agent": "Mozilla/5.0 MentiPlayer probe", "accept-language": "en" }, redirect: "follow", signal: AbortSignal.timeout(12000) }); await r.body.cancel().catch(() => {}); row("live channel · " + name, r.status === 200, "channel page " + r.status); } catch (e) { row("live channel · " + name, false, String(e.message || e).slice(0, 60)); } }
 // a show's free copies: a classic series should list some

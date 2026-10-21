@@ -53,7 +53,8 @@ const STATUS = {}; // source → its last result, for /sources (this isolate onl
 
 class Upstream extends Error { constructor(msg, status) { super(msg); this.status = status || 502; } }
 async function get(url, o = {}) {
-  const r = await fetch(url, { headers: { "user-agent": UA, accept: o.text ? "*/*" : "application/json", ...(o.headers || {}) }, signal: AbortSignal.timeout(o.ms || 7000), redirect: "follow", cf: { cacheTtl: o.ttl || 0 } });
+  let r; try { r = await fetch(url, { headers: { "user-agent": UA, accept: o.text ? "*/*" : "application/json", ...(o.headers || {}) }, signal: AbortSignal.timeout(o.ms || 7000), redirect: "follow", cf: { cacheTtl: o.ttl || 0 } }); }
+  catch (e) { const c = e && ((e.cause && (e.cause.code || e.cause.message)) || (e.message !== "fetch failed" && e.name !== "TimeoutError" ? e.message : "")); throw new Upstream(new URL(url).hostname + " didn't answer" + (c ? " (" + clip(c, 60) + ")" : e && e.name === "TimeoutError" ? " in time" : ""), 502); }
   if (!r.ok) throw new Upstream(new URL(url).hostname + " answered " + r.status, r.status >= 500 ? 502 : r.status);
   if (o.text) { const t = await r.text(); return t.slice(0, o.max || 3e6); }
   return r.json();
@@ -122,7 +123,9 @@ async function tvWatch(name) {
   const w = words(name).toLowerCase().split(" ").filter(Boolean); if (!w.length) return [];
   const jobs = [within(iaSearch("tv", name, 8, 1), 4500).catch(() => [])];
   if (key_("YOUTUBE_API_KEY")) jobs.push(within(ytSearch(name + " full episode", 8, 1), 4500).catch(() => []));
-  return (await Promise.all(jobs)).flat().filter((i) => { const t = i.title.toLowerCase(); return w.every((x) => t.includes(x)); }).slice(0, 10);
+  // a copy counts when the show's name is in its title or, for several-word names, said in full in its credits or description (Archive episodes are often titled by the episode alone)
+  const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ", phrase = norm(w.join(" "));
+  return (await Promise.all(jobs)).flat().filter((i) => w.every((x) => norm(i.title).includes(" " + x)) || (w.length > 1 && norm(i.title + " " + i.creator + " " + i.description).includes(phrase))).slice(0, 10);
 }
 
 // ── Openverse ──
@@ -212,8 +215,11 @@ async function somaSearch(q, limit) {
 // ── Mixcloud: DJ mixes and radio shows, played in Mixcloud's own widget ──
 const mcItem = (c) => { const k = String(c.key || ""); return /^\/[\w.-]+\/[\w.%~-]+\/$/.test(k) && c.name ? mk({ source: "mixcloud", type: "podcast", key: k, title: c.name, creator: c.user && (c.user.name || c.user.username), year: c.created_time, description: [].concat(c.tags || []).map((t) => t.name).filter(Boolean).slice(0, 5).join(", "), thumb: c.pictures && (c.pictures.large || c.pictures.medium || c.pictures.extra_large), page: c.url || "https://www.mixcloud.com" + k, license: "Streamed through Mixcloud's licensed player", meta: "Mixcloud" + (c.audio_length ? " · " + fmtDur(c.audio_length) : ""), play: { kind: "embed", url: "https://www.mixcloud.com/widget/iframe/?hide_cover=1&light=0&feed=" + enc(k), height: 180 } }) : null; };
 async function mcSearch(q, limit, page) {
-  const w = words(q), j = await get(w ? "https://api.mixcloud.com/search/?type=cloudcast&q=" + enc(w) + "&limit=" + limit + "&offset=" + ((page || 1) - 1) * limit : "https://api.mixcloud.com/popular/hot/?limit=" + limit, { ttl: 600 });
-  return (j.data || []).map(mcItem).filter(Boolean).slice(0, limit);
+  const w = words(q), page_ = "&limit=" + limit + "&offset=" + ((page || 1) - 1) * limit;
+  // with no words, the front page: Mixcloud has moved these around, so try each, then fall back to a plain search
+  const tries = w ? ["/search/?type=cloudcast&q=" + enc(w) + page_] : ["/popular/hot/?" + page_.slice(1), "/popular/?" + page_.slice(1), "/search/?type=cloudcast&q=house" + page_];
+  let err; for (const t of tries) try { const j = await get("https://api.mixcloud.com" + t, { ttl: 600 }), out = (j.data || []).map(mcItem).filter(Boolean).slice(0, limit); if (out.length || w) return out; } catch (e) { err = e; }
+  if (err) throw err; return [];
 }
 
 // ── ccMixter: remixes and samples, each under a Creative Commons licence ──
