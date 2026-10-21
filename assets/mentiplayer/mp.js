@@ -13,14 +13,15 @@ const ph = (type) => { const h = HUE[type] || 40, t = (LABEL[type] || "Media").t
 const pic = (src, type, props) => { const i = el("img", { alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer", ...(props || {}) }); i.src = https(src) || ph(type); i.addEventListener("error", () => { if (!i.dataset.f) { i.dataset.f = "1"; i.src = ph(type); } }); return i; };
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (e.hidden = true), ms || 2600); };
 // Safe mode is on unless it has been switched off: the gateway enforces it, this only says which way to ask
-const safeQ = (path) => (S.safe ? path : path + (path.includes("?") ? "&" : "?") + "safe=0");
+const safeQ = (path) => path + (path.includes("?") ? "&" : "?") + "v=4" + (S.safe ? "" : "&safe=0"); // v: never reuse an answer cached under an older rule
 const api = async (path) => { const r = await fetch("/api/media" + safeQ(path), { headers: { accept: "application/json" }, signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined }); const j = await r.json().catch(() => ({ error: "the gateway said " + r.status })); if (!r.ok || j.error) throw new Error(j.error || "the gateway said " + r.status); return j; };
 if (matchMedia("(hover: none)").matches) document.body.classList.add("touch");
 
 const S = { safe: LS.get("safe", true) !== false, type: "", q: "", page: 1, src: LS.get("src", null), saved: LS.get("saved", []), recent: LS.get("recent", []), names: {}, tok: 0, tok2: 0, openId: "", q2: [], qi: -1, cur: null, live: false, rate: LS.get("rate", 1) };
 // what an earlier version showed in Continue and Saved is looked at again: from user-upload sources, or with suggestive words, it goes while Safe mode is on
 const UNSAFE = new Set(["commons", "audius", "mixcloud", "ccmixter", "jamendo", "dailymotion", "peertube"]), RISKY = /\b(sex\w*|porn\w*|xxx+|erotic\w*|nude\w*|nudity|naked|topless|hentai|nsfw|adult\w*|sensual\w*|seduc\w*|bikini|lingerie|boob\w*|breasts?|strip\w*|fetish\w*|kinky|horny|naughty|hardcore|softcore|explicit|uncensored|mature|burlesque|18\+|poop\w*|shit\w*|fuck\w*|medical|surger\w+|autopsy|gore|gory|bloody|prank\w*|meme|parody|twerk\w*|harlem shake)\b/i;
-const okItem = (it) => !S.safe || (!UNSAFE.has(it.source) && !RISKY.test([it.title, it.creator, it.description, it.meta].join(" ")));
+const OPEN_ONLY = new Set(["classictv", "trending", "mixes", "remixes"]);
+const okItem = (it) => !S.safe || (it && !UNSAFE.has(it.source) && !(it.source === "archive" && it.type === "tv") && !RISKY.test([it.title, it.creator, it.description, it.meta].join(" ")));
 if (LS.get("v", 0) < 3) { S.recent = []; LS.set("recent", []); LS.set("v", 3); } // Continue starts clean once, for everyone
 const compact = (it) => ({ id: it.id, source: it.source, type: it.type, title: it.title, creator: it.creator, year: it.year, description: it.description, thumb: it.thumb, page: it.page, license: it.license, meta: it.meta, ...(it.rating ? { rating: it.rating } : {}), ...(it.play ? { play: it.play } : {}) });
 const isSaved = (it) => S.saved.some((s) => s.id === it.id);
@@ -41,14 +42,14 @@ function card(it, onOpen) {
   return el("article", { class: "card t-" + it.type }, open, heart);
 }
 const shelf = (title, note) => { const rail = el("div", { class: "rail" }, el("div", { class: "skel" })); return { sec: el("section", { class: "shelf" }, el("h2", { text: title }, note ? el("small", { text: note }) : null), rail), rail }; };
-const fill = (rail, items) => { rail.replaceChildren(...items.map((i) => card(i))); };
+const fill = (rail, items) => { rail.replaceChildren(...items.filter(okItem).map((i) => card(i))); };
 async function loadHome() {
   const home = $("home"), tok = ++S.tok; home.replaceChildren(); $("results").hidden = true; home.hidden = false; $("status").textContent = "";
   const want = S.type;
   if (!want || want === "all") { const rec = S.recent.filter(okItem); if (rec.length) { const s = shelf("Continue"); home.append(s.sec); fill(s.rail, rec); } }
   let rails = []; try { rails = (await api("/featured")).rails; } catch (e) { if (tok === S.tok) $("status").textContent = "The media gateway isn't answering right now. Try again in a moment."; return; }
-  if (tok !== S.tok) return; rails = rails.filter((r) => !want || r.type === want);
-  const jobs = rails.map((r) => { const s = shelf(r.title); home.append(s.sec); return () => api("/featured?rail=" + encodeURIComponent(r.id)).then((j) => { if (tok !== S.tok) return; if (j.items && j.items.length) fill(s.rail, j.items); else s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "Nothing from this one right now." })); }).catch(() => { if (tok === S.tok) s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "This source didn't answer. It may be resting; it'll be back." })); }); });
+  if (tok !== S.tok) return; rails = rails.filter((r) => (!want || r.type === want) && !(S.safe && OPEN_ONLY.has(r.id)));
+  const jobs = rails.map((r) => { const s = shelf(r.title); home.append(s.sec); return () => api("/featured?rail=" + encodeURIComponent(r.id)).then((j) => { if (tok !== S.tok) return; const shown = (j.items || []).filter(okItem); if (shown.length) fill(s.rail, shown); else s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "Nothing from this one right now." })); }).catch(() => { if (tok === S.tok) s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "This source didn't answer. It may be resting; it'll be back." })); }); });
   const pool = async () => { while (jobs.length) await jobs.shift()(); }; await Promise.all([pool(), pool(), pool(), pool()]);
 }
 async function runSearch(more) {
@@ -57,7 +58,7 @@ async function runSearch(more) {
   const qs = new URLSearchParams({ q: S.q, type: S.type || "all", page: String(S.page) }); if (S.src) qs.set("src", S.src.join(","));
   try {
     const j = await api("/search?" + qs); if (tok !== S.tok) return;
-    grid.append(...j.items.map((i) => card(i))); const down = Object.entries(j.sources || {}).filter(([, v]) => !v.ok).map(([k]) => S.names[k] || k), got = grid.children.length;
+    grid.append(...j.items.filter(okItem).map((i) => card(i))); const down = Object.entries(j.sources || {}).filter(([, v]) => !v.ok).map(([k]) => S.names[k] || k), got = grid.children.length;
     if (!got) grid.append(el("div", { class: "empty", text: "Nothing found for “" + S.q + "”. Try another word, or another tab." }));
     $("status").textContent = got ? got + " result" + (got === 1 ? "" : "s") + (down.length ? " · " + down.join(", ") + " didn't answer" : "") : "";
     $("more").hidden = !j.items.length || S.page >= 10 || (S.type === "" && S.page >= 3);
@@ -116,11 +117,12 @@ dlg.addEventListener("close", () => { document.body.append($("deck")); $("deck")
 $("dclose").addEventListener("click", closeItem); dlg.addEventListener("click", (e) => { if (e.target === dlg) closeItem(); });
 const RESOLVABLE = /^(archive|tvmaze|nasa|podcasts|loc)\|/;
 async function openItem(it, back) {
+  if (!okItem(it)) { toast("Hidden by Safe mode"); return; }
   const tok = ++S.tok2; S.openId = RESOLVABLE.test(it.id) ? it.id : ""; stopVideo(); $("dtitle").textContent = it.title || "…"; $("dbody").replaceChildren(el("div", { class: "spin", text: "Loading…" })); if (!dlg.open) dlg.showModal(); dlg.append($("deck")); $("deck").classList.add("in-dlg"); // the player rides inside the window, above its backdrop
   if (S.openId) syncUrl(true);
   let d = { item: it, play: it.play || null };
   if (!it.play || it.type === "tv" && it.source === "tvmaze") { try { d = await api("/item?id=" + encodeURIComponent(it.id)); } catch (e) { if (tok !== S.tok2) return; if (!it.play) { $("dbody").replaceChildren(el("div", { class: "note", text: "This one couldn't be opened right now (" + e.message + ")." }), it.page ? el("p", {}, el("a", { href: https(it.page), target: "_blank", rel: "noopener noreferrer", text: "Open it on its own site →" })) : null); return; } } }
-  if (tok !== S.tok2) return; renderItem({ ...it, ...(d.item || {}), thumb: (d.item && d.item.thumb) || it.thumb }, d, back);
+  if (tok !== S.tok2) return; if (!okItem({ ...it, ...(d.item || {}) })) { $("dbody").replaceChildren(el("div", { class: "note", text: "Hidden by Safe mode." })); return; } renderItem({ ...it, ...(d.item || {}), thumb: (d.item && d.item.thumb) || it.thumb }, d, back);
 }
 // a show that lives on someone else's player is shown in that player, in a frame that can run it and nothing more
 function frame(url, m, height) { return el("iframe", { src: url, title: m.title, ...(height ? { height: String(height) } : {}), allow: "autoplay; fullscreen; picture-in-picture; encrypted-media", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", sandbox: "allow-scripts allow-same-origin allow-popups allow-presentation" }); }
@@ -156,7 +158,7 @@ function renderItem(m, d, back) {
   acts.append(heart); if (m.page) acts.append(el("a", { class: "btn sm", href: https(m.page), target: "_blank", rel: "noopener noreferrer", text: "Open on its site ↗" }));
   const share = el("button", { class: "btn sm", type: "button", text: "Share" }); share.addEventListener("click", async () => { const u = RESOLVABLE.test(m.id) ? location.origin + location.pathname + "#i=" + encodeURIComponent(m.id) : https(m.page) || location.href; try { if (navigator.share) await navigator.share({ title: m.title, url: u }); else { await navigator.clipboard.writeText(u); toast("Link copied"); } } catch (e) {} }); acts.append(share);
   if (p.kind !== "audio" && p.kind !== "live") info.append(acts);
-  if (d.watch && d.watch.length) parts.push(el("h3", { text: "Watch free" }), el("div", { class: "watch" }, d.watch.map((w) => card(w, (x) => openItem(x, { m, d })))));
+  const watch = (d.watch || []).filter(okItem); if (watch.length) parts.push(el("h3", { text: "Watch free" }), el("div", { class: "watch" }, watch.map((w) => card(w, (x) => openItem(x, { m, d })))));
   if (d.episodes && d.episodes.length) parts.push(el("h3", { text: "Latest episodes" }), el("ul", { class: "eps" }, d.episodes.map((e) => el("li", {}, el("b", { text: (e.season ? "S" + e.season + "E" + e.number + " · " : "") + e.title }), " ", el("small", { text: e.date || "" })))));
   if (d.cast && d.cast.length) parts.push(el("h3", { text: "Cast" }), el("div", { class: "cast" }, d.cast.map((c) => el("figure", {}, pic(c.photo, "tv"), el("b", { text: c.name }), c.as ? "as " + c.as : ""))));
   if (d.links && d.links.length) parts.push(el("p", { class: "links" }, d.links.filter((l) => https(l.url)).map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener noreferrer", text: l.label + " ↗" }))));
