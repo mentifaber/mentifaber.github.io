@@ -73,8 +73,8 @@ const IA_MUSIC = "(mediatype:audio OR mediatype:etree) AND (collection:opensourc
 const IA_BOOKS = "mediatype:audio AND collection:librivoxaudio";
 const IA_KIND = { movie: ["movies", IA_MOVIES], tv: ["movies", IA_TV], music: ["audio", IA_MUSIC], audiobook: ["audio", IA_BOOKS], podcast: ["audio", IA_RADIO] };
 const IA_META = { movie: "Internet Archive film", tv: "Classic TV · Internet Archive", audiobook: "LibriVox audiobook", podcast: "Old-time radio · Internet Archive", music: "Internet Archive audio" };
-async function iaSearch(type, q, limit, page, extra) {
-  const [, base] = IA_KIND[type], w = words(q), terms = w ? "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND " : "", query = terms + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base);
+async function iaSearch(type, q, limit, page, extra, phrase) {
+  const [, base] = IA_KIND[type], w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base);
   const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300 });
   return ((j.response && j.response.docs) || []).filter((d) => d.identifier).map((d) => mk({ source: "archive", type, key: d.identifier, title: d.title || d.identifier, creator: [].concat(d.creator || "")[0], year: [].concat(d.year || "")[0], description: [].concat(d.description || "")[0],
     thumb: IA + "/services/img/" + d.identifier, page: IA + "/details/" + d.identifier, license: d.licenseurl ? licenseName([].concat(d.licenseurl)[0]) : "Public domain or free to share: see its page", meta: IA_META[type] || "Internet Archive" }));
@@ -121,11 +121,11 @@ async function tvItem(key) {
 // a show's free episodes, where there are any: the Internet Archive's classic TV, plus YouTube when the owner has set a key. Each one plays through its host.
 async function tvWatch(name) {
   const w = words(name).toLowerCase().split(" ").filter(Boolean); if (!w.length) return [];
-  const jobs = [within(iaSearch("tv", name, 8, 1), 4500).catch(() => [])];
+  const jobs = [within(iaSearch("tv", name, 12, 1, null, true), 4500).catch(() => [])]; // the name as a phrase: its words scattered over unrelated items would match too much
   if (key_("YOUTUBE_API_KEY")) jobs.push(within(ytSearch(name + " full episode", 8, 1), 4500).catch(() => []));
-  // a copy counts when the show's name is in its title or, for several-word names, said in full in its credits or description (Archive episodes are often titled by the episode alone)
-  const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ", phrase = norm(w.join(" "));
-  return (await Promise.all(jobs)).flat().filter((i) => w.every((x) => norm(i.title).includes(" " + x)) || (w.length > 1 && norm(i.title + " " + i.creator + " " + i.description).includes(phrase))).slice(0, 10);
+  // several-word names are searched as a phrase, so the Archive has already matched the name (its episodes are often titled by the episode alone); one word is far too loose, so it must be in the title
+  const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
+  return (await Promise.all(jobs.map((j, k) => j.then((l) => l.filter((i) => (k === 0 && w.length > 1) || w.every((x) => norm(i.title).includes(" " + x))))))).flat().slice(0, 10);
 }
 
 // ── Openverse ──
@@ -286,7 +286,7 @@ export const SOURCES = {
   loc: { name: "Library of Congress", url: "https://www.loc.gov", types: ["movie", "music"], on: true, note: "Early films, historic recordings and the National Jukebox", search: (t, q, n, p) => locSearch(t, q, n, p) },
   livetv: { name: "Live TV", url: "https://www.youtube.com", types: ["live"], on: true, note: "News and public channels that stream free, shown in the channel's own player", search: (t, q, n) => liveSearch(q, n) },
   openverse: { name: "Openverse", url: "https://openverse.org", types: ["music"], on: true, note: "Openly licensed audio", search: (t, q, n, p) => ovSearch(q, n, p) },
-  ccmixter: { name: "ccMixter", url: "https://ccmixter.org", types: ["music"], on: true, note: "Remixes and samples under Creative Commons licences", search: (t, q, n, p) => ccSearch(q, n, p) },
+  ccmixter: { name: "ccMixter", url: "https://ccmixter.org", types: ["music"], on: false, note: "Remixes and samples under Creative Commons licences. Off by default: its server sends headers some hosts refuse, so it may not answer", search: (t, q, n, p) => ccSearch(q, n, p) },
   audius: { name: "Audius", url: "https://audius.co", types: ["music"], on: true, note: "Artist-uploaded music through Audius's open API", search: (t, q, n) => auSearch(q, n) },
   commons: { name: "Wikimedia Commons", url: "https://commons.wikimedia.org", types: ["video", "music"], on: true, note: "Freely licensed video and audio (WebM and Ogg: some browsers may not play them)", search: (t, q, n, p) => cmSearch(t, q, n, p) },
   nasa: { name: "NASA Image and Video Library", url: "https://images.nasa.gov", types: ["video"], on: true, note: "NASA's own footage", search: (t, q, n, p) => nasaSearch(q, n, p) },
@@ -312,7 +312,6 @@ export const RAILS = [
   { id: "trending", title: "Trending music", type: "music", make: (n) => auTrending(n) },
   { id: "concerts", title: "Live concerts", type: "music", make: (n) => iaSearch("music", "", n, 1, "mediatype:etree AND collection:etree") },
   { id: "jukebox", title: "Library of Congress recordings", type: "music", make: (n) => locSearch("music", "", n, 1) },
-  { id: "remixes", title: "Remixes (ccMixter)", type: "music", make: (n) => ccSearch("", n, 1) },
   { id: "oldradio", title: "Old-time radio", type: "podcast", make: (n) => iaSearch("podcast", "", n, 1) },
   { id: "books", title: "Audiobooks", type: "audiobook", make: (n) => iaSearch("audiobook", "", n, 1) },
   { id: "podcasts", title: "Top podcasts", type: "podcast", make: (n) => podTop(n) },
