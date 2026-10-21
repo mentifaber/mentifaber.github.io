@@ -84,7 +84,7 @@ const IA_KIND = { movie: ["movies", IA_MOVIES], tv: ["movies", IA_TV], music: ["
 const IA_META = { movie: "Internet Archive film", tv: "Classic TV · Internet Archive", audiobook: "LibriVox audiobook", podcast: "Old-time radio · Internet Archive", music: "Internet Archive audio" };
 async function iaSearch(type, q, limit, page, extra, phrase, strict) {
   if (strict && type === "tv") return []; // the Archive's TV collection is open to anyone to add to: not in Safe mode
-  const [, kindBase] = IA_KIND[type], base = strict && IA_STRICT[type] || kindBase, w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + "(" + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base) + ") AND -subject:(adult OR porn OR porno OR xxx OR erotic OR erotica OR nude OR nudity OR hentai OR fetish) AND -collection:(adult OR adult_films OR nsfw)" + (strict ? (type === "movie" ? " AND collection:(feature_films OR silent_films OR Film_Noir OR classic_cartoons)" : "") + " AND -subject:(sex OR sexy OR sexual OR sensual OR burlesque OR striptease OR pinup OR mature OR uncensored OR medical OR surgery OR autopsy OR gore OR parody OR meme) AND -collection:(opensource OR community OR opensource_movies OR additional_collections)" : "");
+  const [, kindBase] = IA_KIND[type], base = strict && IA_STRICT[type] || kindBase, w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + "(" + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base) + ") AND -subject:(adult OR porn OR porno OR xxx OR erotic OR erotica OR nude OR nudity OR hentai OR fetish) AND -collection:(adult OR adult_films OR nsfw)" + (strict ? (type === "movie" ? " AND collection:(feature_films OR silent_films OR Film_Noir OR SciFi_Horror OR classic_cartoons)" : "") + " AND -subject:(sex OR sexy OR sexual OR sensual OR burlesque OR striptease OR pinup OR mature OR uncensored OR medical OR surgery OR autopsy OR gore OR parody OR meme) AND -collection:(opensource OR community OR opensource_movies OR additional_collections)" : "");
   const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&fl[]=subject&fl[]=collection&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300 });
   return ((j.response && j.response.docs) || []).filter((d) => d.identifier && !(strict ? STRICT : EXPLICIT).test([].concat(d.subject || [], d.collection || []).join(" "))).map((d) => mk({ source: "archive", type, key: d.identifier, title: d.title || d.identifier, creator: [].concat(d.creator || "")[0], year: [].concat(d.year || "")[0], description: [].concat(d.description || "")[0],
     thumb: IA + "/services/img/" + d.identifier, page: IA + "/details/" + d.identifier, license: d.licenseurl ? licenseName([].concat(d.licenseurl)[0]) : "Public domain or free to share: see its page", meta: IA_META[type] || "Internet Archive" }));
@@ -353,6 +353,8 @@ export const RAILS = [
   { id: "books", src: "archive", title: "Audiobooks", type: "audiobook", make: (n, o) => iaSearch("audiobook", "", n, 1, null, false, o && o.safe) },
   { id: "podcasts", src: "podcasts", title: "Top podcasts", type: "podcast", make: (n) => podTop(n) },
   { id: "mixes", src: "mixcloud", title: "Mixes and radio shows", type: "podcast", make: (n) => mcSearch("", n, 1) },
+  { id: "noir", src: "archive", title: "Film noir", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:Film_Noir", false, o && o.safe) },
+  { id: "scifi", src: "archive", title: "Sci-fi classics", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:SciFi_Horror", false, o && o.safe) },
   { id: "cartoons", src: "archive", rated: true, ratedTitle: "Top-rated cartoons", title: "Cartoons", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:classic_cartoons OR collection:animationandcartoons)", false, o && o.safe) },
   { id: "silent", src: "archive", rated: true, ratedTitle: "Top-rated silent films", title: "Silent era", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:silent_films", false, o && o.safe) },
   { id: "locfilm", src: "loc", title: "Library of Congress films", type: "movie", make: (n) => locSearch("movie", "", n, 1) },
@@ -382,8 +384,10 @@ export async function item(id, sm = true) {
 
 // ── the route ──
 const flying = new Map(), hits = new Map();
+// bump when what a shelf or search may contain changes: nothing cached under an older rule is ever served again
+export const CACHE_V = "v4";
 async function cached(ctx, origin, key, ttl, make) {
-  const cache = typeof caches !== "undefined" ? caches.default : null, req = new Request(origin + "/__media_cache/" + enc(key));
+  key = CACHE_V + ":" + key; const cache = typeof caches !== "undefined" ? caches.default : null, req = new Request(origin + "/__media_cache/" + enc(key));
   const hit = cache ? await cache.match(req).catch(() => null) : null, at = hit ? +hit.headers.get("x-media-at") : 0;
   if (hit && Date.now() - at < ttl * 1e3) return { body: await hit.text(), at, stale: false };
   let job = flying.get(key);
@@ -401,7 +405,7 @@ export async function media(req, env, ctx, json, isOwner) {
   try {
     if (sub === "/" || sub === "/sources") return json({ types: TYPES, safeDefault: true, ratings: hasRatings(), sources: Object.entries(SOURCES).map(([id, s]) => ({ id, name: s.name, url: s.url, types: s.types, on: s.on, safe: !!s.safe, ready: ready(s), ...(s.needs ? { needs: s.needs } : {}), note: s.note, last: STATUS[id] || (s.types.length > 1 && STATUS[id + ":" + s.types[0]]) || null })) }, 200, { ...cors, "cache-control": "public, max-age=60" });
     if (sub === "/featured") {
-      const id = q.get("rail"); if (!id) return json({ rails: RAILS.filter((r) => railReady(r) && (!sm || (SOURCES[r.src].safe && !r.openOnly))).map((r) => ({ id: r.id, title: shelfTitle(r), type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=600" });
+      const id = q.get("rail"); if (!id) return json({ rails: RAILS.filter((r) => railReady(r) && (!sm || (SOURCES[r.src].safe && !r.openOnly))).map((r) => ({ id: r.id, title: shelfTitle(r), type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=60" });
       const rail = RAILS.find((r) => r.id === id && railReady(r) && (!sm || (SOURCES[r.src].safe && !r.openOnly))); if (!rail) return json({ error: "no such shelf" }, 404, cors);
       return reply(await cached(ctx, url.origin, "rail:" + id + (sm ? "" : ":open") + (hasRatings() ? ":rt" : ""), 1800, async () => ({ id, title: shelfTitle(rail), type: rail.type, items: await timed("rail:" + id, async () => { const rated = rail.rated && hasRatings(), got = clean(await rail.make(rated && !rail.needs ? 26 : 14, { safe: sm }), sm); return rated && !rail.needs ? (await rate(got)).slice(0, 14) : got.slice(0, 14); }) })), 300);
     }

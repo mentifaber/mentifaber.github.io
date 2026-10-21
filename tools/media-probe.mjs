@@ -2,7 +2,7 @@
 // and do the files it hands back actually serve audio or video? Run it anywhere with Node 20+ and a network:
 //   node tools/media-probe.mjs            (GitHub runs it from .github/workflows/media-probe.yml)
 // It exits non-zero only if the script itself breaks; a source that has changed or is down is reported as a warning.
-import { SOURCES, RAILS, LIVE_TV, item, setEnv } from "../src/media.js";
+import { SOURCES, RAILS, LIVE_TV, item, setEnv, explicit } from "../src/media.js";
 setEnv(process.env); // optional keys (YOUTUBE_API_KEY, JAMENDO_CLIENT_ID) make those sources part of the check
 let bad = 0, n = 0; const log = [];
 const row = (name, ok, detail) => { n++; const line = (ok ? "PASS " : "FAIL ") + name.padEnd(34) + detail; console.log(line); log.push(line); if (!ok) { bad++; console.log("::warning title=" + name + "::" + detail); } };
@@ -48,5 +48,18 @@ for (const [label, it] of embeds) { if (!it || !it.play) { console.log("SKIP " +
 for (const [name, ch] of LIVE_TV) { try { const r = await fetch("https://www.youtube.com/channel/" + ch, { headers: { "user-agent": "Mozilla/5.0 MentiPlayer probe", "accept-language": "en" }, redirect: "follow", signal: AbortSignal.timeout(12000) }); await r.body.cancel().catch(() => {}); row("live channel · " + name, r.status === 200, "channel page " + r.status); } catch (e) { row("live channel · " + name, false, String(e.message || e).slice(0, 60)); } }
 // a show's free copies: a classic series should list some
 try { const sh = (await SOURCES.tvmaze.search("tv", "i love lucy", 3, 1))[0], d = sh && (await item(sh.id)); const raw = d && d.watch.length === 0 ? await SOURCES.archive.search("tv", sh.title, 12, 1).catch(() => []) : []; row("watch free · " + (sh ? sh.title : "?"), !!d && Array.isArray(d.watch) && d.watch.length > 0, d ? d.watch.length + " free copies · " + (d.watch[0] ? "“" + d.watch[0].title.slice(0, 40) + "”" : "(the Archive has " + raw.length + " items for the name as words: " + raw.slice(0, 3).map((x) => "“" + x.title.slice(0, 30) + "”").join(", ") + ")") : "no show"); } catch (e) { row("watch free", false, "threw: " + String(e.message || e).slice(0, 100)); }
+// the deployed site, as a visitor with Safe mode on gets it: every shelf, every item, and searches someone might try
+if (process.env.LIVE_SITE) {
+  const base = process.env.LIVE_SITE.replace(/\/$/, "") + "/api/media", g = async (p) => { const r = await fetch(base + p + (p.includes("?") ? "&" : "?") + "v=4", { headers: { "user-agent": "Mozilla/5.0 MentiPlayer probe" }, signal: AbortSignal.timeout(20000) }); return r.json(); };
+  const unsafe = (i) => explicit(i, true) || (i.source === "archive" && i.type === "tv") || !SOURCES[i.source] || !SOURCES[i.source].safe;
+  try {
+    const f = await g("/featured"), ids = (f.rails || []).map((r) => r.id);
+    row("live site · Safe shelves", ids.length > 8 && !ids.some((x) => ["classictv", "trending", "mixes", "remixes"].includes(x)), ids.length + " shelves: " + ids.join(", "));
+    const badItems = [];
+    for (const r of f.rails || []) { const j = await g("/featured?rail=" + r.id).catch(() => ({ items: [] })), items = j.items || []; console.log("     " + r.title.padEnd(32) + items.slice(0, 7).map((i) => i.title.slice(0, 26)).join(" · ")); for (const i of items) if (unsafe(i)) badItems.push(r.id + ": " + i.title); }
+    row("live site · every shelf item Safe", badItems.length === 0, badItems.length ? badItems.slice(0, 8).join(" | ") : "all pass");
+    for (const q of ["love", "girls", "sex", "shake", "medical", "party", "naked", "funny"]) { const j = await g("/search?q=" + q), b = (j.items || []).filter(unsafe); row("live site · Safe search “" + q + "”", b.length === 0, (j.items || []).length + " results" + (b.length ? " · UNSAFE: " + b.slice(0, 4).map((i) => i.title).join(" | ") : "")); }
+  } catch (e) { row("live site", false, "threw: " + String(e.message || e).slice(0, 100)); }
+}
 console.log("\n" + (n - bad) + " of " + n + " checks passed" + (bad ? "; " + bad + " need a look (sources can be resting: run it again before assuming a change)" : ""));
 if (process.env.GITHUB_STEP_SUMMARY) { const { appendFileSync } = await import("node:fs"); appendFileSync(process.env.GITHUB_STEP_SUMMARY, "### MentiPlayer sources\n\n```\n" + log.join("\n") + "\n```\n"); }
