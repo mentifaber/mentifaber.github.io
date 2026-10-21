@@ -10,7 +10,14 @@ const el = (tag, props, ...kids) => { const e = document.createElement(tag); for
 const https = (u) => (typeof u === "string" && /^https:\/\//i.test(u) ? u : "");
 const fmt = (s) => { if (!isFinite(s) || s < 0) return "0:00"; s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
 const ph = (type) => { const h = HUE[type] || 40, t = (LABEL[type] || "Media").toUpperCase(); return "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='hsl(" + h + " 45% 22%)'/><stop offset='1' stop-color='hsl(" + ((h + 40) % 360) + " 55% 10%)'/></linearGradient></defs><rect width='300' height='300' fill='url(#g)'/><text x='150' y='160' text-anchor='middle' font-family='sans-serif' font-size='34' font-weight='700' letter-spacing='4' fill='hsl(" + h + " 70% 75%)' opacity='.8'>" + t + "</text></svg>"); };
-const pic = (src, type, props) => { const i = el("img", { alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer", ...(props || {}) }); i.src = https(src) || ph(type); i.addEventListener("error", () => { if (!i.dataset.f) { i.dataset.f = "1"; i.src = ph(type); } }); return i; };
+// a picture that won't load (the Archive's are often slow or down) is swapped for the film's poster from Wikipedia, then for a drawn card
+const posters = new Map();
+const posterFor = (it) => { const k = it.title + "|" + (it.year || ""); if (!posters.has(k)) posters.set(k, api("/poster?" + new URLSearchParams({ t: it.title, ...(it.year ? { y: String(it.year).slice(0, 4) } : {}), k: it.type === "tv" ? "tv" : "movie" })).then((j) => https(j.url)).catch(() => "")); return posters.get(k); };
+const pic = (src, type, props, it) => {
+  const i = el("img", { alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer", ...(props || {}) }), drawn = () => { i.dataset.f = "2"; i.src = ph(type); };
+  const fallback = () => { if (i.dataset.f) return drawn(); i.dataset.f = "1"; if (it && it.title && (type === "movie" || type === "tv") && it.source !== "tvmaze") posterFor(it).then((u) => (u ? (i.src = u) : drawn())); else drawn(); };
+  i.addEventListener("error", fallback); if (https(src)) i.src = src; else fallback(); return i;
+};
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (e.hidden = true), ms || 2600); };
 // Safe mode is on unless it has been switched off: the gateway enforces it, this only says which way to ask
 const safeQ = (path) => path + (path.includes("?") ? "&" : "?") + "v=4" + (S.safe ? "" : "&safe=0"); // v: never reuse an answer cached under an older rule
@@ -33,7 +40,7 @@ const metaOf = (it) => [it.type === "tv" || it.type === "radio" ? it.meta || it.
 
 // ── cards and shelves ──
 function card(it, onOpen) {
-  const img = pic(it.thumb, it.type);
+  const img = pic(it.thumb, it.type, null, it);
   const art = el("div", { class: "art" }, img, el("span", { class: "badge" + (it.type === "radio" || it.type === "live" ? " live" : ""), text: it.type === "radio" ? "Live" : LABEL[it.type] || it.type }), scoreOf(it.rating) ? el("span", { class: "score", title: it.rating.rt != null ? "Rotten Tomatoes" + (it.rating.imdb != null ? " · IMDb " + it.rating.imdb : "") : "IMDb", text: scoreOf(it.rating) }) : null);
   const open = el("button", { class: "open", type: "button", "aria-label": "Open " + it.title }, art, el("h3", { text: it.title }), el("div", { class: "meta", text: metaOf(it) }));
   open.addEventListener("click", () => (onOpen || openItem)(it));
@@ -55,7 +62,7 @@ function hero(items) {
   const bg = el("div", { class: "hbg", "aria-hidden": "true" }); bg.style.setProperty("--bd", "url(\"" + it.thumb.replace(/["\\\n]/g, encodeURIComponent) + "\")");
   const play = el("button", { class: "btn pri", type: "button", text: "▶ Play", onclick: () => openItem(it) });
   const surprise = el("button", { class: "btn", type: "button", text: "🎲 Surprise me", onclick: () => { const all = [...films.values()]; if (all.length) openItem(all[Math.floor(Math.random() * all.length)]); } });
-  h.replaceChildren(bg, el("div", { class: "hin" }, pic(it.thumb, it.type, { class: "hpost" }), el("div", { class: "htxt" }, el("small", { class: "kick", text: "Tonight's pick" + (it.rating && it.rating.rt != null ? " · 🍅 " + it.rating.rt + "%" : "") }), el("h2", { text: it.title }), el("div", { class: "meta", text: [it.year, it.creator].filter(Boolean).join(" · ") }), it.description ? el("p", { text: it.description }) : null, el("div", { class: "acts" }, play, surprise))));
+  h.replaceChildren(bg, el("div", { class: "hin" }, pic(it.thumb, it.type, { class: "hpost" }, it), el("div", { class: "htxt" }, el("small", { class: "kick", text: "Tonight's pick" + (it.rating && it.rating.rt != null ? " · 🍅 " + it.rating.rt + "%" : "") }), el("h2", { text: it.title }), el("div", { class: "meta", text: [it.year, it.creator].filter(Boolean).join(" · ") }), it.description ? el("p", { text: it.description }) : null, el("div", { class: "acts" }, play, surprise))));
   h.hidden = false;
 }
 async function loadHome() {
@@ -167,7 +174,7 @@ function renderItem(m, d, back) {
   } else if (p.kind === "audio" || p.kind === "live") {
     const tracks = p.tracks && p.tracks.length ? p.tracks : [{ title: m.title, url: p.url, duration: undefined }], live = p.kind === "live";
     const play = el("button", { class: "btn pri", type: "button", text: live ? "▶ Listen live" : tracks.length > 1 ? "▶ Play from the start" : "▶ Play" }); play.addEventListener("click", () => playTracks(tracks, 0, m, live)); acts.append(play);
-    parts.push(el("div", { class: "cover" }, pic(m.thumb, m.type), info)); info.append(acts);
+    parts.push(el("div", { class: "cover" }, pic(m.thumb, m.type, null, m), info)); info.append(acts);
     if (tracks.length > 1) { const ul = el("ul", { class: "tracks audio", role: "list" }, tracks.map((t, i) => el("li", { onclick: () => playTracks(tracks, i, m, false) }, el("span", { text: String(i + 1).padStart(2, "0") }), el("b", { text: t.title }), el("small", { text: t.duration ? fmt(t.duration) : "" })))); parts.push(ul); if (S.cur && S.cur.id === m.id) deckUi(); }
     if (S.cur && S.cur.id === m.id) { /* already playing: the deck shows it */ } else if (!d.noauto && !(m.type === "podcast" || m.type === "audiobook") && tracks.length === 1) playTracks(tracks, 0, m, live);
   } else {

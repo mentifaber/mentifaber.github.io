@@ -88,6 +88,13 @@ assert.ok(!seen.some((u) => /etc\/passwd|a%2Fb/.test(u))); ok("made-up or hostil
   assert.ok((await get("/featured?rail=films")).j.items.every((i) => !i.rating), "no key, no scores, nothing broken");
   assert.equal((await get("/sources", K)).j.ratings, true); ok("with an OMDb key the film shelves are ranked by Rotten Tomatoes score (shown with IMDb's), a Top-rated shelf leads the page, and without a key everything stays as it was"); }
 
+// 5e · posters from Wikipedia, for when the Archive's own pictures won't load
+{ let x = await get("/poster?t=" + encodeURIComponent("Nosferatu (1922)") + "&y=1922"); assert.equal(x.j.url, "https://upload.wikimedia.org/wikipedia/en/nos.jpg"); assert.ok(seen.some((u) => u.includes("en.wikipedia.org") && /gsrsearch=Nosferatu%201922%20film/.test(u)), "asks for the clean title, the year and 'film'");
+  x = await get("/poster?t=" + encodeURIComponent("The Cabinet of Dr. Caligari") + "&y=1920"); assert.equal(x.j.url, null, "a page that only mentions the title is not taken");
+  assert.equal((await get("/poster?t=" + encodeURIComponent("Sex Madness") + "&y=1938", { safe: true })).j.url, null, "no poster for what Safe mode hides"); assert.equal((await get("/poster")).r.status, 400);
+  let st; for (let i = 0; i < 150; i++) st = (await get("/poster?t=Film" + i, { ip: "3.3.3.3" })).r.status; assert.equal(st, 200, "a page full of posters doesn't trip the limit"); assert.equal((await get("/sources", { ip: "3.3.3.3" })).r.status, 200);
+  ok("a film's poster comes from its own Wikipedia page when the Archive's picture won't load, never from a page that only mentions it, with its own allowance"); }
+
 // 6 · shelves
 ({ j } = await get("/featured")); assert.deepEqual(j.rails.map((x) => x.id), ["films", "classictv", "tonight", "livetv", "live", "soma", "space", "trending", "concerts", "jukebox", "oldradio", "books", "podcasts", "mixes", "noir", "scifi", "cartoons", "silent", "comedy", "westerns", "mystery", "romance", "adventure", "drama", "war", "musicals", "locfilm"]);
 for (const rail of j.rails) { const x = await get("/featured?rail=" + rail.id, { ip: "6.6.6." + rail.id.length }); assert.equal(x.r.status, 200, rail.id); assert.ok(x.j.items.length > 0, rail.id + " is empty"); assert.ok(x.j.items.every((i) => i.type === rail.type), rail.id); }
