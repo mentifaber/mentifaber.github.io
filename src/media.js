@@ -85,7 +85,7 @@ const IA_META = { movie: "Internet Archive film", tv: "Classic TV · Internet Ar
 async function iaSearch(type, q, limit, page, extra, phrase, strict) {
   if (strict && type === "tv") return []; // the Archive's TV collection is open to anyone to add to: not in Safe mode
   const [, kindBase] = IA_KIND[type], base = strict && IA_STRICT[type] || kindBase, w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + "(" + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base) + ") AND -subject:(adult OR porn OR porno OR xxx OR erotic OR erotica OR nude OR nudity OR hentai OR fetish) AND -collection:(adult OR adult_films OR nsfw)" + (strict ? (type === "movie" ? " AND collection:(feature_films OR silent_films OR Film_Noir OR SciFi_Horror OR classic_cartoons)" : "") + " AND -subject:(sex OR sexy OR sexual OR sensual OR burlesque OR striptease OR pinup OR mature OR uncensored OR medical OR surgery OR autopsy OR gore OR parody OR meme) AND -collection:(opensource OR community OR opensource_movies OR additional_collections)" : "");
-  const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&fl[]=subject&fl[]=collection&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300 });
+  const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&fl[]=subject&fl[]=collection&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300, ms: 11000 });
   return ((j.response && j.response.docs) || []).filter((d) => d.identifier && !(strict ? STRICT : EXPLICIT).test([].concat(d.subject || [], d.collection || []).join(" "))).map((d) => mk({ source: "archive", type, key: d.identifier, title: d.title || d.identifier, creator: [].concat(d.creator || "")[0], year: [].concat(d.year || "")[0], description: [].concat(d.description || "")[0],
     thumb: IA + "/services/img/" + d.identifier, page: IA + "/details/" + d.identifier, license: d.licenseurl ? licenseName([].concat(d.licenseurl)[0]) : "Public domain or free to share: see its page", meta: IA_META[type] || "Internet Archive" }));
 }
@@ -236,6 +236,17 @@ async function rate(items) {
   return items.sort((a, b) => ((b.rating && b.rating.rt) ?? -1) - ((a.rating && a.rating.rt) ?? -1) || ((b.rating && b.rating.imdb) ?? -1) - ((a.rating && a.rating.imdb) ?? -1));
 }
 const hasRatings = () => !!key_("OMDB_API_KEY");
+
+// ── posters: a film's lead image on Wikipedia, for when the Archive's own picture won't load (it is often slow or down) ──
+export async function poster(title, year, kind) {
+  const t = cleanTitle(title); if (t.length < 2) return null;
+  const q = t + (year ? " " + year : "") + (kind === "tv" ? " television series" : " film");
+  const j = await get("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&generator=search&gsrnamespace=0&gsrlimit=3&gsrsearch=" + enc(q) + "&prop=pageimages&piprop=thumbnail&pithumbsize=500&origin=*", { ttl: 604800, ms: 6000 });
+  const pages = ((j.query && j.query.pages) || []).sort((a, b) => (a.index || 0) - (b.index || 0)), want = t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  // the page has to be about this title, not just mention it
+  const hit = pages.find((p) => p.thumbnail && p.thumbnail.source && String(p.title).toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim() === want);
+  return hit ? { url: safe(hit.thumbnail.source), page: "https://en.wikipedia.org/wiki/" + enc(String(hit.title).replace(/ /g, "_")) } : null;
+}
 
 // ── SomaFM: listener-supported radio, with its own stream addresses ──
 async function somaAll() { const j = await get("https://somafm.com/channels.json", { ttl: 900 }); return (j.channels || []).filter((c) => /^[\w-]{1,40}$/.test(c.id || "") && c.title); }
@@ -408,7 +419,7 @@ export async function media(req, env, ctx, json, isOwner) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { ...cors, "access-control-allow-methods": "GET", "access-control-max-age": "86400" } });
   if (req.method !== "GET") return json({ error: "GET only" }, 405, cors);
   // a soft limit per address (per isolate): the edge cache does the real work
-  const ip = req.headers.get("cf-connecting-ip") || "x", now = Date.now(), h = hits.get(ip) || { n: 0, t: now }; if (now - h.t > 6e4) { h.n = 0; h.t = now; } if (++h.n > 90) return json({ error: "easy: too many requests a minute" }, 429, { ...cors, "retry-after": "30" }); hits.set(ip, h); if (hits.size > 5000) hits.clear();
+  const ip = req.headers.get("cf-connecting-ip") || "x", bucket = ip + (sub === "/poster" ? "|p" : ""), now = Date.now(), h = hits.get(bucket) || { n: 0, t: now }; if (now - h.t > 6e4) { h.n = 0; h.t = now; } if (++h.n > (sub === "/poster" ? 400 : 90)) return json({ error: "easy: too many requests a minute" }, 429, { ...cors, "retry-after": "30" }); hits.set(bucket, h); if (hits.size > 5000) hits.clear();
   const q = url.searchParams, sm = q.get("safe") !== "0", reply = (r, ttl) => json(JSON.parse(r.body), 200, { ...cors, "cache-control": "public, max-age=" + ttl, ...(r.stale ? { "x-media-stale": "1" } : {}), "x-media-age": String(Math.round((Date.now() - r.at) / 1e3)) }, true);
   const fail = (e) => json({ error: clip(e && e.message || e, 160) }, e && e.status >= 400 && e.status < 600 ? e.status : 502, cors);
   try {
@@ -421,6 +432,11 @@ export async function media(req, env, ctx, json, isOwner) {
     if (sub === "/search") {
       const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit"), safe: sm };
       return reply(await cached(ctx, url.origin, "s:" + JSON.stringify([clip(p.q, 100).toLowerCase(), p.type || "all", p.src || "", +p.page || 1, +p.limit || 0, sm]), 600, () => search(p)), 120);
+    }
+    if (sub === "/poster") {
+      const t = clip(q.get("t"), 140), y = /^\d{4}$/.test(q.get("y") || "") ? q.get("y") : "", k = q.get("k") === "tv" ? "tv" : "movie"; if (!t) return json({ error: "which title?" }, 400, cors);
+      if (sm && explicit({ title: t }, true)) return json({ url: null }, 200, { ...cors, "cache-control": "public, max-age=86400" });
+      return reply(await cached(ctx, url.origin, "p:" + JSON.stringify([t.toLowerCase(), y, k]), 604800, async () => (await poster(t, y, k).catch(() => null)) || { url: null }), 86400);
     }
     if (sub === "/item") { const id = clip(q.get("id"), 300); return reply(await cached(ctx, url.origin, "i:" + id + (sm ? "" : ":open"), 3600, () => item(id, sm)), 600); }
     if (sub === "/health") {

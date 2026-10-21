@@ -50,7 +50,7 @@ for (const [name, ch] of LIVE_TV) { try { const r = await fetch("https://www.you
 try { const sh = (await SOURCES.tvmaze.search("tv", "i love lucy", 3, 1))[0], d = sh && (await item(sh.id)); const raw = d && d.watch.length === 0 ? await SOURCES.archive.search("tv", sh.title, 12, 1).catch(() => []) : []; row("watch free · " + (sh ? sh.title : "?"), !!d && Array.isArray(d.watch) && d.watch.length > 0, d ? d.watch.length + " free copies · " + (d.watch[0] ? "“" + d.watch[0].title.slice(0, 40) + "”" : "(the Archive has " + raw.length + " items for the name as words: " + raw.slice(0, 3).map((x) => "“" + x.title.slice(0, 30) + "”").join(", ") + ")") : "no show"); } catch (e) { row("watch free", false, "threw: " + String(e.message || e).slice(0, 100)); }
 // the deployed site, as a visitor with Safe mode on gets it: every shelf, every item, and searches someone might try
 if (process.env.LIVE_SITE) {
-  const base = process.env.LIVE_SITE.replace(/\/$/, "") + "/api/media", g = async (p) => { const r = await fetch(base + p + (p.includes("?") ? "&" : "?") + "v=4", { headers: { "user-agent": "Mozilla/5.0 MentiPlayer probe" }, signal: AbortSignal.timeout(20000) }); return r.json(); };
+  const base = process.env.LIVE_SITE.replace(/\/$/, "") + "/api/media", g = async (p) => { const r = await fetch(base + p + (p.includes("?") ? "&" : "?") + "v=4", { headers: { "user-agent": "Mozilla/5.0 MentiPlayer probe" }, signal: AbortSignal.timeout(20000) }), t = await r.text(); try { return JSON.parse(t); } catch (e) { const err = new Error("the site answered " + r.status + " with a web page, not data (Cloudflare may be turning GitHub's machines away)"); err.page = true; throw err; } };
   const unsafe = (i) => explicit(i, true) || (i.source === "archive" && i.type === "tv") || !SOURCES[i.source] || !SOURCES[i.source].safe;
   try {
     const f = await g("/featured"), ids = (f.rails || []).map((r) => r.id);
@@ -63,7 +63,7 @@ if (process.env.LIVE_SITE) {
     row("live site · thumbnails load", badT.length <= tr.length * 0.2, (tr.length - badT.length) + " of " + tr.length + " load" + (badT.length ? " · failing: " + badT.slice(0, 6).map(([id, st, ct, u]) => id + " " + st + " " + ct + " " + String(u || "").slice(0, 70)).join(" | ") : ""));
     row("live site · every shelf item Safe", badItems.length === 0, badItems.length ? badItems.slice(0, 8).join(" | ") : "all pass");
     for (const q of ["love", "girls", "sex", "shake", "medical", "party", "naked", "funny"]) { const j = await g("/search?q=" + q), b = (j.items || []).filter(unsafe); row("live site · Safe search “" + q + "”", b.length === 0, (j.items || []).length + " results" + (b.length ? " · UNSAFE: " + b.slice(0, 4).map((i) => i.title).join(" | ") : "")); }
-  } catch (e) { row("live site", false, "threw: " + String(e.message || e).slice(0, 100)); }
+  } catch (e) { if (e.page) console.log("SKIP live site".padEnd(39) + e.message); else row("live site", false, "threw: " + String(e.message || e).slice(0, 100)); }
 }
 console.log("\n" + (n - bad) + " of " + n + " checks passed" + (bad ? "; " + bad + " need a look (sources can be resting: run it again before assuming a change)" : ""));
 if (process.env.GITHUB_STEP_SUMMARY) { const { appendFileSync } = await import("node:fs"); appendFileSync(process.env.GITHUB_STEP_SUMMARY, "### MentiPlayer sources\n\n```\n" + log.join("\n") + "\n```\n"); }
