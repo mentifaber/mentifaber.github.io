@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>MentiPlayer · open media</title>
+<meta name="description" content="Films, TV, music, radio, audiobooks and podcasts from open sources: the Internet Archive, NASA, Wikimedia Commons, Audius, live radio and more, in one player.">
+<meta name="theme-color" content="#08080a">
+<link rel="manifest" href="assets/manifests/mentiplayer.webmanifest">
+<link rel="icon" href="assets/icons/v2/mentiplayer.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/mentiplayer-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MentiPlayer"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="assets/mentiplayer/mp.css">
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="/" title="mentifaber.org">Menti<span>Player</span></a>
+  <form class="q" id="find" role="search"><input id="q" type="search" placeholder="Search films, shows, music, radio, podcasts…" autocomplete="off" enterkeyhint="search" aria-label="Search"><button class="btn pri" type="submit">Search</button></form>
+  <button class="btn" id="srcbtn" type="button" aria-haspopup="dialog">Sources</button>
+</header>
+<nav id="tabs" aria-label="What to browse">
+  <button data-t="" class="on">All</button><button data-t="movie">Films</button><button data-t="tv">TV</button><button data-t="music">Music</button><button data-t="radio">Radio</button><button data-t="audiobook">Audiobooks</button><button data-t="podcast">Podcasts</button><button data-t="video">Video</button><button data-t="saved">♥ Saved</button>
+</nav>
+<main id="main">
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="home"></div>
+  <section id="results" hidden><div id="grid" class="grid"></div><div class="morerow"><button class="btn" id="more" type="button" hidden>Show more</button></div></section>
+</main>
+<footer class="foot">
+  <section><h3>About MentiPlayer</h3><p>One player for media that is public domain, openly licensed, or that its owners stream for free. Search runs through a small gateway on mentifaber.org that asks each source for you, so nothing here needs an account or a key.</p></section>
+  <section><h3>Where it comes from</h3><p id="credits">
+    <a href="https://archive.org" target="_blank" rel="noopener">Internet Archive</a> (films, cartoons, old TV, concerts, audiobooks) ·
+    <a href="https://www.tvmaze.com" target="_blank" rel="noopener">TVmaze</a> (TV details, CC BY-SA) ·
+    <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a> ·
+    <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> ·
+    <a href="https://images.nasa.gov" target="_blank" rel="noopener">NASA Image and Video Library</a> ·
+    <a href="https://www.radio-browser.info" target="_blank" rel="noopener">Radio Browser</a> ·
+    <a href="https://podcasts.apple.com" target="_blank" rel="noopener">Apple Podcasts directory</a> and each show's public feed ·
+    <a href="https://audius.co" target="_blank" rel="noopener">Audius</a> ·
+    <a href="https://sepiasearch.org" target="_blank" rel="noopener">Sepia Search</a> (PeerTube, only if you turn it on).</p></section>
+  <section><h3>Terms</h3><p>Personal, non-commercial use. Everything stays the property of its owners and is played straight from them; MentiPlayer stores nothing but your saved list and place-keeping on this device. Respect each item's licence and credit. TV shows are details only: the networks hold the streams. No warranty.</p></section>
+</footer>
+
+<div id="deck" class="deck" hidden>
+  <img id="dkart" alt="" width="46" height="46">
+  <div class="dkt"><b id="dktitle"></b><small id="dksub"></small></div>
+  <div class="dkc">
+    <button id="dkprev" class="ic" type="button" aria-label="Previous">⏮</button>
+    <button id="dkplay" class="ic big" type="button" aria-label="Play or pause">▶</button>
+    <button id="dknext" class="ic" type="button" aria-label="Next">⏭</button>
+  </div>
+  <div class="dks"><span id="dkcur">0:00</span><input id="dkseek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="dkdur">0:00</span></div>
+  <button id="dkrate" class="ic txt" type="button" aria-label="Speed" title="Playback speed">1×</button>
+  <button id="dkclose" class="ic" type="button" aria-label="Stop and close">✕</button>
+</div>
+<audio id="audio" preload="none"></audio>
+
+<dialog id="dlg" aria-labelledby="dtitle"><div class="dhead"><h2 id="dtitle"></h2><button class="ic" id="dclose" type="button" aria-label="Close">✕</button></div><div id="dbody"></div></dialog>
+<dialog id="srcdlg" aria-labelledby="srcttl"><div class="dhead"><h2 id="srcttl">Sources</h2><button class="ic" id="srcclose" type="button" aria-label="Close">✕</button></div>
+  <p class="dim">Choose where MentiPlayer looks. Each one is an open site; the dot shows how its last answer went.</p>
+  <ul id="srclist" class="srclist"></ul><div class="row"><button class="btn" id="srcreset" type="button">Back to the defaults</button><button class="btn pri" id="srcsave" type="button">Done</button></div></dialog>
+<div id="toast" role="status" hidden></div>
+<script src="assets/mentiplayer/mp.js"></script>
+</body>
+</html>

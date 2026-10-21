@@ -7,6 +7,7 @@ export { Agent } from "./agent.js";
 import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
+import { media } from "./media.js";
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -520,6 +521,7 @@ export default {
     }
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
+      if (route === "media") return media(req, env, ctx, json, async () => !!(await session(req, env, "vigil"))); // MentiPlayer's gateway to open media sources (src/media.js)
       if (route === "vigil") return vigil(req, env, ctx, !!(await session(req, env, "vigil")), json); // Vigil's relay for feeds a browser can't read directly (src/vigil.js)
       if (route === "tether" || route === "tether-ws") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req);
       if (route === "agent") { // MENTIFABER AGENT 1.0: the owner loads/wakes/sleeps it; apps chat with it; its container pulls weights
