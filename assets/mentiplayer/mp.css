@@ -99,3 +99,4 @@ dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(3px); }
 
 .btn.safe { border-color: #2e7d5b; color: #8fe0b8; } .btn.safe:not(.on) { border-color: var(--bad); color: var(--bad); }
 @media (max-width: 640px) { .top .btn.safe { padding-left: 10px; padding-right: 10px; font-size: 12.5px; } }
+.card .score { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.78); font-size: 12px; font-weight: 700; letter-spacing: .02em; }

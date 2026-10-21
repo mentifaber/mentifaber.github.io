@@ -214,6 +214,28 @@ async function ptSearch(q, limit, page) {
   return (j.data || []).map((v) => { const e = safe(v.embedUrl); return e && v.name ? mk({ source: "peertube", type: "video", key: v.uuid || v.id, title: v.name, creator: (v.channel && v.channel.displayName) || (v.account && v.account.displayName), year: v.publishedAt, description: v.description, thumb: v.thumbnailUrl, page: v.url, license: v.licence && v.licence.label ? v.licence.label : "Creative Commons", meta: "PeerTube" + (v.duration ? " · " + fmtDur(v.duration) : ""), play: { kind: "embed", url: e } }) : null; }).filter(Boolean);
 }
 
+// ── ratings: Rotten Tomatoes' Tomatometer and IMDb's score, through OMDb (needs the owner's free OMDB_API_KEY) ──
+// There is no public Rotten Tomatoes feed to read, and its pages are not to be scraped; OMDb is the licensed way to get the same number.
+const cleanTitle = (t) => String(t).replace(/\[[^\]]*\]|\([^)]*\)/g, " ").split(/\s[-–—|:]\s|\s+(?:full movie|restored|remastered|hd|1080p|720p)\b/i)[0].replace(/\s+/g, " ").trim();
+const memo = new Map();
+async function omdb(title, year) {
+  const k = key_("OMDB_API_KEY"), t = cleanTitle(title); if (!k || t.length < 2) return null;
+  const mk_ = t.toLowerCase() + "|" + (year || ""); if (memo.has(mk_)) return memo.get(mk_);
+  const j = await get("https://www.omdbapi.com/?apikey=" + enc(k) + "&t=" + enc(t) + (year ? "&y=" + enc(year) : "") + "&type=movie", { ttl: 604800, ms: 4000 }).catch(() => null);
+  let out = null;
+  if (j && j.Response === "True" && !(year && isFinite(parseInt(j.Year)) && Math.abs(parseInt(j.Year) - +year) > 1)) {
+    const rt = (j.Ratings || []).find((r) => r.Source === "Rotten Tomatoes"), pct = rt ? parseInt(rt.Value) : NaN, im = parseFloat(j.imdbRating);
+    if (isFinite(pct) || isFinite(im)) out = { rt: isFinite(pct) ? pct : null, imdb: isFinite(im) ? im : null };
+  }
+  if (memo.size > 3000) memo.clear(); memo.set(mk_, out); return out;
+}
+// each film gets its scores (a slow answer just leaves it unrated), then the best come first
+async function rate(items) {
+  await Promise.all(items.map(async (it) => { const r = await within(omdb(it.title, it.year), 4500).catch(() => null); if (r) it.rating = r; }));
+  return items.sort((a, b) => ((b.rating && b.rating.rt) ?? -1) - ((a.rating && a.rating.rt) ?? -1) || ((b.rating && b.rating.imdb) ?? -1) - ((a.rating && a.rating.imdb) ?? -1));
+}
+const hasRatings = () => !!key_("OMDB_API_KEY");
+
 // ── SomaFM: listener-supported radio, with its own stream addresses ──
 async function somaAll() { const j = await get("https://somafm.com/channels.json", { ttl: 900 }); return (j.channels || []).filter((c) => /^[\w-]{1,40}$/.test(c.id || "") && c.title); }
 const somaItem = (c) => mk({ source: "somafm", type: "radio", key: c.id, title: "SomaFM · " + c.title, creator: c.dj ? "DJ " + c.dj : "", description: c.description + (c.genre ? " (" + String(c.genre).split("|").join(", ") + ")" : ""), thumb: c.xlimage || c.largeimage || c.image, page: "https://somafm.com/" + c.id + "/", license: "Listener-supported radio: © SomaFM", meta: "SomaFM" + (c.listeners ? " · " + c.listeners + " listening" : ""), play: { kind: "live", url: "https://ice1.somafm.com/" + c.id + "-128-mp3" } });
@@ -309,10 +331,14 @@ export const SOURCES = {
   dailymotion: { name: "Dailymotion", url: "https://www.dailymotion.com", types: ["video"], safe: false, on: false, note: "Videos their owners allow to be embedded, shown in Dailymotion's own player. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => dmSearch(q, n, p) },
   peertube: { name: "PeerTube (Sepia Search)", url: "https://sepiasearch.org", types: ["video"], safe: false, on: false, note: "Creative Commons video from open PeerTube servers. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => ptSearch(q, n, p) },
 };
+const shelfTitle = (r) => (r.rated && r.ratedTitle && hasRatings() ? r.ratedTitle : r.title);
+const railReady = (r) => !r.needs || !!key_(r.needs);
 const ready = (s) => !s.needs || !!key_(s.needs);
 // the shelves on the home screen
 export const RAILS = [
-  { id: "films", src: "archive", title: "Classic films", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:feature_films", false, o && o.safe) },
+  // the best of the public-domain films, by Rotten Tomatoes: only there when the site has an OMDb key
+  { id: "toprated", src: "archive", needs: "OMDB_API_KEY", title: "Top-rated on Rotten Tomatoes", type: "movie", rated: true, make: async (n, o) => { const L = await Promise.all([iaSearch("movie", "", 18, 1, "mediatype:movies AND collection:feature_films", false, o && o.safe), iaSearch("movie", "", 10, 1, "mediatype:movies AND collection:silent_films", false, o && o.safe), iaSearch("movie", "", 10, 1, "mediatype:movies AND (collection:Film_Noir OR collection:SciFi_Horror)", false, o && o.safe)].map((p) => p.catch(() => []))), seen = new Set(); return (await rate(L.flat().filter((i) => !seen.has(i.title) && seen.add(i.title)))).filter((i) => i.rating && i.rating.rt != null).slice(0, n); } },
+  { id: "films", src: "archive", rated: true, ratedTitle: "Top-rated classics", title: "Classic films", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:feature_films", false, o && o.safe) },
   { id: "classictv", src: "archive", title: "Classic TV, free", type: "tv", make: (n, o) => iaSearch("tv", "", n, 1, null, false, o && o.safe) },
   { id: "tonight", src: "tvmaze", title: "On TV tonight (US)", type: "tv", make: (n) => tvTonight(n) },
   { id: "livetv", src: "livetv", title: "Live TV", type: "live", make: (n) => liveSearch("", n) },
@@ -326,8 +352,8 @@ export const RAILS = [
   { id: "books", src: "archive", title: "Audiobooks", type: "audiobook", make: (n, o) => iaSearch("audiobook", "", n, 1, null, false, o && o.safe) },
   { id: "podcasts", src: "podcasts", title: "Top podcasts", type: "podcast", make: (n) => podTop(n) },
   { id: "mixes", src: "mixcloud", title: "Mixes and radio shows", type: "podcast", make: (n) => mcSearch("", n, 1) },
-  { id: "cartoons", src: "archive", title: "Cartoons", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:classic_cartoons OR collection:animationandcartoons)", false, o && o.safe) },
-  { id: "silent", src: "archive", title: "Silent era", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:silent_films", false, o && o.safe) },
+  { id: "cartoons", src: "archive", rated: true, ratedTitle: "Top-rated cartoons", title: "Cartoons", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:classic_cartoons OR collection:animationandcartoons)", false, o && o.safe) },
+  { id: "silent", src: "archive", rated: true, ratedTitle: "Top-rated silent films", title: "Silent era", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:silent_films", false, o && o.safe) },
   { id: "locfilm", src: "loc", title: "Library of Congress films", type: "movie", make: (n) => locSearch("movie", "", n, 1) },
 ];
 const RESOLVE = { archive: iaItem, tvmaze: (t, k, sm) => tvItem(k, sm), nasa: (t, k) => nasaGetItem(k), podcasts: (t, k) => podGetItem(k), loc: locGetItem };
@@ -372,11 +398,11 @@ export async function media(req, env, ctx, json, isOwner) {
   const q = url.searchParams, sm = q.get("safe") !== "0", reply = (r, ttl) => json(JSON.parse(r.body), 200, { ...cors, "cache-control": "public, max-age=" + ttl, ...(r.stale ? { "x-media-stale": "1" } : {}), "x-media-age": String(Math.round((Date.now() - r.at) / 1e3)) }, true);
   const fail = (e) => json({ error: clip(e && e.message || e, 160) }, e && e.status >= 400 && e.status < 600 ? e.status : 502, cors);
   try {
-    if (sub === "/" || sub === "/sources") return json({ types: TYPES, safeDefault: true, sources: Object.entries(SOURCES).map(([id, s]) => ({ id, name: s.name, url: s.url, types: s.types, on: s.on, safe: !!s.safe, ready: ready(s), ...(s.needs ? { needs: s.needs } : {}), note: s.note, last: STATUS[id] || (s.types.length > 1 && STATUS[id + ":" + s.types[0]]) || null })) }, 200, { ...cors, "cache-control": "public, max-age=60" });
+    if (sub === "/" || sub === "/sources") return json({ types: TYPES, safeDefault: true, ratings: hasRatings(), sources: Object.entries(SOURCES).map(([id, s]) => ({ id, name: s.name, url: s.url, types: s.types, on: s.on, safe: !!s.safe, ready: ready(s), ...(s.needs ? { needs: s.needs } : {}), note: s.note, last: STATUS[id] || (s.types.length > 1 && STATUS[id + ":" + s.types[0]]) || null })) }, 200, { ...cors, "cache-control": "public, max-age=60" });
     if (sub === "/featured") {
-      const id = q.get("rail"); if (!id) return json({ rails: RAILS.filter((r) => !sm || SOURCES[r.src].safe).map((r) => ({ id: r.id, title: r.title, type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=600" });
-      const rail = RAILS.find((r) => r.id === id && (!sm || SOURCES[r.src].safe)); if (!rail) return json({ error: "no such shelf" }, 404, cors);
-      return reply(await cached(ctx, url.origin, "rail:" + id + (sm ? "" : ":open"), 1800, async () => ({ id, title: rail.title, type: rail.type, items: clean(await timed("rail:" + id, () => rail.make(14, { safe: sm })), sm) })), 300);
+      const id = q.get("rail"); if (!id) return json({ rails: RAILS.filter((r) => railReady(r) && (!sm || SOURCES[r.src].safe)).map((r) => ({ id: r.id, title: shelfTitle(r), type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=600" });
+      const rail = RAILS.find((r) => r.id === id && railReady(r) && (!sm || SOURCES[r.src].safe)); if (!rail) return json({ error: "no such shelf" }, 404, cors);
+      return reply(await cached(ctx, url.origin, "rail:" + id + (sm ? "" : ":open") + (hasRatings() ? ":rt" : ""), 1800, async () => ({ id, title: shelfTitle(rail), type: rail.type, items: await timed("rail:" + id, async () => { const rated = rail.rated && hasRatings(), got = clean(await rail.make(rated && !rail.needs ? 26 : 14, { safe: sm }), sm); return rated && !rail.needs ? (await rate(got)).slice(0, 14) : got.slice(0, 14); }) })), 300);
     }
     if (sub === "/search") {
       const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit"), safe: sm };

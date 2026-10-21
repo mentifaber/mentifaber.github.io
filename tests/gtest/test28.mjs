@@ -78,6 +78,16 @@ assert.ok(!seen.some((u) => /etc\/passwd|a%2Fb/.test(u))); ok("made-up or hostil
   assert.deepEqual((await M.media(new Request("https://mentifaber.org/api/media/search?q=live&src=audius", { headers: { "cf-connecting-ip": "5.5.5.5" } }), {}, { waitUntil() {} }, (b, st = 200) => new Response(JSON.stringify(b), { status: st }), async () => false).then((r) => r.json())).items, [], "with no safe parameter at all (an old page) it is still Safe");
   ok("Safe mode: strict by default even for a page that doesn't ask, only the nine curated sources, suggestive words and tags hidden, the Archive limited to staff shelves, user-upload shelves and items refused, and open mode keeps working"); }
 
+// 5d · ranked by Rotten Tomatoes (through OMDb) when the site has a key; the same shelves, by popularity, when it doesn't
+{ const K = { env: { OMDB_API_KEY: "k" } };
+  let x = await get("/featured", K); assert.equal(x.j.ratings, undefined); assert.deepEqual(x.j.rails.slice(0, 2).map((r) => r.id), ["toprated", "films"]); assert.equal(x.j.rails[0].title, "Top-rated on Rotten Tomatoes"); assert.equal(x.j.rails.find((r) => r.id === "films").title, "Top-rated classics");
+  x = await get("/featured?rail=films", K); assert.deepEqual(x.j.items.slice(0, 2).map((i) => i.title), ["Nosferatu (1922)", "The Cabinet of Dr. Caligari (1920)"], "97% before 90%, whatever order the Archive listed them in"); assert.deepEqual(x.j.items[0].rating, { rt: 97, imdb: 7.9 }); assert.ok(x.j.items.slice(2).every((i) => !i.rating), "unrated films come after the rated ones");
+  x = await get("/featured?rail=toprated", K); assert.deepEqual(x.j.items.map((i) => [i.title, i.rating.rt]), [["Nosferatu (1922)", 97], ["The Cabinet of Dr. Caligari (1920)", 90]], "only films that have a score");
+  assert.ok(seen.some((u) => u.includes("omdbapi.com") && /t=Nosferatu&y=1922/.test(u)) && seen.some((u) => /t=The%20Cabinet%20of%20Dr\.%20Caligari&y=1920/.test(u)), "the year-and-title lookup is clean (no brackets, no year in the title)");
+  x = await get("/featured"); assert.ok(!x.j.rails.some((r) => r.id === "toprated") && x.j.rails.find((r) => r.id === "films").title === "Classic films" && (await get("/featured?rail=toprated")).r.status === 404);
+  assert.ok((await get("/featured?rail=films")).j.items.every((i) => !i.rating), "no key, no scores, nothing broken");
+  assert.equal((await get("/sources", K)).j.ratings, true); ok("with an OMDb key the film shelves are ranked by Rotten Tomatoes score (shown with IMDb's), a Top-rated shelf leads the page, and without a key everything stays as it was"); }
+
 // 6 · shelves
 ({ j } = await get("/featured")); assert.deepEqual(j.rails.map((x) => x.id), ["films", "classictv", "tonight", "livetv", "live", "soma", "space", "trending", "concerts", "jukebox", "oldradio", "books", "podcasts", "mixes", "cartoons", "silent", "locfilm"]);
 for (const rail of j.rails) { const x = await get("/featured?rail=" + rail.id); assert.equal(x.r.status, 200, rail.id); assert.ok(x.j.items.length > 0, rail.id + " is empty"); assert.ok(x.j.items.every((i) => i.type === rail.type), rail.id); }
