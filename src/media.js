@@ -128,7 +128,7 @@ export function nasaPick(urls) {
   return { video: v, subs: u.filter((x) => /\.vtt$/i.test(x)).map((x) => ({ label: "English", url: x })).slice(0, 2) };
 }
 async function nasaGetItem(key) {
-  if (!/^[\w.-]{2,120}$/.test(key)) throw new Upstream("bad NASA id", 400);
+  if (!/^[\w.~() -]{2,160}$/.test(key)) throw new Upstream("bad NASA id", 400); // real ones carry spaces, brackets and tildes: never a slash or a query
   const [col, meta] = await Promise.all([get("https://images-assets.nasa.gov/video/" + enc(key) + "/collection.json", { ttl: 3600 }), get("https://images-api.nasa.gov/search?nasa_id=" + enc(key), { ttl: 3600 }).catch(() => null)]);
   const it = meta && meta.collection && meta.collection.items && meta.collection.items[0], d = (it && it.data && it.data[0]) || { nasa_id: key, title: key }, pk = nasaPick(col);
   return { item: nasaItem(d, it && it.links && it.links[0] && it.links[0].href), play: pk.video ? { kind: "video", url: safe(pk.video), mime: "video/mp4", subtitles: pk.subs.map((s) => ({ label: s.label, url: safe(s.url) })).filter((s) => s.url) } : { kind: "none" }, links: [{ label: "NASA Image and Video Library", url: "https://images.nasa.gov/details/" + enc(key) }] };
@@ -206,11 +206,14 @@ const RESOLVE = { archive: iaItem, tvmaze: (t, k) => tvItem(k), nasa: (t, k) => 
 
 const timed = async (id, fn) => { const t0 = Date.now(); try { const v = await fn(); STATUS[id] = { ok: true, at: Date.now(), ms: Date.now() - t0, n: Array.isArray(v) ? v.length : undefined }; return v; } catch (e) { STATUS[id] = { ok: false, at: Date.now(), ms: Date.now() - t0, error: clip(e && e.message || e, 120) }; throw e; } };
 const roundRobin = (lists) => { const out = [], seen = new Set(); for (let i = 0; lists.some((l) => i < l.length); i++) for (const l of lists) { const it = l[i]; if (!it) continue; const k = it.type + "|" + it.title.toLowerCase().slice(0, 40); if (seen.has(k)) continue; seen.add(k); out.push(it); } return out; };
+// one slow source must not hold the whole screen: each gets this long to answer a search (Openverse, anonymous, is sometimes slow)
+export const BUDGET = { search: 5500 };
+const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Upstream("took too long to answer", 504)), ms))]);
 export async function search({ q, type, src, page, limit }) {
   type = TYPES.includes(type) ? type : "all"; page = Math.max(1, Math.min(10, +page || 1)); limit = Math.max(2, Math.min(24, +limit || (type === "all" ? 6 : 16))); q = clip(q, 100);
   const want = src ? String(src).split(",").map((s) => s.trim()).filter((s) => SOURCES[s]) : Object.keys(SOURCES).filter((s) => SOURCES[s].on), jobs = [];
   for (const s of want) for (const t of SOURCES[s].types) if (type === "all" || type === t) jobs.push([s, t]);
-  const settled = await Promise.allSettled(jobs.map(([s, t]) => timed(s + (jobs.filter((j) => j[0] === s).length > 1 ? ":" + t : ""), () => SOURCES[s].search(t, q, limit, page)))), report = {};
+  const settled = await Promise.allSettled(jobs.map(([s, t]) => timed(s + (jobs.filter((j) => j[0] === s).length > 1 ? ":" + t : ""), () => within(SOURCES[s].search(t, q, limit, page), BUDGET.search)))), report = {};
   const lists = settled.map((r, i) => { const [s] = jobs[i], rep = report[s] || (report[s] = { ok: false, n: 0 }); if (r.status === "fulfilled") { rep.ok = true; rep.n += r.value.length; return r.value; } rep.error = rep.error || clip(r.reason && r.reason.message, 100); return []; });
   const bySrc = {}; settled.forEach((r, i) => { const s = jobs[i][0]; (bySrc[s] = bySrc[s] || []).push(...(lists[i] || [])); });
   return { q, type, page, items: roundRobin(Object.values(bySrc)), sources: report };
