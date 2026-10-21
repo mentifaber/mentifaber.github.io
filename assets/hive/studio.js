@@ -580,11 +580,33 @@ function openSettings() {
   const vm = S("vmodel"), cur = $("s-vmodel"); [...cur.querySelectorAll("option.pin")].forEach((o) => o.remove());
   const add = (id) => { const m = models.find((x) => x.id === id); if (!m) return; const o = document.createElement("option"); o.className = "pin"; o.value = id; o.textContent = "Pin: " + m.name; cur.appendChild(o); };
   add($("model").value); if (vm && vm !== "fast" && vm !== $("model").value) add(vm); cur.value = vm; if (cur.value !== vm) cur.value = "";
+  $("s-vl").classList.toggle("hidden", !owner); if (owner) voiceLinks();
   $("s-name").value = me().name || ""; $("s-about").value = me().about || ""; $("s-len").value = me().len || "";
   $("s-say").value = S("say"); $("sys").value = LS.get("sys", ""); if (!$("sdlg").open) $("sdlg").showModal();
 }
 ["s-name", "s-about", "s-len"].forEach((id) => ($(id).onchange = () => setMe({ name: $("s-name").value, about: $("s-about").value, len: $("s-len").value })));
 $("s-intro").onclick = () => { LS.set("intro", 0); $("sdlg").close(); newChat(); };
+// ── voice links: the owner's side of src/hive-voice.js ──
+const vlWhen = (t) => (t ? agoT(t) : "never");
+async function voiceLinks() {
+  const d = await api("/voice/links").catch(() => null); if (!d || d.error) { $("vl-list").innerHTML = "<p class='dim sm'>Couldn't load your links.</p>"; return; }
+  const day = (t) => new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
+  $("vl-list").innerHTML = (d.links.length ? d.links.map((l) => "<div class='vl' data-id='" + esc(l.id) + "'><div class='vlh'><b>" + esc(l.label) + "</b><span class='vls " + (l.expired ? "exp" : l.on ? "on" : "off") + "'>" + (l.expired ? "expired " + day(l.exp) : l.on ? "on · until " + day(l.exp) : "off") + " · " + l.guests.length + "/" + l.devices + " devices · " + l.perDay + " turns a day each</span></div>" +
+    "<div class='vlu'><input readonly value='" + esc(l.url) + "' aria-label='Link for " + esc(l.label) + "'><button class='q sm' data-a='copy'>Copy</button>" + (navigator.share ? "<button class='q sm' data-a='share'>Share</button>" : "") + "</div>" +
+    "<div class='vla'><button class='q sm' data-a='toggle'>" + (l.on ? "Turn off" : "Turn on") + "</button><button class='q sm' data-a='extend'>+7 days</button><button class='q sm danger' data-a='del'>Delete</button></div>" +
+    (l.guests.length ? "<ul class='vlg'>" + l.guests.map((g) => "<li><span>" + esc(g.name) + "</span><small>seen " + esc(vlWhen(g.seen)) + " · " + g.today + " today · " + g.turns + " in all</small><button class='q sm danger' data-a='kick' data-g='" + esc(g.id) + "'>Remove</button></li>").join("") + "</ul>" : "<p class='dim sm'>No one has opened this link yet.</p>") + "</div>").join("") : "<p class='dim sm'>No links yet.</p>") +
+    "<p class='dim sm'>All guests together: " + d.allToday + " of " + d.allCap + " voice turns used today (the free AI allowance is shared with everything else).</p>";
+}
+$("vl-new").onsubmit = async (e) => { e.preventDefault(); const r = await api("/voice/links/create", { label: $("vl-label").value, devices: +$("vl-dev").value, perDay: +$("vl-per").value, days: +$("vl-days").value }).catch(() => null);
+  if (!r || r.error) return toast((r && r.error) || "Couldn't make the link"); $("vl-label").value = ""; try { await navigator.clipboard.writeText(r.url); toast("Link made and copied"); } catch (x) { toast("Link made"); } voiceLinks(); };
+$("vl-list").onclick = async (e) => { const b = e.target.closest("[data-a]"), box = e.target.closest(".vl"); if (!b || !box) return; const id = box.dataset.id, url = box.querySelector(".vlu input").value, a = b.dataset.a;
+  if (a === "copy") { try { await navigator.clipboard.writeText(url); toast("Link copied"); } catch (x) { box.querySelector(".vlu input").select(); } return; }
+  if (a === "share") { try { await navigator.share({ title: "Talk to AutoFaber", text: "Talk to AutoFaber by voice:", url }); } catch (x) {} return; }
+  if (a === "toggle") await api("/voice/links/update", { id, on: b.textContent !== "Turn off" ? true : false });
+  else if (a === "extend") await api("/voice/links/update", { id, days: 7 });
+  else if (a === "del") { if (!confirm("Delete this link? Every phone using it is disconnected.")) return; await api("/voice/links/delete", { id }); }
+  else if (a === "kick") { if (!confirm("Remove this device? It will have to open the link again.")) return; await api("/voice/guests/remove", { id: b.dataset.g }); }
+  voiceLinks(); };
 $("s-theme").onchange = () => { LS.set("theme", $("s-theme").value); applyTheme(); };
 $("s-motion").onchange = () => { setS("motion", $("s-motion").checked); motion(); };
 $("s-enter").onchange = () => setS("enter", $("s-enter").checked);

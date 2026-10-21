@@ -298,6 +298,17 @@
     <label class="opt"><span>Voice model<small>a fast model makes conversation snappier</small></span><select id="s-vmodel"><option value="">Same as chat</option><option value="fast">Fastest available</option></select></label>
     <div class="opt say"><span>Say it like this<small>names it should pronounce your way, one per line: <b>name = how it sounds</b></small><textarea id="s-say" rows="3" spellcheck="false" placeholder="Anders = Onders"></textarea></span><button class="q" id="s-sayt" type="button">Hear it</button></div>
   </section>
+  <section id="s-vl" class="hidden"><h4>Voice links</h4>
+    <p class="dim sm">A link that lets people talk to AutoFaber by voice on their own phones, as guests. Voice only, free models, nothing they say is saved. Every device that opens the link is its own guest, and you can switch the link off or remove a device at any time.</p>
+    <form id="vl-new" class="vlnew" autocomplete="off">
+      <input id="vl-label" maxlength="60" placeholder="Name it (e.g. Family phones)" aria-label="Link name">
+      <label>Devices<input id="vl-dev" type="number" min="1" max="25" value="5"></label>
+      <label>Turns a day each<input id="vl-per" type="number" min="5" max="300" value="40"></label>
+      <label>Lasts (days)<input id="vl-days" type="number" min="1" max="365" value="7"></label>
+      <button class="pri sm" type="submit">Make link</button>
+    </form>
+    <div id="vl-list" class="vllist" aria-live="polite"></div>
+  </section>
   <section><h4>Directives</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
   <section><h4>Data</h4><div class="row"><button class="q" id="s-export">Export all sessions</button><button class="q" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
   <div class="row mt"><a href="/" class="maker" title="mentifaber.org"><img src="assets/brand/mentifaber-mark-48.webp" alt="" width="24" height="24" loading="lazy" decoding="async">Mentifaber</a><span class="flex"></span><button class="pri" id="ssave">Done</button></div>

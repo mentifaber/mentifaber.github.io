@@ -14,6 +14,7 @@ import { trends, worldText } from "./hive-world.js";
 import { gather, wiki, papers, paperLine, hfSearch, hfText, hfRows, rowsText } from "./hive-know.js";
 import { worthPlanning, plannerPrompt, plannerInput, parseCalls } from "./hive-agent.js";
 import { Library, libraryTables } from "./hive-library.js";
+import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -141,7 +142,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
-      mindTables(q); genesisTables(q); libraryTables(q);
+      mindTables(q); genesisTables(q); libraryTables(q); voiceTables(q);
       // indexes for the lookups every view and every agent step makes (each runs once; cheap if already there)
       for (const ix of ["task(pid, status)", "agent(pid)", "feed(pid, ts)", "proj(ts)", "act(kind, id)", "act(ts)", "thread(status, ok)", "mem(ok, pin)", "turn(cid)", "idea(status)", "journal(kind, id)", "alert(state, id)", "gdh(k, h)"])
         try { q.exec("CREATE INDEX IF NOT EXISTS ix_" + ix.replace(/\W+/g, "_").replace(/_$/, "") + " ON " + ix); } catch (e) {}
@@ -211,9 +212,10 @@ export class Hive extends DurableObject {
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "AutoFaber is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
       return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
+    if (path === "/voice" || path.startsWith("/voice/")) return Voice.route(this, path, b, owner, req, J, url.origin).catch((e) => J({ error: String(e && e.message || e).slice(0, 200) }, 500)); // guest voice links (src/hive-voice.js)
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
-    if (path === "/listen-ok" && req.method === "POST") return J({ ok: owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
+    if (path === "/listen-ok" && req.method === "POST") return J({ ok: b.vg ? await Voice.listenOk(this, String(b.vg)) : owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
     if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (path === "/steps") { const k = String(b.sid || ""), x = this._steps && this._steps.get(k); return J(x && x.owner === owner ? { steps: x.list, now: x.now || null } : { steps: [] }); } // what a reply in the making is doing (keyed by a random id from the sender)
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
@@ -724,6 +726,7 @@ export class Hive extends DurableObject {
     throw new Error("unknown tool");
   }
   meter(req, kind, max) { // the public's daily allowance per visitor; the owner has none
+    if (isGuestReq(req)) return true; // a voice-link guest, on whom src/hive-voice.js has already put its own limits
     const q = this.sql(), day = new Date().toISOString().slice(0, 10), k = kind + ":" + day + ":" + (req.headers.get("cf-connecting-ip") || "x").slice(0, 45);
     const n = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n; if (n >= max) return false;
     q.exec("INSERT INTO limits(k,n) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET n=n+1", k); return true;

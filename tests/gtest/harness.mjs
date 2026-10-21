@@ -2,7 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 const REPO = process.argv[2] || new URL("../..", import.meta.url).pathname.replace(/\/$/, ""), OUT = new URL("./src/", import.meta.url).pathname; mkdirSync(OUT, { recursive: true });
-for (const f of ["hive.js", "hive-kit.js", "hive-mind.js", "hive-genesis.js", "vigil.js", "push.js", "listen.js", "markets.js", "hive-world.js", "hive-know.js", "hive-agent.js", "hive-library.js"]) writeFileSync(OUT + f, readFileSync(REPO + "/src/" + f, "utf8").replace('from "cloudflare:workers"', 'from "../cf-shim.mjs"'));
+for (const f of ["hive.js", "hive-kit.js", "hive-mind.js", "hive-genesis.js", "vigil.js", "push.js", "listen.js", "markets.js", "hive-world.js", "hive-know.js", "hive-agent.js", "hive-library.js", "hive-voice.js"]) writeFileSync(OUT + f, readFileSync(REPO + "/src/" + f, "utf8").replace('from "cloudflare:workers"', 'from "../cf-shim.mjs"'));
 writeFileSync(new URL("./cf-shim.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Hive } = await import(OUT + "hive.js");
 
@@ -20,7 +20,10 @@ export let reflectReply = null;
 export const setReflect = (r) => { reflectReply = r; };
 let responder = null; export const setResponder = (f) => { responder = f; };
 let delay = 0, delayFn = null; export const setDelay = (ms) => { delay = ms; }; export const setDelayFn = (f) => { delayFn = f; };
+export const ttsCalls = []; let sttFake = null; export const setStt = (f) => { sttFake = f; }; // what the fake Whisper hears, and what the fake Aura was asked to say
 const AI = { async run(model, input) {
+  if (/whisper/.test(model)) return sttFake ? sttFake(input) : { text: "" };
+  if (/aura|melotts/.test(model)) { ttsCalls.push({ model, text: input.text || input.prompt, speaker: input.speaker }); return { audio: "QVVESU8=" }; }
   if (/bge/.test(model)) return { shape: [input.text.length, 384], data: input.text.map(vec) };
   { const d = delayFn ? delayFn(input.messages[0].content) : delay; if (d) await new Promise((r) => setTimeout(r, d)); }
   const sys = input.messages[0].content, user = input.messages[input.messages.length - 1].content; calls.push({ model, sys, user, messages: input.messages });

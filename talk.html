@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AutoFaber · voice</title>
+<meta name="description" content="Talk to AutoFaber out loud, hands-free, from a voice link.">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#060607">
+<link rel="manifest" href="assets/manifests/talk.webmanifest">
+<link rel="icon" href="assets/icons/hive-genesis-48.png" sizes="48x48"><link rel="apple-touch-icon" href="assets/icons/hive-genesis-apple.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="AutoFaber Voice">
+<link rel="preload" href="assets/fonts/HiveStrata-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: "Hive Strata"; src: url("assets/fonts/HiveStrata-Light.woff2") format("woff2"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Hive Strata"; src: url("assets/fonts/HiveStrata-Regular.woff2") format("woff2"); font-weight: 400 500; font-display: swap; }
+@font-face { font-family: "Hive Strata"; src: url("assets/fonts/HiveStrata-SemiBold.woff2") format("woff2"); font-weight: 600 800; font-display: swap; }
+:root { --bg: #060607; --ink: #f2e9d8; --ink2: #cfc3ad; --dim: #a1937b; --faint: #857862; --line: rgba(217,164,65,.26); --fil: #d9a441; --fil-hi: #ffd27a; --bad: #ff6a4d; --ui: "Hive Strata", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; background: var(--bg); }
+body { color: var(--ink); font: 400 17px/1.5 var(--ui); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(80% 55% at 50% 38%, rgba(217,164,65,.14), transparent 70%), var(--bg); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.hidden { display: none !important; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+:focus-visible { outline: 1px solid var(--fil-hi); outline-offset: 3px; box-shadow: 0 0 14px rgba(255,210,122,.45); }
+header { display: flex; align-items: center; gap: 10px; padding: 14px 18px 0; }
+header img { width: 34px; height: 34px; border-radius: 50%; filter: drop-shadow(0 0 8px rgba(255,170,60,.45)); }
+header b { font-weight: 600; letter-spacing: .14em; text-transform: uppercase; font-size: 13px; background: linear-gradient(180deg, #ffe7a8, var(--fil)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#who { margin-left: auto; font-size: 13px; color: var(--faint); text-align: right; }
+main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 20px; }
+#stage { width: 100%; max-width: 560px; display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; min-height: 0; }
+#orb { position: relative; width: min(78vw, 46dvh, 420px); aspect-ratio: 1; margin: auto 0 6px; border-radius: 50%; touch-action: manipulation; }
+#viz { position: absolute; inset: -22%; width: 144%; height: 144%; display: block; pointer-events: none; }
+#state { font-size: 15px; letter-spacing: .08em; color: var(--dim); min-height: 1.6em; text-align: center; }
+#cap { width: 100%; text-align: center; margin: 8px 0 auto; min-height: 5.5em; max-height: 26dvh; overflow: auto; }
+#heard { color: var(--faint); font-size: 15px; font-style: italic; min-height: 1.5em; }
+#said { font-weight: 300; font-size: clamp(19px, 5.2vw, 24px); line-height: 1.38; margin-top: 6px; color: var(--ink); }
+.card { width: 100%; max-width: 440px; border: 1px solid var(--line); padding: 22px 20px; background: rgba(14,12,9,.72); box-shadow: 0 0 40px rgba(255,170,60,.08); }
+.card h1 { font-weight: 300; font-size: 26px; line-height: 1.15; margin-bottom: 10px; }
+.card h1 em { font-style: normal; background: linear-gradient(180deg, #fff3cf, var(--fil-hi) 35%, var(--fil)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.card p { color: var(--ink2); font-size: 15.5px; }
+.card label { display: block; margin-top: 16px; font-size: 14px; color: var(--ink2); }
+.card input { width: 100%; margin-top: 6px; min-height: 46px; padding: 9px 12px; background: rgba(0,0,0,.45); border: 1px solid var(--line); color: var(--ink); font-size: 17px; outline: none; }
+.card input:focus { border-color: var(--fil); box-shadow: 0 0 18px rgba(217,164,65,.18); }
+.card small { display: block; margin-top: 14px; color: var(--faint); font-size: 13px; line-height: 1.45; }
+.pri { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 26px; margin-top: 18px; font-weight: 600; font-size: 16px; letter-spacing: .02em; color: #140c00; text-shadow: 0 1px 0 rgba(255,236,190,.45);
+  background: linear-gradient(180deg, var(--fil-hi), var(--fil) 58%, #8a5a14); clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px); }
+.pri:active { transform: translateY(1px); }
+footer { flex: none; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 18px 16px; flex-wrap: wrap; }
+#go { min-width: 168px; margin: 0; }
+.q { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); color: var(--ink2); font-size: 14.5px; }
+.q[aria-pressed="false"] { color: var(--faint); }
+#left { width: 100%; text-align: center; font-size: 12.5px; color: var(--faint); }
+#note { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: min(92vw, 420px); background: rgba(20,16,10,.94); border: 1px solid var(--line); padding: 10px 14px; font-size: 14px; color: var(--ink); text-align: center; z-index: 5; }
+noscript p { padding: 30px; text-align: center; }
+</style>
+</head>
+<body>
+<header><img src="assets/hive/genesis-mark-64.webp" alt="" width="34" height="34"><b>AutoFaber</b><span id="who"></span></header>
+<main>
+  <section id="join" class="card hidden" aria-labelledby="jt">
+    <h1 id="jt">Talk to <em>AutoFaber</em></h1>
+    <p>You've been given a voice link. Say hello and it answers out loud: hands-free, on this phone.</p>
+    <form id="jf" autocomplete="off">
+      <label for="jn">What should it call you? <small style="display:inline;margin:0">(optional)</small></label>
+      <input id="jn" maxlength="24" placeholder="Your first name" autocomplete="given-name" enterkeyhint="go">
+      <button class="pri" id="jgo" type="submit">Connect</button>
+    </form>
+    <small>Your voice is sent to AutoFaber's AI models to be answered. AutoFaber doesn't keep what you say.</small>
+  </section>
+  <section id="msg" class="card hidden" role="alert"><h1 id="mt"></h1><p id="mp"></p><button class="pri hidden" id="mb" type="button"></button></section>
+  <section id="stage" class="hidden">
+    <div id="orb" role="button" tabindex="0" aria-label="AutoFaber. Tap while it speaks to interrupt"><canvas id="viz" aria-hidden="true"></canvas></div>
+    <div id="state" role="status" aria-live="polite">Tap to talk</div>
+    <div id="cap" aria-live="polite"><div id="heard"></div><div id="said"></div></div>
+  </section>
+  <noscript><p>This page needs JavaScript to talk to AutoFaber.</p></noscript>
+</main>
+<footer id="bar" class="hidden">
+  <button class="pri" id="go" type="button">Tap to talk</button>
+  <button class="q" id="caps" type="button" aria-pressed="true">Captions</button>
+  <button class="q" id="leave" type="button">Disconnect</button>
+  <div id="left"></div>
+</footer>
+<div id="note" class="hidden" role="status"></div>
+<audio id="out" playsinline></audio>
+<script src="assets/hive/field.js"></script>
+<script src="assets/hive/ears.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id), API = "/api/hive/voice", SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+const LS = { get(k) { try { return JSON.parse(localStorage.getItem("af:talk:" + k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem("af:talk:" + k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem("af:talk:" + k); } catch (e) {} } };
+let me = null, on = false, paused = false, mode = "idle", hist = [], run = 0, ac, mic, ear, outAn, wake, stopSpeak = null, noteT = 0;
+const lang = () => (navigator.language || "en").slice(0, 2);
+const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const post = async (path, body) => {
+  const r = await fetch(API + path, { method: "POST", headers: { "content-type": "application/json", ...(me && me.token ? { authorization: "Bearer " + me.token } : {}) }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; j._s = r.status; return j;
+};
+const show = (id) => { for (const s of ["join", "msg", "stage"]) $(s).classList.toggle("hidden", s !== id); $("bar").classList.toggle("hidden", id !== "stage"); };
+const message = (title, text, label, fn) => { show("msg"); $("mt").textContent = title; $("mp").textContent = text; const b = $("mb"); b.classList.toggle("hidden", !label); if (label) { b.textContent = label; b.onclick = fn; } };
+const note = (t) => { const n = $("note"); n.textContent = t; n.classList.remove("hidden"); clearTimeout(noteT); noteT = setTimeout(() => n.classList.add("hidden"), 4200); };
+const set = (m, text) => { mode = m; $("state").textContent = text; };
+const cap = (text, partial) => { if (partial) $("heard").textContent = text; else if (/^“/.test(text)) { $("heard").textContent = text; $("said").textContent = ""; } else $("said").textContent = text; };
+const setLeft = (n) => { if (me) me.left = n; $("left").textContent = n == null ? "" : n + (n === 1 ? " turn" : " turns") + " left today"; };
+const ui = () => { $("go").textContent = !on ? "Tap to talk" : paused ? "Resume" : "Pause"; };
+
+// ── joining ──
+function codeFromUrl() { const h = location.hash.replace(/^#/, ""), q = new URLSearchParams(location.search).get("k"), c = String(h || q || "").trim().toLowerCase().replace(/^k=/, ""); return /^[a-z2-7]{26}$/.test(c) ? c : ""; }
+function ready(j, token) {
+  me = { ...j, token: token || j.token, voice: (j.voices && j.voices[0] && j.voices[0].id) || "a2:thalia" }; LS.set("guest", { token: me.token });
+  try { history.replaceState(null, "", location.pathname); } catch (e) {} // the link's code doesn't stay in the address bar
+  $("who").textContent = j.guest.name; setLeft(j.left); show("stage"); set("idle", "Tap to talk"); ui(); drawViz();
+}
+async function connect(code, name) {
+  const saved = LS.get("guest"), j = await post("/join", { code, name, token: saved && saved.token }).catch(() => ({ error: "Couldn't reach AutoFaber. Check your connection.", _s: 0 }));
+  if (j.error) { if (j._s === 401) LS.del("guest"); return message(j._s === 0 ? "No connection" : "This link can't connect", j.error, "Try again", boot); }
+  ready(j, j.token || (saved && saved.token));
+}
+async function boot() {
+  const code = codeFromUrl(), saved = LS.get("guest");
+  if (code && saved && saved.token) return connect(code, "");
+  if (code) { show("join"); setTimeout(() => $("jn").focus(), 50); return; }
+  if (saved && saved.token) { const j = await post("/join", { token: saved.token }).catch(() => ({ error: "Couldn't reach AutoFaber. Check your connection.", _s: 0 })); if (!j.error) return ready(j, saved.token); if (j._s === 0) return message("No connection", j.error, "Try again", boot); if (j._s === 401) LS.del("guest"); return message("This link can't connect", j.error, j._s === 401 ? "" : "Try again", boot); } // a link that's off or expired keeps this phone's place: it works again when the owner turns it back on
+  message("Open your voice link", "Use the link you were sent: it connects this phone to AutoFaber by voice.");
+}
+$("jf").onsubmit = (e) => { e.preventDefault(); $("jgo").disabled = true; connect(codeFromUrl(), $("jn").value).finally(() => ($("jgo").disabled = false)); };
+
+// ── the orb: the voice link's gold orbits (assets/hive/field.js) ──
+let vizOn = false;
+function drawViz() {
+  if (vizOn || !window.HiveFX) return; vizOn = true; const fd = new Uint8Array(128);
+  HiveFX.voice.start($("viz"), () => { let l = 0;
+    if (mode === "talk" && outAn) { outAn.getByteFrequencyData(fd); for (let i = 0; i < 64; i++) l += fd[i]; l /= 64 * 255; } else if (mode === "listen" && ear) l = (ear.level || 0) * .6;
+    return { mode, level: Math.min(1, l * 1.6), color: "#d9a441" }; });
+}
+
+// ── the conversation ──
+async function start() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return note("This browser can't use the microphone");
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)(); try { await ac.resume(); } catch (e) {} // unlocked by this tap, so replies can play
+  if (!outAn) { outAn = ac.createAnalyser(); outAn.fftSize = 256; ac.createMediaElementSource($("out")).connect(outAn); outAn.connect(ac.destination); }
+  try { $("out").src = SILENT; await $("out").play(); } catch (e) {}
+  try { mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); } catch (e) { return note("Microphone blocked: allow it for this page, then tap again"); }
+  try { ear = window.HiveEars ? await window.HiveEars.open(ac, mic) : null; } catch (e) { ear = null; }
+  if (!ear) { mic.getTracks().forEach((t) => t.stop()); return note("This browser can't listen here"); }
+  on = true; paused = false; hist = []; ui(); try { wake = navigator.wakeLock && (await navigator.wakeLock.request("screen")); } catch (e) {} loop();
+}
+function stop(keepMsg) {
+  on = false; paused = false; run++; if (stopSpeak) stopSpeak(); if (ear) { ear.close(); ear = null; } if (mic) mic.getTracks().forEach((t) => t.stop()); mic = null;
+  try { wake && wake.release(); } catch (e) {} wake = null; if (!keepMsg) { set("idle", "Tap to talk"); } ui();
+}
+async function loop() {
+  const gen = ++run;
+  while (on && !paused && gen === run) {
+    set("listen", "Listening…");
+    let r; try { r = await ear.turn({ engine: "flux", silence: 900, guard: 450, keyterm: "AutoFaber", lang: lang(), guest: me.token, onStart: () => set("listen", "Listening…"), onPartial: (t) => cap(t, true), onSend: () => set("think", "Transcribing…"), onWait: () => set("listen", "Listening…"), onError: (m) => note("Couldn't hear that: " + m) }); } catch (e) { r = null; }
+    if (!on || paused || gen !== run) return;
+    const text = r && String(r.text || "").trim(); if (!text || text.length < 2) continue;
+    cap("“" + text + "”"); set("think", "Thinking…");
+    const j = await post("/turn", { text, history: hist.slice(-16), voice: me.voice, lang: lang() }).catch(() => ({ error: "Couldn't reach AutoFaber. Check your connection.", _s: 0 }));
+    if (!on || gen !== run) return;
+    if (j.error) { if (await failed(j)) return; continue; }
+    hist.push({ role: "user", text }, { role: "assistant", text: j.text }); hist = hist.slice(-16); setLeft(j.left); cap(j.text);
+    await speak(j);
+  }
+}
+// a turn that didn't go through: out of turns or a dead link ends the session with a reason; anything else is a moment's trouble
+async function failed(j) {
+  if (j._s === 401 || j._s === 403) { if (j._s === 401) LS.del("guest"); stop(true); message("This link stopped working", j.error, j._s === 403 ? "Try again" : "", boot); return true; }
+  if (j._s === 429) { stop(true); setLeft(j.left == null ? 0 : j.left); message("That's all for now", j.error); return true; }
+  set("idle", "That one didn't go through"); note(j.error || "That one didn't go through"); await sleep(900); return false;
+}
+function speak(j) {
+  return new Promise((ok) => {
+    set("talk", "Speaking…"); let done = false, to = 0; const a = $("out");
+    const fin = () => { if (done) return; done = true; clearTimeout(to); stopSpeak = null; a.onended = a.onerror = a.onloadedmetadata = null; ok(); };
+    stopSpeak = () => { try { a.pause(); speechSynthesis.cancel(); } catch (e) {} fin(); };
+    if (!j.audio) { if (!window.speechSynthesis) return fin(); const u = new SpeechSynthesisUtterance(String(j.text || "").slice(0, 1500)); u.onend = u.onerror = fin; to = setTimeout(fin, 45000); speechSynthesis.speak(u); return; }
+    to = setTimeout(fin, 60000); a.src = j.audio;
+    a.onloadedmetadata = () => { if (isFinite(a.duration)) { clearTimeout(to); to = setTimeout(fin, a.duration * 1000 + 4000); } };
+    a.onended = a.onerror = fin; try { ac && ac.resume && ac.resume(); } catch (e) {} a.play().catch(fin);
+  });
+}
+$("go").onclick = () => { if (!on) return start(); paused = !paused; ui(); if (paused) { run++; if (stopSpeak) stopSpeak(); if (ear) ear.cancel(); set("idle", "Paused"); } else loop(); };
+$("orb").onclick = () => { if (stopSpeak) stopSpeak(); else if (!on) start(); };
+$("orb").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("orb").click(); } };
+$("caps").onclick = () => { const v = $("caps").getAttribute("aria-pressed") !== "true"; $("caps").setAttribute("aria-pressed", String(v)); $("cap").classList.toggle("hidden", !v); LS.set("caps", v); };
+if (LS.get("caps") === false) { $("caps").setAttribute("aria-pressed", "false"); $("cap").classList.add("hidden"); }
+$("leave").onclick = async () => { if (!confirm("Disconnect this phone from the voice link?")) return; stop(); await post("/leave", { token: me && me.token }).catch(() => {}); LS.del("guest"); me = null; message("Disconnected", "This phone is no longer connected. Open the link again to reconnect."); };
+document.addEventListener("visibilitychange", async () => { if (!document.hidden && on && !wake) try { wake = navigator.wakeLock && (await navigator.wakeLock.request("screen")); } catch (e) {} });
+addEventListener("hashchange", () => { if (codeFromUrl() && !on) boot(); }); // the link tapped again while this page is open
+boot();
+})();
+</script>
+</body>
+</html>
