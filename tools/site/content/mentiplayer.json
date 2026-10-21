@@ -1,0 +1,65 @@
+{
+ "kicker": "craft · open media",
+ "tagline": "Films, TV, music, radio, audiobooks and podcasts from the open web, in one player: public-domain cinema, NASA's own footage, live radio and artist-uploaded music, all asked for through one small gateway. No accounts, no keys.",
+ "caps": [
+  "9 open sources",
+  "no accounts, no keys",
+  "keeps your place"
+ ],
+ "launchSub": "Search everything at once, or browse the shelves · your saved list stays on your device",
+ "titleTail": "everything open, in one player",
+ "ledeLabel": "why this exists",
+ "story": {
+  "label": "why this exists",
+  "title": "The open web is <em>full of media</em>"
+ },
+ "lede": "<p>The Internet Archive holds thousands of public-domain films and a century of recordings. NASA publishes its own footage. Thousands of stations stream live, artists put music on open platforms, and podcasters publish public feeds. All of it is free to play, and it's scattered over a dozen sites with a dozen interfaces. <b>MentiPlayer</b> asks them all at once and plays what comes back.</p>",
+ "featuresLabel": "what it does",
+ "features": [
+  {
+   "t": "One search",
+   "d": "Films, TV, music, radio, audiobooks, podcasts and video from nine sources at once, mixed so the first screen isn't all one site. Narrow it by type, or choose which sources to ask."
+  },
+  {
+   "t": "Plays what it finds",
+   "d": "Feature films and cartoons from the Internet Archive, NASA's footage, live radio, and whole audiobooks and podcast feeds as playlists, with speed control and your place remembered."
+  },
+  {
+   "t": "Audio that keeps going",
+   "d": "Start a station or an album, then keep browsing: the player stays at the bottom of the screen, with lock-screen controls where the phone supports them."
+  },
+  {
+   "t": "Honest about TV",
+   "d": "TV shows get their details, tonight's schedule, episodes and cast, but no streams: the networks hold those rights, so it points to the official site instead."
+  }
+ ],
+ "cards": [
+  {
+   "n": "the gateway",
+   "html": "<p>A browser can't call most of these sites directly: some don't allow it, some rate-limit, some want a descriptive user agent. So the page talks to one small endpoint on mentifaber.org, which asks each source, reshapes the answers into one record, caches them and says which sources replied. If one source is down, the others still answer.</p><p>It isn't an open proxy: every upstream is fixed in the code, and the media files themselves are never relayed. Your browser plays them straight from their owners.</p>",
+   "stack": [
+    "Cloudflare Workers",
+    "edge cache",
+    "vanilla JS"
+   ]
+  },
+  {
+   "n": "where it comes from",
+   "html": "<p>The Internet Archive, TVmaze, Openverse, Wikimedia Commons, NASA, Radio Browser, Apple's podcast directory (with each show's public feed), Audius and, if you turn it on, PeerTube through Sepia Search. Every item shows its licence and links back to where it lives.</p>"
+  },
+  {
+   "n": "what stays on your device",
+   "html": "<p>Your saved list, what you played recently, your place in long recordings, and which sources you've switched on. There are no accounts and nothing to sign in to.</p>"
+  }
+ ],
+ "scope": "<p>MentiPlayer plays media that is public domain, openly licensed, or streamed free by its owner. It hosts none of it, so what plays depends on each source being up. Files from Wikimedia Commons are often WebM or Ogg, which some browsers can't play. Live radio sounds as good as the station sends it. PeerTube is off by default because those servers aren't curated, and explicit podcasts are left out of search. <em>Check each item's licence before you reuse it.</em></p>",
+ "closing": "A dozen sites' worth of open media, one search box.",
+ "manifest": {
+  "categories": [
+   "entertainment",
+   "multimedia"
+  ],
+  "background_color": "#08080a",
+  "theme_color": "#08080a"
+ }
+}

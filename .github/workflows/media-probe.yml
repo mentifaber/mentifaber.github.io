@@ -1,0 +1,19 @@
+name: Media sources probe
+
+# A live check of every open source behind MentiPlayer's gateway (tools/media-probe.mjs): is each still answering in the shape
+# src/media.js reads, and do the files it returns serve audio or video? Informational: a source that is resting shows as a warning.
+on:
+  workflow_dispatch:
+  push:
+    paths: ["src/media.js", "tools/media-probe.mjs", ".github/workflows/media-probe.yml"]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node tools/media-probe.mjs
