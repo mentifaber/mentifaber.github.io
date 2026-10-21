@@ -12,10 +12,16 @@ const fmt = (s) => { if (!isFinite(s) || s < 0) return "0:00"; s = Math.floor(s)
 const ph = (type) => { const h = HUE[type] || 40, t = (LABEL[type] || "Media").toUpperCase(); return "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='hsl(" + h + " 45% 22%)'/><stop offset='1' stop-color='hsl(" + ((h + 40) % 360) + " 55% 10%)'/></linearGradient></defs><rect width='300' height='300' fill='url(#g)'/><text x='150' y='160' text-anchor='middle' font-family='sans-serif' font-size='34' font-weight='700' letter-spacing='4' fill='hsl(" + h + " 70% 75%)' opacity='.8'>" + t + "</text></svg>"); };
 const pic = (src, type, props) => { const i = el("img", { alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer", ...(props || {}) }); i.src = https(src) || ph(type); i.addEventListener("error", () => { if (!i.dataset.f) { i.dataset.f = "1"; i.src = ph(type); } }); return i; };
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (e.hidden = true), ms || 2600); };
-const api = async (path) => { const r = await fetch("/api/media" + path, { headers: { accept: "application/json" }, signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined }); const j = await r.json().catch(() => ({ error: "the gateway said " + r.status })); if (!r.ok || j.error) throw new Error(j.error || "the gateway said " + r.status); return j; };
+// Safe mode is on unless it has been switched off: the gateway enforces it, this only says which way to ask
+const safeQ = (path) => (S.safe ? path : path + (path.includes("?") ? "&" : "?") + "safe=0");
+const api = async (path) => { const r = await fetch("/api/media" + safeQ(path), { headers: { accept: "application/json" }, signal: window.AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined }); const j = await r.json().catch(() => ({ error: "the gateway said " + r.status })); if (!r.ok || j.error) throw new Error(j.error || "the gateway said " + r.status); return j; };
 if (matchMedia("(hover: none)").matches) document.body.classList.add("touch");
 
-const S = { type: "", q: "", page: 1, src: LS.get("src", null), saved: LS.get("saved", []), recent: LS.get("recent", []), names: {}, tok: 0, tok2: 0, openId: "", q2: [], qi: -1, cur: null, live: false, rate: LS.get("rate", 1) };
+const S = { safe: LS.get("safe", true) !== false, type: "", q: "", page: 1, src: LS.get("src", null), saved: LS.get("saved", []), recent: LS.get("recent", []), names: {}, tok: 0, tok2: 0, openId: "", q2: [], qi: -1, cur: null, live: false, rate: LS.get("rate", 1) };
+// what an earlier version showed in Continue and Saved is looked at again: from user-upload sources, or with suggestive words, it goes while Safe mode is on
+const UNSAFE = new Set(["commons", "audius", "mixcloud", "ccmixter", "jamendo", "dailymotion", "peertube"]), RISKY = /\b(sex\w*|porn\w*|xxx+|erotic\w*|nude\w*|nudity|naked|topless|hentai|nsfw|adult\w*|sensual\w*|seduc\w*|bikini|lingerie|boob\w*|breasts?|strip\w*|fetish\w*|kinky|horny|naughty|hardcore|softcore|explicit|uncensored|mature|burlesque|18\+)\b/i;
+const okItem = (it) => !S.safe || (!UNSAFE.has(it.source) && !RISKY.test([it.title, it.creator, it.description, it.meta].join(" ")));
+if (LS.get("v", 0) < 3) { S.recent = []; LS.set("recent", []); LS.set("v", 3); } // Continue starts clean once, for everyone
 const compact = (it) => ({ id: it.id, source: it.source, type: it.type, title: it.title, creator: it.creator, year: it.year, description: it.description, thumb: it.thumb, page: it.page, license: it.license, meta: it.meta, ...(it.play ? { play: it.play } : {}) });
 const isSaved = (it) => S.saved.some((s) => s.id === it.id);
 const toggleSave = (it) => { if (isSaved(it)) { S.saved = S.saved.filter((s) => s.id !== it.id); toast("Removed from Saved"); } else { S.saved = [compact(it), ...S.saved].slice(0, 200); toast("Saved ♥"); } LS.set("saved", S.saved); };
@@ -37,7 +43,7 @@ const fill = (rail, items) => { rail.replaceChildren(...items.map((i) => card(i)
 async function loadHome() {
   const home = $("home"), tok = ++S.tok; home.replaceChildren(); $("results").hidden = true; home.hidden = false; $("status").textContent = "";
   const want = S.type;
-  if (!want || want === "all") { if (S.recent.length) { const s = shelf("Continue"); home.append(s.sec); fill(s.rail, S.recent); } }
+  if (!want || want === "all") { const rec = S.recent.filter(okItem); if (rec.length) { const s = shelf("Continue"); home.append(s.sec); fill(s.rail, rec); } }
   let rails = []; try { rails = (await api("/featured")).rails; } catch (e) { if (tok === S.tok) $("status").textContent = "The media gateway isn't answering right now. Try again in a moment."; return; }
   if (tok !== S.tok) return; rails = rails.filter((r) => !want || r.type === want);
   const jobs = rails.map((r) => { const s = shelf(r.title); home.append(s.sec); return () => api("/featured?rail=" + encodeURIComponent(r.id)).then((j) => { if (tok !== S.tok) return; if (j.items && j.items.length) fill(s.rail, j.items); else s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "Nothing from this one right now." })); }).catch(() => { if (tok === S.tok) s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "This source didn't answer. It may be resting; it'll be back." })); }); });
@@ -56,8 +62,8 @@ async function runSearch(more) {
   } catch (e) { if (tok === S.tok) { $("status").textContent = ""; if (!more) grid.replaceChildren(el("div", { class: "empty", text: "The search didn't go through: " + e.message })); else toast("That didn't load: " + e.message); } }
 }
 function showSaved() {
-  ++S.tok; $("home").hidden = true; $("results").hidden = false; $("more").hidden = true; const grid = $("grid"); grid.replaceChildren(...S.saved.map((i) => card(i)));
-  if (!S.saved.length) grid.append(el("div", { class: "empty", text: "Nothing saved yet. Tap the ♥ on anything to keep it here." })); $("status").textContent = S.saved.length ? S.saved.length + " saved on this device" : "";
+  ++S.tok; $("home").hidden = true; $("results").hidden = false; $("more").hidden = true; const grid = $("grid"); const sv = S.saved.filter(okItem); grid.replaceChildren(...sv.map((i) => card(i)));
+  if (!sv.length) grid.append(el("div", { class: "empty", text: "Nothing saved yet. Tap the ♥ on anything to keep it here." })); $("status").textContent = sv.length ? sv.length + " saved on this device" + (sv.length < S.saved.length ? " (" + (S.saved.length - sv.length) + " hidden by Safe mode)" : "") : "";
 }
 function syncUrl(replace) {
   const h = new URLSearchParams(); if (S.q) h.set("q", S.q); if (S.type) h.set("t", S.type); if (S.openId && dlg.open) h.set("i", S.openId);
@@ -161,13 +167,16 @@ const srcdlg = $("srcdlg"); let srcs = [];
 async function openSources() {
   srcdlg.showModal(); const ul = $("srclist"); ul.replaceChildren(el("li", { text: "Loading…" }));
   try { srcs = (await api("/sources")).sources; } catch (e) { ul.replaceChildren(el("li", { text: "Couldn't load the list: " + e.message })); return; }
-  const on = S.src || srcs.filter((s) => s.on && s.ready !== false).map((s) => s.id);
-  ul.replaceChildren(...srcs.map((s) => { const cb = el("input", { type: "checkbox", id: "src-" + s.id, "data-id": s.id, disabled: s.ready === false }); cb.checked = s.ready !== false && on.includes(s.id); const l = s.last; return el("li", {}, cb, el("label", { for: "src-" + s.id }, s.name, el("span", { class: "dot " + (l ? (l.ok ? "ok" : "bad") : ""), title: l ? (l.ok ? "answered " + (l.n != null ? l.n + " items" : "fine") : "last try failed: " + (l.error || "")) : "not tried yet" })), el("small", { text: s.note + (s.ready === false ? " (Not set up on this site yet.)" : "") })); }));
+  const on = S.src || srcs.filter((s) => s.on && s.ready !== false).map((s) => s.id), locked = (s) => s.ready === false || (S.safe && !s.safe);
+  ul.replaceChildren(...srcs.map((s) => { const cb = el("input", { type: "checkbox", id: "src-" + s.id, "data-id": s.id, disabled: locked(s) }); cb.checked = !locked(s) && on.includes(s.id); const l = s.last; return el("li", {}, cb, el("label", { for: "src-" + s.id }, s.name, el("span", { class: "dot " + (l ? (l.ok ? "ok" : "bad") : ""), title: l ? (l.ok ? "answered " + (l.n != null ? l.n + " items" : "fine") : "last try failed: " + (l.error || "")) : "not tried yet" })), el("small", { text: s.note + (s.ready === false ? " (Not set up on this site yet.)" : S.safe && !s.safe ? " (Off while Safe mode is on: anyone can upload here.)" : "") })); }));
 }
+function safeUi() { const b = $("safebtn"); b.textContent = S.safe ? "Safe mode: on" : "Safe mode: off"; b.setAttribute("aria-pressed", String(S.safe)); b.classList.toggle("on", S.safe); document.body.classList.toggle("unsafe", !S.safe); }
+$("safebtn").addEventListener("click", () => { if (S.safe && !confirm("Turn Safe mode off?\n\nResults may then include things you would not want others to see over your shoulder.")) return; S.safe = !S.safe; LS.set("safe", S.safe); safeUi(); if (dlg.open) closeItem(); toast(S.safe ? "Safe mode is on" : "Safe mode is off"); go(true); });
+safeUi();
 $("srcbtn").addEventListener("click", openSources); $("srcclose").addEventListener("click", () => srcdlg.close());
 $("srcall").addEventListener("click", () => { srcdlg.querySelectorAll("input[data-id]:not(:disabled)").forEach((c) => (c.checked = true)); toast("Everything that is set up is on: press Done"); });
 $("srcreset").addEventListener("click", () => { S.src = null; LS.set("src", null); srcdlg.close(); toast("Back to the defaults"); go(true); });
-$("srcsave").addEventListener("click", () => { const ids = [...srcdlg.querySelectorAll("input[data-id]")].filter((c) => c.checked).map((c) => c.dataset.id), def = srcs.filter((s) => s.on && s.ready !== false).map((s) => s.id);
+$("srcsave").addEventListener("click", () => { const ids = [...srcdlg.querySelectorAll("input[data-id]")].filter((c) => c.checked).map((c) => c.dataset.id), def = srcs.filter((s) => s.on && s.ready !== false && (!S.safe || s.safe)).map((s) => s.id);
   if (!ids.length) return toast("Keep at least one source on"); S.src = ids.slice().sort().join() === def.slice().sort().join() ? null : ids; LS.set("src", S.src); srcdlg.close(); go(true); });
 
 // ── start-up, shortcuts, links ──

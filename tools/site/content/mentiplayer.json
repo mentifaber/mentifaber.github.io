@@ -33,6 +33,10 @@
    "d": "Shows that sit on another site (live news channels, Mixcloud sets, Dailymotion and YouTube videos, the Archive's own player) play right here, in that host's official player. Nothing is copied: the show stays with its owner."
   },
   {
+   "t": "Safe mode",
+   "d": "On by default and enforced by the gateway, not just the page: only staff-curated sources are asked, sources where anyone can upload stay off, and anything adult or suggestive is hidden. You can turn it off; it asks first."
+  },
+  {
    "t": "Free episodes of TV shows",
    "d": "Open a show and it lists the free copies that exist, classic series on the Internet Archive and, with a key, full episodes on YouTube. Current network shows get their details, schedule, episodes and cast, and links to where they air."
   }

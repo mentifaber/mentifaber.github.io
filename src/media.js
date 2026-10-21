@@ -64,8 +64,11 @@ const mk = (o) => ({ id: o.source + "|" + o.type + "|" + o.key, source: o.source
   thumb: safe(o.thumb), page: safe(o.page), license: plain(o.license, 80), meta: plain(o.meta || "", 120), ...(o.play && safe(o.play.url) ? { play: { kind: o.play.kind, url: safe(o.play.url), ...(o.play.height ? { height: o.play.height } : {}) } } : {}) });
 // nothing explicit reaches the page, whatever a source lets through: a word list over the text, applied to every result
 const EXPLICIT = /\b(porn\w*|xxx+|hentai|erotic\w*|nsfw|x-rated|blow ?jobs?|hand ?jobs?|cum ?shots?|creampie|gangbang|orgy|orgies|milf|bdsm|fetish\w*|nudes?|nudity|naked|topless|striptease|strippers?|lingerie|sex ?(tape|scene|video|film|movie|show|slave|toy)s?|sexual(ly)?|adults? only|adult (film|movie|video|content|entertainment)s?|18\+|camgirl|onlyfans|escort|hookers?|prostitut\w*|anal|hardcore|softcore|playboy|penthouse|kamasutra|upskirt)\b/i;
-export const explicit = (i) => EXPLICIT.test([i.title, i.creator, i.description, i.meta].join(" "));
-const clean = (l) => (Array.isArray(l) ? l.filter((i) => !explicit(i)) : l);
+// Safe mode adds everything suggestive too: it would rather hide a harmless thing than show a harmful one
+const STRICT = /\b(sex\w*|sensual\w*|seduc\w*|erotic\w*|bikini|thong|boob\w*|breasts?|nipples?|cleavage|kinky|horny|naughty|lust\w*|busty|babes?|hot (girls?|women|chicks?)|strip(per|tease|ping)?|burlesque|brothel|vice|nympho\w*|swinger\w*|dominatrix|spank\w*|voyeur\w*|peep ?show|girlie|pin-?ups?|mature|explicit|uncensored|uncut|adult\w*|nsfw|18\+|r-rated|cam ?girls?)\b/i;
+const text = (i) => [i.title, i.creator, i.description, i.meta].join(" ");
+export const explicit = (i, strict) => EXPLICIT.test(text(i)) || !!(strict && STRICT.test(text(i)));
+const clean = (l, strict) => (Array.isArray(l) ? l.filter((i) => !explicit(i, strict)) : l);
 const parseId = (id) => { const [source, type, ...k] = String(id || "").split("|"); return { source, type, key: k.join("|") }; };
 
 // ── the Internet Archive ──
@@ -75,12 +78,14 @@ const IA_TV = "mediatype:movies AND (collection:classic_tv OR collection:classic
 const IA_RADIO = "mediatype:audio AND (collection:oldtimeradio OR collection:radioprograms)";
 const IA_MUSIC = "(mediatype:audio OR mediatype:etree) AND (collection:opensource_audio OR collection:etree OR collection:78rpm OR collection:netlabels OR collection:audio_music)";
 const IA_BOOKS = "mediatype:audio AND collection:librivoxaudio";
+// Safe mode keeps to the Archive's staff-curated shelves: no open community uploads, no netlabel dumps
+const IA_STRICT = { music: "(collection:etree OR collection:78rpm)", tv: "mediatype:movies AND (collection:classic_tv OR collection:classic_tv_commercials)" };
 const IA_KIND = { movie: ["movies", IA_MOVIES], tv: ["movies", IA_TV], music: ["audio", IA_MUSIC], audiobook: ["audio", IA_BOOKS], podcast: ["audio", IA_RADIO] };
 const IA_META = { movie: "Internet Archive film", tv: "Classic TV · Internet Archive", audiobook: "LibriVox audiobook", podcast: "Old-time radio · Internet Archive", music: "Internet Archive audio" };
-async function iaSearch(type, q, limit, page, extra, phrase) {
-  const [, base] = IA_KIND[type], w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + "(" + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base) + ") AND -subject:(adult OR porn OR porno OR xxx OR erotic OR erotica OR nude OR nudity OR hentai OR fetish) AND -collection:(adult OR adult_films OR nsfw)";
-  const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300 });
-  return ((j.response && j.response.docs) || []).filter((d) => d.identifier).map((d) => mk({ source: "archive", type, key: d.identifier, title: d.title || d.identifier, creator: [].concat(d.creator || "")[0], year: [].concat(d.year || "")[0], description: [].concat(d.description || "")[0],
+async function iaSearch(type, q, limit, page, extra, phrase, strict) {
+  const [, kindBase] = IA_KIND[type], base = strict && IA_STRICT[type] || kindBase, w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + "(" + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base) + ") AND -subject:(adult OR porn OR porno OR xxx OR erotic OR erotica OR nude OR nudity OR hentai OR fetish) AND -collection:(adult OR adult_films OR nsfw)" + (strict ? " AND -subject:(sex OR sexy OR sexual OR sensual OR burlesque OR striptease OR pinup OR mature OR uncensored) AND -collection:(opensource OR community OR opensource_movies OR additional_collections)" : "");
+  const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&fl[]=subject&fl[]=collection&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300 });
+  return ((j.response && j.response.docs) || []).filter((d) => d.identifier && !(strict ? STRICT : EXPLICIT).test([].concat(d.subject || [], d.collection || []).join(" "))).map((d) => mk({ source: "archive", type, key: d.identifier, title: d.title || d.identifier, creator: [].concat(d.creator || "")[0], year: [].concat(d.year || "")[0], description: [].concat(d.description || "")[0],
     thumb: IA + "/services/img/" + d.identifier, page: IA + "/details/" + d.identifier, license: d.licenseurl ? licenseName([].concat(d.licenseurl)[0]) : "Public domain or free to share: see its page", meta: IA_META[type] || "Internet Archive" }));
 }
 const licenseName = (u) => { const t = String(u); let m = /creativecommons\.org\/publicdomain\/(mark|zero)/i.exec(t); if (m) return m[1].toLowerCase() === "mark" ? "Public domain" : "CC0"; m = /creativecommons\.org\/licenses\/([a-z-]+)\/?([\d.]*)/i.exec(t); return m ? "CC " + m[1].toUpperCase() + (m[2] ? " " + m[2] : "") : "See the item's page"; };
@@ -99,9 +104,10 @@ export function iaPick(meta, type) {
   const best = Math.min(...aud.map(rank)), set = aud.filter((f) => rank(f) === best).sort((a, b) => (+a.track || 0) - (+b.track || 0) || a.name.localeCompare(b.name, undefined, { numeric: true })).slice(0, 120);
   return { kind: "audio", url: url(set[0]), mime: /\.ogg$/i.test(set[0].name) ? "audio/ogg" : /\.m4a$/i.test(set[0].name) ? "audio/mp4" : "audio/mpeg", tracks: set.map((f, i) => ({ title: clip(f.title || f.name.replace(/\.[a-z0-9]+$/i, "").replace(/[_]+/g, " "), 90) || "Track " + (i + 1), url: url(f), duration: dur(f) || undefined })), subtitles: [] };
 }
-async function iaItem(type, key) {
+async function iaItem(type, key, sm) {
   if (!/^[\w.-]{2,120}$/.test(key)) throw new Upstream("bad identifier", 400);
   const m = await get(IA + "/metadata/" + enc(key), { ttl: 600, ms: 9000 }), md = m.metadata || {}, play = iaPick(m, type);
+  if (sm && STRICT.test([].concat(md.subject || [], md.collection || []).join(" "))) throw new Upstream("that one isn't available in Safe mode", 403);
   return { item: mk({ source: "archive", type, key, title: md.title || key, creator: [].concat(md.creator || "")[0], year: [].concat(md.year || md.date || "")[0], description: [].concat(md.description || "")[0], thumb: IA + "/services/img/" + key, page: IA + "/details/" + key, license: md.licenseurl ? licenseName(md.licenseurl) : "Public domain or free to share: see its page" }), play: play ? { ...play, ...(play.kind === "video" ? { embed: IA + "/embed/" + enc(key) } : {}) } : { kind: "none" }, links: [{ label: "Internet Archive", url: IA + "/details/" + key }, { label: "Download", url: IA + "/download/" + key }] };
 }
 
@@ -114,19 +120,19 @@ async function tvTonight(limit) {
   for (const e of j || []) { const s = e.show || (e._embedded && e._embedded.show); if (!s || !s.id || by.has(s.id) || !tvImg(s)) continue; by.set(s.id, { s, e }); }
   return [...by.values()].sort((a, b) => (b.s.weight || 0) - (a.s.weight || 0)).slice(0, limit).map(({ s, e }) => tvShow(s, [e.airtime, e.season ? "S" + e.season + "E" + e.number : "", clip(e.name, 40)].filter(Boolean).join(" · ")));
 }
-async function tvItem(key) {
+async function tvItem(key, sm) {
   if (!/^\d{1,8}$/.test(key)) throw new Upstream("bad show id", 400);
   const s = await get(TVM + "/shows/" + key + "?embed[]=episodes&embed[]=cast", { ttl: 900 }), eps = ((s._embedded && s._embedded.episodes) || []).slice(-24).reverse(), cast = ((s._embedded && s._embedded.cast) || []).slice(0, 12);
-  const watch = await tvWatch(s.name);
+  const watch = clean(await tvWatch(s.name, sm), sm);
   return { item: tvShow(s), play: { kind: "none", note: watch.length ? "The networks hold the streams of current shows. These are the ones that can be watched free, through their hosts' own players." : "Streams belong to the networks. Use the official links to watch." }, watch, episodes: eps.map((e) => ({ season: e.season, number: e.number, title: clip(e.name, 90), date: e.airdate, summary: plain(e.summary, 200) })),
     cast: cast.map((c) => ({ name: clip(c.person && c.person.name, 60), as: clip(c.character && c.character.name, 60), photo: safe(c.person && c.person.image && c.person.image.medium) })), status: s.status, links: [s.officialSite && { label: "Official site", url: s.officialSite }, s.network && s.network.officialSite && { label: (s.network.name || "Network") + " (where it airs)", url: s.network.officialSite }, s.webChannel && s.webChannel.officialSite && { label: (s.webChannel.name || "Channel") + " (where it streams)", url: s.webChannel.officialSite }, { label: "TVmaze", url: s.url }].filter((l) => l && safe(l.url)).map((l) => ({ label: l.label, url: safe(l.url) })) };
 }
 
 // a show's free episodes, where there are any: the Internet Archive's classic TV, plus YouTube when the owner has set a key. Each one plays through its host.
-async function tvWatch(name) {
+async function tvWatch(name, sm) {
   const w = words(name).toLowerCase().split(" ").filter(Boolean); if (!w.length) return [];
-  const jobs = [within(iaSearch("tv", name, 12, 1, null, true), 4500).catch(() => [])]; // the name as a phrase: its words scattered over unrelated items would match too much
-  if (key_("YOUTUBE_API_KEY")) jobs.push(within(ytSearch(name + " full episode", 8, 1), 4500).catch(() => []));
+  const jobs = [within(iaSearch("tv", name, 12, 1, null, true, sm), 4500).catch(() => [])]; // the name as a phrase: its words scattered over unrelated items would match too much
+  if (key_("YOUTUBE_API_KEY")) jobs.push(within(ytSearch(name + " full episode", 8, 1, { safe: sm }), 4500).catch(() => []));
   // several-word names are searched as a phrase, so the Archive has already matched the name (its episodes are often titled by the episode alone); one word is far too loose, so it must be in the title
   const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
   return (await Promise.all(jobs.map((j, k) => j.then(clean)).map((j, k) => j.then((l) => l.filter((i) => (k === 0 && w.length > 1) || w.every((x) => norm(i.title).includes(" " + x))))))).flat().slice(0, 10);
@@ -259,9 +265,9 @@ async function dmSearch(q, limit, page) {
   const w = words(q), j = await get("https://api.dailymotion.com/videos?fields=id,title,description,thumbnail_360_url,owner.screenname,duration,created_time,allow_embed&family_filter=1&limit=" + limit + "&page=" + (page || 1) + (w ? "&search=" + enc(w) + "&sort=relevance" : "&sort=trending"), { ttl: 600 });
   return (j.list || []).filter((v) => v.allow_embed !== false && /^[\w]{3,20}$/.test(v.id || "")).map((v) => mk({ source: "dailymotion", type: "video", key: v.id, title: v.title, creator: v["owner.screenname"], year: v.created_time ? new Date(v.created_time * 1e3).getUTCFullYear() : "", description: v.description, thumb: v.thumbnail_360_url, page: "https://www.dailymotion.com/video/" + v.id, license: "Shown through Dailymotion's player: © its owner", meta: "Dailymotion" + (v.duration ? " · " + fmtDur(v.duration) : ""), play: { kind: "embed", url: "https://www.dailymotion.com/embed/video/" + v.id } }));
 }
-async function ytSearch(q, limit, page) {
+async function ytSearch(q, limit, page, o) {
   const k = key_("YOUTUBE_API_KEY"); if (!k) throw new Upstream("YouTube needs a key (YOUTUBE_API_KEY)", 503);
-  const j = await get("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoSyndicated=true&safeSearch=moderate&maxResults=" + Math.min(25, limit) + "&q=" + enc(words(q) || "documentary") + "&key=" + enc(k), { ttl: 600 });
+  const j = await get("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoSyndicated=true&safeSearch=" + (o && o.safe ? "strict" : "moderate") + "&maxResults=" + Math.min(25, limit) + "&q=" + enc(words(q) || "documentary") + "&key=" + enc(k), { ttl: 600 });
   return (j.items || []).filter((v) => v.id && /^[\w-]{6,20}$/.test(v.id.videoId || "") && v.snippet).map((v) => mk({ source: "youtube", type: "video", key: v.id.videoId, title: v.snippet.title, creator: v.snippet.channelTitle, year: v.snippet.publishedAt, description: v.snippet.description, thumb: v.snippet.thumbnails && ((v.snippet.thumbnails.high || v.snippet.thumbnails.medium || v.snippet.thumbnails.default) || {}).url, page: "https://www.youtube.com/watch?v=" + v.id.videoId, license: "Shown through YouTube's player: © its owner", meta: "YouTube", play: { kind: "embed", url: "https://www.youtube-nocookie.com/embed/" + v.id.videoId } }));
 }
 
@@ -285,65 +291,66 @@ async function liveSearch(q, limit) { const w = words(q).toLowerCase().split(" "
 // ── what's behind it ──
 // search(type, q, limit, page) per source, for the types it serves; `on` is whether the all-sources blend includes it
 export const SOURCES = {
-  archive: { name: "Internet Archive", url: "https://archive.org", types: ["movie", "tv", "music", "audiobook", "podcast"], on: true, note: "Public-domain films, classic TV, cartoons, live concerts, 78s, old-time radio and LibriVox audiobooks", search: (t, q, n, p) => iaSearch(t, q, n, p) },
-  tvmaze: { name: "TVmaze", url: "https://www.tvmaze.com", types: ["tv"], on: true, note: "TV details, schedules, episodes and cast, with free episodes found where they exist", search: (t, q, n) => tvSearch(q, n) },
-  loc: { name: "Library of Congress", url: "https://www.loc.gov", types: ["movie", "music"], on: true, note: "Early films, historic recordings and the National Jukebox", search: (t, q, n, p) => locSearch(t, q, n, p) },
-  livetv: { name: "Live TV", url: "https://www.youtube.com", types: ["live"], on: true, note: "News and public channels that stream free, shown in the channel's own player", search: (t, q, n) => liveSearch(q, n) },
-  openverse: { name: "Openverse", url: "https://openverse.org", types: ["music"], on: true, note: "Openly licensed audio", search: (t, q, n, p) => ovSearch(q, n, p) },
-  ccmixter: { name: "ccMixter", url: "https://ccmixter.org", types: ["music"], on: false, note: "Remixes and samples under Creative Commons licences. Off by default: its server sends headers some hosts refuse, so it may not answer", search: (t, q, n, p) => ccSearch(q, n, p) },
-  audius: { name: "Audius", url: "https://audius.co", types: ["music"], on: true, note: "Artist-uploaded music through Audius's open API", search: (t, q, n) => auSearch(q, n) },
-  commons: { name: "Wikimedia Commons", url: "https://commons.wikimedia.org", types: ["video", "music"], on: true, note: "Freely licensed video and audio (WebM and Ogg: some browsers may not play them)", search: (t, q, n, p) => cmSearch(t, q, n, p) },
-  nasa: { name: "NASA Image and Video Library", url: "https://images.nasa.gov", types: ["video"], on: true, note: "NASA's own footage", search: (t, q, n, p) => nasaSearch(q, n, p) },
-  radio: { name: "Radio Browser", url: "https://www.radio-browser.info", types: ["radio"], on: true, note: "Live internet radio (https streams only)", search: (t, q, n) => rbSearch(q, n) },
-  somafm: { name: "SomaFM", url: "https://somafm.com", types: ["radio"], on: true, note: "Listener-supported, commercial-free internet radio", search: (t, q, n) => somaSearch(q, n) },
-  podcasts: { name: "Podcasts (Apple directory + public RSS)", url: "https://podcasts.apple.com", types: ["podcast"], on: true, note: "Shows and episodes from each publisher's public feed; explicit shows are left out", search: (t, q, n) => podSearch(q, n) },
-  mixcloud: { name: "Mixcloud", url: "https://www.mixcloud.com", types: ["podcast"], on: true, note: "DJ mixes and radio shows, played in Mixcloud's own widget", search: (t, q, n, p) => mcSearch(q, n, p) },
-  youtube: { name: "YouTube", url: "https://www.youtube.com", types: ["video"], on: true, needs: "YOUTUBE_API_KEY", note: "Videos their owners allow to be embedded, shown in YouTube's own player. Needs the site owner's API key", search: (t, q, n, p) => ytSearch(q, n, p) },
-  jamendo: { name: "Jamendo", url: "https://www.jamendo.com", types: ["music"], on: true, needs: "JAMENDO_CLIENT_ID", note: "Independent artists' music, free to stream. Needs the site owner's client id", search: (t, q, n, p) => jmSearch(q, n, p) },
-  dailymotion: { name: "Dailymotion", url: "https://www.dailymotion.com", types: ["video"], on: false, note: "Videos their owners allow to be embedded, shown in Dailymotion's own player. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => dmSearch(q, n, p) },
-  peertube: { name: "PeerTube (Sepia Search)", url: "https://sepiasearch.org", types: ["video"], on: false, note: "Creative Commons video from open PeerTube servers. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => ptSearch(q, n, p) },
+  archive: { name: "Internet Archive", url: "https://archive.org", types: ["movie", "tv", "music", "audiobook", "podcast"], safe: true, on: true, note: "Public-domain films, classic TV, cartoons, live concerts, 78s, old-time radio and LibriVox audiobooks", search: (t, q, n, p, o) => iaSearch(t, q, n, p, null, false, o && o.safe) },
+  tvmaze: { name: "TVmaze", url: "https://www.tvmaze.com", types: ["tv"], safe: true, on: true, note: "TV details, schedules, episodes and cast, with free episodes found where they exist", search: (t, q, n) => tvSearch(q, n) },
+  loc: { name: "Library of Congress", url: "https://www.loc.gov", types: ["movie", "music"], safe: true, on: true, note: "Early films, historic recordings and the National Jukebox", search: (t, q, n, p) => locSearch(t, q, n, p) },
+  livetv: { name: "Live TV", url: "https://www.youtube.com", types: ["live"], safe: true, on: true, note: "News and public channels that stream free, shown in the channel's own player", search: (t, q, n) => liveSearch(q, n) },
+  openverse: { name: "Openverse", url: "https://openverse.org", types: ["music"], safe: true, on: true, note: "Openly licensed audio", search: (t, q, n, p) => ovSearch(q, n, p) },
+  ccmixter: { name: "ccMixter", url: "https://ccmixter.org", types: ["music"], safe: false, on: false, note: "Remixes and samples under Creative Commons licences. Off by default: its server sends headers some hosts refuse, so it may not answer", search: (t, q, n, p) => ccSearch(q, n, p) },
+  audius: { name: "Audius", url: "https://audius.co", types: ["music"], safe: false, on: true, note: "Artist-uploaded music through Audius's open API", search: (t, q, n) => auSearch(q, n) },
+  commons: { name: "Wikimedia Commons", url: "https://commons.wikimedia.org", types: ["video", "music"], safe: false, on: true, note: "Freely licensed video and audio (WebM and Ogg: some browsers may not play them)", search: (t, q, n, p) => cmSearch(t, q, n, p) },
+  nasa: { name: "NASA Image and Video Library", url: "https://images.nasa.gov", types: ["video"], safe: true, on: true, note: "NASA's own footage", search: (t, q, n, p) => nasaSearch(q, n, p) },
+  radio: { name: "Radio Browser", url: "https://www.radio-browser.info", types: ["radio"], safe: true, on: true, note: "Live internet radio (https streams only)", search: (t, q, n) => rbSearch(q, n) },
+  somafm: { name: "SomaFM", url: "https://somafm.com", types: ["radio"], safe: true, on: true, note: "Listener-supported, commercial-free internet radio", search: (t, q, n) => somaSearch(q, n) },
+  podcasts: { name: "Podcasts (Apple directory + public RSS)", url: "https://podcasts.apple.com", types: ["podcast"], safe: true, on: true, note: "Shows and episodes from each publisher's public feed; explicit shows are left out", search: (t, q, n) => podSearch(q, n) },
+  mixcloud: { name: "Mixcloud", url: "https://www.mixcloud.com", types: ["podcast"], safe: false, on: true, note: "DJ mixes and radio shows, played in Mixcloud's own widget", search: (t, q, n, p) => mcSearch(q, n, p) },
+  youtube: { name: "YouTube", url: "https://www.youtube.com", types: ["video"], safe: true, on: true, needs: "YOUTUBE_API_KEY", note: "Videos their owners allow to be embedded, shown in YouTube's own player. Needs the site owner's API key", search: (t, q, n, p, o) => ytSearch(q, n, p, o) },
+  jamendo: { name: "Jamendo", url: "https://www.jamendo.com", types: ["music"], safe: false, on: true, needs: "JAMENDO_CLIENT_ID", note: "Independent artists' music, free to stream. Needs the site owner's client id", search: (t, q, n, p) => jmSearch(q, n, p) },
+  dailymotion: { name: "Dailymotion", url: "https://www.dailymotion.com", types: ["video"], safe: false, on: false, note: "Videos their owners allow to be embedded, shown in Dailymotion's own player. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => dmSearch(q, n, p) },
+  peertube: { name: "PeerTube (Sepia Search)", url: "https://sepiasearch.org", types: ["video"], safe: false, on: false, note: "Creative Commons video from open PeerTube servers. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => ptSearch(q, n, p) },
 };
 const ready = (s) => !s.needs || !!key_(s.needs);
 // the shelves on the home screen
 export const RAILS = [
-  { id: "films", title: "Classic films", type: "movie", make: (n) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:feature_films") },
-  { id: "classictv", title: "Classic TV, free", type: "tv", make: (n) => iaSearch("tv", "", n, 1) },
-  { id: "tonight", title: "On TV tonight (US)", type: "tv", make: (n) => tvTonight(n) },
-  { id: "livetv", title: "Live TV", type: "live", make: (n) => liveSearch("", n) },
-  { id: "live", title: "Live radio", type: "radio", make: (n) => rbSearch("", n) },
-  { id: "soma", title: "SomaFM", type: "radio", make: (n) => somaSearch("", n) },
-  { id: "space", title: "From NASA", type: "video", make: (n) => nasaSearch("", n, 1) },
-  { id: "trending", title: "Trending music", type: "music", make: (n) => auTrending(n) },
-  { id: "concerts", title: "Live concerts", type: "music", make: (n) => iaSearch("music", "", n, 1, "mediatype:etree AND collection:etree") },
-  { id: "jukebox", title: "Library of Congress recordings", type: "music", make: (n) => locSearch("music", "", n, 1) },
-  { id: "oldradio", title: "Old-time radio", type: "podcast", make: (n) => iaSearch("podcast", "", n, 1) },
-  { id: "books", title: "Audiobooks", type: "audiobook", make: (n) => iaSearch("audiobook", "", n, 1) },
-  { id: "podcasts", title: "Top podcasts", type: "podcast", make: (n) => podTop(n) },
-  { id: "mixes", title: "Mixes and radio shows", type: "podcast", make: (n) => mcSearch("", n, 1) },
-  { id: "cartoons", title: "Cartoons", type: "movie", make: (n) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:classic_cartoons OR collection:animationandcartoons)") },
-  { id: "silent", title: "Silent era", type: "movie", make: (n) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:silent_films") },
-  { id: "locfilm", title: "Library of Congress films", type: "movie", make: (n) => locSearch("movie", "", n, 1) },
+  { id: "films", src: "archive", title: "Classic films", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:feature_films", false, o && o.safe) },
+  { id: "classictv", src: "archive", title: "Classic TV, free", type: "tv", make: (n, o) => iaSearch("tv", "", n, 1, null, false, o && o.safe) },
+  { id: "tonight", src: "tvmaze", title: "On TV tonight (US)", type: "tv", make: (n) => tvTonight(n) },
+  { id: "livetv", src: "livetv", title: "Live TV", type: "live", make: (n) => liveSearch("", n) },
+  { id: "live", src: "radio", title: "Live radio", type: "radio", make: (n) => rbSearch("", n) },
+  { id: "soma", src: "somafm", title: "SomaFM", type: "radio", make: (n) => somaSearch("", n) },
+  { id: "space", src: "nasa", title: "From NASA", type: "video", make: (n) => nasaSearch("", n, 1) },
+  { id: "trending", src: "audius", title: "Trending music", type: "music", make: (n) => auTrending(n) },
+  { id: "concerts", src: "archive", title: "Live concerts", type: "music", make: (n, o) => iaSearch("music", "", n, 1, "mediatype:etree AND collection:etree", false, o && o.safe) },
+  { id: "jukebox", src: "loc", title: "Library of Congress recordings", type: "music", make: (n) => locSearch("music", "", n, 1) },
+  { id: "oldradio", src: "archive", title: "Old-time radio", type: "podcast", make: (n, o) => iaSearch("podcast", "", n, 1, null, false, o && o.safe) },
+  { id: "books", src: "archive", title: "Audiobooks", type: "audiobook", make: (n, o) => iaSearch("audiobook", "", n, 1, null, false, o && o.safe) },
+  { id: "podcasts", src: "podcasts", title: "Top podcasts", type: "podcast", make: (n) => podTop(n) },
+  { id: "mixes", src: "mixcloud", title: "Mixes and radio shows", type: "podcast", make: (n) => mcSearch("", n, 1) },
+  { id: "cartoons", src: "archive", title: "Cartoons", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:classic_cartoons OR collection:animationandcartoons)", false, o && o.safe) },
+  { id: "silent", src: "archive", title: "Silent era", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND collection:silent_films", false, o && o.safe) },
+  { id: "locfilm", src: "loc", title: "Library of Congress films", type: "movie", make: (n) => locSearch("movie", "", n, 1) },
 ];
-const RESOLVE = { archive: iaItem, tvmaze: (t, k) => tvItem(k), nasa: (t, k) => nasaGetItem(k), podcasts: (t, k) => podGetItem(k), loc: locGetItem };
+const RESOLVE = { archive: iaItem, tvmaze: (t, k, sm) => tvItem(k, sm), nasa: (t, k) => nasaGetItem(k), podcasts: (t, k) => podGetItem(k), loc: locGetItem };
 
 const timed = async (id, fn) => { const t0 = Date.now(); try { const v = await fn(); STATUS[id] = { ok: true, at: Date.now(), ms: Date.now() - t0, n: Array.isArray(v) ? v.length : undefined }; return v; } catch (e) { STATUS[id] = { ok: false, at: Date.now(), ms: Date.now() - t0, error: clip(e && e.message || e, 120) }; throw e; } };
 const roundRobin = (lists) => { const out = [], seen = new Set(); for (let i = 0; lists.some((l) => i < l.length); i++) for (const l of lists) { const it = l[i]; if (!it) continue; const k = it.type + "|" + it.title.toLowerCase().slice(0, 40); if (seen.has(k)) continue; seen.add(k); out.push(it); } return out; };
 // one slow source must not hold the whole screen: each gets this long to answer a search (Openverse, anonymous, is sometimes slow)
 export const BUDGET = { search: 5500 };
 const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Upstream("took too long to answer", 504)), ms))]);
-export async function search({ q, type, src, page, limit }) {
+export async function search({ q, type, src, page, limit, safe: sm = true }) {
   type = TYPES.includes(type) ? type : "all"; page = Math.max(1, Math.min(10, +page || 1)); limit = Math.max(2, Math.min(24, +limit || (type === "all" ? 6 : 16))); q = clip(q, 100);
-  const want = src ? String(src).split(",").map((s) => s.trim()).filter((s) => SOURCES[s] && ready(SOURCES[s])) : Object.keys(SOURCES).filter((s) => SOURCES[s].on && ready(SOURCES[s])), jobs = [];
+  const want = src ? String(src).split(",").map((s) => s.trim()).filter((s) => SOURCES[s] && ready(SOURCES[s]) && (!sm || SOURCES[s].safe)) : Object.keys(SOURCES).filter((s) => SOURCES[s].on && ready(SOURCES[s]) && (!sm || SOURCES[s].safe)), jobs = [];
   for (const s of want) for (const t of SOURCES[s].types) if (type === "all" || type === t) jobs.push([s, t]);
-  const settled = await Promise.allSettled(jobs.map(([s, t]) => timed(s + (jobs.filter((j) => j[0] === s).length > 1 ? ":" + t : ""), () => within(SOURCES[s].search(t, q, limit, page), BUDGET.search)))), report = {};
-  const lists = settled.map((r, i) => { const [s] = jobs[i], rep = report[s] || (report[s] = { ok: false, n: 0 }); if (r.status === "fulfilled") { const v = clean(r.value); rep.ok = true; rep.n += v.length; return v; } rep.error = rep.error || clip(r.reason && r.reason.message, 100); return []; });
+  const settled = await Promise.allSettled(jobs.map(([s, t]) => timed(s + (jobs.filter((j) => j[0] === s).length > 1 ? ":" + t : ""), () => within(SOURCES[s].search(t, q, limit, page, { safe: sm }), BUDGET.search)))), report = {};
+  const lists = settled.map((r, i) => { const [s] = jobs[i], rep = report[s] || (report[s] = { ok: false, n: 0 }); if (r.status === "fulfilled") { const v = clean(r.value, sm); rep.ok = true; rep.n += v.length; return v; } rep.error = rep.error || clip(r.reason && r.reason.message, 100); return []; });
   const bySrc = {}; settled.forEach((r, i) => { const s = jobs[i][0]; (bySrc[s] = bySrc[s] || []).push(...(lists[i] || [])); });
   return { q, type, page, items: roundRobin(Object.values(bySrc)), sources: report };
 }
-export async function item(id) {
+export async function item(id, sm = true) {
   const { source, type, key } = parseId(id); if (!SOURCES[source] || !key) throw new Upstream("unknown item", 404);
+  if (sm && !SOURCES[source].safe) throw new Upstream("Safe mode is on: this source isn't available", 403);
   const fn = RESOLVE[source]; if (!fn) throw new Upstream("this item plays from its list entry", 400);
-  return timed(source + ":item", () => fn(type, key));
+  const r = await timed(source + ":item", () => fn(type, key, sm)); if (sm && explicit(r.item, true)) throw new Upstream("that one isn't available in Safe mode", 403); return r;
 }
 
 // ── the route ──
@@ -362,20 +369,20 @@ export async function media(req, env, ctx, json, isOwner) {
   if (req.method !== "GET") return json({ error: "GET only" }, 405, cors);
   // a soft limit per address (per isolate): the edge cache does the real work
   const ip = req.headers.get("cf-connecting-ip") || "x", now = Date.now(), h = hits.get(ip) || { n: 0, t: now }; if (now - h.t > 6e4) { h.n = 0; h.t = now; } if (++h.n > 90) return json({ error: "easy: too many requests a minute" }, 429, { ...cors, "retry-after": "30" }); hits.set(ip, h); if (hits.size > 5000) hits.clear();
-  const q = url.searchParams, reply = (r, ttl) => json(JSON.parse(r.body), 200, { ...cors, "cache-control": "public, max-age=" + ttl, ...(r.stale ? { "x-media-stale": "1" } : {}), "x-media-age": String(Math.round((Date.now() - r.at) / 1e3)) }, true);
+  const q = url.searchParams, sm = q.get("safe") !== "0", reply = (r, ttl) => json(JSON.parse(r.body), 200, { ...cors, "cache-control": "public, max-age=" + ttl, ...(r.stale ? { "x-media-stale": "1" } : {}), "x-media-age": String(Math.round((Date.now() - r.at) / 1e3)) }, true);
   const fail = (e) => json({ error: clip(e && e.message || e, 160) }, e && e.status >= 400 && e.status < 600 ? e.status : 502, cors);
   try {
-    if (sub === "/" || sub === "/sources") return json({ types: TYPES, sources: Object.entries(SOURCES).map(([id, s]) => ({ id, name: s.name, url: s.url, types: s.types, on: s.on, ready: ready(s), ...(s.needs ? { needs: s.needs } : {}), note: s.note, last: STATUS[id] || (s.types.length > 1 && STATUS[id + ":" + s.types[0]]) || null })) }, 200, { ...cors, "cache-control": "public, max-age=60" });
+    if (sub === "/" || sub === "/sources") return json({ types: TYPES, safeDefault: true, sources: Object.entries(SOURCES).map(([id, s]) => ({ id, name: s.name, url: s.url, types: s.types, on: s.on, safe: !!s.safe, ready: ready(s), ...(s.needs ? { needs: s.needs } : {}), note: s.note, last: STATUS[id] || (s.types.length > 1 && STATUS[id + ":" + s.types[0]]) || null })) }, 200, { ...cors, "cache-control": "public, max-age=60" });
     if (sub === "/featured") {
-      const id = q.get("rail"); if (!id) return json({ rails: RAILS.map((r) => ({ id: r.id, title: r.title, type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=600" });
-      const rail = RAILS.find((r) => r.id === id); if (!rail) return json({ error: "no such shelf" }, 404, cors);
-      return reply(await cached(ctx, url.origin, "rail:" + id, 1800, async () => ({ id, title: rail.title, type: rail.type, items: clean(await timed("rail:" + id, () => rail.make(14))) })), 300);
+      const id = q.get("rail"); if (!id) return json({ rails: RAILS.filter((r) => !sm || SOURCES[r.src].safe).map((r) => ({ id: r.id, title: r.title, type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=600" });
+      const rail = RAILS.find((r) => r.id === id && (!sm || SOURCES[r.src].safe)); if (!rail) return json({ error: "no such shelf" }, 404, cors);
+      return reply(await cached(ctx, url.origin, "rail:" + id + (sm ? "" : ":open"), 1800, async () => ({ id, title: rail.title, type: rail.type, items: clean(await timed("rail:" + id, () => rail.make(14, { safe: sm })), sm) })), 300);
     }
     if (sub === "/search") {
-      const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit") };
-      return reply(await cached(ctx, url.origin, "s:" + JSON.stringify([clip(p.q, 100).toLowerCase(), p.type || "all", p.src || "", +p.page || 1, +p.limit || 0]), 600, () => search(p)), 120);
+      const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit"), safe: sm };
+      return reply(await cached(ctx, url.origin, "s:" + JSON.stringify([clip(p.q, 100).toLowerCase(), p.type || "all", p.src || "", +p.page || 1, +p.limit || 0, sm]), 600, () => search(p)), 120);
     }
-    if (sub === "/item") { const id = clip(q.get("id"), 300); return reply(await cached(ctx, url.origin, "i:" + id, 3600, () => item(id)), 600); }
+    if (sub === "/item") { const id = clip(q.get("id"), 300); return reply(await cached(ctx, url.origin, "i:" + id + (sm ? "" : ":open"), 3600, () => item(id, sm)), 600); }
     if (sub === "/health") {
       if (!(await isOwner())) return json({ error: "owner only" }, 401, cors);
       const out = {}; await Promise.all(Object.entries(SOURCES).map(async ([id, s]) => { const t0 = Date.now(); if (!ready(s)) { out[id] = { ok: true, skipped: "needs " + s.needs }; return; } try { const r = await timed(id + ":health", () => s.search(s.types[0], "love", 3, 1)); out[id] = { ok: true, n: r.length, ms: Date.now() - t0, sample: r[0] && r[0].title }; } catch (e) { out[id] = { ok: false, ms: Date.now() - t0, error: clip(e && e.message || e, 140) }; } }));

@@ -96,3 +96,6 @@ dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(3px); }
 .watch { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; } .watch .card { flex: none; width: 150px; } .watch .card .art { aspect-ratio: 16/10; }
 .back { margin-bottom: 10px; }
 .srclist input:disabled + label { opacity: .6; cursor: default; }
+
+.btn.safe { border-color: #2e7d5b; color: #8fe0b8; } .btn.safe:not(.on) { border-color: var(--bad); color: var(--bad); }
+@media (max-width: 640px) { .top .btn.safe { padding-left: 10px; padding-right: 10px; font-size: 12.5px; } }
