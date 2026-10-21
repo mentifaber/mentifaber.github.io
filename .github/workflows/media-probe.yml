@@ -17,3 +17,6 @@ jobs:
         with:
           node-version: "22"
       - run: node tools/media-probe.mjs
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}

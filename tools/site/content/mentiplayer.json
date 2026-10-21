@@ -1,9 +1,9 @@
 {
  "kicker": "craft · open media",
- "tagline": "Films, TV, music, radio, audiobooks and podcasts from the open web, in one player: public-domain cinema, NASA's own footage, live radio and artist-uploaded music, all asked for through one small gateway. No accounts, no keys.",
+ "tagline": "Films, TV, live TV, music, radio, audiobooks and podcasts from the open web, in one player: public-domain cinema, classic TV, news channels, NASA's own footage, live radio and artist-uploaded music. Shows that live on another host play in that host's own player. No accounts.",
  "caps": [
-  "9 open sources",
-  "no accounts, no keys",
+  "17 sources",
+  "watch-through players",
   "keeps your place"
  ],
  "launchSub": "Search everything at once, or browse the shelves · your saved list stays on your device",
@@ -18,19 +18,23 @@
  "features": [
   {
    "t": "One search",
-   "d": "Films, TV, music, radio, audiobooks, podcasts and video from nine sources at once, mixed so the first screen isn't all one site. Narrow it by type, or choose which sources to ask."
+   "d": "Films, TV, live TV, music, radio, audiobooks, podcasts and video from seventeen sources at once, mixed so the first screen isn't all one site. Narrow it by type, choose which sources to ask, or switch everything on with one button."
   },
   {
    "t": "Plays what it finds",
-   "d": "Feature films and cartoons from the Internet Archive, NASA's footage, live radio, and whole audiobooks and podcast feeds as playlists, with speed control and your place remembered."
+   "d": "Feature films, cartoons and classic TV from the Internet Archive and the Library of Congress, NASA's footage, live radio, and whole audiobooks and podcast feeds as playlists, with speed control and your place remembered."
   },
   {
    "t": "Audio that keeps going",
    "d": "Start a station or an album, then keep browsing: the player stays at the bottom of the screen, with lock-screen controls where the phone supports them."
   },
   {
-   "t": "Honest about TV",
-   "d": "TV shows get their details, tonight's schedule, episodes and cast, but no streams: the networks hold those rights, so it points to the official site instead."
+   "t": "Watch through",
+   "d": "Shows that sit on another site (live news channels, Mixcloud sets, Dailymotion and YouTube videos, the Archive's own player) play right here, in that host's official player. Nothing is copied: the show stays with its owner."
+  },
+  {
+   "t": "Free episodes of TV shows",
+   "d": "Open a show and it lists the free copies that exist, classic series on the Internet Archive and, with a key, full episodes on YouTube. Current network shows get their details, schedule, episodes and cast, and links to where they air."
   }
  ],
  "cards": [
@@ -45,15 +49,15 @@
   },
   {
    "n": "where it comes from",
-   "html": "<p>The Internet Archive, TVmaze, Openverse, Wikimedia Commons, NASA, Radio Browser, Apple's podcast directory (with each show's public feed), Audius and, if you turn it on, PeerTube through Sepia Search. Every item shows its licence and links back to where it lives.</p>"
+   "html": "<p>The Internet Archive, the Library of Congress, TVmaze, Openverse, ccMixter, Audius, Wikimedia Commons, NASA, Radio Browser, SomaFM, Apple's podcast directory (with each show's public feed), Mixcloud and live news channels, plus Jamendo and YouTube where the site has their keys and, if you turn them on, Dailymotion and PeerTube. Every item shows its licence and links back to where it lives.</p>"
   },
   {
    "n": "what stays on your device",
    "html": "<p>Your saved list, what you played recently, your place in long recordings, and which sources you've switched on. There are no accounts and nothing to sign in to.</p>"
   }
  ],
- "scope": "<p>MentiPlayer plays media that is public domain, openly licensed, or streamed free by its owner. It hosts none of it, so what plays depends on each source being up. Files from Wikimedia Commons are often WebM or Ogg, which some browsers can't play. Live radio sounds as good as the station sends it. PeerTube is off by default because those servers aren't curated, and explicit podcasts are left out of search. <em>Check each item's licence before you reuse it.</em></p>",
- "closing": "A dozen sites' worth of open media, one search box.",
+ "scope": "<p>MentiPlayer plays media that is public domain, openly licensed, or streamed free by its owner. It hosts none of it, so what plays depends on each source being up. Files from Wikimedia Commons are often WebM or Ogg, which some browsers can't play. Live radio sounds as good as the station sends it. Dailymotion and PeerTube are off by default because they aren't curated, and explicit podcasts are left out of search. <em>Check each item's licence before you reuse it.</em></p>",
+ "closing": "Seventeen sites' worth of open media, one search box.",
  "manifest": {
   "categories": [
    "entertainment",
