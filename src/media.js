@@ -123,9 +123,9 @@ async function tvWatch(name) {
   const w = words(name).toLowerCase().split(" ").filter(Boolean); if (!w.length) return [];
   const jobs = [within(iaSearch("tv", name, 12, 1, null, true), 4500).catch(() => [])]; // the name as a phrase: its words scattered over unrelated items would match too much
   if (key_("YOUTUBE_API_KEY")) jobs.push(within(ytSearch(name + " full episode", 8, 1), 4500).catch(() => []));
-  // a copy counts when the show's name is in its title or, for several-word names, said in full in its credits or description (Archive episodes are often titled by the episode alone)
-  const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ", phrase = norm(w.join(" "));
-  return (await Promise.all(jobs)).flat().filter((i) => w.every((x) => norm(i.title).includes(" " + x)) || (w.length > 1 && norm(i.title + " " + i.creator + " " + i.description).includes(phrase))).slice(0, 10);
+  // several-word names are searched as a phrase, so the Archive has already matched the name (its episodes are often titled by the episode alone); one word is far too loose, so it must be in the title
+  const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
+  return (await Promise.all(jobs.map((j, k) => j.then((l) => l.filter((i) => (k === 0 && w.length > 1) || w.every((x) => norm(i.title).includes(" " + x))))))).flat().slice(0, 10);
 }
 
 // ── Openverse ──
