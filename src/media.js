@@ -62,11 +62,15 @@ async function get(url, o = {}) {
 // an item every source makes: the same small record
 const mk = (o) => ({ id: o.source + "|" + o.type + "|" + o.key, source: o.source, type: o.type, title: clip(plain(o.title, 200), 160) || "Untitled", creator: clip(plain(o.creator, 160), 120), year: o.year ? String(o.year).slice(0, 4) : "", description: plain(o.description, 420),
   thumb: safe(o.thumb), page: safe(o.page), license: plain(o.license, 80), meta: plain(o.meta || "", 120), ...(o.play && safe(o.play.url) ? { play: { kind: o.play.kind, url: safe(o.play.url), ...(o.play.height ? { height: o.play.height } : {}) } } : {}) });
+// nothing explicit reaches the page, whatever a source lets through: a word list over the text, applied to every result
+const EXPLICIT = /\b(porn\w*|xxx+|hentai|erotic\w*|nsfw|x-rated|blow ?jobs?|hand ?jobs?|cum ?shots?|creampie|gangbang|orgy|orgies|milf|bdsm|fetish\w*|nudes?|nudity|naked|topless|striptease|strippers?|lingerie|sex ?(tape|scene|video|film|movie|show|slave|toy)s?|sexual(ly)?|adults? only|adult (film|movie|video|content|entertainment)s?|18\+|camgirl|onlyfans|escort|hookers?|prostitut\w*|anal|hardcore|softcore|playboy|penthouse|kamasutra|upskirt)\b/i;
+export const explicit = (i) => EXPLICIT.test([i.title, i.creator, i.description, i.meta].join(" "));
+const clean = (l) => (Array.isArray(l) ? l.filter((i) => !explicit(i)) : l);
 const parseId = (id) => { const [source, type, ...k] = String(id || "").split("|"); return { source, type, key: k.join("|") }; };
 
 // ── the Internet Archive ──
 const IA = "https://archive.org";
-const IA_MOVIES = "(collection:feature_films OR collection:prelinger OR collection:animationandcartoons OR collection:silent_films OR collection:SciFi_Horror OR collection:Film_Noir OR collection:classic_cartoons OR collection:fedflix OR collection:moviesandfilms)";
+const IA_MOVIES = "(collection:feature_films OR collection:prelinger OR collection:animationandcartoons OR collection:silent_films OR collection:SciFi_Horror OR collection:Film_Noir OR collection:classic_cartoons OR collection:fedflix)";
 const IA_TV = "mediatype:movies AND (collection:classic_tv OR collection:classic_tv_commercials OR collection:television)";
 const IA_RADIO = "mediatype:audio AND (collection:oldtimeradio OR collection:radioprograms)";
 const IA_MUSIC = "(mediatype:audio OR mediatype:etree) AND (collection:opensource_audio OR collection:etree OR collection:78rpm OR collection:netlabels OR collection:audio_music)";
@@ -74,7 +78,7 @@ const IA_BOOKS = "mediatype:audio AND collection:librivoxaudio";
 const IA_KIND = { movie: ["movies", IA_MOVIES], tv: ["movies", IA_TV], music: ["audio", IA_MUSIC], audiobook: ["audio", IA_BOOKS], podcast: ["audio", IA_RADIO] };
 const IA_META = { movie: "Internet Archive film", tv: "Classic TV · Internet Archive", audiobook: "LibriVox audiobook", podcast: "Old-time radio · Internet Archive", music: "Internet Archive audio" };
 async function iaSearch(type, q, limit, page, extra, phrase) {
-  const [, base] = IA_KIND[type], w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base);
+  const [, base] = IA_KIND[type], w = words(q), terms = w ? (phrase ? '"' + w + '" AND ' : "(" + w.split(" ").filter(Boolean).join(" AND ") + ") AND ") : "", query = terms + "(" + (extra || (type === "movie" ? "mediatype:movies AND " : "") + base) + ") AND -subject:(adult OR porn OR porno OR xxx OR erotic OR erotica OR nude OR nudity OR hentai OR fetish) AND -collection:(adult OR adult_films OR nsfw)";
   const j = await get(IA + "/advancedsearch.php?q=" + enc(query) + "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=creator&fl[]=licenseurl&fl[]=mediatype&sort[]=downloads+desc&rows=" + limit + "&page=" + (page || 1) + "&output=json", { ttl: 300 });
   return ((j.response && j.response.docs) || []).filter((d) => d.identifier).map((d) => mk({ source: "archive", type, key: d.identifier, title: d.title || d.identifier, creator: [].concat(d.creator || "")[0], year: [].concat(d.year || "")[0], description: [].concat(d.description || "")[0],
     thumb: IA + "/services/img/" + d.identifier, page: IA + "/details/" + d.identifier, license: d.licenseurl ? licenseName([].concat(d.licenseurl)[0]) : "Public domain or free to share: see its page", meta: IA_META[type] || "Internet Archive" }));
@@ -125,7 +129,7 @@ async function tvWatch(name) {
   if (key_("YOUTUBE_API_KEY")) jobs.push(within(ytSearch(name + " full episode", 8, 1), 4500).catch(() => []));
   // several-word names are searched as a phrase, so the Archive has already matched the name (its episodes are often titled by the episode alone); one word is far too loose, so it must be in the title
   const norm = (x) => " " + String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
-  return (await Promise.all(jobs.map((j, k) => j.then((l) => l.filter((i) => (k === 0 && w.length > 1) || w.every((x) => norm(i.title).includes(" " + x))))))).flat().slice(0, 10);
+  return (await Promise.all(jobs.map((j, k) => j.then(clean)).map((j, k) => j.then((l) => l.filter((i) => (k === 0 && w.length > 1) || w.every((x) => norm(i.title).includes(" " + x))))))).flat().slice(0, 10);
 }
 
 // ── Openverse ──
@@ -332,7 +336,7 @@ export async function search({ q, type, src, page, limit }) {
   const want = src ? String(src).split(",").map((s) => s.trim()).filter((s) => SOURCES[s] && ready(SOURCES[s])) : Object.keys(SOURCES).filter((s) => SOURCES[s].on && ready(SOURCES[s])), jobs = [];
   for (const s of want) for (const t of SOURCES[s].types) if (type === "all" || type === t) jobs.push([s, t]);
   const settled = await Promise.allSettled(jobs.map(([s, t]) => timed(s + (jobs.filter((j) => j[0] === s).length > 1 ? ":" + t : ""), () => within(SOURCES[s].search(t, q, limit, page), BUDGET.search)))), report = {};
-  const lists = settled.map((r, i) => { const [s] = jobs[i], rep = report[s] || (report[s] = { ok: false, n: 0 }); if (r.status === "fulfilled") { rep.ok = true; rep.n += r.value.length; return r.value; } rep.error = rep.error || clip(r.reason && r.reason.message, 100); return []; });
+  const lists = settled.map((r, i) => { const [s] = jobs[i], rep = report[s] || (report[s] = { ok: false, n: 0 }); if (r.status === "fulfilled") { const v = clean(r.value); rep.ok = true; rep.n += v.length; return v; } rep.error = rep.error || clip(r.reason && r.reason.message, 100); return []; });
   const bySrc = {}; settled.forEach((r, i) => { const s = jobs[i][0]; (bySrc[s] = bySrc[s] || []).push(...(lists[i] || [])); });
   return { q, type, page, items: roundRobin(Object.values(bySrc)), sources: report };
 }
@@ -365,7 +369,7 @@ export async function media(req, env, ctx, json, isOwner) {
     if (sub === "/featured") {
       const id = q.get("rail"); if (!id) return json({ rails: RAILS.map((r) => ({ id: r.id, title: r.title, type: r.type })) }, 200, { ...cors, "cache-control": "public, max-age=600" });
       const rail = RAILS.find((r) => r.id === id); if (!rail) return json({ error: "no such shelf" }, 404, cors);
-      return reply(await cached(ctx, url.origin, "rail:" + id, 1800, async () => ({ id, title: rail.title, type: rail.type, items: await timed("rail:" + id, () => rail.make(14)) })), 300);
+      return reply(await cached(ctx, url.origin, "rail:" + id, 1800, async () => ({ id, title: rail.title, type: rail.type, items: clean(await timed("rail:" + id, () => rail.make(14))) })), 300);
     }
     if (sub === "/search") {
       const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit") };
