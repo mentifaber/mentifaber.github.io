@@ -4,8 +4,8 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const LS = { get(k, d) { try { const v = localStorage.getItem("mp:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("mp:" + k, JSON.stringify(v)); } catch (e) {} } };
-const LABEL = { movie: "Film", tv: "TV", music: "Music", radio: "Radio", audiobook: "Audiobook", podcast: "Podcast", video: "Video" };
-const HUE = { movie: 268, tv: 190, music: 150, radio: 8, audiobook: 38, podcast: 320, video: 215 };
+const LABEL = { movie: "Film", tv: "TV", music: "Music", radio: "Radio", audiobook: "Audiobook", podcast: "Podcast", video: "Video", live: "Live TV" };
+const HUE = { movie: 268, tv: 190, music: 150, radio: 8, audiobook: 38, podcast: 320, video: 215, live: 350 };
 const el = (tag, props, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props || {})) { if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else if (v === true) e.setAttribute(k, ""); else if (v !== false && v != null) e.setAttribute(k, v); } for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c))); return e; };
 const https = (u) => (typeof u === "string" && /^https:\/\//i.test(u) ? u : "");
 const fmt = (s) => { if (!isFinite(s) || s < 0) return "0:00"; s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
@@ -23,17 +23,17 @@ const pushRecent = (it) => { S.recent = [compact(it), ...S.recent.filter((r) => 
 const metaOf = (it) => [it.type === "tv" || it.type === "radio" ? it.meta || it.creator : it.creator, it.year].filter(Boolean).join(" · ");
 
 // ── cards and shelves ──
-function card(it) {
+function card(it, onOpen) {
   const img = pic(it.thumb, it.type);
-  const art = el("div", { class: "art" }, img, el("span", { class: "badge" + (it.type === "radio" ? " live" : ""), text: it.type === "radio" ? "Live" : LABEL[it.type] || it.type }));
+  const art = el("div", { class: "art" }, img, el("span", { class: "badge" + (it.type === "radio" || it.type === "live" ? " live" : ""), text: it.type === "radio" ? "Live" : LABEL[it.type] || it.type }));
   const open = el("button", { class: "open", type: "button", "aria-label": "Open " + it.title }, art, el("h3", { text: it.title }), el("div", { class: "meta", text: metaOf(it) }));
-  open.addEventListener("click", () => openItem(it));
+  open.addEventListener("click", () => (onOpen || openItem)(it));
   const heart = el("button", { class: "heart" + (isSaved(it) ? " on" : ""), type: "button", "aria-label": "Save to your list", "aria-pressed": String(isSaved(it)), text: "♥" });
   heart.addEventListener("click", () => { toggleSave(it); heart.classList.toggle("on", isSaved(it)); heart.setAttribute("aria-pressed", String(isSaved(it))); if (S.type === "saved") showSaved(); });
   return el("article", { class: "card t-" + it.type }, open, heart);
 }
 const shelf = (title, note) => { const rail = el("div", { class: "rail" }, el("div", { class: "skel" })); return { sec: el("section", { class: "shelf" }, el("h2", { text: title }, note ? el("small", { text: note }) : null), rail), rail }; };
-const fill = (rail, items) => { rail.replaceChildren(...items.map(card)); };
+const fill = (rail, items) => { rail.replaceChildren(...items.map((i) => card(i))); };
 async function loadHome() {
   const home = $("home"), tok = ++S.tok; home.replaceChildren(); $("results").hidden = true; home.hidden = false; $("status").textContent = "";
   const want = S.type;
@@ -49,14 +49,14 @@ async function runSearch(more) {
   const qs = new URLSearchParams({ q: S.q, type: S.type || "all", page: String(S.page) }); if (S.src) qs.set("src", S.src.join(","));
   try {
     const j = await api("/search?" + qs); if (tok !== S.tok) return;
-    grid.append(...j.items.map(card)); const down = Object.entries(j.sources || {}).filter(([, v]) => !v.ok).map(([k]) => S.names[k] || k), got = grid.children.length;
+    grid.append(...j.items.map((i) => card(i))); const down = Object.entries(j.sources || {}).filter(([, v]) => !v.ok).map(([k]) => S.names[k] || k), got = grid.children.length;
     if (!got) grid.append(el("div", { class: "empty", text: "Nothing found for “" + S.q + "”. Try another word, or another tab." }));
     $("status").textContent = got ? got + " result" + (got === 1 ? "" : "s") + (down.length ? " · " + down.join(", ") + " didn't answer" : "") : "";
     $("more").hidden = !j.items.length || S.page >= 10 || (S.type === "" && S.page >= 3);
   } catch (e) { if (tok === S.tok) { $("status").textContent = ""; if (!more) grid.replaceChildren(el("div", { class: "empty", text: "The search didn't go through: " + e.message })); else toast("That didn't load: " + e.message); } }
 }
 function showSaved() {
-  ++S.tok; $("home").hidden = true; $("results").hidden = false; $("more").hidden = true; const grid = $("grid"); grid.replaceChildren(...S.saved.map(card));
+  ++S.tok; $("home").hidden = true; $("results").hidden = false; $("more").hidden = true; const grid = $("grid"); grid.replaceChildren(...S.saved.map((i) => card(i)));
   if (!S.saved.length) grid.append(el("div", { class: "empty", text: "Nothing saved yet. Tap the ♥ on anything to keep it here." })); $("status").textContent = S.saved.length ? S.saved.length + " saved on this device" : "";
 }
 function syncUrl(replace) {
@@ -104,29 +104,37 @@ const dlg = $("dlg");
 let video = null;
 function stopVideo() { if (video) { try { video.pause(); } catch (e) {} video = null; } }
 function closeItem() { stopVideo(); if (dlg.open) dlg.close(); }
-dlg.addEventListener("close", () => { document.body.append($("deck")); $("deck").classList.remove("in-dlg"); stopVideo(); dlg.querySelector("iframe") && dlg.querySelector("iframe").remove(); $("dbody").replaceChildren(); S.openId = ""; if (/(^#|&)i=/.test(location.hash)) syncUrl(true); });
+dlg.addEventListener("close", () => { document.body.append($("deck")); $("deck").classList.remove("in-dlg"); stopVideo(); stopFrames(); $("dbody").replaceChildren(); S.openId = ""; if (/(^#|&)i=/.test(location.hash)) syncUrl(true); });
 $("dclose").addEventListener("click", closeItem); dlg.addEventListener("click", (e) => { if (e.target === dlg) closeItem(); });
-const RESOLVABLE = /^(archive|tvmaze|nasa|podcasts)\|/;
-async function openItem(it) {
+const RESOLVABLE = /^(archive|tvmaze|nasa|podcasts|loc)\|/;
+async function openItem(it, back) {
   const tok = ++S.tok2; S.openId = RESOLVABLE.test(it.id) ? it.id : ""; stopVideo(); $("dtitle").textContent = it.title || "…"; $("dbody").replaceChildren(el("div", { class: "spin", text: "Loading…" })); if (!dlg.open) dlg.showModal(); dlg.append($("deck")); $("deck").classList.add("in-dlg"); // the player rides inside the window, above its backdrop
   if (S.openId) syncUrl(true);
   let d = { item: it, play: it.play || null };
-  if (!it.play || it.type === "tv") { try { d = await api("/item?id=" + encodeURIComponent(it.id)); } catch (e) { if (tok !== S.tok2) return; if (!it.play) { $("dbody").replaceChildren(el("div", { class: "note", text: "This one couldn't be opened right now (" + e.message + ")." }), it.page ? el("p", {}, el("a", { href: https(it.page), target: "_blank", rel: "noopener noreferrer", text: "Open it on its own site →" })) : null); return; } } }
-  if (tok !== S.tok2) return; renderItem({ ...it, ...(d.item || {}), thumb: (d.item && d.item.thumb) || it.thumb }, d);
+  if (!it.play || it.type === "tv" && it.source === "tvmaze") { try { d = await api("/item?id=" + encodeURIComponent(it.id)); } catch (e) { if (tok !== S.tok2) return; if (!it.play) { $("dbody").replaceChildren(el("div", { class: "note", text: "This one couldn't be opened right now (" + e.message + ")." }), it.page ? el("p", {}, el("a", { href: https(it.page), target: "_blank", rel: "noopener noreferrer", text: "Open it on its own site →" })) : null); return; } } }
+  if (tok !== S.tok2) return; renderItem({ ...it, ...(d.item || {}), thumb: (d.item && d.item.thumb) || it.thumb }, d, back);
 }
-function renderItem(m, d) {
+// a show that lives on someone else's player is shown in that player, in a frame that can run it and nothing more
+function frame(url, m, height) { return el("iframe", { src: url, title: m.title, ...(height ? { height: String(height) } : {}), allow: "autoplay; fullscreen; picture-in-picture; encrypted-media", allowfullscreen: true, referrerpolicy: "strict-origin-when-cross-origin", sandbox: "allow-scripts allow-same-origin allow-popups allow-presentation" }); }
+function stopFrames() { dlg.querySelectorAll("iframe").forEach((f) => f.remove()); }
+function renderItem(m, d, back) {
   $("dtitle").textContent = m.title; const body = $("dbody"), p = d.play || { kind: "none" }, parts = [], chips = [LABEL[m.type], m.creator, m.year, m.meta && m.meta !== m.creator ? m.meta : "", d.status].filter(Boolean);
   const heart = el("button", { class: "btn sm", type: "button", text: isSaved(m) ? "♥ Saved" : "♡ Save" }); heart.addEventListener("click", () => { toggleSave(m); heart.textContent = isSaved(m) ? "♥ Saved" : "♡ Save"; if (S.type === "saved") showSaved(); });
   const acts = el("div", { class: "acts" }); const info = el("div", {}, el("div", { class: "chips" }, chips.map((c) => el("span", { text: c }))), m.description ? el("p", { class: "desc", text: m.description }) : null);
+  if (back) parts.push(el("button", { class: "btn sm back", type: "button", text: "← Back to " + back.m.title, onclick: () => { stopVideo(); stopFrames(); renderItem(back.m, back.d); } }));
   if (p.kind === "video" && https(p.url)) {
     const v = el("video", { controls: true, playsinline: true, preload: "metadata", poster: https(m.thumb) || false }); v.src = p.url; for (const s of (p.subtitles || []).filter((s) => https(s.url))) v.append(el("track", { kind: "subtitles", label: s.label || "Subtitles", srclang: "en", src: s.url })); video = v; stopAudio();
     const key = posKey(p.url), saved = LS.get(key, 0); if (saved > 5) v.addEventListener("loadedmetadata", () => { if (v.duration - saved > 10) v.currentTime = saved; }, { once: true });
     let t0 = 0; v.addEventListener("timeupdate", () => { if (Date.now() - t0 > 5000) { t0 = Date.now(); LS.set(key, Math.floor(v.currentTime)); } }); v.addEventListener("play", () => { pushRecent(m); if (!A.paused) A.pause(); });
-    parts.push(el("div", { class: "stage" }, v));
+    const stage = el("div", { class: "stage" }, v); parts.push(stage);
+    if (https(p.embed)) { // the host's own player, for when the file won't play here (or when you'd rather)
+      const swap = () => { stopVideo(); stage.replaceChildren(frame(p.embed, m, 0)); swap.b.remove(); pushRecent(m); }; swap.b = el("button", { class: "btn sm", type: "button", text: "Use the Archive's own player", onclick: swap }); acts.append(swap.b); v.addEventListener("error", (e) => { if (e.target === v && stage.contains(v)) { toast("That file wouldn't play here. Trying the Archive's own player."); swap(); } }, true);
+    }
     if (p.tracks && p.tracks.length > 1) parts.push(el("ul", { class: "tracks" }, p.tracks.map((t) => el("li", { onclick: () => { v.src = t.url; v.play().catch(() => {}); } }, el("b", { text: t.title }), el("small", { text: t.duration ? fmt(t.duration) : "" })))));
   } else if (p.kind === "embed" && https(p.url)) {
-    parts.push(el("div", { class: "stage" }, el("iframe", { src: p.url, title: m.title, allow: "autoplay; fullscreen; picture-in-picture", allowfullscreen: true, referrerpolicy: "no-referrer", sandbox: "allow-scripts allow-same-origin allow-popups allow-presentation" }))); pushRecent(m);
-    parts.push(el("p", { class: "lic", text: "Played from an open PeerTube server, which isn't curated by MentiPlayer. Its own page has the details." }));
+    stopAudio(); parts.push(el("div", { class: "stage" + (p.height ? " widget" : "") }, frame(p.url, m, p.height))); pushRecent(m);
+    const host = S.names[m.source] || m.source;
+    parts.push(el("p", { class: "lic", text: m.source === "peertube" ? "Played from an open PeerTube server, which isn't curated by MentiPlayer. Its own page has the details." : "Shown through " + host + ", in its own player, the way its owner allows. Nothing is copied: it stays with its owner." }));
   } else if (p.kind === "audio" || p.kind === "live") {
     const tracks = p.tracks && p.tracks.length ? p.tracks : [{ title: m.title, url: p.url, duration: undefined }], live = p.kind === "live";
     const play = el("button", { class: "btn pri", type: "button", text: live ? "▶ Listen live" : tracks.length > 1 ? "▶ Play from the start" : "▶ Play" }); play.addEventListener("click", () => playTracks(tracks, 0, m, live)); acts.append(play);
@@ -140,6 +148,7 @@ function renderItem(m, d) {
   acts.append(heart); if (m.page) acts.append(el("a", { class: "btn sm", href: https(m.page), target: "_blank", rel: "noopener noreferrer", text: "Open on its site ↗" }));
   const share = el("button", { class: "btn sm", type: "button", text: "Share" }); share.addEventListener("click", async () => { const u = RESOLVABLE.test(m.id) ? location.origin + location.pathname + "#i=" + encodeURIComponent(m.id) : https(m.page) || location.href; try { if (navigator.share) await navigator.share({ title: m.title, url: u }); else { await navigator.clipboard.writeText(u); toast("Link copied"); } } catch (e) {} }); acts.append(share);
   if (p.kind !== "audio" && p.kind !== "live") info.append(acts);
+  if (d.watch && d.watch.length) parts.push(el("h3", { text: "Watch free" }), el("div", { class: "watch" }, d.watch.map((w) => card(w, (x) => openItem(x, { m, d })))));
   if (d.episodes && d.episodes.length) parts.push(el("h3", { text: "Latest episodes" }), el("ul", { class: "eps" }, d.episodes.map((e) => el("li", {}, el("b", { text: (e.season ? "S" + e.season + "E" + e.number + " · " : "") + e.title }), " ", el("small", { text: e.date || "" })))));
   if (d.cast && d.cast.length) parts.push(el("h3", { text: "Cast" }), el("div", { class: "cast" }, d.cast.map((c) => el("figure", {}, pic(c.photo, "tv"), el("b", { text: c.name }), c.as ? "as " + c.as : ""))));
   if (d.links && d.links.length) parts.push(el("p", { class: "links" }, d.links.filter((l) => https(l.url)).map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener noreferrer", text: l.label + " ↗" }))));
@@ -152,18 +161,19 @@ const srcdlg = $("srcdlg"); let srcs = [];
 async function openSources() {
   srcdlg.showModal(); const ul = $("srclist"); ul.replaceChildren(el("li", { text: "Loading…" }));
   try { srcs = (await api("/sources")).sources; } catch (e) { ul.replaceChildren(el("li", { text: "Couldn't load the list: " + e.message })); return; }
-  const on = S.src || srcs.filter((s) => s.on).map((s) => s.id);
-  ul.replaceChildren(...srcs.map((s) => { const cb = el("input", { type: "checkbox", id: "src-" + s.id, "data-id": s.id }); cb.checked = on.includes(s.id); const l = s.last; return el("li", {}, cb, el("label", { for: "src-" + s.id }, s.name, el("span", { class: "dot " + (l ? (l.ok ? "ok" : "bad") : ""), title: l ? (l.ok ? "answered " + (l.n != null ? l.n + " items" : "fine") : "last try failed: " + (l.error || "")) : "not tried yet" })), el("small", { text: s.note })); }));
+  const on = S.src || srcs.filter((s) => s.on && s.ready !== false).map((s) => s.id);
+  ul.replaceChildren(...srcs.map((s) => { const cb = el("input", { type: "checkbox", id: "src-" + s.id, "data-id": s.id, disabled: s.ready === false }); cb.checked = s.ready !== false && on.includes(s.id); const l = s.last; return el("li", {}, cb, el("label", { for: "src-" + s.id }, s.name, el("span", { class: "dot " + (l ? (l.ok ? "ok" : "bad") : ""), title: l ? (l.ok ? "answered " + (l.n != null ? l.n + " items" : "fine") : "last try failed: " + (l.error || "")) : "not tried yet" })), el("small", { text: s.note + (s.ready === false ? " (Not set up on this site yet.)" : "") })); }));
 }
 $("srcbtn").addEventListener("click", openSources); $("srcclose").addEventListener("click", () => srcdlg.close());
+$("srcall").addEventListener("click", () => { srcdlg.querySelectorAll("input[data-id]:not(:disabled)").forEach((c) => (c.checked = true)); toast("Everything that is set up is on: press Done"); });
 $("srcreset").addEventListener("click", () => { S.src = null; LS.set("src", null); srcdlg.close(); toast("Back to the defaults"); go(true); });
-$("srcsave").addEventListener("click", () => { const ids = [...srcdlg.querySelectorAll("input[data-id]")].filter((c) => c.checked).map((c) => c.dataset.id), def = srcs.filter((s) => s.on).map((s) => s.id);
+$("srcsave").addEventListener("click", () => { const ids = [...srcdlg.querySelectorAll("input[data-id]")].filter((c) => c.checked).map((c) => c.dataset.id), def = srcs.filter((s) => s.on && s.ready !== false).map((s) => s.id);
   if (!ids.length) return toast("Keep at least one source on"); S.src = ids.slice().sort().join() === def.slice().sort().join() ? null : ids; LS.set("src", S.src); srcdlg.close(); go(true); });
 
 // ── start-up, shortcuts, links ──
 document.addEventListener("keydown", (e) => { const t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA"); if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); } else if (e.key === " " && !typing && t.tagName !== "BUTTON" && t.tagName !== "VIDEO" && S.q2.length) { e.preventDefault(); A.paused ? A.play().catch(() => {}) : A.pause(); } });
 async function fromHash() {
-  const h = new URLSearchParams(location.hash.slice(1)); S.q = h.get("q") || ""; S.type = ["movie", "tv", "music", "radio", "audiobook", "podcast", "video", "saved"].includes(h.get("t")) ? h.get("t") : ""; $("q").value = S.q;
+  const h = new URLSearchParams(location.hash.slice(1)); S.q = h.get("q") || ""; S.type = ["movie", "tv", "music", "radio", "audiobook", "podcast", "video", "live", "saved"].includes(h.get("t")) ? h.get("t") : ""; $("q").value = S.q;
   [...$("tabs").children].forEach((x) => x.classList.toggle("on", x.dataset.t === S.type)); const id = h.get("i");
   if (id && RESOLVABLE.test(id)) { const [source, type] = id.split("|"); openItem({ id, source, type, title: "…" }); }
   go(true);

@@ -45,7 +45,7 @@ main { padding: 6px 0 24px; min-height: 60vh; }
 .card .meta { margin: 0 2px; font-size: 12.5px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .heart { position: absolute; right: 6px; top: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 15px; opacity: 0; transition: opacity .15s; }
 .card:hover .heart, .card .heart:focus-visible, .card .heart.on, .touch .card .heart { opacity: 1; } .card .heart.on { color: var(--acc2); }
-.t-movie, .t-tv { --ar: .6667; } .t-video { --ar: 1.7778; } .t-music, .t-radio, .t-audiobook, .t-podcast { --ar: 1; }
+.t-movie, .t-tv { --ar: .6667; } .t-video, .t-live { --ar: 1.7778; } .t-music, .t-radio, .t-audiobook, .t-podcast { --ar: 1; }
 .morerow { text-align: center; padding: 8px; }
 .empty { grid-column: 1 / -1; padding: 50px 18px; text-align: center; color: var(--dim); }
 dialog { border: 1px solid var(--line); background: var(--bg2); color: var(--ink); border-radius: 18px; padding: 0; width: min(920px, calc(100vw - 20px)); max-height: calc(100dvh - 24px); overflow: auto; box-shadow: 0 30px 90px rgba(0,0,0,.7); }
@@ -91,3 +91,8 @@ dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(3px); }
   body.deck-on { padding-bottom: calc(env(safe-area-inset-bottom) + 130px); } #toast { bottom: calc(env(safe-area-inset-bottom) + 130px); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+.stage.widget iframe { aspect-ratio: auto; height: 180px; }
+.watch { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; } .watch .card { flex: none; width: 150px; } .watch .card .art { aspect-ratio: 16/10; }
+.back { margin-bottom: 10px; }
+.srclist input:disabled + label { opacity: .6; cursor: default; }

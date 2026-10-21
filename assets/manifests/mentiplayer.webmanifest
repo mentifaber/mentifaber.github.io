@@ -2,7 +2,7 @@
   "id": "/mentiplayer",
   "name": "MentiPlayer · Mentifaber",
   "short_name": "MentiPlayer",
-  "description": "Films, TV, music, radio, audiobooks and podcasts from open sources, in one player: public-domain cinema, NASA's own footage, live radio and artist-uploaded music, through one small gateway. No accounts, no keys.",
+  "description": "Films, TV, live TV, music, radio, audiobooks and podcasts from seventeen open sources, in one player: public-domain cinema, classic TV, news channels, NASA footage and live radio, with host-hosted shows played in their own players. No accounts.",
   "start_url": "/mentiplayer-app.html",
   "scope": "/mentiplayer",
   "display": "standalone",
