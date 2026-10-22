@@ -123,6 +123,8 @@ async function connect(code, name) {
 async function boot() {
   const code = codeFromUrl(), saved = LS.get("guest");
   if (code && saved && saved.token) return connect(code, "");
+  const name = String(new URLSearchParams(location.search).get("name") || "").trim().slice(0, 24);
+  if (code && name) return connect(code, name); // a link that names its guest (…/talk?name=Ann#code) joins without asking
   if (code) { show("join"); setTimeout(() => $("jn").focus(), 50); return; }
   if (saved && saved.token) { const j = await post("/join", { token: saved.token }).catch(() => ({ error: "Couldn't reach AutoFaber. Check your connection.", _s: 0 })); if (!j.error) return ready(j, saved.token); if (j._s === 0) return message("No connection", j.error, "Try again", boot); if (j._s === 401) LS.del("guest"); return message("This link can't connect", j.error, j._s === 401 ? "" : "Try again", boot); } // a link that's off or expired keeps this phone's place: it works again when the owner turns it back on
   message("Open your voice link", "Use the link you were sent: it connects this phone to AutoFaber by voice.");
