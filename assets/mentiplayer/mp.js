@@ -44,9 +44,19 @@ function card(it, onOpen) {
   const art = el("div", { class: "art" }, img, el("span", { class: "badge" + (it.type === "radio" || it.type === "live" ? " live" : ""), text: it.type === "radio" ? "Live" : LABEL[it.type] || it.type }), scoreOf(it.rating) ? el("span", { class: "score", title: it.rating.rt != null ? "Rotten Tomatoes" + (it.rating.imdb != null ? " · IMDb " + it.rating.imdb : "") : "IMDb", text: scoreOf(it.rating) }) : null);
   const open = el("button", { class: "open", type: "button", "aria-label": "Open " + it.title }, art, el("h3", { text: it.title }), el("div", { class: "meta", text: metaOf(it) }));
   open.addEventListener("click", () => (onOpen || openItem)(it));
+  // songs and stations play straight from the card, with the rest of the row lined up after
+  const playable = it.play && (it.play.kind === "audio" || it.play.kind === "live") && https(it.play.url);
+  const qp = playable ? el("button", { class: "qp", type: "button", "aria-label": "Play " + it.title, text: "▶", onclick: (e) => { e.stopPropagation(); quickPlay(e.currentTarget.closest("article.card")); } }) : null;
   const heart = el("button", { class: "heart" + (isSaved(it) ? " on" : ""), type: "button", "aria-label": "Save to your list", "aria-pressed": String(isSaved(it)), text: "♥" });
   heart.addEventListener("click", () => { toggleSave(it); heart.classList.toggle("on", isSaved(it)); heart.setAttribute("aria-pressed", String(isSaved(it))); if (S.type === "saved") showSaved(); });
-  return el("article", { class: "card t-" + it.type }, open, heart);
+  const a = el("article", { class: "card t-" + it.type }, open, qp, heart); a.__it = it; return a;
+}
+function quickPlay(cardEl) { const it = cardEl.__it; if (it) playRow([...(cardEl.parentElement ? cardEl.parentElement.children : [cardEl])].map((c) => c.__it), it); }
+// play one item with the rest of its row lined up after it (a station plays on its own)
+function playRow(list, it) {
+  if (it.play.kind === "live") return playTracks([{ title: it.title, url: it.play.url, item: it }], 0, it, true);
+  const row = list.filter((x) => x && x.play && x.play.kind === "audio" && https(x.play.url) && okItem(x)); if (!row.includes(it)) row.unshift(it);
+  playTracks(row.map((x) => ({ title: x.title, url: x.play.url, item: x })), row.indexOf(it), it, false);
 }
 const shelf = (title, note, id) => {
   const rail = el("div", { class: "rail" }, el("div", { class: "skel" }), el("div", { class: "skel" }), el("div", { class: "skel" })), go_ = (d) => rail.scrollBy({ left: d * rail.clientWidth * 0.85, behavior: "smooth" });
@@ -76,16 +86,35 @@ async function loadHome() {
   const jobs = rails.map((r) => { const s = shelf(r.title, "", r.id); home.append(s.sec); return () => api("/featured?rail=" + encodeURIComponent(r.id)).then((j) => { if (tok !== S.tok) return; const shown = (j.items || []).filter(okItem); if (shown.length) { fill(s.rail, shown); if (r.type === "movie" && ["toprated", "films", "noir", "silent"].includes(r.id)) hero(shown); } else s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "Nothing from this one right now." })); }).catch(() => { if (tok === S.tok) s.sec.replaceChildren(el("h2", { text: r.title }), el("p", { class: "gone", text: "This source didn't answer. It may be resting; it'll be back." })); }); });
   const pool = async () => { while (jobs.length) await jobs.shift()(); }; await Promise.all([pool(), pool(), pool(), pool()]);
 }
+// All: a top result, then a row per kind, best-matched kind first, each with "See all" (the way music and video apps lay out a search)
+const GROUPS = { movie: "Films", tv: "TV shows", music: "Songs", video: "Videos", live: "Live TV", radio: "Radio", podcast: "Podcasts & shows", audiobook: "Audiobooks" };
+function renderGrouped(j, grid) {
+  const items = j.items.filter(okItem), top = j.top && okItem(j.top) ? j.top : null, by = {};
+  for (const it of items) (by[it.type] = by[it.type] || []).push(it);
+  if (top) {
+    const playable = top.play && (top.play.kind === "audio" || top.play.kind === "live") && https(top.play.url), c = card(top);
+    const go_ = el("button", { class: "btn pri", type: "button", text: playable ? "▶ Play" : "Open", onclick: () => (playable ? playRow([top, ...(by[top.type] || []).filter((x) => x.id !== top.id)], top) : openItem(top)) });
+    grid.append(el("section", { class: "topres" }, el("div", { class: "toptxt" }, el("small", { class: "kick", text: "Top result · " + (LABEL[top.type] || top.type) }), el("h2", { text: top.title }), el("div", { class: "meta", text: [top.creator, top.year].filter(Boolean).join(" · ") }), el("div", { class: "acts" }, go_)), c));
+  }
+  const best = (t) => Math.max(...by[t].map((i) => i.score || 0));
+  for (const t of Object.keys(by).filter((t) => GROUPS[t]).sort((a, b) => best(b) - best(a))) {
+    const s = shelf(GROUPS[t], "", "r-" + t); fill(s.rail, by[t]);
+    s.sec.querySelector(".snav").prepend(el("button", { class: "seeall", type: "button", text: "See all", onclick: () => setTab(t) })); grid.append(s.sec);
+  }
+}
+const setTab = (t) => { const b = $("tabs").querySelector('[data-t="' + t + '"]'); if (b) b.click(); };
 async function runSearch(more) {
   const tok = ++S.tok; S.page = more ? S.page + 1 : 1; $("home").hidden = true; $("results").hidden = false; const grid = $("grid");
   if (!more) { grid.replaceChildren(); $("more").hidden = true; } $("status").textContent = more ? "Loading more…" : "Searching for “" + S.q + "”…";
   const qs = new URLSearchParams({ q: S.q, type: S.type || "all", page: String(S.page) }); if (S.src) qs.set("src", S.src.join(","));
   try {
     const j = await api("/search?" + qs); if (tok !== S.tok) return;
-    grid.append(...j.items.filter(okItem).map((i) => card(i))); const down = Object.entries(j.sources || {}).filter(([, v]) => !v.ok).map(([k]) => S.names[k] || k), got = grid.children.length;
+    const grouped = !more && !S.type && S.q; grid.classList.toggle("grouped", !!grouped);
+    if (grouped) renderGrouped(j, grid); else grid.append(...j.items.filter(okItem).map((i) => card(i)));
+    const down = Object.entries(j.sources || {}).filter(([, v]) => !v.ok).map(([k]) => S.names[k] || k), got = grid.querySelectorAll(".card").length;
     if (!got) grid.append(el("div", { class: "empty", text: "Nothing found for “" + S.q + "”. Try another word, or another tab." }));
     $("status").textContent = got ? got + " result" + (got === 1 ? "" : "s") + (down.length ? " · " + down.join(", ") + " didn't answer" : "") : "";
-    $("more").hidden = !j.items.length || S.page >= 10 || (S.type === "" && S.page >= 3);
+    $("more").hidden = !!grouped || !j.items.length || S.page >= 10;
   } catch (e) { if (tok === S.tok) { $("status").textContent = ""; if (!more) grid.replaceChildren(el("div", { class: "empty", text: "The search didn't go through: " + e.message })); else toast("That didn't load: " + e.message); } }
 }
 function showSaved() {
@@ -97,7 +126,7 @@ function syncUrl(replace) {
   try { history[replace ? "replaceState" : "pushState"](null, "", location.pathname + (h.toString() ? "#" + h : "")); } catch (e) {}
 }
 function go(replace) { syncUrl(replace); if (S.type === "saved") return showSaved(); if (S.q) runSearch(false); else loadHome(); }
-$("find").addEventListener("submit", (e) => { e.preventDefault(); S.q = $("q").value.trim(); go(); });
+$("find").addEventListener("submit", (e) => { e.preventDefault(); S.q = $("q").value.trim(); showSugg([]); if (S.q) LS.set("searches", [S.q, ...LS.get("searches", []).filter((x) => x !== S.q)].slice(0, 8)); go(); });
 $("tabs").addEventListener("click", (e) => { const b = e.target.closest("button[data-t]"); if (!b) return; [...$("tabs").children].forEach((x) => x.classList.toggle("on", x === b)); S.type = b.dataset.t; go(); });
 $("more").addEventListener("click", () => runSearch(true));
 
@@ -106,15 +135,15 @@ $("dkart").addEventListener("error", () => { const t = S.cur ? S.cur.type : "mus
 const A = $("audio"), RATES = [1, 1.25, 1.5, 1.75, 2];
 const posKey = (u) => "pos:" + u.slice(0, 200);
 function deckUi() {
-  const t = S.q2[S.qi], m = S.cur; $("deck").hidden = !t; document.body.classList.toggle("deck-on", !!t); if (!t) return;
-  $("dktitle").textContent = t.title || (m && m.title) || ""; $("dksub").textContent = S.live ? "Live radio" : (m && m.title && t.title !== m.title ? m.title : (m && m.creator) || "");
+  const t = S.q2[S.qi], m = (t && t.item) || S.cur; $("deck").hidden = !t; document.body.classList.toggle("deck-on", !!t); if (!t) return;
+  $("dktitle").textContent = t.title || (m && m.title) || ""; $("dksub").textContent = S.live ? "Live" + (m && m.creator ? " · " + m.creator : "") : (m && m.title && t.title !== m.title ? m.title : (m && m.creator) || "");
   $("dkart").src = https(m && m.thumb) || ph(m ? m.type : "music"); $("deck").classList.toggle("live", S.live); $("dkprev").disabled = S.live || S.qi <= 0; $("dknext").disabled = S.live || S.qi >= S.q2.length - 1; $("dkrate").hidden = S.live; $("dkrate").textContent = S.rate + "×";
-  document.querySelectorAll("#dlg .tracks.audio li").forEach((li, i) => li.classList.toggle("on", i === S.qi));
+  document.querySelectorAll("#dlg .tracks.audio li").forEach((li, i) => li.classList.toggle("on", i === S.qi)); npUi();
 }
 function loadTrack(i, resume) {
   const t = S.q2[i]; if (!t || !https(t.url)) return; S.qi = i; A.src = t.url; A.playbackRate = S.rate; const saved = !S.live && LS.get(posKey(t.url), 0);
   if (saved > 5 && resume !== false) A.addEventListener("loadedmetadata", () => { if (A.duration - saved > 10) A.currentTime = saved; }, { once: true });
-  A.play().catch(() => toast("Tap ▶ to start")); deckUi(); session();
+  if (t.item) pushRecent(t.item); A.play().catch(() => toast("Tap ▶ to start")); deckUi(); session();
 }
 function playTracks(tracks, i, m, live) { stopVideo(); S.q2 = tracks.filter((t) => https(t.url)); S.cur = m; S.live = !!live; pushRecent(m); loadTrack(Math.max(0, Math.min(i, S.q2.length - 1))); }
 function stopAudio() { A.pause(); A.removeAttribute("src"); A.load(); S.q2 = []; S.qi = -1; S.cur = null; deckUi(); }
@@ -129,7 +158,7 @@ $("dkprev").addEventListener("click", () => loadTrack(S.qi - 1, false)); $("dkne
 $("dkseek").addEventListener("input", () => { if (isFinite(A.duration)) A.currentTime = (A.duration * +$("dkseek").value) / 1000; });
 $("dkrate").addEventListener("click", () => { S.rate = RATES[(RATES.indexOf(S.rate) + 1) % RATES.length]; A.playbackRate = S.rate; LS.set("rate", S.rate); $("dkrate").textContent = S.rate + "×"; });
 $("dkclose").addEventListener("click", stopAudio);
-function session() { if (!("mediaSession" in navigator) || !window.MediaMetadata) return; const t = S.q2[S.qi], m = S.cur || {}; try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.title || m.title || "", artist: S.live ? "Live radio" : m.creator || "", album: m.title || "", artwork: https(m.thumb) ? [{ src: m.thumb }] : [] });
+function session() { if (!("mediaSession" in navigator) || !window.MediaMetadata) return; const t = S.q2[S.qi], m = (t && t.item) || S.cur || {}; try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.title || m.title || "", artist: S.live ? "Live radio" : m.creator || "", album: m.title || "", artwork: https(m.thumb) ? [{ src: m.thumb }] : [] });
   for (const [a, f] of [["play", () => A.play()], ["pause", () => A.pause()], ["previoustrack", () => S.qi > 0 && loadTrack(S.qi - 1, false)], ["nexttrack", () => S.qi < S.q2.length - 1 && loadTrack(S.qi + 1, false)], ["seekbackward", () => (A.currentTime = Math.max(0, A.currentTime - 15))], ["seekforward", () => (A.currentTime += 30)]]) navigator.mediaSession.setActionHandler(a, f); } catch (e) {} }
 
 // ── an item ──
@@ -181,6 +210,7 @@ function renderItem(m, d, back) {
     parts.push(el("div", { class: "note", text: p.note || "There's nothing to play here." }));
   }
   if (p.kind !== "audio" && p.kind !== "live") { parts.push(info); }
+  for (const b of musicActs(m)) acts.append(b);
   acts.append(heart); if (m.page) acts.append(el("a", { class: "btn sm", href: https(m.page), target: "_blank", rel: "noopener noreferrer", text: "Open on its site ↗" }));
   const share = el("button", { class: "btn sm", type: "button", text: "Share" }); share.addEventListener("click", async () => { const u = RESOLVABLE.test(m.id) ? location.origin + location.pathname + "#i=" + encodeURIComponent(m.id) : https(m.page) || location.href; try { if (navigator.share) await navigator.share({ title: m.title, url: u }); else { await navigator.clipboard.writeText(u); toast("Link copied"); } } catch (e) {} }); acts.append(share);
   if (p.kind !== "audio" && p.kind !== "live") info.append(acts);
@@ -209,8 +239,57 @@ $("srcreset").addEventListener("click", () => { S.src = null; LS.set("src", null
 $("srcsave").addEventListener("click", () => { const ids = [...srcdlg.querySelectorAll("input[data-id]")].filter((c) => c.checked).map((c) => c.dataset.id), def = srcs.filter((s) => s.on && s.ready !== false && (!S.safe || s.safe)).map((s) => s.id);
   if (!ids.length) return toast("Keep at least one source on"); S.src = ids.slice().sort().join() === def.slice().sort().join() ? null : ids; LS.set("src", S.src); srcdlg.close(); go(true); });
 
+// ── music: more by the same artist, the whole song through YouTube's player when the site has a key ──
+const searchFor = (q, t) => { S.q = q; $("q").value = q; [...$("tabs").children].forEach((x) => x.classList.toggle("on", x.dataset.t === (t || ""))); S.type = t || ""; closeNp(); if (dlg.open) closeItem(); go(); };
+async function fullSong(m) {
+  try { const j = await api("/search?" + new URLSearchParams({ q: m.title + " " + (m.creator || ""), type: "music", src: "youtube" })), hit = (j.items || []).filter(okItem)[0]; if (!hit) return toast("Not found on YouTube"); closeNp(); stopAudio(); openItem(hit); } catch (e) { toast("YouTube didn't answer: " + e.message); }
+}
+function musicActs(m) {
+  if (!m || m.type !== "music") return [];
+  const out = []; if (m.creator) out.push(el("button", { class: "btn sm", type: "button", text: "More by " + m.creator, onclick: () => searchFor(m.creator, "music") }));
+  if (m.source === "itunes" && S.yt) out.push(el("button", { class: "btn sm pri", type: "button", text: "▶ Whole song (YouTube)", onclick: () => fullSong(m) }));
+  return out;
+}
+
+// ── now playing: the deck opens into a full view with big art, controls and what's up next ──
+const np = $("np");
+function npUi() {
+  if (np.hidden) return; const t = S.q2[S.qi], m = (t && t.item) || S.cur; if (!t) return closeNp();
+  $("nptitle").textContent = t.title || (m && m.title) || ""; $("npsub").textContent = S.live ? "Live" + (m && m.creator ? " · " + m.creator : "") : (m && m.creator) || "";
+  const art = https(m && m.thumb); $("npart").src = art || ph(m ? m.type : "music"); np.style.setProperty("--bd", art ? "url(\"" + art.replace(/["\\\n]/g, encodeURIComponent) + "\")" : "none");
+  $("npplay").textContent = A.paused ? "▶" : "⏸"; $("npprev").disabled = S.live || S.qi <= 0; $("npnext").disabled = S.live || S.qi >= S.q2.length - 1; np.classList.toggle("live", S.live);
+  $("npacts").replaceChildren(...musicActs(m)); $("npq").replaceChildren(...S.q2.map((x, i) => el("li", { class: i === S.qi ? "on" : "", onclick: () => loadTrack(i, false) }, el("b", { text: x.title }), el("small", { text: (x.item && x.item.creator) || "" }))));
+}
+function openNp() { if (!S.q2.length) return; np.hidden = false; document.body.classList.add("np-on"); npUi(); }
+function closeNp() { if (np.hidden) return; np.hidden = true; document.body.classList.remove("np-on"); }
+document.querySelector("#deck .dkt").addEventListener("click", openNp); $("dkart").addEventListener("click", openNp); $("npclose").addEventListener("click", closeNp);
+$("npplay").addEventListener("click", () => (A.paused ? A.play().catch(() => {}) : A.pause())); $("npprev").addEventListener("click", () => loadTrack(S.qi - 1, false)); $("npnext").addEventListener("click", () => loadTrack(S.qi + 1, false));
+$("npseek").addEventListener("input", () => { if (isFinite(A.duration)) A.currentTime = (A.duration * +$("npseek").value) / 1000; });
+A.addEventListener("timeupdate", () => { if (np.hidden) return; $("npcur").textContent = fmt(A.currentTime); $("npdur").textContent = S.live || !isFinite(A.duration) ? "" : fmt(A.duration); if (isFinite(A.duration) && A.duration > 0) $("npseek").value = String(Math.round((A.currentTime / A.duration) * 1000)); });
+A.addEventListener("play", npUi); A.addEventListener("pause", npUi);
+
+// ── suggestions as you type, and your recent searches ──
+const sugg = $("sugg"), qi = $("q"), ICON = { artist: "♪", song: "♫", show: "▭", film: "▣", recent: "↺" }, KIND = { artist: "Artist", song: "Song", show: "TV show", film: "Film", recent: "Recent" };
+let sgList = [], sgSel = -1, sgTimer = 0, sgTok = 0;
+function showSugg(list) {
+  sgList = list; sgSel = -1; qi.removeAttribute("aria-activedescendant");
+  if (!list.length) { sugg.hidden = true; qi.setAttribute("aria-expanded", "false"); return; }
+  sugg.replaceChildren(...list.map((x, i) => el("li", { role: "option", id: "sg-" + i, onmousedown: (e) => { e.preventDefault(); pickSugg(x); } }, el("i", { "aria-hidden": "true", text: ICON[x.kind] || "⌕" }), el("span", { text: x.text }), el("small", { text: KIND[x.kind] || "" }))));
+  sugg.hidden = false; qi.setAttribute("aria-expanded", "true");
+}
+function pickSugg(x) { qi.value = x.text.replace(" – ", " "); showSugg([]); $("find").requestSubmit(); }
+qi.addEventListener("input", () => { clearTimeout(sgTimer); const v = qi.value.trim(), tok = ++sgTok; if (v.length < 2) return showSugg(v ? [] : LS.get("searches", []).map((t) => ({ text: t, kind: "recent" }))); sgTimer = setTimeout(() => api("/suggest?q=" + encodeURIComponent(v)).then((j) => { if (tok === sgTok && qi.value.trim() === v) showSugg(j.items || []); }).catch(() => {}), 160); });
+qi.addEventListener("focus", () => { if (!qi.value.trim()) showSugg(LS.get("searches", []).map((t) => ({ text: t, kind: "recent" }))); });
+qi.addEventListener("blur", () => setTimeout(() => showSugg([]), 120));
+qi.addEventListener("keydown", (e) => {
+  if (sugg.hidden || !sgList.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sgSel = (sgSel + (e.key === "ArrowDown" ? 1 : -1) + sgList.length) % sgList.length; [...sugg.children].forEach((li, i) => li.classList.toggle("on", i === sgSel)); qi.setAttribute("aria-activedescendant", "sg-" + sgSel); }
+  else if (e.key === "Enter" && sgSel >= 0) { e.preventDefault(); pickSugg(sgList[sgSel]); } else if (e.key === "Escape") showSugg([]);
+});
+
 // ── start-up, shortcuts, links ──
 document.addEventListener("keydown", (e) => { const t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA");
+  if (e.key === "Escape" && !np.hidden && !dlg.open) { closeNp(); return; }
   if (video && dlg.open && !typing && !e.metaKey && !e.ctrlKey) { const k = e.key.toLowerCase(); if (k === "f") { e.preventDefault(); return full(video); } if (k === "m") { video.muted = !video.muted; return toast(video.muted ? "Muted" : "Sound on"); } if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime + (e.key === "ArrowRight" ? 10 : -10)); return; } if (k === "k" || (e.key === " " && t.tagName !== "BUTTON" && t.tagName !== "VIDEO")) { e.preventDefault(); return video.paused ? video.play().catch(() => {}) : video.pause(); } } if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); } else if (e.key === " " && !typing && t.tagName !== "BUTTON" && t.tagName !== "VIDEO" && S.q2.length) { e.preventDefault(); A.paused ? A.play().catch(() => {}) : A.pause(); } });
 async function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1)); S.q = h.get("q") || ""; S.type = ["movie", "tv", "music", "radio", "audiobook", "podcast", "video", "live", "saved"].includes(h.get("t")) ? h.get("t") : ""; $("q").value = S.q;
@@ -218,7 +297,7 @@ async function fromHash() {
   if (id && RESOLVABLE.test(id)) { const [source, type] = id.split("|"); openItem({ id, source, type, title: "…" }); }
   go(true);
 }
-api("/sources").then((j) => { for (const s of j.sources) S.names[s.id] = s.name; }).catch(() => {});
+api("/sources").then((j) => { for (const s of j.sources) S.names[s.id] = s.name; S.yt = !!(j.sources.find((s) => s.id === "youtube") || {}).ready; }).catch(() => {});
 addEventListener("popstate", () => { if (!/(^#|&)i=/.test(location.hash) && dlg.open) { dlg.close(); return; } fromHash(); }); // the browser's back button
 fromHash();
 })();

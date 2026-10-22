@@ -2,7 +2,7 @@
  "kicker": "craft · open media",
  "tagline": "Films, TV, live TV, music, radio, audiobooks and podcasts from the open web, in one player: public-domain cinema, classic TV, news channels, NASA's own footage, live radio and artist-uploaded music. Shows that live on another host play in that host's own player. No accounts.",
  "caps": [
-  "17 sources",
+  "18 sources",
   "watch-through players",
   "keeps your place"
  ],
@@ -31,6 +31,14 @@
   {
    "t": "Watch through",
    "d": "Shows that sit on another site (live news channels, Mixcloud sets, Dailymotion and YouTube videos, the Archive's own player) play right here, in that host's official player. Nothing is copied: the show stays with its owner."
+  },
+  {
+   "t": "Search that finds what you meant",
+   "d": "Suggestions as you type (artists, songs, shows, films), results ranked by how well they match rather than by whichever site answered first, a top result, and a row per kind with See all."
+  },
+  {
+   "t": "Every artist",
+   "d": "Search any artist and their songs come up with Apple Music's own previews, playable straight from the card with the rest of the row queued after. With the site's YouTube key, the whole song plays in YouTube's player. Tap the player for a full now-playing view with the queue."
   },
   {
    "t": "Movie night",

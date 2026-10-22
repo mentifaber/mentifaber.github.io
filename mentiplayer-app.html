@@ -9,18 +9,20 @@
 <link rel="manifest" href="assets/manifests/mentiplayer.webmanifest">
 <link rel="icon" href="assets/icons/v2/mentiplayer.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/mentiplayer-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MentiPlayer"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&amp;display=swap">
 <link rel="stylesheet" href="assets/mentiplayer/mp.css">
 </head>
 <body>
+<aside class="side">
+  <a class="logo" href="/" title="mentifaber.org"><span class="reel" aria-hidden="true"></span>Menti<span>Player</span></a>
+  <nav id="tabs" aria-label="What to browse">
+    <button data-t="" class="on"><i aria-hidden="true">⌂</i>Home</button><button data-t="movie"><i aria-hidden="true">▣</i>Films</button><button data-t="tv"><i aria-hidden="true">▭</i>TV</button><button data-t="music"><i aria-hidden="true">♪</i>Music</button><button data-t="live"><i aria-hidden="true">◉</i>Live TV</button><button data-t="radio"><i aria-hidden="true">≋</i>Radio</button><button data-t="audiobook"><i aria-hidden="true">❡</i>Audiobooks</button><button data-t="podcast"><i aria-hidden="true">◎</i>Podcasts &amp; shows</button><button data-t="video"><i aria-hidden="true">▷</i>Video</button><button data-t="saved"><i aria-hidden="true">♥</i>Saved</button>
+  </nav>
+  <div class="sidefoot"><button class="btn safe" id="safebtn" type="button" aria-pressed="true">Safe mode: on</button><button class="btn" id="srcbtn" type="button" aria-haspopup="dialog">Sources</button></div>
+</aside>
 <header class="top">
-  <a class="logo" href="/" title="mentifaber.org">Menti<span>Player</span></a>
-  <form class="q" id="find" role="search"><input id="q" type="search" placeholder="Search films, shows, live TV, music, radio, podcasts…" autocomplete="off" enterkeyhint="search" aria-label="Search"><button class="btn pri" type="submit">Search</button></form>
-  <button class="btn safe" id="safebtn" type="button" aria-pressed="true">Safe mode: on</button>
-  <button class="btn" id="srcbtn" type="button" aria-haspopup="dialog">Sources</button>
+  <form class="q" id="find" role="search" autocomplete="off"><div class="qwrap"><input id="q" type="search" placeholder="Search films, shows, songs, artists, live TV…" autocomplete="off" enterkeyhint="search" aria-label="Search" aria-autocomplete="list" aria-controls="sugg" aria-expanded="false"><ul id="sugg" role="listbox" hidden></ul></div><button class="btn pri" type="submit">Search</button></form>
 </header>
-<nav id="tabs" aria-label="What to browse">
-  <button data-t="" class="on">All</button><button data-t="movie">Films</button><button data-t="tv">TV</button><button data-t="music">Music</button><button data-t="live">Live TV</button><button data-t="radio">Radio</button><button data-t="audiobook">Audiobooks</button><button data-t="podcast">Podcasts &amp; shows</button><button data-t="video">Video</button><button data-t="saved">♥ Saved</button>
-</nav>
 <main id="main">
   <div id="status" role="status" aria-live="polite"></div>
   <div id="home"></div>
@@ -35,6 +37,7 @@
     <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a> ·
     <a href="https://ccmixter.org" target="_blank" rel="noopener">ccMixter</a> ·
     <a href="https://audius.co" target="_blank" rel="noopener">Audius</a> ·
+    <a href="https://music.apple.com" target="_blank" rel="noopener">Apple Music</a> (30-second song previews, every artist) ·
     <a href="https://www.jamendo.com" target="_blank" rel="noopener">Jamendo</a> ·
     <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> ·
     <a href="https://images.nasa.gov" target="_blank" rel="noopener">NASA Image and Video Library</a> ·
@@ -60,6 +63,13 @@
   <button id="dkclose" class="ic" type="button" aria-label="Stop and close">✕</button>
 </div>
 <audio id="audio" preload="none"></audio>
+<section id="np" class="np" hidden aria-label="Now playing"><div class="npbg" aria-hidden="true"></div>
+  <div class="nphead"><button class="ic" id="npclose" type="button" aria-label="Close now playing">⌄</button><small>Now playing</small><span></span></div>
+  <div class="npbody"><img id="npart" alt="" referrerpolicy="no-referrer"><div class="npmeta"><h2 id="nptitle"></h2><p id="npsub"></p><div class="npacts" id="npacts"></div></div>
+  <div class="npseek"><span id="npcur">0:00</span><input id="npseek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="npdur">0:00</span></div>
+  <div class="npctl"><button class="ic" id="npprev" type="button" aria-label="Previous">⏮</button><button class="ic big" id="npplay" type="button" aria-label="Play or pause">▶</button><button class="ic" id="npnext" type="button" aria-label="Next">⏭</button></div>
+  <h3>Up next</h3><ol id="npq" class="npq"></ol></div>
+</section>
 
 <dialog id="dlg" aria-labelledby="dtitle"><div class="dhead"><h2 id="dtitle"></h2><button class="ic" id="dclose" type="button" aria-label="Close">✕</button></div><div id="dbody"></div></dialog>
 <dialog id="srcdlg" aria-labelledby="srcttl"><div class="dhead"><h2 id="srcttl">Sources</h2><button class="ic" id="srcclose" type="button" aria-label="Close">✕</button></div>

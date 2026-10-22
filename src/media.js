@@ -180,7 +180,7 @@ async function rbGet(path) { let err; for (const h of RB) try { return await get
 const rbItem = (s) => { const raw = String(s.url_resolved || s.url || ""), url = /^https:\/\//i.test(raw) ? safe(raw) : ""; return url ? mk({ source: "radio", type: "radio", key: s.stationuuid, title: s.name, creator: s.country, description: [s.tags && String(s.tags).split(",").slice(0, 4).join(", "), s.language].filter(Boolean).join(" · "), thumb: s.favicon, page: s.homepage, license: "Live stream: © the station", meta: [String(s.codec || "").toUpperCase(), s.bitrate ? s.bitrate + " kbps" : ""].filter(Boolean).join(" "), play: { kind: "live", url } }) : null; };
 async function rbSearch(q, limit) {
   const w = words(q), common = "&limit=" + limit + "&hidebroken=true&is_https=true&order=clickcount&reverse=true";
-  if (!w) return (await rbGet("/json/stations/search?lastcheckok=1" + common)).map(rbItem).filter(Boolean);
+  if (!w) { const seen = new Set(); return (await rbGet("/json/stations/search?lastcheckok=1" + common)).filter((s) => s.stationuuid && !seen.has(s.stationuuid) && seen.add(s.stationuuid)).map(rbItem).filter(Boolean); }
   const [byName, byTag] = await Promise.all([rbGet("/json/stations/search?name=" + enc(w) + common), rbGet("/json/stations/search?tag=" + enc(w) + common).catch(() => [])]), seen = new Set();
   return [...byName, ...byTag].filter((s) => s.stationuuid && !seen.has(s.stationuuid) && seen.add(s.stationuuid)).map(rbItem).filter(Boolean).slice(0, limit);
 }
@@ -248,6 +248,29 @@ export async function poster(title, year, kind) {
   return hit ? { url: safe(hit.thumbnail.source), page: "https://en.wikipedia.org/wiki/" + enc(String(hit.title).replace(/ /g, "_")) } : null;
 }
 
+// ── Apple Music's catalogue (the iTunes Search API): every artist's songs, with Apple's own 30-second previews ──
+const itItem = (t, sm) => t && t.trackId && /^https:\/\//.test(t.previewUrl || "") && !(sm && t.trackExplicitness === "explicit") ? mk({ source: "itunes", type: "music", key: t.trackId, title: t.trackName, creator: t.artistName, year: t.releaseDate, description: [t.collectionName, t.primaryGenreName].filter(Boolean).join(" · "), thumb: String(t.artworkUrl100 || "").replace(/\/\d+x\d+bb\./, "/600x600bb."), page: t.trackViewUrl, license: "Preview from Apple Music: © the artist", meta: "Preview" + (t.trackTimeMillis ? " · " + fmtDur(t.trackTimeMillis / 1000) : ""), play: { kind: "audio", url: t.previewUrl } }) : null;
+async function itSearch(q, limit, o) { const sm = o && o.safe, j = await get("https://itunes.apple.com/search?media=music&entity=song&limit=" + Math.min(50, limit * 2) + "&term=" + enc(words(q) || "hits"), { ttl: 900 }); return (j.results || []).map((t) => itItem(t, sm)).filter(Boolean).slice(0, limit); }
+// the songs most played on Apple Music now, with their previews (the chart has no previews, so they are looked up in one call)
+async function itTop(limit, o) {
+  const c = await get("https://rss.marketingtools.apple.com/api/v2/us/music/most-played/" + Math.min(50, limit * 2) + "/songs.json", { ttl: 3600 }), ids = ((c.feed && c.feed.results) || []).map((r) => r.id).filter((x) => /^\d+$/.test(x)).slice(0, 40);
+  if (!ids.length) return []; const l = await get("https://itunes.apple.com/lookup?entity=song&id=" + ids.join(","), { ttl: 3600 }), by = new Map((l.results || []).map((t) => [String(t.trackId), t]));
+  return ids.map((id) => itItem(by.get(id), o && o.safe)).filter(Boolean).slice(0, limit);
+}
+
+// ── typeahead: names people are likely to be looking for, from the same open catalogues ──
+export async function suggest(q, sm) {
+  const w = words(q); if (w.length < 2) return [];
+  const tm = (p, ms) => within(p, ms || 2500).catch(() => null);
+  const [ar, so, tv, wk] = await Promise.all([tm(get("https://itunes.apple.com/search?media=music&entity=musicArtist&limit=4&term=" + enc(w), { ttl: 86400 })), tm(get("https://itunes.apple.com/search?media=music&entity=song&limit=4&term=" + enc(w), { ttl: 86400 })), tm(get(TVM + "/search/shows?q=" + enc(w), { ttl: 86400 })), tm(get("https://en.wikipedia.org/w/api.php?action=opensearch&format=json&namespace=0&limit=8&search=" + enc(w), { ttl: 86400 }))]);
+  const out = [], seen = new Set(), add = (text, kind) => { const t = clip(plain(text, 90), 80), k = t.toLowerCase(); if (!t || seen.has(k) || (sm ? STRICT : EXPLICIT).test(t) || EXPLICIT.test(t)) return; seen.add(k); out.push({ text: t, kind }); };
+  for (const a of (ar && ar.results) || []) add(a.artistName, "artist");
+  for (const t of (so && so.results) || []) if (!(sm && t.trackExplicitness === "explicit")) add(t.trackName + " – " + t.artistName, "song");
+  for (const r of (tv || []).slice(0, 3)) add(r.show && r.show.name, "show");
+  for (const t of ((wk && wk[1]) || [])) { const m = /^(.*) \((?:\d{4} )?film\)$/.exec(t); if (m) add(m[1], "film"); }
+  return out.slice(0, 10);
+}
+
 // ── SomaFM: listener-supported radio, with its own stream addresses ──
 async function somaAll() { const j = await get("https://somafm.com/channels.json", { ttl: 900 }); return (j.channels || []).filter((c) => /^[\w-]{1,40}$/.test(c.id || "") && c.title); }
 const somaItem = (c) => mk({ source: "somafm", type: "radio", key: c.id, title: "SomaFM · " + c.title, creator: c.dj ? "DJ " + c.dj : "", description: c.description + (c.genre ? " (" + String(c.genre).split("|").join(", ") + ")" : ""), thumb: c.xlimage || c.largeimage || c.image, page: "https://somafm.com/" + c.id + "/", license: "Listener-supported radio: © SomaFM", meta: "SomaFM" + (c.listeners ? " · " + c.listeners + " listening" : ""), play: { kind: "live", url: "https://ice1.somafm.com/" + c.id + "-128-mp3" } });
@@ -299,10 +322,10 @@ async function dmSearch(q, limit, page) {
   const w = words(q), j = await get("https://api.dailymotion.com/videos?fields=id,title,description,thumbnail_360_url,owner.screenname,duration,created_time,allow_embed&family_filter=1&limit=" + limit + "&page=" + (page || 1) + (w ? "&search=" + enc(w) + "&sort=relevance" : "&sort=trending"), { ttl: 600 });
   return (j.list || []).filter((v) => v.allow_embed !== false && /^[\w]{3,20}$/.test(v.id || "")).map((v) => mk({ source: "dailymotion", type: "video", key: v.id, title: v.title, creator: v["owner.screenname"], year: v.created_time ? new Date(v.created_time * 1e3).getUTCFullYear() : "", description: v.description, thumb: v.thumbnail_360_url, page: "https://www.dailymotion.com/video/" + v.id, license: "Shown through Dailymotion's player: © its owner", meta: "Dailymotion" + (v.duration ? " · " + fmtDur(v.duration) : ""), play: { kind: "embed", url: "https://www.dailymotion.com/embed/video/" + v.id } }));
 }
-async function ytSearch(q, limit, page, o) {
+async function ytSearch(q, limit, page, o, music) {
   const k = key_("YOUTUBE_API_KEY"); if (!k) throw new Upstream("YouTube needs a key (YOUTUBE_API_KEY)", 503);
-  const j = await get("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoSyndicated=true&safeSearch=" + (o && o.safe ? "strict" : "moderate") + "&maxResults=" + Math.min(25, limit) + "&q=" + enc(words(q) || "documentary") + "&key=" + enc(k), { ttl: 600 });
-  return (j.items || []).filter((v) => v.id && /^[\w-]{6,20}$/.test(v.id.videoId || "") && v.snippet).map((v) => mk({ source: "youtube", type: "video", key: v.id.videoId, title: v.snippet.title, creator: v.snippet.channelTitle, year: v.snippet.publishedAt, description: v.snippet.description, thumb: v.snippet.thumbnails && ((v.snippet.thumbnails.high || v.snippet.thumbnails.medium || v.snippet.thumbnails.default) || {}).url, page: "https://www.youtube.com/watch?v=" + v.id.videoId, license: "Shown through YouTube's player: © its owner", meta: "YouTube", play: { kind: "embed", url: "https://www.youtube-nocookie.com/embed/" + v.id.videoId } }));
+  const j = await get("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoSyndicated=true&safeSearch=" + (o && o.safe ? "strict" : "moderate") + "&maxResults=" + Math.min(25, limit) + (music ? "&videoCategoryId=10" : "") + "&q=" + enc(words(q) || "documentary") + "&key=" + enc(k), { ttl: 600 });
+  return (j.items || []).filter((v) => v.id && /^[\w-]{6,20}$/.test(v.id.videoId || "") && v.snippet).map((v) => mk({ source: "youtube", type: "video", key: v.id.videoId, title: v.snippet.title, creator: v.snippet.channelTitle, year: v.snippet.publishedAt, description: v.snippet.description, thumb: v.snippet.thumbnails && ((v.snippet.thumbnails.high || v.snippet.thumbnails.medium || v.snippet.thumbnails.default) || {}).url, page: "https://www.youtube.com/watch?v=" + v.id.videoId, license: "Shown through YouTube's player: © its owner", meta: "YouTube", play: { kind: "embed", url: "https://www.youtube-nocookie.com/embed/" + v.id.videoId } })).map((it) => (music ? { ...it, id: it.id.replace("|video|", "|music|"), type: "music" } : it));
 }
 
 // ── Jamendo: independent artists' music, free to stream (needs a client id) ──
@@ -331,6 +354,7 @@ export const SOURCES = {
   livetv: { name: "Live TV", url: "https://www.youtube.com", types: ["live"], safe: true, on: true, note: "News and public channels that stream free, shown in the channel's own player", search: (t, q, n) => liveSearch(q, n) },
   openverse: { name: "Openverse", url: "https://openverse.org", types: ["music"], safe: true, on: true, note: "Openly licensed audio", search: (t, q, n, p) => ovSearch(q, n, p) },
   ccmixter: { name: "ccMixter", url: "https://ccmixter.org", types: ["music"], safe: false, on: false, note: "Remixes and samples under Creative Commons licences. Off by default: its server sends headers some hosts refuse, so it may not answer", search: (t, q, n, p) => ccSearch(q, n, p) },
+  itunes: { name: "Apple Music previews", url: "https://music.apple.com", types: ["music"], safe: true, on: true, note: "Every artist's songs, as Apple's own 30-second previews (explicit songs left out in Safe mode)", search: (t, q, n, p, o) => itSearch(q, n, o) },
   audius: { name: "Audius", url: "https://audius.co", types: ["music"], safe: false, on: true, note: "Artist-uploaded music through Audius's open API", search: (t, q, n) => auSearch(q, n) },
   commons: { name: "Wikimedia Commons", url: "https://commons.wikimedia.org", types: ["video", "music"], safe: false, on: true, note: "Freely licensed video and audio (WebM and Ogg: some browsers may not play them)", search: (t, q, n, p) => cmSearch(t, q, n, p) },
   nasa: { name: "NASA Image and Video Library", url: "https://images.nasa.gov", types: ["video"], safe: true, on: true, note: "NASA's own footage", search: (t, q, n, p) => nasaSearch(q, n, p) },
@@ -338,7 +362,7 @@ export const SOURCES = {
   somafm: { name: "SomaFM", url: "https://somafm.com", types: ["radio"], safe: true, on: true, note: "Listener-supported, commercial-free internet radio", search: (t, q, n) => somaSearch(q, n) },
   podcasts: { name: "Podcasts (Apple directory + public RSS)", url: "https://podcasts.apple.com", types: ["podcast"], safe: true, on: true, note: "Shows and episodes from each publisher's public feed; explicit shows are left out", search: (t, q, n) => podSearch(q, n) },
   mixcloud: { name: "Mixcloud", url: "https://www.mixcloud.com", types: ["podcast"], safe: false, on: true, note: "DJ mixes and radio shows, played in Mixcloud's own widget", search: (t, q, n, p) => mcSearch(q, n, p) },
-  youtube: { name: "YouTube", url: "https://www.youtube.com", types: ["video"], safe: true, on: true, needs: "YOUTUBE_API_KEY", note: "Videos their owners allow to be embedded, shown in YouTube's own player. Needs the site owner's API key", search: (t, q, n, p, o) => ytSearch(q, n, p, o) },
+  youtube: { name: "YouTube", url: "https://www.youtube.com", types: ["video", "music"], safe: true, on: true, needs: "YOUTUBE_API_KEY", note: "Videos their owners allow to be embedded, shown in YouTube's own player. Needs the site owner's API key", search: (t, q, n, p, o) => ytSearch(q, n, p, o, t === "music") },
   jamendo: { name: "Jamendo", url: "https://www.jamendo.com", types: ["music"], safe: false, on: true, needs: "JAMENDO_CLIENT_ID", note: "Independent artists' music, free to stream. Needs the site owner's client id", search: (t, q, n, p) => jmSearch(q, n, p) },
   dailymotion: { name: "Dailymotion", url: "https://www.dailymotion.com", types: ["video"], safe: false, on: false, note: "Videos their owners allow to be embedded, shown in Dailymotion's own player. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => dmSearch(q, n, p) },
   peertube: { name: "PeerTube (Sepia Search)", url: "https://sepiasearch.org", types: ["video"], safe: false, on: false, note: "Creative Commons video from open PeerTube servers. Not curated, so it's off unless you turn it on", search: (t, q, n, p) => ptSearch(q, n, p) },
@@ -357,6 +381,7 @@ export const RAILS = [
   { id: "live", src: "radio", title: "Live radio", type: "radio", make: (n) => rbSearch("", n) },
   { id: "soma", src: "somafm", title: "SomaFM", type: "radio", make: (n) => somaSearch("", n) },
   { id: "space", src: "nasa", title: "From NASA", type: "video", make: (n) => nasaSearch("", n, 1) },
+  { id: "topsongs", src: "itunes", title: "Top songs now", type: "music", make: (n, o) => itTop(n, o) },
   { id: "trending", src: "audius", title: "Trending music", type: "music", make: (n) => auTrending(n) },
   { id: "concerts", src: "archive", title: "Live concerts", type: "music", make: (n, o) => iaSearch("music", "", n, 1, "mediatype:etree AND collection:etree", false, o && o.safe) },
   { id: "jukebox", src: "loc", title: "Library of Congress recordings", type: "music", make: (n) => locSearch("music", "", n, 1) },
@@ -382,6 +407,20 @@ export const RAILS = [
 const RESOLVE = { archive: iaItem, tvmaze: (t, k, sm) => tvItem(k, sm), nasa: (t, k) => nasaGetItem(k), podcasts: (t, k) => podGetItem(k), loc: locGetItem };
 
 const timed = async (id, fn) => { const t0 = Date.now(); try { const v = await fn(); STATUS[id] = { ok: true, at: Date.now(), ms: Date.now() - t0, n: Array.isArray(v) ? v.length : undefined }; return v; } catch (e) { STATUS[id] = { ok: false, at: Date.now(), ms: Date.now() - t0, error: clip(e && e.message || e, 120) }; throw e; } };
+// how well a result answers the words asked: the title counts most, then who made it, then the description. A result that only
+// mentions the words somewhere in a long description is what made search feel random, so those are dropped when better ones exist.
+const normT = (x) => " " + String(x || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
+const STOP = new Set(["the", "a", "an", "of", "and", "in", "on", "to", "for", "with", "by", "at", "from"]);
+export function relevance(it, q) {
+  const qn = normT(q).trim(); if (!qn) return 1;
+  const ws = qn.split(" ").filter((w) => w && !STOP.has(w)), all = ws.length ? ws : qn.split(" "), t = normT(it.title), c = normT(it.creator), d = normT(it.description + " " + it.meta);
+  const frac = (h) => all.filter((w) => h.includes(" " + w)).length / all.length;
+  let s = t.trim() === qn ? 130 : t.startsWith(" " + qn + " ") ? 110 : t.includes(" " + qn + " ") ? 95 : frac(t) === 1 ? 75 : frac(t) * 35;
+  const fc = frac(c); if (fc === 1) s += 45; else s += fc * 15;
+  if (frac(t + c) === 1 && s < 60) s = Math.max(s, 60);
+  const fd = frac(d); s += fd === 1 ? 12 : fd * 4;
+  return Math.round(s + (it.thumb ? 2 : 0));
+}
 const roundRobin = (lists) => { const out = [], seen = new Set(); for (let i = 0; lists.some((l) => i < l.length); i++) for (const l of lists) { const it = l[i]; if (!it) continue; const k = it.type + "|" + it.title.toLowerCase().slice(0, 40); if (seen.has(k)) continue; seen.add(k); out.push(it); } return out; };
 // one slow source must not hold the whole screen: each gets this long to answer a search (Openverse, anonymous, is sometimes slow)
 export const BUDGET = { search: 5500 };
@@ -393,7 +432,11 @@ export async function search({ q, type, src, page, limit, safe: sm = true }) {
   const settled = await Promise.allSettled(jobs.map(([s, t]) => timed(s + (jobs.filter((j) => j[0] === s).length > 1 ? ":" + t : ""), () => within(SOURCES[s].search(t, q, limit, page, { safe: sm }), BUDGET.search)))), report = {};
   const lists = settled.map((r, i) => { const [s] = jobs[i], rep = report[s] || (report[s] = { ok: false, n: 0 }); if (r.status === "fulfilled") { const v = clean(r.value, sm); rep.ok = true; rep.n += v.length; return v; } rep.error = rep.error || clip(r.reason && r.reason.message, 100); return []; });
   const bySrc = {}; settled.forEach((r, i) => { const s = jobs[i][0]; (bySrc[s] = bySrc[s] || []).push(...(lists[i] || [])); });
-  return { q, type, page, items: roundRobin(Object.values(bySrc)), sources: report };
+  if (!q) return { q, type, page, items: roundRobin(Object.values(bySrc)), sources: report };
+  // ranked: each source's results best first, weak matches dropped, the sources that answered best go first
+  const ranked = Object.values(bySrc).map((l) => l.map((it) => ({ it, s: relevance(it, q) })).filter((x) => x.s >= 12).sort((a, b) => b.s - a.s)).filter((l) => l.length).sort((a, b) => b[0].s - a[0].s);
+  const items = roundRobin(ranked.map((l) => l.map((x) => ({ ...x.it, score: x.s })))), best = items.slice().sort((a, b) => b.score - a.score)[0];
+  return { q, type, page, items, top: best && best.score >= 60 ? best : null, sources: report };
 }
 export async function item(id, sm = true) {
   const { source, type, key } = parseId(id); if (!SOURCES[source] || !key) throw new Upstream("unknown item", 404);
@@ -433,6 +476,7 @@ export async function media(req, env, ctx, json, isOwner) {
       const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit"), safe: sm };
       return reply(await cached(ctx, url.origin, "s:" + JSON.stringify([clip(p.q, 100).toLowerCase(), p.type || "all", p.src || "", +p.page || 1, +p.limit || 0, sm]), 600, () => search(p)), 120);
     }
+    if (sub === "/suggest") { const t = clip(q.get("q"), 80); return reply(await cached(ctx, url.origin, "sg:" + JSON.stringify([t.toLowerCase(), sm]), 86400, async () => ({ q: t, items: await suggest(t, sm) })), 3600); }
     if (sub === "/poster") {
       const t = clip(q.get("t"), 140), y = /^\d{4}$/.test(q.get("y") || "") ? q.get("y") : "", k = q.get("k") === "tv" ? "tv" : "movie"; if (!t) return json({ error: "which title?" }, 400, cors);
       if (sm && explicit({ title: t }, true)) return json({ url: null }, 200, { ...cors, "cache-control": "public, max-age=86400" });
