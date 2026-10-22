@@ -126,7 +126,14 @@ function syncUrl(replace) {
   try { history[replace ? "replaceState" : "pushState"](null, "", location.pathname + (h.toString() ? "#" + h : "")); } catch (e) {}
 }
 function go(replace) { syncUrl(replace); if (S.type === "saved") return showSaved(); if (S.q) runSearch(false); else loadHome(); }
-$("find").addEventListener("submit", (e) => { e.preventDefault(); S.q = $("q").value.trim(); showSugg([]); if (S.q) LS.set("searches", [S.q, ...LS.get("searches", []).filter((x) => x !== S.q)].slice(0, 8)); go(); });
+// a pasted link plays through its own site's player instead of being searched for
+async function openLink(raw) {
+  $("status").textContent = "Opening the link…";
+  try { const j = await api("/link?url=" + encodeURIComponent(raw)); $("status").textContent = ""; if (j.resolve) { const [source, type] = j.id.split("|"); return openItem({ id: j.id, source, type, title: "…" }); } openItem(j.item); }
+  catch (e) { $("status").textContent = ""; toast(e.message, 6000); }
+}
+const LINKY = /^(https?:\/\/|(www\.|m\.)?(ok\.ru|youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|dai\.ly|soundcloud\.com|mixcloud\.com|archive\.org)\/)/i;
+$("find").addEventListener("submit", (e) => { e.preventDefault(); const typed = $("q").value.trim(); if (LINKY.test(typed)) { showSugg([]); $("q").value = ""; return openLink(/^https?:/i.test(typed) ? typed : "https://" + typed); } S.q = typed; showSugg([]); if (S.q) LS.set("searches", [S.q, ...LS.get("searches", []).filter((x) => x !== S.q)].slice(0, 8)); go(); });
 $("tabs").addEventListener("click", (e) => { const b = e.target.closest("button[data-t]"); if (!b) return; [...$("tabs").children].forEach((x) => x.classList.toggle("on", x === b)); S.type = b.dataset.t; go(); });
 $("more").addEventListener("click", () => runSearch(true));
 
@@ -198,7 +205,7 @@ function renderItem(m, d, back) {
     if (p.tracks && p.tracks.length > 1) parts.push(el("ul", { class: "tracks" }, p.tracks.map((t) => el("li", { onclick: () => { v.src = t.url; v.play().catch(() => {}); } }, el("b", { text: t.title }), el("small", { text: t.duration ? fmt(t.duration) : "" })))));
   } else if (p.kind === "embed" && https(p.url)) {
     stopAudio(); parts.push(el("div", { class: "stage" + (p.height ? " widget" : "") }, frame(p.url, m, p.height))); pushRecent(m);
-    const host = S.names[m.source] || m.source;
+    const host = m.source === "link" ? m.meta || "its site" : S.names[m.source] || m.source;
     parts.push(el("p", { class: "lic", text: m.source === "peertube" ? "Played from an open PeerTube server, which isn't curated by MentiPlayer. Its own page has the details." : "Shown through " + host + ", in its own player, the way its owner allows. Nothing is copied: it stays with its owner." }));
   } else if (p.kind === "audio" || p.kind === "live") {
     const tracks = p.tracks && p.tracks.length ? p.tracks : [{ title: m.title, url: p.url, duration: undefined }], live = p.kind === "live";
