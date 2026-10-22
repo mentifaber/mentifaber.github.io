@@ -106,6 +106,19 @@ assert.ok(!seen.some((u) => /etc\/passwd|a%2Fb/.test(u))); ok("made-up or hostil
   x = await get("/search?q=thrones&type=music&src=youtube", { env: { YOUTUBE_API_KEY: "k" } }); assert.ok(seen.some((u) => u.includes("googleapis") && u.includes("videoCategoryId=10"))); assert.equal(x.j.items[0].type, "music"); assert.match(x.j.items[0].id, /^youtube\|music\|/);
   ok("search ranks by title, then maker, then description, drops what merely came back, names a top result; every artist's songs come from Apple Music previews (explicit ones out in Safe mode); YouTube music when keyed; suggestions as you type"); }
 
+// 5g · a pasted link plays through its own site's player; only known hosts, only their embed addresses
+{ let x = await get("/link?url=" + encodeURIComponent("https://ok.ru/video/11001753504279"));
+  assert.deepEqual([x.j.item.title, x.j.item.creator, x.j.item.play.url, x.j.item.page], ["Evening concert", "OK channel", "https://ok.ru/videoembed/11001753504279", "https://ok.ru/video/11001753504279"]); assert.equal(x.j.item.play.kind, "embed"); assert.equal(x.j.item.thumb, "https://i.mycdn.me/x.jpg");
+  x = await get("/link?url=" + encodeURIComponent("https://youtu.be/abc123DEF45?t=3")); assert.equal(x.j.item.play.url, "https://www.youtube-nocookie.com/embed/abc123DEF45"); assert.equal(x.j.item.title, "Moon landing restored");
+  assert.equal((await get("/link?url=" + encodeURIComponent("https://www.youtube.com/watch?v=abc123DEF45&list=x"))).j.item.play.url, "https://www.youtube-nocookie.com/embed/abc123DEF45");
+  assert.equal((await get("/link?url=" + encodeURIComponent("https://vimeo.com/76979871"))).j.item.play.url, "https://player.vimeo.com/video/76979871");
+  assert.equal((await get("/link?url=" + encodeURIComponent("https://soundcloud.com/artist/track-name"))).j.item.play.height, 166);
+  assert.deepEqual((await get("/link?url=" + encodeURIComponent("https://archive.org/details/Nosferatu"))).j, { id: "archive|movie|Nosferatu", resolve: true });
+  for (const bad of ["https://evil.example.org/video/1", "javascript:alert(1)", "https://ok.ru/profile/123", "not a link", "https://ok.ru.evil.org/video/12345678"]) assert.equal((await get("/link?url=" + encodeURIComponent(bad))).r.status, 400, bad);
+  assert.equal((await get("/link?url=" + encodeURIComponent("https://ok.ru/video/11001753504279"), { safe: true })).r.status, 200, "Safe mode plays it: its site says what it is, and that passes");
+  assert.equal((await get("/link?url=" + encodeURIComponent("https://ok.ru/video/99999999999"), { safe: true })).r.status, 403, "one whose site won't say what it is doesn't play in Safe mode"); assert.equal((await get("/link?url=" + encodeURIComponent("https://ok.ru/video/99999999999"))).r.status, 200);
+  ok("a pasted OK.ru, YouTube, Vimeo, SoundCloud or Archive link plays through its own site's player with its title; other hosts and odd addresses are refused; in Safe mode only links whose site names them, cleanly"); }
+
 // 6 · shelves
 ({ j } = await get("/featured")); assert.deepEqual(j.rails.map((x) => x.id), ["films", "classictv", "tonight", "livetv", "live", "soma", "space", "topsongs", "trending", "concerts", "jukebox", "oldradio", "books", "podcasts", "mixes", "noir", "scifi", "cartoons", "silent", "comedy", "westerns", "mystery", "romance", "adventure", "drama", "war", "musicals", "locfilm"]);
 for (const rail of j.rails) { const x = await get("/featured?rail=" + rail.id, { ip: "6.6.6." + rail.id.length }); assert.equal(x.r.status, 200, rail.id); assert.ok(x.j.items.length > 0, rail.id + " is empty"); assert.ok(x.j.items.every((i) => i.type === rail.type), rail.id); }

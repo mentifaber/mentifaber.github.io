@@ -271,6 +271,30 @@ export async function suggest(q, sm) {
   return out.slice(0, 10);
 }
 
+// ── a pasted link: played through its own site's official player (never fetched, copied or relayed), with its title from the site's oEmbed ──
+// Only these hosts, only their embed addresses, and only ids that look like ids: the link itself never becomes a request to an arbitrary place.
+const LINK_HOSTS = [
+  [/^(?:www\.|m\.)?ok\.ru$/, (u) => { const m = /\/(?:video|videoembed|live)\/(\d{5,20})\b/.exec(u.pathname); return m && { site: "OK.ru", key: "ok:" + m[1], type: "video", embed: "https://ok.ru/videoembed/" + m[1], page: "https://ok.ru/video/" + m[1], oembed: "https://connect.ok.ru/oembed?url=" + enc("https://ok.ru/video/" + m[1]) }; }],
+  [/^(?:www\.|m\.|music\.)?youtube\.com$|^youtu\.be$/, (u) => { const id = u.hostname === "youtu.be" ? u.pathname.slice(1) : u.searchParams.get("v") || (/^\/(?:shorts|embed|live)\/([\w-]+)/.exec(u.pathname) || [])[1]; return /^[\w-]{6,20}$/.test(id || "") && { site: "YouTube", key: "yt:" + id, type: "video", embed: "https://www.youtube-nocookie.com/embed/" + id, page: "https://www.youtube.com/watch?v=" + id, oembed: "https://www.youtube.com/oembed?format=json&url=" + enc("https://www.youtube.com/watch?v=" + id) }; }],
+  [/^(?:www\.)?dailymotion\.com$|^dai\.ly$/, (u) => { const id = u.hostname === "dai.ly" ? u.pathname.slice(1) : (/^\/(?:embed\/)?video\/([a-z0-9]+)/i.exec(u.pathname) || [])[1]; return /^[a-z0-9]{5,20}$/i.test(id || "") && { site: "Dailymotion", key: "dm:" + id, type: "video", embed: "https://www.dailymotion.com/embed/video/" + id, page: "https://www.dailymotion.com/video/" + id, oembed: "https://www.dailymotion.com/services/oembed?format=json&url=" + enc("https://www.dailymotion.com/video/" + id) }; }],
+  [/^(?:www\.|player\.)?vimeo\.com$/, (u) => { const id = (/\/(?:video\/)?(\d{5,12})(?:\/|$)/.exec(u.pathname) || [])[1]; return id && { site: "Vimeo", key: "vm:" + id, type: "video", embed: "https://player.vimeo.com/video/" + id, page: "https://vimeo.com/" + id, oembed: "https://vimeo.com/api/oembed.json?url=" + enc("https://vimeo.com/" + id) }; }],
+  [/^(?:www\.|m\.)?soundcloud\.com$/, (u) => { const path = u.pathname.replace(/\/+$/, ""); return /^\/[\w-]+\/[\w-]+(?:\/sets\/[\w-]+)?$|^\/[\w-]+\/sets\/[\w-]+$/.test(path) && { site: "SoundCloud", key: "sc:" + path, type: "music", height: 166, embed: "https://w.soundcloud.com/player/?visual=false&url=" + enc("https://soundcloud.com" + path), page: "https://soundcloud.com" + path, oembed: "https://soundcloud.com/oembed?format=json&url=" + enc("https://soundcloud.com" + path) }; }],
+  [/^(?:www\.)?mixcloud\.com$/, (u) => { const k = u.pathname.replace(/\/?$/, "/"); return /^\/[\w.-]+\/[\w.%~-]+\/$/.test(k) && { site: "Mixcloud", key: "mc:" + k, type: "podcast", height: 180, embed: "https://www.mixcloud.com/widget/iframe/?hide_cover=1&light=0&feed=" + enc(k), page: "https://www.mixcloud.com" + k, oembed: "https://www.mixcloud.com/oembed/?format=json&url=" + enc("https://www.mixcloud.com" + k) }; }],
+  [/^(?:www\.)?archive\.org$/, (u) => { const id = (/^\/(?:details|embed)\/([\w.-]{2,120})/.exec(u.pathname) || [])[1]; return id && { site: "Internet Archive", archive: id }; }],
+];
+export async function link(raw, sm) {
+  let u; try { u = new URL(String(raw || "").trim()); } catch (e) { throw new Upstream("that isn't a link", 400); }
+  if (!/^https?:$/.test(u.protocol)) throw new Upstream("that isn't a web link", 400);
+  const host = u.hostname.toLowerCase(), rule = LINK_HOSTS.find(([re]) => re.test(host)), L = rule && rule[1](u);
+  if (!L) throw new Upstream("MentiPlayer plays links from OK.ru, YouTube, Vimeo, Dailymotion, SoundCloud, Mixcloud and the Internet Archive", 400);
+  if (L.archive) return { id: "archive|movie|" + L.archive, resolve: true };
+  const o = await within(get(L.oembed, { ttl: 86400, ms: 5000 }), 5500).catch(() => null);
+  const it = mk({ source: "link", type: L.type, key: L.key, title: (o && o.title) || L.site + " video", creator: (o && o.author_name) || L.site, description: (o && o.description) || "", thumb: o && o.thumbnail_url, page: L.page, license: "Played in " + L.site + "'s own player: © its owner", meta: L.site, play: { kind: "embed", url: L.embed, ...(L.height ? { height: L.height } : {}) } });
+  // Safe mode: a link plays only when its own site says what it is, and that passes the same check as everything else
+  if (sm && (!o || !o.title || explicit(it, true))) throw new Upstream("Safe mode is on: this link can't be checked, so it won't play. Turn Safe mode off to play it.", 403);
+  return { item: it };
+}
+
 // ── SomaFM: listener-supported radio, with its own stream addresses ──
 async function somaAll() { const j = await get("https://somafm.com/channels.json", { ttl: 900 }); return (j.channels || []).filter((c) => /^[\w-]{1,40}$/.test(c.id || "") && c.title); }
 const somaItem = (c) => mk({ source: "somafm", type: "radio", key: c.id, title: "SomaFM · " + c.title, creator: c.dj ? "DJ " + c.dj : "", description: c.description + (c.genre ? " (" + String(c.genre).split("|").join(", ") + ")" : ""), thumb: c.xlimage || c.largeimage || c.image, page: "https://somafm.com/" + c.id + "/", license: "Listener-supported radio: © SomaFM", meta: "SomaFM" + (c.listeners ? " · " + c.listeners + " listening" : ""), play: { kind: "live", url: "https://ice1.somafm.com/" + c.id + "-128-mp3" } });
@@ -476,6 +500,7 @@ export async function media(req, env, ctx, json, isOwner) {
       const p = { q: q.get("q"), type: q.get("type"), src: q.get("src"), page: q.get("page"), limit: q.get("limit"), safe: sm };
       return reply(await cached(ctx, url.origin, "s:" + JSON.stringify([clip(p.q, 100).toLowerCase(), p.type || "all", p.src || "", +p.page || 1, +p.limit || 0, sm]), 600, () => search(p)), 120);
     }
+    if (sub === "/link") { const raw = clip(q.get("url"), 600); return reply(await cached(ctx, url.origin, "ln:" + JSON.stringify([raw, sm]), 86400, () => link(raw, sm)), 3600); }
     if (sub === "/suggest") { const t = clip(q.get("q"), 80); return reply(await cached(ctx, url.origin, "sg:" + JSON.stringify([t.toLowerCase(), sm]), 86400, async () => ({ q: t, items: await suggest(t, sm) })), 3600); }
     if (sub === "/poster") {
       const t = clip(q.get("t"), 140), y = /^\d{4}$/.test(q.get("y") || "") ? q.get("y") : "", k = q.get("k") === "tv" ? "tv" : "movie"; if (!t) return json({ error: "which title?" }, 400, cors);
