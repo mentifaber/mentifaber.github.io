@@ -20,7 +20,8 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 
 ## Fonts
 
-- Self-hosted: Literata, Schibsted Grotesk, Martian Mono, Azeret Mono: SIL Open Font License 1.1.
+- Self-hosted: Literata, Schibsted Grotesk, Martian Mono, Azeret Mono, Atkinson Hyperlegible Next (© The Atkinson
+  Hyperlegible Next Project Authors, Braille Institute of America; used in Big Buttons): SIL Open Font License 1.1.
 - From Google Fonts: Bricolage Grotesque, Bungee, Cinzel, Cormorant Garamond, DM Mono, EB Garamond, IBM Plex Mono,
   JetBrains Mono, Newsreader, Nunito, Orbitron, Playfair Display, Plus Jakarta Sans, Rajdhani, Share Tech Mono,
   Space Grotesk, Syncopate, Unbounded: SIL Open Font License 1.1 or Apache-2.0, as published by Google Fonts.

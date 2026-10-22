@@ -2,14 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Big Buttons · Mentifaber</title>
+  <meta name="description" content="Four giant buttons — Phone, Search, Talk, YouTube — that you can tap or just say out loud. Built for low vision, shaky hands and anyone who'd rather talk than type.">
   <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <title>Big Buttons</title>
-  <meta name="description" content="Four giant buttons — Phone, Search, Talk, YouTube — that you can tap or just say out loud.">
+  <meta name="apple-mobile-web-app-title" content="Big Buttons">
+  <link rel="manifest" href="assets/manifests/big-buttons.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/v2/big-buttons-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/v2/big-buttons-180.png">
+  <link rel="preload" href="assets/fonts/AtkinsonHyperlegibleNext-800.woff2" as="font" type="font/woff2" crossorigin>
   <style>
+    /* Atkinson Hyperlegible Next: drawn by the Braille Institute so letters can't be mistaken for each other */
+    @font-face {
+      font-family: "Atkinson Hyperlegible Next";
+      src: url("assets/fonts/AtkinsonHyperlegibleNext-800.woff2") format("woff2");
+      font-weight: 800;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Atkinson Hyperlegible Next";
+      src: url("assets/fonts/AtkinsonHyperlegibleNext-700.woff2") format("woff2");
+      font-weight: 700;
+      font-display: swap;
+    }
+
+    :root {
+      /* Every button colour holds at least 5:1 against white text (WCAG AAA for large text) */
+      --phone: #1747d1;
+      --search: #0b7a35;
+      --talk: #6b2bc2;
+      --youtube: #c8102e;
+      --ink: #ffffff;
+      --edge: #ffffff;
+      --bg: #000000;
+      --bar: #161616;
+      --live: #ff3b3b;
+      --heard: #ffe500;
+      --gap: 8px;
+      --radius: 26px;
+      --font: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", Verdana, Arial, sans-serif;
+    }
+
+    /* High contrast: yellow on black, the pairing most low-vision users ask for */
+    :root.hc {
+      --phone: #000;
+      --search: #000;
+      --talk: #000;
+      --youtube: #000;
+      --ink: #ffe500;
+      --edge: #ffe500;
+      --bar: #000;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -21,114 +69,592 @@
       height: 100%;
       width: 100%;
       overflow: hidden;
-      background: #000;
-      color: #fff;
-      font-family: "Arial Black", Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-weight: 700;
       touch-action: manipulation;
-      user-select: none;
-      -webkit-user-select: none;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
 
     .app {
       display: flex;
       flex-direction: column;
+      gap: var(--gap);
       height: 100vh;
       height: 100dvh;
       width: 100vw;
-      gap: 6px;
-      padding: 6px;
-      padding-top: max(6px, env(safe-area-inset-top));
-      padding-bottom: max(6px, env(safe-area-inset-bottom));
+      padding: var(--gap);
+      padding-top: max(var(--gap), env(safe-area-inset-top));
+      padding-bottom: max(var(--gap), env(safe-area-inset-bottom));
+      padding-left: max(var(--gap), env(safe-area-inset-left));
+      padding-right: max(var(--gap), env(safe-area-inset-right));
+      user-select: none;
+      -webkit-user-select: none;
     }
 
-    /* Mic bar: shows what the app is hearing; tap it to start / stop listening */
-    #mic {
+    /* ---------- Top bar: the microphone and settings ---------- */
+    .bar {
       flex: 0 0 auto;
-      min-height: 13vh;
-      min-height: 13dvh;
-      border: 5px solid #fff;
-      border-radius: 18px;
-      background: #222;
-      color: #fff;
-      font: inherit;
-      font-size: clamp(1.1rem, 6vw, 3rem);
-      line-height: 1.1;
-      padding: 8px 12px;
-      text-align: center;
+      display: flex;
+      gap: var(--gap);
+      height: clamp(76px, 13dvh, 140px);
+    }
+
+    .bar button {
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--bar);
+      border: 4px solid var(--edge);
+      border-radius: var(--radius);
       cursor: pointer;
+    }
+
+    #mic {
+      flex: 1 1 auto;
+      min-width: 0;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.4em;
+      gap: 12px;
+      padding: 0 12px;
+      text-align: left;
     }
 
-    #mic .dot {
+    #mic .mic-ic {
       flex: 0 0 auto;
-      width: 0.8em;
-      height: 0.8em;
+      width: clamp(44px, 7dvh, 76px);
+      height: clamp(44px, 7dvh, 76px);
       border-radius: 50%;
-      background: #666;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.14);
     }
 
-    #mic.listening { background: #3a0000; border-color: #ff3333; }
-    #mic.listening .dot {
-      background: #ff2222;
-      animation: pulse 1s ease-in-out infinite;
+    #mic .mic-ic svg {
+      width: 58%;
+      height: 58%;
     }
-    #mic.heard { background: #ffee00; color: #000; border-color: #ffee00; }
+
+    #mic .words {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 2px;
+    }
+
+    #micText {
+      font-weight: 800;
+      font-size: clamp(1.4rem, 6.6vw, 2.8rem);
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #micHint {
+      font-size: clamp(0.95rem, 4vw, 1.4rem);
+      line-height: 1.15;
+      opacity: 0.9;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    #mic.listening {
+      border-color: var(--live);
+    }
+    #mic.listening .mic-ic {
+      background: var(--live);
+      color: #fff;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    #mic.heard {
+      background: var(--heard);
+      border-color: var(--heard);
+      color: #000;
+    }
+    #mic.heard .mic-ic {
+      background: #000;
+      color: var(--heard);
+    }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.6; }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.7); }
+      50% { box-shadow: 0 0 0 12px rgba(255, 59, 59, 0); }
+    }
+
+    #more {
+      flex: 0 0 auto;
+      width: clamp(68px, 17vw, 140px);
+      display: grid;
+      place-items: center;
+    }
+
+    #more svg {
+      width: min(60%, 56px);
+      height: min(60%, 56px);
+    }
+
+    /* ---------- The four big buttons ---------- */
+    .grid {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      gap: var(--gap);
+    }
+
+    @media (orientation: landscape) and (min-aspect-ratio: 4/3) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
     }
 
     .big {
-      flex: 1 1 0;
+      position: relative;
       min-height: 0;
-      width: 100%;
-      border: 6px solid #fff;
-      border-radius: 22px;
-      color: #fff;
-      font: inherit;
-      font-weight: 900;
-      text-transform: uppercase;
-      line-height: 1;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      white-space: nowrap;
-      transition: transform 0.1s, filter 0.1s;
+      border: 5px solid var(--edge);
+      border-radius: var(--radius);
+      color: var(--ink);
+      text-decoration: none;
+      background-color: var(--c);
+      background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.18) 100%);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.22);
+      cursor: pointer;
+      transition: transform 0.08s ease-out, filter 0.08s ease-out;
     }
 
-    .big:active, .big.flash {
+    :root.hc .big {
+      background-image: none;
+      box-shadow: none;
+    }
+
+    #phone { --c: var(--phone); }
+    #search { --c: var(--search); }
+    #talk { --c: var(--talk); }
+    #youtube { --c: var(--youtube); }
+
+    /* The picture sits behind the word, so the word keeps the whole width */
+    .big .ic {
+      position: absolute;
+      right: -3%;
+      top: 50%;
+      height: 135%;
+      width: auto;
+      transform: translateY(-50%) rotate(-8deg);
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .big .word {
+      position: relative;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      text-shadow: 0 0.04em 0 rgba(0, 0, 0, 0.28), 0 0.08em 0.25em rgba(0, 0, 0, 0.25);
+      /* cap height sits a little high in this face; nudge it to the optical centre */
+      padding-top: 0.06em;
+    }
+
+    :root.hc .big .word {
+      text-shadow: none;
+    }
+
+    .big:active, .big.pressed {
       transform: scale(0.97);
-      filter: brightness(1.4);
+      filter: brightness(1.25);
+    }
+
+    :root.hc .big:active, :root.hc .big.pressed {
+      background: var(--ink);
+      color: #000;
+      filter: none;
+    }
+
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 6px solid var(--heard);
+      outline-offset: 3px;
     }
 
     .big:focus-visible {
-      outline: 8px solid #ffff00;
       outline-offset: -14px;
     }
 
-    #phone   { background: #0055ee; }
-    #search  { background: #009933; }
-    #talk    { background: #cc0000; }
-    #youtube { background: #ff5500; }
+    /* ---------- Settings and help ---------- */
+    dialog {
+      margin: auto;
+      width: min(680px, calc(100vw - 16px));
+      max-height: calc(100dvh - 16px);
+      background: #111;
+      color: #fff;
+      border: 4px solid #fff;
+      border-radius: 24px;
+      padding: 0;
+      font-family: var(--font);
+      font-size: clamp(1.1rem, 4.4vw, 1.35rem);
+      line-height: 1.4;
+    }
+
+    :root.hc dialog {
+      background: #000;
+      color: var(--ink);
+      border-color: var(--ink);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100dvh - 24px);
+    }
+
+    .panel header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 12px 22px;
+      border-bottom: 2px solid #333;
+    }
+
+    .panel h2 {
+      font-size: 1.6em;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .panel .body {
+      overflow-y: auto;
+      padding: 8px 22px 22px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .panel h3 {
+      font-size: 1.15em;
+      font-weight: 800;
+      margin: 22px 0 10px;
+    }
+
+    .panel p, .panel li {
+      margin: 0 0 10px;
+    }
+
+    .panel ul {
+      padding-left: 1.2em;
+    }
+
+    .panel b {
+      font-weight: 800;
+    }
+
+    .btn {
+      font: inherit;
+      font-weight: 800;
+      min-height: 56px;
+      min-width: 56px;
+      padding: 10px 20px;
+      border-radius: 16px;
+      border: 3px solid currentColor;
+      background: #fff;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: inherit;
+    }
+
+    :root.hc .btn {
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+    :root.hc .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 60px;
+      padding: 8px 0;
+      border-bottom: 1px solid #2a2a2a;
+      cursor: pointer;
+    }
+
+    .row input[type="checkbox"] {
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      accent-color: #ffe500;
+      cursor: pointer;
+    }
+
+    .row span {
+      flex: 1 1 auto;
+    }
+
+    .row small {
+      display: block;
+      font-size: 0.82em;
+      opacity: 0.8;
+    }
+
+    .speed {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      border: 0;
+      padding: 8px 0 12px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .speed legend {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .speed label {
+      flex: 1 1 0;
+      min-width: 90px;
+    }
+
+    .speed input {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .speed label span {
+      display: grid;
+      place-items: center;
+      min-height: 56px;
+      border: 3px solid #fff;
+      border-radius: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .speed input:checked + span {
+      background: #fff;
+      color: #000;
+    }
+
+    .speed input:focus-visible + span {
+      outline: 6px solid var(--heard);
+      outline-offset: 3px;
+    }
+
+    :root.hc .speed label span { border-color: var(--ink); }
+    :root.hc .speed input:checked + span { background: var(--ink); }
+
+    .contacts {
+      list-style: none;
+      padding: 0 !important;
+    }
+
+    .contacts li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #2a2a2a;
+      margin: 0 !important;
+    }
+
+    .contacts li span {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .add {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .add label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
+    .add input {
+      font: inherit;
+      min-height: 56px;
+      padding: 8px 12px;
+      border-radius: 14px;
+      border: 3px solid #fff;
+      background: #000;
+      color: #fff;
+      width: 100%;
+    }
+
+    .add .btn {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 420px) {
+      .add {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .fine {
+      font-size: 0.85em;
+      opacity: 0.85;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .big, .big:active, .big.pressed {
+        transition: none;
+        transform: none;
+      }
+      #mic.listening .mic-ic {
+        animation: none;
+      }
+    }
+
+    /* Windows high-contrast and other forced-colour modes */
+    @media (forced-colors: active) {
+      .big, .bar button {
+        border-color: ButtonText;
+        forced-color-adjust: auto;
+      }
+      .big .ic {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="app">
-    <button id="mic" type="button" aria-live="polite">
-      <span class="dot" aria-hidden="true"></span>
-      <span id="micText">TAP HERE, THEN SPEAK</span>
-    </button>
-    <button class="big" id="phone" type="button" aria-label="Phone – make a call"><span>PHONE</span></button>
-    <button class="big" id="search" type="button" aria-label="Search – open Google"><span>SEARCH</span></button>
-    <button class="big" id="talk" type="button" aria-label="Talk – open Mentifaber Talk"><span>TALK</span></button>
-    <button class="big" id="youtube" type="button" aria-label="YouTube – open YouTube"><span>YOUTUBE</span></button>
+    <div class="bar">
+      <button id="mic" type="button" aria-describedby="micHint">
+        <span class="mic-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>
+        </span>
+        <span class="words">
+          <span id="micText">Tap to talk</span>
+          <span id="micHint">Say Phone, Search, Talk or YouTube</span>
+        </span>
+      </button>
+      <button id="more" type="button" aria-label="Settings and help" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2.2" fill="currentColor"/><circle cx="15" cy="12" r="2.2" fill="currentColor"/><circle cx="7" cy="18" r="2.2" fill="currentColor"/></svg>
+      </button>
+    </div>
+
+    <nav class="grid" aria-label="Big buttons">
+      <a class="big" id="phone" href="tel:" aria-describedby="d-phone">
+        <svg class="ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.2 2.6c.7-.2 1.4.2 1.7.8l1.7 3.9c.3.6.1 1.3-.4 1.7L8.4 10.4a12.5 12.5 0 0 0 5.2 5.2l1.4-1.8c.4-.5 1.1-.7 1.7-.4l3.9 1.7c.6.3 1 1 .8 1.7l-.7 2.7c-.2.8-.9 1.3-1.7 1.3C10.4 20.8 3.2 13.6 3.2 5c0-.8.5-1.5 1.3-1.7z"/></svg>
+        <span class="word">Phone</span>
+      </a>
+      <a class="big" id="search" href="https://www.google.com" aria-describedby="d-search">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M15 15l6 6"/></svg>
+        <span class="word">Search</span>
+      </a>
+      <a class="big" id="talk" href="https://mentifaber.org/talk" aria-describedby="d-talk">
+        <svg class="ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.5h14a2.5 2.5 0 0 1 2.5 2.5v9a2.5 2.5 0 0 1-2.5 2.5h-7.2l-5.3 4v-4H5A2.5 2.5 0 0 1 2.5 15V6A2.5 2.5 0 0 1 5 3.5z"/></svg>
+        <span class="word">Talk</span>
+      </a>
+      <a class="big" id="youtube" href="https://www.youtube.com" aria-describedby="d-youtube">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" d="M9.6 7.6v8.8l7-4.4z"/></svg>
+        <span class="word">YouTube</span>
+      </a>
+    </nav>
   </main>
+
+  <p class="sr" id="d-phone">Opens your phone to make a call</p>
+  <p class="sr" id="d-search">Opens Google search</p>
+  <p class="sr" id="d-talk">Opens Mentifaber Talk</p>
+  <p class="sr" id="d-youtube">Opens YouTube</p>
+  <p class="sr" id="say" aria-live="assertive"></p>
+
+  <dialog id="panel" aria-labelledby="panelTitle">
+    <div class="panel">
+      <header>
+        <h2 id="panelTitle">Settings &amp; help</h2>
+        <button class="btn" id="done" type="button">Done</button>
+      </header>
+      <div class="body">
+        <h3>How to use it</h3>
+        <ul>
+          <li><b>Tap</b> any big button, or</li>
+          <li><b>tap the top bar</b> and say what you want. It keeps listening until you say “stop”.</li>
+        </ul>
+
+        <h3>Things you can say</h3>
+        <ul>
+          <li><b>“Phone”</b> — opens your phone</li>
+          <li><b>“Call 555 123 4567”</b> — dials that number</li>
+          <li><b>“Call Mom”</b> — calls a saved contact (add them below)</li>
+          <li><b>“Search pizza near me”</b> — searches Google</li>
+          <li><b>“Search”</b> — asks you what to look for</li>
+          <li><b>“Talk”</b> — opens Talk</li>
+          <li><b>“YouTube cooking videos”</b> or <b>“Play some music”</b> — searches YouTube</li>
+          <li><b>“Help”</b> — reads this list out loud</li>
+          <li><b>“Stop”</b> — stops listening</li>
+        </ul>
+        <p class="fine">Calls never go through on their own: your phone shows the number first, and you press its call button.</p>
+
+        <h3>Settings</h3>
+        <label class="row"><input type="checkbox" id="optSpeak"><span>Speak out loud<small>Says what's happening, like “Opening YouTube”</small></span></label>
+        <label class="row"><input type="checkbox" id="optAuto"><span>Listen as soon as it opens<small>Once you've allowed the microphone</small></span></label>
+        <label class="row"><input type="checkbox" id="optHc"><span>Yellow on black<small>Highest contrast colours</small></span></label>
+        <label class="row"><input type="checkbox" id="optBuzz"><span>Buzz when pressed<small>On phones that can vibrate</small></span></label>
+        <fieldset class="speed">
+          <legend>Speaking speed</legend>
+          <label><input type="radio" name="rate" value="0.8"><span>Slow</span></label>
+          <label><input type="radio" name="rate" value="1"><span>Normal</span></label>
+          <label><input type="radio" name="rate" value="1.25"><span>Fast</span></label>
+        </fieldset>
+
+        <h3>People to call by name</h3>
+        <ul class="contacts" id="contacts"></ul>
+        <p class="fine" id="noContacts">No one saved yet. Add someone, then say “Call” and their name.</p>
+        <form class="add" id="addForm" autocomplete="off">
+          <label>Name<input id="cName" name="name" required maxlength="40" placeholder="Mom"></label>
+          <label>Number<input id="cNum" name="number" type="tel" inputmode="tel" required maxlength="24" placeholder="555 123 4567"></label>
+          <button class="btn" type="submit">Add person</button>
+        </form>
+
+        <div id="installBox" hidden>
+          <h3>Put it on your home screen</h3>
+          <p id="installText">Install Big Buttons so it opens full screen, like any other app — and works without internet.</p>
+          <button class="btn" id="installBtn" type="button">Install app</button>
+        </div>
+
+        <h3>Privacy</h3>
+        <p class="fine">Big Buttons has no accounts, no ads and no tracking. Your settings and saved people stay on this device. Speech is turned into text by your browser or phone — on Chrome and Android that's Google's speech service, on iPhone it's Apple's — and only while the microphone is on.</p>
+        <p class="fine">Google and YouTube are trademarks of Google LLC. Big Buttons isn't made by or affiliated with Google. © 2026 Mentifaber.</p>
+      </div>
+    </div>
+  </dialog>
 
   <script>
     const LINKS = {
@@ -137,78 +663,120 @@
       talk: 'https://mentifaber.org/talk',
       youtube: 'https://www.youtube.com'
     };
+    const NAMES = { phone: 'phone', search: 'Google', talk: 'Talk', youtube: 'YouTube' };
+    const COMMANDS = 'Say phone, search, talk, or YouTube.';
+    const HINT = 'Say Phone, Search, Talk or YouTube';
 
-    const mic = document.getElementById('mic');
-    const micText = document.getElementById('micText');
+    const $ = (id) => document.getElementById(id);
+    const mic = $('mic'), micText = $('micText'), micHint = $('micHint'), panel = $('panel');
     const bigButtons = [...document.querySelectorAll('.big')];
 
-    /* ---------- Make each word as wide as the screen ---------- */
+    /* ---------- Settings, kept on this device ---------- */
+    const STORE = 'big-buttons-v1';
+    const settings = Object.assign(
+      { speak: true, auto: true, hc: false, buzz: true, rate: 1, contacts: [] },
+      (() => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } })()
+    );
+    function save() {
+      try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch (e) { /* private mode: settings last this visit */ }
+    }
+    function applyTheme() {
+      document.documentElement.classList.toggle('hc', !!settings.hc);
+    }
+    applyTheme();
+
+    /* ---------- Make each word as wide as its button ---------- */
     function fitText() {
       bigButtons.forEach(btn => {
-        const span = btn.firstElementChild;
-        span.style.fontSize = '100px';
-        const maxW = btn.clientWidth * 0.94;
-        const maxH = btn.clientHeight * 0.9;
-        const w = span.scrollWidth || 1;
-        const h = span.offsetHeight || 1;
-        const size = Math.min(100 * maxW / w, 100 * maxH / h);
-        span.style.fontSize = Math.floor(size) + 'px';
+        const word = btn.querySelector('.word');
+        word.style.fontSize = '100px';
+        const maxW = btn.clientWidth * 0.9;
+        const maxH = btn.clientHeight * 0.78;
+        const w = word.scrollWidth || 1;
+        const h = word.offsetHeight || 1;
+        word.style.fontSize = Math.max(16, Math.floor(Math.min(100 * maxW / w, 100 * maxH / h))) + 'px';
       });
     }
-    window.addEventListener('resize', fitText);
-    window.addEventListener('orientationchange', () => setTimeout(fitText, 200));
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitText);
+    addEventListener('resize', fitText);
+    addEventListener('orientationchange', () => setTimeout(fitText, 250));
+    if (document.fonts) document.fonts.ready.then(fitText);
     fitText();
 
-    /* ---------- Talking back ---------- */
+    /* ---------- Saying things ---------- */
+    let speaking = false;
+    function announce(text) {
+      const say = $('say');
+      say.textContent = '';
+      setTimeout(() => { say.textContent = text; }, 30);
+    }
+
     function speak(text, done) {
       let finished = false;
-      const finish = () => { if (!finished) { finished = true; if (done) done(); } };
-      if (!('speechSynthesis' in window)) { finish(); return; }
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        speaking = false;
+        resumeListening();
+        if (done) done();
+      };
+      announce(text);
+      if (!settings.speak || !('speechSynthesis' in window)) { setTimeout(finish, 150); return; }
+      // Stop listening while talking, so the app doesn't hear its own voice
+      speaking = true;
+      pauseListening();
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1;
+      u.lang = 'en-US';
+      u.rate = +settings.rate || 1;
       u.onend = finish;
       u.onerror = finish;
       speechSynthesis.speak(u);
-      // Some phones never fire onend — don't get stuck waiting
-      setTimeout(finish, 2500);
+      // Some phones never report the end of speech; don't wait forever
+      setTimeout(finish, 1200 + text.length * 90 / u.rate);
     }
 
-    function setMic(text, mode) {
+    function setMic(text, mode, hint) {
       micText.textContent = text;
+      micHint.textContent = hint || HINT;
       mic.classList.remove('listening', 'heard');
       if (mode) mic.classList.add(mode);
     }
 
-    /* ---------- Going places ---------- */
-    let leaving = false;
-    function go(url, sayText, btnId) {
-      if (leaving) return;
-      leaving = true;
-      stopListening();
-      if (btnId) document.getElementById(btnId).classList.add('flash');
-      setMic(sayText.toUpperCase(), 'heard');
-      speak(sayText, () => { window.location.href = url; });
-      // In case the browser blocks navigation, let the app work again
-      setTimeout(() => {
-        leaving = false;
-        bigButtons.forEach(b => b.classList.remove('flash'));
-      }, 4000);
+    function buzz() {
+      if (settings.buzz && navigator.vibrate) { try { navigator.vibrate(35); } catch (e) {} }
     }
 
-    // Taps go straight there
+    /* ---------- Going places ---------- */
+    let leaving = false;
+    function go(url, sayText, id) {
+      if (leaving) return;
+      leaving = true;
+      stopListening(true);
+      buzz();
+      if (id) $(id).classList.add('pressed');
+      setMic(sayText, 'heard', ' ');
+      speak(sayText, () => { location.href = url; });
+      // If the browser stays put (a blocked link, a cancelled call), come back to life
+      setTimeout(reset, 5000);
+    }
+
+    function reset() {
+      leaving = false;
+      bigButtons.forEach(b => b.classList.remove('pressed'));
+      setMic(wantListening ? 'Listening…' : 'Tap to talk', wantListening ? 'listening' : null);
+    }
+
     bigButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const names = { phone: 'Phone', search: 'Google', talk: 'Talk', youtube: 'YouTube' };
-        go(LINKS[btn.id], 'Opening ' + names[btn.id], btn.id);
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        go(LINKS[btn.id], 'Opening ' + NAMES[btn.id], btn.id);
       });
     });
 
-    /* ---------- Voice commands ---------- */
+    /* ---------- Understanding what was said ---------- */
     const NUMBER_WORDS = {
-      zero: '0', oh: '0', o: '0', one: '1', two: '2', to: '2', too: '2', three: '3',
-      four: '4', for: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9'
+      zero: '0', oh: '0', o: '0', one: '1', won: '1', two: '2', to: '2', too: '2', three: '3', tree: '3',
+      four: '4', for: '4', five: '5', six: '6', seven: '7', eight: '8', ate: '8', nine: '9'
     };
 
     function digitsFrom(text) {
@@ -217,57 +785,84 @@
         .join('');
     }
 
-    let waitingFor = null; // 'search' | 'youtube' when the app asked "what for?"
+    function findContact(text) {
+      const t = ' ' + text.replace(/^(my|the)\s+/, '') + ' ';
+      return settings.contacts.find(c => {
+        const n = c.name.toLowerCase().trim();
+        return n && (t.trim() === n || t.includes(' ' + n + ' '));
+      });
+    }
+
+    function callContact(c) {
+      go('tel:' + c.number.replace(/[^0-9+*#]/g, ''), 'Calling ' + c.name, 'phone');
+    }
+
+    let waitingFor = null; // 'search' after the app asks "what for?"
 
     function handle(raw) {
-      const text = raw.toLowerCase().trim().replace(/[.,!?]/g, '');
-      if (!text) return;
+      const text = raw.toLowerCase().trim().replace(/[.,!?']/g, '').replace(/\s+/g, ' ');
+      if (!text || leaving) return;
 
-      // Follow-up answer to "What do you want to search?"
-      if (waitingFor) {
-        const kind = waitingFor;
+      if (/^(stop|stop listening|be quiet|quiet|cancel)$/.test(text)) {
         waitingFor = null;
-        if (/^(cancel|stop|never ?mind|nothing)$/.test(text)) {
-          setMic('OK, CANCELLED', 'heard');
-          speak('Okay');
-          return;
-        }
-        return kind === 'search' ? searchGoogle(text) : searchYouTube(text);
+        stopListening();
+        speak('Stopped listening. Tap the top bar to talk again.');
+        return;
       }
+
+      if (waitingFor) {
+        waitingFor = null;
+        if (/^(never ?mind|nothing|no)$/.test(text)) { reset(); speak('Okay.'); return; }
+        return searchGoogle(text);
+      }
+
+      if (/^(help|what can i say|commands|what do i say|what do i do)\b/.test(text)) {
+        setMic('Help', 'heard');
+        speak(COMMANDS + ' You can also say, search, and what you want to find, or, call, and a name or number. Say stop to stop listening.');
+        return;
+      }
+
+      if (/^(settings|options|open settings)$/.test(text)) { openPanel(); return; }
 
       let m;
 
-      // PHONE: "phone", "call", "dial", "call 555 1234"
-      if ((m = text.match(/^(?:phone|call|dial|make a call)(?:\s+(.*))?$/)) || /\bphone\b/.test(text)) {
-        const digits = m && m[1] ? digitsFrom(m[1]) : '';
+      // PHONE: "phone", "call", "call 555 1234", "call mom", "mom"
+      if ((m = text.match(/^(?:phone|call|dial|ring|make a call|make a phone call)(?:\s+(?:to\s+)?(.*))?$/)) || /\bphone\b/.test(text)) {
+        const rest = m && m[1] ? m[1] : '';
+        const who = rest && findContact(rest);
+        if (who) return callContact(who);
+        const digits = rest ? digitsFrom(rest) : '';
         if (digits.length >= 3) return go('tel:' + digits, 'Calling ' + digits.split('').join(' '), 'phone');
+        if (rest && /[a-z]/.test(rest) && !/^(someone|somebody|a number|now)$/.test(rest)) {
+          return go(LINKS.phone, 'I don\'t have ' + rest + ' saved. Opening phone', 'phone');
+        }
         return go(LINKS.phone, 'Opening phone', 'phone');
       }
+      const person = findContact(text);
+      if (person && text.split(' ').length <= 3) return callContact(person);
 
-      // YOUTUBE: "youtube", "youtube cat videos", "play some music"
-      if ((m = text.match(/^(?:you ?tube|play)(?:\s+(.*))?$/)) || /\byou ?tube\b/.test(text)) {
-        const q = m && m[1] ? m[1].replace(/^(?:for|search(?: for)?)\s+/, '') : '';
+      // YOUTUBE: "youtube", "youtube cat videos", "play some music", "watch the news"
+      if ((m = text.match(/^(?:youtube|you tube|play|watch)(?:\s+(.*))?$/)) || /\byou ?tube\b/.test(text)) {
+        const q = m && m[1] ? m[1].replace(/^(?:for|search(?: for)?|videos? of)\s+/, '') : '';
         if (q) return searchYouTube(q);
         return go(LINKS.youtube, 'Opening YouTube', 'youtube');
       }
 
       // TALK
-      if (/\btalk\b/.test(text)) {
-        return go(LINKS.talk, 'Opening Talk', 'talk');
-      }
+      if (/\btalk\b/.test(text)) return go(LINKS.talk, 'Opening Talk', 'talk');
 
       // SEARCH: "search", "google", "search for pizza near me", "look up the weather"
-      if ((m = text.match(/^(?:search|google|look up|find)(?:\s+(?:for\s+)?(.*))?$/)) || /\b(search|google)\b/.test(text)) {
+      if ((m = text.match(/^(?:search|google|look up|find|look for)(?:\s+(?:for\s+|up\s+)?(.*))?$/)) || /\b(search|google)\b/.test(text)) {
         const q = m && m[1] ? m[1] : '';
         if (q) return searchGoogle(q);
         waitingFor = 'search';
-        setMic('SEARCH FOR WHAT?', 'heard');
+        setMic('Search for what?', 'heard', 'Say what you want to find');
         speak('What do you want to search for?');
         return;
       }
 
-      setMic('SAY: PHONE · SEARCH · TALK · YOUTUBE', 'heard');
-      speak('Say phone, search, talk, or YouTube');
+      setMic('“' + raw.trim() + '”?', 'heard');
+      speak('Sorry, I didn\'t catch that. ' + COMMANDS);
     }
 
     function searchGoogle(q) {
@@ -275,106 +870,217 @@
     }
 
     function searchYouTube(q) {
-      go('https://www.youtube.com/results?search_query=' + encodeURIComponent(q), 'YouTube, ' + q, 'youtube');
+      go('https://www.youtube.com/results?search_query=' + encodeURIComponent(q), 'YouTube: ' + q, 'youtube');
     }
 
-    /* ---------- Speech recognition ---------- */
+    /* ---------- Listening ---------- */
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let rec = null;
-    let wantListening = false;
-    let running = false;
+    let rec = null, running = false, wantListening = false, paused = false;
 
     if (!Recognition) {
-      setMic('VOICE NOT SUPPORTED HERE — TAP A BUTTON', null);
+      setMic('Voice isn\'t available here', null, 'Tap a button instead');
     } else {
       rec = new Recognition();
-      rec.lang = navigator.language || 'en-US';
+      rec.lang = 'en-US';
       rec.continuous = true;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
       rec.onstart = () => {
         running = true;
-        if (!waitingFor) setMic('LISTENING… SAY A BUTTON', 'listening');
+        if (!leaving && !waitingFor && !speaking) setMic('Listening…', 'listening');
       };
 
       rec.onresult = (e) => {
+        if (speaking || leaving) return;
         for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          const said = r[0].transcript;
-          if (r.isFinal) {
-            handle(said);
-          } else {
-            setMic('“' + said.trim().toUpperCase() + '”', 'listening');
-          }
+          const r = e.results[i], said = r[0].transcript;
+          if (r.isFinal) handle(said);
+          else if (said.trim()) setMic('“' + said.trim() + '”', 'listening');
         }
       };
 
       rec.onerror = (e) => {
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
           wantListening = false;
-          setMic('ALLOW THE MICROPHONE, THEN TAP HERE', null);
+          setMic('Microphone is off', null, 'Allow the microphone, then tap here');
+          announce('The microphone is blocked. Allow it in your browser settings, then tap the top bar.');
         }
       };
 
       rec.onend = () => {
         running = false;
-        // Keep listening until told to stop (phones cut off after silence)
-        if (wantListening && !leaving) {
-          setTimeout(startListening, 250);
-        } else if (!leaving && !wantListening && mic.classList.contains('listening')) {
-          setMic('TAP HERE, THEN SPEAK', null);
-        }
+        // Phones stop listening after a pause; start again unless told to stop
+        if (wantListening && !paused && !leaving) setTimeout(startRec, 300);
+        else if (!wantListening && !leaving && mic.classList.contains('listening')) setMic('Tap to talk');
       };
     }
 
-    function startListening() {
-      if (!rec || running) return;
-      wantListening = true;
-      try { rec.start(); } catch (err) { /* already started */ }
+    function startRec() {
+      if (!rec || running || paused || !wantListening) return;
+      try { rec.start(); } catch (e) { /* already starting */ }
     }
 
-    function stopListening() {
+    function startListening() {
+      if (!rec) return;
+      wantListening = true;
+      startRec();
+    }
+
+    function stopListening(quiet) {
       wantListening = false;
-      if (rec && running) { try { rec.stop(); } catch (err) {} }
+      if (rec && running) { try { rec.abort(); } catch (e) {} }
+      if (!quiet) setMic('Tap to talk');
+    }
+
+    function pauseListening() {
+      paused = true;
+      if (rec && running) { try { rec.abort(); } catch (e) {} }
+    }
+
+    function resumeListening() {
+      paused = false;
+      if (wantListening && !leaving) setTimeout(startRec, 250);
     }
 
     mic.addEventListener('click', () => {
-      if (!rec) {
-        speak('Voice is not supported in this browser. Tap a button instead.');
-        return;
-      }
-      if (wantListening) {
-        stopListening();
-        setMic('TAP HERE, THEN SPEAK', null);
-      } else {
-        speak('Say phone, search, talk, or YouTube', startListening);
-      }
+      buzz();
+      if (!rec) { speak('Voice isn\'t available in this browser. Tap a button instead.'); return; }
+      if (wantListening) { waitingFor = null; stopListening(); announce('Stopped listening'); return; }
+      wantListening = true;
+      setMic('Listening…', 'listening');
+      speak(COMMANDS);
     });
 
-    // Start listening right away if the mic is already allowed
-    if (rec && navigator.permissions && navigator.permissions.query) {
-      navigator.permissions.query({ name: 'microphone' })
-        .then(p => { if (p.state === 'granted') startListening(); })
-        .catch(() => {});
+    function micAllowed() {
+      if (!navigator.permissions || !navigator.permissions.query) return Promise.resolve(false);
+      return navigator.permissions.query({ name: 'microphone' }).then(p => p.state === 'granted').catch(() => false);
     }
 
-    // Coming back with the Back button: reset and listen again
-    window.addEventListener('pageshow', (e) => {
-      leaving = false;
-      bigButtons.forEach(b => b.classList.remove('flash'));
+    function autoListen() {
+      if (rec && settings.auto && !leaving && !panel.open) micAllowed().then(ok => { if (ok) startListening(); });
+    }
+    autoListen();
+
+    addEventListener('pageshow', (e) => {
+      reset();
       fitText();
-      if (e.persisted && rec) startListening();
+      if (e.persisted) autoListen();
     });
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) stopListening();
-      else if (rec && !leaving && navigator.permissions) {
-        navigator.permissions.query({ name: 'microphone' })
-          .then(p => { if (p.state === 'granted') startListening(); })
-          .catch(() => {});
-      }
+      if (document.hidden) { stopListening(true); if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+      else { reset(); autoListen(); }
     });
+
+    /* ---------- Keyboard: 1–4 or P/S/T/Y for the buttons, M for the microphone ---------- */
+    const KEYS = { '1': 'phone', p: 'phone', '2': 'search', s: 'search', '3': 'talk', t: 'talk', '4': 'youtube', y: 'youtube' };
+    addEventListener('keydown', (e) => {
+      if (panel.open || e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (KEYS[k]) { e.preventDefault(); $(KEYS[k]).click(); }
+      else if (k === 'm') { e.preventDefault(); mic.click(); }
+      else if (k === ' ' && document.activeElement && document.activeElement.classList.contains('big')) { e.preventDefault(); document.activeElement.click(); }
+    });
+
+    /* ---------- Settings panel ---------- */
+    function renderContacts() {
+      const list = $('contacts');
+      list.textContent = '';
+      settings.contacts.forEach((c, i) => {
+        const li = document.createElement('li');
+        const s = document.createElement('span');
+        s.innerHTML = '<b></b><br>';
+        s.firstChild.textContent = c.name;
+        s.appendChild(document.createTextNode(c.number));
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'btn ghost';
+        del.textContent = 'Remove';
+        del.setAttribute('aria-label', 'Remove ' + c.name);
+        del.onclick = () => {
+          settings.contacts.splice(i, 1);
+          save();
+          renderContacts();
+          announce(c.name + ' removed');
+        };
+        li.append(s, del);
+        list.appendChild(li);
+      });
+      $('noContacts').hidden = settings.contacts.length > 0;
+    }
+
+    function openPanel() {
+      stopListening(true);
+      $('optSpeak').checked = settings.speak;
+      $('optAuto').checked = settings.auto;
+      $('optHc').checked = settings.hc;
+      $('optBuzz').checked = settings.buzz;
+      document.querySelectorAll('input[name="rate"]').forEach(r => { r.checked = +r.value === +settings.rate; });
+      renderContacts();
+      panel.showModal();
+    }
+
+    $('more').addEventListener('click', () => { buzz(); openPanel(); });
+    $('done').addEventListener('click', () => panel.close());
+    panel.addEventListener('click', (e) => { if (e.target === panel) panel.close(); });
+    panel.addEventListener('close', () => { setMic('Tap to talk'); fitText(); autoListen(); });
+
+    [['optSpeak', 'speak'], ['optAuto', 'auto'], ['optHc', 'hc'], ['optBuzz', 'buzz']].forEach(([id, key]) => {
+      $(id).addEventListener('change', (e) => {
+        settings[key] = e.target.checked;
+        save();
+        if (key === 'hc') applyTheme();
+      });
+    });
+
+    document.querySelectorAll('input[name="rate"]').forEach(r => r.addEventListener('change', () => {
+      settings.rate = +r.value;
+      save();
+      speak('This is how fast I talk.');
+    }));
+
+    $('addForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('cName').value.trim().replace(/\s+/g, ' ');
+      const number = $('cNum').value.trim();
+      if (!name || number.replace(/[^0-9]/g, '').length < 3) { announce('Add a name and a phone number'); return; }
+      const old = settings.contacts.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
+      if (old >= 0) settings.contacts.splice(old, 1);
+      settings.contacts.push({ name, number });
+      save();
+      renderContacts();
+      e.target.reset();
+      announce(name + ' saved. Say: call ' + name);
+      $('cName').focus();
+    });
+
+    /* ---------- Install as an app, and work without internet ---------- */
+    let installPrompt = null;
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!standalone && ios) {
+      $('installBox').hidden = false;
+      $('installText').innerHTML = 'In Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. It will open full screen, like any other app.';
+      $('installBtn').hidden = true;
+    }
+    addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      installPrompt = e;
+      $('installBox').hidden = false;
+    });
+    $('installBtn').addEventListener('click', async () => {
+      if (!installPrompt) return;
+      installPrompt.prompt();
+      try { await installPrompt.userChoice; } catch (e) {}
+      installPrompt = null;
+      $('installBox').hidden = true;
+    });
+    addEventListener('appinstalled', () => { $('installBox').hidden = true; });
+
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      navigator.serviceWorker.register('/big-buttons-sw.js', { scope: '/big-buttons' }).catch(() => {});
+    }
   </script>
 </body>
 </html>

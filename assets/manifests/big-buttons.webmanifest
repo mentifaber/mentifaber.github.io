@@ -1,0 +1,33 @@
+{
+  "id": "/big-buttons",
+  "name": "Big Buttons · Mentifaber",
+  "short_name": "Big Buttons",
+  "description": "Four giant buttons — Phone, Search, Talk, YouTube — that you can tap or just say out loud.",
+  "start_url": "/big-buttons",
+  "scope": "/big-buttons",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["accessibility", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "../icons/v2/big-buttons-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/big-buttons-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/big-buttons-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
