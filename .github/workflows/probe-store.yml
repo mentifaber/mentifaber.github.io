@@ -1,0 +1,14 @@
+name: Probe the live Store (temporary)
+on:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/workflows/probe-store.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in /store/catalog.json /store.apk /store/apk/org.mentifaber.mentiplayer /autofaber.apk /store /store.html; do
+            echo "=== $u"; curl -sS -D - -o body.txt "https://mentifaber.org$u?probe=$RANDOM" | head -20; head -c 1500 body.txt; echo
+          done
+          echo "=== github release json"; curl -sSL https://github.com/mentifaber/mentifaber.github.io/releases/download/mentifaber-store/MentifaberStore.json; echo
