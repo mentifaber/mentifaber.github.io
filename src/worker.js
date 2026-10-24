@@ -8,7 +8,8 @@ import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
 import { media } from "./media.js";
-import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the AutoFaber Android app (android/autofaber), so it opens full screen
+import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
+import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the Android apps (android/), so AutoFaber opens full screen and store links open the Store
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -520,6 +521,7 @@ export default {
       h.set("x-robots-tag", "noindex"); h.set("cache-control", "no-cache");
       return new Response(r.body, { status: r.status, headers: h });
     }
+    if (path === "/store.apk" || path.startsWith("/store/")) { const r = await storeRoutes(req, ctx); if (r) return r; }
     if (path === "/autofaber.apk" || path === "/android") { // the AutoFaber Android app: the release-signed build when there is one, else the test build
       const base = "https://github.com/mentifaber/mentifaber.github.io/releases/download/", signed = base + "autofaber-android/AutoFaber.apk";
       const has = await fetch(signed, { method: "HEAD", redirect: "manual", cf: { cacheTtl: 600 } }).then((r) => r.status === 302 || r.status === 200).catch(() => false);

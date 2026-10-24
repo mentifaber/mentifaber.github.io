@@ -1,14 +1,38 @@
 [
-  {
-    "relation": [
-      "delegate_permission/common.handle_all_urls"
-    ],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "org.mentifaber.autofaber",
-      "sha256_cert_fingerprints": [
-        "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
-      ]
-    }
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.autofaber",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
   }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.store",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.mentiplayer",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ }
 ]

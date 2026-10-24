@@ -1,0 +1,70 @@
+{
+  "_": "The Mentifaber Store's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes; the store reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
+  "apps": [
+    {
+      "id": "org.mentifaber.autofaber",
+      "name": "AutoFaber",
+      "dir": "android/autofaber",
+      "release": "autofaber-android",
+      "file": "AutoFaber",
+      "category": "AI",
+      "tagline": "A mind with a name, and every model on call",
+      "description": "AutoFaber remembers you, talks with you out loud and calls on every AI model it can reach: one at a time in the Studio, as a council that merges the best drafts, or as a swarm that builds whole projects you can run. Live web search with sources, vision, pictures, weather, quotes for any stock or coin, and phone alerts from Vigil.\n\nOn Android it runs full screen in Chrome's own engine, so voice, the microphone, sign-in, uploads and notifications work just as they do on the web.",
+      "features": [
+        "Talk hands-free or push-to-talk",
+        "Council and Swarm modes",
+        "Search, read, see and imagine",
+        "Phone alerts"
+      ],
+      "icon": "/assets/icons/v2/hive-512.png",
+      "accent": "#f0b24a",
+      "web": "/hive-app",
+      "page": "/hive",
+      "shots": [
+        "/assets/previews/hive.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.mentiplayer",
+      "name": "MentiPlayer",
+      "dir": "android/mentiplayer",
+      "release": "mentiplayer-android",
+      "file": "MentiPlayer",
+      "category": "Entertainment",
+      "tagline": "Films, TV, music, radio and podcasts in one player",
+      "description": "One player for films, classic TV, live TV, music from every artist, radio, audiobooks and podcasts, from open sources and the ones their owners stream for free: the Internet Archive, the Library of Congress, NASA, YouTube, SomaFM, Mixcloud and more. Search everything at once, queue songs, save what you like, and pick up where you left off.\n\nSafe mode is on unless you turn it off, so it stays family-friendly. On Android it runs full screen in Chrome's own engine, with background playback just like the web.",
+      "features": [
+        "Search every source at once",
+        "Music from every artist",
+        "Live TV and radio",
+        "Safe mode on by default"
+      ],
+      "icon": "/assets/icons/v2/mentiplayer-512.png",
+      "accent": "#ff7a59",
+      "web": "/mentiplayer-app",
+      "page": "/mentiplayer",
+      "shots": [
+        "/assets/previews/mentiplayer.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.store",
+      "name": "Mentifaber Store",
+      "dir": "android/store",
+      "release": "mentifaber-store",
+      "file": "MentifaberStore",
+      "category": "Tools",
+      "tagline": "Every Mentifaber app, installed and kept up to date",
+      "description": "The home of Mentifaber's Android apps. Install any of them in a tap, open and remove them, and let the Store keep them current: it checks for new versions twice a day, and on Android 12 and later it installs updates to the apps it installed without asking each time.\n\nEvery download is checked before it is installed. Its checksum must match the catalog, its package name must be the app's, and it must be signed with the same key as the Store itself, so nothing else can slip in.",
+      "features": [
+        "One-tap installs and updates",
+        "Updates itself",
+        "Every APK checked against Mentifaber's signature",
+        "Update alerts"
+      ],
+      "icon": "/assets/icons/v2/store-512.png",
+      "accent": "#f0b24a",
+      "page": "/store"
+    }
+  ]
+}

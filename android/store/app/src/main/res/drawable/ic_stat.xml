@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- the Store's bag, in one colour for the status bar -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M8.5,7V6a3.5,3.5 0,0 1,7 0v1h3.1l1,13.5H4.4L5.4,7zM10.2,7h3.6V6a1.8,1.8 0,0 0,-3.6 0zM10,10.5v6l5,-3z" />
+</vector>

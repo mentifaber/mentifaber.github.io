@@ -52,7 +52,7 @@
  "cards": [
   {
    "n": "on Android",
-   "html": "<p>AutoFaber installs as an app on any Android phone: its own icon, full screen, voice and alerts working as they do in Chrome. Download <a href=\"/autofaber.apk\">AutoFaber.apk</a> on the phone, open it, and allow installs from your browser if Android asks. New versions install over the top.</p>",
+   "html": "<p>AutoFaber installs as an app on any Android phone: its own icon, full screen, voice and alerts working as they do in Chrome. Get it from the <a href=\"/store\">Mentifaber Store</a>, which installs it in a tap and keeps it updated, or download <a href=\"/autofaber.apk\">AutoFaber.apk</a> on its own and allow installs from your browser if Android asks.</p>",
    "stack": [
     "Android 5+",
     "Trusted Web Activity",
