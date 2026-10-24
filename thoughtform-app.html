@@ -98,7 +98,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   .scr{gap:8px;padding:12px}.logo{font-size:clamp(30px,9vh,64px)}.btn{padding:11px 26px;font-size:13px}.lore{font-size:11px;line-height:1.6}
   .perk{padding:10px 14px 10px 50px;margin:4px auto}
 }
-@media (pointer:coarse){#radar{width:120px!important;height:120px!important;opacity:.9}#xh{width:30px;height:30px;margin:-15px 0 0 -15px}#feed{display:none}.keys{display:none}
+@media (pointer:coarse){#radar{width:120px!important;height:120px!important;opacity:.9}#xh{width:30px;height:30px;margin:-15px 0 0 -15px}#feed{display:none}.keys{display:none}.keys.set{display:grid}
   .wep{top:calc(64px + env(safe-area-inset-top));bottom:auto}#ws,.ab{display:none}.wep b{font-size:13px;margin:2px 0 0}
   #slots i{pointer-events:auto;width:30px;height:30px;line-height:30px}
   #touch #tpause{left:auto;right:calc(110px + env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top));transform:none}
@@ -134,6 +134,23 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
 #stick{position:fixed;width:120px;height:120px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.04);pointer-events:none;display:none}
 #stick i{position:absolute;left:40px;top:40px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.3)}
 #tpause{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);pointer-events:auto;width:44px;height:30px;border-radius:10px;font-size:12px}
+/* abilities show their own cooldown: a dark sweep that unwinds, the seconds left, and what they cost in focus */
+.tc{flex-direction:column;gap:1px;overflow:visible}.tc>span{position:relative;z-index:1}.tc>small{position:relative;z-index:1;font-size:10px;letter-spacing:.04em;color:var(--gold);min-height:12px;font-weight:700}
+.tc:before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(rgba(5,2,12,.78) calc(var(--cd,0)*360deg),transparent 0);pointer-events:none}
+.tc.cool{color:var(--dim)}.tc.ready{border-color:var(--acc);box-shadow:0 0 14px rgba(125,255,216,.35)}.tc.poor{color:var(--dim);border-style:dashed}.tc.poor>small{color:#ff8a8a}.tc.on{border-color:#9fd8ff;box-shadow:0 0 16px rgba(159,216,255,.5)}
+/* the Fire button aims too: drag anywhere inside its ring to look while you shoot */
+#tfire:after{content:"AIM";position:absolute;inset:-30px;border-radius:50%;border:1px dashed rgba(255,92,138,.4);font-size:8px;letter-spacing:.3em;color:rgba(255,160,185,.7);display:flex;align-items:flex-start;justify-content:center;padding-top:4px}
+#tfire.aiming:after{border-color:rgba(255,92,138,.85);background:rgba(255,92,138,.06)}
+.ab span{white-space:nowrap}.ab span b{color:var(--ink);font-weight:600}.ab span.cool em{color:var(--dim)}.ab span.poor em{color:#ff8a8a}.ab span.on em{color:#9fd8ff}
+/* a thought you haven't met before announces itself */
+#newk{position:fixed;left:max(14px,env(safe-area-inset-left));top:calc(148px + env(safe-area-inset-top));transform:translateX(-8px);width:min(340px,40vw);padding:10px 13px;border-radius:14px;background:rgba(10,4,24,.82);border:1px solid var(--kc,#9d8bff);border-left:5px solid var(--kc,#9d8bff);font-size:10px;letter-spacing:.06em;line-height:1.5;color:#d9d0f5;opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;z-index:3}
+@media (max-height:520px){#newk{top:calc(142px + env(safe-area-inset-top));font-size:9px;line-height:1.45;padding:8px 11px}#newk b{font-size:13px}}
+#newk.show{opacity:1;transform:none}#newk i{font-style:normal;font-size:8px;letter-spacing:.24em;color:var(--gold)}#newk b{display:block;font-size:15px;letter-spacing:.16em;color:var(--kc,#fff);margin:1px 0 3px}#newk em{font-style:normal;color:var(--acc)}#newk u{text-decoration:none;color:#ff9aa8}
+/* the Codex */
+.cx{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;width:min(900px,94vw)}
+.cx .card{cursor:default}.cx .card b{display:flex;align-items:center;gap:8px}.cx .card p{font-size:11px;line-height:1.6;color:#c9bfe9;margin-top:6px;letter-spacing:.03em}.cx .card p em{font-style:normal;color:var(--acc)}.cx .card p u{text-decoration:none;color:#ff9aa8}
+.cx .card .nums{display:flex;gap:14px;margin-top:8px;font-size:10px;letter-spacing:.14em;color:var(--dim)}.cx .card .nums b{display:inline;font-size:13px;color:var(--ink);letter-spacing:.05em}
+.cx .card.unk{opacity:.55}.cx .card i.sw{flex:none}
 </style>
 </head>
 <body>
@@ -144,7 +161,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <div id="dmgs"></div>
   <canvas id="radar" width="120" height="120"></canvas>
   <div class="wep"><div id="slots"><i>1</i><i>2</i><i>3</i><i>4</i></div><b id="wn">QUILL</b><span id="ws"></span>
-    <div class="ab"><span>Q SHOCKWAVE <em id="cdq">READY</em></span><span>F BARRIER <em id="cdf">READY</em></span></div></div>
+    <div class="ab" id="abl"></div></div>
   <div class="top">WAVE<b id="wave">1</b><span id="left"></span><div id="region" style="font-size:10px;margin-top:4px;color:var(--acc)"></div>
     <div id="bossbar" class="hidden"><span>THE CRITIC</span><div><b></b></div></div></div>
   <div class="score">SCORE<b id="sc">0</b><div id="combo"></div></div>
@@ -155,7 +172,7 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
     <div class="lbl"><span>QUILL HEAT</span><span id="hen"></span></div><div class="bar" id="he"><b></b></div>
   </div>
   <div id="banner"></div>
-  <div id="powerup"></div><div id="tip"></div>
+  <div id="powerup"></div><div id="tip"></div><div id="newk"></div>
   <div id="rw">FOCUS FULL · PRESS E TO REWRITE</div>
 </div>
 
@@ -176,9 +193,10 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <button class="btn" id="b-play">ENTER THE MIND</button>
   <div class="row2"><button class="btn alt" id="b-coop">CO-OP · ONLINE</button><button class="btn alt" id="b-shop">ARMORY</button></div>
   <div class="row2"><button class="btn alt" id="b-world">WORLD BOARD</button><button class="btn alt" id="b-acct">PLAYER FILE</button></div>
+  <div class="row2"><button class="btn alt" id="b-codex">CODEX</button></div>
   <button class="btn alt hidden" id="b-install">INSTALL AS AN APP</button>
   <div class="stat hidden" id="ios-hint" style="max-width:420px;line-height:1.8">On iPhone or iPad: tap <b>Share</b>, then <b>Add to Home Screen</b>. It opens full screen, like an app.</div>
-  <div class="keys" id="keys"><b>WASD</b> move · <b>MOUSE</b> look · <b>CLICK</b> fire · <b>RIGHT CLICK</b> surge · <b>1 2 3 4 / WHEEL</b> Quill, Scatter, Cannon, Beam<br><b>SPACE</b> jump, again in the air · <b>SHIFT</b> dash · <b>Q</b> shockwave · <b>F</b> barrier · <b>E</b> rewrite when focus is full · <b>ESC</b> pause</div>
+  <div class="keys" id="keys"><b>WASD</b> move · <b>MOUSE</b> look · <b>CLICK</b> fire · <b>RIGHT CLICK</b> surge · <b>1 2 3 4 / WHEEL</b> Quill, Scatter, Cannon, Beam<br><b>SPACE</b> jump, again in the air · <b>SHIFT</b> dash · <b>Q</b> shockwave (25 focus) · <b>F</b> barrier · <b>E</b> rewrite when focus is full · <b>ESC</b> pause<br>surge costs 15 focus, shockwave 25: kills fill it, so save some for the Critic</div>
   <div class="stat" id="t-best"></div>
   <div class="stat" id="t-ai" style="font-size:11px">AI agents: play at <a href="/api/thoughtform/ai" style="color:var(--acc)">/api/thoughtform/ai</a> (no WebGL needed) · world board as JSON: <a href="/api/tether/tf-world" style="color:var(--acc)">/api/tether/tf-world</a></div>
   <div class="board" id="t-board"></div>
@@ -220,6 +238,14 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
   <button class="btn alt" id="b-aback">BACK</button>
 </section>
 
+<section class="scr hidden" id="s-codex">
+  <div class="logo" style="font-size:clamp(30px,7vw,52px)">CODEX</div>
+  <div class="tag" id="x-sub">EVERY THOUGHT YOU HAVE MET, AND HOW TO WRITE IT OUT</div>
+  <div id="x-tabs" class="chips"></div>
+  <div id="x-items" class="cx"></div>
+  <button class="btn alt" id="b-xback">BACK</button>
+</section>
+
 <section class="scr hidden" id="s-coop">
   <div class="logo" style="font-size:clamp(30px,7vw,52px)">CO-OP</div>
   <div class="tag">TWO CLEAR THOUGHTS · ONE MIND · SHARED SCORE</div>
@@ -232,8 +258,9 @@ select{pointer-events:auto;font:inherit;background:#120a24;color:var(--ink);bord
 <section class="scr hidden" id="s-pause">
   <div class="logo" style="font-size:48px">PAUSED</div>
   <button class="btn" id="b-resume">RESUME</button>
+  <button class="btn alt" id="b-pcodex">CODEX</button>
   <button class="btn alt" id="b-quit">LEAVE THE MIND</button>
-  <div class="keys set"><label>SENSITIVITY <input type="range" id="sens" min="1" max="20" value="8"></label><label>FIELD OF VIEW <input type="range" id="fov" min="95" max="165" value="125"></label><label>VOLUME <input type="range" id="vol" min="0" max="100" value="55"></label><label>INVERT LOOK <input type="checkbox" id="inv"></label><label>MUSIC <input type="range" id="mus" min="0" max="100" value="50"></label><label>SCREEN SHAKE <input type="checkbox" id="shk" checked></label><label>REDUCED MOTION <input type="checkbox" id="rmo"></label><label>TIPS <input type="checkbox" id="tps" checked></label><label>AIM ASSIST <input type="checkbox" id="aim"></label><label>GRAPHICS <select id="gfx"><option value="2">CINEMATIC</option><option value="1">BALANCED</option><option value="0">FAST</option></select></label><label>QUALITY <select id="qual"><option value="auto">AUTO</option><option value="low">LOW</option><option value="high">HIGH</option></select></label><button class="btn alt" id="b-fs" style="min-width:0;padding:10px 18px;margin-top:6px">FULLSCREEN</button></div>
+  <div class="keys set"><label><span id="sens-l">LOOK SENSITIVITY</span> <input type="range" id="sens" min="1" max="30" value="8"></label><label>FIELD OF VIEW <input type="range" id="fov" min="95" max="165" value="125"></label><label>VOLUME <input type="range" id="vol" min="0" max="100" value="55"></label><label>INVERT LOOK <input type="checkbox" id="inv"></label><label>MUSIC <input type="range" id="mus" min="0" max="100" value="50"></label><label>SCREEN SHAKE <input type="checkbox" id="shk" checked></label><label>REDUCED MOTION <input type="checkbox" id="rmo"></label><label>TIPS <input type="checkbox" id="tps" checked></label><label>AIM ASSIST <input type="checkbox" id="aim"></label><label>COLOURS <select id="cvd"><option value="std">STANDARD</option><option value="rg">RED-GREEN SAFE</option><option value="by">BLUE-YELLOW SAFE</option></select></label><label>GRAPHICS <select id="gfx"><option value="2">CINEMATIC</option><option value="1">BALANCED</option><option value="0">FAST</option></select></label><label>QUALITY <select id="qual"><option value="auto">AUTO</option><option value="low">LOW</option><option value="high">HIGH</option></select></label><button class="btn alt" id="b-fs" style="min-width:0;padding:10px 18px;margin-top:6px">FULLSCREEN</button></div>
   <div class="stat" id="p-stats" style="line-height:2;max-width:560px"></div>
 </section>
 
@@ -277,7 +304,7 @@ uniform vec4 TA[${MAXT}]; uniform vec4 TB[${MAXT}];
 uniform float RW, HURT, MUZ, HEAT, SURGE, WAVEP; uniform vec3 VB;
 uniform vec4 BOOM; uniform vec4 SHOCK; uniform float BAR;
 uniform vec3 QC; uniform float QH; uniform vec4 GEO; uniform vec3 PAL0, PAL1, PAL2; uniform float FOGK, FLASH, FOVK; uniform int REG; uniform vec4 SLAM;
-uniform vec4 SP[${MAXS}]; uniform int NS; uniform int QL;
+uniform vec4 SP[${MAXS}]; uniform int NS; uniform int QL; uniform vec3 KC[10];
 #define PI 3.14159265
 mat2 rot(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
 float h21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
@@ -466,7 +493,7 @@ vec3 shade(vec3 p, vec3 n, vec3 rd, float m, float t, bool full, out float gloss
     } else {
       int idx = int(m - 10.); vec4 ei = EI[0];
       for (int j=0;j<${MAXE};j++) if (j==idx) ei = EI[j];
-      vec3 ec = ei.x<.5 ? vec3(1.,.28,.45) : ei.x<1.5 ? vec3(.95,.75,.2) : ei.x<2.5 ? vec3(.55,.25,1.) : ei.x<3.5 ? vec3(.3,1.,.6) : ei.x<4.5 ? vec3(.7,.95,1.) : ei.x<5.5 ? vec3(1.,.55,.15) : ei.x<6.5 ? vec3(1.,.9,.7) : ei.x<7.5 ? vec3(.45,1.,.9) : ei.x<8.5 ? vec3(.35,.6,1.) : vec3(.95,.35,.95);
+      vec3 ec = KC[int(clamp(ei.x+.5, 0., 9.))];                        // each kind's colour (the palette follows the colour setting)
       base = ec*.35; spec = .9; rough = 70.;
       emi += ec*(.45+.35*sin(T*8.+ei.z)) + vec3(1.)*ei.y*1.6;
       emi *= ei.w>-50. ? 1. : 1.;
@@ -563,7 +590,7 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgram
 gl.useProgram(prog);
 const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 const al = gl.getAttribLocation(prog, "a"); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
-const U = {}; for (const n of ["R", "T", "C", "YP", "E", "EI", "NE", "B", "NB", "K", "NK", "TA", "TB", "RW", "HURT", "MUZ", "HEAT", "SURGE", "WAVEP", "VB", "BOOM", "SHOCK", "BAR", "GEO", "PAL0", "PAL1", "PAL2", "FOGK", "FLASH", "FOVK", "REG", "SLAM", "SP", "NS", "QC", "QH", "QL"]) U[n] = gl.getUniformLocation(prog, n);
+const U = {}; for (const n of ["R", "T", "C", "YP", "E", "EI", "NE", "B", "NB", "K", "NK", "TA", "TB", "RW", "HURT", "MUZ", "HEAT", "SURGE", "WAVEP", "VB", "BOOM", "SHOCK", "BAR", "GEO", "PAL0", "PAL1", "PAL2", "FOGK", "FLASH", "FOVK", "REG", "SLAM", "SP", "NS", "QC", "QH", "QL", "KC"]) U[n] = gl.getUniformLocation(prog, n);
 const fSP = new Float32Array(MAXS * 4), fE = new Float32Array(MAXE * 4), fEI = new Float32Array(MAXE * 4), fB = new Float32Array(MAXB * 4), fK = new Float32Array(MAXK * 4), fTA = new Float32Array(MAXT * 4), fTB = new Float32Array(MAXT * 4);
 let scale = matchMedia("(pointer:coarse)").matches ? .42 : .62, W = 1, H = 1;
 function resize() { W = Math.max(1, Math.round(innerWidth * scale)); H = Math.max(1, Math.round(innerHeight * scale)); cv.width = W; cv.height = H; gl.viewport(0, 0, W, H); }
@@ -750,7 +777,7 @@ function feedShop(t) { toast(t); }
 const persist = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} if (save.acct) { clearTimeout(persist.t); persist.t = setTimeout(cloudPush, 2500); } };
 /* ───────────────────────── player file: one save that follows you to every device you log in on ───────────────────────── */
 if (!save.dev) save.dev = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-const SYNC = ["prof", "best", "bestWave", "miles", "name"], progOf = (sv) => sv && sv.prof ? sv.prof.lvl * 1e6 + sv.prof.xp + (sv.best || 0) / 1e3 : -1;
+const SYNC = ["prof", "best", "bestWave", "miles", "name", "codex"], progOf = (sv) => sv && sv.prof ? sv.prof.lvl * 1e6 + sv.prof.xp + (sv.best || 0) / 1e3 : -1;
 const devName = () => { const u = navigator.userAgent; const os = /iPhone/.test(u) ? "iPhone" : /iPad|Macintosh.*Mobile/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1) ? "iPad" : /Android/.test(u) ? "Android" : /Windows/.test(u) ? "Windows" : /Mac/.test(u) ? "Mac" : /CrOS/.test(u) ? "Chromebook" : /Linux/.test(u) ? "Linux" : "device";
   const br = /Edg\//.test(u) ? "Edge" : /OPR\//.test(u) ? "Opera" : /Firefox\//.test(u) ? "Firefox" : /Chrome\//.test(u) ? "Chrome" : /Safari\//.test(u) ? "Safari" : ""; return os + (br ? " · " + br : "") + (matchMedia("(display-mode: standalone)").matches ? " · app" : ""); };
 const pick = (sv) => Object.fromEntries(SYNC.filter((k) => sv[k] !== undefined).map((k) => [k, sv[k]]));
@@ -793,6 +820,7 @@ function reset() {
   pshots = []; shock = null; sparks = []; slam = null; bossE = null; setRegion(mode === "daily" ? today() % 4 : mode === "boss" ? 0 : mapStart); $("bossbar").classList.add("hidden");
   const up = save.prof.up; P.m.dmg = 1 + up.dmg * .04; P.m.heat = 1 - up.cool * .05; P.hpMax = mode === "glass" ? 1 : (mode === "hard" ? 60 : 100) + up.hp * 8; P.hp = P.hpMax; if (mode === "glass") P.m.dmg *= 3; P.clock = mode === "blitz" ? 180 : 0; P.focus = Math.min(100, up.focus * 12);
   rand = mode === "daily" ? mulberry(today()) : Math.random;
+  P.met = {}; P.lastBy = undefined; P.newK = 0;
   enemies = []; orbs = []; picks = []; tracers = []; boom = null; wave = 0; score = 0; combo = 0; comboT = 0; kills = 0; shots = 0; hits = 0; slowT = 0; hurtT = 0;
   nextWave();
 }
@@ -855,7 +883,22 @@ const KIND = [
   { name: "LOOP", r: .95, hp: 70, sp: 5, pts: 260 },
   { name: "DENIAL", r: 1.2, hp: 120, sp: 2.6, pts: 350 },
 ];
-const KCOL = ["#ff6f8f", "#ffd36b", "#b49bff", "#6fffb0", "#bff3ff", "#ff9a3d", "#fff1c9", "#73ffe6", "#6fa0ff", "#f070f0"], KSPARK = [1, 2, 3, 4, 5, 6, 2, 5, 5, 3];
+// each kind's colour, in the world and on the HUD. The colour-blind palettes keep every kind apart for red-green
+// (deuteranopia, protanopia) or blue-yellow (tritanopia) colour vision: they differ in brightness as well as hue
+const PALETTES = {
+  std: [[1, .28, .45], [.95, .75, .2], [.55, .25, 1], [.3, 1, .6], [.7, .95, 1], [1, .55, .15], [1, .9, .7], [.45, 1, .9], [.35, .6, 1], [.95, .35, .95]],
+  rg: [[1, .55, .05], [1, .95, .3], [.2, .45, 1], [.35, .85, 1], [1, 1, 1], [.95, .45, .75], [1, .9, .7], [.45, 1, .9], [.55, .3, .9], [.7, .5, 0]],
+  by: [[1, .2, .3], [1, .6, .75], [.1, .75, .75], [.6, 1, .9], [1, 1, 1], [1, .45, .1], [1, .9, .7], [.45, 1, .9], [.7, .1, .45], [.25, .5, .5]],
+};
+const hexOf = (c) => "#" + c.map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
+let KCOL = PALETTES.std.map(hexOf); const fKC = new Float32Array(30);
+const KCOL0 = ["#ff6f8f", "#ffd36b", "#b49bff", "#6fffb0", "#bff3ff", "#ff9a3d", "#fff1c9", "#73ffe6", "#6fa0ff", "#f070f0"];
+function palette() { const p = PALETTES[save.cvd] || PALETTES.std; KCOL = PALETTES[save.cvd] ? p.map((c) => hexOf(c.map((v) => .3 + v * .7))) : KCOL0.slice(); p.forEach((c, i) => fKC.set(c, i * 3)); }
+palette();
+const KSPARK = [1, 2, 3, 4, 5, 6, 2, 5, 5, 3];
+// focus: kills fill it; the hardest-hitting abilities spend it, Rewrite needs all of it
+const FOCUS_GAIN = [7, 11, 22, 8, 12, 3, 100, 0, 14, 15], COST = { surge: 15, shock: 25 };
+function spend(what) { const c = COST[what] || 0; if (P.focus >= c) { P.focus -= c; return true; } if (T - (spend.t || -9) > 1.2) { spend.t = T; feed("NEED " + c + " FOCUS", "#ff8a8a"); tone(180, .12, "square", .04, 120); } return false; }
 // insights: one is offered from three after every wave, and they stack
 const CATS = { QUILL: "#7dffd8", INSTRUMENT: "#ffd36b", SURGE: "#b49bff", WAVE: "#6fffb0", SHIELD: "#9fd8ff", DASH: "#ff9a3d", JUMP: "#ff7aa8", MIND: "#ffe9a8", BODY: "#ff6f8f" };
 const UNLOCKS = [
@@ -905,10 +948,79 @@ function spawn(kind, at) {
   const e = { k: kind, x: at ? at.x : Math.cos(a) * R, z: at ? at.z : Math.sin(a) * R, y: kind === 1 ? 3.5 + Math.random() * 2 : kind === 2 ? 2.2 : kind === 3 ? 1.6 : kind === 4 ? 2.6 : kind === 6 ? 6 : 1.2, vx: 0, vz: 0, vy: 0,
     id: spawn.n = (spawn.n || 0) + 1, hp: K.hp * (1 + wave * .06) * (mode === "hard" ? 1.35 : mode === "horde" ? .65 : 1), max: K.hp * (1 + wave * .06), r: K.r, flash: 0, ph: Math.random() * 9, fire: 1.5 + Math.random() * 1.5, grow: at ? 1 : 0, touch: 0, orbit: Math.random() < .5 ? 1 : -1, charge: 0, atk: 0, tele: at ? 0 : 1.1 };
   if (kind < 6 && wave >= 3 && !at && rand() < Math.min(.06 + wave * .01, .18)) { e.elite = true; e.hp *= 2.5; e.max = e.hp; e.r *= 1.3; }
-  enemies.push(e); return true;
+  enemies.push(e); meet(kind); return true;
 }
 function banner(a, b) { const el = $("banner"); el.innerHTML = a + (b ? "<small>" + b + "</small>" : ""); el.style.opacity = 1; clearTimeout(banner.t); banner.t = setTimeout(() => (el.style.opacity = 0), 2200); }
 function feed(txt, c) { const el = $("feed"); const d = document.createElement("div"); d.textContent = txt; d.style.color = c || ""; el.prepend(d); while (el.children.length > 5) el.lastChild.remove(); setTimeout(() => d.remove(), 2600); }
+/* ───────────────────────── the Codex: every thought you have met, what it does, how to beat it ───────────────────────── */
+// what each kind is, what it's good at, how to write it out, and from which wave it shows up
+const KINFO = [
+  { lore: "A shard that will not hold still.", ex: "rushing you in numbers, faster every wave", wk: "very little resolve: any instrument erases it, the Scatter shreds a crowd", from: 1, sp: "fast" },
+  { lore: "A ring that repeats what you are afraid of.", ex: "hanging back high up and lobbing orbs that lead your movement", wk: "fragile once you close in; the Barrier eats its orbs (and turns them into focus)", from: 2, sp: "steady" },
+  { lore: "A tangle that swallows light.", ex: "huge resolve, the hardest contact hit, splits into two Doubts when erased", wk: "slow: keep your distance and use the Logic Cannon or Surge, then finish the pieces", from: 3, sp: "slow" },
+  { lore: "Two voices circling one lie.", ex: "weaving side to side and lunging when it gets close", wk: "the lowest resolve of all: a Shockwave or aim assist ends it, dash away from the lunge", from: 2, sp: "very fast" },
+  { lore: "A certainty sharpened to a point.", ex: "keeping its distance, locking on and firing a line that hits for 20", wk: "step sideways when the red line stops moving; the Clarity Beam reaches it", from: 4, sp: "steady" },
+  { lore: "Small fears, never alone.", ex: "arriving in fours, the fastest thing in the mind", wk: "almost no resolve: Shockwave, Scatter and Volatile Ideas clear the pack", from: 4, sp: "fastest" },
+  { lore: "Everything you were ever told you could not do.", ex: "spiral orb volleys, a red ring along the floor, calling Swarms to help", wk: "jump the red ring as it reaches you, raise the Barrier for volleys, save focus for a Rewrite", from: 5, sp: "slow", boss: 1 },
+  null,
+  { lore: "Two rings that keep passing through each other.", ex: "vanishing and coming back right beside you every few seconds", wk: "turn the moment it vanishes; it can't hit hard and doesn't have much resolve", from: 6, sp: "quick" },
+  { lore: "A bristling core that refuses to let anything end.", ex: "healing the most wounded thought near it by a quarter, again and again", wk: "erase it first: it is slow and stays back, so the Beam and the Cannon reach it", from: 7, sp: "slow" },
+];
+const KDMG = [11, 11, 22, 11, 10, 6, 30, 0, 14, 8];
+const ABIL = [
+  { k: "surge", n: "SURGE", key: "RIGHT CLICK", tb: "SURGE", d: "a charged blast where you aim: 130 at the centre, knocks thoughts back. Builds heat.", cd: "1.1s", cost: COST.surge },
+  { k: "shock", n: "SHOCKWAVE", key: "Q", tb: "WAVE", d: "blasts everything within 9 metres away from you for up to 55 and wipes out nearby orbs.", cd: "8s", cost: COST.shock },
+  { k: "bar", n: "BARRIER", key: "F", tb: "SHIELD", d: "a 5-second shield: 70% less damage, and orbs that hit it are eaten and give you 4 focus.", cd: "15s", cost: 0 },
+  { k: "rw", n: "REWRITE", key: "E", tb: "REWRITE", d: "needs a full focus bar. Time slows for 7 seconds: double damage, piercing shots, no heat, 3 resolve back per kill.", cd: "full focus", cost: 100 },
+  { k: "dash", n: "DASH", key: "SHIFT", tb: "DASH", d: "a burst in the direction you are moving, untouchable for a moment.", cd: "0.9s", cost: 0, always: 1 },
+  { k: "jump", n: "DOUBLE JUMP", key: "SPACE ×2", tb: "JUMP", d: "jump again in the air. Jump the Critic's red ring.", cd: "on landing", cost: 0, always: 1 },
+];
+const WINFO = [
+  "hitscan, 15 a shot, fast and accurate. Builds heat if you hold it too long.",
+  "8 sparks at close range, 11 each, weaker with distance. Insight unlock.",
+  "a slow proof that bursts for up to 120 across 5.5 metres. Insight unlock.",
+  "hold to fire a beam that pierces up to six thoughts in a line, 7 each. Insight unlock.",
+];
+function codex() { const c = save.codex = save.codex || {}; c.seen = c.seen || {}; c.kills = c.kills || {}; c.deaths = c.deaths || {}; return c; }
+// the first time a kind appears in a run, a small card says what it is; the very first time ever, it goes in the Codex
+function meet(k) {
+  if (!P || !P.met || k === 7 || P.met[k]) return; P.met[k] = 1;
+  const cx = codex(), first = !cx.seen[k]; if (first) { cx.seen[k] = wave || 1; P.newK = (P.newK || 0) + 1; persist(); }
+  if (!first && (cx.kills[k] || 0) >= 25 && !KINFO[k].boss) return;   // once you know a kind well, it stops announcing itself
+  const q = meet.q = meet.q || []; q.push([k, first]); if (q.length === 1) meetShow();
+}
+function meetShow() {
+  const q = meet.q || [], it = q[0]; if (!it) return; const [k, first] = it, I = KINFO[k], el = $("newk");
+  el.style.setProperty("--kc", KCOL[k]);
+  el.innerHTML = "<i>" + (first ? "NEW THOUGHT · ADDED TO THE CODEX" : "INCOMING") + "</i><b>" + KIND[k].name + "</b>EXCELS AT <em>" + I.ex + "</em><br>WEAK TO <u>" + I.wk + "</u>";
+  el.classList.add("show"); clearTimeout(meetShow.t);
+  meetShow.t = setTimeout(() => { el.classList.remove("show"); setTimeout(() => { q.shift(); meetShow(); }, 400); }, first ? 6500 : 4000);
+}
+let codexTab = "thoughts", codexBack = "s-title";
+function openCodex(from) {
+  if (from) codexBack = from; const cx = codex();
+  $("x-tabs").innerHTML = [["thoughts", "THOUGHTS"], ["inst", "INSTRUMENTS"], ["abil", "ABILITIES"], ["ins", "INSIGHTS"]].map(([k, n]) => '<button class="chip' + (k === codexTab ? " on" : "") + '" data-x="' + k + '">' + n + "</button>").join("");
+  let h = "";
+  if (codexTab === "thoughts") {
+    const met = KINFO.filter((x, k) => x && cx.seen[k]).length, total = KINFO.filter(Boolean).length;
+    $("x-sub").textContent = met + " OF " + total + " THOUGHTS MET · ERASED " + Object.values(cx.kills).reduce((a, b) => a + b, 0) + " · LOST TO THEM " + Object.values(cx.deaths).reduce((a, b) => a + b, 0);
+    h = KINFO.map((I, k) => { if (!I) return ""; const K = KIND[k], seen = cx.seen[k];
+      if (!seen) return '<div class="card unk"><b><i class="sw" style="background:#3a2f55"></i>???</b><p>Not met yet. ' + (I.boss ? "Comes every fifth wave." : "Shows up from wave " + I.from + ".") + "</p></div>";
+      return '<div class="card"><b><i class="sw" style="background:' + KCOL[k] + '"></i>' + K.name + "</b><p>" + I.lore + "</p><p>EXCELS AT <em>" + I.ex + "</em></p><p>WEAK TO <u>" + I.wk + "</u></p>" +
+        '<div class="nums"><span>RESOLVE <b>' + K.hp + "</b></span><span>SPEED <b>" + I.sp.toUpperCase() + "</b></span><span>HITS <b>" + KDMG[k] + "</b></span></div>" +
+        '<div class="nums"><span>ERASED <b>' + (cx.kills[k] || 0) + "</b></span><span>DEFEATED YOU <b>" + (cx.deaths[k] || 0) + "</b></span><span>MET <b>W" + seen + "</b></span></div></div>"; }).join("");
+  } else if (codexTab === "inst") {
+    $("x-sub").textContent = "FOUR INSTRUMENTS OF INTENT · 1 2 3 4 OR THE WHEEL";
+    h = WEAP.map((w, i) => '<div class="card"><b>' + (i + 1) + " · " + w.name + "</b><p>" + w.sub + "</p><p>" + WINFO[i] + '</p><div class="nums"><span>COOLDOWN <b>' + w.cd + "s</b></span><span>HEAT <b>" + Math.round(w.heat * 100) + "%</b></span></div></div>").join("");
+  } else if (codexTab === "abil") {
+    $("x-sub").textContent = "ABILITIES AND SPECIALS · SURGE AND SHOCKWAVE SPEND FOCUS";
+    h = ABIL.map((a) => '<div class="card"><b>' + a.n + "</b><p>" + a.d + '</p><div class="nums"><span>KEY <b>' + a.key + "</b></span><span>TOUCH <b>" + a.tb + "</b></span></div>" + '<div class="nums"><span>COOLDOWN <b>' + a.cd + "</b></span><span>FOCUS <b>" + (a.cost || "FREE") + "</b></span><span><b>" + (a.always ? "ALWAYS" : "INSIGHT UNLOCK") + "</b></span></div></div>").join("");
+  } else {
+    $("x-sub").textContent = "INSIGHTS · ONE OF THREE AFTER EVERY WAVE · THEY STACK";
+    h = UNLOCKS.concat(PERKS).map((k) => '<div class="card" style="border-left:4px solid ' + CATS[k.cat] + '"><b>' + k.n + '</b><p><em style="color:' + CATS[k.cat] + '">' + k.cat + "</em> · " + k.d + "</p></div>").join("");
+  }
+  $("x-items").innerHTML = h; show("s-codex");
+}
 const dirOf = (yaw, pitch) => ({ x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: Math.cos(yaw) * Math.cos(pitch) });
 
 /* ───────────────────────── combat ───────────────────────── */
@@ -943,7 +1055,8 @@ function damage(e, dmg, quiet, depth, remote) {
     if (e.elite) { picks.push({ x: e.x, y: Math.max(.6, e.y), z: e.z, k: 0, t: 12 }); feed("ELITE ERASED", "#ffd36b"); }
     const pts = Math.round(KIND[e.k].pts * (SMULT[mode] || 1) * (e.elite ? 2.5 : 1) * (1 + (combo - 1) * .25) * (slowT > 0 ? 1.5 : 1)); score += pts;
     feed(KIND[e.k].name + " ERASED  +" + pts, KCOL[e.k]); SFX.kill(combo);
-    P.focus = Math.min(100, P.focus + [9, 14, 30, 11, 16, 4, 100, 0, 18, 20][e.k] * P.m.focus * (slowT > 0 ? 0 : 1));
+    P.focus = Math.min(100, P.focus + FOCUS_GAIN[e.k] * P.m.focus * (slowT > 0 ? 0 : 1));
+    if (e.k !== 7) { const cx = codex(); cx.kills[e.k] = (cx.kills[e.k] || 0) + 1; }
     if (slowT > 0) P.hp = Math.min(P.hpMax, P.hp + 3);
     if (Math.random() < Math.min(.9, (.35 + Math.min(e.k, 3) * .15) * P.m.drop)) picks.push({ x: e.x, y: Math.max(.6, e.y), z: e.z, k: Math.random() < .55 ? 0 : 1, t: 12 });
     if (e.k === 2) for (let i = 0; i < 2; i++) if (spawn(0, { x: e.x + (i ? 1 : -1), z: e.z })) waveLeft++;
@@ -995,7 +1108,7 @@ function explode(at, dmg, rad) {
 }
 function shockwave() {
   if (P.down || !P.kit.shock) return;
-  if (P.shockCd > 0) return; P.shockCd = 8 * P.m.abil; shakeT = .5; shock = { x: P.x, y: P.y, z: P.z, life: 1 };
+  if (P.shockCd > 0 || !spend("shock")) return; P.shockCd = 8 * P.m.abil; shakeT = .5; shock = { x: P.x, y: P.y, z: P.z, life: 1 };
   for (const e of enemies) { if (e.dead) continue; const dx = e.x - P.x, dz = e.z - P.z, d = Math.hypot(dx, dz); if (d < 9 * P.m.shockR) { damage(e, 55 * (1 - d / (11 * P.m.shockR))); e.vx += dx / (d || 1) * 30; e.vz += dz / (d || 1) * 30; } }
   orbs = orbs.filter((o) => Math.hypot(o.x - P.x, o.z - P.z) > 9);
   SFX.shock(); feed("SHOCKWAVE", "#7dffd8");
@@ -1003,7 +1116,7 @@ function shockwave() {
 function barrier() { if (P.down || !P.kit.bar || P.barCd > 0) return; P.barCd = 15 * P.m.abil; P.barT = 5; SFX.barrier(); feed("BARRIER RAISED", "#7dd8ff"); }
 function surge() {
   if (P.down || !P.kit.surge) return;
-  if (P.over || P.surgeCd > 0) return;
+  if (P.over || P.surgeCd > 0 || !spend("surge")) return;
   P.surgeCd = 1.1 * P.m.surgeCd; P.heat += .45 * P.m.heat; P.muz = 1.5; if (P.heat >= 1) { P.over = true; P.overT = 1.6; SFX.heat(); }
   const d = dirOf(P.yaw, P.pitch), o = { x: P.x, y: P.y + EYE, z: P.z }, wt = worldRay(o, d, 60), hit = rayEnemy(o, d, wt);
   const t = hit ? hit.t : wt, at = { x: o.x + d.x * t, y: o.y + d.y * t, z: o.z + d.z * t };
@@ -1016,10 +1129,10 @@ function rewrite() {
   if (P.focus < 100 || slowT > 0) return;
   P.focus = 0; slowT = P.m.rwT; P.rewrites = (P.rewrites || 0) + 1; P.heat = 0; P.over = false; SFX.rewrite(); banner("REWRITE", "TIME BENDS TO YOU");
 }
-function hurt(n) {
+function hurt(n, k) {
   if (P.inv > 0 || (state !== "play" && !(coop && state === "paused"))) return;
   if (P.barT > 0) n *= .3; n *= P.m.armor;
-  P.hp -= n; shakeT = Math.max(shakeT, .35); hurtT = P.barT > 0 ? .3 : 1; P.inv = .35; SFX.hurt();
+  if (k !== undefined) P.lastBy = k; P.hp -= n; shakeT = Math.max(shakeT, .35); hurtT = P.barT > 0 ? .3 : 1; P.inv = .35; SFX.hurt();
   if (P.hp <= 0) { if (coop) goDown(); else die(); }
 }
 async function board(el, bm) {
@@ -1037,8 +1150,10 @@ async function post() {
 }
 function die() {
   state = "dead"; SFX.over(); document.exitPointerLock && document.exitPointerLock();
+  { const cx = codex(); if (P.lastBy !== undefined && KINFO[P.lastBy]) cx.deaths[P.lastBy] = (cx.deaths[P.lastBy] || 0) + 1; }
   const nb = score > save.best; save.best = Math.max(save.best, score); save.bestWave = Math.max(save.bestWave, wave); persist();
-  $("d-score").textContent = score; $("d-stat").innerHTML = "WAVE <b>" + wave + "</b> · ERASED <b>" + kills + "</b> · ACCURACY <b>" + (shots ? Math.round(Math.min(1, hits / shots) * 100) : 0) + "%</b><br>" + (nb ? "<b style='color:#ffd36b'>NEW BEST</b>" : "BEST <b>" + save.best + "</b>");
+  $("d-score").textContent = score; $("d-stat").innerHTML = "WAVE <b>" + wave + "</b> · ERASED <b>" + kills + "</b> · ACCURACY <b>" + (shots ? Math.round(Math.min(1, hits / shots) * 100) : 0) + "%</b><br>" + (nb ? "<b style='color:#ffd36b'>NEW BEST</b>" : "BEST <b>" + save.best + "</b>") +
+    (P.lastBy !== undefined && KIND[P.lastBy] ? "<br>WRITTEN OUT BY <b style='color:" + KCOL[P.lastBy] + "'>" + KIND[P.lastBy].name + "</b>" : "") + (P.newK ? " · <b style='color:var(--acc)'>" + P.newK + " NEW IN THE CODEX</b>" : "");
   show("s-dead"); $("hud").classList.add("hidden"); $("touch").classList.add("hidden");
   award();
   if (coop) { netSend({ ev: ["over"] }); coop = null; if (net && net.ws) try { net.ws.send(JSON.stringify({ t: "leave" })); } catch (e) {} }
@@ -1096,6 +1211,32 @@ function kitUI() {
   for (const [id, k] of [["talt", "surge"], ["tshock", "shock"], ["tbar", "bar"], ["trw", "rw"]]) $(id).style.display = K[k] ? "" : "none";
   $("tswap").style.visibility = K.w1 || K.w2 || K.w3 ? "" : "hidden";
   [...document.querySelectorAll("#slots i")].forEach((el, i) => el.style.opacity = !i || K["w" + i] ? "" : ".2");
+}
+// every ability says when it's ready: a sweep and seconds on its touch button, a readout beside the instrument on a computer
+const ABUI = [
+  { k: "surge", tb: "talt", key: "RMB", n: "SURGE" }, { k: "shock", tb: "tshock", key: "Q", n: "SHOCKWAVE" }, { k: "bar", tb: "tbar", key: "F", n: "BARRIER" },
+  { k: "dash", tb: "tdash", key: "SHIFT", n: "DASH" }, { k: "rw", tb: "trw", key: "E", n: "REWRITE" },
+];
+function abState(k) {   // [fraction of cooldown left 0..1, text, class]
+  const m = P.m, f = P.focus;
+  if (k === "surge") { const t = Math.max(0, P.surgeCd), tot = 1.1 * m.surgeCd; return t > 0 ? [t / tot, t.toFixed(1), "cool"] : P.over ? [0, "HOT", "cool"] : f < COST.surge ? [0, COST.surge + "◈", "poor"] : [0, COST.surge + "◈", "ready"]; }
+  if (k === "shock") { const t = P.shockCd, tot = 8 * m.abil; return t > 0 ? [t / tot, t.toFixed(1), "cool"] : f < COST.shock ? [0, COST.shock + "◈", "poor"] : [0, COST.shock + "◈", "ready"]; }
+  if (k === "bar") { if (P.barT > 0) return [1 - P.barT / 5, "ON " + P.barT.toFixed(1), "on"]; const t = P.barCd, tot = 15 * m.abil; return t > 0 ? [t / tot, t.toFixed(1), "cool"] : [0, "READY", "ready"]; }
+  if (k === "dash") { const t = P.dashCd, tot = .9 * m.dashCd; return t > 0 ? [t / tot, t.toFixed(1), "cool"] : [0, "", "ready"]; }
+  if (k === "rw") return slowT > 0 ? [1 - slowT / m.rwT, slowT.toFixed(1), "on"] : f >= 100 ? [0, "READY", "ready"] : [1 - f / 100, Math.floor(f) + "%", "poor"];
+}
+function cdUI() {
+  const box = $("abl");
+  if (!box.children.length) box.innerHTML = ABUI.map((a) => '<span data-a="' + a.k + '"><b>' + a.key + "</b> " + a.n + " <em></em></span>").join("");
+  for (const a of ABUI) {
+    const have = a.k === "dash" || P.kit[a.k], [frac, txt, cls] = have ? abState(a.k) : [0, "", ""];
+    const sp = box.querySelector('[data-a="' + a.k + '"]'); sp.style.display = have ? "" : "none";
+    if (have && sp.dataset.t !== txt + cls) { sp.dataset.t = txt + cls; sp.className = cls; sp.lastChild.textContent = cls === "ready" && a.k !== "rw" ? "READY" + (COST[a.k] ? " · " + COST[a.k] + "◈" : "") : txt; }
+    if (!touchMode) continue;
+    const el = $(a.tb); if (!el.firstChild || el.firstChild.nodeType === 3) { el.innerHTML = "<span>" + el.textContent + "</span><small></small>"; }
+    el.style.setProperty("--cd", frac.toFixed(3)); if (el.dataset.c !== cls) { el.dataset.c = cls; el.classList.remove("cool", "ready", "poor", "on"); if (cls) el.classList.add(cls); }
+    if (el.lastChild.textContent !== txt) el.lastChild.textContent = txt;
+  }
 }
 function setWeapon(i) { if (!P || i === P.w || i < 0 || i > 3 || (i && !P.kit["w" + i])) return; P.w = i; P.cd = Math.max(P.cd, .18); SFX.swap(); $("wn").textContent = WEAP[i].name; $("ws").textContent = WEAP[i].sub; [...document.querySelectorAll("#slots i")].forEach((el, k) => el.classList.toggle("on", k === i)); }
 
@@ -1160,7 +1301,7 @@ function update(dt) {
   if (REGI === 2) { boltT -= dt; if (boltT <= 0) { boltT = 5 + Math.random() * 8; flashT = 1; SFX.thunder(); } }
   flashT = Math.max(0, flashT - dt * 3.5); shakeT = Math.max(0, shakeT - dt * 2.5);
   // the Critic's ring: a warning, then a wave along the floor (jump it)
-  if (slam) { slam.t += edt; if (slam.t > 0) { const R2 = slam.t * 17; if (!G) for (const tg of targets()) { const d = Math.hypot(tg.x - slam.x, tg.z - slam.z); if (!slam["hit" + tg.me] && tg.y < groundAt(tg.x, tg.z) + .5 && Math.abs(d - R2) < 1.1) { slam["hit" + tg.me] = true; hitT(tg, 26); } } if (R2 > 36) slam = null; } }
+  if (slam) { slam.t += edt; if (slam.t > 0) { const R2 = slam.t * 17; if (!G) for (const tg of targets()) { const d = Math.hypot(tg.x - slam.x, tg.z - slam.z); if (!slam["hit" + tg.me] && tg.y < groundAt(tg.x, tg.z) + .5 && Math.abs(d - R2) < 1.1) { slam["hit" + tg.me] = true; hitT(tg, 26, 6); } } if (R2 > 36) slam = null; } }
   for (const sp of sparks) { sp.vy -= 9 * dt; sp.x += sp.vx * dt; sp.y += sp.vy * dt; sp.z += sp.vz * dt; if (sp.y < 0) { sp.y = 0; sp.vy *= -.4; } sp.life -= dt * 1.5; }
   sparks = sparks.filter((sp) => sp.life > 0);
   // enemies
@@ -1191,14 +1332,14 @@ function update(dt) {
     e.y += (Math.max(targetY, groundAt(e.x, e.z) + e.r * .6) - e.y) * Math.min(1, edt * 2.5);
     pushOut(e, e.r * .8);
     const d3 = Math.hypot(e.x - tg.x, e.y - (tg.y + 1), e.z - tg.z);
-    e.touch -= edt; if (d3 < e.r + .55 && e.touch <= 0 && e.grow > .9) { hitT(tg, [11, 11, 22, 11, 10, 6, 30, 0, 14, 8][e.k]); if (tg.me && P.m.thorns) damage(e, P.m.thorns / P.m.dmg, true, 1); e.touch = .7; e.vx -= tx * 6; e.vz -= tz * 6; }
+    e.touch -= edt; if (d3 < e.r + .55 && e.touch <= 0 && e.grow > .9) { hitT(tg, [11, 11, 22, 11, 10, 6, 30, 0, 14, 8][e.k], e.k); if (tg.me && P.m.thorns) damage(e, P.m.thorns / P.m.dmg, true, 1); e.touch = .7; e.vx -= tx * 6; e.vz -= tz * 6; }
     if (e.k === 4 && e.grow >= 1) {                           // LANCE: tracks you, locks, fires a line you can sidestep
       if (e.charge > 0) {
         e.charge -= edt; if (e.charge > .45) e.aim = { x: tg.x, y: tg.y + 1.2, z: tg.z };
         if (e.charge <= 0) {
           const o = { x: e.x, y: e.y, z: e.z }, ax = e.aim.x - o.x, ay = e.aim.y - o.y, az = e.aim.z - o.z, al = Math.hypot(ax, ay, az), d = { x: ax / al, y: ay / al, z: az / al }, wt = worldRay(o, d, 70);
           for (const q of TG) { const px = q.x - o.x, py = q.y + 1.1 - o.y, pz = q.z - o.z, t = px * d.x + py * d.y + pz * d.z, miss = Math.hypot(px - d.x * t, py - d.y * t, pz - d.z * t);
-          if (t > 0 && t < wt && miss < .85) hitT(q, 20); }
+          if (t > 0 && t < wt && miss < .85) hitT(q, 20, 4); }
           addTracer(o, { x: o.x + d.x * wt, y: o.y + d.y * wt, z: o.z + d.z * wt }, 2); at3(e.x, e.z, () => SFX.lance(), 1.4); e.fire = 3.4 + Math.random() * 1.5;
         }
       } else { e.fire -= edt; if (e.fire <= 0) { e.charge = 1.35; e.aim = { x: tg.x, y: tg.y + 1.2, z: tg.z }; at3(e.x, e.z, () => SFX.charge(), 1.5); } }
@@ -1206,7 +1347,7 @@ function update(dt) {
     if (e.k === 6 && e.grow >= 1) {                           // THE CRITIC: spiral volleys, floor rings, summoned fears
       e.fire -= edt; if (e.fire <= 0) {
         e.fire = e.hp < e.max * .5 ? 2.4 : 3.4; e.atk = (e.atk + 1) % 3;
-        if (e.atk === 0) { for (let i = 0; i < 12 && orbs.length < MAXB; i++) { const a = i / 12 * Math.PI * 2 + e.ph; orbs.push({ x: e.x, y: e.y, z: e.z, vx: Math.cos(a) * 9, vy: -1.9, vz: Math.sin(a) * 9, r: .4, t: 6 }); } at3(e.x, e.z, () => SFX.orb(), 1.6); }
+        if (e.atk === 0) { for (let i = 0; i < 12 && orbs.length < MAXB; i++) { const a = i / 12 * Math.PI * 2 + e.ph; orbs.push({ x: e.x, y: e.y, z: e.z, vx: Math.cos(a) * 9, vy: -1.9, vz: Math.sin(a) * 9, r: .4, t: 6, k: 6 }); } at3(e.x, e.z, () => SFX.orb(), 1.6); }
         if (e.atk === 1) { slam = { x: e.x, z: e.z, t: -1.15, hit: false }; at3(e.x, e.z, () => SFX.charge(), 2); }
         if (e.atk === 2) { for (let i = 0; i < 3; i++) if (spawn(5, { x: e.x + Math.cos(i * 2.1) * 3, z: e.z + Math.sin(i * 2.1) * 3 })) waveLeft++; feed("THE CRITIC CALLS ITS FEARS", "#ff9a3d"); }
       }
@@ -1224,7 +1365,7 @@ function update(dt) {
         e.fire = Math.max(1.1, 2.6 - wave * .08) * (.8 + Math.random() * .4);
         const lead = Math.min(dist / 13, 1.4), aimx = tg.x + tg.vx * lead * .6, aimy = tg.y + 1.2, aimz = tg.z + tg.vz * lead * .6;
         const ax = aimx - e.x, ay = aimy - e.y, az = aimz - e.z, al = Math.hypot(ax, ay, az);
-        if (orbs.length < MAXB) { orbs.push({ x: e.x, y: e.y, z: e.z, vx: ax / al * 13, vy: ay / al * 13, vz: az / al * 13, r: .32, t: 6 }); at3(e.x, e.z, () => SFX.orb(), 1.3); }
+        if (orbs.length < MAXB) { orbs.push({ x: e.x, y: e.y, z: e.z, vx: ax / al * 13, vy: ay / al * 13, vz: az / al * 13, r: .32, t: 6, k: 1 }); at3(e.x, e.z, () => SFX.orb(), 1.3); }
       }
     }
   }
@@ -1236,7 +1377,7 @@ function update(dt) {
     o.x += o.vx * edt; o.y += o.vy * edt; o.z += o.vz * edt; o.t -= edt;
     if (!G) for (const q of TG) { const od = Math.hypot(o.x - q.x, o.y - (q.y + 1.1), o.z - q.z);
       if (q.bar && od < 2.2) { o.t = 0; if (q.me) { P.focus = Math.min(100, P.focus + 4); if (P.m.mirror) { let nb = null, nd = 40; for (const e of enemies) { const dd = Math.hypot(e.x - o.x, e.z - o.z); if (!e.dead && dd < nd) { nd = dd; nb = e; } } if (nb) { damage(nb, P.m.mirror, true); addTracer({ x: o.x, y: o.y, z: o.z }, { x: nb.x, y: nb.y, z: nb.z }, 1); } } } break; }
-      if (od < o.r + .55) { hitT(q, 9); o.t = 0; break; } }
+      if (od < o.r + .55) { hitT(q, 9, o.k); o.t = 0; break; } }
     if (o.y < 0 || Math.hypot(o.x, o.z) > 34) o.t = 0;
     for (const [px, pz] of PILLARS) if (Math.hypot(o.x - px, o.z - pz) < PILLAR_HIT) o.t = 0;
   }
@@ -1259,7 +1400,7 @@ function hud() {
   if (bossE) $("bossbar").lastChild.firstChild.style.width = Math.max(0, bossE.hp / bossE.max * 100) + "%";
   $("fo").firstChild.style.width = P.focus + "%"; $("fon").textContent = slowT > 0 ? "REWRITING " + slowT.toFixed(1) : Math.floor(P.focus);
   $("he").firstChild.style.width = Math.min(100, P.heat * 100) + "%"; $("hen").textContent = P.over ? "OVERHEATED" : "";
-  $("cdq").textContent = !P.kit.shock ? "LOCKED" : P.shockCd > 0 ? P.shockCd.toFixed(1) : "READY"; $("cdf").textContent = !P.kit.bar ? "LOCKED" : P.barT > 0 ? "ACTIVE " + P.barT.toFixed(1) : P.barCd > 0 ? P.barCd.toFixed(1) : "READY";
+  cdUI();
   radar(); threats();
   $("left").textContent = P.clock ? "⏱ " + Math.floor(P.clock / 60) + ":" + String(Math.floor(P.clock % 60)).padStart(2, "0") + " · " + Math.max(0, waveLeft) + " REMAIN" : (waveLeft > 0 ? waveLeft : 0) + " THOUGHTS REMAIN";
   $("rw").style.opacity = P.kit.rw && P.focus >= 100 && slowT <= 0 ? 1 : 0; $("rw").textContent = touchMode ? "FOCUS FULL · TAP REWRITE" : "FOCUS FULL · PRESS E TO REWRITE";
@@ -1293,7 +1434,7 @@ function draw() {
   gl.uniform1i(U.QL, save.gfx === undefined ? (touchMode ? 0 : 2) : save.gfx); gl.uniform1f(U.FLASH, save.rmo ? flashT * .25 : flashT); gl.uniform1f(U.FOVK, save.fov || 1.25);
   gl.uniform4f(U.SLAM, slam ? slam.x : 0, slam ? slam.z : 0, slam ? (slam.t < 0 ? 3.2 : slam.t * 17) : 0, slam && P && state !== "title" ? (slam.t < 0 ? 1 : 2) : 0);
   { let n = 0; fSP.fill(0); if (P && state !== "title") for (const sp of sparks) { if (n >= MAXS) break; fSP.set([sp.x, sp.y, sp.z, sp.c + Math.min(.999, sp.life)], n * 4); n++; } gl.uniform4fv(U.SP, fSP); gl.uniform1i(U.NS, n); }
-  gl.uniform2f(U.R, W, H); gl.uniform1f(U.T, T); gl.uniform3f(U.C, cx, cy, cz); gl.uniform2f(U.YP, yaw, pitch);
+  gl.uniform3fv(U.KC, fKC); gl.uniform2f(U.R, W, H); gl.uniform1f(U.T, T); gl.uniform3f(U.C, cx, cy, cz); gl.uniform2f(U.YP, yaw, pitch);
   const es = (state === "title" || !P) ? demo() : enemies;
   let n = 0;
   const al = coop && coop.ally && state !== "title" && P ? coop.ally : null;
@@ -1332,7 +1473,7 @@ function targets() {
   const a = coop && coop.ally; if (a && !a.down) t.push({ x: a.x, y: a.y, z: a.z, vx: a.vx, vz: a.vz, bar: a.bar, me: 0 });
   return t;
 }
-function hitT(tg, n) { if (tg.me) return hurt(n); const a = coop.ally; if (a.inv > T) return; a.inv = T + .35; coop.out.hu.push(n); }
+function hitT(tg, n, k) { if (tg.me) return hurt(n, k); const a = coop.ally; if (a.inv > T) return; a.inv = T + .35; coop.out.hu.push(n); }
 function pickUp(k) { if (k === 0) P.hp = Math.min(P.hpMax, P.hp + 8); else P.focus = Math.min(100, P.focus + 12); SFX.pick(); }
 function goDown() { P.hp = 0; P.down = true; P.downs = (P.downs || 0) + 1; mouseDown = false; banner("YOU ARE DOWN", "HOLD ON · CLEARING THE WAVE BRINGS YOU BACK"); SFX.over(); }
 function revive() { if (!P.down) return; P.down = false; P.hp = Math.round(P.hpMax * .5); feed("BACK IN THE MIND", "#7dffd8"); SFX.rewrite(); }
@@ -1363,9 +1504,9 @@ function onRel(d) {
   for (const n of d.hu || []) hurt(n);
   for (const k of d.pk || []) pickUp(k);
   if (d.s) { const by = new Map(enemies.map((e) => [e.id, e])), next = [];
-    for (const [id, k, x, y, z, r, grow, el, ph, ch, hp] of d.s) { let e = by.get(id); if (!e) e = { id, k, x, y, z, r, flash: 0, ph }; by.delete(id);
+    for (const [id, k, x, y, z, r, grow, el, ph, ch, hp] of d.s) { let e = by.get(id); if (!e) { e = { id, k, x, y, z, r, flash: 0, ph }; meet(k); } by.delete(id);
       Object.assign(e, { k, tx: x, ty: y, tz: z, r, grow, elite: !!el, hp }); if (Math.abs(e.ph - ph) > 1) e.ph = ph; if (ch) { e.aim = { x: ch[0], y: ch[1], z: ch[2] }; e.charge = ch[3]; } else e.charge = 0; next.push(e); }
-    for (const e of by.values()) { burst(e.x, e.y, e.z, e.k === 6 ? 32 : 10, KSPARK[e.k], e.k === 6 ? 14 : 7); if (e.lastHit && T - e.lastHit < .6) { P.focus = Math.min(100, P.focus + [9, 14, 30, 11, 16, 4, 100, 0, 18, 20][e.k] * P.m.focus); if (P.m.leech) P.hp = Math.min(P.hpMax, P.hp + P.m.leech); SFX.kill(1); } }
+    for (const e of by.values()) { burst(e.x, e.y, e.z, e.k === 6 ? 32 : 10, KSPARK[e.k], e.k === 6 ? 14 : 7); if (e.lastHit && T - e.lastHit < .6) { P.focus = Math.min(100, P.focus + FOCUS_GAIN[e.k] * P.m.focus); const cx = codex(); cx.kills[e.k] = (cx.kills[e.k] || 0) + 1; if (P.m.leech) P.hp = Math.min(P.hpMax, P.hp + P.m.leech); SFX.kill(1); } }
     enemies = next; }
   if (d.o) orbs = d.o.map(([x, y, z, vx, vy, vz, r]) => ({ x, y, z, vx, vy, vz, r, t: 6 }));
   if (d.k) picks = d.k.map(([x, y, z, k]) => ({ x, y, z, k, t: 12 }));
@@ -1430,7 +1571,7 @@ function startCoop() {
 
 /* ───────────────────────── input ───────────────────────── */
 const touchMode = matchMedia("(pointer:coarse)").matches;
-function show(id) { ["s-title", "s-pause", "s-dead", "s-perk", "s-modes", "s-shop", "s-coop", "s-world", "s-acct"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
+function show(id) { ["s-title", "s-pause", "s-dead", "s-perk", "s-modes", "s-shop", "s-coop", "s-world", "s-acct", "s-codex"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 function start() {
   goFull(); audio(); reset(); setTimeout(orient, 50); state = "play"; show(null); P.w = -1; setWeapon(0); $("hud").classList.remove("hidden"); kitUI();
   if (touchMode) $("touch").classList.remove("hidden"); else cv.requestPointerLock && cv.requestPointerLock();
@@ -1488,6 +1629,11 @@ $("tps").checked = save.tips !== false; $("tps").onchange = (e) => { save.tips =
 $("qual").value = save.qual || "auto"; $("qual").onchange = (e) => { save.qual = e.target.value; persist(); scale = save.qual === "low" ? .38 : save.qual === "high" ? .85 : scale; resize(); };
 $("b-fs").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} };
 save.aim = save.aim === undefined ? touchMode : save.aim; $("aim").checked = !!save.aim; $("aim").onchange = (e) => { save.aim = e.target.checked; persist(); };
+$("cvd").value = save.cvd || "std"; $("cvd").onchange = (e) => { save.cvd = e.target.value; persist(); palette(); };
+if (touchMode) $("sens-l").textContent = "SWIPE SENSITIVITY";
+$("b-codex").onclick = () => { audio(); openCodex("s-title"); }; $("b-pcodex").onclick = () => openCodex("s-pause");
+$("b-xback").onclick = () => { show(codexBack); if (codexBack === "s-title") bestLine(); };
+$("x-tabs").onclick = (e) => { const b = e.target.closest("[data-x]"); if (b) { codexTab = b.dataset.x; openCodex(); } };
 $("perks").onclick = (e) => { const b = e.target.closest(".perk"); if (b) takePerk(+b.dataset.i); };
 let lockGrace = 0;
 function relock() { if (touchMode || !cv.requestPointerLock || document.pointerLockElement === cv) return; try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
@@ -1522,7 +1668,7 @@ function dash() {
 }
 // touch: left half moves, right half looks, buttons act
 if (touchMode) {
-  $("keys").innerHTML = "<b>LEFT THUMB</b> move · <b>RIGHT THUMB</b> look · <b>FIRE</b> (drag it to aim while firing) · <b>SURGE</b> charged burst · <b>SWAP</b> weapon<br><b>JUMP</b> twice for a double jump · <b>DASH</b> · <b>WAVE</b> shockwave · <b>SHIELD</b> barrier · <b>REWRITE</b> when focus is full";
+  $("keys").innerHTML = "<b>LEFT THUMB</b> move · <b>RIGHT THUMB</b> look · <b>FIRE</b> (drag it to aim while firing) · <b>SURGE</b> charged burst · <b>SWAP</b> weapon<br><b>JUMP</b> twice for a double jump · <b>DASH</b> · <b>WAVE</b> shockwave · <b>SHIELD</b> barrier · <b>REWRITE</b> when focus is full<br>each button shows its cooldown; <b>SURGE</b> costs 15 focus and <b>WAVE</b> 25";
   let stickId = null, sx = 0, sy = 0, lookId = null, lx = 0, ly = 0;
   const stick = $("stick"), knob = stick.firstChild;
   cv.addEventListener("touchstart", (e) => { for (const t of e.changedTouches) {
@@ -1534,11 +1680,12 @@ if (touchMode) {
   const end = (e) => { for (const t of e.changedTouches) { if (t.identifier === stickId) { stickId = null; mv.x = mv.y = 0; stick.style.display = "none"; knob.style.transform = ""; } if (t.identifier === lookId) lookId = null; } };
   cv.addEventListener("touchend", end); cv.addEventListener("touchcancel", end);
   const btn = (id, down, up) => { const el = $(id); el.addEventListener("touchstart", (e) => { e.preventDefault(); e.stopPropagation(); audio(); if (state === "play") down(); }, { passive: false }); if (up) el.addEventListener("touchend", (e) => { e.preventDefault(); up(); }); };
-  btn("tfire", () => (mouseDown = true), () => (mouseDown = false));
-  { const fb = $("tfire"); let fx0 = 0, fy0 = 0;
-    fb.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; fx0 = t.clientX; fy0 = t.clientY; }, { passive: false });
-    fb.addEventListener("touchmove", (e) => { e.preventDefault(); e.stopPropagation(); const t = e.changedTouches[0]; look.x += (t.clientX - fx0) * 2.2; look.y += (t.clientY - fy0) * 2.2; fx0 = t.clientX; fy0 = t.clientY; }, { passive: false });
-    fb.addEventListener("touchcancel", () => (mouseDown = false)); } btn("talt", surge); btn("tjump", jump); btn("tdash", dash); btn("trw", rewrite); btn("tpause", pause); btn("tswap", () => cycleWeapon(1)); btn("tshock", shockwave); btn("tbar", barrier);
+  // FIRE is also an aim pad: press anywhere in its ring and drag to look while you shoot, so you never have to stop to turn
+  { const fb = $("tfire"); let fid = null, fx0 = 0, fy0 = 0; const mine = (e) => [...e.changedTouches].find((t) => t.identifier === fid);
+    fb.addEventListener("touchstart", (e) => { e.preventDefault(); e.stopPropagation(); audio(); if (state !== "play" || fid !== null) return; const t = e.changedTouches[0]; fid = t.identifier; fx0 = t.clientX; fy0 = t.clientY; mouseDown = true; fb.classList.add("aiming"); }, { passive: false });
+    fb.addEventListener("touchmove", (e) => { e.preventDefault(); e.stopPropagation(); const t = mine(e); if (!t) return; look.x += (t.clientX - fx0) * 2.2; look.y += (t.clientY - fy0) * 2.2; fx0 = t.clientX; fy0 = t.clientY; }, { passive: false });
+    const up = (e) => { if (!mine(e)) return; e.preventDefault(); fid = null; mouseDown = false; fb.classList.remove("aiming"); };
+    fb.addEventListener("touchend", up); fb.addEventListener("touchcancel", up); } btn("talt", surge); btn("tjump", jump); btn("tdash", dash); btn("trw", rewrite); btn("tpause", pause); btn("tswap", () => cycleWeapon(1)); btn("tshock", shockwave); btn("tbar", barrier);
 }
 let deferredInstall = null;
 const standalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone;
@@ -1555,7 +1702,8 @@ bestLine();
 window.TF = { state: () => ({ state, wave, score, hp: P && P.hp, enemies: enemies && enemies.length, kills, scale }), start, fire, surge, look: (x, y) => { look.x += x; look.y += y; }, aimAt: (i) => { const e = enemies[i]; if (!e) return; const dx = e.x - P.x, dy = e.y - (P.y + EYE), dz = e.z - P.z; P.yaw = Math.atan2(dx, dz); P.pitch = Math.atan2(dy, Math.hypot(dx, dz)); }, god: () => { P.hp = 1e9; }, step: (n) => { for (let i = 0; i < n; i++) { T += 1 / 60; update(1 / 60); } }, weapon: setWeapon, shock: shockwave, mode: (m, map) => { mode = m; mapStart = map || 0; }, coop: () => coop && { host: coop.host, ally: coop.ally, down: P && P.down, n: enemies ? enemies.length : 0, wave, score, hp: P && P.hp, state, ap: coop.ap, picked: P && P.picked, cleared: P && P.cleared, breathT, waveLeft, toSpawn }, down: () => { P.hp = 1; P.inv = 0; hurt(999); }, prof: () => save.prof, give: (n) => { save.prof.shards += n; save.prof.lvl = Math.max(save.prof.lvl, 6); persist(); }, perk: takePerk, resume: () => { state = "play"; show(null); }, clear: () => { enemies = []; orbs = []; toSpawn = 0; hurtT = 0; }, wave: (n) => { while (wave < n - 1) { wave++; } enemies = []; toSpawn = 0; waveLeft = 0; nextWave(); }, region: () => REGI, boss: () => bossE && { hp: bossE.hp, max: bossE.max },
   stage: () => { $("banner").style.transition = "none"; $("banner").style.opacity = 0; clearTimeout(banner.t); banner.t = setTimeout(() => {}, 0); enemies = []; orbs = []; toSpawn = 0; waveLeft = 9; P.x = 0; P.z = 9; P.y = DAIS_H; P.yaw = Math.PI; P.pitch = .06; P.hp = 100; hurtT = 0; score = 4280; combo = 3; comboT = 9; P.focus = 72; P.heat = .35;
     for (const [k, x, z, y] of [[0, -2.4, 2.5, 1.7], [1, 3.8, -3, 4.6], [2, -1, -9, 2.2], [3, 6, -11, 1.6], [0, -7, -14, 1.3], [1, -9, -4, 5.2]]) { spawn(k, { x, z }); const e = enemies[enemies.length - 1]; e.y = y; e.grow = 1; e.touch = 99; e.fire = 99; }
-    orbs.push({ x: 2.6, y: 3.8, z: -.5, vx: 0, vy: 0, vz: 0, r: .32, t: 99 }); }, barrier, pshots: () => pshots.length };
+    orbs.push({ x: 2.6, y: 3.8, z: -.5, vx: 0, vy: 0, vz: 0, r: .32, t: 99 }); }, barrier, pshots: () => pshots.length,
+  p: () => P && { focus: P.focus, yaw: P.yaw, shockCd: P.shockCd, surgeCd: P.surgeCd, lastBy: P.lastBy, kit: P.kit, firing: mouseDown }, setFocus: (n) => { P.focus = n; }, hit: (i, n) => damage(enemies[i], n), hurtBy: (k, n) => { P.inv = 0; hurt(n, k); }, codex: () => codex(), kinds: () => enemies.map((e) => e.k) };
 requestAnimationFrame(frame);
 setTimeout(orient, 300);
 })();
