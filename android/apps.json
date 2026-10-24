@@ -1,5 +1,5 @@
 {
-  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app without a \"dir\" is built in its own repo and published to its release here by that repo's workflow (Big Buttons: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
+  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app without a \"dir\" is built in its own repo and published to its release here by that repo's workflow (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
   "apps": [
     {
       "id": "org.mentifaber.autofaber",
@@ -49,20 +49,20 @@
     },
     {
       "id": "org.mentifaber.bigbuttons",
-      "name": "Big Buttons",
-      "release": "big-buttons-android",
-      "file": "BigButtons",
+      "name": "SayTap",
+      "release": "saytap-android",
+      "file": "SayTap",
       "category": "Accessibility",
-      "tagline": "Four giant buttons: Phone, Search, Talk, YouTube",
-      "description": "Four giant buttons, Phone, Search, Talk and YouTube, that you can tap or just say out loud. Made for low vision, shaky hands, and anyone who'd rather talk than type.\n\nCalls open the dialer so you still press call yourself, searches and videos open in the browser or the YouTube app, and Talk opens AutoFaber's voice. Speech recognition and the spoken replies use the phone's own voice services. It's private: nothing is collected.",
+      "tagline": "Four giant buttons you can tap, or just say",
+      "description": "Four giant buttons, Phone, Search, Talk and YouTube, that you can tap or just say out loud: say “call Mom” or “YouTube cat videos” and it happens. Made for low vision, shaky hands, and anyone who'd rather talk than type.\n\nCalls open the dialer so you still press call yourself, searches and videos open in the browser or the YouTube app, and Talk opens AutoFaber's voice. Speech recognition and the spoken replies use the phone's own voice services. It's private: nothing is collected.",
       "features": [
         "Tap or say it",
         "Huge, high-contrast buttons",
         "Easy-to-read type",
         "Nothing collected"
       ],
-      "icon": "/assets/icons/v2/big-buttons-192.png",
-      "accent": "#2f6bff"
+      "icon": "/assets/icons/v2/saytap-512.png",
+      "accent": "#4f8dff"
     },
     {
       "id": "org.mentifaber.store",
