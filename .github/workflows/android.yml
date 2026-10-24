@@ -1,24 +1,68 @@
-name: AutoFaber for Android
+name: Android apps
 
-# Builds the AutoFaber app (android/autofaber, a Trusted Web Activity around mentifaber.org/hive-app), signs it with the
-# release key (decrypted from android/autofaber/release.jks.enc with the AUTOFABER_KEY_PASSPHRASE secret) and, on main,
-# publishes it as a download: https://github.com/mentifaber/mentifaber.github.io/releases/download/autofaber-android/AutoFaber.apk
-# Without the secret it still builds, signed with a throwaway key, and publishes a test copy instead.
+# Builds the Android apps listed in android/apps.json (each a Gradle project in its "dir"), signs them with the release key
+# (decrypted from android/release.jks.enc with the AUTOFABER_KEY_PASSPHRASE secret) and, on main, publishes each one to its
+# release: <file>.apk plus <file>.json, the build's details (version, size, SHA-256, signer, what changed) that the
+# Mentifaber Store's catalog (/store/catalog.json, src/store.js) reads. A push rebuilds only the apps whose folder changed;
+# run it by hand to rebuild one app or all of them. Without the secret, builds are signed with a throwaway key and
+# published as test copies (<release>-test) that the Store never offers.
 on:
   workflow_dispatch:
+    inputs:
+      app:
+        description: "App id to rebuild (e.g. org.mentifaber.autofaber), or all"
+        default: all
   push:
     branches: [main, "claude/**"]
-    paths: ["android/**", ".github/workflows/android.yml"]
+    paths: ["android/**", "!android/apps.json", ".github/workflows/android.yml"]
 
 permissions:
   contents: write
 
 jobs:
-  apk:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    outputs:
+      apps: ${{ steps.p.outputs.apps }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: p
+        env:
+          BEFORE: ${{ github.event.before }}
+          PICK: ${{ github.event.inputs.app }}
+        run: |
+          ALL=$(jq -c '[.apps[] | select(.dir) | {id, name, dir, release, file}]' android/apps.json)
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            [ "${PICK:-all}" = all ] && APPS="$ALL" || APPS=$(jq -c --arg id "$PICK" 'map(select(.id == $id))' <<<"$ALL")
+          elif [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]] && git fetch -q --no-tags --depth=1 origin "$BEFORE" 2>/dev/null; then
+            CHANGED=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
+            if grep -qx ".github/workflows/android.yml\|android/release.jks.enc" <<<"$CHANGED"; then APPS="$ALL"
+            else APPS=$(jq -c --arg ch "$CHANGED" '($ch | split("\n")) as $f | map(. as $a | select(any($f[]; startswith($a.dir + "/"))))' <<<"$ALL"); fi
+          else APPS="$ALL"; fi
+          echo "apps=$APPS" >> "$GITHUB_OUTPUT"; echo "Building: $(jq -r 'map(.name) | join(", ")' <<<"$APPS")" >> "$GITHUB_STEP_SUMMARY"
+
+  apk:
+    needs: plan
+    if: needs.plan.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    name: ${{ matrix.app.name }}
+    env:
+      DIR: ${{ matrix.app.dir }}
+      ID: ${{ matrix.app.id }}
+      FILE: ${{ matrix.app.file }}
+      TAG: ${{ matrix.app.release }}
+      NAME: ${{ matrix.app.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 60
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,30 +75,49 @@ jobs:
           PASS: ${{ secrets.AUTOFABER_KEY_PASSPHRASE }}
         run: |
           if [ -n "$PASS" ]; then
-            openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in android/autofaber/release.jks.enc -out "$RUNNER_TEMP/release.jks" -pass env:PASS
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in android/release.jks.enc -out "$RUNNER_TEMP/release.jks" -pass env:PASS
             echo "AF_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"; echo "AF_KEY_PASS=$PASS" >> "$GITHUB_ENV"; echo "SIGNED=release" >> "$GITHUB_ENV"
           else
             echo "SIGNED=test" >> "$GITHUB_ENV"; echo "::warning::AUTOFABER_KEY_PASSPHRASE isn't set: this build is signed with a throwaway key"
           fi
       - name: Build
-        run: gradle -p android/autofaber --no-daemon assembleRelease
-      - name: Check the signature
+        run: gradle -p "$DIR" --no-daemon assembleRelease
+      - name: Check it and write its details
         run: |
-          APK=android/autofaber/app/build/outputs/apk/release/app-release.apk
+          APK="$DIR/app/build/outputs/apk/release/app-release.apk"
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" verify --print-certs "$APK" | tee certs.txt
-          { echo "### AutoFaber $SIGNED build"; echo '```'; cat certs.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          cp "$APK" AutoFaber.apk
+          "$BT/aapt2" dump badging "$APK" > badging.txt
+          PKG=$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" badging.txt)
+          VC=$(sed -n "s/^package: .* versionCode='\([0-9]*\)'.*/\1/p" badging.txt)
+          VN=$(sed -n "s/^package: .* versionName='\([^']*\)'.*/\1/p" badging.txt)
+          MIN=$(sed -n "s/^minSdkVersion:'\([0-9]*\)'.*/\1/p" badging.txt); TGT=$(sed -n "s/^targetSdkVersion:'\([0-9]*\)'.*/\1/p" badging.txt)
+          [ "$PKG" = "$ID" ] || { echo "::error::$DIR builds $PKG, but android/apps.json says $ID"; exit 1; }
+          CERT=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' certs.txt)
+          PERMS=$(sed -n "s/^uses-permission: name='\([^']*\)'.*/\1/p" badging.txt | jq -R . | jq -sc .)
+          CHANGES=$(git log --no-merges -n 8 --format=%s -- "$DIR" | jq -R . | jq -sc .)
+          cp "$APK" "$FILE.apk"
+          jq -n --arg id "$PKG" --argjson vc "$VC" --arg vn "$VN" --argjson size "$(stat -c %s "$FILE.apk")" --arg sha "$(sha256sum "$FILE.apk" | cut -d' ' -f1)" \
+            --argjson min "${MIN:-21}" --argjson tgt "${TGT:-34}" --arg cert "$CERT" --arg signed "$SIGNED" --arg commit "$GITHUB_SHA" \
+            --arg built "$(date -u +%FT%TZ)" --argjson changes "$CHANGES" --argjson perms "$PERMS" \
+            '{id: $id, versionCode: $vc, versionName: $vn, size: $size, sha256: $sha, minSdk: $min, targetSdk: $tgt, cert: $cert, signed: $signed, commit: $commit, built: $built, changes: $changes, permissions: $perms}' > "$FILE.json"
+          { echo "### $NAME $VN ($SIGNED key)"; echo '```'; cat "$FILE.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: AutoFaber-${{ env.SIGNED }}
-          path: AutoFaber.apk
-      - name: Publish the download
+          name: ${{ matrix.app.file }}-${{ env.SIGNED }}
+          path: |
+            ${{ matrix.app.file }}.apk
+            ${{ matrix.app.file }}.json
+      - name: Publish
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$SIGNED" = release ]; then TAG=autofaber-android; NAME="AutoFaber for Android"; FILE=AutoFaber.apk; PRE=""; else TAG=autofaber-android-test; NAME="AutoFaber for Android (test key)"; FILE=AutoFaber-test.apk; PRE="--prerelease"; cp AutoFaber.apk "$FILE"; fi
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" $PRE --title "$NAME" --notes "Install on Android: download $FILE, open it, and allow installs from your browser if asked. Updates install over the top. Built from ${GITHUB_SHA::7}."
-          gh release upload "$TAG" "$FILE" --clobber
-          gh release edit "$TAG" --notes "Install on Android: download $FILE, open it, and allow installs from your browser if asked. Updates install over the top. Latest build: ${GITHUB_SHA::7}, version 1.0.$GITHUB_RUN_NUMBER."
+          if [ "$SIGNED" = release ]; then T="$TAG"; F="$FILE"; PRE=""; TITLE="$NAME for Android"
+          else T="$TAG-test"; F="$FILE-test"; PRE="--prerelease"; TITLE="$NAME for Android (test key)"; cp "$FILE.apk" "$F.apk"; cp "$FILE.json" "$F.json"; fi
+          NOTES="Install it from the Mentifaber Store (https://mentifaber.org/store), or download $F.apk, open it and allow installs from your browser if asked. Updates install over the top. Latest build: ${GITHUB_SHA::7}, version $(jq -r .versionName "$FILE.json")."
+          gh release view "$T" >/dev/null 2>&1 || gh release create "$T" $PRE --title "$TITLE" --notes "$NOTES"
+          # the APK first: the Store only offers a version once its details (the .json) are up beside it
+          gh release upload "$T" "$F.apk" --clobber
+          gh release upload "$T" "$F.json" --clobber
+          gh release edit "$T" --notes "$NOTES"

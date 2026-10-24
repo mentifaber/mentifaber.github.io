@@ -1,6 +1,6 @@
 plugins { id("com.android.application") }
 
-// The release key comes from the build machine (decrypted from release.jks.enc with the AUTOFABER_KEY_PASSPHRASE secret);
+// The release key comes from the build machine (decrypted from android/release.jks.enc with the AUTOFABER_KEY_PASSPHRASE secret);
 // without it the build is signed with a throwaway debug key, which installs fine but can't update a release-signed copy.
 val keyFile = System.getenv("AF_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
 val keyPass = System.getenv("AF_KEY_PASS") ?: ""
