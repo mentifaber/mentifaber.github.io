@@ -1,5 +1,5 @@
 {
-  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app without a \"dir\" is built in its own repo and published to its release here by that repo's workflow (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
+  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app with a \"prebuilt\" APK instead is built in its own private repo and dropped in android/prebuilt; it is re-signed with the release key and published the same way (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
   "apps": [
     {
       "id": "org.mentifaber.autofaber",
@@ -62,7 +62,8 @@
         "Nothing collected"
       ],
       "icon": "/assets/icons/v2/saytap-512.png",
-      "accent": "#4f8dff"
+      "accent": "#4f8dff",
+      "prebuilt": "android/prebuilt/SayTap.apk"
     },
     {
       "id": "org.mentifaber.store",
