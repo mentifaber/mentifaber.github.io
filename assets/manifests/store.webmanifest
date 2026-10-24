@@ -1,0 +1,16 @@
+{
+  "id": "/store",
+  "name": "Foundry · Mentifaber",
+  "short_name": "Foundry",
+  "description": "Mentifaber's apps: install them and keep them up to date.",
+  "start_url": "/store",
+  "scope": "/store",
+  "display": "standalone",
+  "background_color": "#08080a",
+  "theme_color": "#08080a",
+  "icons": [
+    { "src": "../icons/v2/store-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../icons/v2/store-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "../icons/v2/store-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
