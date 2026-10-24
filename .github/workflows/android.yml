@@ -33,13 +33,13 @@ jobs:
           BEFORE: ${{ github.event.before }}
           PICK: ${{ github.event.inputs.app }}
         run: |
-          ALL=$(jq -c '[.apps[] | select(.dir) | {id, name, dir, release, file}]' android/apps.json)
+          ALL=$(jq -c '[.apps[] | select(.dir or .prebuilt) | {id, name, dir: (.dir // ""), prebuilt: (.prebuilt // ""), release, file}]' android/apps.json)
           if [ "${{ github.event_name }}" = workflow_dispatch ]; then
             [ "${PICK:-all}" = all ] && APPS="$ALL" || APPS=$(jq -c --arg id "$PICK" 'map(select(.id == $id))' <<<"$ALL")
           elif [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]] && git fetch -q --no-tags --depth=1 origin "$BEFORE" 2>/dev/null; then
             CHANGED=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
             if grep -qx ".github/workflows/android.yml\|android/release.jks.enc" <<<"$CHANGED"; then APPS="$ALL"
-            else APPS=$(jq -c --arg ch "$CHANGED" '($ch | split("\n")) as $f | map(. as $a | select(any($f[]; startswith($a.dir + "/"))))' <<<"$ALL"); fi
+            else APPS=$(jq -c --arg ch "$CHANGED" '($ch | split("\n")) as $f | map(. as $a | select(any($f[]; ($a.dir != "" and startswith($a.dir + "/")) or ($a.prebuilt != "" and . == $a.prebuilt))))' <<<"$ALL"); fi
           else APPS="$ALL"; fi
           echo "apps=$APPS" >> "$GITHUB_OUTPUT"; echo "Building: $(jq -r 'map(.name) | join(", ")' <<<"$APPS")" >> "$GITHUB_STEP_SUMMARY"
 
@@ -55,6 +55,7 @@ jobs:
     name: ${{ matrix.app.name }}
     env:
       DIR: ${{ matrix.app.dir }}
+      PREBUILT: ${{ matrix.app.prebuilt }}
       ID: ${{ matrix.app.id }}
       FILE: ${{ matrix.app.file }}
       TAG: ${{ matrix.app.release }}
@@ -81,10 +82,22 @@ jobs:
             echo "SIGNED=test" >> "$GITHUB_ENV"; echo "::warning::AUTOFABER_KEY_PASSPHRASE isn't set: this build is signed with a throwaway key"
           fi
       - name: Build
-        run: gradle -p "$DIR" --no-daemon assembleRelease
+        if: env.DIR != ''
+        run: gradle -p "$DIR" --no-daemon assembleRelease && echo "APK=$DIR/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
+      - name: Re-sign a prebuilt app
+        # apps built in their own private repo (SayTap) arrive as an APK in android/prebuilt; they get Mentifaber's key here
+        if: env.PREBUILT != ''
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/zipalign" -p -f 4 "$PREBUILT" aligned.apk
+          if [ "$SIGNED" = release ]; then
+            "$BT/apksigner" sign --ks "$AF_KEYSTORE" --ks-key-alias autofaber --ks-pass env:AF_KEY_PASS --key-pass env:AF_KEY_PASS --out resigned.apk aligned.apk
+          else
+            cp "$PREBUILT" resigned.apk  # no release key here: published as a test copy, as it came
+          fi
+          echo "APK=resigned.apk" >> "$GITHUB_ENV"
       - name: Check it and write its details
         run: |
-          APK="$DIR/app/build/outputs/apk/release/app-release.apk"
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" verify --print-certs "$APK" | tee certs.txt
           "$BT/aapt2" dump badging "$APK" > badging.txt
@@ -95,7 +108,7 @@ jobs:
           [ "$PKG" = "$ID" ] || { echo "::error::$DIR builds $PKG, but android/apps.json says $ID"; exit 1; }
           CERT=$(grep -m1 -i 'certificate SHA-256 digest' certs.txt | sed 's/.*digest: //' | tr -d '[:space:]')
           PERMS=$(sed -n "s/^uses-permission: name='\([^']*\)'.*/\1/p" badging.txt | jq -R . | jq -sc .)
-          CHANGES=$(git log --no-merges -n 8 --format=%s -- "$DIR" | jq -R . | jq -sc .)
+          CHANGES=$(git log --no-merges -n 8 --format=%s -- ${DIR:-$PREBUILT} | jq -R . | jq -sc .)
           cp "$APK" "$FILE.apk"
           jq -n --arg id "$PKG" --argjson vc "$VC" --arg vn "$VN" --argjson size "$(stat -c %s "$FILE.apk")" --arg sha "$(sha256sum "$FILE.apk" | cut -d' ' -f1)" \
             --argjson min "${MIN:-21}" --argjson tgt "${TGT:-34}" --arg cert "$CERT" --arg signed "$SIGNED" --arg commit "$GITHUB_SHA" \

@@ -14,6 +14,7 @@ for (const a of SHELF.apps) {
   assert.match(a.id, /^[a-z][\w]*(\.[a-z][\w]*)+$/); assert.ok(!ids.has(a.id), "duplicate " + a.id); ids.add(a.id);
   assert.ok(a.name && a.tagline && a.description && a.category, a.id + " needs words");
   assert.ok(existsSync(REPO + a.icon), a.id + " icon " + a.icon);
+  if (a.prebuilt) { assert.ok(existsSync(REPO + "/" + a.prebuilt), a.id + " prebuilt " + a.prebuilt); assert.ok(a.release && /^[\w-]+$/.test(a.file), a.id + " release/file"); }
   if (a.dir) {
     const g = readFileSync(REPO + "/" + a.dir + "/app/build.gradle.kts", "utf8");
     assert.match(g, new RegExp('applicationId = "' + a.id.replace(/\./g, "\\.") + '"'), a.dir + " builds " + a.id);
