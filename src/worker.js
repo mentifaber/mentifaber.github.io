@@ -8,6 +8,7 @@ import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
 import { media } from "./media.js";
+import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the AutoFaber Android app (android/autofaber), so it opens full screen
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -519,6 +520,7 @@ export default {
       h.set("x-robots-tag", "noindex"); h.set("cache-control", "no-cache");
       return new Response(r.body, { status: r.status, headers: h });
     }
+    if (path === "/.well-known/assetlinks.json") return new Response(JSON.stringify(ASSETLINKS), { headers: { "content-type": "application/json", "cache-control": "public, max-age=3600", "access-control-allow-origin": "*" } });
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "media") return media(req, env, ctx, json, async () => !!(await session(req, env, "vigil"))); // MentiPlayer's gateway to open media sources (src/media.js)

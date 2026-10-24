@@ -1,0 +1,60 @@
+name: AutoFaber for Android
+
+# Builds the AutoFaber app (android/autofaber, a Trusted Web Activity around mentifaber.org/hive-app), signs it with the
+# release key (decrypted from android/autofaber/release.jks.enc with the AUTOFABER_KEY_PASSPHRASE secret) and, on main,
+# publishes it as a download: https://github.com/mentifaber/mentifaber.github.io/releases/download/autofaber-android/AutoFaber.apk
+# Without the secret it still builds, signed with a throwaway key, and publishes a test copy instead.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["android/**", ".github/workflows/android.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Unlock the release key
+        env:
+          PASS: ${{ secrets.AUTOFABER_KEY_PASSPHRASE }}
+        run: |
+          if [ -n "$PASS" ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in android/autofaber/release.jks.enc -out "$RUNNER_TEMP/release.jks" -pass env:PASS
+            echo "AF_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"; echo "AF_KEY_PASS=$PASS" >> "$GITHUB_ENV"; echo "SIGNED=release" >> "$GITHUB_ENV"
+          else
+            echo "SIGNED=test" >> "$GITHUB_ENV"; echo "::warning::AUTOFABER_KEY_PASSPHRASE isn't set: this build is signed with a throwaway key"
+          fi
+      - name: Build
+        run: gradle -p android/autofaber --no-daemon assembleRelease
+      - name: Check the signature
+        run: |
+          APK=android/autofaber/app/build/outputs/apk/release/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$APK" | tee certs.txt
+          { echo "### AutoFaber $SIGNED build"; echo '```'; cat certs.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cp "$APK" AutoFaber.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AutoFaber-${{ env.SIGNED }}
+          path: AutoFaber.apk
+      - name: Publish the download
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$SIGNED" = release ]; then TAG=autofaber-android; NAME="AutoFaber for Android"; FILE=AutoFaber.apk; PRE=""; else TAG=autofaber-android-test; NAME="AutoFaber for Android (test key)"; FILE=AutoFaber-test.apk; PRE="--prerelease"; cp AutoFaber.apk "$FILE"; fi
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" $PRE --title "$NAME" --notes "Install on Android: download $FILE, open it, and allow installs from your browser if asked. Updates install over the top. Built from ${GITHUB_SHA::7}."
+          gh release upload "$TAG" "$FILE" --clobber
+          gh release edit "$TAG" --notes "Install on Android: download $FILE, open it, and allow installs from your browser if asked. Updates install over the top. Latest build: ${GITHUB_SHA::7}, version 1.0.$GITHUB_RUN_NUMBER."
