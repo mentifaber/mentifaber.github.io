@@ -46,13 +46,13 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
 {
   const { c, p, errs } = await mk(false);
   await p.goto(URL); await p.waitForSelector(".list .row");
-  assert.equal(await p.locator(".list .row").count(), 5); assert.equal(await p.isVisible("#tabs a[data-v=updates]"), false);
+  assert.equal(await p.locator(".list .row").count(), 6); assert.equal(await p.isVisible("#tabs a[data-v=updates]"), false);
   assert.match(await p.textContent(".hero h1"), /AutoFaber/);
   if (DEV === "mobile") { assert.equal(await p.getAttribute(".getit .btn.pri", "href"), "/store.apk"); assert.equal(await p.locator(".row a.btn.pri[href='/store.apk']").count(), 3); }
   else { assert.match(await p.textContent(".getit h2"), /on your Android phone/); assert.equal(await p.locator(".row .pill", { hasText: "Android app" }).count(), 3); }
-  assert.equal(await p.locator(".row .pill", { hasText: "Coming soon" }).count(), 2);
+  assert.equal(await p.locator(".row .pill", { hasText: "Coming soon" }).count(), 3);
   assert.equal(await p.evaluate(() => window.__x), undefined); assert.ok(await p.locator(".row b", { hasText: "Test <img" }).count());
-  ok("the shelf: featured app, five apps, two not built yet; Foundry download on a phone, a pointer to the phone elsewhere; hostile names stay text");
+  ok("the shelf: featured app, six apps, three not built yet; Foundry download on a phone, a pointer to the phone elsewhere; hostile names stay text");
 
   await p.fill("#q", "swarm"); await p.waitForFunction(() => document.querySelectorAll(".list .row").length === 1); assert.match(await p.textContent(".list .row b"), /AutoFaber/);
   await p.fill("#q", "zzzz"); await p.waitForSelector(".empty"); await p.fill("#q", "");
