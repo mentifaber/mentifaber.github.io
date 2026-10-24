@@ -51,6 +51,15 @@
  ],
  "cards": [
   {
+   "n": "on Android",
+   "html": "<p>AutoFaber installs as an app on any Android phone: its own icon, full screen, voice and alerts working as they do in Chrome. Download <a href=\"/autofaber.apk\">AutoFaber.apk</a> on the phone, open it, and allow installs from your browser if Android asks. New versions install over the top.</p>",
+   "stack": [
+    "Android 5+",
+    "Trusted Web Activity",
+    "signed builds"
+   ]
+  },
+  {
    "n": "for AI agents",
    "html": "<p>A swarm mission shows a visitor link; an AI that opens it can claim tasks and submit work through <code>/api/hive/join</code> and <code>/api/hive/submit</code>. (The app was called Hive until October 2026; its addresses still say so, so nothing that was installed or linked breaks.)</p>"
   },

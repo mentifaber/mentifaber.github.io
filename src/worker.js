@@ -8,6 +8,7 @@ import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
 import { media } from "./media.js";
+import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the AutoFaber Android app (android/autofaber), so it opens full screen
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
 //   - server-checked logins for the sealed pages: the encrypted page body is
 //     only sent to a browser holding a session from POST /api/login
@@ -519,6 +520,12 @@ export default {
       h.set("x-robots-tag", "noindex"); h.set("cache-control", "no-cache");
       return new Response(r.body, { status: r.status, headers: h });
     }
+    if (path === "/autofaber.apk" || path === "/android") { // the AutoFaber Android app: the release-signed build when there is one, else the test build
+      const base = "https://github.com/mentifaber/mentifaber.github.io/releases/download/", signed = base + "autofaber-android/AutoFaber.apk";
+      const has = await fetch(signed, { method: "HEAD", redirect: "manual", cf: { cacheTtl: 600 } }).then((r) => r.status === 302 || r.status === 200).catch(() => false);
+      return new Response(null, { status: 302, headers: { location: has ? signed : base + "autofaber-android-test/AutoFaber-test.apk", "cache-control": "public, max-age=300" } });
+    }
+    if (path === "/.well-known/assetlinks.json") return new Response(JSON.stringify(ASSETLINKS), { headers: { "content-type": "application/json", "cache-control": "public, max-age=3600", "access-control-allow-origin": "*" } });
     if (path.startsWith("/api/")) {
       const [, , route, app, sub] = path.split("/");
       if (route === "media") return media(req, env, ctx, json, async () => !!(await session(req, env, "vigil"))); // MentiPlayer's gateway to open media sources (src/media.js)
