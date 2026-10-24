@@ -120,3 +120,12 @@ main { max-width: 980px; margin: 0 auto; padding: 14px 16px 32px; min-height: 60
   .stats div { flex-basis: 50%; border-bottom: 1px solid var(--line); }
   .shots img { height: 200px; }
 }
+
+/* iPhone: the Add to Home Screen sheet and Safari's share glyph */
+.share { display: inline-block; width: 16px; height: 18px; vertical-align: -3px; margin: 0 2px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 1v10M4.5 4.5L8 1l3.5 3.5M5 7.5H3v9h10v-9h-2'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 18' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 1v10M4.5 4.5L8 1l3.5 3.5M5 7.5H3v9h10v-9h-2'/%3E%3C/svg%3E") center / contain no-repeat; color: var(--acc); }
+.sheet { width: min(460px, calc(100vw - 24px)); margin: auto auto 12px; padding: 0; border: 1px solid var(--gold); border-radius: 22px; background: #121014; color: var(--ink); box-shadow: 0 -10px 60px rgba(0,0,0,.6); }
+.sheet::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
+.sheet .sh { display: grid; justify-items: center; gap: 10px; padding: 22px 20px calc(18px + env(safe-area-inset-bottom)); text-align: center; }
+.sheet .ico { border-radius: 18px; } .sheet h2 { margin: 2px 0 0; font-size: 22px; }
+.sheet ol { text-align: left; margin: 4px 0; padding-left: 22px; color: #d9d2c6; font-size: 16px; line-height: 1.6; } .sheet li { margin: 4px 0; }
+.sheet .btn { width: 100%; }

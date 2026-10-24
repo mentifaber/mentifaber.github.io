@@ -6,6 +6,11 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const B = window.MentiStore || null, inApp = !!B, android = inApp || /Android/i.test(navigator.userAgent);
+  // iPhone and iPad (iPadOS says it's a Mac, but has touch): Apple allows no other app stores, so Foundry offers the
+  // apps that run on the web as Home Screen apps instead: their own icon, full screen, and always the latest version
+  const ios = !inApp && (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+  const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+  document.documentElement.classList.toggle("ios", ios);
   const SELF = "org.mentifaber.store";
   const S = { apps: [], installed: {}, info: null, prog: {}, q: "", cat: "", loaded: 0, err: "", waitPerm: "" };
   document.documentElement.classList.toggle("in-app", inApp);
@@ -63,6 +68,7 @@
   const andro = (sdk) => "Android " + (ANDROID[sdk] || "API " + sdk) + "+";
 
   function state(a) {
+    if (ios) return a.web ? { k: "ios" } : { k: "iosno" };
     if (!a.available) return { k: "soon" };
     if (!inApp) return { k: "web" };
     const p = S.prog[a.id]; if (p) return { k: "busy", p };
@@ -78,6 +84,8 @@
     const s = state(a), id = esc(a.id), sm = big ? "" : " sm";
     switch (s.k) {
       case "soon": return `<span class="pill">Coming soon</span>`;
+      case "ios": return `<button class="btn pri${sm}" data-do="ios" data-id="${id}">Get</button>` + (big ? ` <a class="btn${sm}" href="${esc(a.web)}">Try it now</a>` : "");
+      case "iosno": return `<span class="pill">Android only for now</span>`;
       case "old": return `<span class="pill">Needs ${esc(andro(a.minSdk))}</span>`;
       case "web": return android
         ? `<a class="btn pri${sm}" href="/store.apk" data-get="${id}">${a.id === SELF ? "Download" : "Get"}</a>` + (big && a.id !== SELF ? ` <a class="btn${sm}" href="${esc(a.apk)}" download>APK only</a>` : "")
@@ -118,9 +126,9 @@
 
   function home() {
     const q = S.q.trim().toLowerCase();
-    const shown = S.apps.filter((a) => (!S.cat || a.category === S.cat) && (!q || (a.name + " " + a.tagline + " " + a.category + " " + (a.description || "")).toLowerCase().includes(q)));
+    const shown = S.apps.filter((a) => !(ios && a.id === SELF) && (!S.cat || a.category === S.cat) && (!q || (a.name + " " + a.tagline + " " + a.category + " " + (a.description || "")).toLowerCase().includes(q)));
     const cats = [...new Set(S.apps.map((a) => a.category).filter(Boolean))];
-    const feat = !q && !S.cat && (S.apps.find((a) => a.available && a.id !== SELF) || S.apps[0]);
+    const feat = !q && !S.cat && (S.apps.find((a) => (ios ? a.web : a.available) && a.id !== SELF) || S.apps[0]);
     let h = "";
     if (!inApp) h += getStore();
     if (feat) h += `<section class="hero" style="--ac:${esc(feat.accent || "#f0b24a")}"><div class="hglow"></div>${icon(feat, 96)}<div class="ht"><small class="kick">Featured</small><h1>${esc(feat.name)}</h1><p>${esc(feat.tagline || "")}</p><div class="hact"><span data-act="${esc(feat.id)}" class="big">${actions(feat, true)}</span><a class="btn" href="#app/${esc(feat.id)}">Details</a></div></div></section>`;
@@ -132,6 +140,9 @@
 
   function getStore() {
     const store = S.apps.find((a) => a.id === SELF);
+    if (ios) return standalone
+      ? `<section class="getit"><div><h2>Mentifaber apps for iPhone</h2><p>Tap <b>Get</b> on an app, then add it to your Home Screen. Each one gets its own icon, opens full screen, and is always the latest version: no App Store, no updates to install.</p></div></section>`
+      : `<section class="getit"><div><h2>Put Foundry on your Home Screen</h2><ol><li>Tap the <b>Share</b> button <span class="share" aria-hidden="true"></span> in Safari's toolbar.</li><li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open Foundry from your Home Screen, and tap <b>Get</b> on any app.</li></ol></div><div class="qr" aria-hidden="true">${icon(store || {}, 72)}</div></section>`;
     const v = store && store.available ? `Version ${esc(store.versionName)} · ${mb(store.size)}` : "";
     if (!android) return `<section class="getit"><div><h2>Get Foundry on your Android phone</h2><p>Open <b>mentifaber.org/store</b> on the phone, download Foundry, and every app here installs and updates from it.</p></div><div class="qr" aria-hidden="true">${icon(store || {}, 72)}</div></section>`;
     return `<section class="getit"><div><h2>Install Foundry</h2><ol><li>Download Foundry${v ? ` <small>(${v})</small>` : ""}.</li><li>Open the file. If Android asks, allow your browser to install apps.</li><li>Open Foundry: everything here installs in a tap, and updates arrive on their own.</li></ol></div><a class="btn pri" href="/store.apk">Download Foundry</a></section>`;
@@ -141,7 +152,7 @@
     const a = S.apps.find((x) => x.id === id);
     if (!a) return `<p class="empty">That app isn't on the shelf. <a href="#">Back to Foundry</a></p>`;
     const i = have(a), paras = String(a.description || "").split(/\n\s*\n/).map((p) => `<p>${esc(p)}</p>`).join("");
-    const stats = [
+    const stats = ios ? [["On iPhone", a.web ? "Home Screen app" : "Not yet"], ["Updates", a.web ? "Automatic" : "Android only"], a.built && ["Updated", esc(day(a.built))], ["Category", esc(a.category || "App")]].filter(Boolean) : [
       a.available && ["Version", esc(a.versionName)], i && ["On this phone", esc(i.versionName || "")],
       a.available && ["Size", mb(a.size)], a.minSdk && ["Needs", esc(andro(a.minSdk))], a.built && ["Updated", esc(day(a.built))], ["Category", esc(a.category || "App")],
     ].filter(Boolean);
@@ -152,8 +163,9 @@
     if (a.shots && a.shots.length) h += `<div class="shots">${a.shots.map((s) => `<img src="${esc(s)}" alt="${esc(a.name)} screenshot" loading="lazy">`).join("")}</div>`;
     h += `<section class="block"><h2>About this app</h2>${paras}${a.features && a.features.length ? `<ul class="feats">${a.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}</section>`;
     if (a.changes && a.changes.length) h += `<section class="block"><h2>What's new</h2><p class="m">${esc(a.versionName ? "Version " + a.versionName : "")}${a.built ? " · " + esc(day(a.built)) : ""}</p><ul class="changes">${a.changes.slice(0, 6).map((c) => `<li>${esc(c)}</li>`).join("")}</ul></section>`;
-    if (a.available) h += `<section class="block safe"><h2>Safety</h2><p>Signed by Mentifaber. Before it installs, Foundry checks that the download's SHA-256 matches the catalog, that it is ${esc(a.name)} and not some other app, and that it carries Mentifaber's signature.</p><p class="m mono">SHA-256 ${esc(a.sha256)}</p>${a.cert ? `<p class="m mono">Signer ${esc(a.cert)}</p>` : ""}</section>`;
-    const perms = (a.permissions || []).map(perm).filter(Boolean);
+    if (ios && a.web) h += `<p class="hint">On iPhone, ${esc(a.name)} runs as a Home Screen app: tap Get, add it to your Home Screen, and it opens full screen with its own icon. It's always the latest version.</p>`;
+    if (a.available && !ios) h += `<section class="block safe"><h2>Safety</h2><p>Signed by Mentifaber. Before it installs, Foundry checks that the download's SHA-256 matches the catalog, that it is ${esc(a.name)} and not some other app, and that it carries Mentifaber's signature.</p><p class="m mono">SHA-256 ${esc(a.sha256)}</p>${a.cert ? `<p class="m mono">Signer ${esc(a.cert)}</p>` : ""}</section>`;
+    const perms = ios ? [] : (a.permissions || []).map(perm).filter(Boolean);
     if (perms.length) h += `<section class="block"><h2>What it can do</h2><ul class="perms">${[...new Set(perms)].map((p) => `<li>${esc(p)}</li>`).join("")}</ul></section>`;
     const links = [a.web && `<a class="btn sm" href="${esc(a.web)}">Use it on the web</a>`, a.page && a.page !== "/store" && `<a class="btn sm" href="${esc(a.page)}">About ${esc(a.name)}</a>`].filter(Boolean);
     if (links.length) h += `<p class="links">${links.join(" ")}</p>`;
@@ -196,6 +208,7 @@
       <h2>Install</h2><p>Download Foundry on your phone and open it${android ? "" : " (open mentifaber.org/store on the phone)"}. Android asks once whether Foundry may install apps: say yes. From then on every app here installs in a tap.</p>
       <h2>Updates</h2><p>When Mentifaber ships a new version, it's built, signed and put on the shelf automatically, and Foundry sees it within minutes. Open <b>Updates</b> to install it, or let Foundry do it: twice a day it checks, and on Android 12 and later it installs updates to the apps it installed without asking each time. On older Android, it sends a notification and you tap to update. Foundry updates itself the same way.</p>
       <h2>Safety</h2><p>Every app is signed with Mentifaber's key. Before installing anything, Foundry checks the download's SHA-256 against the catalog, that the package is the app it claims to be, and that it's signed with the same key as Foundry itself. Android then refuses any update signed with a different key. Foundry never takes a download address from a web page: it installs only from the catalog it fetched itself.</p>
+      <h2>On iPhone</h2><p>Apple doesn't allow other app stores, so on iPhone the Mentifaber apps that run on the web install as Home Screen apps: tap <b>Get</b>, then <b>Share</b> → <b>Add to Home Screen</b>. They get their own icon, open full screen and are always the latest version. Apps that are Android-only are marked.</p>
       <h2>Already have an app?</h2><p>If you installed an app from its APK before, Foundry updates it too. The first update may ask you to confirm, because Android remembers which app installed it; after that it's Foundry's.</p>
       ${inApp ? "" : `<p>${android ? `<a class="btn pri" href="/store.apk">Download Foundry</a>` : ""}</p>`}</section>`;
   }
@@ -227,7 +240,8 @@
     if (!b) return;
     if (b.dataset.cat !== undefined) { S.cat = b.dataset.cat; render(); return; }
     const id = b.dataset.id, d = b.dataset.do;
-    if (d === "install") install(id);
+    if (d === "ios") iosSheet(id);
+    else if (d === "install") install(id);
     else if (d === "all") { const due = S.apps.filter(needsUpdate).sort((x, y) => (x.id === SELF) - (y.id === SELF)); due.forEach((a) => install(a.id)); }
     else if (d === "open" || d === "uninstall") call(d, { id });
     else if (d === "permission" || d === "notifications") call(d);
@@ -237,6 +251,17 @@
   $("#find").addEventListener("submit", (e) => { e.preventDefault(); $("#q").blur(); });
   $("#q").addEventListener("input", (e) => { S.q = e.target.value; if (route().v !== "home") location.hash = ""; else render(); });
   addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
+
+  // iPhone: how to put an app on the Home Screen. Safari only adds the page you're on, so it opens the app first.
+  function iosSheet(id) {
+    const a = S.apps.find((x) => x.id === id); if (!a || !a.web) return;
+    let d = $("#iosget"); if (!d) { d = document.createElement("dialog"); d.id = "iosget"; d.className = "sheet"; document.body.append(d); d.addEventListener("click", (e) => { if (e.target === d || e.target.closest("[data-close]")) d.close(); }); }
+    d.innerHTML = `<div class="sh">${icon(a, 72)}<h2>Get ${esc(a.name)}</h2>
+      <ol><li>Tap <b>Open ${esc(a.name)}</b> below. It opens in Safari.</li><li>Tap the <b>Share</b> button <span class="share" aria-hidden="true"></span> in Safari's toolbar.</li><li>Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol>
+      <p class="m">It gets its own icon, opens full screen, and is always the latest version. Nothing to update, no App Store.</p>
+      <a class="btn pri" href="${esc(a.web)}" target="_blank" rel="noopener">Open ${esc(a.name)}</a><button class="btn" data-close type="button">Not now</button></div>`;
+    d.showModal();
+  }
 
   let tt;
   function toast(msg, bad) { const t = $("#toast"); t.textContent = msg; t.classList.toggle("bad", !!bad); t.hidden = false; clearTimeout(tt); tt = setTimeout(() => { t.hidden = true; }, 5200); }

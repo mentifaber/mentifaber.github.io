@@ -13,9 +13,10 @@ const builds = { "autofaber-android/AutoFaber.json": build("org.mentifaber.autof
 const cat = await S.catalog(shelf, async (u) => { const b = builds[u.split("/download/")[1]]; return b ? new Response(JSON.stringify(b)) : new Response("", { status: 404 }); });
 
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
-const mk = async (bridge) => {
-  const c = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1280, height: 860 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block",
-    userAgent: DEV === "mobile" ? "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36" : undefined });
+const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
+const mk = async (bridge, ua) => {
+  const c = await b.newContext({ viewport: DEV === "mobile" || ua ? { width: 390, height: 844 } : { width: 1280, height: 860 }, isMobile: DEV === "mobile" || !!ua, hasTouch: DEV === "mobile" || !!ua, serviceWorkers: "block",
+    userAgent: ua || (DEV === "mobile" ? "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36" : undefined) });
   await c.route(/\/store\/catalog\.json/, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cat) }));
   await c.route(/^(?!http:\/\/localhost:8099)/, (r) => r.abort());
   if (bridge) await c.addInitScript(({ vc }) => {
@@ -110,6 +111,25 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   ok("Installed lists what's on the phone, Updates holds the settings (auto-update can be turned off), and an app's page can uninstall it");
   assert.equal(await p.evaluate(() => window.__x), undefined);
   if (process.env.SHOTS) await p.screenshot({ path: "tests/ui/shots/store-" + DEV + ".png" });
+  assert.deepEqual(errs, []); await c.close();
+}
+// ---- on an iPhone: Home Screen apps instead of APKs ----
+{
+  const { c, p, errs } = await mk(false, IPHONE);
+  await p.goto(URL); await p.waitForSelector(".list .row");
+  assert.match(await p.textContent(".getit h2"), /Put Foundry on your Home Screen/);
+  assert.equal(await p.locator(".list .row").count(), 5, "Foundry itself isn't listed on iPhone");
+  assert.equal(await p.locator(".list .row .btn.pri", { hasText: "Get" }).count(), 2, "the two web apps");
+  assert.equal(await p.locator(".row .pill", { hasText: "Android only for now" }).count(), 3);
+  assert.equal(await p.locator("a[href='/store.apk'], a[download]").count(), 0, "no APKs offered on iPhone");
+  await p.click('.list [data-act="org.mentifaber.autofaber"] .btn'); await p.waitForSelector("dialog#iosget[open]");
+  assert.match(await p.textContent("#iosget"), /Add to Home Screen/); assert.equal(await p.getAttribute("#iosget a.btn.pri", "href"), "/hive-app"); assert.equal(await p.getAttribute("#iosget a.btn.pri", "target"), "_blank");
+  await p.click("#iosget [data-close]"); await p.waitForFunction(() => !document.querySelector("dialog#iosget").open);
+  await p.goto(URL + "#app/org.mentifaber.mentiplayer"); await p.waitForSelector(".dhead");
+  assert.match(await p.textContent(".stats"), /Home Screen app/); assert.equal(await p.locator(".safe, .perms").count(), 0);
+  await p.goto(URL + "#app/org.mentifaber.bigbuttons"); await p.waitForSelector(".dhead"); assert.match(await p.textContent(".dact"), /Android only for now/);
+  ok("on iPhone: web apps install to the Home Screen with a three-step guide, Android-only apps say so, and no APKs are offered");
+  if (process.env.SHOTS) { await p.goto(URL); await p.waitForSelector(".list .row"); await p.screenshot({ path: "tests/ui/shots/store-iphone.png", fullPage: true }); }
   assert.deepEqual(errs, []); await c.close();
 }
 await b.close();
