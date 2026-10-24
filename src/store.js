@@ -1,9 +1,9 @@
-// The Mentifaber Store's catalog. android/apps.json is the shelf (names, words, icons); each app's latest build publishes
+// The Foundry's catalog. android/apps.json is the shelf (names, words, icons); each app's latest build publishes
 // <file>.apk and <file>.json (version, size, SHA-256, signer, what changed) to its GitHub release
-// (.github/workflows/android.yml). The catalog joins the two, so a new build reaches the Store within minutes of
+// (.github/workflows/android.yml). The catalog joins the two, so a new build reaches Foundry within minutes of
 // publishing, with no deploy of the site.
-//   GET /store/catalog.json   the catalog (the storefront page and the Store app both read it)
-//   GET /store.apk            the Store app itself, to install first
+//   GET /store/catalog.json   the catalog (the storefront page and the Foundry app both read it)
+//   GET /store.apk            the Foundry app itself, to install first
 //   GET /store/apk/<id>       any app's latest APK, by its id
 import SHELF from "../android/apps.json";
 
@@ -34,7 +34,7 @@ export async function catalog(shelf = SHELF, get = fetch) {
     return b ? { ...pick(a, PUBLIC), ...b, apk: apkUrl(a), available: true } : { ...pick(a, PUBLIC), available: false };
   }));
   const updated = apps.map((a) => a.built || "").sort().pop() || null;
-  return { name: "Mentifaber Store", store: "org.mentifaber.store", updated, apps };
+  return { name: "Foundry", store: "org.mentifaber.store", updated, apps };
 }
 
 // The store's routes; null when the path isn't the store's.
@@ -51,7 +51,7 @@ export async function store(req, ctx, shelf = SHELF, get = fetch) {
   const m = path === "/store.apk" ? ["", "org.mentifaber.store"] : path.match(/^\/store\/apk\/([\w.]+)$/);
   if (m) {
     const a = shelf.apps.find((x) => x.id === m[1] && x.release && x.file);
-    if (!a) return new Response("No such app in the Mentifaber Store.", { status: 404, headers: { "content-type": "text/plain" } });
+    if (!a) return new Response("No such app in Foundry.", { status: 404, headers: { "content-type": "text/plain" } });
     return new Response(null, { status: 302, headers: { location: apkUrl(a), "cache-control": "public, max-age=300" } });
   }
   return null;

@@ -1,5 +1,5 @@
 {
-  "_": "The Mentifaber Store's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes; the store reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
+  "_": "The Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes; the store reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
   "apps": [
     {
       "id": "org.mentifaber.autofaber",
@@ -49,13 +49,13 @@
     },
     {
       "id": "org.mentifaber.store",
-      "name": "Mentifaber Store",
+      "name": "Foundry",
       "dir": "android/store",
       "release": "mentifaber-store",
       "file": "MentifaberStore",
       "category": "Tools",
       "tagline": "Every Mentifaber app, installed and kept up to date",
-      "description": "The home of Mentifaber's Android apps. Install any of them in a tap, open and remove them, and let the Store keep them current: it checks for new versions twice a day, and on Android 12 and later it installs updates to the apps it installed without asking each time.\n\nEvery download is checked before it is installed. Its checksum must match the catalog, its package name must be the app's, and it must be signed with the same key as the Store itself, so nothing else can slip in.",
+      "description": "The home of Mentifaber's Android apps. Install any of them in a tap, open and remove them, and let Foundry keep them current: it checks for new versions twice a day, and on Android 12 and later it installs updates to the apps it installed without asking each time.\n\nEvery download is checked before it is installed. Its checksum must match the catalog, its package name must be the app's, and it must be signed with the same key as Foundry itself, so nothing else can slip in.",
       "features": [
         "One-tap installs and updates",
         "Updates itself",

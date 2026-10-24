@@ -53,7 +53,7 @@ final class Installer {
         if (!busy.add(id)) { emit(event("progress", id).put2("phase", "busy")); return; }
         pool.execute(() -> {
             Catalog.App a = Catalog.find(id);
-            if (a == null) finished(app, id, id, false, false, "That app isn't in the Store's catalog.");
+            if (a == null) finished(app, id, id, false, false, "That app isn't in Foundry's catalog.");
             else run(app, a, false);
         });
     }

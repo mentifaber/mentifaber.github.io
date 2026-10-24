@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mentifaber Store: the storefront is mentifaber.org/store in a WebView; this app adds what a web page can't do
+<!-- Foundry: the storefront is mentifaber.org/store in a WebView; this app adds what a web page can't do
      (install, update, open and remove apps) through a message channel only that origin is given. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />

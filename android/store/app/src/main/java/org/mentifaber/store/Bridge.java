@@ -10,7 +10,7 @@ import androidx.webkit.WebViewCompat;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/** The page's line to the Store, as window.MentiStore: given only to https://mentifaber.org, main frame only.
+/** The page's line to Foundry, as window.MentiStore: given only to https://mentifaber.org, main frame only.
  *  Messages are JSON {op, req, id?}; answers come back as {type:"reply", req, data}, and events (progress, done,
  *  changed, resume, permission) as {type, id, …}. */
 final class Bridge implements WebViewCompat.WebMessageListener {

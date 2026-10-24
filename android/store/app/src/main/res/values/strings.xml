@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Mentifaber Store</string>
+    <string name="app_name">Foundry</string>
     <string name="store_url" translatable="false">https://mentifaber.org/store</string>
 </resources>

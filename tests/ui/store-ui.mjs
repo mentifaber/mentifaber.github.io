@@ -1,7 +1,7 @@
-// The Mentifaber Store's storefront in Chromium, against the real catalog code (src/store.js) with builds faked.
-// In a browser: the shelf, details, search, the APK downloads, hostile text kept as text. Inside the Store app (window.MentiStore
+// The Foundry's storefront in Chromium, against the real catalog code (src/store.js) with builds faked.
+// In a browser: the shelf, details, search, the APK downloads, hostile text kept as text. Inside the Foundry app (window.MentiStore
 // faked the way the Android app answers): install, update with progress, the one-time "install apps" permission, open,
-// uninstall, the Store updating itself, update settings.
+// uninstall, Foundry updating itself, update settings.
 import { createRequire } from "node:module"; import assert from "node:assert/strict";
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const DEV = process.argv[3] || "desktop";
@@ -19,7 +19,7 @@ const mk = async (bridge) => {
   await c.route(/\/store\/catalog\.json/, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cat) }));
   await c.route(/^(?!http:\/\/localhost:8099)/, (r) => r.abort());
   if (bridge) await c.addInitScript(({ vc }) => {
-    // the Store app, as the page sees it: replies and events over one message channel
+    // the Foundry app, as the page sees it: replies and events over one message channel
     const st = window.__st = { inst: { "org.mentifaber.autofaber": 141, "org.mentifaber.store": 140 }, can: true, auto: true, calls: [] };
     const send = (m, d = 0) => setTimeout(() => window.MentiStore.onmessage && window.MentiStore.onmessage({ data: JSON.stringify(m) }), d);
     const info = () => ({ version: "1.0.40", sdk: 34, canInstall: st.can, silent: true, auto: st.auto, notify: true, package: "org.mentifaber.store" });
@@ -52,7 +52,7 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   else { assert.match(await p.textContent(".getit h2"), /on your Android phone/); assert.equal(await p.locator(".row .pill", { hasText: "Android app" }).count(), 3); }
   assert.equal(await p.locator(".row .pill", { hasText: "Coming soon" }).count(), 2);
   assert.equal(await p.evaluate(() => window.__x), undefined); assert.ok(await p.locator(".row b", { hasText: "Test <img" }).count());
-  ok("the shelf: featured app, five apps, two not built yet; the Store download on a phone, a pointer to the phone elsewhere; hostile names stay text");
+  ok("the shelf: featured app, five apps, two not built yet; Foundry download on a phone, a pointer to the phone elsewhere; hostile names stay text");
 
   await p.fill("#q", "swarm"); await p.waitForFunction(() => document.querySelectorAll(".list .row").length === 1); assert.match(await p.textContent(".list .row b"), /AutoFaber/);
   await p.fill("#q", "zzzz"); await p.waitForSelector(".empty"); await p.fill("#q", "");
@@ -65,23 +65,23 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   assert.match(await p.textContent(".safe"), new RegExp(sha)); assert.match(await p.textContent(".perms"), /Use the internet/); assert.doesNotMatch(await p.textContent(".perms"), /dynamic receiver/i);
   assert.ok(await p.locator(".changes li", { hasText: "<b>bold</b> change" }).count()); assert.equal(await p.locator(".changes b").count(), 0);
   if (DEV === "mobile") assert.equal(await p.getAttribute(".dact a[download]", "href"), "https://github.com/mentifaber/mentifaber.github.io/releases/download/autofaber-android/AutoFaber.apk");
-  assert.match(await p.title(), /AutoFaber · Mentifaber Store/);
+  assert.match(await p.title(), /AutoFaber · Foundry/);
   await p.goBack(); await p.waitForSelector(".hero");
   await p.click("#tabs a[data-v=about]"); assert.match(await p.textContent(".prose"), /SHA-256/);
   ok("an app's page: version, size, Android version, checksum, what's new and what it can do, in plain words; the APK alone on a phone");
   assert.deepEqual(errs, []); await c.close();
 }
 
-// ---- inside the Store app ----
+// ---- inside the Foundry app ----
 {
   const { c, p, errs } = await mk(true);
   await p.goto(URL); await p.waitForSelector(".list .row"); await p.waitForFunction(() => document.querySelector("#ucount") && !document.querySelector("#ucount").hidden);
   assert.equal(await p.isVisible("#tabs a[data-v=updates]"), true); assert.equal(await p.textContent("#ucount"), "2");
-  assert.equal(await p.isVisible("#selfup"), true); assert.match(await p.textContent("#selfup"), /new Mentifaber Store/);
+  assert.equal(await p.isVisible("#selfup"), true); assert.match(await p.textContent("#selfup"), /new version of Foundry/);
   assert.equal(await p.locator(".getit").count(), 0);
   const btn = (id) => p.locator(`.list [data-act="${id}"] .btn`).first();
   assert.equal(await btn("org.mentifaber.autofaber").textContent(), "Update"); assert.equal(await btn("org.mentifaber.testapp").textContent(), "Install");
-  ok("in the app: two updates waiting (one is the Store itself, shown up top), the rest marked Install");
+  ok("in the app: two updates waiting (one is Foundry itself, shown up top), the rest marked Install");
 
   await btn("org.mentifaber.autofaber").click(); await p.waitForSelector('.list [data-act="org.mentifaber.autofaber"] .prog');
   await p.waitForFunction(() => /Downloading · 45%|Checking|Installing/.test(document.querySelector('.list [data-act="org.mentifaber.autofaber"]').textContent));
@@ -99,7 +99,7 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   await btn("org.mentifaber.testapp").click(); await p.waitForFunction(() => window.__st.calls.some(([o, id]) => o === "open" && id === "org.mentifaber.testapp"));
   await p.click("#selfup .btn"); await p.waitForFunction(() => window.__st.calls.some(([o, id]) => o === "install" && id === "org.mentifaber.store"));
   await p.waitForFunction(() => document.querySelector("#selfup").hidden && document.querySelector("#ucount").hidden);
-  ok("Open hands over to the app; the Store updates itself from the banner, and the update count clears");
+  ok("Open hands over to the app; Foundry updates itself from the banner, and the update count clears");
 
   await p.click("#tabs a[data-v=installed]"); await p.waitForSelector(".shelf h2:has-text(\"Installed\")"); assert.equal(await p.locator(".list .row").count(), 3);
   await p.click("#tabs a[data-v=updates]"); await p.waitForSelector(".settings"); assert.match(await p.textContent(".shelf h2"), /all up to date/);
