@@ -10,7 +10,7 @@ import android.os.Build;
 
 import java.util.List;
 
-/** The Store's notifications: updates waiting, an update that needs a tap, an update done. */
+/** Foundry's notifications: updates waiting, an update that needs a tap, an update done. */
 final class Notify {
     static final String UPDATES = "updates";
     private static final String CHANNEL = "updates";

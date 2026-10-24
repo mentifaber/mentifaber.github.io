@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** The Store's shelf, read from mentifaber.org/store/catalog.json. Installs are only ever made from what this class
+/** Foundry's shelf, read from mentifaber.org/store/catalog.json. Installs are only ever made from what this class
  *  fetched itself: the page can ask for an app by its id, but the address and checksum always come from here. */
 final class Catalog {
     static final String URL = "https://mentifaber.org/store/catalog.json";

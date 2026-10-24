@@ -1,4 +1,4 @@
-// The Mentifaber Store's catalog (src/store.js): the shelf (android/apps.json) joined with each app's latest signed build
+// The Foundry's catalog (src/store.js): the shelf (android/apps.json) joined with each app's latest signed build
 // from its GitHub release. Only complete, release-signed builds of the right app are offered; build-only fields stay private.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -54,7 +54,7 @@ r = await S.store(req("/store/apk/org.nope.app"), ctx, SHELF); assert.equal(r.st
 assert.equal(await S.store(req("/store/apk/../../x"), ctx, SHELF), null); assert.equal(await S.store(req("/store"), ctx, SHELF), null); assert.equal(await S.store(req("/store/"), ctx, SHELF), null);
 ok("/store/catalog.json, /store.apk and /store/apk/<id> answer; anything else under /store is left to the page");
 
-// 5 · the Worker routes to it, and the Store app is vouched for at mentifaber.org/store
+// 5 · the Worker routes to it, and the Foundry app is vouched for at mentifaber.org/store
 const w = readFileSync(REPO + "/src/worker.js", "utf8"); assert.match(w, /import \{ store as storeRoutes \} from "\.\/store\.js"/); assert.match(w, /path === "\/store\.apk" \|\| path\.startsWith\("\/store\/"\)/);
 const links = JSON.parse(readFileSync(REPO + "/.well-known/assetlinks.json", "utf8")); assert.deepEqual(links.map((l) => l.target.package_name).sort(), ["org.mentifaber.autofaber", "org.mentifaber.mentiplayer", "org.mentifaber.store"]);
 assert.equal(new Set(links.map((l) => l.target.sha256_cert_fingerprints[0])).size, 1);
@@ -62,4 +62,4 @@ const man = readFileSync(REPO + "/android/store/app/src/main/AndroidManifest.xml
 const inst = readFileSync(REPO + "/android/store/app/src/main/java/org/mentifaber/store/Installer.java", "utf8"); assert.match(inst, /hex\(md\.digest\(\)\)\.equals\(a\.sha256\)/); assert.match(inst, /a\.id\.equals\(apk\.packageName\)/); assert.match(inst, /Collections\.disjoint\(theirs, ours\)/);
 const br = readFileSync(REPO + "/android/store/app/src/main/java/org/mentifaber/store/MainActivity.java", "utf8"); assert.match(br, /addWebMessageListener\(web, "MentiStore", Collections\.singleton\(ORIGIN\)/); assert.match(br, /ORIGIN = "https:\/\/mentifaber\.org"/);
 const wr = JSON.parse(readFileSync(REPO + "/wrangler.jsonc", "utf8").replace(/^\s*\/\/.*$/gm, "")); for (const r of ["/store/*", "/store.apk", "/autofaber.apk"]) assert.ok(wr.assets.run_worker_first.includes(r), r + " must reach the Worker: unmatched paths get the 404 page, not the Worker");
-ok("the Worker serves the store (its paths are routed to it first); both apps share one signing key in assetlinks; the Store checks checksum, package and signer, and talks only to mentifaber.org");
+ok("the Worker serves the store (its paths are routed to it first); both apps share one signing key in assetlinks; Foundry checks checksum, package and signer, and talks only to mentifaber.org");

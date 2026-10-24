@@ -33,7 +33,7 @@ import org.json.JSONObject;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-/** The storefront (mentifaber.org/store) in a WebView, with the Store's powers handed to that page alone. */
+/** The storefront (mentifaber.org/store) in a WebView, with Foundry's powers handed to that page alone. */
 public final class MainActivity extends Activity {
     static final String ORIGIN = "https://mentifaber.org";
     static volatile boolean visible;
@@ -119,7 +119,7 @@ public final class MainActivity extends Activity {
     private void offline() {
         String retry = getString(R.string.store_url);
         web.loadDataWithBaseURL(null, "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><body style='margin:0;min-height:100vh;display:grid;place-items:center;background:#08080a;color:#f2ede4;font:16px/1.5 sans-serif;text-align:center;padding:24px'>"
-                + "<div><div style='font-size:22px;font-weight:700'>Mentifaber <span style='color:#f0b24a'>Store</span></div><p style='color:#a39a8a'>The Store needs the internet to show the shelf.</p>"
+                + "<div><div style='font-size:22px;font-weight:700;color:#f0b24a'>Foundry</div><p style='color:#a39a8a'>Foundry needs the internet to show the shelf.</p>"
                 + "<a href='" + retry + "' style='display:inline-block;padding:12px 22px;border-radius:999px;background:#f0b24a;color:#1a1200;font-weight:700;text-decoration:none'>Try again</a></div>",
                 "text/html", "utf-8", null);
     }
@@ -151,7 +151,7 @@ public final class MainActivity extends Activity {
         return out;
     }
 
-    /** Installs need "install unknown apps" for the Store, once; this sends the person to that switch. */
+    /** Installs need "install unknown apps" for Foundry, once; this sends the person to that switch. */
     boolean install(String id) {
         if (!Installer.canInstall(this)) { askInstallPermission(); bridge.send(Installer.event("permission", id)); return false; }
         Installer.install(this, id);
@@ -170,7 +170,7 @@ public final class MainActivity extends Activity {
             try { startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())); } catch (ActivityNotFoundException ignored) { }
     }
 
-    /** Open or remove an app: only the ones on the Store's shelf. */
+    /** Open or remove an app: only the ones on Foundry's shelf. */
     void withApp(String id, boolean remove) {
         Installer.pool.execute(() -> {
             Catalog.App a = Catalog.find(id);

@@ -3,7 +3,7 @@ package org.mentifaber.store;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-/** The Store's few settings. */
+/** Foundry's few settings. */
 final class Prefs {
     private static SharedPreferences p(Context c) { return c.getSharedPreferences("store", Context.MODE_PRIVATE); }
     /** Install updates in the background when Android allows it (on by default). */

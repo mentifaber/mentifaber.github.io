@@ -1,4 +1,4 @@
-// Mentifaber Store · the storefront. In a browser it shows the shelf and hands out APKs; inside the Store app
+// Foundry · the storefront. In a browser it shows the shelf and hands out APKs; inside the Foundry app
 // (android/store) the app gives this page window.MentiStore, and the same buttons install, update, open and remove.
 // The app never takes an address or checksum from this page: it installs by id from the catalog it fetches itself.
 (() => {
@@ -10,7 +10,7 @@
   const S = { apps: [], installed: {}, info: null, prog: {}, q: "", cat: "", loaded: 0, err: "", waitPerm: "" };
   document.documentElement.classList.toggle("in-app", inApp);
 
-  // ---- the line to the Store app ----
+  // ---- the line to the Foundry app ----
   const pend = new Map(); let seq = 0;
   const call = (op, extra = {}) => new Promise((res) => {
     if (!B) return res(null);
@@ -29,7 +29,7 @@
     if (m.type === "progress") {
       if (m.phase === "busy") { if (!S.prog[m.id]) S.prog[m.id] = { phase: "download", pct: 0 }; }
       else S.prog[m.id] = { phase: m.phase, pct: m.pct || 0, self: m.self };
-      if (m.phase === "install" && m.self) toast("The Store is updating itself. It will close and reopen on the new version.");
+      if (m.phase === "install" && m.self) toast("Foundry is updating itself. It will close and reopen on the new version.");
       paintActions();
     } else if (m.type === "done") {
       delete S.prog[m.id];
@@ -43,7 +43,7 @@
       });
     } else if (m.type === "permission") {
       S.waitPerm = m.id;
-      toast("Turn on “Allow from this source” for Mentifaber Store, then come back. The install carries on by itself.");
+      toast("Turn on “Allow from this source” for Foundry, then come back. The install carries on by itself.");
     }
   }
 
@@ -103,7 +103,7 @@
     const store = S.apps.find((a) => a.id === SELF), up = $("#selfup");
     const show = inApp && store && needsUpdate(store) && route().v !== "app";
     up.hidden = !show;
-    if (show) up.innerHTML = `<img src="${esc(store.icon)}" alt="" width="28" height="28"><span>A new Mentifaber Store is ready: <b>${esc(store.versionName)}</b></span><span data-act="${SELF}">${actions(store)}</span>`;
+    if (show) up.innerHTML = `<img src="${esc(store.icon)}" alt="" width="28" height="28"><span>A new version of Foundry is ready: <b>${esc(store.versionName)}</b></span><span data-act="${SELF}">${actions(store)}</span>`;
   }
 
   // ---- views ----
@@ -133,13 +133,13 @@
   function getStore() {
     const store = S.apps.find((a) => a.id === SELF);
     const v = store && store.available ? `Version ${esc(store.versionName)} · ${mb(store.size)}` : "";
-    if (!android) return `<section class="getit"><div><h2>Get the Store on your Android phone</h2><p>Open <b>mentifaber.org/store</b> on the phone, download the Store, and every app here installs and updates from it.</p></div><div class="qr" aria-hidden="true">${icon(store || {}, 72)}</div></section>`;
-    return `<section class="getit"><div><h2>Install the Mentifaber Store</h2><ol><li>Download the Store${v ? ` <small>(${v})</small>` : ""}.</li><li>Open the file. If Android asks, allow your browser to install apps.</li><li>Open Mentifaber Store: everything here installs in a tap, and updates arrive on their own.</li></ol></div><a class="btn pri" href="/store.apk">Download the Store</a></section>`;
+    if (!android) return `<section class="getit"><div><h2>Get Foundry on your Android phone</h2><p>Open <b>mentifaber.org/store</b> on the phone, download Foundry, and every app here installs and updates from it.</p></div><div class="qr" aria-hidden="true">${icon(store || {}, 72)}</div></section>`;
+    return `<section class="getit"><div><h2>Install Foundry</h2><ol><li>Download Foundry${v ? ` <small>(${v})</small>` : ""}.</li><li>Open the file. If Android asks, allow your browser to install apps.</li><li>Open Foundry: everything here installs in a tap, and updates arrive on their own.</li></ol></div><a class="btn pri" href="/store.apk">Download Foundry</a></section>`;
   }
 
   function detail(id) {
     const a = S.apps.find((x) => x.id === id);
-    if (!a) return `<p class="empty">That app isn't on the shelf. <a href="#">Back to the Store</a></p>`;
+    if (!a) return `<p class="empty">That app isn't on the shelf. <a href="#">Back to Foundry</a></p>`;
     const i = have(a), paras = String(a.description || "").split(/\n\s*\n/).map((p) => `<p>${esc(p)}</p>`).join("");
     const stats = [
       a.available && ["Version", esc(a.versionName)], i && ["On this phone", esc(i.versionName || "")],
@@ -147,12 +147,12 @@
     ].filter(Boolean);
     let h = `<a class="back" href="#">← All apps</a><section class="dhead" style="--ac:${esc(a.accent || "#f0b24a")}">${icon(a, 104)}<div><h1>${esc(a.name)}</h1><p class="dev">Mentifaber</p><p class="tag">${esc(a.tagline || "")}</p></div></section>`;
     h += `<div class="dact big" data-act="${esc(a.id)}">${actions(a, true)}</div>`;
-    if (!inApp && android && a.available && a.id !== SELF) h += `<p class="hint">Get installs the Store first; from then on ${esc(a.name)} installs and updates from it. APK only downloads this app alone, and you'd update it by hand.</p>`;
+    if (!inApp && android && a.available && a.id !== SELF) h += `<p class="hint">Get installs Foundry first; from then on ${esc(a.name)} installs and updates from it. APK only downloads this app alone, and you'd update it by hand.</p>`;
     h += `<dl class="stats">${stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
     if (a.shots && a.shots.length) h += `<div class="shots">${a.shots.map((s) => `<img src="${esc(s)}" alt="${esc(a.name)} screenshot" loading="lazy">`).join("")}</div>`;
     h += `<section class="block"><h2>About this app</h2>${paras}${a.features && a.features.length ? `<ul class="feats">${a.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}</section>`;
     if (a.changes && a.changes.length) h += `<section class="block"><h2>What's new</h2><p class="m">${esc(a.versionName ? "Version " + a.versionName : "")}${a.built ? " · " + esc(day(a.built)) : ""}</p><ul class="changes">${a.changes.slice(0, 6).map((c) => `<li>${esc(c)}</li>`).join("")}</ul></section>`;
-    if (a.available) h += `<section class="block safe"><h2>Safety</h2><p>Signed by Mentifaber. Before it installs, the Store checks that the download's SHA-256 matches the catalog, that it is ${esc(a.name)} and not some other app, and that it carries Mentifaber's signature.</p><p class="m mono">SHA-256 ${esc(a.sha256)}</p>${a.cert ? `<p class="m mono">Signer ${esc(a.cert)}</p>` : ""}</section>`;
+    if (a.available) h += `<section class="block safe"><h2>Safety</h2><p>Signed by Mentifaber. Before it installs, Foundry checks that the download's SHA-256 matches the catalog, that it is ${esc(a.name)} and not some other app, and that it carries Mentifaber's signature.</p><p class="m mono">SHA-256 ${esc(a.sha256)}</p>${a.cert ? `<p class="m mono">Signer ${esc(a.cert)}</p>` : ""}</section>`;
     const perms = (a.permissions || []).map(perm).filter(Boolean);
     if (perms.length) h += `<section class="block"><h2>What it can do</h2><ul class="perms">${[...new Set(perms)].map((p) => `<li>${esc(p)}</li>`).join("")}</ul></section>`;
     const links = [a.web && `<a class="btn sm" href="${esc(a.web)}">Use it on the web</a>`, a.page && a.page !== "/store" && `<a class="btn sm" href="${esc(a.page)}">About ${esc(a.name)}</a>`].filter(Boolean);
@@ -167,7 +167,7 @@
   }
 
   function updates() {
-    if (!inApp) return `<p class="empty">Updates arrive through the Store app on Android. <a href="#about">How it works</a></p>`;
+    if (!inApp) return `<p class="empty">Updates arrive through the Foundry app on Android. <a href="#about">How it works</a></p>`;
     const due = S.apps.filter(needsUpdate), others = S.apps.filter((a) => have(a) && !needsUpdate(a));
     let h = `<section class="shelf"><h2>Updates <small>${due.length ? due.length + " ready" : "all up to date"}</small>${due.length > 1 ? ` <button class="btn pri sm" data-do="all">Update all</button>` : ""}</h2>`;
     h += due.length ? `<ul class="list">${due.map(row).join("")}</ul>` : `<p class="empty">Every installed Mentifaber app is on its latest version.</p>`;
@@ -179,10 +179,10 @@
   function settings() {
     const i = S.info || {};
     return `<section class="block settings"><h2>Updates on this phone</h2>
-      <label class="sw"><input type="checkbox" id="auto" ${i.auto ? "checked" : ""}><span><b>Install updates by themselves</b><small>${i.silent ? "Twice a day the Store installs new versions of the apps it installed, without asking each time." : "Android " + esc(i.sdk ? ANDROID[i.sdk] || i.sdk : "") + " asks before each install, so the Store will notify you when updates are ready instead."}</small></span></label>
-      <div class="setrow"><span><b>Installs from the Store</b><small>${i.canInstall ? "Allowed" : "Not allowed yet: Android asks once."}</small></span>${i.canInstall ? "" : `<button class="btn sm" data-do="permission">Allow</button>`}</div>
+      <label class="sw"><input type="checkbox" id="auto" ${i.auto ? "checked" : ""}><span><b>Install updates by themselves</b><small>${i.silent ? "Twice a day Foundry installs new versions of the apps it installed, without asking each time." : "Android " + esc(i.sdk ? ANDROID[i.sdk] || i.sdk : "") + " asks before each install, so Foundry will notify you when updates are ready instead."}</small></span></label>
+      <div class="setrow"><span><b>Installs from Foundry</b><small>${i.canInstall ? "Allowed" : "Not allowed yet: Android asks once."}</small></span>${i.canInstall ? "" : `<button class="btn sm" data-do="permission">Allow</button>`}</div>
       <div class="setrow"><span><b>Update notifications</b><small>${i.notify ? "On" : "Off"}</small></span><button class="btn sm" data-do="notifications">${i.notify ? "Settings" : "Turn on"}</button></div>
-      <p class="m">Mentifaber Store ${esc(i.version || "")}</p></section>`;
+      <p class="m">Foundry ${esc(i.version || "")}</p></section>`;
   }
 
   function installed() {
@@ -191,13 +191,13 @@
   }
 
   function about() {
-    return `<section class="block prose"><h1>How the Store works</h1>
-      <p>Mentifaber Store is the home of Mentifaber's Android apps: one place to install them, open them, and keep them current.</p>
-      <h2>Install</h2><p>Download the Store on your phone and open it${android ? "" : " (open mentifaber.org/store on the phone)"}. Android asks once whether the Store may install apps: say yes. From then on every app here installs in a tap.</p>
-      <h2>Updates</h2><p>When Mentifaber ships a new version, it's built, signed and put on the shelf automatically, and the Store sees it within minutes. Open <b>Updates</b> to install it, or let the Store do it: twice a day it checks, and on Android 12 and later it installs updates to the apps it installed without asking each time. On older Android, it sends a notification and you tap to update. The Store updates itself the same way.</p>
-      <h2>Safety</h2><p>Every app is signed with Mentifaber's key. Before installing anything, the Store checks the download's SHA-256 against the catalog, that the package is the app it claims to be, and that it's signed with the same key as the Store itself. Android then refuses any update signed with a different key. The Store never takes a download address from a web page: it installs only from the catalog it fetched itself.</p>
-      <h2>Already have an app?</h2><p>If you installed an app from its APK before, the Store updates it too. The first update may ask you to confirm, because Android remembers which app installed it; after that it's the Store's.</p>
-      ${inApp ? "" : `<p>${android ? `<a class="btn pri" href="/store.apk">Download the Store</a>` : ""}</p>`}</section>`;
+    return `<section class="block prose"><h1>How Foundry works</h1>
+      <p>Foundry is the home of Mentifaber's Android apps: one place to install them, open them, and keep them current.</p>
+      <h2>Install</h2><p>Download Foundry on your phone and open it${android ? "" : " (open mentifaber.org/store on the phone)"}. Android asks once whether Foundry may install apps: say yes. From then on every app here installs in a tap.</p>
+      <h2>Updates</h2><p>When Mentifaber ships a new version, it's built, signed and put on the shelf automatically, and Foundry sees it within minutes. Open <b>Updates</b> to install it, or let Foundry do it: twice a day it checks, and on Android 12 and later it installs updates to the apps it installed without asking each time. On older Android, it sends a notification and you tap to update. Foundry updates itself the same way.</p>
+      <h2>Safety</h2><p>Every app is signed with Mentifaber's key. Before installing anything, Foundry checks the download's SHA-256 against the catalog, that the package is the app it claims to be, and that it's signed with the same key as Foundry itself. Android then refuses any update signed with a different key. Foundry never takes a download address from a web page: it installs only from the catalog it fetched itself.</p>
+      <h2>Already have an app?</h2><p>If you installed an app from its APK before, Foundry updates it too. The first update may ask you to confirm, because Android remembers which app installed it; after that it's Foundry's.</p>
+      ${inApp ? "" : `<p>${android ? `<a class="btn pri" href="/store.apk">Download Foundry</a>` : ""}</p>`}</section>`;
   }
 
   // ---- routing and events ----
@@ -211,7 +211,7 @@
     m.innerHTML = r.v === "app" ? detail(r.id) : r.v === "updates" ? updates() : r.v === "installed" ? installed() : r.v === "about" ? about() : home();
     paintCounts();
     const a = r.v === "app" && S.apps.find((x) => x.id === r.id);
-    document.title = a ? a.name + " · Mentifaber Store" : "Mentifaber Store";
+    document.title = a ? a.name + " · Foundry" : "Foundry";
   }
 
   async function install(id) {
@@ -249,7 +249,7 @@
       S.apps = (j.apps || []).filter((a) => a && a.id && a.name);
       S.err = ""; S.loaded = Date.now();
     } catch {
-      S.err = "The Store couldn't reach its catalog. Check the connection and try again.";
+      S.err = "Foundry couldn't reach its catalog. Check the connection and try again.";
     }
     render();
     if (inApp) await refreshInstalled(true);

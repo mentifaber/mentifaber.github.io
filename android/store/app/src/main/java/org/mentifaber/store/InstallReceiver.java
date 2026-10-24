@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageInstaller;
 import android.os.Build;
 
-/** The system's answer on each install session the Store commits. */
+/** The system's answer on each install session Foundry commits. */
 public final class InstallReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context ctx, Intent i) {
@@ -40,7 +40,7 @@ public final class InstallReceiver extends BroadcastReceiver {
         switch (status) {
             case PackageInstaller.STATUS_FAILURE_ABORTED: return "Cancelled";
             case PackageInstaller.STATUS_FAILURE_STORAGE: return "There isn't enough space on this phone.";
-            case PackageInstaller.STATUS_FAILURE_CONFLICT: return "The copy on this phone is signed differently. Remove it, then install from the Store.";
+            case PackageInstaller.STATUS_FAILURE_CONFLICT: return "The copy on this phone is signed differently. Remove it, then install from Foundry.";
             case PackageInstaller.STATUS_FAILURE_INCOMPATIBLE: return "This app doesn't run on this phone.";
             case PackageInstaller.STATUS_FAILURE_BLOCKED: return "This phone blocked the install.";
             case PackageInstaller.STATUS_FAILURE_INVALID: return "The download was damaged. Try again.";
