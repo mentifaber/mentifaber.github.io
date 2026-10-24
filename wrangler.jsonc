@@ -11,6 +11,7 @@
     "html_handling": "auto-trailing-slash",
     "run_worker_first": [
       "/api/*", "/p/*",
+      "/store/*", "/store.apk", "/autofaber.apk", "/android",
       "/vigil-app", "/vigil-app.html",
       "/flutterbloom", "/flutterbloom.html",
       "/muse-live", "/muse-live.html",

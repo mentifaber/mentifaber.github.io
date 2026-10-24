@@ -93,7 +93,7 @@ jobs:
           VN=$(sed -n "s/^package: .* versionName='\([^']*\)'.*/\1/p" badging.txt)
           MIN=$(sed -n "s/^minSdkVersion:'\([0-9]*\)'.*/\1/p" badging.txt); TGT=$(sed -n "s/^targetSdkVersion:'\([0-9]*\)'.*/\1/p" badging.txt)
           [ "$PKG" = "$ID" ] || { echo "::error::$DIR builds $PKG, but android/apps.json says $ID"; exit 1; }
-          CERT=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' certs.txt)
+          CERT=$(grep -m1 -i 'certificate SHA-256 digest' certs.txt | sed 's/.*digest: //' | tr -d '[:space:]')
           PERMS=$(sed -n "s/^uses-permission: name='\([^']*\)'.*/\1/p" badging.txt | jq -R . | jq -sc .)
           CHANGES=$(git log --no-merges -n 8 --format=%s -- "$DIR" | jq -R . | jq -sc .)
           cp "$APK" "$FILE.apk"
