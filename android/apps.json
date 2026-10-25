@@ -1,5 +1,5 @@
 {
-  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app with a \"prebuilt\" APK instead is built in its own private repo and dropped in android/prebuilt; it is re-signed with the release key and published the same way (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
+  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app with a \"prebuilt\" APK instead is built in its own private repo and dropped in android/prebuilt; it is re-signed with the release key and published the same way (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. Each app with a \"twa\" path is one of the site's web apps, built from the shared template in android/webapp with its own id, name, colour and logo. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
   "apps": [
     {
       "id": "org.mentifaber.autofaber",
@@ -64,6 +64,603 @@
       "icon": "/assets/icons/v2/saytap-512.png",
       "accent": "#4f8dff",
       "prebuilt": "android/prebuilt/SayTap.apk"
+    },
+    {
+      "id": "org.mentifaber.thoughtform",
+      "name": "Thoughtform",
+      "twa": "/thoughtform-app",
+      "release": "thoughtform-android",
+      "file": "Thoughtform",
+      "category": "Games",
+      "tagline": "A shooter fought inside a mind under siege",
+      "description": "A first-person shooter set inside a mind under siege, built from nothing but maths: a hand-written raymarched world and live-synthesized sound, with no engine, models, textures or samples. Eleven kinds of intrusive thought, each with its own attack; the Critic every fifth wave; four regions that sink deeper the longer you last, with lightning and gravity wells underfoot; and an Insight to choose after every wave, from double jump to Undertow.\n\nOn Android it runs full screen in Chrome's own engine with touch controls, and your progress, Codex and leaderboard come with it.",
+      "icon": "/assets/icons/v2/thoughtform-512.png",
+      "accent": "#795df9",
+      "bg": "#07040f",
+      "web": "/thoughtform-app",
+      "features": [
+        "Eleven kinds of thought, each with its own attack",
+        "Depths that keep getting harder",
+        "Insights that change how you play",
+        "Touch or mouse and keyboard"
+      ],
+      "page": "/thoughtform",
+      "shots": [
+        "/assets/previews/thoughtform.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.tether",
+      "name": "Tether",
+      "twa": "/tether-app",
+      "release": "tether-android",
+      "file": "Tether",
+      "category": "Games",
+      "tagline": "One-finger rope swinging over lava",
+      "description": "A one-finger rope-swinging game, open to everyone: real rope physics over lava through ten biomes with their own weather and soundtracks. Saws, drones, rockets, fire spouts, speed lasers and world-flipping rings; ten stackable power-ups; eleven modes including co-op, racing, time trial and the daily course; a ghost of your best run, and an online lobby where you can challenge anyone playing to a live head-to-head race.",
+      "icon": "/assets/icons/v2/tether-512.png",
+      "accent": "#fd683f",
+      "bg": "#07060f",
+      "web": "/tether-app",
+      "page": "/tether",
+      "shots": [
+        "/assets/previews/tether.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.sideways",
+      "name": "Sideways",
+      "twa": "/sideways-app",
+      "release": "sideways-android",
+      "file": "Sideways",
+      "category": "Games",
+      "tagline": "Drift, and the soundtrack plays itself",
+      "description": "A drifting game Claude made for Anders where the soundtrack is played by how you drive: get sideways and an arpeggio comes in, hold it and the bass and lead follow, every orb is a note on the beat. Four tracks, one boxy wagon.",
+      "icon": "/assets/icons/v2/sideways-512.png",
+      "accent": "#ff505e",
+      "bg": "#2a1633",
+      "web": "/sideways-app",
+      "page": "/sideways",
+      "shots": [
+        "/assets/previews/sideways.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.graveyard",
+      "name": "Graveyard Shift",
+      "twa": "/graveyard-app",
+      "release": "graveyard-android",
+      "file": "GraveyardShift",
+      "category": "Games",
+      "tagline": "Keep the satellites talking until dawn",
+      "description": "A night-shift orbit game Claude designed and built for Anders with no input from him: put relay satellites into real orbits, route signals across the network, and keep the stations talking until dawn.",
+      "icon": "/assets/icons/v2/graveyard-512.png",
+      "accent": "#ffe06e",
+      "bg": "#05070f",
+      "web": "/graveyard-app",
+      "page": "/graveyard",
+      "shots": [
+        "/assets/previews/graveyard.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.rootcause",
+      "name": "Root Cause",
+      "twa": "/rootcause-app",
+      "release": "rootcause-android",
+      "file": "RootCause",
+      "category": "Games",
+      "tagline": "The pager's going off: find the first domino",
+      "description": "An on-call detective game Claude made for Anders, unprompted: the pager goes off, the logs are full of red herrings, and you run real checks to find the first domino. Ten incidents, a rubber duck, an endless rotation.",
+      "icon": "/assets/icons/v2/rootcause-512.png",
+      "accent": "#ffd34a",
+      "bg": "#0a0b0d",
+      "web": "/rootcause-app",
+      "page": "/rootcause"
+    },
+    {
+      "id": "org.mentifaber.watchyourgrass",
+      "name": "Watch Your Grass",
+      "twa": "/watchyourgrass-app",
+      "release": "watchyourgrass-android",
+      "file": "WatchYourGrass",
+      "category": "Games",
+      "tagline": "Defend a six-by-six lawn from its visitors",
+      "description": "Arena defense on a 6×6 lawn: ten plant and terrain types, six kinds of visitor, drawn up on paper before a line of code and now playable in the browser.",
+      "icon": "/assets/icons/v2/watchyourgrass-512.png",
+      "accent": "#ff496f",
+      "bg": "#0b1510",
+      "web": "/watchyourgrass-app",
+      "page": "/watchyourgrass",
+      "shots": [
+        "/assets/previews/watchyourgrass.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.barycenter",
+      "name": "Barycenter",
+      "twa": "/barycenter-app",
+      "release": "barycenter-android",
+      "file": "Barycenter",
+      "category": "Communication",
+      "tagline": "A private, encrypted universe for two",
+      "description": "A private universe for two: messages, voice notes, touch and presence, encrypted end to end and kept on your own devices. Invite-only.",
+      "icon": "/assets/icons/v2/barycenter-512.png",
+      "accent": "#d8b07d",
+      "bg": "#05060f",
+      "web": "/barycenter-app",
+      "page": "/barycenter",
+      "shots": [
+        "/assets/previews/barycenter.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.pilotfish",
+      "name": "Pilotfish",
+      "twa": "/pilotfish-app",
+      "release": "pilotfish-android",
+      "file": "Pilotfish",
+      "category": "Communication",
+      "tagline": "A shared list and a quiet line for two",
+      "description": "A shared list and a quiet signal line for two: what to grab, how you feel, what you need. Push alerts, photos, offline.",
+      "icon": "/assets/icons/v2/pilotfish-512.png",
+      "accent": "#36c7d8",
+      "bg": "#e9f8f9",
+      "web": "/pilotfish-app",
+      "page": "/pilotfish",
+      "shots": [
+        "/assets/previews/pilotfish.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.nullspace",
+      "name": "NULLSPACE",
+      "twa": "/nullspace-app",
+      "release": "nullspace-android",
+      "file": "NULLSPACE",
+      "category": "Communication",
+      "tagline": "Encrypted comms over the internet and mesh radio",
+      "description": "An encrypted comms deck that talks over the internet and over LoRa mesh radio (Meshtastic and MeshCore). No account, no phone number: pick a handle, tune a frequency, transmit.",
+      "icon": "/assets/icons/v2/nullspace-512.png",
+      "accent": "#fee44b",
+      "bg": "#05040a",
+      "web": "/nullspace-app",
+      "page": "/nullspace",
+      "shots": [
+        "/assets/previews/nullspace.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.meshnet",
+      "name": "Hopline",
+      "twa": "/meshnet-app",
+      "release": "meshnet-android",
+      "file": "Hopline",
+      "category": "Communication",
+      "tagline": "Chat across a LoRa mesh, no towers needed",
+      "description": "A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.",
+      "icon": "/assets/icons/v2/meshnet-512.png",
+      "accent": "#ff92c4",
+      "bg": "#07060b",
+      "web": "/meshnet-app",
+      "page": "/meshnet",
+      "shots": [
+        "/assets/previews/meshnet.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.novarac",
+      "name": "Skipline",
+      "twa": "/novarac-app",
+      "release": "novarac-android",
+      "file": "Skipline",
+      "category": "Communication",
+      "tagline": "HF radio chat with the internet switched off",
+      "description": "HF radio chat that works with the internet switched off — a browser VARA client verified to make zero external calls. Air-gapped by design.",
+      "icon": "/assets/icons/v2/novarac-512.png",
+      "accent": "#91e0fe",
+      "bg": "#0b0703",
+      "web": "/novarac-app",
+      "page": "/novarac",
+      "shots": [
+        "/assets/previews/novarac.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.pi",
+      "name": "Nobody",
+      "twa": "/pi-app",
+      "release": "pi-android",
+      "file": "Nobody",
+      "category": "AI",
+      "tagline": "A terse voice assistant that never goes silent",
+      "description": "A voice assistant that runs on the phone itself, not in an app store. Camera, GPS, contacts and 22 device tools never leave it; only chat text goes out. When the voice drops, it degrades instead of going silent.",
+      "icon": "/assets/icons/v2/pi-512.png",
+      "accent": "#8efbb7",
+      "bg": "#000000",
+      "web": "/pi-app",
+      "page": "/pi",
+      "shots": [
+        "/assets/previews/pi.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.phonemcp",
+      "name": "Phone MCP",
+      "twa": "/phone-mcp-app",
+      "release": "phone-mcp-android",
+      "file": "PhoneMCP",
+      "category": "AI",
+      "tagline": "Watch a model drive an Android phone",
+      "description": "A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.",
+      "icon": "/assets/icons/v2/phone-mcp-512.png",
+      "accent": "#ff92fd",
+      "bg": "#08090d",
+      "web": "/phone-mcp-app",
+      "page": "/phone-mcp",
+      "shots": [
+        "/assets/previews/phone-mcp.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.cartograph",
+      "name": "Cartograph",
+      "twa": "/cartograph-app",
+      "release": "cartograph-android",
+      "file": "Cartograph",
+      "category": "Science",
+      "tagline": "A 3D atlas from the planets to the first galaxies",
+      "description": "A 3D atlas from the planets to the first galaxies: 140+ objects at their real positions across ten views, each cited to the instrument that measured it, plus live satellites around Earth.",
+      "icon": "/assets/icons/v2/cartograph-512.png",
+      "accent": "#92a8ff",
+      "bg": "#04060b",
+      "web": "/cartograph-app",
+      "page": "/cartograph",
+      "shots": [
+        "/assets/previews/cartograph.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.orbit",
+      "name": "Overhead",
+      "twa": "/orbit-app",
+      "release": "orbit-android",
+      "file": "Overhead",
+      "category": "Science",
+      "tagline": "Live satellites, and every pass over you",
+      "description": "Live satellite tracking from CelesTrak element sets, propagated with SGP4 in your browser: ground tracks, the day-night line, and every pass over you, with the ones you can see by eye marked.",
+      "icon": "/assets/icons/v2/orbit-512.png",
+      "accent": "#90d0fe",
+      "bg": "#060a10",
+      "web": "/orbit-app",
+      "page": "/orbit",
+      "shots": [
+        "/assets/previews/orbit.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.proximity",
+      "name": "Bodywake",
+      "twa": "/proximity-app",
+      "release": "proximity-android",
+      "file": "Bodywake",
+      "category": "Science",
+      "tagline": "See a body's shadow on ambient WiFi",
+      "description": "Detects a person walking through a house from the shadow their body casts on ambient WiFi. No camera, no wearable, no app on their phone.",
+      "icon": "/assets/icons/v2/proximity-512.png",
+      "accent": "#a1fe91",
+      "bg": "#070b08",
+      "web": "/proximity-app",
+      "page": "/proximity",
+      "shots": [
+        "/assets/previews/proximity.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.neuralsim",
+      "name": "Moodfield",
+      "twa": "/neural-sim-v3",
+      "release": "neural-sim-android",
+      "file": "Moodfield",
+      "category": "Science",
+      "tagline": "Simulations of emotional state, honestly told",
+      "description": "Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.",
+      "icon": "/assets/icons/v2/neural-sim-512.png",
+      "accent": "#8ff6fc",
+      "bg": "#000000",
+      "web": "/neural-sim-v3",
+      "page": "/neural-sim",
+      "shots": [
+        "/assets/previews/neural-sim.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.mooncompatibility",
+      "name": "Synodic",
+      "twa": "/moon-compatibility-app",
+      "release": "moon-compatibility-android",
+      "file": "Synodic",
+      "category": "Science",
+      "tagline": "Two dates, two moons, one score",
+      "description": "Any two dates placed on the synodic cycle, both moons drawn and overlaid, the gap between them read as a compatibility score.",
+      "icon": "/assets/icons/v2/moon-compatibility-512.png",
+      "accent": "#aa90fd",
+      "bg": "#080705",
+      "web": "/moon-compatibility-app",
+      "page": "/moon-compatibility",
+      "shots": [
+        "/assets/previews/moon-compatibility.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.omnilogos",
+      "name": "Omnilogos",
+      "twa": "/omnilogos-app",
+      "release": "omnilogos-android",
+      "file": "Omnilogos",
+      "category": "Learning",
+      "tagline": "933,573 verses in one navigable graph",
+      "description": "933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.",
+      "icon": "/assets/icons/v2/omnilogos-512.png",
+      "accent": "#fdf990",
+      "bg": "#0c0b08",
+      "web": "/omnilogos-app",
+      "page": "/omnilogos",
+      "shots": [
+        "/assets/previews/omnilogos.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.conflictatlas",
+      "name": "Unlit",
+      "twa": "/conflict-atlas-app",
+      "release": "conflict-atlas-android",
+      "file": "Unlit",
+      "category": "Learning",
+      "tagline": "Twenty-eight wars, tiered by scale",
+      "description": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.",
+      "icon": "/assets/icons/v2/conflict-atlas-512.png",
+      "accent": "#ffe693",
+      "bg": "#0b0908",
+      "web": "/conflict-atlas-app",
+      "page": "/conflict-atlas",
+      "shots": [
+        "/assets/previews/conflict-atlas.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.crimedashboard",
+      "name": "Per Capita",
+      "twa": "/crime-dashboard-app",
+      "release": "crime-dashboard-android",
+      "file": "PerCapita",
+      "category": "Learning",
+      "tagline": "US city crime, ranked by rate, not counts",
+      "description": "Forty-three US cities, four crime categories, FBI data projected to 2025 — ranked by rate per 100,000, not raw counts, in one file you can email to anyone.",
+      "icon": "/assets/icons/v2/crime-dashboard-512.png",
+      "accent": "#deff92",
+      "bg": "#0b0f16",
+      "web": "/crime-dashboard-app",
+      "page": "/crime-dashboard",
+      "shots": [
+        "/assets/previews/crime-dashboard.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.ballast",
+      "name": "Ballast",
+      "twa": "/ballast-app",
+      "release": "ballast-android",
+      "file": "Ballast",
+      "category": "Money",
+      "tagline": "Every bill on a calendar, and what's safe to spend",
+      "description": "Every bill on a real calendar, ninety days projected forward, and one honest number: what's safe to spend today. Local-first — the numbers never leave the browser.",
+      "icon": "/assets/icons/v2/ballast-512.png",
+      "accent": "#9aff92",
+      "bg": "#080705",
+      "web": "/ballast-app",
+      "page": "/ballast",
+      "shots": [
+        "/assets/previews/ballast.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.duely",
+      "name": "Duely",
+      "twa": "/duely-app",
+      "release": "duely-android",
+      "file": "Duely",
+      "category": "Money",
+      "tagline": "Chase overdue invoices, politely",
+      "description": "Overdue invoices, chased politely: three dated reminders, friendly to firm, checked against hard legal guardrails and sent from your own mail app. You pay nothing unless your client does.",
+      "icon": "/assets/icons/v2/duely-512.png",
+      "accent": "#ff929f",
+      "bg": "#0a0c0b",
+      "web": "/duely-app",
+      "page": "/duely",
+      "shots": [
+        "/assets/previews/duely.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.cryptovault",
+      "name": "CryptoVault",
+      "twa": "/cryptovault-app",
+      "release": "cryptovault-android",
+      "file": "CryptoVault",
+      "category": "Tools",
+      "tagline": "Encryption you can read to the bottom of",
+      "description": "Encryption you can read to the bottom of: RSA-4096 and AES-256-GCM in one HTML file, with identities, contacts, signatures and files. No server, no dependency, and no network call allowed.",
+      "icon": "/assets/icons/v2/cryptovault-512.png",
+      "accent": "#92ffdf",
+      "bg": "#050b0d",
+      "web": "/cryptovault-app",
+      "page": "/cryptovault",
+      "shots": [
+        "/assets/previews/cryptovault.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.doccrawler",
+      "name": "DocCrawler",
+      "twa": "/doccrawler-app",
+      "release": "doccrawler-android",
+      "file": "DocCrawler",
+      "category": "Tools",
+      "tagline": "Your documents, read, indexed and asked",
+      "description": "A local document library for the phone — scan a folder, OCR and index everything into SQLite full-text search, auto-tag it, and ask the Librarian questions answered from your own files, with citations. Offline by design.",
+      "icon": "/assets/icons/v2/doccrawler-512.png",
+      "accent": "#fded90",
+      "bg": "#0b0d0a",
+      "web": "/doccrawler-app",
+      "page": "/doccrawler",
+      "shots": [
+        "/assets/previews/doccrawler.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.roku",
+      "name": "Eightysixty",
+      "twa": "/roku-app",
+      "release": "roku-android",
+      "file": "Eightysixty",
+      "category": "Tools",
+      "tagline": "A web remote for your Roku TV",
+      "description": "A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud.",
+      "icon": "/assets/icons/v2/roku-512.png",
+      "accent": "#a38dfb",
+      "bg": "#0a0914",
+      "web": "/roku-app",
+      "page": "/roku",
+      "shots": [
+        "/assets/previews/roku.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.wormeater",
+      "name": "Worm Eater",
+      "twa": "/worm-eater-app",
+      "release": "worm-eater-android",
+      "file": "WormEater",
+      "category": "Health",
+      "tagline": "An ingredient scanner that admits what it doesn't know",
+      "description": "An ingredient scanner for food, cosmetics and personal care that says \"I don't know\" instead of quietly scoring the unknowns as safe. Five open databases.",
+      "icon": "/assets/icons/v2/worm-eater-512.png",
+      "accent": "#fec192",
+      "bg": "#0a0806",
+      "web": "/worm-eater-app",
+      "page": "/worm-eater",
+      "shots": [
+        "/assets/previews/worm-eater.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.sleepcompression",
+      "name": "Sleep Compression",
+      "twa": "/sleep-compression-app",
+      "release": "sleep-compression-android",
+      "file": "SleepCompression",
+      "category": "Health",
+      "tagline": "Sleep restriction, tracked night by night",
+      "description": "A sleep-restriction protocol turned tracker — log nights, get sleep efficiency, and know exactly when to widen the window. The Obsidian vault is included.",
+      "icon": "/assets/icons/v2/sleep-compression-512.png",
+      "accent": "#92d1ff",
+      "bg": "#080705",
+      "web": "/sleep-compression-app",
+      "page": "/sleep-compression",
+      "shots": [
+        "/assets/previews/sleep-compression.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.arsenal",
+      "name": "Mechanic's Arsenal",
+      "twa": "/arsenal-app",
+      "release": "arsenal-android",
+      "file": "MechanicsArsenal",
+      "category": "Engineering",
+      "tagline": "Machines you can take apart in the browser",
+      "description": "Machines you can take apart in the browser — a 2008 Volvo XC70 with 126 cataloged parts, and a FANUC LR Mate robot arm you can jog, solve and run, every spec cited to the manual.",
+      "icon": "/assets/icons/v2/arsenal-512.png",
+      "accent": "#91f7fd",
+      "bg": "#080705",
+      "web": "/arsenal-app",
+      "page": "/arsenal",
+      "shots": [
+        "/assets/previews/arsenal.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.bubbleeditor",
+      "name": "Balloon",
+      "twa": "/bubble-editor-app",
+      "release": "bubble-editor-android",
+      "file": "Balloon",
+      "category": "Engineering",
+      "tagline": "Balloon a drawing for first-article inspection",
+      "description": "Ballooning an engineering drawing for first-article inspection — drag numbered callouts into place, load your own drawing, export the sheet.",
+      "icon": "/assets/icons/v2/bubble-editor-512.png",
+      "accent": "#ff92a4",
+      "bg": "#080705",
+      "web": "/bubble-editor-app",
+      "page": "/bubble-editor",
+      "shots": [
+        "/assets/previews/bubble-editor.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.shop",
+      "name": "The Shop",
+      "twa": "/shop-app",
+      "release": "shop-android",
+      "file": "TheShop",
+      "category": "Engineering",
+      "tagline": "CNC, G-code and steel",
+      "description": "CNC, G-code and steel — the machines that don't accept an approximately right answer.",
+      "icon": "/assets/icons/v2/shop-512.png",
+      "accent": "#fe91d8",
+      "bg": "#0c0d0f",
+      "web": "/shop-app",
+      "page": "/shop",
+      "shots": [
+        "/assets/previews/shop.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.monstrosity",
+      "name": "The Monstrosity",
+      "twa": "/monstrosity-app",
+      "release": "monstrosity-android",
+      "file": "TheMonstrosity",
+      "category": "Engineering",
+      "tagline": "A homelab opened up, layer by layer",
+      "description": "A bolted-together homelab, build log 001 — three machines on a private line, ten drives in one namespace, Traefik routing, and a tunnel as the only door.",
+      "icon": "/assets/icons/v2/monstrosity-512.png",
+      "accent": "#fec391",
+      "bg": "#0b0a08",
+      "web": "/monstrosity-app",
+      "page": "/monstrosity",
+      "shots": [
+        "/assets/previews/monstrosity.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.sonicveil",
+      "name": "Sonic Veil",
+      "twa": "/sonicveil-app",
+      "release": "sonicveil-android",
+      "file": "SonicVeil",
+      "category": "Music",
+      "tagline": "Ten years of ambient and electronic music",
+      "description": "Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.",
+      "icon": "/assets/icons/v2/sonicveil-512.png",
+      "accent": "#90bafd",
+      "bg": "#07090c",
+      "web": "/sonicveil-app",
+      "page": "/sonicveil",
+      "shots": [
+        "/assets/previews/sonicveil.webp"
+      ]
     },
     {
       "id": "org.mentifaber.store",

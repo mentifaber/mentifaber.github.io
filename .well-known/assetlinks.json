@@ -34,5 +34,401 @@
     "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
    ]
   }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.thoughtform",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.tether",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.sideways",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.graveyard",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.rootcause",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.watchyourgrass",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.barycenter",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.pilotfish",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.nullspace",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.meshnet",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.novarac",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.pi",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.phonemcp",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.cartograph",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.orbit",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.proximity",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.neuralsim",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.mooncompatibility",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.omnilogos",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.conflictatlas",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.crimedashboard",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.ballast",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.duely",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.cryptovault",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.doccrawler",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.roku",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.wormeater",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.sleepcompression",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.arsenal",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.bubbleeditor",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.shop",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.monstrosity",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
+ },
+ {
+  "relation": [
+   "delegate_permission/common.handle_all_urls"
+  ],
+  "target": {
+   "namespace": "android_app",
+   "package_name": "org.mentifaber.sonicveil",
+   "sha256_cert_fingerprints": [
+    "B4:DC:86:A0:EC:83:74:E9:F9:84:DA:06:5F:E5:E8:05:2D:14:80:AF:37:C4:F8:5F:F1:48:FB:DE:07:CD:04:B9"
+   ]
+  }
  }
 ]

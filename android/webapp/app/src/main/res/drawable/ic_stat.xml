@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- a four-point spark, in one colour for the status bar: the mark every Mentifaber web app shares there -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M12,2C12.6,7.4 16.6,11.4 22,12C16.6,12.6 12.6,16.6 12,22C11.4,16.6 7.4,12.6 2,12C7.4,11.4 11.4,7.4 12,2z" />
+</vector>

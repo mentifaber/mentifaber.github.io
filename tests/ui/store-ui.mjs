@@ -8,7 +8,8 @@ const DEV = process.argv[3] || "desktop";
 const { S, SHELF } = await import("../gtest/store-load.mjs");
 const sha = "cd".repeat(32);
 const build = (id, vc, extra = {}) => ({ id, versionCode: vc, versionName: "1.0." + (vc - 100), size: 2_400_000, sha256: sha, minSdk: 24, targetSdk: 34, cert: "B4:DC:86", signed: "release", built: "2026-10-24T02:00:00Z", changes: ["Faster installs", "<b>bold</b> change"], permissions: ["android.permission.INTERNET", "android.permission.POST_NOTIFICATIONS", "androidx.x.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"], ...extra });
-const shelf = { apps: [...SHELF.apps, { id: "org.mentifaber.testapp", name: "Test <img src=x onerror=window.__x=1>", category: "Play", tagline: "A test app", description: "One.\n\nTwo.", icon: "/assets/icons/v2/store-512.png", release: "t", file: "T" }, { id: "org.mentifaber.later", name: "Later", category: "Tools", tagline: "Not built yet", description: "Soon.", icon: "/assets/icons/v2/store-512.png", release: "l", file: "L" }] };
+// the hand-built apps and two test ones (the site's web apps, "twa", are checked on their own at the end)
+const shelf = { apps: [...SHELF.apps.filter((a) => !a.twa), { id: "org.mentifaber.testapp", name: "Test <img src=x onerror=window.__x=1>", category: "Play", tagline: "A test app", description: "One.\n\nTwo.", icon: "/assets/icons/v2/store-512.png", release: "t", file: "T" }, { id: "org.mentifaber.later", name: "Later", category: "Tools", tagline: "Not built yet", description: "Soon.", icon: "/assets/icons/v2/store-512.png", release: "l", file: "L" }] };
 const builds = { "autofaber-android/AutoFaber.json": build("org.mentifaber.autofaber", 142), "mentifaber-store/MentifaberStore.json": build("org.mentifaber.store", 150), "t/T.json": build("org.mentifaber.testapp", 120, { minSdk: 26 }) };
 const cat = await S.catalog(shelf, async (u) => { const b = builds[u.split("/download/")[1]]; return b ? new Response(JSON.stringify(b)) : new Response("", { status: 404 }); });
 
@@ -130,6 +131,19 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   await p.goto(URL + "#app/org.mentifaber.bigbuttons"); await p.waitForSelector(".dhead"); assert.match(await p.textContent(".dact"), /Android only for now/);
   ok("on iPhone: web apps install to the Home Screen with a three-step guide, Android-only apps say so, and no APKs are offered");
   if (process.env.SHOTS) { await p.goto(URL); await p.waitForSelector(".list .row"); await p.screenshot({ path: "tests/ui/shots/store-iphone.png", fullPage: true }); }
+  assert.deepEqual(errs, []); await c.close();
+}
+// ---- the whole shelf: every web app is there with its logo, and games, science and the rest each have a category ----
+{
+  const full = await S.catalog(SHELF, async () => new Response("", { status: 404 }));
+  const { c, p, errs } = await mk(false); await c.unroute(/\/store\/catalog\.json/); await c.route(/\/store\/catalog\.json/, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(full) }));
+  await p.goto(URL); await p.waitForSelector(".list .row");
+  assert.equal(await p.locator(".list .row").count(), SHELF.apps.length);
+  const broken = await p.evaluate(async () => { const imgs = [...document.querySelectorAll(".list .row img.ico")]; await Promise.all(imgs.map((i) => (i.loading = "eager", i.decode().catch(() => {})))); return imgs.filter((i) => !i.naturalWidth).map((i) => i.src); });
+  assert.deepEqual(broken, [], "every logo loads");
+  await p.click(".chips button[data-cat=Games]"); const games = await p.locator(".list .row b").allTextContents(); assert.ok(games.includes("Thoughtform") && games.includes("Tether"), games.join());
+  await p.click(".chips button[data-cat='']"); await p.fill("#q", "mind under siege"); await p.waitForFunction(() => document.querySelectorAll(".list .row").length === 1); assert.match(await p.textContent(".list .row b"), /Thoughtform/);
+  ok("the whole shelf: " + SHELF.apps.length + " apps, every logo loads, Thoughtform under Games and found by search");
   assert.deepEqual(errs, []); await c.close();
 }
 await b.close();

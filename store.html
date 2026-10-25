@@ -10,10 +10,11 @@
 <link rel="manifest" href="assets/manifests/store.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Foundry"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta property="og:title" content="Foundry"><meta property="og:description" content="Every Mentifaber app for Android, installed and kept up to date."><meta property="og:image" content="https://mentifaber.org/assets/icons/v2/store-512.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&amp;display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Syne:wght@600;700;800&amp;display=swap">
 <link rel="stylesheet" href="assets/store/store.css">
 </head>
 <body>
+<canvas id="forge" aria-hidden="true"></canvas>
 <header class="top">
   <a class="logo" href="#" title="Foundry · Mentifaber's apps"><img src="assets/icons/v2/store-48.png" alt="" width="34" height="34"><span class="lt">Foundry<small>by Mentifaber</small></span></a>
   <form class="q" id="find" role="search" autocomplete="off"><input id="q" type="search" placeholder="Search apps" aria-label="Search apps" enterkeyhint="search"></form>
@@ -22,8 +23,9 @@
   </nav>
 </header>
 <div id="selfup" class="selfup" hidden></div>
-<main id="main" aria-live="polite"><div class="loading"><span></span>Opening the shelf…</div></main>
+<main id="main" aria-live="polite"><div class="loading"><span></span>Heating the forge…</div></main>
 <footer class="foot">
+  <div class="ticker" aria-hidden="true"><span>Every build signed with one key · SHA-256 checked before install · package verified · signer verified · updates arrive on their own · made by Mentifaber ·</span></div>
   <p><b>Foundry</b> · apps made by Mentifaber, signed with one key and checked before they install. <a href="/">mentifaber.org</a></p>
 </footer>
 <div id="toast" class="toast" role="status" hidden></div>
