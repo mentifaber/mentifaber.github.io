@@ -1806,7 +1806,8 @@ $("mus").value = save.mus === undefined ? 50 : save.mus; $("mus").oninput = (e) 
 $("shk").checked = save.shake !== false; $("shk").onchange = (e) => { save.shake = e.target.checked; persist(); };
 $("rmo").checked = !!save.rmo; $("rmo").onchange = (e) => { save.rmo = e.target.checked; persist(); };
 $("tps").checked = save.tips !== false; $("tps").onchange = (e) => { save.tips = e.target.checked; persist(); };
-$("qual").value = save.qual || "auto"; $("qual").onchange = (e) => { save.qual = e.target.value; persist(); scale = save.qual === "low" ? .38 : save.qual === "high" ? .85 : scale; resize(); };
+$("qual").value = save.qual || "auto"; const qualScale = () => { scale = save.qual === "low" ? .38 : save.qual === "high" ? .85 : scale; resize(); };
+$("qual").onchange = (e) => { save.qual = e.target.value; persist(); qualScale(); }; qualScale();   // a saved Low or High holds from the first frame, not only after changing it
 $("b-fs").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} };
 save.aim = save.aim === undefined ? touchMode : save.aim; $("aim").checked = !!save.aim; $("aim").onchange = (e) => { save.aim = e.target.checked; persist(); };
 $("cvd").value = save.cvd || "std"; $("cvd").onchange = (e) => { save.cvd = e.target.value; persist(); palette(); };
