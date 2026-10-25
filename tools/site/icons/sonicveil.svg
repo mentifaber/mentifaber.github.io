@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#13386e"/><stop offset=".55" stop-color="#081a36"/><stop offset="1" stop-color="#02070f"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#8ad0ff" stop-opacity=".5"/><stop offset="1" stop-color="#8ad0ff" stop-opacity="0"/></radialGradient>
+<linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6f6ff"/><stop offset="1" stop-color="#3a7ad6"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#8ad0ff" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<g fill="none" stroke-linecap="round"><path d="M150 96 C180 180 120 330 150 416" stroke="url(#veil)" stroke-width="10" opacity="0.35"/><path d="M196 96 C226 180 166 330 196 416" stroke="url(#veil)" stroke-width="10" opacity="0.55"/><path d="M242 96 C272 180 212 330 242 416" stroke="url(#veil)" stroke-width="10" opacity="0.8"/><path d="M288 96 C318 180 258 330 288 416" stroke="url(#veil)" stroke-width="10" opacity="0.8"/><path d="M334 96 C364 180 304 330 334 416" stroke="url(#veil)" stroke-width="10" opacity="0.55"/><path d="M380 96 C410 180 350 330 380 416" stroke="url(#veil)" stroke-width="10" opacity="0.35"/></g>
+<path d="M96 256 h40 l20 -60 l26 120 l26 -150 l26 180 l26 -120 l26 70 l20 -40 h82" fill="none" stroke="#ffc94a" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

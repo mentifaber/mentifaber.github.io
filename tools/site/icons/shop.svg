@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#5a1a4a"/><stop offset=".55" stop-color="#280a22"/><stop offset="1" stop-color="#0e030c"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff8ae0" stop-opacity=".5"/><stop offset="1" stop-color="#ff8ae0" stop-opacity="0"/></radialGradient>
+<linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8c0d4"/><stop offset="1" stop-color="#5a5068"/></linearGradient><linearGradient id="shank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0e6ff"/><stop offset="1" stop-color="#8a7a9e"/></linearGradient><linearGradient id="cut" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffd6f4"/><stop offset="1" stop-color="#b23a92"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#ff8ae0" stroke-opacity=".13" stroke-width="2"><path d="M64 0V512"/><path d="M128 0V512"/><path d="M192 0V512"/><path d="M256 0V512"/><path d="M320 0V512"/><path d="M384 0V512"/><path d="M448 0V512"/><path d="M0 64H512"/><path d="M0 128H512"/><path d="M0 192H512"/><path d="M0 256H512"/><path d="M0 320H512"/><path d="M0 384H512"/><path d="M0 448H512"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<path d="M100 330 L256 260 L412 330 L256 400Z" fill="url(#top)" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><path d="M100 330 L256 400 V432 L100 362Z" fill="#3a2a40"/><path d="M412 330 L256 400 V432 L412 362Z" fill="#241a2a"/>
+<rect x="232" y="88" width="48" height="90" rx="6" fill="url(#shank)" stroke="#fff" stroke-opacity=".5" stroke-width="3"/>
+<path d="M232 178 H280 V300 L256 316 L232 300Z" fill="url(#cut)"/><g stroke="#fff" stroke-opacity=".5" stroke-width="5"><path d="M232 200 L280 228 M232 236 L280 264 M232 272 L280 300"/></g>
+<g stroke="#ffc94a" stroke-width="5" stroke-linecap="round"><path d="M290 318 L340 296 M296 330 L356 330 M286 340 L326 372 M222 318 L176 296 M216 332 L168 340"/></g>
+</svg>
