@@ -15,6 +15,11 @@ for (const a of SHELF.apps) {
   assert.ok(a.name && a.tagline && a.description && a.category, a.id + " needs words");
   assert.ok(existsSync(REPO + a.icon), a.id + " icon " + a.icon);
   if (a.prebuilt) { assert.ok(existsSync(REPO + "/" + a.prebuilt), a.id + " prebuilt " + a.prebuilt); assert.ok(a.release && /^[\w-]+$/.test(a.file), a.id + " release/file"); }
+  if (a.twa) {   // one of the site's web apps, built from the shared template: its page, both logo sizes, a package of its own
+    assert.ok(!a.dir && !a.prebuilt, a.id + " is built one way"); assert.ok(existsSync(REPO + a.twa + ".html"), a.id + " page " + a.twa);
+    assert.ok(existsSync(REPO + a.icon.replace("-512.png", "-192.png")), a.id + " launcher icon"); assert.match(a.bg || "", /^#[0-9a-f]{6}$/i, a.id + " colour");
+    assert.ok(a.release && /^[\w-]+$/.test(a.file), a.id + " release/file");
+  }
   if (a.dir) {
     const g = readFileSync(REPO + "/" + a.dir + "/app/build.gradle.kts", "utf8");
     assert.match(g, new RegExp('applicationId = "' + a.id.replace(/\./g, "\\.") + '"'), a.dir + " builds " + a.id);
@@ -22,7 +27,10 @@ for (const a of SHELF.apps) {
   }
 }
 assert.ok(ids.has("org.mentifaber.store") && ids.has("org.mentifaber.autofaber") && ids.has("org.mentifaber.mentiplayer"));
-ok("the shelf lists " + SHELF.apps.length + " apps; each one built here is the package its folder builds, signed with the release key");
+const tpl = readFileSync(REPO + "/android/webapp/app/build.gradle.kts", "utf8"); assert.match(tpl, /applicationId = appId/); assert.match(tpl, /keyAlias = "autofaber"/);
+const wf = readFileSync(REPO + "/.github/workflows/android.yml", "utf8"); assert.match(wf, /ORG_GRADLE_PROJECT_appId: \$\{\{ matrix\.app\.id \}\}/); assert.match(wf, /select\(\.dir or \.prebuilt or \.twa\)/);
+assert.ok(SHELF.apps.filter((a) => a.twa).length >= 30 && SHELF.apps.some((a) => a.id === "org.mentifaber.thoughtform"));
+ok("the shelf lists " + SHELF.apps.length + " apps; each one built here is the package its folder builds (the web apps from one template, each its own package), signed with the release key");
 
 // 2 · the catalog joins words and builds
 let seen = [];
@@ -57,10 +65,10 @@ ok("/store/catalog.json, /store.apk and /store/apk/<id> answer; anything else un
 
 // 5 · the Worker routes to it, and the Foundry app is vouched for at mentifaber.org/store
 const w = readFileSync(REPO + "/src/worker.js", "utf8"); assert.match(w, /import \{ store as storeRoutes \} from "\.\/store\.js"/); assert.match(w, /path === "\/store\.apk" \|\| path\.startsWith\("\/store\/"\)/);
-const links = JSON.parse(readFileSync(REPO + "/.well-known/assetlinks.json", "utf8")); assert.deepEqual(links.map((l) => l.target.package_name).sort(), ["org.mentifaber.autofaber", "org.mentifaber.mentiplayer", "org.mentifaber.store"]);
+const links = JSON.parse(readFileSync(REPO + "/.well-known/assetlinks.json", "utf8")); assert.deepEqual(links.map((l) => l.target.package_name).sort(), ["org.mentifaber.autofaber", "org.mentifaber.mentiplayer", "org.mentifaber.store", ...SHELF.apps.filter((a) => a.twa).map((a) => a.id)].sort());
 assert.equal(new Set(links.map((l) => l.target.sha256_cert_fingerprints[0])).size, 1);
 const man = readFileSync(REPO + "/android/store/app/src/main/AndroidManifest.xml", "utf8"); for (const p of ["REQUEST_INSTALL_PACKAGES", "UPDATE_PACKAGES_WITHOUT_USER_ACTION", "QUERY_ALL_PACKAGES"]) assert.match(man, new RegExp(p));
 const inst = readFileSync(REPO + "/android/store/app/src/main/java/org/mentifaber/store/Installer.java", "utf8"); assert.match(inst, /hex\(md\.digest\(\)\)\.equals\(a\.sha256\)/); assert.match(inst, /a\.id\.equals\(apk\.packageName\)/); assert.match(inst, /Collections\.disjoint\(theirs, ours\)/);
 const br = readFileSync(REPO + "/android/store/app/src/main/java/org/mentifaber/store/MainActivity.java", "utf8"); assert.match(br, /addWebMessageListener\(web, "MentiStore", Collections\.singleton\(ORIGIN\)/); assert.match(br, /ORIGIN = "https:\/\/mentifaber\.org"/);
 const wr = JSON.parse(readFileSync(REPO + "/wrangler.jsonc", "utf8").replace(/^\s*\/\/.*$/gm, "")); for (const r of ["/store/*", "/store.apk", "/autofaber.apk"]) assert.ok(wr.assets.run_worker_first.includes(r), r + " must reach the Worker: unmatched paths get the 404 page, not the Worker");
-ok("the Worker serves the store (its paths are routed to it first); both apps share one signing key in assetlinks; Foundry checks checksum, package and signer, and talks only to mentifaber.org");
+ok("the Worker serves the store (its paths are routed to it first); every app that opens mentifaber.org full screen shares one signing key in assetlinks; Foundry checks checksum, package and signer, and talks only to mentifaber.org");

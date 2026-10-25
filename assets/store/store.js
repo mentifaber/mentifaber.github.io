@@ -117,11 +117,13 @@
   // ---- views ----
   const mb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
   const day = (t) => { const d = new Date(t); return isNaN(d) ? "" : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); };
+  // an app's logo turning inside its rings: the featured app, and the top of an app's page
+  const reactor = (a, size) => `<div class="reactor" aria-hidden="true">${icon(a, size)}<i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i></div>`;
   const icon = (a, size) => `<img class="ico" src="${esc(a.icon || "assets/icons/v2/store-192.png")}" alt="" width="${size}" height="${size}" loading="lazy">`;
   const meta = (a) => [a.category, a.available ? a.versionName && "v" + a.versionName : "", a.available && a.size ? mb(a.size) : ""].filter(Boolean).map(esc).join(" · ");
 
-  function row(a) {
-    return `<li class="row"><a class="rlink" href="#app/${esc(a.id)}">${icon(a, 56)}<span class="rt"><b>${esc(a.name)}</b><small>${esc(a.tagline || "")}</small><small class="m">${meta(a)}</small></span></a><span class="ract" data-act="${esc(a.id)}">${actions(a)}</span></li>`;
+  function row(a, i) {
+    return `<li class="row" style="--ac:${esc(a.accent || "#ffc35a")};--i:${i | 0}"><a class="rlink" href="#app/${esc(a.id)}">${icon(a, 56)}<span class="rt"><b>${esc(a.name)}</b><small>${esc(a.tagline || "")}</small><small class="m">${meta(a)}</small></span></a><span class="ract" data-act="${esc(a.id)}">${actions(a)}</span></li>`;
   }
 
   function home() {
@@ -131,9 +133,14 @@
     const feat = !q && !S.cat && (S.apps.find((a) => (ios ? a.web : a.available) && a.id !== SELF) || S.apps[0]);
     let h = "";
     if (!inApp) h += getStore();
-    if (feat) h += `<section class="hero" style="--ac:${esc(feat.accent || "#f0b24a")}"><div class="hglow"></div>${icon(feat, 96)}<div class="ht"><small class="kick">Featured</small><h1>${esc(feat.name)}</h1><p>${esc(feat.tagline || "")}</p><div class="hact"><span data-act="${esc(feat.id)}" class="big">${actions(feat, true)}</span><a class="btn" href="#app/${esc(feat.id)}">Details</a></div></div></section>`;
-    if (cats.length > 1) h += `<nav class="chips" aria-label="Categories"><button data-cat="" class="${S.cat ? "" : "on"}">All</button>${cats.map((c) => `<button data-cat="${esc(c)}" class="${S.cat === c ? "on" : ""}">${esc(c)}</button>`).join("")}</nav>`;
-    h += `<section class="shelf"><h2>${q ? "Results for “" + esc(S.q.trim()) + "”" : S.cat ? esc(S.cat) : "All apps"} <small>${shown.length} app${shown.length === 1 ? "" : "s"}</small></h2>`;
+    if (feat) {
+      const spec = [feat.category && `<li>${esc(feat.category)}</li>`, feat.available && feat.versionName && `<li>v<b>${esc(feat.versionName)}</b></li>`, feat.available && feat.size && `<li><b>${mb(feat.size)}</b></li>`,
+        ios ? feat.web && `<li class="sig">Home Screen app</li>` : feat.available && `<li class="sig">Signed · verified</li>`].filter(Boolean).join("");
+      h += `<section class="hero" style="--ac:${esc(feat.accent || "#ffc35a")}"><div class="hglow"></div>${reactor(feat, 104)}<div class="ht"><small class="kick">Featured · ${S.apps.length} on the shelf</small><h1>${esc(feat.name)}</h1><p>${esc(feat.tagline || "")}</p>${spec ? `<ul class="spec">${spec}</ul>` : ""}<div class="hact"><span data-act="${esc(feat.id)}" class="big">${actions(feat, true)}</span><a class="btn" href="#app/${esc(feat.id)}">Details</a></div></div></section>`;
+    }
+    const inCat = (c) => S.apps.filter((a) => !(ios && a.id === SELF) && (!c || a.category === c)).length;
+    if (cats.length > 1) h += `<nav class="chips" aria-label="Categories"><button data-cat="" class="${S.cat ? "" : "on"}">All <small>${inCat("")}</small></button>${cats.map((c) => `<button data-cat="${esc(c)}" class="${S.cat === c ? "on" : ""}">${esc(c)} <small>${inCat(c)}</small></button>`).join("")}</nav>`;
+    h += `<section class="shelf"><h2><span class="idx">01</span> ${q ? "Results for “" + esc(S.q.trim()) + "”" : S.cat ? esc(S.cat) : "All apps"} <small>${shown.length} app${shown.length === 1 ? "" : "s"}</small></h2>`;
     h += shown.length ? `<ul class="list">${shown.map(row).join("")}</ul>` : `<p class="empty">Nothing on the shelf matches that.</p>`;
     return h + `</section>`;
   }
@@ -156,7 +163,7 @@
       a.available && ["Version", esc(a.versionName)], i && ["On this phone", esc(i.versionName || "")],
       a.available && ["Size", mb(a.size)], a.minSdk && ["Needs", esc(andro(a.minSdk))], a.built && ["Updated", esc(day(a.built))], ["Category", esc(a.category || "App")],
     ].filter(Boolean);
-    let h = `<a class="back" href="#">← All apps</a><section class="dhead" style="--ac:${esc(a.accent || "#f0b24a")}">${icon(a, 104)}<div><h1>${esc(a.name)}</h1><p class="dev">Mentifaber</p><p class="tag">${esc(a.tagline || "")}</p></div></section>`;
+    let h = `<a class="back" href="#">← All apps</a><section class="dhead" style="--ac:${esc(a.accent || "#ffc35a")}">${reactor(a, 96)}<div><h1>${esc(a.name)}</h1><p class="dev">Mentifaber</p><p class="tag">${esc(a.tagline || "")}</p></div></section>`;
     h += `<div class="dact big" data-act="${esc(a.id)}">${actions(a, true)}</div>`;
     if (!inApp && android && a.available && a.id !== SELF) h += `<p class="hint">Get installs Foundry first; from then on ${esc(a.name)} installs and updates from it. APK only downloads this app alone, and you'd update it by hand.</p>`;
     h += `<dl class="stats">${stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
@@ -181,10 +188,10 @@
   function updates() {
     if (!inApp) return `<p class="empty">Updates arrive through the Foundry app on Android. <a href="#about">How it works</a></p>`;
     const due = S.apps.filter(needsUpdate), others = S.apps.filter((a) => have(a) && !needsUpdate(a));
-    let h = `<section class="shelf"><h2>Updates <small>${due.length ? due.length + " ready" : "all up to date"}</small>${due.length > 1 ? ` <button class="btn pri sm" data-do="all">Update all</button>` : ""}</h2>`;
+    let h = `<section class="shelf"><h2><span class="idx">01</span> Updates <small>${due.length ? due.length + " ready" : "all up to date"}</small>${due.length > 1 ? ` <button class="btn pri sm" data-do="all">Update all</button>` : ""}</h2>`;
     h += due.length ? `<ul class="list">${due.map(row).join("")}</ul>` : `<p class="empty">Every installed Mentifaber app is on its latest version.</p>`;
     h += `</section>` + settings();
-    if (others.length) h += `<section class="shelf"><h2>Up to date</h2><ul class="list">${others.map(row).join("")}</ul></section>`;
+    if (others.length) h += `<section class="shelf"><h2><span class="idx">02</span> Up to date</h2><ul class="list">${others.map(row).join("")}</ul></section>`;
     return h;
   }
 
@@ -199,7 +206,7 @@
 
   function installed() {
     const mine = S.apps.filter((a) => have(a));
-    return `<section class="shelf"><h2>Installed <small>${mine.length} app${mine.length === 1 ? "" : "s"}</small></h2>${mine.length ? `<ul class="list">${mine.map(row).join("")}</ul>` : `<p class="empty">No Mentifaber apps on this phone yet. <a href="#">Find one</a></p>`}</section>`;
+    return `<section class="shelf"><h2><span class="idx">01</span> Installed <small>${mine.length} app${mine.length === 1 ? "" : "s"}</small></h2>${mine.length ? `<ul class="list">${mine.map(row).join("")}</ul>` : `<p class="empty">No Mentifaber apps on this phone yet. <a href="#">Find one</a></p>`}</section>`;
   }
 
   function about() {
@@ -247,6 +254,21 @@
     else if (d === "permission" || d === "notifications") call(d);
     else if (d === "reload") load();
   });
+  // "/" jumps to search, as in any good console
+  addEventListener("keydown", (e) => { if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("#q").focus(); } });
+  // the forge's light follows the pointer, and an ingot tilts toward it
+  if (matchMedia("(pointer: fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    let tilted = null;
+    addEventListener("pointermove", (e) => {
+      document.body.style.setProperty("--mx", (e.clientX / innerWidth * 100).toFixed(1) + "%"); document.body.style.setProperty("--my", (e.clientY / innerHeight * 100).toFixed(1) + "%");
+      const r = e.target.closest && e.target.closest(".row");
+      if (tilted && tilted !== r) { tilted.style.removeProperty("--rx"); tilted.style.removeProperty("--ry"); }
+      tilted = r; if (!r) return;
+      const b = r.getBoundingClientRect(), x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5;
+      r.style.setProperty("--ry", (x * 7).toFixed(2) + "deg"); r.style.setProperty("--rx", (-y * 7).toFixed(2) + "deg");
+    }, { passive: true });
+  }
+  forge();
   document.addEventListener("change", async (e) => { if (e.target.id === "auto") { const i = await call("auto", { on: e.target.checked }); if (i) S.info = i; render(); } });
   $("#find").addEventListener("submit", (e) => { e.preventDefault(); $("#q").blur(); });
   $("#q").addEventListener("input", (e) => { S.q = e.target.value; if (route().v !== "home") location.hash = ""; else render(); });
@@ -265,6 +287,27 @@
 
   let tt;
   function toast(msg, bad) { const t = $("#toast"); t.textContent = msg; t.classList.toggle("bad", !!bad); t.hidden = false; clearTimeout(tt); tt = setTimeout(() => { t.hidden = true; }, 5200); }
+
+  // embers rising from the casting floor, behind everything; still when motion is reduced, idle while hidden
+  function forge() {
+    const cv = $("#forge"), cx = cv && cv.getContext("2d"); if (!cx) return;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches, N = innerWidth < 700 ? 34 : 70, E = [];
+    let w = 0, h = 0, dpr = 1;
+    const size = () => { dpr = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    const spawn = (e, any) => Object.assign(e, { x: Math.random() * w, y: any ? Math.random() * h : h + 10, v: .25 + Math.random() * .9, r: .6 + Math.random() * 1.8, s: Math.random() * 6.28, hot: Math.random() < .82 });
+    size(); addEventListener("resize", size); for (let i = 0; i < N; i++) E.push(spawn({}, true));
+    const draw = (t) => {
+      cx.clearRect(0, 0, w, h); cx.globalCompositeOperation = "lighter";
+      for (const e of E) {
+        if (!still) { e.y -= e.v; e.x += Math.sin(t / 900 + e.s) * .35; if (e.y < -10) spawn(e); }
+        const life = Math.max(0, Math.min(1, e.y / h)), a = .15 + .6 * life, g = cx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.r * 5);
+        g.addColorStop(0, e.hot ? `rgba(255,200,120,${a})` : `rgba(130,245,255,${a * .8})`); g.addColorStop(1, "rgba(255,120,40,0)");
+        cx.fillStyle = g; cx.beginPath(); cx.arc(e.x, e.y, e.r * 5, 0, 7); cx.fill();
+      }
+      if (!still) requestAnimationFrame(draw);
+    };
+    if (still) draw(0); else requestAnimationFrame(draw);
+  }
 
   async function load() {
     try {
