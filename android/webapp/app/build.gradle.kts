@@ -15,6 +15,9 @@ val appBg = prop("appBg", "#08080A")
 val appIcon = prop("appIcon", "/assets/icons/v2/store-512.png")          // the 512 px logo; the 192 px one sits beside it
 val appDisplay = prop("appDisplay", "default")                          // "immersive" for games: no status or navigation bar
 
+// a name as Android's resource compiler wants it: apostrophes, quotes, @ and ? escaped ("Mechanic's Arsenal")
+fun aapt(v: String) = v.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace(Regex("^([@?])"), "\\\\$1")
+
 // the app's logo, from the site's own icons: the launcher icon and the splash
 val repo = rootDir.resolve("../..")
 val iconRes = layout.buildDirectory.dir("generated/icon-res")
@@ -34,7 +37,7 @@ android {
         targetSdk = 34
         versionCode = 100 + run
         versionName = "1.0.$run"
-        resValue("string", "app_name", appName)
+        resValue("string", "app_name", aapt(appName))
         resValue("string", "launch_url", "https://mentifaber.org$appPath?from=android")
         resValue("color", "bg", appBg)
         manifestPlaceholders["appPath"] = appPath
