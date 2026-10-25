@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#5e1a12"/><stop offset=".55" stop-color="#2a0a08"/><stop offset="1" stop-color="#0f0302"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff7a5a" stop-opacity=".5"/><stop offset="1" stop-color="#ff7a5a" stop-opacity="0"/></radialGradient>
+<linearGradient id="white" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a120c"/><stop offset="1" stop-color="#140504"/></linearGradient><radialGradient id="iris" cx="50%" cy="50%" r="70%"><stop offset="0" stop-color="#ff8a5a"/><stop offset="1" stop-color="#5e1206"/></radialGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#ff7a5a" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<path d="M76 256 C150 150 362 150 436 256 C362 362 150 362 76 256Z" fill="url(#white)" stroke="#fff" stroke-opacity=".55" stroke-width="4"/>
+<circle cx="256" cy="256" r="86" fill="url(#iris)"/><g fill="none" stroke="#ffd6c4" stroke-opacity=".5" stroke-width="2"><circle cx="256" cy="256" r="58"/><circle cx="256" cy="256" r="30"/><path d="M170 256 H342 M256 170 V342"/></g>
+<path d="M256 256 L256 170 A86 86 0 0 1 330 212Z" fill="#ffc94a" opacity=".55"/><path d="M256 256 L330 212" stroke="#ffc94a" stroke-width="5"/><circle cx="300" cy="226" r="7" fill="#fff"/>
+</svg>

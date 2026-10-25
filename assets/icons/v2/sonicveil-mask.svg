@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><radialGradient id="b" cx="28%" cy="18%" r="105%"><stop offset="0" stop-color="hsl(216 72% 34%)"/><stop offset=".55" stop-color="hsl(234 78% 14%)"/><stop offset="1" stop-color="hsl(248 80% 6%)"/></radialGradient>
-<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<clipPath id="c"><rect width="512" height="512"/></clipPath></defs>
-<g clip-path="url(#c)"><rect width="512" height="512" fill="url(#b)"/><rect width="512" height="512" fill="url(#s)"/>
-<circle cx="256" cy="256" r="150" fill="hsl(216 95% 60%)" opacity=".10"/></g>
-<g transform="translate(256 256) scale(9.2) translate(-12 -12)" fill="none" stroke-linecap="round" stroke-linejoin="round" color="hsl(216 96% 76%)">
-<g stroke="hsl(216 100% 62%)" stroke-width="5.2" opacity=".10"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></g><g stroke="hsl(216 100% 66%)" stroke-width="3" opacity=".22"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></g><g stroke="hsl(216 96% 78%)" stroke-width="1.55"><path d="M4 15v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.6"/></g></g>
-
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#13386e"/><stop offset=".55" stop-color="#081a36"/><stop offset="1" stop-color="#02070f"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#8ad0ff" stop-opacity=".5"/><stop offset="1" stop-color="#8ad0ff" stop-opacity="0"/></radialGradient>
+<linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6f6ff"/><stop offset="1" stop-color="#3a7ad6"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#8ad0ff" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<g fill="none" stroke-linecap="round"><path d="M150 96 C180 180 120 330 150 416" stroke="url(#veil)" stroke-width="10" opacity="0.35"/><path d="M196 96 C226 180 166 330 196 416" stroke="url(#veil)" stroke-width="10" opacity="0.55"/><path d="M242 96 C272 180 212 330 242 416" stroke="url(#veil)" stroke-width="10" opacity="0.8"/><path d="M288 96 C318 180 258 330 288 416" stroke="url(#veil)" stroke-width="10" opacity="0.8"/><path d="M334 96 C364 180 304 330 334 416" stroke="url(#veil)" stroke-width="10" opacity="0.55"/><path d="M380 96 C410 180 350 330 380 416" stroke="url(#veil)" stroke-width="10" opacity="0.35"/></g>
+<path d="M96 256 h40 l20 -60 l26 120 l26 -150 l26 180 l26 -120 l26 70 l20 -40 h82" fill="none" stroke="#ffc94a" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
 </svg>

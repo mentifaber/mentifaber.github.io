@@ -1,10 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><radialGradient id="b" cx="28%" cy="18%" r="105%"><stop offset="0" stop-color="hsl(330 72% 34%)"/><stop offset=".55" stop-color="hsl(348 78% 14%)"/><stop offset="1" stop-color="hsl(362 80% 6%)"/></radialGradient>
-<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<clipPath id="c"><rect width="512" height="512" rx="116"/></clipPath></defs>
-<g clip-path="url(#c)"><rect width="512" height="512" fill="url(#b)"/><rect width="512" height="512" fill="url(#s)"/>
-<circle cx="256" cy="256" r="190" fill="hsl(330 95% 60%)" opacity=".10"/></g>
-<g transform="translate(256 256) scale(11.6) translate(-12 -12)" fill="none" stroke-linecap="round" stroke-linejoin="round" color="hsl(330 96% 76%)">
-<g stroke="hsl(330 100% 62%)" stroke-width="5.2" opacity=".10"><path d="M12 7.5v11"/><path d="M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4"/><path d="M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9"/><path d="M11.2 6 9.8 3.8M12.8 6l1.4-2.2"/></g><g stroke="hsl(330 100% 66%)" stroke-width="3" opacity=".22"><path d="M12 7.5v11"/><path d="M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4"/><path d="M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9"/><path d="M11.2 6 9.8 3.8M12.8 6l1.4-2.2"/></g><g stroke="hsl(330 96% 78%)" stroke-width="1.55"><path d="M12 7.5v11"/><path d="M12 9.5C9.2 4 3.8 4.3 4.1 8.6c.3 3 3.8 4.2 7.9 3.4M12 9.5c2.8-5.5 8.2-5.2 7.9-.9-.3 3-3.8 4.2-7.9 3.4"/><path d="M12 12.5c-3.3.6-6.3 2.6-5.3 5.4.8 2.1 3.8 1.2 5.3-1.9M12 12.5c3.3.6 6.3 2.6 5.3 5.4-.8 2.1-3.8 1.2-5.3-1.9"/><path d="M11.2 6 9.8 3.8M12.8 6l1.4-2.2"/></g></g>
-<rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="hsl(330 85% 70%)" stroke-opacity=".28" stroke-width="3"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><clipPath id="r"><rect width="512" height="512" rx="116"/></clipPath><g clip-path="url(#r)">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#5e1a4a"/><stop offset=".55" stop-color="#2a0a22"/><stop offset="1" stop-color="#0f030c"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff9ad6" stop-opacity=".5"/><stop offset="1" stop-color="#ff9ad6" stop-opacity="0"/></radialGradient>
+<radialGradient id="pet" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffe6f4"/><stop offset="1" stop-color="#e24a9a"/></radialGradient><linearGradient id="w1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd6ef"/><stop offset="1" stop-color="#c23a8a"/></linearGradient><linearGradient id="w2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset="1" stop-color="#e0962a"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#ff9ad6" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<path d="M256 420 V320" stroke="#7ad06a" stroke-width="8" stroke-linecap="round"/><path d="M256 370 C226 350 206 360 200 380 C222 390 242 384 256 370Z" fill="#7ad06a"/>
+<g transform="translate(256 300)"><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(0)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(60)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(120)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(180)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(240)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(300)"/><circle r="12" fill="#ffc94a"/></g>
+<g transform="translate(256 166)"><path d="M0 0 C-30 -70 -110 -60 -96 -6 C-88 22 -40 26 0 0Z" fill="url(#w1)"/><path d="M0 0 C30 -70 110 -60 96 -6 C88 22 40 26 0 0Z" fill="url(#w1)"/><path d="M0 4 C-24 20 -70 60 -44 74 C-24 82 -6 46 0 4Z" fill="url(#w2)"/><path d="M0 4 C24 20 70 60 44 74 C24 82 6 46 0 4Z" fill="url(#w2)"/><rect x="-4" y="-24" width="8" height="54" rx="4" fill="#3a0a22"/></g>
+</g><rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3"/></svg>

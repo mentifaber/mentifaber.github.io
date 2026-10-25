@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#5e1a4a"/><stop offset=".55" stop-color="#2a0a22"/><stop offset="1" stop-color="#0f030c"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff9ad6" stop-opacity=".5"/><stop offset="1" stop-color="#ff9ad6" stop-opacity="0"/></radialGradient>
+<radialGradient id="pet" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffe6f4"/><stop offset="1" stop-color="#e24a9a"/></radialGradient><linearGradient id="w1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd6ef"/><stop offset="1" stop-color="#c23a8a"/></linearGradient><linearGradient id="w2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset="1" stop-color="#e0962a"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#ff9ad6" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<path d="M256 420 V320" stroke="#7ad06a" stroke-width="8" stroke-linecap="round"/><path d="M256 370 C226 350 206 360 200 380 C222 390 242 384 256 370Z" fill="#7ad06a"/>
+<g transform="translate(256 300)"><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(0)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(60)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(120)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(180)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(240)"/><ellipse cx="0" cy="-26" rx="16" ry="28" fill="url(#pet)" transform="rotate(300)"/><circle r="12" fill="#ffc94a"/></g>
+<g transform="translate(256 166)"><path d="M0 0 C-30 -70 -110 -60 -96 -6 C-88 22 -40 26 0 0Z" fill="url(#w1)"/><path d="M0 0 C30 -70 110 -60 96 -6 C88 22 40 26 0 0Z" fill="url(#w1)"/><path d="M0 4 C-24 20 -70 60 -44 74 C-24 82 -6 46 0 4Z" fill="url(#w2)"/><path d="M0 4 C24 20 70 60 44 74 C24 82 6 46 0 4Z" fill="url(#w2)"/><rect x="-4" y="-24" width="8" height="54" rx="4" fill="#3a0a22"/></g>
+</svg>

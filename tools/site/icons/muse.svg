@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#46196e"/><stop offset=".55" stop-color="#200a36"/><stop offset="1" stop-color="#0a030f"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#d49aff" stop-opacity=".5"/><stop offset="1" stop-color="#d49aff" stop-opacity="0"/></radialGradient>
+<linearGradient id="stem" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1dcff"/><stop offset="1" stop-color="#9a5cff"/></linearGradient><radialGradient id="head" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#f6e8ff"/><stop offset="1" stop-color="#7a3cd6"/></radialGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#d49aff" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<path d="M206 330 V140 L356 108 V292" fill="none" stroke="url(#stem)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/><path d="M206 148 L356 116 V158 L206 190Z" fill="url(#stem)"/>
+<ellipse cx="172" cy="340" rx="46" ry="36" fill="url(#head)" transform="rotate(-20 172 340)"/><ellipse cx="322" cy="302" rx="46" ry="36" fill="url(#head)" transform="rotate(-20 322 302)"/>
+<g fill="none" stroke="#ffc94a" stroke-linecap="round"><path d="M392 270 q22 24 0 48" stroke-width="7"/><path d="M414 252 q38 42 0 84" stroke-width="5" opacity=".6"/><path d="M436 236 q52 58 0 116" stroke-width="3" opacity=".35"/></g>
+</svg>

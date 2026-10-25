@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#0d4a5e"/><stop offset=".55" stop-color="#06222e"/><stop offset="1" stop-color="#02090f"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#7ae8ff" stop-opacity=".5"/><stop offset="1" stop-color="#7ae8ff" stop-opacity="0"/></radialGradient>
+<linearGradient id="wave" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8fbff"/><stop offset="1" stop-color="#2fb7c9"/></linearGradient><linearGradient id="earth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f3a48"/><stop offset="1" stop-color="#031016"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<g fill="none" stroke="#7ae8ff" stroke-opacity=".13" stroke-width="2"><path d="M0 150Q256 40 512 150"/><path d="M0 120Q256 10 512 120"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
+<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
+<path d="M40 470Q256 360 472 470" fill="url(#earth)"/><path d="M40 470Q256 360 472 470" fill="none" stroke="#7ae8ff" stroke-opacity=".6" stroke-width="3"/>
+<path d="M60 140Q256 52 452 140" fill="none" stroke="#7ae8ff" stroke-width="6" stroke-opacity=".55" stroke-dasharray="2 12" stroke-linecap="round"/>
+<path d="M128 380 L192 118 L256 352 L320 118 L384 380" fill="none" stroke="url(#wave)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+<g fill="#ffc94a"><path d="M118 404 L128 362 L138 404Z"/><path d="M374 404 L384 362 L394 404Z"/></g><circle cx="128" cy="358" r="7" fill="#fff"/><circle cx="384" cy="358" r="7" fill="#fff"/>
+</svg>
