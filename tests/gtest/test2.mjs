@@ -3,6 +3,8 @@ const H = await import("./harness.mjs");
 const { call, calls, settle, setReflect, db } = H; let n = 0; const ok = (m) => console.log("  ✓ " + (++n) + " " + m);
 const M = "workers-ai|@cf/openai/gpt-oss-120b";
 const { asksSystems } = await import("./src/hive-genesis.js");
+// no live feeds here: with internet, a real red alert on Vigil's board would land in the journal ahead of what this checks
+globalThis.fetch = async (u) => { throw new Error("offline in this test: " + (u && u.url || u)); };
 
 // 1 · "test the systems" runs a real check; nothing invented
 for (const t of ["Test system functionality after upgrades", "run a health check", "is everything working?", "how are the systems tonight", "system status"]) assert.ok(asksSystems(t), t);
