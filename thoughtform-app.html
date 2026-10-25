@@ -887,7 +887,7 @@ function toast(t) { const el = $("powerup"); el.textContent = t; el.classList.ad
 const TIPS = ["DOUBLE-JUMP, THEN DASH, TO CLEAR A SWARM", "LANCES LOCK ON: STEP SIDEWAYS WHEN THE RED LINE STOPS MOVING", "THE CRITIC'S RED RING: JUMP AS IT REACHES YOU", "THE BARRIER TURNS BLOCKED SHOTS INTO FOCUS", "KNOTS SPLIT. FINISH THE PIECES", "ELITES SHIMMER GOLD AND ALWAYS DROP RESOLVE", "THE BEAM PIERCES EVERY THOUGHT IN A LINE", "REWRITE HEALS YOU FOR EVERY KILL IT MAKES"];
 function tip() { if (save.tips === false) return; const el = $("tip"); el.textContent = TIPS[(tip.i = ((tip.i || 0) + 1)) % TIPS.length]; el.classList.add("show"); clearTimeout(tip.t); tip.t = setTimeout(() => el.classList.remove("show"), 4500); }
 function showPerks() {
-  if (state !== "play") return; state = "perk"; keys.clear(); mouseDown = false; lockGrace = performance.now() + 900; document.exitPointerLock && document.exitPointerLock();
+  if (state !== "play") return; state = "perk"; keys.clear(); mouseDown = false; lockGrace = performance.now() + 900; held = false; document.exitPointerLock && document.exitPointerLock();
   const locked = UNLOCKS.filter((u) => !P.kit[u.k]), pool = PERKS.filter((k) => !k.req || P.kit[k.req]), pick = [];
   const nU = !locked.length ? 0 : wave === 1 ? 2 : rand() < .55 ? 1 : 0;   // early waves hand you new tools; later ones mostly sharpen them
   for (let i = 0; i < nU && locked.length; i++) pick.push(locked.splice(rand() * locked.length | 0, 1)[0]);
@@ -1301,7 +1301,7 @@ async function post() {
   board("d-board", v.mode);
 }
 function die() {
-  state = "dead"; SFX.over(); document.exitPointerLock && document.exitPointerLock();
+  state = "dead"; SFX.over(); held = false; document.exitPointerLock && document.exitPointerLock();
   { const cx = codex(); if (P.lastBy !== undefined && KINFO[P.lastBy]) cx.deaths[P.lastBy] = (cx.deaths[P.lastBy] || 0) + 1; }
   const nb = score > save.best; save.best = Math.max(save.best, score); save.bestWave = Math.max(save.bestWave, wave); persist();
   $("d-score").textContent = score; $("d-stat").innerHTML = "WAVE <b>" + wave + "</b> · ERASED <b>" + kills + "</b> · ACCURACY <b>" + (shots ? Math.round(Math.min(1, hits / shots) * 100) : 0) + "%</b><br>" + (nb ? "<b style='color:#ffd36b'>NEW BEST</b>" : "BEST <b>" + save.best + "</b>") +
@@ -1816,9 +1816,10 @@ $("b-codex").onclick = () => { audio(); openCodex("s-title"); }; $("b-pcodex").o
 $("b-xback").onclick = () => { show(codexBack); if (codexBack === "s-title") bestLine(); };
 $("x-tabs").onclick = (e) => { const b = e.target.closest("[data-x]"); if (b) { codexTab = b.dataset.x; openCodex(); } };
 $("perks").onclick = (e) => { const b = e.target.closest(".perk"); if (b) takePerk(+b.dataset.i); };
-let lockGrace = 0;
+let lockGrace = 0, held = false;   // held: the game has the mouse right now (so losing it means you pressed Esc)
 function relock() { if (touchMode || !cv.requestPointerLock || document.pointerLockElement === cv) return; try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
-document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && state === "play" && !touchMode && performance.now() > lockGrace) pause(); });
+// pause only when a lock the game holds is lost mid-play; a release the game asked for (an Insight, a death) can arrive late on a slow device and must not pause the next run
+document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement) { held = true; return; } const was = held; held = false; if (was && state === "play" && !touchMode && performance.now() > lockGrace) pause(); });
 addEventListener("mousemove", (e) => { if (document.pointerLockElement === cv) { look.x += e.movementX; look.y += e.movementY; } });
 cv.addEventListener("mousedown", (e) => { if (state !== "play") return; if (!document.pointerLockElement && !touchMode) { cv.requestPointerLock(); return; } if (e.button === 0) mouseDown = true; if (e.button === 2) surge(); });
 addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; });
