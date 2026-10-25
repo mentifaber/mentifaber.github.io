@@ -70,6 +70,7 @@ body.wk > * { position: relative; z-index: 1; }
 .key svg { width: 15px; height: 15px; }
 .key.big { min-height: 48px; padding: 0 22px; font-size: 12.5px; --c: 10px; }
 .key[hidden] { display: none; }
+.key.soon { cursor: default; color: var(--build); } .key.soon:hover { background: var(--line-2); color: var(--build); } .key.soon:active { transform: none; }
 
 /* ── the drawing sheet: a border with grid references, like any architect's drawing ── */
 .drawing { position: relative; margin: 14px; padding: 26px 30px 30px; border: 1px solid var(--line-2); }

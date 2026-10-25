@@ -34,8 +34,9 @@ jobs:
           BEFORE: ${{ github.event.before }}
           PICK: ${{ github.event.inputs.app }}
         run: |
-          # a web app ("twa") is built from the shared template in android/webapp, so it rebuilds whenever that changes
-          ALL=$(jq -c '[.apps[] | select(.dir or .prebuilt or .twa) | {id, name, dir: (.dir // (if .twa then "android/webapp" else "" end)), prebuilt: (.prebuilt // ""), release, file,
+          # a web app ("twa") is built from the shared template in android/webapp, so it rebuilds whenever that changes; an app
+          # that's "soon" (a demo or site page) isn't built at all
+          ALL=$(jq -c '[.apps[] | select((.dir or .prebuilt or .twa) and .status != "soon") | {id, name, dir: (.dir // (if .twa then "android/webapp" else "" end)), prebuilt: (.prebuilt // ""), release, file,
             twa: (.twa // ""), icon: (.icon // ""), bg: (.bg // "#08080A"), display: (if .category == "Games" then "immersive" else "default" end)}]' android/apps.json)
           if [ "${{ github.event_name }}" = workflow_dispatch ]; then
             [ "${PICK:-all}" = all ] && APPS="$ALL" || APPS=$(jq -c --arg id "$PICK" 'map(select(.id == $id))' <<<"$ALL")

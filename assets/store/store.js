@@ -68,6 +68,7 @@
   const andro = (sdk) => "Android " + (ANDROID[sdk] || "API " + sdk) + "+";
 
   function state(a) {
+    if (a.status === "soon") return { k: "soon" };   // a demo, simulator or site page: not an app to install yet
     if (ios) return a.web ? { k: "ios" } : { k: "iosno" };
     if (!a.available) return { k: "soon" };
     if (!inApp) return { k: "web" };
@@ -120,7 +121,7 @@
   // an app's logo turning inside its rings: the featured app, and the top of an app's page
   const reactor = (a, size) => `<div class="reactor" aria-hidden="true">${icon(a, size)}<i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i></div>`;
   const icon = (a, size) => `<img class="ico" src="${esc(a.icon || "assets/icons/v2/store-192.png")}" alt="" width="${size}" height="${size}" loading="lazy">`;
-  const meta = (a) => [a.category, a.available ? a.versionName && "v" + a.versionName : "", a.available && a.size ? mb(a.size) : ""].filter(Boolean).map(esc).join(" · ");
+  const meta = (a) => [a.category, a.status === "private" ? "Private · invite only" : "", a.available ? a.versionName && "v" + a.versionName : "", a.available && a.size ? mb(a.size) : ""].filter(Boolean).map(esc).join(" · ");
 
   function row(a, i) {
     return `<li class="row" style="--ac:${esc(a.accent || "#ffc35a")};--i:${i | 0}"><a class="rlink" href="#app/${esc(a.id)}">${icon(a, 56)}<span class="rt"><b>${esc(a.name)}</b><small>${esc(a.tagline || "")}</small><small class="m">${meta(a)}</small></span></a><span class="ract" data-act="${esc(a.id)}">${actions(a)}</span></li>`;
@@ -128,9 +129,9 @@
 
   function home() {
     const q = S.q.trim().toLowerCase();
-    const shown = S.apps.filter((a) => !(ios && a.id === SELF) && (!S.cat || a.category === S.cat) && (!q || (a.name + " " + a.tagline + " " + a.category + " " + (a.description || "")).toLowerCase().includes(q)));
+    const shown = S.apps.filter((a) => !(ios && a.id === SELF) && (!S.cat || a.category === S.cat) && (!q || (a.name + " " + a.tagline + " " + a.category + " " + (a.description || "")).toLowerCase().includes(q))).sort((x, y) => (x.status === "soon") - (y.status === "soon"));
     const cats = [...new Set(S.apps.map((a) => a.category).filter(Boolean))];
-    const feat = !q && !S.cat && (S.apps.find((a) => (ios ? a.web : a.available) && a.id !== SELF) || S.apps[0]);
+    const feat = !q && !S.cat && (S.apps.find((a) => (ios ? a.web : a.available) && a.status !== "soon" && a.id !== SELF) || S.apps[0]);
     let h = "";
     if (!inApp) h += getStore();
     if (feat) {
@@ -165,6 +166,8 @@
     ].filter(Boolean);
     let h = `<a class="back" href="#">← All apps</a><section class="dhead" style="--ac:${esc(a.accent || "#ffc35a")}">${reactor(a, 96)}<div><h1>${esc(a.name)}</h1><p class="dev">Mentifaber</p><p class="tag">${esc(a.tagline || "")}</p></div></section>`;
     h += `<div class="dact big" data-act="${esc(a.id)}">${actions(a, true)}</div>`;
+    if (a.status === "soon") h += `<p class="hint">Coming soon: what's here today is a preview${a.web ? ", which you can try on the web" : ""}. It will be installable once it's a finished app.</p>`;
+    else if (a.status === "private") h += `<p class="hint">Private: ${esc(a.name)} works for the people it was made for. You'll need an invite or its password from Mentifaber to get past the first screen.</p>`;
     if (!inApp && android && a.available && a.id !== SELF) h += `<p class="hint">Get installs Foundry first; from then on ${esc(a.name)} installs and updates from it. APK only downloads this app alone, and you'd update it by hand.</p>`;
     h += `<dl class="stats">${stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
     if (a.shots && a.shots.length) h += `<div class="shots">${a.shots.map((s) => `<img src="${esc(s)}" alt="${esc(a.name)} screenshot" loading="lazy">`).join("")}</div>`;
@@ -174,7 +177,7 @@
     if (a.available && !ios) h += `<section class="block safe"><h2>Safety</h2><p>Signed by Mentifaber. Before it installs, Foundry checks that the download's SHA-256 matches the catalog, that it is ${esc(a.name)} and not some other app, and that it carries Mentifaber's signature.</p><p class="m mono">SHA-256 ${esc(a.sha256)}</p>${a.cert ? `<p class="m mono">Signer ${esc(a.cert)}</p>` : ""}</section>`;
     const perms = ios ? [] : (a.permissions || []).map(perm).filter(Boolean);
     if (perms.length) h += `<section class="block"><h2>What it can do</h2><ul class="perms">${[...new Set(perms)].map((p) => `<li>${esc(p)}</li>`).join("")}</ul></section>`;
-    const links = [a.web && `<a class="btn sm" href="${esc(a.web)}">Use it on the web</a>`, a.page && a.page !== "/store" && `<a class="btn sm" href="${esc(a.page)}">About ${esc(a.name)}</a>`].filter(Boolean);
+    const links = [a.web && `<a class="btn sm" href="${esc(a.web)}">${a.status === "soon" ? "Try the preview" : "Use it on the web"}</a>`, a.page && a.page !== "/store" && `<a class="btn sm" href="${esc(a.page)}">About ${esc(a.name)}</a>`].filter(Boolean);
     if (links.length) h += `<p class="links">${links.join(" ")}</p>`;
     return h;
   }

@@ -14,8 +14,9 @@ ROOMNO = {k: i + 1 for i, k in enumerate(LAYOUT[0] + LAYOUT[1])}  # numbered as 
 NAMES = {k: (n, b) for k, n, b in CATS}
 ORDER = [a for k in LAYOUT[0] + LAYOUT[1] for a in A.values() if a["cat"] == k]  # the walk: room by room, bench by bench
 FEAT = {"hive", "barycenter", "nullspace", "pilotfish"}
-LAMP = {"live": "live", "music": "music", "private": "lock", "build": "build", "concept": "build", "stalled": ""}
-STATUS = {"live": "live", "music": "music · live", "private": "private", "build": "being built", "concept": "a concept", "stalled": "paused"}
+LAMP = {"live": "live", "music": "music", "private": "lock", "build": "build", "soon": "build", "concept": "build", "stalled": ""}
+STATUS = {"live": "live", "music": "music · live", "private": "private", "build": "being built", "soon": "coming soon", "concept": "a concept", "stalled": "paused"}
+NOT_READY = {"soon", "build", "concept", "stalled"}   # demos, simulators, samples and site pages: shown, but never offered as an app to install
 LOGO = '<img src="assets/brand/mentifaber-mark-96.png" alt="" width="52" height="52">'
 FIND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>'
 SUITE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM17 14v6M14 17h6"/></svg>'
@@ -38,7 +39,7 @@ def head(title, desc, a=None, og=None):
     if own: icons = f'<link rel="icon" href="{own["fav"]}" sizes="48x48"><link rel="icon" href="{own["tile"]}" sizes="192x192"><link rel="apple-touch-icon" href="{own["apple"]}">'
     elif a: icons = f'<link rel="icon" href="assets/icons/v2/{a["id"]}.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/{a["id"]}-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/{a["id"]}-180.png">'
     else: icons = '<link rel="icon" href="assets/brand/mark.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/mentifaber-48.png" sizes="48x48"><link rel="apple-touch-icon" href="assets/icons/v2/mentifaber-180.png">'
-    man = f'assets/manifests/{a["id"]}.webmanifest' if a and a.get("app") else ("assets/manifests/mentifaber.webmanifest" if not a else "")
+    man = f'assets/manifests/{a["id"]}.webmanifest' if a and a.get("app") and a["status"] not in NOT_READY else ("assets/manifests/mentifaber.webmanifest" if not a else "")
     name = a["name"] if a else "Mentifaber"
     return f"""<!doctype html>
 <html lang="en">
@@ -195,7 +196,8 @@ def page(i):
         S("Inscription", f'<p class="closing gold-text">{c.get("closing", "")}</p>') if c.get("closing") else "",
         S("The same room", f'<ul class="benches adj">{"".join(bench(x) for x in near)}</ul>') if near else "",
     ])
-    if app: acts = f'<button class="key pri big" data-power>Power on</button><a class="key big" href="{esc(app)}">Full screen</a><button class="key big" data-install hidden>{DOWN}Install</button>'
+    if app and a["status"] in NOT_READY: acts = f'<button class="key pri big" data-power>Preview</button><a class="key big" href="{esc(app)}">Full screen</a><span class="key big soon" title="Not an app you can install yet">Coming soon</span>'
+    elif app: acts = f'<button class="key pri big" data-power>Power on</button><a class="key big" href="{esc(app)}">Full screen</a><button class="key big" data-install hidden>{DOWN}Install</button>'
     elif op and op != a.get("href"): acts = f'<a class="key pri big" href="{esc(op)}">Open</a>'
     else: acts = ""
     piece = (f"""<figure class="piece" data-app="{esc(app or "")}">

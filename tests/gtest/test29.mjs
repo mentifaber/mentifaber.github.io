@@ -28,7 +28,7 @@ for (const a of SHELF.apps) {
 }
 assert.ok(ids.has("org.mentifaber.store") && ids.has("org.mentifaber.autofaber") && ids.has("org.mentifaber.mentiplayer"));
 const tpl = readFileSync(REPO + "/android/webapp/app/build.gradle.kts", "utf8"); assert.match(tpl, /applicationId = appId/); assert.match(tpl, /keyAlias = "autofaber"/);
-const wf = readFileSync(REPO + "/.github/workflows/android.yml", "utf8"); assert.match(wf, /ORG_GRADLE_PROJECT_appId: \$\{\{ matrix\.app\.id \}\}/); assert.match(wf, /select\(\.dir or \.prebuilt or \.twa\)/);
+const wf = readFileSync(REPO + "/.github/workflows/android.yml", "utf8"); assert.match(wf, /ORG_GRADLE_PROJECT_appId: \$\{\{ matrix\.app\.id \}\}/); assert.match(wf, /select\(\(\.dir or \.prebuilt or \.twa\) and \.status != "soon"\)/);
 assert.ok(SHELF.apps.filter((a) => a.twa).length >= 30 && SHELF.apps.some((a) => a.id === "org.mentifaber.thoughtform"));
 ok("the shelf lists " + SHELF.apps.length + " apps; each one built here is the package its folder builds (the web apps from one template, each its own package), signed with the release key");
 
@@ -51,6 +51,15 @@ for (const [k, b] of Object.entries(bad)) {
   assert.equal(a.available, false, k); assert.ok(!a.apk && !a.sha256, k); assert.equal(a.name, "AutoFaber", k);
 }
 ok("no build, another app's build, a test-key build, a broken checksum, a bad version, junk or a dead link: the app shows, but can't be installed");
+
+// 3b · a "soon" app (a demo, simulator or site page) is listed but never offered, even when a signed build of it exists
+{ const sa = SHELF.apps.find((x) => x.status === "soon"); assert.ok(sa, "some app is coming soon");
+  const seen2 = []; c = await S.catalog(SHELF, fake({ [sa.release + "/" + sa.file + ".json"]: good(sa.id) }, seen2));
+  const got = c.apps.find((x) => x.id === sa.id); assert.equal(got.available, false); assert.equal(got.status, "soon"); assert.ok(!got.apk && !got.sha256);
+  assert.ok(!seen2.some((u) => u.includes(sa.release + "/")), "its build isn't even fetched");
+  const r = await S.store(new Request("https://mentifaber.org/store/apk/" + sa.id), { waitUntil() {} }, SHELF); assert.equal(r.status, 404);
+  assert.ok(SHELF.apps.filter((x) => x.status === "private").every((x) => x.twa), "private apps stay installable"); }
+ok("a Coming-soon app is listed but never offered: no build fetched, no download, no APK route; private apps stay installable");
 
 // 4 · routes
 const ctx = { waitUntil() {} }, req = (p) => new Request("https://mentifaber.org" + p);
