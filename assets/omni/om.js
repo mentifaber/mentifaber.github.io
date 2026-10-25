@@ -1,4 +1,5 @@
-/* Omnilogos · the lattice, on a verbatim sample. Book → chapter → verse → word, fifteen texts in parallel, and the model
+/* Omnilogos · the lattice. Book → chapter → verse → word: any chapter in up to twenty-two texts in parallel (corpus.js fetches
+   them; a verbatim 24-verse sample in data.js stands in until it has), and the model
    that scores them, running live: normalise every English rendering (spelling, archaic forms, divine names), weight each
    word by TF-IDF across the sample, measure every pair of translations by cosine, then turn the pairs that agree into a
    Beta-posterior attestation score. Pairs inside one transmission line count for less: Geneva agreeing with Tyndale,
@@ -7,9 +8,10 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const O = window.OMNI, BY = Object.fromEntries(O.tr.map((t) => [t.id, t])), EN = O.tr.filter((t) => t.lang === "English");
+let O = window.OMNI, BY = {}, EN = [];   // the texts on show: the built-in sample at first, then whatever chapter corpus.js hands over
 const LINES = { orig: "the originals", V: "Vulgate line", T: "Tyndale line", F: "fresh from the Hebrew and Greek", J: "Jewish", B: "Basic English" };
 const SHORT = { Tyndale: "Tyn", Geneva1599: "Gen", KJV: "KJV", Webster: "Web", ASV: "ASV", DRC: "DRC", YLT: "YLT", Darby: "Dby", Noyes: "Noy", Rotherham: "Rot", JPS: "JPS", BBE: "BBE" };
+const lab = (id) => (BY[id] && BY[id].s) || SHORT[id] || String(id).slice(0, 3);
 const S = { tau: 0.6, min: 0.5, ref: O.refs[0], metric: "cos", word: null, theme: null, tab: "par", normt: false };
 
 // ── normalise: one display word → zero or more tokens ──
@@ -25,9 +27,9 @@ const WORD = /([A-Za-z][A-Za-z'\-]*)/;
 const norm = (t) => (t.match(/[A-Za-z][A-Za-z'\-]*/g) || []).flatMap(toks);
 
 // ── index the sample: documents, document frequency, TF-IDF vectors, every pair ──
-const DOC = {}, FORMS = {}; let N = 0; const DF = {};
-for (const r of O.refs) { DOC[r] = {}; for (const t of EN) { const s = O.v[r][t.id]; if (!s) continue; const tk = norm(s); DOC[r][t.id] = tk; N++; new Set(tk).forEach((w) => (DF[w] = (DF[w] || 0) + 1));
-  (s.match(/[A-Za-z][A-Za-z'\-]*/g) || []).forEach((w) => toks(w).forEach((k) => { const f = (FORMS[k] = FORMS[k] || new Map()), lw = w.toLowerCase(); f.set(lw, (f.get(lw) || 0) + 1); })); } }
+let DOC = {}, FORMS = {}, N = 0, DF = {}, PAIR = {}, TAGS = {};
+
+
 const shown = (k) => { const f = FORMS[k]; return f ? [...f.entries()].sort((a, b) => b[1] - a[1])[0][0] : k; };
 const IDF = (w) => Math.log((1 + N) / (1 + (DF[w] || 0))) + 1;
 const STOP = new Set("a an and the of to in on upon unto for from by with at as is was be are were been am has have had do did shall will would should may might not no nor but or so that this these those which who whom whose what it its he him his she her they them their we us our i me my you your all any every there then than when now also even".split(" ").flatMap(toks));
@@ -35,18 +37,29 @@ const COMMON = (w) => STOP.has(w) || (DF[w] || 0) > N * 0.3;
 function vec(tk) { const m = new Map(); tk.forEach((w) => m.set(w, (m.get(w) || 0) + 1)); let n = 0; for (const [w, c] of m) { const x = c * IDF(w); m.set(w, x); n += x * x; } return { m, n: Math.sqrt(n) }; }
 const cosv = (a, b) => { let d = 0; for (const [w, x] of a.m) { const y = b.m.get(w); if (y) d += x * y; } return a.n && b.n ? d / (a.n * b.n) : 0; };
 const jacv = (a, b) => { const A = new Set(a), B = new Set(b); let i = 0; A.forEach((w) => B.has(w) && i++); return i / (A.size + B.size - i || 1); };
-const PAIR = {};
-for (const r of O.refs) {
-  const ids = EN.map((t) => t.id).filter((id) => DOC[r][id]), V = ids.map((id) => vec(DOC[r][id]));
-  PAIR[r] = { ids, cos: ids.map((_, i) => ids.map((__, j) => (i === j ? 1 : cosv(V[i], V[j])))), jac: ids.map((a, i) => ids.map((b, j) => (i === j ? 1 : jacv(DOC[r][a], DOC[r][b])))) };
-}
+
+
+
+
+
 const wOf = (a, b) => (BY[a].line === BY[b].line ? 0.4 : 1);
 function score(r) { const P = PAIR[r]; let k = 0, n = 0; for (let i = 0; i < P.ids.length; i++) for (let j = i + 1; j < P.ids.length; j++) { const w = wOf(P.ids[i], P.ids[j]); n += w; if (P.cos[i][j] >= S.tau) k += w; } return { k, n, s: (1 + k) / (2 + n) }; }
 const mean = (r, m) => { const P = PAIR[r][m]; let a = 0, c = 0; P.forEach((row, i) => row.forEach((v, j) => { if (j > i) { a += v; c++; } })); return c ? a / c : 0; };
 
 // ── tags: a theme sticks to a verse when 40% of its English lines use one of the theme's words ──
 const THEMES = { creation: ["creat", "heaven", "earth", "begin"], light: ["light", "lamp", "dark", "darknes"], love: ["lov", "charity"], faith: ["faith", "believ", "trust", "hop"], peace: ["peac", "stil", "rest"], life: ["lif", "everlast", "eternal", "death", "perish"], strength: ["strength", "strong", "renew", "weary", "faint"], word: ["word", "law", "comand", "comandment"], time: ["tim", "season"], justice: ["mercy", "just", "justly", "humbl", "humbly", "kindnes"] };
-const TAGS = {}; for (const r of O.refs) { const ids = Object.keys(DOC[r]); TAGS[r] = Object.keys(THEMES).filter((th) => ids.filter((id) => DOC[r][id].some((w) => THEMES[th].includes(w))).length >= ids.length * 0.4); }
+// ── index the texts on show: documents, document frequency, TF-IDF vectors, every pair, and the themes ──
+function index() {
+  BY = Object.fromEntries(O.tr.map((t) => [t.id, t])); EN = O.tr.filter((t) => t.lang === "English");
+  DOC = {}; FORMS = {}; N = 0; DF = {}; PAIR = {}; TAGS = {};
+  for (const r of O.refs) { DOC[r] = {}; for (const t of EN) { const s = O.v[r][t.id]; if (!s) continue; const tk = norm(s); DOC[r][t.id] = tk; N++; new Set(tk).forEach((w) => (DF[w] = (DF[w] || 0) + 1));
+    (s.match(/[A-Za-z][A-Za-z'\-]*/g) || []).forEach((w) => toks(w).forEach((k) => { const f = (FORMS[k] = FORMS[k] || new Map()), lw = w.toLowerCase(); f.set(lw, (f.get(lw) || 0) + 1); })); } }
+  for (const r of O.refs) {
+    const ids = EN.map((t) => t.id).filter((id) => DOC[r][id]), V = ids.map((id) => vec(DOC[r][id]));
+    PAIR[r] = { ids, cos: ids.map((_, i) => ids.map((__, j) => (i === j ? 1 : cosv(V[i], V[j])))), jac: ids.map((a, i) => ids.map((b, j) => (i === j ? 1 : jacv(DOC[r][a], DOC[r][b])))) };
+  }
+  for (const r of O.refs) { const ids = Object.keys(DOC[r]); TAGS[r] = Object.keys(THEMES).filter((th) => ids.filter((id) => DOC[r][id].some((w) => THEMES[th].includes(w))).length >= ids.length * 0.4); }
+}
 
 // ── the lattice ──
 const bookOf = (r) => r.replace(/ \d+:\d+$/, "");
@@ -58,10 +71,10 @@ function drawList() {
     h += '<a data-ref="' + esc(r) + '" class="' + (r === S.ref ? "on" : "") + (S.theme && !TAGS[r].includes(S.theme) ? " dim" : "") + '"><span>' + esc(r.slice(b.length + 1)) + '</span><span class="bar"><i style="width:' + Math.round(sc * 100) + '%"></i></span><span class="mk ' + (ok ? "ok" : "no") + '" title="' + (ok ? "attested" : "below threshold") + '">' + (ok ? "✓" : "·") + "</span></a>";
   }
   $("list").innerHTML = h;
-  $("sum").innerHTML = "<b>" + pass + "</b> of " + O.refs.length + " attested at ≥ " + Math.round(S.min * 100) + "% · sample mean <b>" + Math.round((sum / O.refs.length) * 100) + "%</b>. The full corpus, on the shipped Jaccard model, averages 42.5%.";
+  $("sum").innerHTML = "<b>" + pass + "</b> of " + O.refs.length + " attested at ≥ " + Math.round(S.min * 100) + "% · mean <b>" + Math.round((sum / O.refs.length) * 100) + "%</b>" + (O.live ? " across " + O.tr.filter((t) => t.lang === "English").length + " English texts." : ". This is the built-in sample: the full texts load as soon as the connection allows.");
   $("tauv").textContent = S.tau.toFixed(2); $("minv").textContent = Math.round(S.min * 100) + "%";
 }
-$("themes").innerHTML = Object.keys(THEMES).filter((th) => O.refs.some((r) => TAGS[r].includes(th))).map((th) => '<button data-th="' + th + '">' + th + "</button>").join("");
+function drawThemes() { $("themes").innerHTML = Object.keys(THEMES).filter((th) => O.refs.some((r) => TAGS[r].includes(th))).map((th) => '<button data-th="' + th + '">' + th + "</button>").join(""); }
 
 // ── the parallel view ──
 function cls(tk, r, id) {
@@ -82,7 +95,7 @@ function drawPar() {
   let h = '<div class="vh"><h2>' + esc(r) + '</h2><span class="sc">attestation ' + Math.round(sc.s * 100) + "%" + (sc.s >= S.min ? " · attested" : " · below threshold") + '</span><span class="tg">' + TAGS[r].map((t) => "<span>" + t + "</span>").join("") + "</span></div>";
   h += '<p class="legend"><span class="a">Bright</span>: most other lines use the word. <span class="b">Amber</span>: this line\'s own wording. Dim: words too common to count. Tap a word to follow it.</p>';
   const srcs = O.tr.filter((t) => t.lang !== "English" && v[t.id]);
-  if (srcs.length) h += '<div class="src">' + srcs.map((t) => '<div class="r"><span class="who"><b>' + esc(t.n) + "</b>" + esc(t.lang + " · " + t.y) + '</span><p lang="' + (t.lang === "Hebrew" ? "he" : t.lang === "Greek" ? "grc" : "la") + '"' + (t.dir ? ' dir="rtl"' : "") + ">" + esc(v[t.id]) + "</p></div>").join("") + "</div>";
+  if (srcs.length) h += '<div class="src">' + srcs.map((t) => '<div class="r"><span class="who"><b>' + esc(t.n) + "</b>" + esc(t.lang + " · " + t.y) + '</span><p lang="' + (t.code || (t.lang === "Hebrew" ? "he" : t.lang === "Greek" ? "grc" : "la")) + '"' + (t.dir ? ' dir="rtl"' : "") + ">" + esc(v[t.id]) + "</p></div>").join("") + "</div>";
   for (const line of ["T", "V", "F", "J", "B"]) {
     const ts = EN.filter((t) => t.line === line && v[t.id]); if (!ts.length) continue;
     h += '<div class="ln">' + esc(LINES[line]) + "</div>";
@@ -91,7 +104,7 @@ function drawPar() {
       h += '<div class="row"><span class="who"><b>' + esc(t.n) + "</b>" + esc(t.y) + "</span><p>" + wordsHTML(v[t.id], r, t.id) + (S.normt ? '<span class="nt">' + esc(DOC[r][t.id].join(" ")) + "</span>" : "") + '</p><span class="m" title="mean cosine with the other lines">' + m.toFixed(2) + "</span></div>";
     }
   }
-  if (r.startsWith("Psalms")) h += '<p class="legend" style="margin-top:16px">Psalm numbering differs by tradition: the Vulgate and Douay count this psalm one lower, and the Hebrew counts the superscription as verse 1. The sample is aligned by content.</p>';
+  if (r.startsWith("Psalms")) h += '<p class="legend" style="margin-top:16px">Psalm numbering differs by tradition: the Vulgate and Douay count this psalm one lower, and the Hebrew counts the superscription as verse 1. Here they are matched by chapter, the Greek way mapped back to the Hebrew; a verse can sit one off where a superscription is counted.</p>';
   if (BY.JPS && v.JPS) h += '<p class="legend">This JPS edition writes the divine names as G-d and HaShem; normalising maps them, with Jehovah, Yahweh and the LORD, to one token, so agreement measures the sentence rather than the naming convention.</p>';
   $("par").innerHTML = h;
 }
@@ -99,15 +112,15 @@ function drawPar() {
 // ── the agreement heatmap and the score ──
 function drawAgr() {
   const r = S.ref, P = PAIR[r], M = P[S.metric], n = P.ids.length;
-  let h = "<span></span>" + P.ids.map((id) => '<span class="lab top">' + SHORT[id] + "</span>").join("");
-  P.ids.forEach((a, i) => { h += '<span class="lab">' + SHORT[a] + "</span>" + P.ids.map((b, j) => { const x = M[i][j], same = BY[a].line === BY[b].line; return '<span data-i="' + i + '" data-j="' + j + '" style="background:' + (i === j ? "rgba(242,236,218,.07)" : "rgba(230,180,80," + (0.08 + 0.92 * Math.pow(x, 1.6)).toFixed(3) + ")") + (same && i !== j ? ";outline:1px dashed rgba(242,236,218,.25);outline-offset:-1px" : "") + '"></span>'; }).join(""); });
+  let h = "<span></span>" + P.ids.map((id) => '<span class="lab top">' + lab(id) + "</span>").join("");
+  P.ids.forEach((a, i) => { h += '<span class="lab">' + lab(a) + "</span>" + P.ids.map((b, j) => { const x = M[i][j], same = BY[a].line === BY[b].line; return '<span data-i="' + i + '" data-j="' + j + '" style="background:' + (i === j ? "rgba(242,236,218,.07)" : "rgba(230,180,80," + (0.08 + 0.92 * Math.pow(x, 1.6)).toFixed(3) + ")") + (same && i !== j ? ";outline:1px dashed rgba(242,236,218,.25);outline-offset:-1px" : "") + '"></span>'; }).join(""); });
   $("heat").style.gridTemplateColumns = "30px repeat(" + n + ", minmax(0, 1fr))"; $("heat").innerHTML = h;
   const sc = score(r), mc = mean(r, "cos"), mj = mean(r, "jac");
   $("math").innerHTML = '<span class="big">' + Math.round(sc.s * 100) + "%</span><code>k = " + sc.k.toFixed(1) + " of n = " + sc.n.toFixed(1) + " weighted pairs at cos ≥ " + S.tau.toFixed(2) + "</code><code>(1 + k) / (2 + n) = " + sc.s.toFixed(2) + "</code>" +
     "<span>Pairs inside one line (dashed cells) count 0.4: a revision agreeing with its parent is weak evidence. Pairs across lines count 1.</span>" +
-    "<span>Mean pair score here: cosine <b>" + mc.toFixed(2) + "</b>, Jaccard <b>" + mj.toFixed(2) + "</b>. Jaccard counts every shared word the same, so “and”, “the” and “of” prop up short verses; TF-IDF weights each word by how rare it is across the sample.</span><span><b>Attestation is not truth.</b> It measures how consistently independent lines render a verse, nothing more.</span>";
+    "<span>Mean pair score here: cosine <b>" + mc.toFixed(2) + "</b>, Jaccard <b>" + mj.toFixed(2) + "</b>. Jaccard counts every shared word the same, so “and”, “the” and “of” prop up short verses; TF-IDF weights each word by how rare it is across these verses.</span><span><b>Attestation is not truth.</b> It measures how consistently independent lines render a verse, nothing more.</span>";
 }
-$("heat").addEventListener("pointerover", (e) => { const c = e.target.closest("[data-i]"); if (!c) return; const P = PAIR[S.ref], i = +c.dataset.i, j = +c.dataset.j, a = P.ids[i], b = P.ids[j]; $("hov").textContent = i === j ? BY[a].n : SHORT[a] + " × " + SHORT[b] + " · cos " + P.cos[i][j].toFixed(2) + " · jac " + P.jac[i][j].toFixed(2) + " · " + (BY[a].line === BY[b].line ? "same line, weight 0.4" : "across lines, weight 1"); });
+$("heat").addEventListener("pointerover", (e) => { const c = e.target.closest("[data-i]"); if (!c) return; const P = PAIR[S.ref], i = +c.dataset.i, j = +c.dataset.j, a = P.ids[i], b = P.ids[j]; $("hov").textContent = i === j ? BY[a].n : lab(a) + " × " + lab(b) + " · cos " + P.cos[i][j].toFixed(2) + " · jac " + P.jac[i][j].toFixed(2) + " · " + (BY[a].line === BY[b].line ? "same line, weight 0.4" : "across lines, weight 1"); });
 
 // ── the word level: follow one token through the sample ──
 function drawWord() {
@@ -115,12 +128,13 @@ function drawWord() {
   const rows = O.refs.map((r) => { const ids = Object.keys(DOC[r]); return { r, c: ids.filter((id) => DOC[r][id].includes(tk)).length, n: ids.length }; }).filter((x) => x.c).sort((a, b) => b.c / b.n - a.c / a.n);
   const forms = [...(FORMS[tk] || new Map()).keys()].slice(0, 12);
   el.innerHTML = "<b>Word · <span style=\"color:var(--acc)\">" + esc(shown(tk)) + "</span> <small style=\"color:var(--mute);font:12px ui-monospace,monospace\">token " + esc(tk) + "</small></b><p class=\"mute\">Renderings: " + esc(forms.join(", ")) + ". In " + rows.length + " of " + O.refs.length + " verses; document frequency " + (DF[tk] || 0) + " of " + N + ", idf " + IDF(tk).toFixed(2) + (COMMON(tk) ? ", too common to count for much" : "") + '.</p><div class="conc">' + rows.map((x) => '<a data-ref="' + esc(x.r) + '"><span>' + esc(x.r) + "</span><small>" + x.c + "/" + x.n + " lines</small></a>").join("") + '</div><button class="mini" id="wx" style="justify-self:start;border:1px solid var(--line);background:transparent;border-radius:8px;padding:2px 9px;color:var(--dim);cursor:pointer">clear</button>';
-  $("wx").onclick = () => { S.word = null; el.innerHTML = '<b>Word</b><p class="mute">Tap any word in the parallel view to follow it through the sample.</p>'; drawPar(); graphDraw(); };
+  $("wx").onclick = () => { S.word = null; el.innerHTML = '<b>Word</b><p class="mute">Tap any word in the parallel view to follow it through this chapter.</p>'; drawPar(); graphDraw(); };
 }
 
 // ── the graph: books, verses and the distinctive words they share ──
 const G = { nodes: [], edges: [], hover: null };
-(function build() {
+function buildGraph() {
+  G.nodes = []; G.edges = []; G.hover = null;
   const books = [...new Set(O.refs.map(bookOf))], idx = {};
   books.forEach((b) => { idx["b:" + b] = G.nodes.push({ k: "b", id: b, label: b }) - 1; });
   const top = {};
@@ -141,7 +155,7 @@ const G = { nodes: [], edges: [], hover: null };
     G.nodes.forEach((n) => { n.vx -= n.x * 0.004; n.vy -= n.y * 0.006; n.x += Math.max(-12, Math.min(12, n.vx)) * a; n.y += Math.max(-12, Math.min(12, n.vy)) * a; n.vx *= 0.5; n.vy *= 0.5; });
   }
   G.adj = G.nodes.map(() => new Set()); G.edges.forEach(([i, j]) => { G.adj[i].add(j); G.adj[j].add(i); });
-})();
+}
 const gc = $("gc"), gx = gc.getContext("2d"); let GW = 0, GH = 0, T = { s: 1, ox: 0, oy: 0 };
 function gfit() {
   const r = gc.getBoundingClientRect(); if (!r.width) return; const D = Math.min(2, devicePixelRatio || 1); GW = r.width; GH = r.height; gc.width = GW * D; gc.height = GH * D; gx.setTransform(D, 0, 0, D, 0, 0);
@@ -183,7 +197,14 @@ $("min").addEventListener("input", (e) => { S.min = +e.target.value; drawList();
 $("themes").addEventListener("click", (e) => { const b = e.target.closest("[data-th]"); if (!b) return; S.theme = S.theme === b.dataset.th ? null : b.dataset.th; document.querySelectorAll("#themes button").forEach((x) => x.classList.toggle("on", x.dataset.th === S.theme)); drawList(); });
 document.querySelector(".seg").addEventListener("click", (e) => { const b = e.target.closest("[data-m]"); if (!b) return; S.metric = b.dataset.m; document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b)); drawAgr(); });
 $("normt").addEventListener("change", (e) => { S.normt = e.target.checked; drawPar(); });
-const m = /[#&]v=([^&]+)/.exec(location.hash); if (m) { const r = decodeURIComponent(m[1]); if (O.v[r]) S.ref = r; }
-drawList(); drawPar(); drawAgr();
-window.Omnilogos = { S, score, PAIR, DOC, toks, pick, tab, G };
+// a new set of texts (the sample, or a chapter from corpus.js): index it, rebuild the graph, draw it all
+function use(next, ref) {
+  O = next; index(); buildGraph(); S.word = null; S.theme = null;
+  S.ref = ref && O.v[ref] ? ref : O.v[S.ref] ? S.ref : O.refs[0];
+  drawThemes(); drawList(); drawPar(); drawAgr(); drawWord(); $("wordc").innerHTML = '<b>Word</b><p class="mute">Tap any word in the parallel view to follow it through this chapter.</p>';
+  if (S.tab === "graph") requestAnimationFrame(gfit);
+}
+const m = /[#&]v=([^&]+)/.exec(location.hash);
+use(O, m ? decodeURIComponent(m[1]) : null);
+window.Omnilogos = { S, score, get PAIR() { return PAIR; }, get DOC() { return DOC; }, toks, pick, tab, G, use, get O() { return O; } };
 })();

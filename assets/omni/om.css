@@ -67,3 +67,20 @@ input[type=range] { width: 100%; accent-color: var(--acc); }
   .pipe { display: none; }
   .agr { display: flex; }
 }
+
+/* the corpus: book and chapter, the texts on show, and how the download is going */
+.cnav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cnav select, .cnav button { height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg2); color: var(--ink); padding: 0 10px; font-size: 13px; cursor: pointer; }
+.cnav select:focus-visible, .cnav button:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+#cbook { max-width: 170px; } #cprev, #cnext { width: 32px; padding: 0; font-size: 17px; line-height: 1; }
+.ctexts { color: var(--acc) !important; border-color: rgba(230,180,80,.35) !important; } .ctexts b { margin-left: 4px; font-weight: 600; }
+.cstat { font: 11px/1.3 ui-monospace, monospace; color: var(--mute); } .cstat.bad { color: var(--bad); }
+.cdlg { width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 40px); border: 1px solid var(--line); border-radius: 14px; background: var(--bg2); color: var(--ink); padding: 18px 20px; }
+.cdlg::backdrop { background: rgba(0,0,0,.6); }
+.cdlg h3 { margin: 0 0 6px; font: 600 20px/1.2 var(--serif); } .cdlg h4 { margin: 14px 0 6px; font: 600 11px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--acc); }
+.cdlg .mute { color: var(--mute); font-size: 12.5px; margin: 6px 0; } .cdlg a { color: var(--acc); }
+.ct { display: flex; gap: 10px; align-items: center; padding: 6px 4px; border-radius: 8px; cursor: pointer; } .ct:hover { background: var(--bg3); }
+.ct input { accent-color: var(--acc); width: 17px; height: 17px; } .ct span { display: grid; } .ct small { color: var(--mute); font-size: 12px; }
+.cdlg .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; position: sticky; bottom: -18px; background: var(--bg2); padding: 10px 0 2px; }
+.cdlg .row button { height: 38px; padding: 0 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg3); cursor: pointer; } .cdlg .row .pri { background: var(--acc); color: #1a1205; border-color: transparent; font-weight: 600; }
+@media (max-width: 760px) { .cnav { width: 100%; order: 3; } #cbook { flex: 1; max-width: none; } .cstat { width: 100%; } .pipe { display: none; } }

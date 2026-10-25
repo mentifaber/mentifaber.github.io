@@ -297,8 +297,8 @@
       "release": "phone-mcp-android",
       "file": "PhoneMCP",
       "category": "AI",
-      "tagline": "Watch a model drive an Android phone",
-      "description": "A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.",
+      "tagline": "A console for any MCP server",
+      "description": "Connect to your own MCP server over Streamable HTTP, with a bearer token if it needs one, and see every tool it offers. Each tool gets a form built from its schema; call it and read the raw JSON-RPC both ways. Screenshots and text come back on the phone's screen.\n\nWith no server, it runs a simulated model driving a demo Android phone through ADB, so you can see how the four links fit together.",
       "icon": "/assets/icons/v2/phone-mcp-512.png",
       "accent": "#ff92fd",
       "bg": "#08090d",
@@ -307,7 +307,12 @@
       "shots": [
         "/assets/previews/phone-mcp.webp"
       ],
-      "status": "soon"
+      "features": [
+        "Any Streamable HTTP MCP server",
+        "Forms from each tool's schema",
+        "Every request and reply shown",
+        "A simulated phone to explore"
+      ]
     },
     {
       "id": "org.mentifaber.cartograph",
@@ -371,8 +376,8 @@
       "release": "neural-sim-android",
       "file": "Moodfield",
       "category": "Science",
-      "tagline": "Simulations of emotional state, honestly told",
-      "description": "Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.",
+      "tagline": "Four networks that model a shifting mood",
+      "description": "Four small simulated networks model emotional state as it shifts: watch them settle, push them with stimuli, and see how each one responds. A guide explains every network and control, and the page says plainly what the simulations do and do not show.",
       "icon": "/assets/icons/v2/neural-sim-512.png",
       "accent": "#8ff6fc",
       "bg": "#000000",
@@ -381,7 +386,12 @@
       "shots": [
         "/assets/previews/neural-sim.webp"
       ],
-      "status": "soon"
+      "features": [
+        "Four live networks",
+        "Stimuli and speed controls",
+        "A guide to every part",
+        "An honest account of the limits"
+      ]
     },
     {
       "id": "org.mentifaber.mooncompatibility",
@@ -408,8 +418,8 @@
       "release": "omnilogos-android",
       "file": "Omnilogos",
       "category": "Learning",
-      "tagline": "933,573 verses in one navigable graph",
-      "description": "933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.",
+      "tagline": "Every chapter in 22 public-domain texts, side by side",
+      "description": "Read any chapter of the Bible side by side in up to 22 public-domain texts: the Hebrew Masoretic text, the Greek Septuagint and Textus Receptus, the Latin Vulgate, eleven English translations from Geneva to the World English Bible, and Russian, Czech, Hungarian, Chinese and Vietnamese. Pick the texts you want, jump to any book and chapter, and follow shared words and themes through a live graph.\n\nTexts download once and stay on your device.",
       "icon": "/assets/icons/v2/omnilogos-512.png",
       "accent": "#fdf990",
       "bg": "#0c0b08",
@@ -418,7 +428,12 @@
       "shots": [
         "/assets/previews/omnilogos.webp"
       ],
-      "status": "soon"
+      "features": [
+        "22 public-domain texts",
+        "Originals and translations side by side",
+        "A live graph of shared words and themes",
+        "Downloaded once, kept offline"
+      ]
     },
     {
       "id": "org.mentifaber.conflictatlas",
@@ -531,21 +546,24 @@
     {
       "id": "org.mentifaber.roku",
       "name": "Eightysixty",
-      "twa": "/roku-app",
+      "dir": "android/eightysixty",
       "release": "roku-android",
       "file": "Eightysixty",
       "category": "Tools",
-      "tagline": "A web remote for your Roku TV",
-      "description": "A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud.",
+      "tagline": "A real remote for your Roku TV",
+      "description": "Eightysixty finds every Roku TV and player on your Wi-Fi and drives it directly over Roku's own control protocol: every button, hold to scroll, your channels as a grid, inputs, and a keyboard for search boxes. It shows what's on screen and logs every request it sends.\n\nNo Roku account and no cloud: the commands go from your phone to the TV over your own network. On the TV, Settings › System › Advanced system settings › Control by mobile apps must be enabled.",
       "icon": "/assets/icons/v2/roku-512.png",
       "accent": "#a38dfb",
-      "bg": "#0a0914",
-      "web": "/roku-app",
       "page": "/roku",
       "shots": [
         "/assets/previews/roku.webp"
       ],
-      "status": "soon"
+      "features": [
+        "Finds your Rokus on its own",
+        "Every button and your channels",
+        "Type into search boxes",
+        "No account, no cloud"
+      ]
     },
     {
       "id": "org.mentifaber.wormeater",
@@ -664,7 +682,7 @@
       "file": "SonicVeil",
       "category": "Music",
       "tagline": "Ten years of ambient and electronic music",
-      "description": "Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.",
+      "description": "Sonic Veil's music since 2016, ambient, experimental and electronic, in a full player: the whole catalogue, shuffle and repeat, volume, lock-screen and headset controls, keyboard shortcuts, and it picks up where you left off.",
       "icon": "/assets/icons/v2/sonicveil-512.png",
       "accent": "#90bafd",
       "bg": "#07090c",
@@ -673,7 +691,12 @@
       "shots": [
         "/assets/previews/sonicveil.webp"
       ],
-      "status": "soon"
+      "features": [
+        "The whole catalogue",
+        "Shuffle, repeat and resume",
+        "Lock-screen controls",
+        "Share any track"
+      ]
     },
     {
       "id": "org.mentifaber.store",

@@ -94,7 +94,7 @@ def suite():  # assets/suite.json: what "Install the suite" walks through, one a
     for a in sorted(A.values(), key=lambda a: order.index(a["cat"]) if a["cat"] in order else 99):
         i = a["id"]
         page = os.path.join(ROOT, f"{i}.html")
-        if a["status"] in ("soon", "build", "concept", "stalled"): continue   # not ready for the public: no install
+        if a["status"] in ("soon", "build", "concept", "stalled", "android"): continue   # not ready for the public: no install
         if not (os.path.exists(os.path.join(ROOT, f"assets/manifests/{i}.webmanifest")) and os.path.exists(page) and 'id="mf-app"' in open(page, encoding="utf-8").read()): continue  # the page must carry the shell, which runs the step
         out.append({"id": i, "n": a["name"], "p": f"{i}.html", "ic": OWN_ICON[i]["tile"] if i in OWN_ICON else f"assets/icons/v2/{i}-192.png", "c": dict((c[0], c[1]) for c in CATS).get(a["cat"], ""), "lock": a["status"] == "private"})
     json.dump(out, open(os.path.join(ROOT, "assets/suite.json"), "w"), ensure_ascii=False, separators=(",", ":"))

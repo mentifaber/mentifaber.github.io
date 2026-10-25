@@ -1,12 +1,12 @@
 {
  "kicker": "signals · local network",
- "tagline": "The whole remote in a browser: every button, every input, every channel, and a real keyboard for search boxes, talking straight to the TV. No Roku account, no cloud, no app store.",
+ "tagline": "The whole remote on your phone: every button, every input, every channel, and a real keyboard for search boxes, talking straight to the TV. No Roku account, no cloud.",
  "caps": [
   "ECP on port 8060",
   "SSDP discovery",
   "nothing leaves the house"
  ],
- "launchSub": "A live remote, driving a demo TV over the same protocol, with every request shown",
+ "launchSub": "The Android app drives your real TVs; here in the browser it drives a demo TV over the same protocol, with every request shown",
  "titleTail": "the whole remote in a browser",
  "ledeLabel": "why this exists",
  "story": {
@@ -50,7 +50,7 @@
    "html": "<p>Arrow keys move, Enter is OK, Backspace is Back, Escape is Home. With the keyboard field focused, typing goes to the TV instead.</p>"
   }
  ],
- "scope": "<p>Power off works on every TV. Power on only works on Roku TVs with Fast TV Start enabled: a TV that's fully off has taken its network down with it, so nothing can wake it remotely. The demo has one TV of each kind so you can see the difference. The relay has no login: it's meant for a home network, and anyone on that network could use it, just as they could use the TV's own protocol. <em>The TV and relay on this page are simulated; the requests are the real ones, and the real proof is the living-room TV.</em></p>",
+ "scope": "<p>Power off works on every TV. Power on only works on Roku TVs with Fast TV Start enabled: a TV that's fully off has taken its network down with it, so nothing can wake it remotely. The demo has one TV of each kind so you can see the difference. The relay has no login: it's meant for a home network, and anyone on that network could use it, just as they could use the TV's own protocol. <em>The Android app talks to your real TVs. A browser can't reach a TV on your network, so the TV and relay on this page are simulated; the requests are the real ones, and the real proof is the living-room TV.</em></p>",
  "closing": "The remote was always a web page. It just never had one.",
  "manifest": {
   "categories": [

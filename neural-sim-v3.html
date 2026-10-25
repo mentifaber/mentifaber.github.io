@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Moodfield · neural simulation v3 — V-PROJECT</title>
+<title>Moodfield · four networks, one field</title>
+<meta name="description" content="Moodfield: four networks firing side by side (a human brain, the same brain on psilocybin, an unstable AI and a stable one), which you can stimulate, merge into one field and split again.">
 <link rel="icon" href="assets/icons/neural-sim.png">
 <link rel="apple-touch-icon" href="assets/icons/neural-sim.png">
+<link rel="manifest" href="assets/manifests/neural-sim.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Moodfield">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -24,7 +27,17 @@ button:hover{background:#180000}
 #bx{color:#0088ff;border:1px solid #0044aa;display:none}
 #br{color:#444;border:1px solid #333}
 #bfs{color:#888;border:1px solid #555}
-#inf{font-size:9px;color:#222;margin-left:auto;text-align:right}
+#inf{font-size:10px;color:#6a6a6a;margin-left:auto;margin-right:64px;text-align:right}
+#bh{color:#ddd;border:1px solid #666}
+#guide{margin:auto;max-width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:#0a0a0a;color:#cfcfcf;border:1px solid #333;border-radius:10px;padding:22px 24px;font:13px/1.55 ui-sans-serif,-apple-system,"Segoe UI",sans-serif}
+#guide::backdrop{background:rgba(0,0,0,.72)}
+#guide h2{font:600 20px/1.2 ui-sans-serif,sans-serif;color:#fff;margin-bottom:4px}#guide h3{font:600 11px/1 monospace;letter-spacing:.14em;text-transform:uppercase;color:#888;margin:16px 0 6px}
+#guide p{margin:6px 0}#guide .nets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}#guide .nets div{border:1px solid #222;border-radius:8px;padding:8px 10px}#guide .nets b{display:block;font:600 12px/1.3 monospace}
+#guide kbd{font:11px monospace;border:1px solid #444;border-radius:4px;padding:1px 5px;color:#ddd}#guide .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-top:6px}
+#guide .go{margin-top:16px;display:flex;gap:8px;justify-content:flex-end}#guide .go button{font:600 13px ui-sans-serif,sans-serif;padding:9px 16px;border-radius:7px}
+#guide .go .pri{background:#00cc44;color:#000;border:0}#guide .go .sec{background:none;color:#aaa;border:1px solid #444}
+#guide .fine{color:#7a7a7a;font-size:12px;border-top:1px solid #222;padding-top:10px;margin-top:14px}
+@media (max-width:560px){#guide .nets{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -36,8 +49,23 @@ button:hover{background:#180000}
   <button id="bx" onclick="splitNets()">SPLIT</button>
   <button id="br" onclick="resetSim()">RESET</button>
   <button id="bfs" onclick="toggleFS()">⛶ FULLSCREEN</button>
+  <button id="bh" onclick="guide()" aria-label="What am I looking at?">? GUIDE</button>
   <span id="inf"></span>
 </div>
+<dialog id="guide" aria-labelledby="gt">
+  <h2 id="gt">Moodfield</h2>
+  <p>Four networks fire side by side. Each one is a simulation drawn from a model of how its kind of system behaves; watch how differently the same stimulus spreads through each.</p>
+  <div class="nets">
+    <div><b style="color:#ff6a3a">HUMAN BRAIN</b>Regions with excitation and inhibition in balance, firing in rhythms.</div>
+    <div><b style="color:#b46aff">PSILOCYBIN BRAIN</b>The same brain with its thresholds lowered: more cross-talk, more entropy, the default network loosened.</div>
+    <div><b style="color:#ff4a4a">INCONSISTENT AI</b>A layered network with dead units and vanishing signal: it misfires and fills the gaps.</div>
+    <div><b style="color:#3ad66a">CONSISTENT AI</b>Residual connections and normalised layers: signal arrives where it should, in step.</div>
+  </div>
+  <h3>What you can do</h3>
+  <div class="keys"><kbd>▶ PLAY</kbd><span>run the simulation (Space)</span><kbd>STIMULUS</kbd><span>fire the input regions of all four at once (S)</span><kbd>MERGE ×4</kbd><span>fold the four into one field, with feedback running between them; SPLIT pulls them apart (M)</span><kbd>RESET</kbd><span>new networks, from scratch (R)</span><kbd>⛶</kbd><span>full screen (F) · this guide (?)</span></div>
+  <p class="fine">Moodfield is a visual simulation, not a measurement. It shows how the models behave, and makes no claim about what any of these systems feel or whether they are conscious.</p>
+  <div class="go"><button class="sec" onclick="document.getElementById('guide').close()">Close</button><button class="pri" onclick="document.getElementById('guide').close();if(!run)togglePlay()">Start it running</button></div>
+</dialog>
 <script>
 // ── GLOBALS ───────────────────────────────────────────────────────────────────
 const C=document.getElementById('c');
@@ -573,7 +601,7 @@ function drawCrossConns(mp){
 // ── LABELS (overlay canvas) ───────────────────────────────────────────────────
 const LNAMES=['HUMAN BRAIN','PSILOCYBIN BRAIN','INCONSISTENT AI','CONSISTENT AI'];
 const LSUBS=['biological · E/I balance · oscillatory','5-HT2A agonism · elevated entropy · DMN disruption','dead ReLU · gradient vanishing · hallucination','residual net · layer norm · synchronized'];
-const LCOLS=['rgba(100,20,0','rgba(80,0,140','rgba(100,0,0','rgba(0,90,20'];
+const LCOLS=['rgba(255,106,58','rgba(180,106,255','rgba(255,74,74','rgba(58,214,106'];   // bright enough to read on black
 
 function drawLabels(mp){
   oct.clearRect(0,0,DW,DH);
@@ -589,10 +617,10 @@ function drawLabels(mp){
       }
       const fs=Math.max(8,DW/140)|0;
       oct.font=`bold ${fs}px monospace`;
-      oct.fillStyle=`${LCOLS[i]},${sp*.6})`;
+      oct.fillStyle=`${LCOLS[i]},${sp*.95})`;
       oct.fillText(LNAMES[i],i*PW+6,14);
       oct.font=`${Math.max(7,DW/165)|0}px monospace`;
-      oct.fillStyle=`${LCOLS[i]},${sp*.3})`;
+      oct.fillStyle=`${LCOLS[i]},${sp*.65})`;
       oct.fillText(LSUBS[i],i*PW+6,26);
     }
   }
@@ -677,6 +705,16 @@ function toggleFS(){
   else document.exitFullscreen();
 }
 
+// the guide: first visit, the ? button, and the keys
+function guide(){const g=document.getElementById('guide');if(!g.open)g.showModal();}
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey||document.getElementById('guide').open)return;
+  const k=e.key.toLowerCase();
+  if(k===' '){e.preventDefault();togglePlay();}else if(k==='s')injectStimulus();else if(k==='m'){merged||merging?splitNets():startMerge();}
+  else if(k==='r')resetSim();else if(k==='f')toggleFS();else if(k==='?'||k==='h')guide();
+});
+try{if(!localStorage.getItem('moodfield:seen')){localStorage.setItem('moodfield:seen','1');setTimeout(guide,400);}}catch(e){}
+
 // ── STARTUP ───────────────────────────────────────────────────────────────────
 window.addEventListener('resize',()=>{resize();if(nets)initNets();render(true);render(true);});
 document.addEventListener('fullscreenchange',()=>{resize();if(nets)initNets();render(true);render(true);});
@@ -686,5 +724,6 @@ render(true);firstDraw=false;render(true);firstDraw=true;
 requestAnimationFrame(loop);
 </script>
 <script src="assets/js/mf-version.js" data-app="neural-sim" data-pos="br" defer></script>
+<script src="/assets/install.js" defer></script>
 </body>
 </html>

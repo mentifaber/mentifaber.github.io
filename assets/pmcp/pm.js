@@ -1,4 +1,6 @@
-/* Phone MCP · the console. What a model sees when it holds a phone over MCP: JSON-RPC 2.0 tool calls that travel a
+/* Phone MCP · the console. Two modes: the simulated phone below, and "Your server", which connects to any real MCP server
+   over Streamable HTTP and calls its tools for real (see live(), further down).
+   The simulated one: What a model sees when it holds a phone over MCP: JSON-RPC 2.0 tool calls that travel a
    tunnel, a hand-written server and ADB to a device. The device here is simulated; the shapes, the tools (v1.0's 15) and
    the failure modes are the real ones: a quick tunnel's hostname rotates on restart, ADB authorisation is per host key,
    and doze kills a background listener without telling anyone. SMS is gated, and a hung send reports "likely sent",
@@ -9,6 +11,9 @@ const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const rnd = (n) => Math.random().toString(36).slice(2, 2 + n);
 const S = { host: "", cfg: "", adb: "ok", doze: false, app: null, sms: [], text: "", clip: "", batt: 54, notif: ["Termux: server running on :8765", "Messages: 1 new"], id: 1 };
+// live mode: your own server (see live(), further down)
+const L = { on: false, url: "", token: "", sid: "", ready: false, tools: [], name: "" };
+try { L.url = localStorage.getItem("pmcp:url") || ""; L.token = sessionStorage.getItem("pmcp:token") || ""; } catch (e) {}
 const newHost = () => (S.host = ["bright", "quiet", "amber", "north", "cedar", "lunar"][Math.floor(Math.random() * 6)] + "-" + ["river", "stone", "field", "harbor", "signal"][Math.floor(Math.random() * 5)] + "-" + rnd(4) + ".trycloudflare.com");
 newHost(); S.cfg = S.host;
 const TOOLS = {
@@ -43,12 +48,24 @@ $("chain").addEventListener("click", (e) => { const b = e.target.closest("[data-
 
 // ── the console ──
 function log(cls, text, obj) { const p = document.createElement("pre"); p.className = cls; p.textContent = obj ? text + "\n" + JSON.stringify(obj, null, 2) : text; $("log").appendChild(p); $("log").scrollTop = $("log").scrollHeight; }
-$("tool").innerHTML = Object.entries(TOOLS).map(([k, t]) => '<option value="' + k + '">' + k + " · " + esc(t.d) + "</option>").join("");
-const setArgs = () => ($("args").value = JSON.stringify(TOOLS[$("tool").value].a));
+function toolMenu() {
+  const list = L.on ? L.tools.map((t) => [t.name, t.description || ""]) : Object.entries(TOOLS).map(([k, t]) => [k, t.d]);
+  $("tool").innerHTML = list.length ? list.map(([k, d]) => '<option value="' + esc(k) + '">' + esc(k) + (d ? " · " + esc(d.split("\n")[0].slice(0, 80)) : "") + "</option>").join("") : '<option value="">connect, then list the tools</option>';
+}
+// example arguments: the simulated phone's own, or built from a live tool's input schema (defaults, examples, else a blank of the right type)
+function example(sc) {
+  const o = {}, P = (sc && sc.properties) || {}, req = new Set((sc && sc.required) || []);
+  for (const [k, v] of Object.entries(P)) { if (!req.has(k) && Object.keys(P).length > 4) continue;
+    o[k] = v.default !== undefined ? v.default : v.examples ? v.examples[0] : v.enum ? v.enum[0] : v.type === "number" || v.type === "integer" ? 0 : v.type === "boolean" ? false : v.type === "array" ? [] : v.type === "object" ? {} : ""; }
+  return o;
+}
+const setArgs = () => { const n = $("tool").value; $("args").value = JSON.stringify(L.on ? example((L.tools.find((t) => t.name === n) || {}).inputSchema) : (TOOLS[n] || {}).a || {}, null, L.on ? 1 : 0); };
+toolMenu();
 $("tool").addEventListener("change", setArgs); setArgs();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function walk(upto) { for (let i = 0; i < LINKS.length; i++) { document.querySelectorAll(".node").forEach((n, j) => n.classList.toggle("act", j === i)); document.querySelectorAll(".hop").forEach((h) => h.classList.toggle("act", +h.dataset.h === i)); await sleep(110); if (i >= upto) break; } document.querySelectorAll(".node,.hop").forEach((n) => n.classList.remove("act")); }
 async function rpc(method, params) {
+  if (L.on) return live(method, params);
   const req = { jsonrpc: "2.0", id: S.id++, method, params }; log("req", "→ POST https://" + S.cfg + "/mcp", req);
   if (S.cfg !== S.host) { await walk(1); return log("err", "← 404 Not Found (the tunnel at that hostname no longer exists)"); }
   if (S.doze) { await walk(2); return log("err", "← 502 Bad Gateway: the tunnel is up but nothing is listening behind it"); }
@@ -58,6 +75,72 @@ async function rpc(method, params) {
   log("res", "←", { jsonrpc: "2.0", id: req.id, result: { content: [{ type: "text", text: out }] } });
 }
 $("list").addEventListener("click", () => rpc("tools/list", {}));
+
+// ── your own server: MCP over Streamable HTTP, for real ──
+// The page speaks the protocol itself: initialize (keeping the session id the server hands back), notifications/initialized,
+// then tools/list and tools/call. Replies come as JSON or as a server-sent event stream; both are read. The server has to
+// allow this page's origin (CORS), and expose Mcp-Session-Id if it uses sessions. Images in a result land on the screen.
+async function post(body, notify) {
+  const h = { "content-type": "application/json", accept: "application/json, text/event-stream", "mcp-protocol-version": "2025-06-18" };
+  if (L.sid) h["mcp-session-id"] = L.sid; if (L.token) h.authorization = "Bearer " + L.token;
+  const r = await fetch(L.url, { method: "POST", headers: h, body: JSON.stringify(body) });
+  const sid = r.headers.get("mcp-session-id"); if (sid) L.sid = sid;
+  if (notify) return { status: r.status };
+  const ct = r.headers.get("content-type") || "", txt = await r.text();
+  if (!r.ok) throw new Error(r.status + " " + r.statusText + (txt ? ": " + txt.slice(0, 300) : ""));
+  if (ct.includes("text/event-stream")) {   // the reply is one of the events: the message with our id
+    for (const chunk of txt.split(/\r?\n\r?\n/)) { const data = chunk.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim()).join("\n"); if (!data) continue;
+      try { const m = JSON.parse(data); if (m.id === body.id) return m; } catch (e) {} }
+    throw new Error("the event stream ended without a reply");
+  }
+  return JSON.parse(txt);
+}
+async function connect() {
+  L.url = $("lurl").value.trim(); L.token = $("ltok").value.trim(); L.sid = ""; L.ready = false; L.tools = [];
+  if (!/^https?:\/\//.test(L.url)) return lstat("Enter the server's URL, starting https://", true);
+  try { localStorage.setItem("pmcp:url", L.url); sessionStorage.setItem("pmcp:token", L.token); } catch (e) {}
+  lstat("Connecting…");
+  try {
+    const init = { jsonrpc: "2.0", id: S.id++, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "Phone MCP console", version: "2.0" } } };
+    log("req", "→ POST " + L.url, init); const r = await post(init); log(r.error ? "err" : "res", "←", r);
+    if (r.error) throw new Error(r.error.message || "initialize failed");
+    L.name = (r.result && r.result.serverInfo && (r.result.serverInfo.name + " " + (r.result.serverInfo.version || ""))) || "MCP server";
+    await post({ jsonrpc: "2.0", method: "notifications/initialized" }, true);
+    L.ready = true; lstat("Connected to " + L.name + (L.sid ? " · session " + L.sid.slice(0, 8) : "")); await live("tools/list", {});
+  } catch (e) {
+    lstat(/Failed to fetch|NetworkError|Load failed/i.test(String(e.message)) ? "Couldn't reach it. Check the URL, that the server is up, and that it allows this page's origin (CORS)." : String(e.message || e), true);
+    log("err", "← " + (e.message || e));
+  }
+}
+async function live(method, params) {
+  if (!L.ready) return lstat("Connect first.", true);
+  const req = { jsonrpc: "2.0", id: S.id++, method, params }; log("req", "→ POST " + L.url, req);
+  try {
+    const r = await post(req), shown = JSON.parse(JSON.stringify(r, (k, v) => (k === "data" && typeof v === "string" && v.length > 120 ? "[" + Math.round(v.length * 0.75 / 1024) + " KB, shown on the screen]" : v)));
+    log(r.error || (r.result && r.result.isError) ? "err" : "res", "←", shown);
+    if (method === "tools/list" && r.result) { L.tools = r.result.tools || []; toolMenu(); setArgs(); lstat("Connected to " + L.name + " · " + L.tools.length + " tools"); }
+    if (method === "tools/call" && r.result) shot(r.result.content || []);
+  } catch (e) { log("err", "← " + (e.message || e)); }
+}
+function shot(content) {   // what a tool returned, on the phone's screen: an image if there is one, else its text
+  const img = content.find((c) => c.type === "image" && c.data), txt = content.filter((c) => c.type === "text").map((c) => c.text).join("\n");
+  $("screen").innerHTML = img ? '<img class="shot" alt="What the tool returned" src="data:' + esc(img.mimeType || "image/png") + ";base64," + esc(img.data) + '">' : '<pre class="out">' + esc(txt || "(no output)") + "</pre>";
+}
+const lstat = (t, bad) => { const el = $("lstat"); if (el) { el.textContent = t; el.classList.toggle("bad", !!bad); } };
+function mode(on) {
+  L.on = on; document.querySelectorAll("#mode button").forEach((b) => b.classList.toggle("on", (b.dataset.m === "live") === on));
+  document.body.classList.toggle("is-live", on);
+  if (on) { $("chain").innerHTML = '<div class="node live"><b><i></i>Your MCP server</b><small>Streamable HTTP · JSON-RPC 2.0</small>'
+      + '<label>Server URL<input id="lurl" type="url" placeholder="https://your-tunnel.trycloudflare.com/mcp" value="' + esc(L.url) + '" autocomplete="url"></label>'
+      + '<label>Bearer token <em>(if it needs one; kept for this tab only)</em><input id="ltok" type="password" value="' + esc(L.token) + '" autocomplete="off"></label>'
+      + '<button id="lgo" class="btn pri">Connect</button><p id="lstat" class="lstat" role="status">' + (L.ready ? "Connected to " + esc(L.name) : "Not connected") + '</p>'
+      + '<p class="hint">Any MCP server that speaks Streamable HTTP and allows this page\'s origin works: a phone over Termux and a tunnel, as here, or anything else. Images it returns, such as screenshots, appear on the screen.</p></div>';
+    $("lgo").onclick = connect; $("lurl").onkeydown = (e) => { if (e.key === "Enter") connect(); };
+    $("ep").textContent = L.ready ? L.url : ""; $("screen").innerHTML = '<pre class="out">Connect to your server, list its tools, then call one.</pre>';
+  } else { chain(); draw(); }
+  toolMenu(); setArgs();
+}
+document.getElementById("mode").addEventListener("click", (e) => { const b = e.target.closest("[data-m]"); if (b) mode(b.dataset.m === "live"); });
 $("send").addEventListener("click", () => { let a = {}; try { a = JSON.parse($("args").value || "{}"); } catch (e) { return log("err", "arguments aren't valid JSON"); } rpc("tools/call", { name: $("tool").value, arguments: a }); });
 
 // ── the (simulated) phone ──

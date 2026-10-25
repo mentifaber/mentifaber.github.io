@@ -40,5 +40,5 @@ def from_icon(app, icon):
 
 
 if __name__ == "__main__":
-    for p in autofaber() + from_icon("mentiplayer", "mentiplayer") + from_icon("store", "store"):
+    for p in autofaber() + from_icon("mentiplayer", "mentiplayer") + from_icon("store", "store") + from_icon("eightysixty", "roku"):
         print("made", os.path.relpath(p, ROOT), os.path.getsize(p) // 1024, "KB")
