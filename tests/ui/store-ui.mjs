@@ -135,7 +135,9 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
 }
 // ---- the whole shelf: every web app is there with its logo, and games, science and the rest each have a category ----
 {
-  const full = await S.catalog(SHELF, async () => new Response("", { status: 404 }));
+  // every app has a build: the Coming-soon ones must still not be offered, and they come last
+  const full = await S.catalog(SHELF, async (u) => { const a = SHELF.apps.find((x) => u.endsWith("/" + x.release + "/" + x.file + ".json")); return a ? new Response(JSON.stringify(build(a.id, 130))) : new Response("", { status: 404 }); });
+  const soonN = SHELF.apps.filter((a) => a.status === "soon").length;
   const { c, p, errs } = await mk(false); await c.unroute(/\/store\/catalog\.json/); await c.route(/\/store\/catalog\.json/, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(full) }));
   await p.goto(URL); await p.waitForSelector(".list .row");
   assert.equal(await p.locator(".list .row").count(), SHELF.apps.length);
@@ -143,7 +145,13 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   assert.deepEqual(broken, [], "every logo loads");
   await p.click(".chips button[data-cat=Games]"); const games = await p.locator(".list .row b").allTextContents(); assert.ok(games.includes("Thoughtform") && games.includes("Tether"), games.join());
   await p.click(".chips button[data-cat='']"); await p.fill("#q", "mind under siege"); await p.waitForFunction(() => document.querySelectorAll(".list .row").length === 1); assert.match(await p.textContent(".list .row b"), /Thoughtform/);
-  ok("the whole shelf: " + SHELF.apps.length + " apps, every logo loads, Thoughtform under Games and found by search");
+  await p.fill("#q", ""); await p.waitForFunction((n) => document.querySelectorAll(".list .row").length === n, SHELF.apps.length);
+  const tail = await p.$$eval(".list .row", (rs) => rs.map((r) => r.querySelector(".ract").textContent.trim()));
+  assert.equal(tail.filter((t) => t === "Coming soon").length, soonN); assert.ok(tail.slice(-soonN).every((t) => t === "Coming soon"), "Coming soon goes last: " + tail.join("|"));
+  await p.click('.list .row:last-child .rlink'); await p.waitForSelector(".dhead"); assert.match(await p.textContent(".dact"), /Coming soon/); assert.match(await p.textContent(".hint"), /preview/);
+  assert.equal(await p.locator(".dact a[download], .dact .btn.pri").count(), 0, "nothing to install on a Coming-soon app's page");
+  await p.goto(URL + "#app/org.mentifaber.barycenter"); await p.waitForSelector(".dhead"); assert.match(await p.textContent(".hint"), /invite or its password/);
+  ok("the whole shelf: " + SHELF.apps.length + " apps, every logo loads, Thoughtform under Games and found by search; the " + soonN + " Coming-soon apps are last and offer nothing to install; private apps say they need an invite");
   assert.deepEqual(errs, []); await c.close();
 }
 await b.close();

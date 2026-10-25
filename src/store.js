@@ -9,7 +9,9 @@ import SHELF from "../android/apps.json";
 
 export const RELEASES = "https://github.com/mentifaber/mentifaber.github.io/releases/download/";
 const ID = /^[a-z][\w]*(\.[a-z][\w]*)+$/i;
-const PUBLIC = ["id", "name", "category", "tagline", "description", "features", "icon", "accent", "web", "page", "shots"];
+const PUBLIC = ["id", "name", "category", "tagline", "description", "features", "icon", "accent", "web", "page", "shots", "status"];
+// "soon": a demo, simulator, sample or site page. Listed as Coming soon, never offered for install, whatever builds exist.
+const soon = (a) => a.status === "soon";
 const BUILT = ["versionCode", "versionName", "size", "sha256", "minSdk", "targetSdk", "cert", "built", "commit", "changes", "permissions"];
 
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
@@ -25,7 +27,7 @@ export function build(a, b) {
 export async function catalog(shelf = SHELF, get = fetch) {
   const apps = await Promise.all(shelf.apps.filter((a) => ID.test(a.id || "")).map(async (a) => {
     let b = null;
-    if (a.release && a.file) {
+    if (a.release && a.file && !soon(a)) {
       try {
         const r = await get(RELEASES + a.release + "/" + a.file + ".json", { cf: { cacheTtl: 90, cacheEverything: true } });
         if (r.ok) b = build(a, await r.json());
@@ -50,7 +52,7 @@ export async function store(req, ctx, shelf = SHELF, get = fetch) {
   }
   const m = path === "/store.apk" ? ["", "org.mentifaber.store"] : path.match(/^\/store\/apk\/([\w.]+)$/);
   if (m) {
-    const a = shelf.apps.find((x) => x.id === m[1] && x.release && x.file);
+    const a = shelf.apps.find((x) => x.id === m[1] && x.release && x.file && !soon(x));
     if (!a) return new Response("No such app in Foundry.", { status: 404, headers: { "content-type": "text/plain" } });
     return new Response(null, { status: 302, headers: { location: apkUrl(a), "cache-control": "public, max-age=300" } });
   }

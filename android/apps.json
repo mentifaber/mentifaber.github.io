@@ -1,5 +1,5 @@
 {
-  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app with a \"prebuilt\" APK instead is built in its own private repo and dropped in android/prebuilt; it is re-signed with the release key and published the same way (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. Each app with a \"twa\" path is one of the site's web apps, built from the shared template in android/webapp with its own id, name, colour and logo. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
+  "_": "Foundry's shelf. Each app here with a \"dir\" is built, signed with the release key and published by .github/workflows/android.yml whenever its folder changes. An app with a \"prebuilt\" APK instead is built in its own private repo and dropped in android/prebuilt; it is re-signed with the release key and published the same way (SayTap: mentifaber/Big-Button). Foundry reads each build's details (version, size, checksum, what changed) from its release, so editing words here never forces an update. Each app with a \"twa\" path is one of the site's web apps, built from the shared template in android/webapp with its own id, name, colour and logo. \"status\": \"soon\" lists an app as Coming soon (a demo, simulator, sample or site page): never offered for install, and not built; \"private\" means it works but needs an invite or a password, and it stays installable. To add an app: put its Gradle project in android/<name>, give it an entry here, push.",
   "apps": [
     {
       "id": "org.mentifaber.autofaber",
@@ -123,7 +123,8 @@
       "page": "/sideways",
       "shots": [
         "/assets/previews/sideways.webp"
-      ]
+      ],
+      "status": "private"
     },
     {
       "id": "org.mentifaber.graveyard",
@@ -141,7 +142,8 @@
       "page": "/graveyard",
       "shots": [
         "/assets/previews/graveyard.webp"
-      ]
+      ],
+      "status": "private"
     },
     {
       "id": "org.mentifaber.rootcause",
@@ -156,7 +158,8 @@
       "accent": "#ffd34a",
       "bg": "#0a0b0d",
       "web": "/rootcause-app",
-      "page": "/rootcause"
+      "page": "/rootcause",
+      "status": "private"
     },
     {
       "id": "org.mentifaber.watchyourgrass",
@@ -192,7 +195,8 @@
       "page": "/barycenter",
       "shots": [
         "/assets/previews/barycenter.webp"
-      ]
+      ],
+      "status": "private"
     },
     {
       "id": "org.mentifaber.pilotfish",
@@ -210,7 +214,8 @@
       "page": "/pilotfish",
       "shots": [
         "/assets/previews/pilotfish.webp"
-      ]
+      ],
+      "status": "private"
     },
     {
       "id": "org.mentifaber.nullspace",
@@ -238,7 +243,7 @@
       "file": "Hopline",
       "category": "Communication",
       "tagline": "Chat across a LoRa mesh, no towers needed",
-      "description": "A browser front-end for a Meshtastic LoRa mesh. Every radio is a relay and no tower sits in the middle — kill any node and the traffic finds another road.",
+      "description": "A front-end for a Meshtastic LoRa mesh. Connect your radio over USB or Bluetooth and message the mesh, see every node, how many hops away it is and how strong it sounds: every radio is a relay and no tower sits in the middle. No radio? A simulated valley of radios shows how the mesh floods messages.",
       "icon": "/assets/icons/v2/meshnet-512.png",
       "accent": "#ff92c4",
       "bg": "#07060b",
@@ -264,7 +269,8 @@
       "page": "/novarac",
       "shots": [
         "/assets/previews/novarac.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.pi",
@@ -274,7 +280,7 @@
       "file": "Nobody",
       "category": "AI",
       "tagline": "A terse voice assistant that never goes silent",
-      "description": "A voice assistant that runs on the phone itself, not in an app store. Camera, GPS, contacts and 22 device tools never leave it; only chat text goes out. When the voice drops, it degrades instead of going silent.",
+      "description": "Nobody, in the browser: a terse voice assistant with a fluid orb you tap to talk to. It answers out loud, reads the time, your battery and where you are, sets timers, opens and shares things, and when the voice drops it degrades to text instead of going silent.\n\nOn Android it runs full screen in Chrome's own engine, with the microphone and speech working just as they do on the web.",
       "icon": "/assets/icons/v2/pi-512.png",
       "accent": "#8efbb7",
       "bg": "#000000",
@@ -300,7 +306,8 @@
       "page": "/phone-mcp",
       "shots": [
         "/assets/previews/phone-mcp.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.cartograph",
@@ -354,7 +361,8 @@
       "page": "/proximity",
       "shots": [
         "/assets/previews/proximity.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.neuralsim",
@@ -372,7 +380,8 @@
       "page": "/neural-sim",
       "shots": [
         "/assets/previews/neural-sim.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.mooncompatibility",
@@ -408,7 +417,8 @@
       "page": "/omnilogos",
       "shots": [
         "/assets/previews/omnilogos.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.conflictatlas",
@@ -508,7 +518,7 @@
       "file": "DocCrawler",
       "category": "Tools",
       "tagline": "Your documents, read, indexed and asked",
-      "description": "A local document library for the phone — scan a folder, OCR and index everything into SQLite full-text search, auto-tag it, and ask the Librarian questions answered from your own files, with citations. Offline by design.",
+      "description": "A document library that lives in your browser: drop in PDFs, Word files, notes and photos of paper, and DocCrawler reads them (OCR included), indexes and tags everything for full-text search, and lets you ask the Librarian questions answered from your own files, with citations. Nothing leaves the device.",
       "icon": "/assets/icons/v2/doccrawler-512.png",
       "accent": "#fded90",
       "bg": "#0b0d0a",
@@ -534,7 +544,8 @@
       "page": "/roku",
       "shots": [
         "/assets/previews/roku.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.wormeater",
@@ -615,8 +626,8 @@
       "release": "shop-android",
       "file": "TheShop",
       "category": "Engineering",
-      "tagline": "CNC, G-code and steel",
-      "description": "CNC, G-code and steel — the machines that don't accept an approximately right answer.",
+      "tagline": "Program a lathe in G-code and watch it cut",
+      "description": "A lathe you program in G-code: write or load a program for a FANUC-style turning centre, run it a block at a time or all at once, and watch the tool cut the stock, with the cycle time, cutting path and every move it makes. Start from sample parts, or type your own.",
       "icon": "/assets/icons/v2/shop-512.png",
       "accent": "#fe91d8",
       "bg": "#0c0d0f",
@@ -642,7 +653,8 @@
       "page": "/monstrosity",
       "shots": [
         "/assets/previews/monstrosity.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.sonicveil",
@@ -660,7 +672,8 @@
       "page": "/sonicveil",
       "shots": [
         "/assets/previews/sonicveil.webp"
-      ]
+      ],
+      "status": "soon"
     },
     {
       "id": "org.mentifaber.store",
