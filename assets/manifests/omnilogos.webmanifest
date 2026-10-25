@@ -2,7 +2,7 @@
   "id": "/omnilogos",
   "name": "Omnilogos · Mentifaber",
   "short_name": "Omnilogos",
-  "description": "933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.",
+  "description": "Read any chapter of the Bible side by side in up to 22 public-domain texts, from the Hebrew, Greek and Latin originals to English and five other languages, and follow shared words and themes through a live graph.",
   "start_url": "/omnilogos-app.html",
   "scope": "/omnilogos",
   "display": "standalone",

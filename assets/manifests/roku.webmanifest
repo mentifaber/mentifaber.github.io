@@ -2,7 +2,7 @@
   "id": "/roku",
   "name": "Eightysixty · Mentifaber",
   "short_name": "Eightysixty",
-  "description": "A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud.",
+  "description": "A remote for Roku TVs. The Android app finds every Roku on your Wi-Fi and drives it directly: every button, channels, inputs and a real keyboard, with no account and no cloud. In a browser it drives a demo TV.",
   "start_url": "/roku-app.html",
   "scope": "/roku",
   "display": "standalone",

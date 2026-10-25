@@ -56,7 +56,7 @@ def apps():
     for j in site():
         i = _id(j["href"])
         out.append({"id": i, "name": j["name"], "href": j["href"] if j["href"] != "#" else None, "status": j["status"], "cat": CAT_OF.get(j.get("cat"), "tools"),
-                    "desc": j.get("desc", ""), "added": j.get("added"), "hue": HUE.get(i, 38), "glyph": GLYPH.get(i, GLYPH["mentifaber"]), "app": APP_URL.get(i)})
+                    "desc": j.get("desc", ""), "added": j.get("added"), "hue": HUE.get(i, 38), "glyph": GLYPH.get(i, GLYPH["mentifaber"]), "app": APP_URL.get(i), "android": j.get("android")})
     return out
 
 if __name__ == "__main__":

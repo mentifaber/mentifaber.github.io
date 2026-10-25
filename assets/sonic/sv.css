@@ -25,3 +25,13 @@ h3 { margin: 22px 0 8px; font-size: 13px; letter-spacing: .14em; text-transform:
 .more { color: var(--mute); font-size: 13px; margin-top: 16px; }
 #sc { grid-column: 1 / -1; width: 100%; height: 166px; border: 0; border-radius: 16px; }
 @media (max-width: 860px) { main { grid-template-columns: 1fr; } .now { min-height: 360px; } }
+
+/* shuffle, repeat, volume, share, and what the keys do */
+.ctl .tog { font-size: 18px; color: var(--mute); } .ctl .tog[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); } .ctl .tog.one::after { content: "1"; position: absolute; font: 700 9px/1 ui-monospace, monospace; margin: 14px 0 0 14px; }
+.ctl .tog { position: relative; }
+.xtra { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+.vol { display: flex; align-items: center; gap: 8px; color: var(--dim); } .vol input { width: 120px; accent-color: var(--gold); }
+.lnk { background: none; border: 0; padding: 0; color: var(--gold); font: 500 13px/1 ui-sans-serif, sans-serif; cursor: pointer; text-decoration: none; } .lnk:hover { text-decoration: underline; }
+.keys { margin: 10px 0 0; color: var(--mute); font: 11px/1.4 ui-monospace, monospace; }
+.recent li { cursor: pointer; } .recent li:hover { color: var(--ink, #fff); }
+@media (pointer: coarse) { .keys { display: none; } }

@@ -1,4 +1,5 @@
-/* Eightysixty · the remote, driving a demo TV. Every Roku listens on port 8060 for the External Control Protocol: plain
+/* Eightysixty · the remote. In a browser it drives a demo TV; inside the Eightysixty Android app (android/eightysixty) the
+   app's bridge finds the real Rokus on the Wi-Fi and every press goes to them (see REAL below). In a browser: Every Roku listens on port 8060 for the External Control Protocol: plain
    HTTP, no pairing, no PIN. The real remote is a page plus a tiny Node relay on the home network (a browser can't send the
    SSDP multicast that finds the TV, and the TV doesn't send the headers a page would need). Here the relay and the TVs are
    simulated, but every request in the log is the one the real remote sends, and the TVs behave the way real ones do:
@@ -37,6 +38,28 @@ function req(method, path, status, note, body) {
   if (body) { line(esc(body), "x"); lastReq = null; }
 }
 const say = (t, cls) => { line(esc(t), cls || "w"); lastReq = null; };
+
+// ── the Android app: Eightysixty for Android loads this page and lends it what a browser can't do, finding TVs on the Wi-Fi
+// (SSDP) and talking to them on port 8060 (window.RokuBridge, given to mentifaber.org alone). Then every button is real.
+const NB = window.RokuBridge || null, REAL = !!NB, pend = new Map(); let rq = 0;
+if (NB) NB.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } const f = pend.get(m.req); if (f) { pend.delete(m.req); f(m); } };
+const bridge = (op, x) => new Promise((res) => { const r = ++rq; pend.set(r, res); NB.postMessage(JSON.stringify(Object.assign({ op, req: r }, x || {}))); setTimeout(() => { if (pend.has(r)) { pend.delete(r); res({ ok: false, error: "the app didn't answer" }); } }, 9000); });
+const tag = (xml, k) => { const m = new RegExp("<" + k + ">([^<]*)</" + k + ">").exec(xml || ""); return m ? m[1].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">") : ""; };
+async function ecp(method, path, note, at) {
+  const t = TV.get(at || ip); if (!t) return {};
+  const m = await bridge("ecp", { ip: t.d.ip, method, path }); req(method, path, m.status || 0, note || m.error || "");
+  return m;
+}
+function realTV(ipAddr, info) {
+  const d = { ip: ipAddr, name: tag(info, "user-device-name") || tag(info, "friendly-device-name") || "Roku at " + ipAddr, model: tag(info, "model-name") || tag(info, "friendly-model-name") || "Roku",
+    sw: tag(info, "software-version"), fast: tag(info, "supports-wake-on-wlan") === "true" || tag(info, "power-mode") !== "", tv: tag(info, "is-tv") === "true" };
+  const t = TV.get(ipAddr) || { real: true, v: { v: "real" }, tiles: [], active: "", on: true };
+  t.d = d; t.on = !/Standby|Off|Suspend/i.test(tag(info, "power-mode") || "PowerOn"); TV.set(ipAddr, t); return t;
+}
+let refreshT = 0;
+function refresh() { clearTimeout(refreshT); refreshT = setTimeout(async () => { const t = cur(); if (!t || !t.real) return;   // what's on screen now
+  const m = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/active-app" }); if (m.status === 200) { t.active = tag(m.body, "app") || "Home"; t.on = true; }
+  else if (!m.status) t.on = false; draw(); }, 700); }
 $("clr").addEventListener("click", () => { L.innerHTML = ""; lastReq = null; });
 
 // ── what a key does to the TV ──
@@ -111,6 +134,7 @@ function lit(ch) { // keyboard input only lands in a focused text field
 function send(k, opt) {
   const t = cur(); if (!t) return;
   const path = (opt && opt.verb ? "/" + opt.verb + "/" : "/keypress/") + k;
+  if (t.real) { ecp("POST", path).then(refresh); return; }
   if (!t.on) {
     if (!t.d.fast) { req("POST", k === "Power" ? "/keypress/PowerOn" : path, 0); if (!t.warned) { say(t.d.name + " is fully off, and its network went down with it. PowerOn needs Fast TV Start, which this TV doesn't have on. Tap the TV to press its physical power button."); t.warned = true; } return; }
     if (k === "PowerOn" || k === "Power") { req("POST", "/keypress/PowerOn", 200, "waking"); t.on = true; t.boot = performance.now(); goHome(t); draw(); return; }
@@ -121,7 +145,8 @@ function send(k, opt) {
   const note = key(k); req("POST", path, 200, note); draw();
 }
 function launch(id) {
-  const t = cur(); if (!t) return; if (!t.on) { req("POST", "/launch/" + id, t.d.fast ? 200 : 0, t.d.fast ? "standby: only PowerOn wakes it" : ""); return; }
+  const t = cur(); if (!t) return;
+  if (t.real) { ecp("POST", "/launch/" + id, (t.tiles.find((x) => x.id === id) || {}).n).then(refresh); return; } if (!t.on) { req("POST", "/launch/" + id, t.d.fast ? 200 : 0, t.d.fast ? "standby: only PowerOn wakes it" : ""); return; }
   const tile = t.tiles.find((x) => x.id === id); req("POST", "/launch/" + id, 200, open(t, tile)); draw();
 }
 
@@ -130,6 +155,12 @@ const grad = (c) => "linear-gradient(135deg," + c + ", color-mix(in srgb," + c +
 const tileH = (a, f, extra) => '<div class="tile' + (f ? " f" : "") + '" style="background:' + grad(a.c) + '">' + esc(a.n) + (extra || "") + "</div>";
 function draw() {
   const t = cur(), s = $("scr"); if (!t) return;
+  if (t.real) {   // a real TV: what it told us, not a picture of its screen
+    $("led").className = "led" + (t.on ? "" : " stby"); $("hops").textContent = "this phone → " + t.d.ip + ":8060";
+    s.className = "scr real"; s.innerHTML = '<div class="rinfo"><b>' + esc(t.d.name) + "</b><span>" + esc([t.d.model, t.d.sw && "software " + t.d.sw].filter(Boolean).join(" · ")) + "</span><em>" + (t.on ? "on" : "standby or off") + "</em>"
+      + '<div class="now"><small>on screen</small>' + esc(t.active || "…") + "</div></div>";
+    return;
+  }
   $("led").className = "led" + (t.on ? "" : " stby"); $("hops").textContent = "page → relay → " + t.d.ip + ":8060";
   document.querySelectorAll("#inputs button").forEach((b) => b.classList.toggle("on", t.on && ((t.v.v === "tuner" && b.dataset.k === "InputTuner") || (t.v.v === "input" && b.textContent === t.v.n))));
   if (!t.on) { s.className = "scr off"; s.innerHTML = ""; return; }
@@ -159,7 +190,7 @@ let lastT = performance.now();
 function tick(now, once) {
   if (!once) requestAnimationFrame(tick);
   const dt = Math.min(0.1, (now - lastT) / 1000); if (!once) lastT = now;
-  const t = cur(); if (!t) return;
+  const t = cur(); if (!t || t.real) return;
   if (t.boot && now - t.boot > 1300) { t.boot = 0; draw(); return; }
   const osd = $("osd"), showOsd = t.on && !t.boot && now - t.osdAt < 1600;
   osd.hidden = !showOsd; if (showOsd) osd.innerHTML = (t.mute ? "🔇 Muted" : "🔉 " + t.vol) + '<span class="vb"><i style="width:' + (t.mute ? 0 : t.vol) + '%"></i></span>';
@@ -176,8 +207,16 @@ requestAnimationFrame(tick);
 
 // ── discovery and connecting ──
 const xmlApps = (t) => "<apps>\n" + t.tiles.map((a) => '  <app id="' + a.id + '" type="' + (a.tvin ? "tvin" : "appl") + '" version="' + (a.tvin ? "1.0.0" : (hash(a.id) % 9) + "." + (hash(a.n) % 20) + ".0") + '">' + a.n + "</app>").join("\n") + "\n</apps>";
+async function connectReal(t) {
+  say("— " + t.d.name + " (" + t.d.ip + ") —", "x");
+  const a = await ecp("GET", "/query/apps");
+  if (a.status === 200) { t.tiles = [...String(a.body).matchAll(/<app id="([^"]+)"[^>]*type="([^"]*)"[^>]*>([^<]*)<\/app>/g)].map((x) => ({ id: x[1], n: x[3].replace(/&amp;/g, "&"), tvin: x[2] === "tvin", c: "#" + ((hash(x[1]) & 0x7f7f7f) | 0x202040).toString(16).padStart(6, "0") })); }
+  $("apps").innerHTML = t.tiles.filter((x) => !x.tvin).map((x) => '<button data-app="' + esc(x.id) + '" style="background:' + grad(x.c) + '" title="POST /launch/' + esc(x.id) + '">' + esc(x.n) + "</button>").join("") || '<small class="x">No channels reported.</small>';
+  refresh(); draw();
+}
 function connect(to) {
   ip = to; store.set("rgm.tv", to); const t = cur(); $("dev").value = to; lastReq = null;
+  if (t.real) return connectReal(t);
   say("— " + t.d.name + " (" + t.d.ip + ") —", "x");
   if (!t.on && !t.d.fast) { req("GET", "/query/device-info", 0); say(t.d.name + " doesn't answer: it's fully off. Tap the TV to switch it on at the set."); }
   else {
@@ -189,7 +228,18 @@ function connect(to) {
   draw();
 }
 function fillDevs() { const known = [...TV.values()]; $("dev").innerHTML = known.map((t) => '<option value="' + t.d.ip + '">' + esc(t.d.name) + " · " + t.d.ip + "</option>").join(""); if (ip) $("dev").value = ip; }
+async function discoverReal(first) {
+  lastReq = null; line('<span class="x">' + now() + '</span> <span class="m">SSDP</span> M-SEARCH * HTTP/1.1 → 239.255.255.250:1900 · looking for Rokus on this Wi-Fi…', "");
+  const m = await bridge("discover");
+  const found = (m.devices || []);
+  found.forEach((x) => { realTV(x.ip, x.info); line('<span class="x">' + now() + '</span> <span class="ok">found</span> ' + esc(x.ip) + " · " + esc(tag(x.info, "user-device-name") || tag(x.info, "friendly-device-name") || "Roku")); });
+  if (!found.length) { say(m.error ? "Discovery failed: " + m.error : "No Roku answered on this Wi-Fi. Check the phone is on the same network as the TV, and that Settings › System › Advanced system settings › Control by mobile apps is set to Enabled (or Permissive). You can also add a TV by its IP (Settings › Network › About shows it)."); }
+  fillDevs();
+  const saved = store.get("rgm.tv"), pick = TV.has(saved) && TV.get(saved).real ? saved : found.length ? found[0].ip : null;
+  if (pick) connect(pick);
+}
 function discover(first) {
+  if (REAL) return discoverReal(first);
   lastReq = null; line('<span class="x">' + now() + '</span> <span class="m">SSDP</span> M-SEARCH * HTTP/1.1 → 239.255.255.250:1900', ""); line(esc('MAN: "ssdp:discover"\nST: roku:ecp\nMX: 3'), "x");
   DEVS.forEach((d, k) => setTimeout(() => { line('<span class="x">' + now() + '</span> <span class="ok">HTTP/1.1 200 OK</span> from ' + d.ip); line(esc("ST: roku:ecp\nLOCATION: http://" + d.ip + ":8060/\nUSN: " + d.usn), "x"); lastReq = null;
     if (k === DEVS.length - 1) { fillDevs(); if (first) { const saved = store.get("rgm.tv"); connect(TV.has(saved) ? saved : DEVS[0].ip); } } }, 260 + k * 340));
@@ -200,6 +250,7 @@ $("addip").addEventListener("click", () => {
   const raw = $("ip").value.trim();
   if (!/^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(raw)) { say("relay refused “" + raw + "”: not a plain IPv4 address. It won't reach for hostnames, ports or URLs.", "bad"); return; }
   if (TV.has(raw)) { connect(raw); return; }
+  if (REAL) { bridge("info", { ip: raw }).then((m) => { if (m.status === 200) { realTV(raw, m.body); fillDevs(); connect(raw); store.set("rgm.extra", JSON.stringify([...new Set([raw].concat(JSON.parse(store.get("rgm.extra") || "[]")))])); } else { req("GET", "http://" + raw + ":8060/query/device-info", 0); say("Nothing at " + raw + " answered as a Roku. Check the address, and that Control by mobile apps is enabled on the TV."); } }); return; }
   lastReq = null; line('<span class="x">' + now() + '</span> <span class="m">GET</span> http://' + esc(raw) + ':8060/query/device-info <span class="bad">no answer after 3000 ms</span>'); say("Nothing at " + raw + " speaks ECP. (In this demo only the two simulated TVs answer; at home, this is how you add a TV that SSDP missed.)");
 });
 $("ip").addEventListener("keydown", (e) => { if (e.key === "Enter") $("addip").click(); });
@@ -212,6 +263,7 @@ const DPAD = new Set(["Up", "Down", "Left", "Right"]);
 let hold = null;
 function endHold() {
   if (!hold) return; clearTimeout(hold.t1); clearInterval(hold.t2); hold.b.classList.remove("on");
+  if (hold.real) { if (hold.rep) ecp("POST", "/keyup/" + hold.k, "let go").then(refresh); else send(hold.k); hold = null; return; }   // the TV repeats it while held
   if (hold.rep) { req("POST", "/keyup/" + hold.k, 200, hold.rep + " repeats while held"); } else send(hold.k);
   hold = null;
 }
@@ -221,16 +273,18 @@ R.addEventListener("pointerdown", (e) => {
   const k = b.dataset.k; b.classList.add("on");
   if (!DPAD.has(k)) { setTimeout(() => b.classList.remove("on"), 140); return; }
   e.preventDefault(); endHold();
+  if (cur() && cur().real) { hold = { k, b, rep: 0, real: true, t1: setTimeout(() => { hold.rep = 1; ecp("POST", "/keydown/" + k, "held"); }, 380) }; return; }
   hold = { k, b, rep: 0, t1: setTimeout(() => { const t = cur(); if (!t || !t.on || t.boot) return; lastReq = null; req("POST", "/keydown/" + k, 200, "held"); hold.t2 = setInterval(() => { key(k); hold.rep++; draw(); }, 120); key(k); hold.rep = 1; draw(); }, 380) };
 });
 ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => R.addEventListener(ev, (e) => { if (hold && (ev !== "pointerleave" || e.target === hold.b)) endHold(); }, true));
 R.addEventListener("click", (e) => { const b = e.target.closest(".k[data-k]"); if (!b) return; const k = b.dataset.k; if (DPAD.has(k) && e.detail > 0) return; send(k); });
-$("tv").addEventListener("click", () => { const t = cur(); if (t && !t.on) { say("Pressed the power button on the TV itself.", "x"); t.on = true; t.boot = performance.now(); goHome(t); draw(); } });
+$("tv").addEventListener("click", () => { const t = cur(); if (t && !t.real && !t.on) { say("Pressed the power button on the TV itself.", "x"); t.on = true; t.boot = performance.now(); goHome(t); draw(); } });
 
 // the keyboard field: every character becomes Lit_<char>, deletions become Backspace
 const kb = $("kb");
 kb.addEventListener("input", () => {
   const nv = kb.value; let i = 0; while (i < kbPrev.length && i < nv.length && kbPrev[i] === nv[i]) i++;
+  if (REAL && cur() && cur().real) { (async () => { for (let k = kbPrev.length; k > i; k--) await ecp("POST", "/keypress/Backspace"); for (const ch of nv.slice(i)) await ecp("POST", "/keypress/Lit_" + encodeURIComponent(ch)); })(); kbPrev = nv; return; }
   for (let k = kbPrev.length; k > i; k--) { const t = cur(); if (t && t.on && t.v.v === "search") t.q = t.q.slice(0, -1); req("POST", "/keypress/Backspace", t && t.on ? 200 : 0); }
   for (const ch of nv.slice(i)) { const r = lit(ch), t = cur(); req("POST", "/keypress/Lit_" + encodeURIComponent(ch), r === null && !t.d.fast ? 0 : 200, r === null ? (t.d.fast ? "standby" : "") : r); }
   kbPrev = nv; draw();
@@ -243,6 +297,10 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault(); send(k);
 });
 
+if (REAL) {   // the app: real TVs only, and the ones added by hand come back
+  TV.clear(); ip = null; document.querySelector(".top .pill").textContent = "live · your TVs"; document.querySelector(".top .pill").title = "Talking to the Rokus on this Wi-Fi, through the Eightysixty app.";
+  try { JSON.parse(store.get("rgm.extra") || "[]").forEach((x) => bridge("info", { ip: x }).then((m) => { if (m.status === 200) { realTV(x, m.body); fillDevs(); } })); } catch (e) {}
+}
 discover(true);
 window.RokuGodMode = { TV, send, launch, connect, cur: () => cur() };
 })();

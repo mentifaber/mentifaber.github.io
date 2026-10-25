@@ -50,10 +50,11 @@
   {
     "href": "roku.html",
     "name": "Eightysixty",
-    "desc": "A self-hosted web remote for Roku TVs — auto-discovery, every button, inputs, a channel grid and a real keyboard, talking straight to the TV over the local network. No Roku account, no cloud.",
-    "status": "soon",
+    "desc": "A remote for Roku TVs. The Android app finds every Roku on your Wi-Fi and drives it directly: every button, channels, inputs and a real keyboard, with no account and no cloud. In a browser it drives a demo TV.",
+    "status": "android",
     "cat": "Signals",
-    "added": "2026-08-09"
+    "added": "2026-08-09",
+    "android": "org.mentifaber.roku"
   },
   {
     "href": "hive",
@@ -90,16 +91,16 @@
   {
     "href": "phone-mcp.html",
     "name": "Phone MCP",
-    "desc": "A model on the internet driving a real Android phone — MCP over a Cloudflare tunnel, down a USB cable, into ADB. Four links, every one accounted for.",
-    "status": "soon",
+    "desc": "A console for any MCP server: connect to your own over Streamable HTTP, list its tools and call them with forms built from their schemas, or watch a simulated model drive a demo Android phone through ADB.",
+    "status": "live",
     "cat": "AI & Minds",
     "added": "2026-08-20"
   },
   {
     "href": "neural-sim.html",
     "name": "Moodfield",
-    "desc": "Simulations of emotional state and a consciousness protocol — with a straight account of what the runs do not prove.",
-    "status": "soon",
+    "desc": "Four small simulated networks that model shifting emotional state, with a guide to what each one does, live controls, and a straight account of what the runs do not prove.",
+    "status": "live",
     "cat": "AI & Minds",
     "added": "2026-09-14"
   },
@@ -154,8 +155,8 @@
   {
     "href": "omnilogos.html",
     "name": "Omnilogos",
-    "desc": "933,573 verses across thirty translations, wired into one navigable graph — the most comprehensive concordance attempted, fully local.",
-    "status": "soon",
+    "desc": "Read any chapter of the Bible side by side in up to 22 public-domain texts, from the Hebrew, Greek and Latin originals to English and five other languages, and follow shared words and themes through a live graph.",
+    "status": "live",
     "cat": "Tools",
     "added": "2026-08-20"
   },
@@ -322,8 +323,8 @@
   {
     "href": "sonicveil.html",
     "name": "Sonic Veil",
-    "desc": "Composer since 2016 — ambient, experimental and electronic. 86 tracks, ten years of genre-bending, streaming on 150+ platforms.",
-    "status": "soon",
+    "desc": "Ten years of ambient, experimental and electronic music from Sonic Veil, in a full player: the whole catalogue, shuffle and repeat, lock-screen controls, keyboard shortcuts, and it picks up where you left off.",
+    "status": "music",
     "cat": "Craft",
     "added": "2026-08-20"
   },

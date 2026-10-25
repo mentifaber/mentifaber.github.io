@@ -13,6 +13,8 @@ const shelf = { apps: [...SHELF.apps.filter((a) => !a.twa), { id: "org.mentifabe
 const builds = { "autofaber-android/AutoFaber.json": build("org.mentifaber.autofaber", 142), "mentifaber-store/MentifaberStore.json": build("org.mentifaber.store", 150), "t/T.json": build("org.mentifaber.testapp", 120, { minSdk: 26 }) };
 const cat = await S.catalog(shelf, async (u) => { const b = builds[u.split("/download/")[1]]; return b ? new Response(JSON.stringify(b)) : new Response("", { status: 404 }); });
 
+// what the shelf holds decides the counts below: every app, the ones with no build yet, and the Android-only ones
+const ALL = cat.apps.length, UNBUILT = cat.apps.filter((a) => !a.available).length, DROID = shelf.apps.filter((a) => !a.web && a.id !== "org.mentifaber.store").length;
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
 const mk = async (bridge, ua) => {
@@ -48,13 +50,13 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
 {
   const { c, p, errs } = await mk(false);
   await p.goto(URL); await p.waitForSelector(".list .row");
-  assert.equal(await p.locator(".list .row").count(), 6); assert.equal(await p.isVisible("#tabs a[data-v=updates]"), false);
+  assert.equal(await p.locator(".list .row").count(), ALL); assert.equal(await p.isVisible("#tabs a[data-v=updates]"), false);
   assert.match(await p.textContent(".hero h1"), /AutoFaber/);
   if (DEV === "mobile") { assert.equal(await p.getAttribute(".getit .btn.pri", "href"), "/store.apk"); assert.equal(await p.locator(".row a.btn.pri[href='/store.apk']").count(), 3); }
   else { assert.match(await p.textContent(".getit h2"), /on your Android phone/); assert.equal(await p.locator(".row .pill", { hasText: "Android app" }).count(), 3); }
-  assert.equal(await p.locator(".row .pill", { hasText: "Coming soon" }).count(), 3);
+  assert.equal(await p.locator(".row .pill", { hasText: "Coming soon" }).count(), UNBUILT); assert.ok(UNBUILT >= 1);
   assert.equal(await p.evaluate(() => window.__x), undefined); assert.ok(await p.locator(".row b", { hasText: "Test <img" }).count());
-  ok("the shelf: featured app, six apps, three not built yet; Foundry download on a phone, a pointer to the phone elsewhere; hostile names stay text");
+  ok("the shelf: featured app, every app, the ones not built yet; Foundry download on a phone, a pointer to the phone elsewhere; hostile names stay text");
 
   await p.fill("#q", "swarm"); await p.waitForFunction(() => document.querySelectorAll(".list .row").length === 1); assert.match(await p.textContent(".list .row b"), /AutoFaber/);
   await p.fill("#q", "zzzz"); await p.waitForSelector(".empty"); await p.fill("#q", "");
@@ -119,9 +121,9 @@ const ok = (m) => console.log("ok", DEV, m), URL = "http://localhost:8099/store.
   const { c, p, errs } = await mk(false, IPHONE);
   await p.goto(URL); await p.waitForSelector(".list .row");
   assert.match(await p.textContent(".getit h2"), /Put Foundry on your Home Screen/);
-  assert.equal(await p.locator(".list .row").count(), 5, "Foundry itself isn't listed on iPhone");
+  assert.equal(await p.locator(".list .row").count(), ALL - 1, "Foundry itself isn't listed on iPhone");
   assert.equal(await p.locator(".list .row .btn.pri", { hasText: "Get" }).count(), 2, "the two web apps");
-  assert.equal(await p.locator(".row .pill", { hasText: "Android only for now" }).count(), 3);
+  assert.equal(await p.locator(".row .pill", { hasText: "Android only for now" }).count(), DROID);
   assert.equal(await p.locator("a[href='/store.apk'], a[download]").count(), 0, "no APKs offered on iPhone");
   await p.click('.list [data-act="org.mentifaber.autofaber"] .btn'); await p.waitForSelector("dialog#iosget[open]");
   assert.match(await p.textContent("#iosget"), /Add to Home Screen/); assert.equal(await p.getAttribute("#iosget a.btn.pri", "href"), "/hive-app"); assert.equal(await p.getAttribute("#iosget a.btn.pri", "target"), "_blank");
