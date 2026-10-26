@@ -47,17 +47,21 @@ const bridge = (op, x) => new Promise((res) => { const r = ++rq; pend.set(r, res
 const tag = (xml, k) => { const m = new RegExp("<" + k + ">([^<]*)</" + k + ">").exec(xml || ""); return m ? m[1].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">") : ""; };
 async function ecp(method, path, note, at) {
   const t = TV.get(at || ip); if (!t) return {};
-  const m = await bridge("ecp", { ip: t.d.ip, method, path }); req(method, path, m.status || 0, note || m.error || "");
+  const m = await bridge("ecp", { ip: t.d.ip, method, path });
+  req(method, path, m.status || 0, refused(m) ? "refused · the TV said \"" + String(m.body).trim().slice(0, 90) + "\"" : note || m.error || "");
   if (method === "POST") await checked(t, m, path);
   return m;
 }
 const nap = (ms) => new Promise((r) => setTimeout(r, ms));
-// Roku OS 14.1 and later ship "Control by mobile apps" set to Limited: the TV still answers questions (its name, its channels), so
-// it looks connected, but it refuses every key press, keydown and keyup with 403. Only "Enabled" lets a remote press buttons.
-const LIMITED = (t) => t.d.name + " answers but won't take button presses: its \"Control by mobile apps\" setting is on Limited, which Roku OS 14.1 and later turn on by default. With the TV's own remote, open Settings › System › Advanced system settings › Control by mobile apps and choose Enabled (keep Network access on Default). Then press any button here.";
+// Roku OS 14.1 and later ship "Control by mobile apps" set to Limited: the TV still answers questions (its name, its channels) and
+// still takes a few keys (volume and mute), so it looks connected and half works. Everything else it refuses, and not always with
+// an error: often it answers 200 OK with the words "ECP command not allowed" in the body (openHAB checks for the same text).
+const refused = (m) => m.status === 403 || /ECP command not allowed|not allowed in limited/i.test(m.body || "");
+const done = (m) => m.status >= 200 && m.status < 300 && !refused(m);
+const LIMITED = (t) => t.d.name + " answers but won't take button presses: its \"Control by mobile apps\" setting is on Limited, which Roku OS 14.1 and later turn on by default. With the TV's own remote, open Settings › System › Advanced system settings › Control by mobile apps and choose Enabled (Permissive works too). Volume can work while it's on Limited; nothing else will. Then press any button here.";
 async function checked(t, m, path) {
-  if (m.status >= 200 && m.status < 300) { if (t.limited || t.slept) { t.limited = t.slept = false; draw(); } return; }
-  if (m.status !== 403) return;
+  if (done(m)) { if ((t.limited && !/Volume/.test(path)) || t.slept) { t.limited = t.slept = false; draw(); } return; }   // volume gets through even on Limited: proves nothing
+  if (!refused(m)) return;
   const i = await bridge("info", { ip: t.d.ip }); if (i.status === 200) realTV(t.d.ip, i.body);   // asleep, or locked out?
   if (!t.on && !/PowerOn/.test(path)) { if (!t.slept) say(t.d.name + " is in standby, and a TV in standby only listens for Power. Press ⏻ to wake it."); t.slept = true; }
   else if (!t.limited) { t.limited = true; say(LIMITED(t)); }
@@ -78,13 +82,13 @@ async function powerReal(t, k) {
     const i = await bridge("info", { ip: t.d.ip }), up = i.status === 200; if (up) realTV(t.d.ip, i.body);
     if (k === "PowerOff" || (k === "Power" && up && t.on)) {
       const m = await ecp("POST", t.d.tv ? "/keypress/PowerOff" : "/keypress/Power", "off");
-      if (m.status >= 200 && m.status < 300) { t.on = false; t.d.pm = "Ready"; draw(); } return;
+      if (done(m)) { t.on = false; t.d.pm = "Ready"; draw(); } return;
     }
     say("Waking " + t.d.name + "…", "x");
     if (t.d.mac) { const w = await bridge("wake", { ip: t.d.ip, mac: t.d.mac });
       line('<span class="x">' + now() + '</span> <span class="m">WoL</span> magic packet → ' + esc(t.d.mac) + " " + (w.ok ? '<span class="ok">sent</span>' : '<span class="bad">' + esc(w.error || "not sent") + "</span>" + (w.error === "unknown request" ? ' <span class="x">· update Eightysixty from Foundry to wake TVs from deep sleep</span>' : ""))); lastReq = null; }
     let m = {};
-    for (let n = 0; n < 6; n++) { m = await ecp("POST", "/keypress/PowerOn", n ? "again" : "waking"); if (m.status >= 200 && m.status < 300) break; if (m.status === 403 && t.limited) return; await nap(1500); }
+    for (let n = 0; n < 6; n++) { m = await ecp("POST", "/keypress/PowerOn", n ? "again" : "waking"); if (done(m)) break; if (refused(m) && t.limited) return; await nap(1500); }
     for (let n = 0; n < 10 && !t.on; n++) { await nap(1000); const r = await bridge("info", { ip: t.d.ip }); if (r.status === 200) realTV(t.d.ip, r.body); }
     if (t.on) { say(t.d.name + " is on.", "x"); refresh(); }
     else if (!t.limited) say(t.d.name + " didn't wake. A Roku TV can only be switched on over the network while Fast TV Start keeps its Wi-Fi awake: on the TV, Settings › System › Power › Fast TV Start. Some TVs still drop off Wi-Fi after hours asleep; a wired connection, or the TV's own remote, covers those.");
@@ -92,7 +96,7 @@ async function powerReal(t, k) {
 }
 let refreshT = 0;
 function refresh() { clearTimeout(refreshT); refreshT = setTimeout(async () => { const t = cur(); if (!t || !t.real) return;   // what's on screen now
-  const m = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/active-app" }); if (m.status === 200) { t.active = tag(m.body, "app") || "Home"; t.on = true; }
+  const m = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/active-app" }); if (m.status === 200 && !refused(m)) { t.active = tag(m.body, "app") || "Home"; t.on = true; }
   else if (!m.status) t.on = false; draw(); }, 700); }
 $("clr").addEventListener("click", () => { L.innerHTML = ""; lastReq = null; });
 
@@ -248,9 +252,8 @@ async function connectReal(t) {
   const a = await ecp("GET", "/query/apps");
   if (a.status === 200) { t.tiles = [...String(a.body).matchAll(/<app id="([^"]+)"[^>]*type="([^"]*)"[^>]*>([^<]*)<\/app>/g)].map((x) => ({ id: x[1], n: x[3].replace(/&amp;/g, "&"), tvin: x[2] === "tvin", c: "#" + ((hash(x[1]) & 0x7f7f7f) | 0x202040).toString(16).padStart(6, "0") })); }
   $("apps").innerHTML = t.tiles.filter((x) => !x.tvin).map((x) => '<button data-app="' + esc(x.id) + '" style="background:' + grad(x.c) + '" title="POST /launch/' + esc(x.id) + '">' + esc(x.n) + "</button>").join("") || '<small class="x">No channels reported.</small>';
-  const probe = t.tiles.find((x) => !x.tvin);
-  if (t.on && probe) { const c = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/icon/" + encodeURIComponent(probe.id) });
-    if (c.status === 403) { t.limited = true; say(LIMITED(t)); } else if (c.status === 200) t.limited = false; }
+  if (t.on) { const c = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/media-player" });
+    if (refused(c)) { t.limited = true; say(LIMITED(t)); } else if (c.status === 200) t.limited = false; }
   else if (!t.on) say(t.d.name + " is in standby. Press ⏻ to wake it.", "x");
   refresh(); draw();
 }
