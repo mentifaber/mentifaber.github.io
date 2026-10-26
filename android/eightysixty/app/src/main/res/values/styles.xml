@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FF0A0914</color>
-    <color name="accent">#FFA38DFB</color>
+    <color name="bg">#FF0B0804</color>
+    <color name="accent">#FFFFB547</color>
     <style name="Remote" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:colorBackground">@color/bg</item>

@@ -27,14 +27,14 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
         web = new WebView(this);
-        web.setBackgroundColor(0xFF0A0914);
+        web.setBackgroundColor(0xFF0B0804);
         setContentView(web);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(false);
-        s.setUserAgentString(s.getUserAgentString() + " Eightysixty/" + versionName());
+        s.setUserAgentString(s.getUserAgentString() + " Phosphor/" + versionName());
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
@@ -64,9 +64,9 @@ public final class MainActivity extends Activity {
 
     private void offline() {
         String retry = getString(R.string.remote_url);
-        web.loadDataWithBaseURL(null, "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><body style='margin:0;min-height:100vh;display:grid;place-items:center;background:#0a0914;color:#ece8ff;font:16px/1.5 sans-serif;text-align:center;padding:24px'>"
-                + "<div><div style='font-size:22px;font-weight:700;color:#a38dfb'>Eightysixty</div><p style='color:#9d97b8'>Eightysixty loads its remote from mentifaber.org once, then talks to your TV over Wi-Fi.<br>Connect to the internet and try again.</p>"
-                + "<a href='" + retry + "' style='display:inline-block;padding:12px 22px;border-radius:999px;background:#a38dfb;color:#140f2a;font-weight:700;text-decoration:none'>Try again</a></div>",
+        web.loadDataWithBaseURL(null, "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><body style='margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0804;color:#fff1d6;font:16px/1.5 sans-serif;text-align:center;padding:24px'>"
+                + "<div><div style='font-size:24px;font-weight:800;letter-spacing:.12em;color:#ffb547;text-shadow:0 0 18px rgba(255,181,71,.6)'>PHOSPHOR</div><p style='color:#b39a76'>Phosphor loads its remote from mentifaber.org once, then talks to your TV over Wi-Fi.<br>Connect to the internet and try again.</p>"
+                + "<a href='" + retry + "' style='display:inline-block;padding:12px 22px;border-radius:999px;background:#ffb547;color:#1a0f02;font-weight:700;text-decoration:none'>Try again</a></div>",
                 "text/html", "utf-8", null);
     }
 
@@ -74,7 +74,7 @@ public final class MainActivity extends Activity {
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return "?"; }
     }
 
-    /** The phone's volume buttons turn the chosen TV up and down while Eightysixty is open (as Roku's own app does). */
+    /** The phone's volume buttons turn the chosen TV up and down while Phosphor is open (as Roku's own app does). */
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         int k = e.getKeyCode();

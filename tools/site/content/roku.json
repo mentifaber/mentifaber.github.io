@@ -1,5 +1,5 @@
 {
- "kicker": "signals · local network",
+ "kicker": "signals · living room",
  "tagline": "The whole remote on your phone: every button, every input, every channel, and a real keyboard for search boxes, talking straight to the TV. No Roku account, no cloud.",
  "caps": [
   "ECP on port 8060",
@@ -7,13 +7,13 @@
   "nothing leaves the house"
  ],
  "launchSub": "The Android app drives your real TVs; here in the browser it drives a demo TV over the same protocol, with every request shown",
- "titleTail": "the whole remote in a browser",
+ "titleTail": "a remote that glows",
  "ledeLabel": "why this exists",
  "story": {
   "label": "why this exists",
   "title": "The TV was <em>already listening</em>"
  },
- "lede": "<p>Every Roku runs a small web server on port 8060, the External Control Protocol, and it accepts button presses from anything on the same network: no pairing, no PIN. The official app wraps that in an account and a store listing. <b>Eightysixty</b> just talks to it directly, and the remote below shows you every request it sends.</p>",
+ "lede": "<p>Every Roku runs a small web server on port 8060, the External Control Protocol, and it accepts button presses from anything on the same network: no pairing, no PIN. The official app wraps that in an account and a store listing. <b>Phosphor</b> just talks to it directly, and the remote below shows you every request it sends.</p>",
  "featuresLabel": "what it does",
  "features": [
   {

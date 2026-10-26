@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Eightysixty: the remote is mentifaber.org/roku-app in a WebView; this app adds what a web page can't do, finding the
+<!-- Phosphor: the remote is mentifaber.org/roku-app in a WebView; this app adds what a web page can't do, finding the
      Rokus on this Wi-Fi and talking to them on port 8060, through a message channel only that origin is given. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
