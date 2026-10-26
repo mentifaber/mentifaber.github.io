@@ -551,7 +551,7 @@
       "file": "Eightysixty",
       "category": "Tools",
       "tagline": "A real remote for your Roku TV",
-      "description": "Eightysixty finds every Roku TV and player on your Wi-Fi and drives it directly over Roku's own control protocol: every button, hold to scroll, your channels as a grid, inputs, and a keyboard for search boxes. It shows what's on screen and logs every request it sends.\n\nNo Roku account and no cloud: the commands go from your phone to the TV over your own network. One setting on the TV: Settings › System › Advanced system settings › Control by mobile apps › Enabled. Roku OS 14.1 and later default to Limited, which lets apps see the TV but not press its buttons; Eightysixty tells you if yours is. It wakes a sleeping TV with Wake-on-LAN, which needs Fast TV Start on.",
+      "description": "Eightysixty finds every Roku TV and player on your Wi-Fi and drives it directly over Roku's own control protocol: every button on a big d-pad or a swipe pad, your channels with their own icons, inputs, a keyboard for search boxes, and your phone's own volume buttons turning the TV up and down. It shows what's on screen and logs every request it sends.\n\nNo Roku account and no cloud: the commands go from your phone to the TV over your own network. One setting on the TV: Settings › System › Advanced system settings › Control by mobile apps › Enabled. Roku OS 14.1 and later default to Limited, which lets apps see the TV but not press its buttons; Eightysixty tells you if yours is. It wakes a sleeping TV with Wake-on-LAN, which needs Fast TV Start on.",
       "icon": "/assets/icons/v2/roku-512.png",
       "accent": "#a38dfb",
       "page": "/roku",
@@ -560,8 +560,10 @@
       ],
       "features": [
         "Finds your Rokus on its own",
-        "Every button and your channels",
-        "Type into search boxes",
+        "A big d-pad or a swipe pad",
+        "Your phone's volume buttons drive the TV",
+        "Your channels, with their own icons",
+        "Wakes a sleeping TV",
         "No account, no cloud"
       ]
     },

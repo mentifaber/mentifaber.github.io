@@ -29,7 +29,9 @@ let kbPrev = ""; const setKb = (v) => { $("kb").value = v; kbPrev = v; };
 // ── the traffic log ──
 const L = $("log"); let lastReq = null;
 const now = () => new Date().toTimeString().slice(0, 8);
-function line(html, cls) { const d = document.createElement("div"); if (cls) d.className = cls; d.innerHTML = html; L.appendChild(d); while (L.children.length > 260) L.firstChild.remove(); L.scrollTop = L.scrollHeight; return d; }
+let unseen = 0; const logOpen = () => document.body.classList.contains("logopen") || matchMedia("(min-width: 901px)").matches;
+function badge(n) { unseen = n; const i = document.getElementById("logn"); if (i) { i.hidden = !n; i.textContent = n > 9 ? "9+" : n; } }
+function line(html, cls) { const d = document.createElement("div"); if (cls) d.className = cls; if ((cls === "w" || /class="bad"/.test(html)) && !logOpen()) badge(unseen + 1); d.innerHTML = html; L.appendChild(d); while (L.children.length > 260) L.firstChild.remove(); L.scrollTop = L.scrollHeight; return d; }
 function req(method, path, status, note, body) {
   const ok = status && status < 400, sig = method + path + status + (note || "");
   if (lastReq && lastReq.sig === sig && Date.now() - lastReq.at < 2500 && !body) { lastReq.n++; lastReq.at = Date.now(); lastReq.el.querySelector(".n").textContent = " ×" + lastReq.n; L.scrollTop = L.scrollHeight; return; }
@@ -42,7 +44,9 @@ const say = (t, cls) => { line(esc(t), cls || "w"); lastReq = null; };
 // ── the Android app: Eightysixty for Android loads this page and lends it what a browser can't do, finding TVs on the Wi-Fi
 // (SSDP) and talking to them on port 8060 (window.RokuBridge, given to mentifaber.org alone). Then every button is real.
 const NB = window.RokuBridge || null, REAL = !!NB, pend = new Map(); let rq = 0;
-if (NB) NB.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } const f = pend.get(m.req); if (f) { pend.delete(m.req); f(m); } };
+if (NB) NB.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (x) { return; }
+  if (m.type === "hwkey") { const t = cur(); req("POST", "/keypress/" + m.key, m.status || 0, "phone's volume button"); buzz(); if (t) checked(t, m, "/keypress/" + m.key); return; }
+  const f = pend.get(m.req); if (f) { pend.delete(m.req); f(m); } };
 const bridge = (op, x) => new Promise((res) => { const r = ++rq; pend.set(r, res); NB.postMessage(JSON.stringify(Object.assign({ op, req: r }, x || {}))); setTimeout(() => { if (pend.has(r)) { pend.delete(r); res({ ok: false, error: "the app didn't answer" }); } }, 9000); });
 const tag = (xml, k) => { const m = new RegExp("<" + k + ">([^<]*)</" + k + ">").exec(xml || ""); return m ? m[1].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">") : ""; };
 async function ecp(method, path, note, at) {
@@ -53,6 +57,7 @@ async function ecp(method, path, note, at) {
   return m;
 }
 const nap = (ms) => new Promise((r) => setTimeout(r, ms));
+const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms || 8); } catch (e) {} };   // a tick under the thumb
 // Roku OS 14.1 and later ship "Control by mobile apps" set to Limited: the TV still answers questions (its name, its channels) and
 // still takes a few keys (volume and mute), so it looks connected and half works. Everything else it refuses, and not always with
 // an error: often it answers 200 OK with the words "ECP command not allowed" in the body (openHAB checks for the same text).
@@ -195,7 +200,7 @@ function draw() {
   const t = cur(), s = $("scr"); if (!t) return;
   if (t.real) {   // a real TV: what it told us, not a picture of its screen
     $("led").className = "led" + (t.on ? "" : " stby"); $("hops").textContent = "this phone → " + t.d.ip + ":8060";
-    s.className = "scr real"; s.innerHTML = '<div class="rinfo"><b>' + esc(t.d.name) + "</b><span>" + esc([t.d.model, t.d.sw && "software " + t.d.sw].filter(Boolean).join(" · ")) + "</span><em>" + (t.on ? "on" : "standby or off") + "</em>"
+    s.className = "scr real"; s.innerHTML = '<div class="rinfo"><i class="dot' + (t.on ? " on" : "") + '"></i><b>' + esc(t.d.name) + "</b><span>" + esc([t.on ? "on" : "standby", t.d.model, t.d.ip].filter(Boolean).join(" · ")) + "</span>"
       + '<div class="now"><small>on screen</small>' + esc(t.on ? t.active || "…" : "nothing: the TV is in standby") + "</div>"
       + (t.limited ? '<div class="warn"><b>Buttons blocked by the TV</b>On the TV: Settings › System › Advanced system settings › Control by mobile apps › <b>Enabled</b></div>'
         : !t.on ? '<div class="warn soft">Press ⏻ to wake it</div>' : "") + "</div>";
@@ -251,11 +256,25 @@ async function connectReal(t) {
   say("— " + t.d.name + " (" + t.d.ip + ") —", "x");
   const a = await ecp("GET", "/query/apps");
   if (a.status === 200) { t.tiles = [...String(a.body).matchAll(/<app id="([^"]+)"[^>]*type="([^"]*)"[^>]*>([^<]*)<\/app>/g)].map((x) => ({ id: x[1], n: x[3].replace(/&amp;/g, "&"), tvin: x[2] === "tvin", c: "#" + ((hash(x[1]) & 0x7f7f7f) | 0x202040).toString(16).padStart(6, "0") })); }
-  $("apps").innerHTML = t.tiles.filter((x) => !x.tvin).map((x) => '<button data-app="' + esc(x.id) + '" style="background:' + grad(x.c) + '" title="POST /launch/' + esc(x.id) + '">' + esc(x.n) + "</button>").join("") || '<small class="x">No channels reported.</small>';
+  $("apps").innerHTML = t.tiles.filter((x) => !x.tvin).map((x) => '<button data-app="' + esc(x.id) + '" style="background:' + (x.icon ? "url('" + x.icon + "') center/cover" : grad(x.c)) + '"' + (x.icon ? ' class="icon"' : "") + ' title="' + esc(x.n) + '" aria-label="' + esc(x.n) + '">' + esc(x.n) + "</button>").join("") || '<small class="x">No channels reported.</small>';
+  bridge("target", { ip: t.d.ip });   // the phone's volume buttons now turn this TV up and down
+  icons(t);
   if (t.on) { const c = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/media-player" });
     if (refused(c)) { t.limited = true; say(LIMITED(t)); } else if (c.status === 200) t.limited = false; }
   else if (!t.on) say(t.d.name + " is in standby. Press ⏻ to wake it.", "x");
   refresh(); draw();
+}
+// each channel's own artwork, from /query/icon/<id> through the app (it comes back as a data: URL); one at a time, kept for the session
+let noIcons = false;
+async function icons(t) {
+  for (const x of t.tiles.filter((x) => !x.tvin && !x.icon).slice(0, 60)) {
+    if (noIcons || cur() !== t) return;
+    const m = await bridge("icon", { ip: t.d.ip, id: x.id });
+    if (m.error === "unknown request") { noIcons = true; return; }   // an older app: the coloured tiles stay
+    if (!m.data || !/^data:image\/(png|jpeg|gif|webp);base64,/.test(m.data)) continue;
+    x.icon = m.data; const b = document.querySelector('#apps [data-app="' + CSS.escape(x.id) + '"]');
+    if (b) { b.style.background = "url('" + m.data + "') center/cover"; b.classList.add("icon"); }
+  }
 }
 function connect(to) {
   ip = to; store.set("rgm.tv", to); const t = cur(); $("dev").value = to; lastReq = null;
@@ -313,7 +332,7 @@ function endHold() {
 const R = $("remote");
 R.addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".k[data-k]"); if (!b || e.button > 0) return;
-  const k = b.dataset.k; b.classList.add("on");
+  const k = b.dataset.k; b.classList.add("on"); buzz(k === "Power" ? 18 : 8);
   if (!DPAD.has(k)) { setTimeout(() => b.classList.remove("on"), 140); return; }
   e.preventDefault(); endHold();
   if (cur() && cur().real) { hold = { k, b, rep: 0, real: true, t1: setTimeout(() => { hold.rep = 1; ecp("POST", "/keydown/" + k, "held"); }, 380) }; return; }
@@ -340,8 +359,34 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault(); send(k);
 });
 
+// ── D-pad or swipe pad ──
+const mode = (m) => { const tr = m === "track"; $("pad").hidden = tr; $("track").hidden = !tr; $("m-pad").setAttribute("aria-selected", !tr); $("m-track").setAttribute("aria-selected", tr); store.set("rgm.mode", m); };
+$("m-pad").addEventListener("click", () => mode("pad")); $("m-track").addEventListener("click", () => mode("track"));
+mode(store.get("rgm.mode") === "track" ? "track" : "pad");
+// the swipe pad: every 34px of travel in one direction is one press that way, so a long swipe keeps moving; a tap is OK
+{
+  const T = $("track"), STEP = 34; let g = null;
+  const dot = document.createElement("i"); dot.className = "dot"; dot.hidden = true; T.appendChild(dot);
+  const at = (e) => { const r = T.getBoundingClientRect(); dot.style.left = e.clientX - r.left + "px"; dot.style.top = e.clientY - r.top + "px"; };
+  T.addEventListener("pointerdown", (e) => { T.setPointerCapture(e.pointerId); g = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), n: 0 }; dot.hidden = false; at(e); });
+  T.addEventListener("pointermove", (e) => {
+    if (!g) return; at(e); const dx = e.clientX - g.x, dy = e.clientY - g.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < STEP) return;
+    const k = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "Right" : "Left") : (dy > 0 ? "Down" : "Up");
+    g.x = e.clientX; g.y = e.clientY; g.n++; buzz(6); send(k); T.classList.add("flash"); setTimeout(() => T.classList.remove("flash"), 90);
+  });
+  const up = (e) => { if (!g) return; const tap = !g.n && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 12 && performance.now() - g.t < 400; g = null; dot.hidden = true; if (tap && e.type === "pointerup") { buzz(12); send("Select"); } };
+  T.addEventListener("pointerup", up); T.addEventListener("pointercancel", up);
+}
+// ── the log sheet (a phone): opens from the top bar, closes by the button, the dimmed page or Escape ──
+const sheet = (open) => { document.body.classList.toggle("logopen", open); $("scrim").hidden = !open; $("logbtn").setAttribute("aria-expanded", open); if (open) { badge(0); L.scrollTop = L.scrollHeight; } };
+$("logbtn").addEventListener("click", () => sheet(!document.body.classList.contains("logopen")));
+$("logx").addEventListener("click", () => sheet(false)); $("scrim").addEventListener("click", () => sheet(false));
+addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("logopen")) { e.stopImmediatePropagation(); sheet(false); } }, true);
+
 if (REAL) {   // the app: real TVs only, and the ones added by hand come back
-  TV.clear(); ip = null; document.querySelector(".top .pill").textContent = "live · your TVs"; document.querySelector(".top .pill").title = "Talking to the Rokus on this Wi-Fi, through the Eightysixty app.";
+  TV.clear(); ip = null; document.body.classList.add("real"); document.querySelector(".top .pill").textContent = "live"; document.querySelector(".top .pill").title = "Talking to the Rokus on this Wi-Fi, through the Eightysixty app.";
+  $("note").textContent = "Your phone's volume buttons turn the TV up and down while Eightysixty is open.";
   try { JSON.parse(store.get("rgm.extra") || "[]").forEach((x) => bridge("info", { ip: x }).then((m) => { if (m.status === 200) { realTV(x, m.body); fillDevs(); } })); } catch (e) {}
 }
 discover(true);
