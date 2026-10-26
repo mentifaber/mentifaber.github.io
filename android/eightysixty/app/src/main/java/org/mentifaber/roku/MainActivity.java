@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -71,6 +72,17 @@ public final class MainActivity extends Activity {
 
     private String versionName() {
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return "?"; }
+    }
+
+    /** The phone's volume buttons turn the chosen TV up and down while Eightysixty is open (as Roku's own app does). */
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+        int k = e.getKeyCode();
+        if ((k == KeyEvent.KEYCODE_VOLUME_UP || k == KeyEvent.KEYCODE_VOLUME_DOWN) && bridge != null) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && bridge.volumeKey(k == KeyEvent.KEYCODE_VOLUME_UP ? "VolumeUp" : "VolumeDown")) return true;
+            if (e.getAction() == KeyEvent.ACTION_UP && bridge.hasTarget()) return true;
+        }
+        return super.dispatchKeyEvent(e);
     }
 
     @Override

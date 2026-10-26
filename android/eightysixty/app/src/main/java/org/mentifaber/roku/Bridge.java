@@ -35,7 +35,9 @@ import java.util.regex.Pattern;
 
 /** The page's line to the TVs, as window.RokuBridge: given only to https://mentifaber.org, main frame only.
  *  Messages are JSON {op, req, …}: "discover" (an SSDP search, then each Roku's device-info), "info" {ip},
- *  "ecp" {ip, method, path} and "wake" {ip, mac} (a Wake-on-LAN magic packet, broadcast on this network). Answers come back as {req, ok, status, body} or {req, devices}. It talks to private
+ *  "ecp" {ip, method, path}, "wake" {ip, mac} (a Wake-on-LAN magic packet, broadcast on this network), "icon" {ip, id}
+ *  (a channel's artwork, as a data: URL) and "target" {ip} (the TV the phone's own volume buttons drive; their presses come
+ *  back unasked as {type: "hwkey", key, status, body}). Answers come back as {req, ok, status, body} or {req, devices}. It talks to private
  *  network addresses on port 8060 alone, and only on Roku's control paths, so the page can't use it to reach anything else. */
 final class Bridge implements WebViewCompat.WebMessageListener {
     private static final Pattern PATH = Pattern.compile("/(keypress|keydown|keyup|launch|input|search|query)(/[A-Za-z0-9_.%~-]*)*(\\?[A-Za-z0-9_.%=&~-]*)?");
@@ -43,6 +45,7 @@ final class Bridge implements WebViewCompat.WebMessageListener {
     private final Context ctx;
     private final ExecutorService pool = Executors.newFixedThreadPool(3);
     private JavaScriptReplyProxy reply;
+    private volatile String target;
 
     Bridge(Context ctx) { this.ctx = ctx.getApplicationContext(); }
 
@@ -61,6 +64,8 @@ final class Bridge implements WebViewCompat.WebMessageListener {
                     case "info": out = ecp(m.optString("ip"), "GET", "/query/device-info"); break;
                     case "ecp": out = ecp(m.optString("ip"), m.optString("method", "GET"), m.optString("path")); break;
                     case "wake": out = wake(m.optString("ip"), m.optString("mac")); break;
+                    case "icon": out = icon(m.optString("ip"), m.optString("id")); break;
+                    case "target": target = local(m.optString("ip")) ? m.optString("ip") : null; out = new JSONObject().put("ok", target != null); break;
                     default: out = fail("unknown request");
                 }
             } catch (Exception e) { out = fail(e.getMessage() == null ? e.toString() : e.getMessage()); }
@@ -100,6 +105,35 @@ final class Bridge implements WebViewCompat.WebMessageListener {
             if (i.optInt("status") == 200) devs.put(new JSONObject().put("ip", ip).put("info", i.optString("body")));
         }
         return new JSONObject().put("ok", true).put("devices", devs);
+    }
+
+    /** The phone's volume button, while Eightysixty is in front and a TV is chosen: true if it went to the TV. */
+    boolean volumeKey(String key) {
+        final String ip = target;
+        if (ip == null) return false;
+        pool.execute(() -> {
+            JSONObject out;
+            try { out = ecp(ip, "POST", "/keypress/" + key); } catch (Exception e) { out = fail(e.toString()); }
+            try { out.put("type", "hwkey").put("key", key); } catch (JSONException ignored) { }
+            send(out);
+        });
+        return true;
+    }
+
+    /** A channel's icon from /query/icon/<id>, as a data: URL the page can show (at most 256 KB, images only). */
+    private JSONObject icon(String ip, String id) throws Exception {
+        if (!local(ip)) return fail("only TVs on your own network");
+        if (!id.matches("[A-Za-z0-9_.-]{1,64}")) return fail("not a channel id");
+        HttpURLConnection c = (HttpURLConnection) new URL("http://" + ip + ":8060/query/icon/" + id).openConnection();
+        try {
+            c.setConnectTimeout(2500); c.setReadTimeout(3500); c.setInstanceFollowRedirects(false); c.setRequestProperty("Connection", "close");
+            int code = c.getResponseCode();
+            String type = c.getContentType() == null ? "" : c.getContentType().split(";")[0].trim().toLowerCase();
+            if (code != 200 || !type.matches("image/(png|jpeg|gif|webp)")) return fail("no icon (" + code + ")");
+            ByteArrayOutputStream b = new ByteArrayOutputStream();
+            try (InputStream s = c.getInputStream()) { byte[] k = new byte[8192]; int n; while ((n = s.read(k)) > 0) { b.write(k, 0, n); if (b.size() > 256 * 1024) return fail("icon too large"); } }
+            return new JSONObject().put("ok", true).put("status", 200).put("data", "data:" + type + ";base64," + android.util.Base64.encodeToString(b.toByteArray(), android.util.Base64.NO_WRAP));
+        } finally { c.disconnect(); }
     }
 
     /** Wake-on-LAN: six 0xFF bytes and the MAC sixteen times, to the network's broadcast addresses on ports 9 and 7, a few
@@ -164,6 +198,8 @@ final class Bridge implements WebViewCompat.WebMessageListener {
         android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
         h.post(() -> { try { r.postMessage(e.toString()); } catch (RuntimeException ignored) { } }); // the page went away
     }
+
+    boolean hasTarget() { return target != null; }
 
     void close() { pool.shutdownNow(); }
 }
