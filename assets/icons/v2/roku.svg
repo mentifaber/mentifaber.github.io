@@ -1,13 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><clipPath id="r"><rect width="512" height="512" rx="116"/></clipPath><g clip-path="url(#r)">
 <defs>
-<radialGradient id="bg" cx="50%" cy="44%" r="74%"><stop offset="0" stop-color="#32206e"/><stop offset=".55" stop-color="#160c36"/><stop offset="1" stop-color="#06030f"/></radialGradient>
-<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#b49aff" stop-opacity=".5"/><stop offset="1" stop-color="#b49aff" stop-opacity="0"/></radialGradient>
-<linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b1f63"/><stop offset="1" stop-color="#0d0826"/></linearGradient><linearGradient id="rem" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2a7e"/><stop offset="1" stop-color="#140c36"/></linearGradient>
+<radialGradient id="bg" cx="50%" cy="48%" r="74%"><stop offset="0" stop-color="#2e1a08"/><stop offset=".55" stop-color="#140b04"/><stop offset="1" stop-color="#050302"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffb547" stop-opacity=".42"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/></radialGradient>
+<linearGradient id="bez" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2410"/><stop offset="1" stop-color="#140b04"/></linearGradient>
+<radialGradient id="tube" cx="50%" cy="48%" r="62%"><stop offset="0" stop-color="#5a3510"/><stop offset=".6" stop-color="#1e1207"/><stop offset="1" stop-color="#0b0603"/></radialGradient>
+<radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe2a8" stop-opacity=".95"/><stop offset=".35" stop-color="#ffb547" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a1f" stop-opacity="0"/></radialGradient>
+<linearGradient id="line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffb547" stop-opacity="0"/><stop offset=".5" stop-color="#fff1cf"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/></linearGradient>
+<pattern id="scan" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="3" fill="#000" opacity=".28"/></pattern>
+<clipPath id="scr"><rect x="132" y="168" width="248" height="186" rx="46"/></clipPath>
 </defs>
 <rect width="512" height="512" fill="url(#bg)"/>
-<g fill="none" stroke="#b49aff" stroke-opacity=".13" stroke-width="2"><circle cx="256" cy="256" r="150"/><circle cx="256" cy="256" r="212"/><path d="M256 256L40 60M256 256L472 60M256 256L40 452M256 256L472 452"/></g>
-<circle cx="256" cy="256" r="175" fill="url(#halo)"/>
-<rect x="96" y="104" width="320" height="210" rx="22" fill="url(#scr)" stroke="#d6c8ff" stroke-opacity=".7" stroke-width="5"/><path d="M226 168 L304 210 L226 252Z" fill="#fff" opacity=".9"/><path d="M226 168 L304 210 L226 252Z" fill="none" stroke="#b49aff" stroke-width="4"/>
-<path d="M216 314 L200 344 M296 314 L312 344" stroke="#d6c8ff" stroke-opacity=".6" stroke-width="6" stroke-linecap="round"/>
-<g transform="rotate(-18 330 380)"><rect x="296" y="300" width="76" height="160" rx="30" fill="url(#rem)" stroke="#fff" stroke-opacity=".55" stroke-width="3"/><circle cx="334" cy="350" r="22" fill="none" stroke="#ffc94a" stroke-width="6"/><circle cx="334" cy="350" r="7" fill="#ffc94a"/><circle cx="320" cy="404" r="6" fill="#d6c8ff"/><circle cx="348" cy="404" r="6" fill="#d6c8ff"/></g>
+<g stroke="#ffb547" stroke-opacity=".1" stroke-width="2" fill="none"><path d="M256 262L40 60M256 262L472 60M256 262L40 470M256 262L472 470"/><circle cx="256" cy="262" r="150"/><circle cx="256" cy="262" r="214"/></g>
+<circle cx="256" cy="262" r="175" fill="url(#halo)"/>
+<g stroke="#ffcf7a" stroke-width="7" stroke-linecap="round" fill="none" opacity=".9"><path d="M238 146L184 74"/><path d="M274 146L330 66"/></g>
+<circle cx="184" cy="74" r="10" fill="#ffcf7a"/><circle cx="330" cy="66" r="10" fill="#ffcf7a"/>
+<rect x="108" y="144" width="296" height="234" rx="62" fill="url(#bez)" stroke="#ffcf7a" stroke-opacity=".75" stroke-width="6"/>
+<rect x="132" y="168" width="248" height="186" rx="46" fill="url(#tube)"/>
+<g clip-path="url(#scr)">
+<circle cx="256" cy="261" r="96" fill="url(#glow)"/>
+<rect x="132" y="257" width="248" height="8" fill="url(#line)" opacity=".85"/>
+<rect x="132" y="168" width="248" height="186" fill="url(#scan)"/>
+</g>
+<circle cx="256" cy="261" r="52" fill="none" stroke="#ffb547" stroke-width="7" stroke-dasharray="230 97" stroke-linecap="round" transform="rotate(-62 256 261)"/>
+<circle cx="256" cy="261" r="20" fill="#fff4dc"/>
+<rect x="132" y="168" width="248" height="186" rx="46" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="4"/>
+<circle cx="372" cy="398" r="9" fill="#7dffb0"/><circle cx="372" cy="398" r="20" fill="#7dffb0" opacity=".18"/>
+<path d="M196 384L180 420M316 384L332 420" stroke="#ffcf7a" stroke-opacity=".55" stroke-width="7" stroke-linecap="round"/>
 </g><rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3"/></svg>

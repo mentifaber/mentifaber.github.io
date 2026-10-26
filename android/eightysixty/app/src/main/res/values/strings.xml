@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Eightysixty</string>
+    <string name="app_name">Phosphor</string>
     <string name="remote_url" translatable="false">https://mentifaber.org/roku-app?from=android</string>
 </resources>

@@ -107,7 +107,7 @@ final class Bridge implements WebViewCompat.WebMessageListener {
         return new JSONObject().put("ok", true).put("devices", devs);
     }
 
-    /** The phone's volume button, while Eightysixty is in front and a TV is chosen: true if it went to the TV. */
+    /** The phone's volume button, while Phosphor is in front and a TV is chosen: true if it went to the TV. */
     boolean volumeKey(String key) {
         final String ip = target;
         if (ip == null) return false;

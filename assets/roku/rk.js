@@ -1,4 +1,4 @@
-/* Eightysixty · the remote. In a browser it drives a demo TV; inside the Eightysixty Android app (android/eightysixty) the
+/* Phosphor (once Eightysixty) · the remote. In a browser it drives a demo TV; inside the Phosphor Android app (android/eightysixty) the
    app's bridge finds the real Rokus on the Wi-Fi and every press goes to them (see REAL below). In a browser: Every Roku listens on port 8060 for the External Control Protocol: plain
    HTTP, no pairing, no PIN. The real remote is a page plus a tiny Node relay on the home network (a browser can't send the
    SSDP multicast that finds the TV, and the TV doesn't send the headers a page would need). Here the relay and the TVs are
@@ -41,7 +41,7 @@ function req(method, path, status, note, body) {
 }
 const say = (t, cls) => { line(esc(t), cls || "w"); lastReq = null; };
 
-// ── the Android app: Eightysixty for Android loads this page and lends it what a browser can't do, finding TVs on the Wi-Fi
+// ── the Android app: Phosphor for Android loads this page and lends it what a browser can't do, finding TVs on the Wi-Fi
 // (SSDP) and talking to them on port 8060 (window.RokuBridge, given to mentifaber.org alone). Then every button is real.
 const NB = window.RokuBridge || null, REAL = !!NB, pend = new Map(); let rq = 0;
 if (NB) NB.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (x) { return; }
@@ -91,7 +91,7 @@ async function powerReal(t, k) {
     }
     say("Waking " + t.d.name + "…", "x");
     if (t.d.mac) { const w = await bridge("wake", { ip: t.d.ip, mac: t.d.mac });
-      line('<span class="x">' + now() + '</span> <span class="m">WoL</span> magic packet → ' + esc(t.d.mac) + " " + (w.ok ? '<span class="ok">sent</span>' : '<span class="bad">' + esc(w.error || "not sent") + "</span>" + (w.error === "unknown request" ? ' <span class="x">· update Eightysixty from Foundry to wake TVs from deep sleep</span>' : ""))); lastReq = null; }
+      line('<span class="x">' + now() + '</span> <span class="m">WoL</span> magic packet → ' + esc(t.d.mac) + " " + (w.ok ? '<span class="ok">sent</span>' : '<span class="bad">' + esc(w.error || "not sent") + "</span>" + (w.error === "unknown request" ? ' <span class="x">· update Phosphor from Foundry to wake TVs from deep sleep</span>' : ""))); lastReq = null; }
     let m = {};
     for (let n = 0; n < 6; n++) { m = await ecp("POST", "/keypress/PowerOn", n ? "again" : "waking"); if (done(m)) break; if (refused(m) && t.limited) return; await nap(1500); }
     for (let n = 0; n < 10 && !t.on; n++) { await nap(1000); const r = await bridge("info", { ip: t.d.ip }); if (r.status === 200) realTV(t.d.ip, r.body); }
@@ -200,7 +200,8 @@ function draw() {
   const t = cur(), s = $("scr"); if (!t) return;
   if (t.real) {   // a real TV: what it told us, not a picture of its screen
     $("led").className = "led" + (t.on ? "" : " stby"); $("hops").textContent = "this phone → " + t.d.ip + ":8060";
-    s.className = "scr real"; s.innerHTML = '<div class="rinfo"><i class="dot' + (t.on ? " on" : "") + '"></i><b>' + esc(t.d.name) + "</b><span>" + esc([t.on ? "on" : "standby", t.d.model, t.d.ip].filter(Boolean).join(" · ")) + "</span>"
+    const warm = t.on && !t.lit; t.lit = t.on;
+    s.className = "scr real"; s.innerHTML = '<div class="rinfo' + (warm ? " boot" : "") + '"><i class="dot' + (t.on ? " on" : "") + '"></i><b>' + esc(t.d.name) + "</b><span>" + esc([t.on ? "on" : "standby", t.d.model, t.d.ip].filter(Boolean).join(" · ")) + "</span>"
       + '<div class="now"><small>on screen</small>' + esc(t.on ? t.active || "…" : "nothing: the TV is in standby") + "</div>"
       + (t.limited ? '<div class="warn"><b>Buttons blocked by the TV</b>On the TV: Settings › System › Advanced system settings › Control by mobile apps › <b>Enabled</b></div>'
         : !t.on ? '<div class="warn soft">Press ⏻ to wake it</div>' : "") + "</div>";
@@ -255,7 +256,7 @@ const xmlApps = (t) => "<apps>\n" + t.tiles.map((a) => '  <app id="' + a.id + '"
 async function connectReal(t) {
   say("— " + t.d.name + " (" + t.d.ip + ") —", "x");
   const a = await ecp("GET", "/query/apps");
-  if (a.status === 200) { t.tiles = [...String(a.body).matchAll(/<app id="([^"]+)"[^>]*type="([^"]*)"[^>]*>([^<]*)<\/app>/g)].map((x) => ({ id: x[1], n: x[3].replace(/&amp;/g, "&"), tvin: x[2] === "tvin", c: "#" + ((hash(x[1]) & 0x7f7f7f) | 0x202040).toString(16).padStart(6, "0") })); }
+  if (a.status === 200) { t.tiles = [...String(a.body).matchAll(/<app id="([^"]+)"[^>]*type="([^"]*)"[^>]*>([^<]*)<\/app>/g)].map((x) => ({ id: x[1], n: x[3].replace(/&amp;/g, "&"), tvin: x[2] === "tvin", c: "hsl(" + (8 + (hash(x[1]) % 42)) + " " + (38 + (hash(x[3]) % 30)) + "% " + (22 + (hash(x[1] + x[3]) % 12)) + "%)" })); }
   $("apps").innerHTML = t.tiles.filter((x) => !x.tvin).map((x) => '<button data-app="' + esc(x.id) + '" style="background:' + (x.icon ? "url('" + x.icon + "') center/cover" : grad(x.c)) + '"' + (x.icon ? ' class="icon"' : "") + ' title="' + esc(x.n) + '" aria-label="' + esc(x.n) + '">' + esc(x.n) + "</button>").join("") || '<small class="x">No channels reported.</small>';
   bridge("target", { ip: t.d.ip });   // the phone's volume buttons now turn this TV up and down
   icons(t);
@@ -367,8 +368,20 @@ mode(store.get("rgm.mode") === "track" ? "track" : "pad");
 {
   const T = $("track"), STEP = 34; let g = null;
   const dot = document.createElement("i"); dot.className = "dot"; dot.hidden = true; T.appendChild(dot);
-  const at = (e) => { const r = T.getBoundingClientRect(); dot.style.left = e.clientX - r.left + "px"; dot.style.top = e.clientY - r.top + "px"; };
-  T.addEventListener("pointerdown", (e) => { T.setPointerCapture(e.pointerId); g = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), n: 0 }; dot.hidden = false; at(e); });
+  const cv = document.createElement("canvas"); T.prepend(cv); const cx = cv.getContext("2d"); let pts = [], raf = 0;
+  const paint = () => {   // phosphor persistence: each point glows, then fades over ~0.6 s
+    const r = T.getBoundingClientRect(), d = devicePixelRatio || 1;
+    if (cv.width !== Math.round(r.width * d)) { cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); }
+    cx.setTransform(d, 0, 0, d, 0, 0); cx.clearRect(0, 0, r.width, r.height); const now = performance.now();
+    pts = pts.filter((p) => now - p.t < 650);
+    for (let i = 1; i < pts.length; i++) { const a = 1 - (now - pts[i].t) / 650; if (pts[i].s !== pts[i - 1].s) continue;
+      cx.strokeStyle = "rgba(255,181,71," + (a * 0.85).toFixed(3) + ")"; cx.lineWidth = 3 + 9 * a; cx.lineCap = "round"; cx.shadowColor = "rgba(255,170,60,.9)"; cx.shadowBlur = 16 * a;
+      cx.beginPath(); cx.moveTo(pts[i - 1].x, pts[i - 1].y); cx.lineTo(pts[i].x, pts[i].y); cx.stroke(); }
+    raf = pts.length ? requestAnimationFrame(paint) : 0;
+  };
+  let stroke = 0;
+  const at = (e) => { const r = T.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; dot.style.left = x + "px"; dot.style.top = y + "px"; pts.push({ x, y, t: performance.now(), s: stroke }); if (!raf) raf = requestAnimationFrame(paint); };
+  T.addEventListener("pointerdown", (e) => { stroke++; T.setPointerCapture(e.pointerId); g = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), n: 0 }; dot.hidden = false; at(e); });
   T.addEventListener("pointermove", (e) => {
     if (!g) return; at(e); const dx = e.clientX - g.x, dy = e.clientY - g.y;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < STEP) return;
@@ -385,8 +398,8 @@ $("logx").addEventListener("click", () => sheet(false)); $("scrim").addEventList
 addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("logopen")) { e.stopImmediatePropagation(); sheet(false); } }, true);
 
 if (REAL) {   // the app: real TVs only, and the ones added by hand come back
-  TV.clear(); ip = null; document.body.classList.add("real"); document.querySelector(".top .pill").textContent = "live"; document.querySelector(".top .pill").title = "Talking to the Rokus on this Wi-Fi, through the Eightysixty app.";
-  $("note").textContent = "Your phone's volume buttons turn the TV up and down while Eightysixty is open.";
+  TV.clear(); ip = null; document.body.classList.add("real"); document.querySelector(".top .pill").textContent = "live"; document.querySelector(".top .pill").title = "Talking to the Rokus on this Wi-Fi, through the Phosphor app.";
+  $("note").textContent = "Your phone's volume buttons turn the TV up and down while Phosphor is open.";
   try { JSON.parse(store.get("rgm.extra") || "[]").forEach((x) => bridge("info", { ip: x }).then((m) => { if (m.status === 200) { realTV(x, m.body); fillDevs(); } })); } catch (e) {}
 }
 discover(true);

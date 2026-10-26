@@ -1,7 +1,7 @@
 {
   "id": "/roku",
-  "name": "Eightysixty · Mentifaber",
-  "short_name": "Eightysixty",
+  "name": "Phosphor · Mentifaber",
+  "short_name": "Phosphor",
   "description": "A remote for Roku TVs. The Android app finds every Roku on your Wi-Fi and drives it directly: every button, channels, inputs and a real keyboard, with no account and no cloud. In a browser it drives a demo TV.",
   "start_url": "/roku-app.html",
   "scope": "/roku",

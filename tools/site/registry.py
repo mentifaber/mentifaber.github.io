@@ -23,7 +23,7 @@ def _hues():
     s = open(os.path.join(ROOT, "assets/mf.js"), encoding="utf-8").read()
     d = json.loads(re.search(r"const MF_SYS = (\{.*?\});", s, re.S).group(1))
     return {k: v[1] for k, v in d.items()}
-HUE = _hues(); HUE.update({"mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34})
+HUE = _hues(); HUE.update({"mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
 
 CATS = [  # display order on the home page
   ("signals", "Signals & Comms", "Messengers, radios and things that talk without the usual pipes."),
