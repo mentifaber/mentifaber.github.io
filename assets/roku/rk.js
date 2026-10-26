@@ -48,13 +48,47 @@ const tag = (xml, k) => { const m = new RegExp("<" + k + ">([^<]*)</" + k + ">")
 async function ecp(method, path, note, at) {
   const t = TV.get(at || ip); if (!t) return {};
   const m = await bridge("ecp", { ip: t.d.ip, method, path }); req(method, path, m.status || 0, note || m.error || "");
+  if (method === "POST") await checked(t, m, path);
   return m;
+}
+const nap = (ms) => new Promise((r) => setTimeout(r, ms));
+// Roku OS 14.1 and later ship "Control by mobile apps" set to Limited: the TV still answers questions (its name, its channels), so
+// it looks connected, but it refuses every key press, keydown and keyup with 403. Only "Enabled" lets a remote press buttons.
+const LIMITED = (t) => t.d.name + " answers but won't take button presses: its \"Control by mobile apps\" setting is on Limited, which Roku OS 14.1 and later turn on by default. With the TV's own remote, open Settings › System › Advanced system settings › Control by mobile apps and choose Enabled (keep Network access on Default). Then press any button here.";
+async function checked(t, m, path) {
+  if (m.status >= 200 && m.status < 300) { if (t.limited || t.slept) { t.limited = t.slept = false; draw(); } return; }
+  if (m.status !== 403) return;
+  const i = await bridge("info", { ip: t.d.ip }); if (i.status === 200) realTV(t.d.ip, i.body);   // asleep, or locked out?
+  if (!t.on && !/PowerOn/.test(path)) { if (!t.slept) say(t.d.name + " is in standby, and a TV in standby only listens for Power. Press ⏻ to wake it."); t.slept = true; }
+  else if (!t.limited) { t.limited = true; say(LIMITED(t)); }
+  draw();
 }
 function realTV(ipAddr, info) {
   const d = { ip: ipAddr, name: tag(info, "user-device-name") || tag(info, "friendly-device-name") || "Roku at " + ipAddr, model: tag(info, "model-name") || tag(info, "friendly-model-name") || "Roku",
-    sw: tag(info, "software-version"), fast: tag(info, "supports-wake-on-wlan") === "true" || tag(info, "power-mode") !== "", tv: tag(info, "is-tv") === "true" };
+    sw: tag(info, "software-version"), wol: tag(info, "supports-wake-on-wlan") === "true", tv: tag(info, "is-tv") === "true",
+    mac: (tag(info, "wifi-mac") || tag(info, "ethernet-mac")).toLowerCase(), pm: tag(info, "power-mode") || "PowerOn" };
   const t = TV.get(ipAddr) || { real: true, v: { v: "real" }, tiles: [], active: "", on: true };
-  t.d = d; t.on = !/Standby|Off|Suspend/i.test(tag(info, "power-mode") || "PowerOn"); TV.set(ipAddr, t); return t;
+  t.d = d; t.on = /^PowerOn$/i.test(d.pm); TV.set(ipAddr, t); return t;
+}
+// Power: off is one press; on is Wake-on-LAN (the app sends the magic packet to the TV's MAC), then PowerOn, then a check that it woke
+let powering = false;
+async function powerReal(t, k) {
+  if (powering) return; powering = true;
+  try {
+    const i = await bridge("info", { ip: t.d.ip }), up = i.status === 200; if (up) realTV(t.d.ip, i.body);
+    if (k === "PowerOff" || (k === "Power" && up && t.on)) {
+      const m = await ecp("POST", t.d.tv ? "/keypress/PowerOff" : "/keypress/Power", "off");
+      if (m.status >= 200 && m.status < 300) { t.on = false; t.d.pm = "Ready"; draw(); } return;
+    }
+    say("Waking " + t.d.name + "…", "x");
+    if (t.d.mac) { const w = await bridge("wake", { ip: t.d.ip, mac: t.d.mac });
+      line('<span class="x">' + now() + '</span> <span class="m">WoL</span> magic packet → ' + esc(t.d.mac) + " " + (w.ok ? '<span class="ok">sent</span>' : '<span class="bad">' + esc(w.error || "not sent") + "</span>" + (w.error === "unknown request" ? ' <span class="x">· update Eightysixty from Foundry to wake TVs from deep sleep</span>' : ""))); lastReq = null; }
+    let m = {};
+    for (let n = 0; n < 6; n++) { m = await ecp("POST", "/keypress/PowerOn", n ? "again" : "waking"); if (m.status >= 200 && m.status < 300) break; if (m.status === 403 && t.limited) return; await nap(1500); }
+    for (let n = 0; n < 10 && !t.on; n++) { await nap(1000); const r = await bridge("info", { ip: t.d.ip }); if (r.status === 200) realTV(t.d.ip, r.body); }
+    if (t.on) { say(t.d.name + " is on.", "x"); refresh(); }
+    else if (!t.limited) say(t.d.name + " didn't wake. A Roku TV can only be switched on over the network while Fast TV Start keeps its Wi-Fi awake: on the TV, Settings › System › Power › Fast TV Start. Some TVs still drop off Wi-Fi after hours asleep; a wired connection, or the TV's own remote, covers those.");
+  } finally { powering = false; draw(); }
 }
 let refreshT = 0;
 function refresh() { clearTimeout(refreshT); refreshT = setTimeout(async () => { const t = cur(); if (!t || !t.real) return;   // what's on screen now
@@ -134,7 +168,7 @@ function lit(ch) { // keyboard input only lands in a focused text field
 function send(k, opt) {
   const t = cur(); if (!t) return;
   const path = (opt && opt.verb ? "/" + opt.verb + "/" : "/keypress/") + k;
-  if (t.real) { ecp("POST", path).then(refresh); return; }
+  if (t.real) { if (/^Power(On|Off)?$/.test(k)) powerReal(t, k); else ecp("POST", path).then(refresh); return; }
   if (!t.on) {
     if (!t.d.fast) { req("POST", k === "Power" ? "/keypress/PowerOn" : path, 0); if (!t.warned) { say(t.d.name + " is fully off, and its network went down with it. PowerOn needs Fast TV Start, which this TV doesn't have on. Tap the TV to press its physical power button."); t.warned = true; } return; }
     if (k === "PowerOn" || k === "Power") { req("POST", "/keypress/PowerOn", 200, "waking"); t.on = true; t.boot = performance.now(); goHome(t); draw(); return; }
@@ -158,7 +192,9 @@ function draw() {
   if (t.real) {   // a real TV: what it told us, not a picture of its screen
     $("led").className = "led" + (t.on ? "" : " stby"); $("hops").textContent = "this phone → " + t.d.ip + ":8060";
     s.className = "scr real"; s.innerHTML = '<div class="rinfo"><b>' + esc(t.d.name) + "</b><span>" + esc([t.d.model, t.d.sw && "software " + t.d.sw].filter(Boolean).join(" · ")) + "</span><em>" + (t.on ? "on" : "standby or off") + "</em>"
-      + '<div class="now"><small>on screen</small>' + esc(t.active || "…") + "</div></div>";
+      + '<div class="now"><small>on screen</small>' + esc(t.on ? t.active || "…" : "nothing: the TV is in standby") + "</div>"
+      + (t.limited ? '<div class="warn"><b>Buttons blocked by the TV</b>On the TV: Settings › System › Advanced system settings › Control by mobile apps › <b>Enabled</b></div>'
+        : !t.on ? '<div class="warn soft">Press ⏻ to wake it</div>' : "") + "</div>";
     return;
   }
   $("led").className = "led" + (t.on ? "" : " stby"); $("hops").textContent = "page → relay → " + t.d.ip + ":8060";
@@ -212,6 +248,10 @@ async function connectReal(t) {
   const a = await ecp("GET", "/query/apps");
   if (a.status === 200) { t.tiles = [...String(a.body).matchAll(/<app id="([^"]+)"[^>]*type="([^"]*)"[^>]*>([^<]*)<\/app>/g)].map((x) => ({ id: x[1], n: x[3].replace(/&amp;/g, "&"), tvin: x[2] === "tvin", c: "#" + ((hash(x[1]) & 0x7f7f7f) | 0x202040).toString(16).padStart(6, "0") })); }
   $("apps").innerHTML = t.tiles.filter((x) => !x.tvin).map((x) => '<button data-app="' + esc(x.id) + '" style="background:' + grad(x.c) + '" title="POST /launch/' + esc(x.id) + '">' + esc(x.n) + "</button>").join("") || '<small class="x">No channels reported.</small>';
+  const probe = t.tiles.find((x) => !x.tvin);
+  if (t.on && probe) { const c = await bridge("ecp", { ip: t.d.ip, method: "GET", path: "/query/icon/" + encodeURIComponent(probe.id) });
+    if (c.status === 403) { t.limited = true; say(LIMITED(t)); } else if (c.status === 200) t.limited = false; }
+  else if (!t.on) say(t.d.name + " is in standby. Press ⏻ to wake it.", "x");
   refresh(); draw();
 }
 function connect(to) {
