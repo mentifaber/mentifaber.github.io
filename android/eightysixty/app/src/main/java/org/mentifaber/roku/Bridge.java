@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -33,8 +34,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** The page's line to the TVs, as window.RokuBridge: given only to https://mentifaber.org, main frame only.
- *  Messages are JSON {op, req, …}: "discover" (an SSDP search, then each Roku's device-info), "info" {ip} and
- *  "ecp" {ip, method, path}. Answers come back as {req, ok, status, body} or {req, devices}. It talks to private
+ *  Messages are JSON {op, req, …}: "discover" (an SSDP search, then each Roku's device-info), "info" {ip},
+ *  "ecp" {ip, method, path} and "wake" {ip, mac} (a Wake-on-LAN magic packet, broadcast on this network). Answers come back as {req, ok, status, body} or {req, devices}. It talks to private
  *  network addresses on port 8060 alone, and only on Roku's control paths, so the page can't use it to reach anything else. */
 final class Bridge implements WebViewCompat.WebMessageListener {
     private static final Pattern PATH = Pattern.compile("/(keypress|keydown|keyup|launch|input|search|query)(/[A-Za-z0-9_.%~-]*)*(\\?[A-Za-z0-9_.%=&~-]*)?");
@@ -59,6 +60,7 @@ final class Bridge implements WebViewCompat.WebMessageListener {
                     case "discover": out = discover(); break;
                     case "info": out = ecp(m.optString("ip"), "GET", "/query/device-info"); break;
                     case "ecp": out = ecp(m.optString("ip"), m.optString("method", "GET"), m.optString("path")); break;
+                    case "wake": out = wake(m.optString("ip"), m.optString("mac")); break;
                     default: out = fail("unknown request");
                 }
             } catch (Exception e) { out = fail(e.getMessage() == null ? e.toString() : e.getMessage()); }
@@ -100,6 +102,29 @@ final class Bridge implements WebViewCompat.WebMessageListener {
         return new JSONObject().put("ok", true).put("devices", devs);
     }
 
+    /** Wake-on-LAN: six 0xFF bytes and the MAC sixteen times, to the network's broadcast addresses on ports 9 and 7, a few
+     *  times over (Wi-Fi drops some). A Roku TV asleep with Fast TV Start keeps listening for this on its Wi-Fi. */
+    private JSONObject wake(String ip, String mac) throws Exception {
+        if (!local(ip)) return fail("only TVs on your own network");
+        if (!mac.matches("([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}")) return fail("no MAC address for this TV");
+        byte[] p = new byte[102];
+        for (int i = 0; i < 6; i++) p[i] = (byte) 0xFF;
+        String[] h = mac.split("[:-]");
+        for (int r = 0; r < 16; r++) for (int i = 0; i < 6; i++) p[6 + r * 6 + i] = (byte) Integer.parseInt(h[i], 16);
+        String[] o = ip.split("\\.");
+        InetAddress[] to = { InetAddress.getByName("255.255.255.255"), InetAddress.getByName(o[0] + "." + o[1] + "." + o[2] + ".255") };
+        try (DatagramSocket sock = new DatagramSocket()) {
+            sock.setBroadcast(true);
+            for (int round = 0; round < 3; round++) {
+                for (InetAddress a : to) for (int port : new int[]{9, 7}) {
+                    try { sock.send(new DatagramPacket(p, p.length, a, port)); } catch (Exception ignored) { } // one address may be refused; the others still go
+                }
+                Thread.sleep(120);
+            }
+        }
+        return new JSONObject().put("ok", true);
+    }
+
     /** One External Control Protocol request to http://ip:8060/path. */
     private JSONObject ecp(String ip, String method, String path) throws Exception {
         if (!local(ip)) return fail("only TVs on your own network");
@@ -109,10 +134,12 @@ final class Bridge implements WebViewCompat.WebMessageListener {
         try {
             c.setConnectTimeout(2500); c.setReadTimeout(3500); c.setInstanceFollowRedirects(false); c.setUseCaches(false);
             c.setRequestMethod(method);
+            c.setRequestProperty("Connection", "close"); // Roku's little server answers one request per connection most reliably
             if ("POST".equals(method)) { c.setDoOutput(true); c.setFixedLengthStreamingMode(0); try (OutputStream o = c.getOutputStream()) { o.flush(); } }
             int code = c.getResponseCode();
             InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
             ByteArrayOutputStream b = new ByteArrayOutputStream();
+            if (path.startsWith("/query/icon/")) in = null; // an image: the page only needs to know whether it was allowed
             if (in != null) try (InputStream s = in) { byte[] k = new byte[8192]; int n; while ((n = s.read(k)) > 0 && b.size() < 512 * 1024) b.write(k, 0, n); }
             return new JSONObject().put("ok", code < 400).put("status", code).put("body", b.toString("UTF-8"));
         } finally { c.disconnect(); }
