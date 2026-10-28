@@ -100,14 +100,99 @@ def suite():  # assets/suite.json: what "Install the suite" walks through, one a
     json.dump(out, open(os.path.join(ROOT, "assets/suite.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     return f"assets/suite.json ({len(out)} apps)"
 
+# ── search engines ─────────────────────────────────────────────────────────────────────────────────────────────────────
+# The site is served by Cloudflare with html_handling "auto-trailing-slash": /arsenal.html answers with a redirect to
+# /arsenal. So every page's address for search engines is the clean one, and each page says so in a canonical tag.
+SITE = "https://mentifaber.org"
+def clean_url(f):  # arsenal.html -> /arsenal · index.html -> / · wx/index.html -> /wx/
+    return "/" + (f[:-len("index.html")] if f.endswith("index.html") else f[:-5])
+
+# descriptions for the hand-made pages that have none (the generated pages take theirs from site.json)
+DESC = {
+    "arsenal-app.html": "Take a 2008 Volvo XC70 and a FANUC robot arm apart in your browser: every part labelled, exploded views, and an arm you can jog and run.",
+    "bubble-editor-app.html": "Balloon: number every dimension on an inspection drawing in a click, then export the ballooned drawing and a first-article inspection report.",
+    "crime-dashboard-app.html": "Per Capita: the safest and most dangerous US cities, ranked by crime per 100,000 people, with the numbers behind every rank.",
+    "moon-compatibility-app.html": "Synodic: compare the moon phases two people were born under, with the real lunar phase for each date and what it is said to mean.",
+    "neural-sim-v1.html": "Moodfield v1: the first simulation of emotional state as a small neural network, kept as it was built, with notes on what it does and doesn't show.",
+    "neural-sim-v2.html": "Moodfield v2: the second simulation of shifting emotional state in a small neural network, kept as it was built.",
+    "sleep-compression-app.html": "Sleep Compression Tracker: log time in bed and time asleep, and let it suggest your next sleep window the way sleep compression therapy does.",
+    "monstrosity-log.html": "The Monstrosity, build log 001: three machines on a private line, ten drives in one namespace, Traefik routing and a tunnel as the only way in.",
+    "garden-notes.html": "Garden Notes: notes from the garden, kept by Mentifaber.",
+    "angels.html": "Be Not Afraid: a private Mentifaber page.",
+    "build.html": "An AutoFaber build: a project made by AutoFaber's swarm, runnable in your browser.",
+    "flutterbloom-accounts.html": "Flutterbloom accounts: sign in to Flutterbloom.",
+    "pilotfish-app.html": "Pilotfish: a private, invite-only messenger by Mentifaber.",
+    "vigil-app.html": "Vigil: a private watch board for world events, air traffic and space weather.",
+    "muse-live.html": "muse: live access to a private Mentifaber service. Invite only.",
+    "weaver-live.html": "Weaver: live access to a private Mentifaber service. Invite only.",
+    "barycenter-app.html": "Barycenter: a private universe for two, with messages, voice notes and presence, encrypted end to end. Invite only.",
+}
+
+def short_desc(d, cap=155):  # whole sentences up to ~155 characters; a long first sentence is cut at a word, with an ellipsis
+    d = re.sub(r"\s+", " ", d).strip()
+    if len(d) <= 160: return d
+    out = ""
+    for sent in re.split(r"(?<=[.!?])\s+", d):
+        if len(out + (" " if out else "") + sent) > cap: break
+        out = out + (" " if out else "") + sent
+    if len(out) >= 110: return out
+    cut = d[:cap - 1].rsplit(" ", 1)[0].rstrip(",;:—–-· ")
+    return cut + "…"
+
+def seo():
+    """Every page: a canonical tag on its clean address, og:url, a meta description of the right length, and one H1."""
+    import html as _h
+    files = sorted(f for f in os.listdir(ROOT) if f.endswith(".html") and f != "404.html") + ["wx/index.html", "widgets/index.html"]
+    n = 0
+    for f in files:
+        path = os.path.join(ROOT, f)
+        if not os.path.exists(path): continue
+        s = open(path, encoding="utf-8").read(); o = s
+        if re.search(r'http-equiv=["\']refresh', s, re.I):  # a forwarding page: point its canonical at the clean target
+            s = re.sub(r'(<link rel="canonical" href=")(?!https?:)([^"]+?)(?:\.html)?(")', lambda m: m.group(1) + SITE + "/" + m.group(2).lstrip("/") + m.group(3), s)
+            if s != o: open(path, "w", encoding="utf-8").write(s); n += 1
+            continue
+        url = SITE + clean_url(f)
+        s = re.sub(r'\s*<link rel="canonical"[^>]*>', "", s)
+        s = re.sub(r'(<meta charset="?utf-8"?[^>]*>)', lambda m: m.group(1) + '\n<link rel="canonical" href="' + url + '">', s, count=1, flags=re.I)
+        if 'rel="canonical"' not in s: s = s.replace("<head>", '<head>\n<link rel="canonical" href="' + url + '">', 1)
+        if 'property="og:title"' in s and 'property="og:url"' not in s: s = s.replace('<meta property="og:title"', '<meta property="og:url" content="' + url + '"><meta property="og:title"', 1)
+        m = re.search(r'<meta name="description" content="([^"]*)"', s)
+        if m:
+            d = _h.unescape(m.group(1)); nd = short_desc(d)
+            if len(d) < 50 and f in DESC: nd = DESC[f]
+            if nd != d: s = s[:m.start(1)] + _h.escape(nd, quote=True) + s[m.end(1):]
+        elif f in DESC:
+            s = re.sub(r'(<title>[^<]*</title>)', lambda m: m.group(1) + '\n<meta name="description" content="' + _h.escape(DESC[f], quote=True) + '">', s, count=1)
+        # one H1: a page that only shows its name inside the app gets it as a heading for search engines and screen readers
+        if not re.search(r"<h1[\s>]", s, re.I):
+            t = re.search(r"<title>([^<]*)</title>", s); name = _h.unescape(t.group(1)) if t else "Mentifaber"
+            h1 = '<h1 class="seo-h1" style="position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">' + _h.escape(name) + "</h1>"
+            s = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + "\n" + h1, s, count=1)
+        # structured data: the site on the home page, each project as an app on its own page
+        ld = None; md = re.search(r'<meta name="description" content="([^"]*)"', s); dsc = _h.unescape(md.group(1)) if md else ""
+        org = {"@type": "Organization", "name": "Mentifaber", "url": SITE + "/", "logo": SITE + "/assets/icons/v2/mentifaber-512.png"}
+        if f == "index.html":
+            ld = {"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "name": "Mentifaber", "url": SITE + "/", "description": dsc, "publisher": org}, org]}
+        elif f[:-5] in A and A[f[:-5]].get("href") == f and A[f[:-5]]["status"] != "private" and "noindex" not in s:
+            a = A[f[:-5]]
+            ld = {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": a["name"], "description": dsc, "url": url,
+                  "applicationCategory": "GameApplication" if a["cat"] == "play" else "MultimediaApplication" if a["cat"] == "craft" else "UtilitiesApplication",
+                  "operatingSystem": "Android" if a["status"] == "android" else "Web browser, Android", "image": SITE + "/assets/icons/v2/" + a["id"] + "-512.png",
+                  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": org}
+        s = re.sub(r'\s*<script type="application/ld\+json" id="ld-seo">.*?</script>', "", s, flags=re.S)
+        if ld: s = s.replace("</head>", '<script type="application/ld+json" id="ld-seo">' + json.dumps(ld, ensure_ascii=False).replace("</", "<\\/") + "</script>\n</head>", 1)
+        if s != o: open(path, "w", encoding="utf-8").write(s); n += 1
+    return f"search basics on {n} pages"
+
 def sitemap():  # sitemap.xml: every public page, skipping noindex pages and whatever robots.txt keeps out
     import subprocess, datetime
     blocked = [l.split(":", 1)[1].strip() for l in open(os.path.join(ROOT, "robots.txt")) if l.lower().startswith("disallow:")]
     pages = sorted(f for f in os.listdir(ROOT) if f.endswith(".html") and f != "404.html") + ["wx/index.html", "widgets/index.html"]
     rows = []
     for f in pages:
-        url = "/" + f.replace("index.html", "")
-        if any(b and url.startswith(b) for b in blocked) or "noindex" in open(os.path.join(ROOT, f), encoding="utf-8").read(): continue
+        url = clean_url(f); src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        if any(b and url.startswith(b) for b in blocked) or "noindex" in src or re.search(r'http-equiv=["\']refresh', src, re.I): continue
         day = subprocess.run(["git", "-C", ROOT, "log", "-1", "--format=%cs", "--", f], capture_output=True, text=True).stdout.strip() or datetime.date.today().isoformat()
         pri = "1.0" if url == "/" else "0.8" if has_page(f[:-5]) else "0.6" if f.endswith("-app.html") else "0.5"
         rows.append(f"  <url><loc>https://mentifaber.org{url}</loc><lastmod>{day}</lastmod><priority>{pri}</priority></url>")
@@ -119,4 +204,4 @@ if __name__ == "__main__":
     icons(list(A)); brand_icons()
     import plan
     for i in ids: print("built", plan.page(i))
-    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.aliases()); print("built", suite()); print("built", sitemap())
+    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.aliases()); print("built", suite()); print("built", seo()); print("built", sitemap())

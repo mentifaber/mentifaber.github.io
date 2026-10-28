@@ -198,7 +198,7 @@ input.tg:checked::after { left: 23px; background: var(--fil-hi); box-shadow: 0 0
 .sess.on > time { color: var(--fil-hi); }
 
 /* ── the other realms ── */
-.realm h1 { font-weight: 300; letter-spacing: -.015em; }
+.realm :is(h1, h2) { font-weight: 300; letter-spacing: -.015em; }
 .bd { border-top-color: var(--line); }
 .ptabs { background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-color: var(--line); }
 .tabrow button[data-pt].on::after, .mtabs button.on::after { background: var(--fil-hi); height: 1px; box-shadow: 0 0 10px var(--fil-hi); }

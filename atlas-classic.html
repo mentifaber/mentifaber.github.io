@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<link rel="canonical" href="https://mentifaber.org/atlas-classic">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Mentifaber — builder of minds and the systems that hold them. Autonomous agents, live orbital and world trackers, local-first tools and music, charted as one atlas."/>
+<meta name="description" content="Mentifaber — builder of minds and the systems that hold them. Autonomous agents, live orbital and world trackers, local-first tools and music, charted as…"/>
 <meta property="og:title" content="Mentifaber"/>
 <meta property="og:description" content="Builder of minds and the systems that hold them — an atlas of agents, trackers, tools and music."/>
 <meta name="theme-color" content="#000000"/>
@@ -126,8 +127,8 @@ body { font-family: 'Newsreader', serif; position: relative; overflow-x: clip; }
   align-self: start; height: 100vh; display: flex; flex-direction: column;
 }
 .legend-mark { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; letter-spacing: .14em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 2.6rem; }
-.legend h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); text-shadow: 0 0 34px rgba(200,169,110,.22); }
-.legend h1 i { font-style: italic; font-weight: 300; color: var(--rust); text-shadow: 0 0 30px rgba(217,64,48,.5); }
+.legend .lg-t { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); text-shadow: 0 0 34px rgba(200,169,110,.22); }
+.legend .lg-t i { font-style: italic; font-weight: 300; color: var(--rust); text-shadow: 0 0 30px rgba(217,64,48,.5); }
 .legend .sub { font-family: 'Newsreader', serif; font-style: italic; color: var(--ink-soft); font-size: 1.02rem; margin-top: 1.1rem; line-height: 1.5; }
 .legend-key { margin-top: 3rem; font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-soft); border-top: 1px solid var(--contour); padding-top: 1.6rem; }
 .legend-key .row { display: flex; align-items: center; gap: .7rem; padding: .45rem 0; text-transform: uppercase; letter-spacing: .04em; }
@@ -290,8 +291,8 @@ footer.mf p { font-family: 'Newsreader', serif; font-style: italic; color: var(-
   .plate.wide { grid-column: span 1; }
 }
 @font-face{font-family:'Mentifaber Display';font-display:swap;src:url('assets/fonts/MentifaberDisplay-Regular.woff2') format('woff2'),url('assets/fonts/MentifaberDisplay-Regular.ttf') format('truetype')}
-h1,h2,h3,.d-hero-name,.d-title,.plate h3,.pc-title,.field-head h2,.legend h1,.legend h2{font-family:'Mentifaber Display','Bricolage Grotesque',Georgia,serif!important;font-weight:400!important}
-.d-hero-name i,.d-title i,h1 i,h2 i,.pc-title i{font-style:normal!important}
+h1,h2,h3,.d-hero-name,.d-title,.plate h3,.pc-title,.field-head h2,.legend .lg-t,.legend h2{font-family:'Mentifaber Display','Bricolage Grotesque',Georgia,serif!important;font-weight:400!important}
+.d-hero-name i,.d-title i,h1 i,.lg-t i,h2 i,.pc-title i{font-style:normal!important}
 </style>
 </head>
 <body>
@@ -394,7 +395,7 @@ h1,h2,h3,.d-hero-name,.d-title,.plate h3,.pc-title,.field-head h2,.legend h1,.le
 <div class="atlas" id="atlas-main">
   <aside class="legend">
     <p class="legend-mark">Atlas of Systems / ed. 2026</p>
-    <h1>Menti<i class="shimmer">faber</i></h1>
+    <p class="lg-t" role="heading" aria-level="2">Menti<i class="shimmer">faber</i></p>
     <p class="sub">Every system charted like a site — surveyed, marked, and returned to.</p>
 
     <div class="legend-key">
