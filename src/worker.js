@@ -639,7 +639,7 @@ The server runs the real game engine and records every result, so scores on the 
 
 3. OBSERVATION (all x values are relative to you: dx>0 is ahead. y is absolute: 0 = top of the world, lavaY = 880 = lava, larger y = lower)
    you:{x,y,vx,vy,hooked,anchor:{dx,y},ropeLen,combo,shield,lives,powerups}, metres, score, time, over, why
-   anchors, lasers (fly through gapTop..gapBottom; "yellow-needs-speed" lasers need vx>=1000), saws (circle r), spouts (avoid when FIRING), rockets (warning:true means one is coming at that y),
+   anchors, lasers (fly through gapTop..gapBottom; "yellow-needs-speed" lasers need vx>=600), gravityWells (columns that drag you down hard), saws (circle r), spouts (avoid when FIRING), rockets (warning:true means one is coming at that y),
    drones, rings (fly through: boost forward; the purple ones flip the screen), bumpers, updrafts, powerups, shards.
 
 4. TIPS  Hold while you are below the anchor swinging forward; release on the upswing (vx>400, vy<-150) for a PERFECT (more speed, combo).
@@ -715,8 +715,22 @@ export class Lobby extends DurableObject {
           q.exec("DELETE FROM matches WHERE rowid=?", r.id);
         }
         q.exec("DELETE FROM board WHERE mode='wins' AND v=0 AND m=0"); q.exec("INSERT INTO tally(k,n) VALUES('mig_forfeits_v1',1)");
-      } }
+      }
+      // Tether names are claimed by a device key: the first device to post a name owns it (stored only as a hash)
+      q.exec("CREATE TABLE IF NOT EXISTS tclaim(k TEXT PRIMARY KEY, h TEXT, ts INTEGER)");
+      // one-time: the physics changed (speed walls, swings, bounces, gravity wells), so saved AI replays no longer play back true
+      if (!q.exec("SELECT n FROM tally WHERE k='mig_ghosts_v2'").toArray().length) { q.exec("DELETE FROM ghosts"); q.exec("INSERT INTO tally(k,n) VALUES('mig_ghosts_v2',1)"); }
+    }
     return q;
+  }
+  // may this device post under this name? A free name is claimed on the spot; a claimed one needs the same key
+  async owns(name, key) {
+    const k = String(name || "").trim().toLowerCase(); if (!k) return false;
+    if (!/^[a-f0-9]{32}$/.test(String(key || ""))) return false;
+    const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("tk1:" + key)), h = [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+    const q = this.sql(), row = q.exec("SELECT h FROM tclaim WHERE k=?", k).toArray()[0];
+    if (!row) { q.exec("INSERT INTO tclaim(k,h,ts) VALUES(?,?,?)", k, h, Date.now()); return true; }
+    return row.h === h;
   }
   match(w, l, mode, t) {
     if (!w.name || !l.name) return; const d = (a) => Math.max(0, Math.round(((a.x || 220) - 220) / 10));
@@ -1002,6 +1016,7 @@ export class Lobby extends DurableObject {
       let b; try { b = await req.json(); } catch (e) { return J({ ok: false }); }
       const r = q.exec("SELECT agent,mode,t FROM ghosts WHERE id=?", String(b.id || "")).toArray()[0], name = String(b.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16);
       if (!r || !name) return J({ ok: false }); const win = !!b.win, m = Math.max(0, Math.min(6000, Math.round(+b.m) || 0));
+      if (!(await this.owns(name, b.key))) return J({ ok: false, error: "claimed" });
       this.rec(name, win); this.rec(r.agent, !win);
       this.match(win ? { name, x: 220 + m * 10, mode: r.mode } : { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10, mode: r.mode }, win ? { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10 } : { name, x: 220 + m * 10 }, 0, win ? +b.time || 0 : r.t);
       return J({ ok: true });
@@ -1018,6 +1033,8 @@ export class Lobby extends DurableObject {
       const mode = String(b.mode || ""), v = +b.v, m = Math.max(0, Math.min(60000, Math.round(+b.m) || 0));
       if ((!MODES.includes(mode) && mode !== "other") || mode === "wins") return J({ ok: false });
       if (!(v >= 0) || v > 5e6) return J({ ok: false });
+      // nothing moves faster than 1800 a second: a 5000m trial takes at least ~28s, and a 60s sprint can't pass ~10800m
+      if ((mode === "trial" && v > 0 && v < 27) || (mode === "sprint" && v > 10800)) return J({ ok: false });
       this.bump("runs", 1); this.bump("metres", m); this.bump("d" + new Date().toISOString().slice(0, 10), 1);
       const cur = q.exec("SELECT n FROM tally WHERE k='bestm'").toArray()[0]; if (!cur || m > cur.n) q.exec("INSERT INTO tally(k,n) VALUES('bestm',?) ON CONFLICT(k) DO UPDATE SET n=?", m, m);
       const name = String(b.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16);
@@ -1027,6 +1044,7 @@ export class Lobby extends DurableObject {
         q.exec("INSERT INTO tffeed(ts,name,mode,v,m) VALUES(?,?,?,?,?)", Date.now(), name, mode, v, m); q.exec("DELETE FROM tffeed WHERE ts < (SELECT MIN(ts) FROM (SELECT ts FROM tffeed ORDER BY ts DESC LIMIT 60))");
       }
       let rank = null;
+      if (name && !mode.startsWith("thoughtform") && !(await this.owns(name, b.key))) return J({ ok: true, rank: null, claimed: true });
       if (name && MODES.includes(mode) && (!ASC[mode] || v > 0)) {
         const old = q.exec("SELECT v FROM board WHERE mode=? AND name=?", mode, name).toArray()[0];
         if (!old || (ASC[mode] ? v < old.v : v > old.v)) q.exec("INSERT INTO board(mode,name,v,m,ts) VALUES(?,?,?,?,?) ON CONFLICT(mode,name) DO UPDATE SET v=?,m=?,ts=?", mode, name, v, m, Date.now(), v, m, Date.now());
@@ -1114,7 +1132,9 @@ export class Lobby extends DurableObject {
   async webSocketMessage(ws, raw) {
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
     const a = this.me(ws);
-    if (m.t === "hello") { const name = String(m.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16) || "Player"; this.set(ws, { name, status: "idle" }); this.send(ws, { t: "welcome", id: a.id }); return this.lobby(); }
+    if (m.t === "hello") { const name = String(m.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16) || "Player";
+      if (!(await this.owns(name, m.key))) { this.send(ws, { t: "taken", name }); return; }
+      this.set(ws, { name, status: "idle" }); this.send(ws, { t: "welcome", id: a.id }); return this.lobby(); }
     if (!a.name) return;
     if (m.t === "invite") { this.doInvite(ws, a, m); return; }
     if (m.t === "cancel") { const o = this.find(m.to); if (o) this.send(o, { t: "withdrawn", from: a.id }); return; }
