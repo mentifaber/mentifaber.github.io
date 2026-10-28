@@ -337,7 +337,7 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 
 /* ── the other realms: a title at the surface, then beds on the rail ── */
 .realm { padding-block: 38px 26px; }
-.realm h1 { font-weight: 300; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.012em; }
+.realm :is(h1, h2) { font-weight: 300; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.012em; }
 .realm p { margin: 10px 0 0; font-size: 14.5px; }
 .realm > .rail { padding-top: 12px; }
 .bd { padding-block: 22px 26px; border-top: 1px solid var(--line); }
@@ -389,7 +389,7 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .st.done { color: var(--ok); } .st.failed { color: var(--bad); } .st.paused { color: var(--warn); }
 /* one mission */
 .phead .ttl { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
-.phead h1 { font-size: clamp(26px, 3vw, 38px); }
+.phead :is(h1, h2) { font-size: clamp(26px, 3vw, 38px); }
 .phead > .rail .q { margin-left: -9px; border-color: transparent; color: var(--dim); }
 .phead > .rail .q:hover { color: var(--ink); }
 .pstats { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 18px; }

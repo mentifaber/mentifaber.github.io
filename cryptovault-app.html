@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/cryptovault-app">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <!-- No network, enforced by the browser rather than promised: this page may not fetch, connect, or load anything that isn't
      inside this file (icons and the manifest aside). Open devtools; the network tab stays empty. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>CryptoVault · hybrid encryption in one file</title>
-<meta name="description" content="RSA-4096 and AES-256-GCM in one HTML file: identities with passphrase-protected backups, contacts with fingerprints, signed and encrypted messages and files. No server, no dependency, no network.">
+<meta name="description" content="RSA-4096 and AES-256-GCM in one HTML file: identities with passphrase-protected backups, contacts with fingerprints, signed and encrypted messages and…">
 <meta name="theme-color" content="#050b0d">
 <link rel="manifest" href="assets/manifests/cryptovault.webmanifest">
 <link rel="icon" href="assets/icons/v2/cryptovault.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/cryptovault-180.png">
@@ -55,6 +56,7 @@ a { color: var(--acc); }
 </style>
 </head>
 <body>
+<h1 class="seo-h1" style="position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">CryptoVault · hybrid encryption in one file</h1>
 <header class="top"><span class="logo">CRYPTO<span>VAULT</span></span><span class="who" id="who"><span class="dot"></span><span id="whoName">locked</span></span></header>
 <nav id="tabs" aria-label="Sections"><button data-t="id" class="on">Identity</button><button data-t="ct">Contacts</button><button data-t="enc">Encrypt</button><button data-t="dec">Decrypt</button><button data-t="spec">How it works</button></nav>
 <main>
