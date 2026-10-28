@@ -36,6 +36,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .hud .r{text-align:right}
 .hud .combo{font-family:var(--disp);font-size:20px;color:var(--hot);min-height:24px}
 .pz{position:fixed;right:14px;top:calc(var(--st) + 66px);width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.08);z-index:4;font-size:14px;pointer-events:auto}
+.pz2{top:calc(var(--st) + 114px);font-size:19px}
+.speedo{position:fixed;left:calc(env(safe-area-inset-left,0px) + 12px);bottom:calc(var(--sb) + 10px);width:118px;text-align:center;pointer-events:none;z-index:3;font-family:var(--disp)}
+.speedo svg{display:block;width:100%;overflow:visible}.speedo path{fill:none;stroke-width:9;stroke-linecap:round}.sp-bg{stroke:rgba(255,255,255,.12)}
+.sp-on{stroke:#5ef2ff;stroke-dasharray:0 100;transition:stroke .2s;filter:drop-shadow(0 0 5px currentColor)}.speedo.fast .sp-on{stroke:#ffe066}
+.sp-wall{stroke:#ffe066;stroke-width:3;stroke-linecap:round}
+.speedo b{display:block;margin-top:-30px;font-size:22px;font-weight:900;line-height:1}.speedo.fast b{color:#ffe066}.speedo small{display:block;font-size:8.5px;letter-spacing:.2em;color:var(--dim);margin-top:3px}
 .scr{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:calc(var(--st) + 24px) 20px calc(var(--sb) + 24px);text-align:center;background:radial-gradient(120% 80% at 50% 40%,rgba(7,6,15,.35),rgba(7,6,15,.9));overflow-y:auto}
 .logo{font-family:var(--disp);font-weight:900;font-size:clamp(56px,17vw,120px);letter-spacing:-.04em;line-height:.9;background:linear-gradient(180deg,#fff,#5ef2ff 55%,#ff4fd8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(94,242,255,.35))}
 .tag{font-size:11px;letter-spacing:.32em;color:var(--dim);margin:14px 0 30px;text-transform:uppercase}
@@ -107,7 +113,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div><div class="d" id="h-d">0<small>m</small></div><div class="s" id="h-s">SCORE 0</div></div>
   <div class="r"><div class="combo" id="h-c"></div><div class="s" id="h-b">BEST 0</div><div class="s" id="h-l"></div></div>
 </div>
-<button class="pz hidden" id="b-pause">❚❚</button>
+<button class="pz hidden" id="b-pause" aria-label="Pause">❚❚</button>
+<button class="pz pz2 hidden" id="b-restart" aria-label="Restart" title="Restart (R)">↻</button>
+<div class="speedo hidden" id="speedo" aria-hidden="true"><svg viewBox="0 0 120 68"><path class="sp-bg" d="M10 62 A50 50 0 0 1 110 62" pathLength="100"/><path class="sp-on" id="sp-arc" d="M10 62 A50 50 0 0 1 110 62" pathLength="100"/><line class="sp-wall" x1="39" y1="25.6" x2="32" y2="13.5"/></svg><b id="sp-v">0</b><small id="sp-l">SPEED</small></div>
 <div class="hint hidden" id="hint">TAP TO START</div>
 <button class="btn alt hidden" id="b-stopwait" style="position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:30;width:auto;padding:12px 22px">STOP WAITING</button>
 
@@ -189,6 +197,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="logo" style="font-size:54px">PAUSED</div>
   <div style="height:26px"></div>
   <button class="btn" id="b-resume">RESUME</button>
+  <button class="btn alt" id="b-restart2">RESTART</button>
   <button class="btn alt" id="b-quit">QUIT RUN</button>
 </section>
 
@@ -207,11 +216,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <section class="scr hidden" id="s-how">
   <div class="logo" style="font-size:48px">HOW</div>
   <div class="how">
-    <b>Hold anywhere</b> to fire a tether at a rope point ahead. <b>Let go</b> to fly. Any point on screen ahead of you is in reach.<br><br>
+    <b>Hold anywhere</b> to fire a tether at a rope point ahead. <b>Let go</b> to fly. The rope has no length limit: any point ahead of you is in reach. <b>↻</b> (or R) restarts a run.<br><br>
     Swing low, release on the way up. Release rising and fast for a <b>PERFECT</b>: bonus points and a climbing combo. Hit <b style="color:#ff4fd8">×8</b> for <b>OVERDRIVE</b> and smash through hazards.<br><br>
-    <b>The floor is lava.</b> Watch for <b style="color:#ff4f6a">laser walls</b> (one gap), <b style="color:#ffe066">yellow speed lasers</b> (no gap; break them at speed 1000+, a boost ring always comes first), <b>saws</b> of every size (some on chains or rails), <b style="color:#ff3b3b">drones</b> that wake and chase you once you pass, <b style="color:#ff2a2a">rockets</b> (a flashing ! warns you), and <b style="color:#ff7a3d">fire spouts</b> from the floor and ceiling.<br><br>
-    <b style="color:#ffe066">Boost rings</b> launch you forward and make you float a moment. <b style="color:#c08bff">Purple rings</b> flip the world upside down until the next purple ring. <b style="color:#b8ff4f">Green pads</b> bounce you off the lava; <b style="color:#ff9df0">pink bumpers</b> knock you away; updrafts lift you.<br><br>
-    <b>Power-ups</b> stack on the left of the screen: shield, magnet, ×2 score, long rope, slow-mo, jetpack (hold in the air), extra life, <b>reel</b> (hold to pull the rope in), <b>heavy ball</b> (smashes saws and drones) and <b>phase</b> (pass through anything).<br><br>
+    <b>The floor is lava.</b> Watch for <b style="color:#ff4f6a">laser walls</b> (one gap), <b style="color:#ffe066">yellow speed lasers</b> (no gap; break them moving forward at speed 600+, a boost ring always comes first; the speedometer turns yellow when you're fast enough), <b>saws</b> of every size (some on chains or rails), <b style="color:#ff3b3b">drones</b> that wake and chase you once you pass, <b style="color:#ff2a2a">rockets</b> (a flashing ! warns you), <b style="color:#ff7a3d">fire spouts</b> from the floor and ceiling, and <b style="color:#b48cff">gravity wells</b> that drag everything inside them down.<br><br>
+    <b style="color:#ffe066">Boost rings</b> launch you forward and make you float a moment. <b style="color:#c08bff">Purple rings</b> (rare) flip the world upside down until you fly through the huge purple ring that follows. <b style="color:#b8ff4f">Green pads</b> launch you high off the lava; <b style="color:#ff9df0">pink bumpers</b> fire you away at twice the speed you hit them; updrafts lift you without stealing your forward speed.<br><br>
+    <b>Power-ups</b> stack on the left of the screen: shield, magnet, ×2 score, slow-mo (slows the whole game), jetpack (hold in the air), extra life, <b>reel</b> (hold to pull the rope in), <b>heavy ball</b> (swings harder and smashes saws and drones) and <b>phase</b> (pass through anything).<br><br>
     <b>Modes:</b> Classic, Daily, Co-op, Race, Time Trial, Zen, Hardcore, Low Gravity, 60s Sprint, Shard Rush and Power Gauntlet. Ten biomes, each with its own weather and soundtrack.<br><br>
     Shards from runs and missions buy orbs, trails and items in the shop. Your best run races you as a ghost.<br><br>
     <b>Online:</b> tap ONLINE, pick a name, and you land in a lobby listing everyone who is playing. Challenge anyone: they get the request in-game and can accept or decline. Once they accept you both pick an orb and trail, hit READY, and a countdown starts a 2500m race on the same course. Crashes cost 1.6 seconds, first to the line wins, and if your opponent quits you win.<br><br>
@@ -233,6 +242,8 @@ const todayKey = () => { const d = new Date(); return d.getFullYear() * 10000 + 
 /* ── tuning ── */
 const WORLD_H = 960, FLOOR = 880, POOL = 120, R = 11, GRAV = 1900, MIN_L = 70, REACH = 660;
 const CRUISE = 1000, MAXV = 1800;           // above cruise speed, air drag bites; nothing ever compounds forever
+const WALL_V = 600;                          // a yellow speed wall breaks for anything moving forward this fast
+const WELL_G = 2600;                         // the extra pull inside a gravity well
 const GAP_MIN = 210, GAP_MAX = 300;          // anchors are always this far apart, always within reach of the last
 const Y_MIN = 120, Y_MAX = 330, Y_STEP = 110;
 const SAFE = 48;                             // ropes shorten themselves so the swing never dips into the lava
@@ -271,9 +282,9 @@ const MODES = {
 const PUP = {
   shield: { n: "SHIELD", c: "#7cd8ff", i: "🛡" }, magnet: { n: "MAGNET", c: "#ff7ad9", i: "🧲" }, x2: { n: "SCORE ×2", c: "#ffe066", i: "×2" },
   reach: { n: "LONG ROPE", c: "#9dff7a", i: "🎯" }, slowmo: { n: "SLOW-MO", c: "#a98bff", i: "⏳" }, jet: { n: "JETPACK · HOLD IN THE AIR", c: "#ff9a3d", i: "🚀" }, life: { n: "EXTRA LIFE", c: "#ff5e7a", i: "♥" },
-  reel: { n: "REEL · HOLD TO PULL IN", c: "#4fffe0", i: "⤒" }, heavy: { n: "HEAVY BALL", c: "#c0c6d6", i: "⚓" }, phase: { n: "PHASE · PASS THROUGH", c: "#e0b8ff", i: "👻" },
+  reel: { n: "REEL · HOLD TO PULL IN", c: "#4fffe0", i: "⤒" }, heavy: { n: "HEAVY BALL · SWING HARDER", c: "#c0c6d6", i: "⚓" }, phase: { n: "PHASE · PASS THROUGH", c: "#e0b8ff", i: "👻" },
 };
-const PDUR = { magnet: 9, x2: 10, reach: 10, slowmo: 4, jet: 6, reel: 10, heavy: 10, phase: 5 };
+const PDUR = { magnet: 9, x2: 10, reach: 10, slowmo: 5, jet: 6, reel: 10, heavy: 10, phase: 5 };
 const TRAILS = [{ id: "ribbon", n: "RIBBON", cost: 0 }, { id: "dots", n: "DOTS", cost: 150 }, { id: "spark", n: "SPARKS", cost: 300 }, { id: "comet", n: "COMET", cost: 600 }, { id: "rainbow", n: "RAINBOW", cost: 1000 }, { id: "fire", n: "FIRE", cost: 1400 }, { id: "volt", n: "VOLT", cost: 1700 }, { id: "none", n: "NONE", cost: 0 }];
 const ITEMS = [{ id: "head", n: "HEAD START", d: "begin at 250m", cost: 120 }, { id: "shield", n: "SHIELD", d: "start shielded", cost: 60 }, { id: "life", n: "EXTRA LIFE", d: "one revive", cost: 150 }];
 const DEF_SET = { music: 70, sfx: 80, shake: 1, haptics: 1, reticle: 1, ghost: 1, p2: "green", raceLen: 5000, track: "auto" };
@@ -285,7 +296,9 @@ try { Object.assign(prog, JSON.parse(localStorage.getItem(SAVE) || "{}")); } cat
 prog.bestCoop = prog.bestCoop || 0;
 prog.set = Object.assign({}, DEF_SET, prog.set || {}); prog.trails = prog.trails || ["ribbon", "none"]; prog.trail = prog.trail || "ribbon";
 prog.items = prog.items || { head: 0, shield: 0, life: 0 }; prog.bestHard = prog.bestHard || 0; prog.bestZen = prog.bestZen || 0;
-prog.trial = prog.trial || {}; prog.race = prog.race || { p1: 0, p2: 0 };
+prog.trial = prog.trial || {}; prog.race = prog.race || { p1: 0, p2: 0 }; prog.trialTries = prog.trialTries || 0;
+// this device's key: it proves the leaderboard name is yours (the server only keeps a hash of it)
+if (!/^[a-f0-9]{32}$/.test(prog.key || "")) { try { prog.key = [...crypto.getRandomValues(new Uint8Array(16))].map((x) => x.toString(16).padStart(2, "0")).join(""); } catch (e) { prog.key = Array.from({ length: 32 }, () => "0123456789abcdef"[Math.random() * 16 | 0]).join(""); } }
 if (![2500, 5000, 10000].includes(prog.set.raceLen)) prog.set.raceLen = 5000;
 const TRIAL_M = 5000;
 const P2c = () => P2_COLORS[prog.set.p2] || P2_COLORS.green;
@@ -294,7 +307,7 @@ const save = () => { try { localStorage.setItem(SAVE, JSON.stringify(prog)); } c
 /* ── canvas ── */
 const cv = $("cv"), cx = cv.getContext("2d");
 let W = 1, H = 1, DPR = 1, S = 1;
-function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.max(Math.min(H / 640, W / (H > W ? 460 : 560)), Math.min(H / (FLOOR + POOL + 40), W / 1400)); }
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; S = Math.max(Math.min(H / 640, W / (H > W ? 560 : 640)), Math.min(H / (FLOOR + POOL + 40), W / 1400)); }
 addEventListener("resize", resize); resize();
 let zoomK = 1;
 const zoom = () => S * (coop ? .82 : 1) * zoomK;
@@ -389,7 +402,7 @@ let ghostR = null, online = false, net = null, myId = null, oppInfo = null, onli
 let players = [], anchors = [], gates = [], saws = [], shards = [], parts = [], pops = [];
 let genX = 0, genY = 0, maxX = 0, style = 0, got = 0, t = 0, slow = 0, shake = 0, biomeI = 0, flash = 0, lastMile = 0, revives = 0, topSpeed = 0, deathMsg = "";
 let ghostRec = [], ghostPlay = null;
-let rings = [], pads = [], pups = [], drones = [], x2T = 0, run = {}, doneNow = [], endTimer = 0;
+let rings = [], pads = [], pups = [], drones = [], wells = [], x2T = 0, run = {}, doneNow = [], endTimer = 0, tscale = 1;
 const cam = { x: 0, y: 0 };
 const vib = (ms) => { if (!prog.set.haptics) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 
@@ -404,7 +417,7 @@ function newRun(m, isCoop) {
   finishX = online ? olLen * 10 + 220 : race ? prog.set.raceLen * 10 + 220 : trial ? TRIAL_M * 10 + 220 : Infinity; winner = null; slowmoT = 0; raceT = 0;
   // daily and time trial use fixed seeds, so everyone races the same world
   seed = forceSeed ? forceSeed : online ? onlineSeed : m === "daily" ? todayKey() : trial ? 424242 : (Math.random() * 1e9) | 0; rng = mulberry(seed);
-  flipK = 0; flipTo = 0; lastHaz = -1e9; lastSpout = -1e9; nextFlip = 0; anchors = []; winds = []; bumpers = []; spouts = []; rockets = []; rocketT = 6; gates = []; saws = []; shards = []; parts = []; pops = []; rings = []; pads = []; pups = []; drones = []; x2T = 0; doneNow = [];
+  flipK = 0; flipTo = 0; lastHaz = -1e9; lastSpout = -1e9; nextFlip = 0; anchors = []; winds = []; bumpers = []; spouts = []; rockets = []; rocketT = 6; gates = []; saws = []; shards = []; parts = []; pops = []; rings = []; pads = []; pups = []; drones = []; wells = []; x2T = 0; doneNow = [];
   run = { perfects: 0, closes: 0, rings: 0, boings: 0, pups: 0, od: 0, smash: 0, fives: 0, got: 0, dist: 0 };
   // A start anchor, always: you begin hanging from it, pulled back, ready to swing.
   const start = { x: 220, y: 190, id: 0 }; anchors.push(start);
@@ -424,9 +437,9 @@ function newRun(m, isCoop) {
     if (it.head > 0 && !trial && m !== "daily") { it.head--; const a = anchors.find((x) => x.x >= 2700) || anchors[anchors.length - 1]; Object.assign(p, { hook: a, L: 200, x: a.x - 120, y: a.y + 160, startRope: false }); maxX = a.x - 120; cam.x = a.x - 120 - (W / zoom()) * .3; headX = a.x; generate(a.x + 2600); const safe = (q) => q.x < a.x - 600 || q.x > a.x + 1500; gates = gates.filter(safe); saws = saws.filter(safe); drones = drones.filter(safe); spouts = spouts.filter(safe); bumpers = bumpers.filter(safe); p.inv = 2.5; pop("HEAD START", a.x, a.y - 40, "#ffe066", 1.6, 1.2); }
     save();
   }
-  { const p0 = players[0]; cam.x = p0.x - (W / zoom()) * .5; cam.y = camYFor(p0.y); }
-  state = "play"; prog.runs++;
-  show(null); $("hud").classList.remove("hidden"); $("b-pause").classList.remove("hidden");
+  { const p0 = players[0]; cam.x = p0.x - (W / zoom()) * (coop ? .5 : H > W ? .24 : .36); cam.y = camYFor(p0.y); }
+  state = "play"; prog.runs++; if (trial) prog.trialTries++;
+  show(null); $("hud").classList.remove("hidden"); $("b-pause").classList.remove("hidden"); $("b-restart").classList.toggle("hidden", online); $("speedo").classList.remove("hidden");
   $("hint").textContent = (moon ? "LOW GRAVITY · " : sprint ? "60s SPRINT · " : rush ? "SHARD RUSH · 60s · " : gaunt ? "POWER GAUNTLET · " : race ? "RACE TO " + prog.set.raceLen + "m · " : trial ? "TIME TRIAL · " + TRIAL_M + "m · " : "") + (coop ? (matchMedia("(pointer:coarse)").matches ? "P1 LEFT HALF · P2 RIGHT HALF · TAP TO START" : "P1: MOUSE / ↑   ·   P2: SPACE   ·   PRESS TO START") : "TAP TO START · HOLD TO STAY ON · LET GO TO FLY");
   $("hint").classList.remove("hidden");
   if (audio()) { nextT = AC.currentTime + .05; step = 0; }
@@ -448,15 +461,17 @@ function generate(upTo) {
     const lowY = 650; // ropes self-shorten to stay off the lava, so swings bottom out just above it
     if (rng() < (rush ? .95 : .55)) { const n = rush ? 5 + (rng() * 4 | 0) : 3 + (rng() * 3 | 0); for (let i = 0; i < n; i++) { const k = (i + 1) / (n + 1); shards.push({ x: prevX + gap * k, y: lowY - 20 - Math.sin(k * Math.PI) * 110, got: false, p: rng() * TAU }); } }
     // boost rings sit on the arc you fly after a good release
-    if (!zen && !trial && !race && d0 > .5 && genX > nextFlip && rng() < .05) { const fx0 = prevX + gap * .5; rings.push({ x: fx0, y: lowY - rnd(30, 100), r: 46, hit: {}, flip: 1 }, { x: fx0 + 1000, y: lowY - rnd(30, 100), r: 46, hit: {}, flip: -1 }); nextFlip = fx0 + 3500; }
+    if (!zen && !trial && !race && d0 > .5 && genX > nextFlip && rng() < .01) { const fx0 = prevX + gap * .5; rings.push({ x: fx0, y: lowY - rnd(30, 100), r: 46, hit: {}, flip: 1 }, { x: fx0 + 1000, y: (rnd(30, 100), 470), r: 46, hit: {}, flip: -1, exit: true }); nextFlip = fx0 + 9000; }
     else if (d0 > .15 && rng() < (moon ? .5 : .2)) rings.push({ x: prevX + gap * rnd(.35, .65), y: lowY - rnd(10, 110), r: 42, hit: {} });
     // springy pads on the lava: a second chance, if you find them
     if (!rush && d0 > .6 && rng() < .07) winds.push({ x: prevX + gap * .5, w: rnd(90, 140), top: lowY - 260, f: rnd(2600, 3400) });
     // fire spouts from the lava or the ceiling keep you from climbing or diving forever
     if (!rush && !zen && d > .7 && rng() < .1 && prevX - lastSpout > 900 && room(prevX + gap * .5)) { const top = rng() < .5; lastSpout = prevX; spouts.push({ x: prevX + gap * rnd(.3, .7), top, len: top ? rnd(156, 228) : rnd(132, 198), ph: rng() * TAU, per: rnd(2.2, 3.2) }); }
+    // gravity wells: a column where everything is dragged down hard. Never a lasting effect, only a place to avoid or use
+    if (!rush && !zen && d > .8 && rng() < .06 && room(prevX + gap * .5)) wells.push({ x: prevX + gap * rnd(.4, .6), w: rnd(110, 160), ph: rng() * TAU });
     if (!rush && !zen && d > .5 && rng() < .08 && room(prevX + gap * .5)) bumpers.push({ x: prevX + gap * rnd(.35, .65), y: lowY - rnd(50, 150), r: 22, hitT: 0 });
     if ((d0 > .4 || zen) && rng() < .13) pads.push({ x: prevX + gap * rnd(.3, .7), w: 96, ph: rng() * TAU });
-    if (rng() < (gaunt ? .9 : rush ? .17 : .085)) { const pool = hard ? ["magnet", "x2", "reach", "slowmo", "jet", "reel", "heavy", "phase"] : ["shield", "magnet", "x2", "reach", "slowmo", "jet", "shield", "life", "reel", "heavy", "phase", "reel"]; pups.push({ x: prevX + gap * rnd(.4, .6), y: lowY - rnd(30, 120), k: pool[rng() * pool.length | 0], got: false, p: rng() * TAU }); }
+    if (rng() < (gaunt ? .9 : rush ? .17 : .085)) { const pool = hard ? ["magnet", "x2", "slowmo", "jet", "reel", "heavy", "phase"] : ["shield", "magnet", "x2", "slowmo", "jet", "shield", "life", "reel", "heavy", "phase", "reel"]; pups.push({ x: prevX + gap * rnd(.4, .6), y: lowY - rnd(30, 120), k: pool[rng() * pool.length | 0], got: false, p: rng() * TAU }); }
     if (!rush && d > 1.3 && rng() < .1 + Math.min(d - 1.3, 2) * .03 && room(prevX + gap * .5)) drones.push({ x: prevX + gap * .5, y: rnd(55, 130), span: rnd(80, 160), ph: rng() * TAU, sp: rnd(1.2, 2), dead: false });
     if (!rush && d > .35 && rng() < .09 + Math.min(d, 3) * .035 && room(prevX + gap * .5)) {
       // the gap sits around the natural swing path, never at random
@@ -473,15 +488,17 @@ function generate(upTo) {
         orb: d > 1 && kind < .3 ? rnd(70, 120) : 0, amp: d > 1.2 && kind >= .3 && kind < .65 ? rnd(50, 110) : 0, spd: rnd(1.2, 2.2) * (rng() < .5 ? -1 : 1) });
     }
   }
-  for (const g of gates) { const near = (q) => Math.abs(q.x - g.x) < 300 + (q.orb || q.amp || 0); saws = saws.filter((q) => !near(q)); drones = drones.filter((q) => !near(q)); spouts = spouts.filter((q) => Math.abs(q.x - g.x) > 330); bumpers = bumpers.filter((q) => !near(q)); winds = winds.filter((q) => !near(q)); }
+  for (const g of gates) { const near = (q) => Math.abs(q.x - g.x) < 300 + (q.orb || q.amp || 0); wells = wells.filter((q) => !near(q)); saws = saws.filter((q) => !near(q)); drones = drones.filter((q) => !near(q)); spouts = spouts.filter((q) => Math.abs(q.x - g.x) > 330); bumpers = bumpers.filter((q) => !near(q)); winds = winds.filter((q) => !near(q)); }
   // a boost ring's flight path stays clear, and updraft columns never hold saws
-  for (const rg of rings) { const ahead = (q) => q.x > rg.x - 80 && q.x < rg.x + 520 && !q.brk; saws = saws.filter((q) => !ahead(q)); drones = drones.filter((q) => !ahead(q)); spouts = spouts.filter((q) => !ahead(q)); bumpers = bumpers.filter((q) => !ahead(q)); gates = gates.filter((q) => !ahead(q)); }
+  for (const rg of rings) { const ahead = (q) => q.x > rg.x - 80 && q.x < rg.x + 520 && !q.brk; wells = wells.filter((q) => !ahead(q)); saws = saws.filter((q) => !ahead(q)); drones = drones.filter((q) => !ahead(q)); spouts = spouts.filter((q) => !ahead(q)); bumpers = bumpers.filter((q) => !ahead(q)); gates = gates.filter((q) => !ahead(q)); }
   for (const wz of winds) saws = saws.filter((q) => Math.abs(q.x - wz.x) > wz.w / 2 + q.r + (q.orb || q.amp || 0) + 30);
   const cut = cam.x - 700;
-  winds = winds.filter((q) => q.x > cut); spouts = spouts.filter((q) => q.x > cut); rockets = rockets.filter((q) => q.x > cut - 400); bumpers = bumpers.filter((q) => q.x > cut);
+  wells = wells.filter((q) => q.x > cut); winds = winds.filter((q) => q.x > cut); spouts = spouts.filter((q) => q.x > cut); rockets = rockets.filter((q) => q.x > cut - 400); bumpers = bumpers.filter((q) => q.x > cut);
   rings = rings.filter((r) => r.x > cut); pads = pads.filter((q) => q.x > cut); pups = pups.filter((q) => q.x > cut); drones = drones.filter((q) => q.x > cut - 200);
   anchors = anchors.filter((a) => a.x > cut && !a.dead); gates = gates.filter((g) => g.x > cut); saws = saws.filter((s) => s.x > cut - 60); shards = shards.filter((s) => s.x > cut);
 }
+// the exit ring of an upside-down stretch spans half the screen's height, whatever the screen
+const ringR = (rg) => rg.exit ? Math.max(170, (H / zoom()) * .25) : rg.r;
 function sawPos(s) {
   if (s.orb) { const a = t * s.spd + s.ph; return [s.x + Math.cos(a) * s.orb, s.y + Math.sin(a) * s.orb]; }
   const o = s.amp ? Math.sin(t * 1.6 * Math.abs(s.spd || 1) + s.ph) * s.amp : 0; return [s.x + (s.axis === "x" ? o : 0), s.y + (s.axis === "y" ? o : 0)];
@@ -499,7 +516,7 @@ function target(p) {
   let best = null, bs = 1e9;
   for (const a of anchors) {
     const dx = a.x - p.x, dy = a.y - p.y, d = Math.hypot(dx, dy);
-    if (a.dead || dx < -40 || a.x > cam.x + W / zoom() + 60 || d < 30) continue; // no reach limit: anything on screen ahead is grabbable
+    if (a.dead || dx < -40 || a.x > cam.x + W / zoom() + 500 || d < 30) continue; // the rope has no length limit: anything ahead, even just off screen, is grabbable
     const sc = d - Math.min(dx, 320) * .45 + (a.y > p.y + 40 ? 140 : 0) + (dx < 0 ? 160 : 0);
     if (sc < bs) { bs = sc; best = a; }
   }
@@ -553,6 +570,7 @@ function keyFor(e) {
 }
 addEventListener("keydown", (e) => {
   if (e.code === "Escape" || e.code === "KeyP") return pause();
+  if (e.code === "KeyR" && !e.repeat) return restart();
   const id = keyFor(e); if (id < 0) return; e.preventDefault(); if (!e.repeat) press(id);
 });
 addEventListener("keyup", (e) => { const id = keyFor(e); if (id >= 0) release(id); });
@@ -563,8 +581,12 @@ const leader = () => alive().reduce((a, p) => (!a || p.x > a.x ? p : a), null);
 function stepPlayer(p, dt) {
   const sub = 4, h = dt / sub;
   for (let k = 0; k < sub; k++) {
-    p.vy += GRAV * (p.heavyT > 0 ? 1.7 : 1) * (moon ? .5 : 1) * (p.floatT > 0 ? .25 : 1) * (p.hook ? 1 : .7) * h;
-    for (const wz of winds) if (Math.abs(p.x - wz.x) < wz.w / 2 && p.y > wz.top) p.vy -= wz.f * h; // updrafts
+    // on a rope, the rising half of a swing gets a little help, so it carries up past the anchor instead of dying halfway
+    const rising = p.hook && p.vy < 0;
+    p.vy += GRAV * (moon ? .5 : 1) * (p.floatT > 0 ? .25 : 1) * (p.hook ? (rising ? .82 : 1) : .7) * h;
+    let vent = false;
+    for (const wz of winds) if (Math.abs(p.x - wz.x) < wz.w / 2 && p.y > wz.top) { p.vy -= wz.f * h; vent = true; } // updrafts
+    for (const gw of wells) if (Math.abs(p.x - gw.x) < gw.w / 2) p.vy += WELL_G * (moon ? .5 : 1) * h; // gravity wells
     if (p.jetT > 0 && p.holding && !p.hook) { p.vy -= 3000 * h; p.vx += 300 * h; }
     let sp = Math.hypot(p.vx, p.vy);
     if (p.hook) {
@@ -572,25 +594,30 @@ function stepPlayer(p, dt) {
       const sl = Math.max(MIN_L, safeL(p.hook)); if (p.L > sl) p.L = Math.max(sl, p.L - 600 * h);
       if (p.reelT > 0 && p.holding && p.hookT > .15) p.L = Math.max(MIN_L, p.L - 380 * h);
       // a small pump keeps a swing alive, but fades out well before cruise speed
-      const dx = p.x - p.hook.x, dy = p.y - p.hook.y, d = Math.hypot(dx, dy) || 1, tx = -dy / d, ty = dx / d, dir = Math.sign(p.vx * tx + p.vy * ty) || 1, pump = 240 * clamp((850 - sp) / 850, 0, 1);
+      // a heavy ball swings harder: its pump never fades, so it builds momentum all the way up
+      const dx = p.x - p.hook.x, dy = p.y - p.hook.y, d = Math.hypot(dx, dy) || 1, tx = -dy / d, ty = dx / d, dir = Math.sign(p.vx * tx + p.vy * ty) || 1, pump = p.heavyT > 0 ? 520 : 300 * clamp((950 - sp) / 950, .12, 1);
       p.vx += tx * dir * pump * h; p.vy += ty * dir * pump * h;
     }
     // air drag past cruise speed: speed tops out instead of snowballing
-    if (sp > CRUISE) { const k2 = Math.exp(-((sp - CRUISE) / CRUISE) * (p.heavyT > 0 ? .3 : .55) * h); p.vx *= k2; p.vy *= k2; }
-    // soft ceiling: upward speed bleeds off near the top instead of slamming into it
-    if (p.y < 150 && p.vy < 0) p.vy *= Math.exp(-(150 - p.y) / 150 * 9 * h);
+    // (in an updraft the drag only takes the vertical speed it added: a vent never costs you forward momentum)
+    if (sp > CRUISE) { const k2 = Math.exp(-((sp - CRUISE) / CRUISE) * (p.heavyT > 0 ? .3 : .55) * h); if (!vent) p.vx *= k2; p.vy *= k2; }
+    // soft ceiling in free flight only: upward speed bleeds off near the top instead of slamming into it (never on a rope, where it killed swings)
+    if (!p.hook && p.y < 110 && p.vy < 0) p.vy *= Math.exp(-(110 - p.y) / 110 * 9 * h);
     p.x += p.vx * h; p.y += p.vy * h;
     if (p.hook) {
       const dx = p.x - p.hook.x, dy = p.y - p.hook.y, d = Math.hypot(dx, dy);
       if (d > p.L) { const nx = dx / d, ny = dy / d; p.x = p.hook.x + nx * p.L; p.y = p.hook.y + ny * p.L; const vr = p.vx * nx + p.vy * ny; if (vr > 0) { p.vx -= vr * nx; p.vy -= vr * ny; } }
     }
     if (!p.hook && p.vy > 1260) p.vy = 1260; // falls are 30% gentler than full speed
-    sp = Math.hypot(p.vx, p.vy); if (sp > MAXV) { p.vx *= MAXV / sp; p.vy *= MAXV / sp; }
+    sp = Math.hypot(p.vx, p.vy);
+    if (sp > MAXV) { if (vent && Math.abs(p.vx) < MAXV) { const my = Math.sqrt(MAXV * MAXV - p.vx * p.vx); p.vy = clamp(p.vy, -my, my); } else { p.vx *= MAXV / sp; p.vy *= MAXV / sp; } }
     if (p.y < R + 6) { p.y = R + 6; p.vy = Math.abs(p.vy) * .4; shake = Math.max(shake, .12); }
   }
 }
 function update(dtReal) {
-  const dt = dtReal * (slow > 0 ? .4 : slowmoT > 0 ? .55 : 1); slow = Math.max(0, slow - dtReal); slowmoT = Math.max(0, slowmoT - dtReal);
+  tscale = slow > 0 ? .4 : slowmoT > 0 ? .5 : 1;
+  const dt = dtReal * tscale; slow = Math.max(0, slow - dtReal); slowmoT = Math.max(0, slowmoT - dtReal);
+  if (filt && AC) filt.frequency.setTargetAtTime(slowmoT > 0 ? 380 : 900, AC.currentTime, .15); // the music sinks underwater while time is slow
   if (!started) {
     // waiting at the start: a gentle idle sway, no gravity
     for (const p of players) { const a = Math.sin(performance.now() / 700 + p.id) * .08 - (p.id ? .75 : 1.05); p.x = p.hook.x + Math.sin(a) * p.L; p.y = p.hook.y + Math.cos(a) * p.L; p.vx = 0; p.vy = 0; p.trail = []; }
@@ -610,7 +637,7 @@ function update(dtReal) {
     if (p.jetT > 0 && p.holding && !p.hook && Math.random() < .8) parts.push({ x: p.x - 4, y: p.y + 8, vx: fx(-60, 20), vy: fx(150, 300), t: 0, life: .35, c: Math.random() < .5 ? "#ff9a3d" : "#ffe066", r: 4 });
     if (p.od) { p.odT -= dt; if (p.odT <= 0) { p.od = false; p.combo = Math.min(p.combo, 4); p.inv = .6; pop("OVERDRIVE SPENT", p.x, p.y - 40, "#ff4fd8", 1, .9); } }
     // bounce pads
-    if (p.y > FLOOR - R - 6 && p.vy > 0) { const pad = pads.find((q) => Math.abs(q.x - p.x) < q.w / 2 + 4); if (pad) { p.vy = -Math.max(1050, p.vy * .9); p.y = FLOOR - R - 7; p.hook = null; run.boings++; addStyle(20); pop("BOING +20", p.x, p.y - 40, "#b8ff4f"); sfx("perfect", 2); burst(p.x, FLOOR, 18, "#b8ff4f", 300); vib(15); } }
+    if (p.y > FLOOR - R - 6 && p.vy > 0) { const pad = pads.find((q) => Math.abs(q.x - p.x) < q.w / 2 + 4); if (pad) { p.vy = -Math.max(1450, p.vy * 1.3); p.vx = Math.max(p.vx, 420); /* twice the old height, just short of the ceiling */ p.y = FLOOR - R - 7; p.hook = null; run.boings++; addStyle(20); pop("BOING +20", p.x, p.y - 40, "#b8ff4f"); sfx("perfect", 2); burst(p.x, FLOOR, 18, "#b8ff4f", 300); vib(15); } }
     if (zen && p.y > FLOOR - R - 4) { p.y = FLOOR - R - 5; p.vy = -Math.max(950, Math.abs(p.vy) * .8); p.hook = null; burst(p.x, FLOOR, 12, "#a98bff", 200); sfx("fly"); }
     if (p.y > FLOOR - R) { if (!kill(p, "THE FLOOR IS LAVA")) continue; }
     if (coop && p.x < cam.x - 30) { kill(p, "LEFT BEHIND"); continue; }
@@ -619,7 +646,7 @@ function update(dtReal) {
     for (const g of gates) {
       const off = g.mv ? Math.sin(t * 1.4 + g.ph) * g.mv : 0, top = g.top + off, bot = g.bot + off;
       if (Math.abs(p.x - g.x) < R + (g.zap ? 4 : 15) && (p.y - R < top || p.y + R > bot) && !p.inv && !p.phaseT && !g.broken && (!g.zap || zapOn(g))) {
-        if (p.od || (g.brk && p.vx >= 1000)) { g.broken = true; smash(p, g.x, p.y); if (g.brk) pop("BREAKTHROUGH!", p.x, p.y - 60, "#ffe066", 1.2, 1.2); continue; }
+        if (p.od || (g.brk && p.vx >= WALL_V)) { g.broken = true; smash(p, g.x, p.y); if (g.brk) pop("BREAKTHROUGH!", p.x, p.y - 60, "#ffe066", 1.2, 1.2); continue; }
         if (kill(p, g.brk ? "TOO SLOW" : "LASERED") === false) { dead = true; break; } }
       if (!g.passed[p.id] && p.x > g.x + R && g.zap) { g.passed[p.id] = true; run.zaps = (run.zaps || 0) + 1; addStyle(25); pop("TIMED +25", p.x, p.y - 34, "#9ad8ff"); }
       if (!g.passed[p.id] && p.x > g.x + R) { g.passed[p.id] = true; const m = Math.min(p.y - R - top, bot - p.y - R); if (m < 22) closeCall(p); else addStyle(15); }
@@ -639,10 +666,10 @@ function update(dtReal) {
     }
     if (dead) continue;
     for (const bp of bumpers) { const dx4 = p.x - bp.x, dy4 = p.y - bp.y, dd4 = Math.hypot(dx4, dy4); if (dd4 < bp.r + R && dd4 > 0) {
-      const nx = dx4 / dd4, ny = dy4 / dd4, vn = p.vx * nx + p.vy * ny; if (vn < 0) { p.vx -= 2 * vn * nx; p.vy -= 2 * vn * ny; p.vx = Math.max(p.vx, 250); }
+      const nx = dx4 / dd4, ny = dy4 / dd4, vn = p.vx * nx + p.vy * ny; if (vn < 0) { const out = Math.max(-2 * vn, 700); p.vx += (out - vn) * nx; p.vy += (out - vn) * ny; p.vx = Math.max(p.vx, 300); } // leaves at twice the speed it came in
       p.x = bp.x + nx * (bp.r + R + 1); p.y = bp.y + ny * (bp.r + R + 1); p.hook = null; bp.hitT = .3; run.bumps = (run.bumps || 0) + 1; addStyle(15); pop("BUMP +15", p.x, p.y - 30, "#ff9df0"); sfx("perfect", 3); burst(p.x, p.y, 10, "#ff9df0", 220); } }
     for (const bp of bumpers) bp.hitT = Math.max(0, bp.hitT - dt / players.length);
-    for (const rg of rings) if (!rg.hit[p.id] && Math.hypot(p.x - rg.x, p.y - rg.y) < rg.r) {
+    for (const rg of rings) if (!rg.hit[p.id] && Math.hypot(p.x - rg.x, p.y - rg.y) < ringR(rg)) {
       rg.hit[p.id] = true; if (!rg.flip) run.rings++; if (rg.flip) { flipTo = rg.flip > 0 ? 1 : 0; pop(rg.flip > 0 ? "UPSIDE DOWN!" : "RIGHT SIDE UP", p.x, p.y - 50, "#c08bff", 1.4, 1.2); sfx("biome"); }
       else { p.hook = null; p.vx = 1050; p.vy = 0; p.floatT = .7; }
       if (!rg.flip) { addStyle(30); pop("BOOST +30", p.x, p.y - 36, "#ffe066"); sfx("latch", 12); burst(rg.x, rg.y, 16, "#ffe066", 260); flash = .06; } else { addStyle(50); burst(rg.x, rg.y, 24, "#c08bff", 300); flash = .15; }
@@ -674,10 +701,11 @@ function update(dtReal) {
   // drones sleep where they hang. Pass one and it wakes, chases you for a couple of seconds, then gives up
   for (const dr of drones) {
     if (dr.dead) continue; if (dr.px == null) { dr.px = dr.x; dr.py = dr.y; dr.vx = 0; dr.vy = 0; dr.st = "idle"; dr.ct = 0; }
-    if (dr.st === "idle") { dr.py = dr.y + Math.sin(t * 2 + dr.ph) * 6; const p = alive().find((q) => q.x > dr.px + 20 && q.x < dr.px + 900); if (p) { dr.st = "chase"; dr.ct = 2.2; dr.tg = p; pop("!", dr.px, dr.py - 46, "#ff3b3b", .8, 1.6); sfx("close"); } }
+    if (dr.st === "idle") { dr.py = dr.y + Math.sin(t * 2 + dr.ph) * 6; const p = alive().find((q) => q.x > dr.px + 20 && q.x < dr.px + 900); if (p) { dr.st = "chase"; dr.ct = 1.8; dr.tg = p; pop("!", dr.px, dr.py - 46, "#ff3b3b", .8, 1.6); sfx("close"); } }
     else if (dr.st === "chase") { const p = dr.tg && dr.tg.alive ? dr.tg : leader(); dr.ct -= dt; if (!p || dr.ct <= 0) dr.st = "tired";
-      else { const dx = p.x - dr.px, dy = p.y - dr.py, dd = Math.hypot(dx, dy) || 1; dr.vx += (dx / dd * 2600 - dr.vx * 1.6) * dt; dr.vy += (dy / dd * 2600 - dr.vy * 1.6) * dt; } }
+      else { const dx = p.x - dr.px, dy = p.y - dr.py, dd = Math.hypot(dx, dy) || 1; dr.vx += (dx / dd * 1400 - dr.vx * 1.6) * dt; dr.vy += (dy / dd * 1400 - dr.vy * 1.6) * dt; const ds = Math.hypot(dr.vx, dr.vy); if (ds > 620) { dr.vx *= 620 / ds; dr.vy *= 620 / ds; } } }
     else { dr.vx *= Math.exp(-2 * dt); dr.vy = dr.vy * Math.exp(-2 * dt) + 40 * dt; }
+    for (const gw of wells) if (dr.st !== "idle" && Math.abs(dr.px - gw.x) < gw.w / 2) dr.vy += WELL_G * .5 * dt; // wells drag drones down too
     if (dr.st !== "idle") { dr.px += dr.vx * dt; dr.py = clamp(dr.py + dr.vy * dt, 30, FLOOR - 40); }
   }
   // rockets: a loud warning on the right edge at your height, then one screams straight through
@@ -699,6 +727,7 @@ function update(dtReal) {
     a.breakT -= dt;
     if (a.breakT <= 0) { a.dead = true; burst(a.x, a.y, 14, "#ff7a3d", 200); sfx("miss"); for (const p of players) if (p.hook === a) { p.hook = null; pop("SNAP!", p.x, p.y - 30, "#ff7a3d"); } }
   }
+  for (const gw of wells) for (const q of [...shards, ...pups]) if (!q.got && Math.abs(q.x - gw.x) < gw.w / 2) q.y = Math.min(FLOOR - 60, q.y + 160 * dt);
   run.dist = dist(); checkMissions();
   const lead = leader();
   if (!coop && !zen && lead && ghostRec.length < 30000 && Math.round(t * 20) > ghostRec.length / 2) ghostRec.push(Math.round(lead.x), Math.round(lead.y));
@@ -718,7 +747,7 @@ function update(dtReal) {
     const z1 = zoom(), px = W * .62; cam.x += px / z0 - px / z1;
   }
   if (lead) {
-    const viewW = W / zoom(), want = coop ? lead.x - viewW * .55 : lead.x - viewW * .5 + clamp(lead.vx, 0, 1300) * .06;
+    const viewW = W / zoom(), lane = H > W ? .24 : .36, want = coop ? lead.x - viewW * .55 : lead.x - viewW * lane + clamp(lead.vx, 0, 1300) * .08;
     cam.x = lerp(cam.x, want, 1 - Math.exp(-(coop ? 3.5 : 6) * dtReal));
     const ys = alive(), cy = coop && ys.length > 1 ? (ys[0].y + ys[1].y) / 2 : lead.y; cam.y = lerp(cam.y, camYFor(cy), 1 - Math.exp(-4 * dtReal));
   }
@@ -809,19 +838,19 @@ function endRun() {
   let nb = "";
   if (online) {
     const won = netResult ? netResult.win : !!winner;
-    if (ghostR) { try { fetch("/api/tether/ghost-result", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: ghostR.id, name: nm() || "Player", win: won, time: raceT, m: dist() }) }); } catch (e) {} } prog.onl = prog.onl || { w: 0, l: 0, s: 0, bs: 0 }; if (won) { prog.onl.w++; prog.onl.s++; prog.onl.bs = Math.max(prog.onl.bs, prog.onl.s); } else { prog.onl.l++; prog.onl.s = 0; } save();
+    if (ghostR) { try { fetch("/api/tether/ghost-result", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: ghostR.id, name: nm() || "Player", key: prog.key, win: won, time: raceT, m: dist() }) }); } catch (e) {} } prog.onl = prog.onl || { w: 0, l: 0, s: 0, bs: 0 }; if (won) { prog.onl.w++; prog.onl.s++; prog.onl.bs = Math.max(prog.onl.bs, prog.onl.s); } else { prog.onl.l++; prog.onl.s = 0; } save();
     $("d-why").textContent = "ONLINE " + OLM[olMode][0] + " · VS " + (oppInfo ? oppInfo.name : "?").toUpperCase();
     $("d-dist").innerHTML = '<span style="color:' + (won ? "#9dff7a" : "#ff4f6a") + '">' + (won ? "YOU WIN" : "YOU LOSE") + "</span>";
     $("d-new").textContent = netResult && netResult.why === "left" ? "THEY LEFT THE RACE" : netResult && netResult.time ? "WINNING TIME " + netResult.time.toFixed(1) + "s" : "";
     $("d-stat").innerHTML = "YOU " + dist() + "m  vs  " + (oppInfo ? oppInfo.name.toUpperCase() : "?") + " " + (remote ? Math.round(Math.max(0, remote.x - 220) / 10) : 0) + "m<br>" + raceT.toFixed(1) + "s · " + raceT.toFixed(1) + "s · PERFECTS <b>" + players[0].perfects + "</b> · CRASHES <b>" + players[0].deaths + "</b>";
-    $("d-miss").innerHTML = "RECORD <b>" + prog.onl.w + "W – " + prog.onl.l + "L</b> · STREAK <b>" + prog.onl.s + "</b> · BEST STREAK <b>" + prog.onl.bs + "</b>"; $("b-again").textContent = "BACK TO LOBBY"; ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
+    $("d-miss").innerHTML = "RECORD <b>" + prog.onl.w + "W – " + prog.onl.l + "L</b> · STREAK <b>" + prog.onl.s + "</b> · BEST STREAK <b>" + prog.onl.bs + "</b>"; $("b-again").textContent = "BACK TO LOBBY"; ["hud", "b-pause", "b-restart", "speedo", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
   }
   $("b-again").textContent = "AGAIN";
   if (race) {
     const w = winner ? winner.id : players[0].best >= players[1].best ? 0 : 1; prog.race["p" + (w + 1)]++; save();
     $("d-why").textContent = "RACE TO " + prog.set.raceLen + "m"; $("d-dist").innerHTML = '<span style="color:' + pcolor(players[w]) + '">P' + (w + 1) + " WINS</span>"; $("d-new").textContent = "SERIES · P1 " + prog.race.p1 + " – " + prog.race.p2 + " P2";
     $("d-stat").innerHTML = players.map((p) => '<span style="color:' + pcolor(p) + '">P' + (p.id + 1) + "</span> " + Math.round(Math.max(0, p.best - 220) / 10) + "m · CRASHES <b>" + p.deaths + "</b> · PERFECTS <b>" + p.perfects + "</b>").join("<br>") + "<br>TIME <b>" + raceT.toFixed(1) + "s</b>";
-    $("d-miss").innerHTML = ""; ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
+    $("d-miss").innerHTML = ""; ["hud", "b-pause", "b-restart", "speedo", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
   }
   if (trial) {
     const done = !!winner, tm = raceT, prev = prog.trial.best;
@@ -829,8 +858,8 @@ function endRun() {
     postScore("trial", done ? tm : 0, m);
     save();
     $("d-why").textContent = done ? "TIME TRIAL · " + TRIAL_M + "m" : "DNF · " + deathMsg; $("d-dist").textContent = done ? tm.toFixed(2) + "s" : m + "m"; $("d-new").textContent = nb;
-    $("d-stat").innerHTML = "BEST <b>" + (prog.trial.best ? prog.trial.best.toFixed(2) + "s" : "—") + "</b><br>PERFECTS <b>" + players[0].perfects + "</b> · RINGS <b>" + run.rings + "</b> · SHARDS <b>+" + got + "</b>";
-    $("d-miss").innerHTML = "NEXT<br>" + missionsHTML(); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
+    $("d-stat").innerHTML = "BEST <b>" + (prog.trial.best ? prog.trial.best.toFixed(2) + "s" : "—") + "</b> · ATTEMPTS <b>" + prog.trialTries + "</b><br>PERFECTS <b>" + players[0].perfects + "</b> · RINGS <b>" + run.rings + "</b> · SHARDS <b>+" + got + "</b>";
+    $("d-miss").innerHTML = "NEXT<br>" + missionsHTML(); ["hud", "b-pause", "b-restart", "speedo", "hint"].forEach((i) => $(i).classList.add("hidden")); show("s-dead"); return;
   }
   if (moon) { if (sc > (prog.bestMoon || 0)) { prog.bestMoon = sc; nb = "NEW LOW-G BEST"; } }
   else if (sprint) { if (m > (prog.bestSprint || 0)) { prog.bestSprint = m; nb = "NEW SPRINT BEST"; } }
@@ -849,7 +878,7 @@ function endRun() {
   const bestNow = moon ? prog.bestMoon : sprint ? (prog.bestSprint || 0) + "m" : rush ? prog.bestRush : gaunt ? prog.bestGaunt : zen ? prog.bestZen : hard ? prog.bestHard : coop ? prog.bestCoop : mode === "daily" ? (prog.daily[seed] || {}).best || 0 : prog.bestScore;
   const per = players.map((p) => (coop ? '<span style="color:' + pcolor(p) + '">P' + (p.id + 1) + "</span> " : "") + "PERFECTS <b>" + p.perfects + "</b> · CLOSE <b>" + p.closes + "</b>").join("<br>");
   $("d-stat").innerHTML = "SCORE <b>" + sc + "</b> · BEST <b>" + bestNow + "</b><br>" + per + "<br>TOP SPEED <b>" + Math.round(topSpeed / 10) + "</b> · RINGS <b>" + run.rings + "</b> · SMASHES <b>" + run.smash + "</b> · SHARDS <b>+" + got + "</b> (" + prog.shards + ")" + (mode === "daily" ? "<br>DAILY RUN · " + dailyLabel() : "");
-  ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden"));
+  ["hud", "b-pause", "b-restart", "speedo", "hint"].forEach((i) => $(i).classList.add("hidden"));
   show("s-dead");
 }
 function hud() {
@@ -861,7 +890,9 @@ function hud() {
   else { $("h-d").innerHTML = dist() + "<small>m</small>"; $("h-s").textContent = (zen ? "ZEN · " : gaunt ? "GAUNTLET · " : hard ? "HARDCORE · " : "") + "SCORE " + score(); }
   $("h-c").innerHTML = players.map((p) => (p.combo > 1 ? '<span style="color:' + (coop ? pcolor(p) : "#ff4fd8") + '">×' + p.combo + "</span>" : "")).filter(Boolean).join(" ");
   const b = moon ? prog.bestMoon || 0 : sprint ? (prog.bestSprint || 0) + "m" : rush ? prog.bestRush || 0 : gaunt ? prog.bestGaunt || 0 : zen ? prog.bestZen : hard ? prog.bestHard : coop ? prog.bestCoop : mode === "daily" ? ((prog.daily[seed] || {}).best || 0) : prog.bestScore;
-  $("h-b").textContent = race ? "SERIES " + prog.race.p1 + "–" + prog.race.p2 : trial ? "" : (moon ? "LOW-G BEST " : sprint ? "SPRINT BEST " : rush ? "RUSH BEST " : gaunt ? "GAUNTLET BEST " : zen ? "ZEN BEST " : hard ? "HARDCORE BEST " : coop ? "CO-OP BEST " : mode === "daily" ? "DAILY BEST " : "BEST ") + b;
+  $("h-b").textContent = race ? "SERIES " + prog.race.p1 + "–" + prog.race.p2 : trial ? "ATTEMPT #" + prog.trialTries : (moon ? "LOW-G BEST " : sprint ? "SPRINT BEST " : rush ? "RUSH BEST " : gaunt ? "GAUNTLET BEST " : zen ? "ZEN BEST " : hard ? "HARDCORE BEST " : coop ? "CO-OP BEST " : mode === "daily" ? "DAILY BEST " : "BEST ") + b;
+  { const ld = leader(), sp = ld ? Math.hypot(ld.vx, ld.vy) : 0, el = $("speedo");
+    if (el && el.classList) { $("sp-arc").style.strokeDasharray = (Math.min(1, sp / MAXV) * 100).toFixed(1) + " 100"; $("sp-v").textContent = Math.round(sp); el.classList.toggle("fast", !!ld && ld.vx >= WALL_V); $("sp-l").textContent = ld && ld.vx >= WALL_V ? "BREAKS WALLS" : "SPEED"; } }
   const pw = "";
   $("h-l").textContent = (coop && !race ? "REVIVES " + "♥".repeat(revives) + "·".repeat(3 - revives) + "  " : "") + pw;
 }
@@ -911,13 +942,13 @@ function drawStack() {
 
 /* ── drawing ── */
 const skin = () => SKINS.find((s) => s.id === prog.skin) || SKINS[0];
-let clock = 0;
+let clock = 0, lastDraw = 0;
 function pcolor(p) { if (p && p.color) return p.color; const s = skin(); return s.c === "rainbow" ? "hsl(" + ((clock * 120) % 360) + ",100%,65%)" : s.c; }
 function hash(n) { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); }
 function mix(a, b, k) { const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(",") + ")"; }
 function biomeAt(x) { const f = x / BIOME_LEN, i = Math.floor(f), k = clamp((f - i - .85) / .15, 0, 1); const A = BIOMES[i % BIOMES.length], B = BIOMES[(i + 1) % BIOMES.length]; return { lh: k > .5 ? B.lava : A.lava, w: k > .5 ? B.w : A.w, wk: Math.abs(k - .5) * 2, a: mix(A.a, B.a, k), b: mix(A.b, B.b, k), acc: k > .5 ? B.acc : A.acc, lava: mix(A.lava, B.lava, k), city: mix(A.city, B.city, k) }; }
 function draw(now) {
-  clock = now / 1000;
+  { const dn = lastDraw ? Math.min(.1, (now - lastDraw) / 1000) : 0; lastDraw = now; clock += dn * (state === "play" ? tscale : 1); }
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   const title = state === "title", bm = biomeAt(title ? (now / 40) % (BIOME_LEN * 6) : maxX), Z = zoom();
   const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, bm.a); g.addColorStop(1, bm.b); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
@@ -958,6 +989,12 @@ function draw(now) {
   for (const wz of winds) { if (wz.x < x0 - 100 || wz.x > x1 + 100) continue; const wg = cx.createLinearGradient(0, wz.top, 0, FLOOR); wg.addColorStop(0, "rgba(160,220,255,0)"); wg.addColorStop(1, "rgba(160,220,255,.14)"); cx.fillStyle = wg; cx.fillRect(wz.x - wz.w / 2, wz.top, wz.w, FLOOR - wz.top);
     cx.strokeStyle = "rgba(200,240,255,.45)"; cx.lineWidth = 2; for (let i = 0; i < 7; i++) { const lx = wz.x - wz.w / 2 + (i + .5) * wz.w / 7, ly = FLOOR - ((clock * 380 + hash(i + wz.x) * 600) % (FLOOR - wz.top)); cx.beginPath(); cx.moveTo(lx, ly); cx.lineTo(lx, ly - 26); cx.stroke(); }
     cx.fillStyle = "rgba(200,240,255,.7)"; cx.font = "900 16px Unbounded, sans-serif"; cx.fillText("↑", wz.x, FLOOR - 30); }
+  // gravity wells
+  for (const gw of wells) { if (gw.x < x0 - 100 || gw.x > x1 + 100) continue; const l = gw.x - gw.w / 2;
+    const gg = cx.createLinearGradient(0, 0, 0, FLOOR); gg.addColorStop(0, "rgba(120,60,255,.04)"); gg.addColorStop(1, "rgba(120,60,255,.28)"); cx.fillStyle = gg; cx.fillRect(l, 0, gw.w, FLOOR);
+    cx.strokeStyle = "rgba(170,120,255,.55)"; cx.lineWidth = 2; cx.setLineDash([10, 10]); cx.beginPath(); cx.moveTo(l, 0); cx.lineTo(l, FLOOR); cx.moveTo(l + gw.w, 0); cx.lineTo(l + gw.w, FLOOR); cx.stroke(); cx.setLineDash([]);
+    cx.strokeStyle = "rgba(200,170,255,.6)"; cx.lineWidth = 3; for (let i = 0; i < 9; i++) { const yy = ((clock * 260 + i * FLOOR / 9 + gw.ph * 80) % FLOOR), a = .25 + .6 * (yy / FLOOR); cx.globalAlpha = a; cx.beginPath(); cx.moveTo(gw.x - 16, yy - 10); cx.lineTo(gw.x, yy); cx.lineTo(gw.x + 16, yy - 10); cx.stroke(); }
+    cx.globalAlpha = 1; cx.fillStyle = "rgba(220,200,255,.85)"; cx.font = "900 12px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("GRAVITY", gw.x, 120); }
   // bumpers
   for (const bp of bumpers) { if (bp.x < x0 - 40 || bp.x > x1 + 40) continue; const pr = bp.r + bp.hitT * 14; cx.shadowColor = "#ff9df0"; cx.shadowBlur = 18; cx.fillStyle = "#ff9df0"; cx.beginPath(); cx.arc(bp.x, bp.y, pr, 0, TAU); cx.fill(); cx.shadowBlur = 0; cx.fillStyle = "#3a1238"; cx.beginPath(); cx.arc(bp.x, bp.y, pr * .62, 0, TAU); cx.fill(); cx.fillStyle = "#ff9df0"; cx.beginPath(); cx.arc(bp.x, bp.y, pr * .3, 0, TAU); cx.fill(); }
   if (ghostPlay && ghostPlay.length > 4 && started) {
@@ -969,8 +1006,9 @@ function draw(now) {
   if (state === "play" && prog.set.reticle) for (const p of players) if (p.alive && !p.hook) { const a = target(p); if (a) aims.set(a, [...(aims.get(a) || []), p]); }
   // pads on the lava
   for (const q of pads) { if (q.x < x0 - 60 || q.x > x1 + 60) continue; const bob = Math.sin(clock * 3 + q.ph) * 3; cx.fillStyle = "#b8ff4f"; cx.shadowColor = "#b8ff4f"; cx.shadowBlur = 14; cx.beginPath(); cx.roundRect(q.x - q.w / 2, FLOOR - 10 + bob, q.w, 12, 6); cx.fill(); cx.shadowBlur = 0; cx.fillStyle = "rgba(184,255,79,.5)"; for (let i = -1; i <= 1; i++) { cx.beginPath(); cx.moveTo(q.x + i * 26 - 6, FLOOR - 16 + bob); cx.lineTo(q.x + i * 26, FLOOR - 24 + bob); cx.lineTo(q.x + i * 26 + 6, FLOOR - 16 + bob); cx.fill(); } }
-  for (const rg of rings) if (rg.flip && rg.x > x0 - 60 && rg.x < x1 + 60) { const used = Object.keys(rg.hit).length; cx.save(); cx.translate(rg.x, rg.y); cx.globalAlpha = used ? .3 : 1; cx.shadowColor = "#c08bff"; cx.shadowBlur = 22; cx.strokeStyle = "#c08bff"; cx.lineWidth = 6;
-    for (let k = 0; k < 3; k++) { cx.beginPath(); cx.arc(0, 0, rg.r - k * 8, clock * (k % 2 ? -4 : 4) + k, clock * (k % 2 ? -4 : 4) + k + 4.4); cx.stroke(); } cx.shadowBlur = 0; cx.fillStyle = "#e9d8ff"; cx.font = "900 20px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText(rg.flip > 0 ? "⇅" : "↻", 0, 7); cx.restore(); }
+  for (const rg of rings) if (rg.flip && rg.x > x0 - 60 && rg.x < x1 + 60) { const used = Object.keys(rg.hit).length; cx.save(); cx.translate(rg.x, rg.y); cx.globalAlpha = used ? .3 : 1; cx.shadowColor = "#c08bff"; cx.shadowBlur = 22; cx.strokeStyle = "#c08bff"; cx.lineWidth = rg.exit ? 9 : 6; const rr = ringR(rg);
+    if (rg.exit) { cx.fillStyle = "rgba(192,139,255,.08)"; cx.beginPath(); cx.arc(0, 0, rr, 0, TAU); cx.fill(); }
+    for (let k = 0; k < 3; k++) { cx.beginPath(); cx.arc(0, 0, rr - k * (rg.exit ? 14 : 8), clock * (k % 2 ? -4 : 4) + k, clock * (k % 2 ? -4 : 4) + k + 4.4); cx.stroke(); } cx.shadowBlur = 0; cx.fillStyle = "#e9d8ff"; cx.font = "900 20px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText(rg.flip > 0 ? "⇅" : "↻", 0, 7); cx.restore(); }
   for (const rg of rings) { if (rg.flip || rg.x < x0 - 50 || rg.x > x1 + 50) continue; const used = Object.keys(rg.hit).length; cx.strokeStyle = used ? "rgba(255,224,102,.25)" : "#ffe066"; cx.lineWidth = 5; cx.shadowColor = "#ffe066"; cx.shadowBlur = used ? 0 : 16; cx.beginPath(); cx.ellipse(rg.x, rg.y, rg.r * .45, rg.r, 0, 0, TAU); cx.stroke(); cx.shadowBlur = 0; if (!used) { cx.fillStyle = "rgba(255,224,102,.7)"; cx.font = "900 14px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillText("»", rg.x, rg.y + 5); } }
   for (const u of pups) { if (u.got || u.x < x0 || u.x > x1) continue; const b = Math.sin(clock * 3 + u.p) * 5, c = PUP[u.k].c; cx.strokeStyle = c; cx.lineWidth = 2.5; cx.shadowColor = c; cx.shadowBlur = 18; cx.beginPath(); cx.arc(u.x, u.y + b, 17, 0, TAU); cx.stroke(); cx.shadowBlur = 0; cx.fillStyle = "rgba(10,10,20,.55)"; cx.beginPath(); cx.arc(u.x, u.y + b, 15.5, 0, TAU); cx.fill(); drawIcon(u.k, u.x, u.y + b, 19, c); }
   // drones: loud on purpose. Hot body, pulsing danger ring, spinning rotors, a blinking eye and a scan beam
@@ -1007,8 +1045,8 @@ function draw(now) {
   for (const s of shards) { if (s.got || s.x < x0 || s.x > x1) continue; const k = Math.sin(clock * 4 + s.p); cx.save(); cx.translate(s.x, s.y + k * 4); cx.rotate(clock * 2 + s.p); cx.fillStyle = "#ffe066"; cx.beginPath(); cx.moveTo(0, -8); cx.lineTo(6, 0); cx.lineTo(0, 8); cx.lineTo(-6, 0); cx.fill(); cx.restore(); }
   for (const gt of gates) {
     if (gt.x < x0 || gt.x > x1 || gt.broken) continue; const off = gt.mv ? Math.sin(t * 1.4 + gt.ph) * gt.mv : 0, top = gt.top + off, bot = gt.bot + off;
-    if (gt.brk) { const fast = leader() && leader().vx >= 1000; cx.strokeStyle = "#ffe066"; cx.shadowColor = "#ffe066"; cx.shadowBlur = 26; cx.lineWidth = 22; cx.globalAlpha = .9 + Math.sin(clock * 24) * .1; cx.beginPath(); cx.moveTo(gt.x, -200); cx.lineTo(gt.x, FLOOR); cx.stroke(); cx.shadowBlur = 0; cx.lineWidth = 6; cx.strokeStyle = "#fff"; cx.stroke(); cx.globalAlpha = 1;
-      cx.font = "900 15px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillStyle = fast ? "#9dff7a" : "#ffe066"; for (let y = 140; y < FLOOR; y += 220) { cx.save(); cx.translate(gt.x, y); cx.rotate(-Math.PI / 2); cx.fillText(fast ? "» FAST ENOUGH »" : "» SPEED 1000 »", 0, -18); cx.restore(); } continue; }
+    if (gt.brk) { const fast = leader() && leader().vx >= WALL_V; cx.strokeStyle = "#ffe066"; cx.shadowColor = "#ffe066"; cx.shadowBlur = 26; cx.lineWidth = 22; cx.globalAlpha = .9 + Math.sin(clock * 24) * .1; cx.beginPath(); cx.moveTo(gt.x, -200); cx.lineTo(gt.x, FLOOR); cx.stroke(); cx.shadowBlur = 0; cx.lineWidth = 6; cx.strokeStyle = "#fff"; cx.stroke(); cx.globalAlpha = 1;
+      cx.font = "900 15px Unbounded, sans-serif"; cx.textAlign = "center"; cx.fillStyle = fast ? "#9dff7a" : "#ffe066"; for (let y = 140; y < FLOOR; y += 220) { cx.save(); cx.translate(gt.x, y); cx.rotate(-Math.PI / 2); cx.fillText(fast ? "» FAST ENOUGH »" : "» SPEED " + WALL_V + " »", 0, -18); cx.restore(); } continue; }
     if (gt.zap) { const on = zapOn(gt), warn = !on && Math.sin(t * 2.4 + gt.ph) > -.25;
       cx.fillStyle = "#9aa3b8"; cx.fillRect(gt.x - 7, -10, 14, 22); cx.fillRect(gt.x - 7, FLOOR - 22, 14, 22);
       if (on) { cx.strokeStyle = "#9ad8ff"; cx.shadowColor = "#9ad8ff"; cx.shadowBlur = 20; cx.lineWidth = 3; for (let k = 0; k < 2; k++) { cx.beginPath(); cx.moveTo(gt.x, 10); for (let y = 10; y < FLOOR - 20; y += 26) cx.lineTo(gt.x + fx(-11, 11), y); cx.lineTo(gt.x, FLOOR - 22); cx.stroke(); } cx.shadowBlur = 0; }
@@ -1138,7 +1176,7 @@ function drawTitleOrb(now) {
 function show(id) { ["s-title", "s-dead", "s-pause", "s-shop", "s-how", "s-modes", "s-set", "s-online", "s-board"].forEach((s) => $(s).classList.toggle("hidden", s !== id)); }
 const dailyLabel = () => { const k = String(todayKey()); return k.slice(4, 6) + "/" + k.slice(6); };
 function title() {
-  state = "title"; players = []; show("s-title"); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden"));
+  state = "title"; players = []; show("s-title"); ["hud", "b-pause", "b-restart", "speedo", "hint"].forEach((i) => $(i).classList.add("hidden"));
   $("t-daily").textContent = dailyLabel() + ((prog.daily[todayKey()] || {}).best ? " · " + prog.daily[todayKey()].best : "");
   $("t-stats").innerHTML = prog.runs ? "BEST <b>" + prog.bestScore + "</b> · FURTHEST <b>" + prog.best + "m</b>" + (prog.bestCoop ? " · CO-OP <b>" + prog.bestCoop + "</b>" : "") + "<br>SHARDS <b>" + prog.shards + "</b> · RUNS <b>" + prog.runs + "</b>" : "HOLD TO GRAB. LET GO TO FLY.";
   $("b-snd").textContent = prog.sound ? "🔊" : "🔇";
@@ -1189,7 +1227,7 @@ let bdMode = "classic", bdKind = "all", liveT = 0;
 const nm = () => (prog.olName || "").trim();
 function postScore(mode, v, m) {
   if (location.protocol === "file:") return;
-  try { fetch("/api/tether/score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: nm(), mode, v, m }), keepalive: true }).then((r) => r.json()).then((j) => { if (j && j.rank) $("d-new").textContent = ($("d-new").textContent ? $("d-new").textContent + " · " : "") + "RANK #" + j.rank; }).catch(() => {}); } catch (e) {}
+  try { fetch("/api/tether/score", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: nm(), key: prog.key, mode, v, m }), keepalive: true }).then((r) => r.json()).then((j) => { if (j && j.claimed) $("d-new").textContent = "“" + nm().toUpperCase() + "” BELONGS TO ANOTHER PLAYER · PICK A NEW NAME ON THE LEADERBOARD"; if (j && j.rank) $("d-new").textContent = ($("d-new").textContent ? $("d-new").textContent + " · " : "") + "RANK #" + j.rank; }).catch(() => {}); } catch (e) {}
 }
 const fmtN = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "k" : String(Math.round(n));
 async function liveStats() {
@@ -1227,7 +1265,7 @@ const OL = (id) => $(id), olShow = (which) => ["ol-join", "ol-lobby", "ol-prep"]
 function netSend(m) { try { if (net && net.readyState === 1) net.send(JSON.stringify(m)); } catch (e) {} }
 function openOnline() {
   ghostR = null; ghostList();
-  show("s-online"); ["hud", "b-pause", "hint"].forEach((i) => $(i).classList.add("hidden")); state = "title"; players = [];
+  show("s-online"); ["hud", "b-pause", "b-restart", "speedo", "hint"].forEach((i) => $(i).classList.add("hidden")); state = "title"; players = [];
   OL("ol-name").value = prog.olName || ""; $("b-again").textContent = "AGAIN";
   if (net && net.readyState === 1) { olShow("ol-lobby"); netSend({ t: "leave" }); } else olShow("ol-join");
 }
@@ -1237,7 +1275,7 @@ function olConnect() {
   if (location.protocol === "file:") { OL("ol-msg").textContent = "Online play needs the live site."; olShow("ol-lobby"); return; }
   OL("ol-msg").textContent = "Connecting…"; olShow("ol-lobby");
   net = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/tether-ws");
-  net.onopen = () => netSend({ t: "hello", name });
+  net.onopen = () => netSend({ t: "hello", name, key: prog.key });
   net.onclose = () => { net = null; if (online && state === "play") { netResult = { win: false, why: "connection lost" }; state = "dying"; endRun(); } else if (!$("s-online").classList.contains("hidden")) { OL("ol-msg").textContent = "Disconnected."; olShow("ol-join"); } };
   net.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } olMsg(m); };
 }
@@ -1282,6 +1320,7 @@ function olPickUI() {
 }
 function olMsg(m) {
   if (m.t === "welcome") { myId = m.id; OL("ol-msg").textContent = ""; }
+  else if (m.t === "taken") { try { net.onclose = null; net.close(); } catch (e) {} net = null; olShow("ol-join"); OL("ol-msg").textContent = "“" + m.name + "” belongs to another player. Pick a different name."; OL("ol-name").focus(); }
   else if (m.t === "lobby") { olPlayers = m.players; olList(m.players); }
   else if (m.t === "invited") { OL("ol-inv").classList.remove("hidden"); OL("ol-inv").innerHTML = "<b></b> wants to race you!<div class=\"row\"><button class=\"btn\" data-acc=\"" + m.from + "\">ACCEPT</button><button class=\"btn alt\" data-dec=\"" + m.from + "\">NO THANKS</button></div>"; OL("ol-inv").querySelector("b").textContent = m.name; sfx("five"); vib([60, 40, 60]); }
   else if (m.t === "withdrawn") OL("ol-inv").classList.add("hidden");
@@ -1315,6 +1354,10 @@ $("b-menu").onclick = title; $("b-quit").onclick = title;
 // resuming keeps everyone on their ropes, only the held buttons are reset
 $("b-resume").onclick = () => { show(null); state = "play"; players.forEach((p) => (p.holding = false)); pointers.clear(); if (AC) nextT = AC.currentTime + .05; };
 $("b-pause").onclick = (e) => { e.stopPropagation(); pause(); };
+// restart: straight into a fresh run of the same mode (a time trial counts it as another attempt)
+const restart = () => { if (online || (state !== "play" && state !== "paused" && state !== "dying")) return; clearTimeout(endTimer); pointers.clear(); newRun(mode); };
+$("b-restart").onclick = (e) => { e.stopPropagation(); restart(); }; $("b-restart").addEventListener("pointerdown", (e) => e.stopPropagation());
+$("b-restart2").onclick = restart;
 $("b-pause").addEventListener("pointerdown", (e) => e.stopPropagation());
 $("b-shop").onclick = shop; $("b-shopback").onclick = title;
 $("b-how").onclick = () => show("s-how"); $("b-howback").onclick = title;
@@ -1361,14 +1404,15 @@ const AG = {
         powerups: { magnet: +p.magnetT.toFixed(1), reach: +p.reachT.toFixed(1), jet: +p.jetT.toFixed(1), reel: +p.reelT.toFixed(1), heavy: +p.heavyT.toFixed(1), phase: +p.phaseT.toFixed(1), x2: +x2T.toFixed(1) } },
       lavaY: FLOOR, ceilingY: 0,
       anchors: L(anchors.filter((a) => !a.dead), (a) => ({ dx: R_(a.x - X), y: R_(a.y), crumbles: !!a.crumble })),
-      lasers: L(gates, (g) => { const off = g.mv ? Math.sin(t * 1.4 + g.ph) * g.mv : 0; return g.brk ? { dx: R_(g.x - X), kind: "yellow-needs-speed", needVx: 1000 } : { dx: R_(g.x - X), gapTop: R_(g.top + off), gapBottom: R_(g.bot + off) }; }),
+      lasers: L(gates, (g) => { const off = g.mv ? Math.sin(t * 1.4 + g.ph) * g.mv : 0; return g.brk ? { dx: R_(g.x - X), kind: "yellow-needs-speed", needVx: WALL_V } : { dx: R_(g.x - X), gapTop: R_(g.top + off), gapBottom: R_(g.bot + off) }; }),
       saws: L(saws, (q) => { const [sx, sy] = sawPos(q); return { dx: R_(sx - X), y: R_(sy), r: R_(q.r) }; }),
       spouts: L(spouts, (q) => ({ dx: R_(q.x - X), from: q.top ? "ceiling" : "lava", length: R_(q.len), state: spoutLive(q) ? "FIRING" : spoutWarn(q) ? "warning" : "idle" })),
       rockets: rockets.filter((q) => !q.dead).map((q) => ({ y: R_(q.y), warning: q.warn > 0, dx: q.warn > 0 ? null : R_(q.x - X) })),
       drones: L(drones.filter((q) => !q.dead), (q) => ({ dx: R_(q.x - X), y: R_(q.y) })),
-      rings: L(rings, (r) => ({ dx: R_(r.x - X), y: R_(r.y), r: r.r, effect: r.flip ? "flips the screen" : "boost forward" })),
+      rings: L(rings, (r) => ({ dx: R_(r.x - X), y: R_(r.y), r: R_(ringR(r)), effect: r.flip ? "flips the screen" : "boost forward" })),
       bumpers: L(bumpers, (q) => ({ dx: R_(q.x - X), y: R_(q.y), r: q.r })),
       updrafts: L(winds, (q) => ({ dx: R_(q.x - X), width: R_(q.w), topY: R_(q.top) })),
+      gravityWells: L(wells, (q) => ({ dx: R_(q.x - X), width: R_(q.w), pull: "everything inside is dragged down hard" })),
       powerups: L(pups.filter((q) => !q.got), (q) => ({ dx: R_(q.x - X), y: R_(q.y), kind: q.k })),
       shards: L(shards.filter((q) => !q.got), (q) => ({ dx: R_(q.x - X), y: R_(q.y) })),
     };
