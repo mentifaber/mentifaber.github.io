@@ -5,6 +5,9 @@
   const mine = () => { try { return JSON.parse(localStorage.getItem("hive-mine") || "{}"); } catch (e) { return {}; } };
   const remember = (id, ctok) => { try { const m = mine(); m[id] = ctok; localStorage.setItem("hive-mine", JSON.stringify(m)); } catch (e) {} };
   const LSG = (k, d) => { try { const v = localStorage.getItem("hive:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, LSS = (k, v) => { try { localStorage.setItem("hive:" + k, JSON.stringify(v)); } catch (e) {} };
+  // a finished project that didn't pass every review says so, wherever its status shows
+  const unverified = (p) => p.status === "done" && p.verdict && p.verdict !== "verified";
+  const stTag = (p) => unverified(p) ? "<span class='st needs_human' title='" + esc(p.verdict.replace(/^needs_human: /, "")) + "'>needs human</span>" : "<span class='st " + esc(p.status) + "'>" + esc(p.status) + "</span>";
   const api = async (path, body) => { const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" }); return r.json().catch(() => ({ error: "the server said " + r.status })); };
   const hhmm = (ts) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const ago = (ts) => { const s = (Date.now() - ts) / 1000; return s < 60 ? Math.round(s) + "s" : s < 3600 ? Math.round(s / 60) + "m" : s < 86400 ? Math.round(s / 3600) + "h" : Math.round(s / 86400) + "d"; };
@@ -22,7 +25,7 @@
     $("purge").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => /done|stopped|failed/.test(p.status)));
     $("audit").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => p.status === "done" && p.has)); home.list = j.projects || [];
     $("plist").innerHTML = (j.projects || []).length ? j.projects.map((p) => "<div data-id='" + esc(p.id) + "' class='pl'><span class='pt'><b>" + esc(p.title) + "</b>" + (p.by === "genesis" ? "<i class='byg' title='Started by AutoFaber on its own'>by AutoFaber</i>" : "") + "<span class='dim'>" + ago(p.ts) + " ago · " + p.calls + " calls</span></span>" +
-      (p.has ? "<button class='q sm' data-run title='Run what it made'>Run</button>" : "") + "<span class='st " + esc(p.status) + "'>" + esc(p.status) + "</span>" + (canDel(p) ? "<button class='x' data-del title='Delete this mission' aria-label='Delete'>✕</button>" : "") + "</div>").join("") : "<span class='dim'>none yet</span>";
+      (p.has ? "<button class='q sm' data-run title='Run what it made'>Run</button>" : "") + stTag(p) + (canDel(p) ? "<button class='x' data-del title='Delete this mission' aria-label='Delete'>✕</button>" : "") + "</div>").join("") : "<span class='dim'>none yet</span>";
   }
   const del = async (id, title) => { if (!confirm("Delete “" + (title || "this mission") + "” for good? Its tasks, agents, log and result all go.")) return false; const j = await api("/delete", { id, ctok: mine()[id] }); if (j.error) { alert(j.error); return false; } try { const m = mine(); delete m[id]; localStorage.setItem("hive-mine", JSON.stringify(m)); } catch (e) {} return true; };
   $("plist").onclick = async (e) => { const d = e.target.closest("[data-id]"); if (!d) return; if (e.target.closest("[data-del]")) { e.stopPropagation(); if (await del(d.dataset.id, d.querySelector("b").textContent)) home(); return; } open(d.dataset.id, e.target.closest("[data-run]") ? "run" : null); };
@@ -84,9 +87,9 @@
     const p = j.project; last = j;
     $("squota").classList.toggle("hidden", !p.quota_until && p.status !== "paused");
     if (p.quota_until || p.status === "paused") $("squota").textContent = "⏸ Cloudflare's free AI allowance for today is used up. This project is paused and resumes on its own" + (p.quota_until ? " at " + new Date(p.quota_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " your time" : "") + (p.owner ? ", or bring in your own keys with “Retry & bring in my keys”." : ".");
-    $("ptitle").textContent = p.title; $("pst").textContent = p.status; $("pst").className = "st " + p.status;
+    $("ptitle").textContent = p.title; { const u = unverified(p); $("pst").textContent = u ? "needs human" : p.status; $("pst").className = "st " + (u ? "needs_human" : p.status); $("pst").title = u ? p.verdict.replace(/^needs_human: /, "") : ""; }
     $("pcalls").textContent = p.calls + " / " + p.max + " calls"; $("pbar").style.width = Math.min(100, p.calls / p.max * 100) + "%";
-    const done = j.tasks.filter((t) => t.status === "done").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks done";
+    const done = j.tasks.filter((t) => t.status === "done").length, nh = j.tasks.filter((t) => t.status === "needs_human").length; $("pcount").textContent = done + " / " + j.tasks.length + " tasks passed review" + (nh ? " · " + nh + " need a person" : "");
     $("pring").style.strokeDashoffset = 170 - 170 * (j.tasks.length ? done / j.tasks.length : 0);
     $("pring").closest(".ring").classList.toggle("done", !!j.tasks.length && done === j.tasks.length);
     if (window.HiveFX && tab === "swarm") HiveFX.map($("map"), j);
@@ -96,7 +99,7 @@
     $("acount").textContent = live + " online · " + busy + " busy · " + j.agents.length + " total";
     $("agents").innerHTML = j.agents.map((a) => { const t = a.task && j.tasks.find((x) => x.id === a.task); return "<div class='ag " + esc(a.status) + "' title='" + esc(a.src + " · " + a.model + " · reputation " + (a.score || 0)) + "'>" + (a.score ? "<span class='sc'>" + (a.score > 0 ? "+" : "") + a.score + "</span>" : "") + "<b>" + esc(a.name) + "</b>" + (a.status === "offline" && a.err ? "<span class='er'>" + esc(a.err.slice(0, 90)) + "</span>" : "") +
       "<span class='r'>" + esc(a.status === "working" && t ? t.role + " · #" + t.id : a.status === "reviewing" && t ? "reviewing #" + t.id : a.status) + "</span><br><span class='r'>" + esc(a.src) + " · " + a.done + " done</span></div>"; }).join("");
-    const cols = [["open", ["open"]], ["in progress", ["claimed"]], ["in review", ["review", "reviewing"]], ["done", ["done"]]], name = (id) => { const a = j.agents.find((x) => x.id === id); return a ? a.name : ""; };
+    const cols = [["open", ["open"]], ["in progress", ["claimed"]], ["in review", ["review", "reviewing"]], ["done", ["done"]], ["needs human", ["needs_human"]]], name = (id) => { const a = j.agents.find((x) => x.id === id); return a ? a.name : ""; };
     $("board").innerHTML = cols.map(([h, ss]) => { const ts = j.tasks.filter((t) => ss.includes(t.status)); return "<div class='col'><h3>" + h + " " + ts.length + "</h3>" + ts.map((t) => "<div class='tk' data-t='" + t.id + "'><div class='role'>#" + t.id + " " + esc(t.role) + (t.tries ? " · redo " + t.tries : "") + "</div>" + esc(t.title) + (t.agent ? "<div class='who'>" + esc(name(t.agent)) + "</div>" : "") + "</div>").join("") + "</div>"; }).join("");
     const f = $("feed"), seen = new Set([...f.children].map((d) => d.dataset.k)), add = j.feed.slice().reverse().filter((x) => !seen.has(x.ts + x.who + x.kind));
     for (const x of add) { const d = document.createElement("div"); d.dataset.k = x.ts + x.who + x.kind; d.className = "k-" + x.kind; d.innerHTML = "<time>" + hhmm(x.ts) + "</time><span class='who'>" + esc(x.who) + "</span> <span class='dim'>" + esc(x.kind) + "</span><br>" + esc(x.text); f.prepend(d); }

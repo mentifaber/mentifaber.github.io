@@ -387,6 +387,8 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .st.working, .st.planning, .st.integrating, .st.replanning { color: var(--ink); }
 .st.working::before, .st.planning::before, .st.integrating::before, .st.replanning::before { animation: pulse 1.1s ease-in-out infinite; }
 .st.done { color: var(--ok); } .st.failed { color: var(--bad); } .st.paused { color: var(--warn); }
+.st.needs_human { color: var(--warn); } .pl:has(.st.needs_human) { --sc: var(--warn); }
+#feed .k-needs_human .dim { color: var(--warn); }
 /* one mission */
 .phead .ttl { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
 .phead :is(h1, h2) { font-size: clamp(26px, 3vw, 38px); }
@@ -437,7 +439,7 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--dim); margin-top: 8px; }
 .legend i { display: inline-block; width: 8px; height: 11px; margin-right: 6px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); vertical-align: -1px; }
 .legend .w { background: var(--ink); } .legend .v { background: var(--m-azurite); } .legend .i { background: var(--faint); } .legend .o { background: var(--bad); opacity: .6; }
-.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 10px; border-left: 1px solid var(--line); }
+.board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 10px; border-left: 1px solid var(--line); }
 .board .col { border-right: 1px solid var(--line); padding: 0 8px 8px; min-height: 120px; min-width: 0; }
 .board .col h3 { font-weight: 400; font-size: 11.5px; color: var(--faint); letter-spacing: .04em; padding: 2px 0 8px; display: block; }
 .tk { border-top: 1px solid var(--line); padding: 7px 0; font-size: 13px; cursor: pointer; line-height: 1.4; overflow-wrap: anywhere; }
