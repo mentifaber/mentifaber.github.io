@@ -49,10 +49,10 @@ const stone = () => { if (!window.HiveFX) return;
   const fam = new Set(models.map((m) => HiveFX.mineralName(m.id))).size;
   $("gcap").innerHTML = "<b>" + models.length + " minds</b> on call, " + fam + " famil" + (fam === 1 ? "y" : "ies") + ".<br>The orbits are every mind AutoFaber can reach; the AF at their heart is the one that answers you."; };
 // live telemetry in the header and the side panel
-let lastMs = 0, lastTtft = 0, lastCps = 0; window.tele = () => tele();
+let lastMs = 0, lastTtft = 0, lastCps = 0, lastBurst = false; window.tele = () => tele();
 function tele() {
   const modes = [on("web") && "search", on("council") && "council", on("draw") && "imagine"].filter(Boolean), layers = chat ? chat.msgs.filter((m) => m.role === "user").length : 0;
-  $("tele").innerHTML = [modes.length ? "<b>" + modes.join(" + ") + "</b>" : "", lastTtft ? "first word <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? "<b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "", lastCps ? "<b>" + lastCps + "</b> ch/s" : "", layers ? "<b>" + layers + "</b> layer" + (layers === 1 ? "" : "s") : ""].filter(Boolean).join(" · ");
+  $("tele").innerHTML = [modes.length ? "<b>" + modes.join(" + ") + "</b>" : "", lastTtft ? "first word <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? "<b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "", lastCps ? "<b>" + lastCps + "</b> ch/s" : lastBurst ? "delivered in one burst" : "", layers ? "<b>" + layers + "</b> layer" + (layers === 1 ? "" : "s") : ""].filter(Boolean).join(" · ");
 }
 const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = ok ? "online" : "offline"; $("led-link").className = "led " + (ok ? "ok" : "bad"); };
 addEventListener("online", link); addEventListener("offline", link); link();
@@ -327,8 +327,8 @@ async function run(image, opts) {
   busy = null; $("sendb").classList.remove("stop"); $("sendb").textContent = on("draw") ? "Paint" : "Ask"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
-  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text + (j.cut && !body.voice ? "\n\n_(cut off at the model's length limit: say “continue” for the rest)_" : ""), cut: j.cut || undefined, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
-  m.ms = Date.now() - t0; lastMs = m.ms; lastTtft = m.ttft || 0; lastCps = m.text && m.ttft && m.ms > m.ttft ? Math.round(m.text.length / ((m.ms - m.ttft) / 1000)) : 0; tele();
+  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text + (j.cut && !body.voice ? (j.cut === "loop" ? "\n\n_(stopped: the model started repeating itself. Ask again, or pick another model)_" : j.cut === "time" ? "\n\n_(stopped: the reply reached the two-minute limit. Say “continue” for the rest)_" : "\n\n_(cut off at the model's length limit: say “continue” for the rest)_") : ""), cut: j.cut || undefined, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
+  m.ms = Date.now() - t0; lastMs = m.ms; lastTtft = m.ttft || 0; { const sp = window.HiveMetrics ? HiveMetrics.speedOf((m.text || "").length, m.ttft, m.tLast, m.chunks) : { cps: 0, burst: false }; lastCps = sp.cps; lastBurst = sp.burst; } tele();
   if (chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } delete u._images; save();
   return m;
 }
@@ -348,8 +348,8 @@ async function stream(body, m, i, signal) {
     let k; while ((k = buf.indexOf("\n\n")) >= 0) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
       if (ev === "meta") { lastWord = Date.now(); m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
-      else if (ev === "delta") { lastWord = Date.now(); if (!m.ttft) { m.ttft = Date.now() - tStart; } m.text += d.t; out.text = m.text; fx("token"); if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
-      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; out.cut = !!d.cut; }
+      else if (ev === "delta") { lastWord = Date.now(); if (!m.ttft) { m.ttft = Date.now() - tStart; m.chunks = 0; } m.chunks++; m.tLast = Date.now() - tStart; m.text += d.t; out.text = m.text; fx("token"); if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
+      else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; out.cut = d.cut || false; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
   }

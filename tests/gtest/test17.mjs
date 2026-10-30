@@ -35,7 +35,8 @@ const oss = db.prepare("SELECT status, err FROM agent WHERE pid=? AND id='OSS120
 const feed = db.prepare("SELECT text FROM feed WHERE pid=? ORDER BY ts").all(id).map((r) => r.text).join("\n"); assert.match(feed, /too much for it to read at once; it stays on smaller jobs/); assert.doesNotMatch(feed, /no credit; trying again in 6 hours/);
 ok("\"request too large\" (with a billing link in it) isn't read as out of credit: no 6-hour bench, no retirement");
 let fin = db.prepare("SELECT final FROM proj WHERE id=?").get(id).final;
-assert.match(fin, /^## Run it\n\n```html run\n<!doctype html>/); assert.match(fin, /## Notes\n- Shows quotes from sample data\.\n\n## The team's source files\n/);
+assert.match(fin, /^> \*\*Completion report\*\* \(AutoFaber Swarm\)\n> Every task passed a reviewer's reading\. Reviews are models reading the work; no tests were executed\.\n\n## Run it\n\n```html run\n<!doctype html>/);
+assert.equal(db.prepare("SELECT verdict FROM proj WHERE id=?").get(id).verdict, "verified"); assert.match(fin, /## Notes\n- Shows quotes from sample data\.\n\n## The team's source files\n/);
 assert.match(fin, /#### From #\d+ coder: coder task 1\n\n```js file=part1\.js\nexport function part1/); assert.match(fin, /#### From #\d+ tester: tester task 3/); assert.equal((fin.match(/```html run/g) || []).length, 1); assert.doesNotMatch(fin, /Prose about the design/);
 ok("the result: the runnable file and notes first, then the team's code files (none marked to run), no preamble, no prose dump");
 
@@ -48,14 +49,15 @@ plan["@cf/meta/llama-3.1-8b-instruct-fast"] = () => { throw new Error("a fifth t
 seen.length = 0;
 id = await mission("Another one", outs.slice(0, 3), [["OSS120", "@cf/openai/gpt-oss-120b", ["integrator"]], ["Llama33", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", ["integrator"]], ["Llama31", "@cf/meta/llama-3.1-70b-instruct", ["writer"]], ["Coder", "@cf/qwen/qwen2.5-coder-32b-instruct", ["coder"]], ["Small", "@cf/meta/llama-3.1-8b-instruct-fast", ["writer"]]]);
 assert.ok(await tick(id, 10)); fin = db.prepare("SELECT final FROM proj WHERE id=?").get(id).final;
-assert.equal(new Set(seen.filter((c) => /Assemble the team's approved work/.test(c.sys)).map((c) => c.model)).size, 4); assert.match(fin, /^# Another one\n\n_The integrators couldn't finish[^\n]*Make it runnable/);
+assert.equal(new Set(seen.filter((c) => /Assemble the team's approved work/.test(c.sys)).map((c) => c.model)).size, 4); assert.match(fin, /^> \*\*Completion report\*\* \(AutoFaber Swarm\)\n> \*\*Needs a person to check it\.\*\* no integrator could assemble the pieces into one deliverable\.[^\n]*\n\n# Another one\n\n_The integrators couldn't finish[^\n]*Make it runnable/);
+assert.match(db.prepare("SELECT verdict FROM proj WHERE id=?").get(id).verdict, /^needs_human: no integrator could assemble/);
 const f2 = db.prepare("SELECT text FROM feed WHERE pid=? ORDER BY ts").all(id).map((r) => r.text).join("\n"); assert.match(f2, /a stub \(11 chars of code\)/); assert.match(f2, /final draft was cut off/);
 ok("a stub, a timeout, a cut-off draft and a too-short one: four different models tried, then the stitched result says how to get something runnable");
 
 // 3 · a document stays a document
 plan["@cf/openai/gpt-oss-120b"] = (s) => /Assemble/.test(s) ? "# The plan\n\n" + "A thorough section of the plan with real content. ".repeat(80) : null;
 id = await mission("A written strategy", [["writer", "Draft. ".repeat(900)], ["researcher", "Facts. ".repeat(900)]], [["OSS120", "@cf/openai/gpt-oss-120b", ["integrator"]]]);
-assert.ok(await tick(id)); fin = db.prepare("SELECT final FROM proj WHERE id=?").get(id).final; assert.match(fin, /^# The plan/); assert.doesNotMatch(fin, /team's source files/); ok("a document with nothing to run is delivered as written, no files appended");
+assert.ok(await tick(id)); fin = db.prepare("SELECT final FROM proj WHERE id=?").get(id).final; assert.match(fin, /^> \*\*Completion report\*\*[^\n]*\n> Every task passed[^\n]*\n\n# The plan/); assert.doesNotMatch(fin, /team's source files/); ok("a document with nothing to run is delivered as written, no files appended");
 
 // 4 · a fix tries the next model when the first doesn't deliver
 const R1 = await mission("Fix me please, a tool", outs.slice(0, 2), [["OSS120", "@cf/openai/gpt-oss-120b", ["integrator"]], ["Llama33", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", ["integrator"]]]);

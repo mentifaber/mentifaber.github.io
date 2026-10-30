@@ -77,7 +77,7 @@ export async function complete(env, v, key, model, system, msgs, max) {
   max = max || 2048;
   if (!v) { // Workers AI
     const r = await env.AI.run(model, { messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text || "" }))], max_tokens: max });
-    return textOf(r);
+    return finalOnly(model, textOf(r));
   }
   if (v.kind === "anthropic") {
     const messages = msgs.map((m) => ({ role: m.role, content: [...(m.images || []).map(parts).filter(Boolean).map((p) => ({ type: "image", source: { type: "base64", media_type: p.type, data: p.data } })), { type: "text", text: m.text || "…" }] }));
@@ -86,7 +86,7 @@ export async function complete(env, v, key, model, system, msgs, max) {
   }
   const messages = [{ role: "system", content: system }, ...msgs.map((m) => (m.images && m.images.length ? { role: m.role, content: [{ type: "text", text: m.text || "" }, ...m.images.map((u) => ({ type: "image_url", image_url: { url: u } }))] } : { role: m.role, content: m.text || "" }))];
   const j = await jfetch(v.base.replace(/\/$/, "") + "/chat/completions", { fetcher: v.fetcher, method: "POST", headers: hdr(v, key), body: JSON.stringify({ model, max_tokens: max, messages }) }, v.ms); // v.ms: a slow local model (MENTIFABER AGENT) gets longer
-  const c = j.choices && j.choices[0] && j.choices[0].message; let out = String((c && c.content) || "").trim();
+  const c = j.choices && j.choices[0] && j.choices[0].message; let out = finalOnly(model, String((c && c.content) || "").trim());
   if (j.citations && j.citations.length) out += "\n\n" + j.citations.map((u, i) => "[" + (i + 1) + "] " + u).join("\n"); // Perplexity cites its sources
   return out;
 }
@@ -193,12 +193,59 @@ export function spokenLang(t) {
 export async function imagine(env, prompt) { const r = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt: prompt.slice(0, 2000), steps: 6 }); return r && r.image; }
 
 // ── streaming: the same call shape, but words arrive as they're written ──
-async function sse(body, onData, onBytes) { // read a server-sent-event stream, hand each data payload over
-  const rd = body.getReader(), dec = new TextDecoder(); let buf = "";
+async function sse(body, onData, onBytes, ctl) { // read a server-sent-event stream, hand each data payload over; ctl.stop() ends it cleanly
+  const rd = body.getReader(), dec = new TextDecoder(); let buf = "", stopped = false;
+  if (ctl) ctl.stop = () => { if (!stopped) { stopped = true; rd.cancel().catch(() => {}); } };
   for (;;) {
-    const { value, done } = await rd.read(); if (done) break; if (onBytes) onBytes(); buf += dec.decode(value, { stream: true });
+    if (stopped) break;
+    const { value, done } = await rd.read(); if (done || stopped) break; if (onBytes) onBytes(); buf += dec.decode(value, { stream: true });
     let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line.startsWith("data:")) { const d = line.slice(5).trim(); if (d && d !== "[DONE]") try { onData(JSON.parse(d)); } catch (e) {} } }
   }
+}
+// ── reply guards ──
+// A reply never runs forever: a hard token cap (max_tokens), a wall-clock cap per reply, and a repetition detector that
+// stops a model that has fallen into a loop (the same line six times running, or the same 120+ characters four times
+// back to back: high enough that a table or code with repeated rows passes). A stopped reply keeps what came before the loop and says why it stopped.
+export const WALL_MS = 120000, AGENT_WALL_MS = 300000;
+export function loopGuard() {
+  let seen = 0;
+  return (text) => {
+    if (text.length - seen < 40) return false; seen = text.length;
+    // the newest line may still be arriving, so only complete lines are compared
+    const lines = text.slice(0, text.lastIndexOf("\n")).split("\n").map((l) => l.trim()).filter(Boolean).slice(-6), last = lines[lines.length - 1] || "";
+    if (lines.length === 6 && last.length >= 16 && lines.every((l) => l === last)) return true;
+    const tail = text.replace(/\s+/g, " ");
+    for (const n of [120, 240, 480]) { if (tail.length < n * 4) break; const w = [1, 2, 3, 4].map((k) => tail.slice(-k * n, tail.length - (k - 1) * n)); if (w.every((x) => x === w[0]) && new Set(w[0]).size > 6) return true; }
+    return false;
+  };
+}
+// gpt-oss writes in channels: "analysis" (its private reasoning) and "final" (the answer). When a provider hands the raw
+// text over with the channels flattened ("analysis…assistantfinal…" or with <|channel|> markers), only the final channel
+// may be shown. Anything else passes through untouched.
+const OSS_HEADS = ["analysis", "<|channel|>analysis", "<|start|>assistant<|channel|>analysis"];
+const OSS_START = /^\s*(?:<\|start\|>assistant)?(?:<\|channel\|>)?analysis/, OSS_FINAL = /(?:<\|start\|>assistant)?<\|channel\|>final<\|message\|>|assistantfinal/;
+export function channelFilter(model) {
+  if (!/gpt-oss/i.test(String(model || ""))) return null;
+  let buf = "", mode = "?"; // ? undecided · a analysis (hidden) · f final (shown) · p plain (shown)
+  return {
+    push(t) {
+      if (mode === "f" || mode === "p") return t.replace(/<\|(?:end|return|call)\|>/g, "");
+      buf += t;
+      if (mode === "?") {
+        const h = buf.replace(/^\s+/, "");
+        if (OSS_START.test(buf)) mode = "a";
+        else if (OSS_HEADS.some((x) => x.startsWith(h))) return ""; // could still become a channel header: wait for more
+        else { mode = "p"; const out = buf; buf = ""; return out; }
+      }
+      const m = OSS_FINAL.exec(buf); if (!m) return "";
+      mode = "f"; const out = buf.slice(m.index + m[0].length).replace(/<\|(?:end|return|call)\|>/g, ""); buf = ""; return out;
+    },
+    hidden() { return mode === "a"; }, // the stream ended still inside the reasoning: nothing of it is shown
+  };
+}
+export function finalOnly(model, text) { // the same rule for a reply that arrived whole
+  const f = channelFilter(model); if (!f || !text) return text;
+  const out = f.push(text); return f.hidden() ? "" : out.trim();
 }
 const cutOff = (j) => { const c = j && j.choices && j.choices[0]; return !!((c && c.finish_reason === "length") || (j && j.type === "message_delta" && j.delta && j.delta.stop_reason === "max_tokens") || (j && j.finish_reason === "length") || (j && j.type === "response.incomplete")); };
 const piece = (j) => { // the new text in one streamed event, whichever provider sent it
@@ -211,11 +258,18 @@ const piece = (j) => { // the new text in one streamed event, whichever provider
 };
 export async function streamComplete(env, v, key, model, system, msgs, max, onDelta, meta) {
   max = max || 2048; let text = "", serr = null; meta = meta || {};
-  const take = (j) => { if (j && j.error && !text) { serr = j.error; return; } if (cutOff(j)) meta.cut = true; const t = piece(j); if (t) { text += t; onDelta(t); } }; // an error can arrive inside a stream that had already begun
+  const ctl = {}, chan = channelFilter(model), looping = loopGuard(), stop = (why) => { if (!meta.cut || meta.cut === true) meta.cut = why; if (ctl.stop) ctl.stop(); };
+  const take = (j) => { // an error can arrive inside a stream that had already begun
+    if (j && j.error && !text) { serr = j.error; return; } if (cutOff(j)) meta.cut = meta.cut || true;
+    let t = piece(j); if (t && chan) t = chan.push(t); if (!t) return;
+    text += t; onDelta(t); if (looping(text)) stop("loop");
+  };
+  const wall = setTimeout(() => stop("time"), meta.wall || (v && v.ms ? AGENT_WALL_MS : WALL_MS)); // the agent on a CPU writes slowly: it gets longer
+  try {
 
   if (!v) {
     const s = await env.AI.run(model, { messages: [{ role: "system", content: system }, ...msgs.map((m) => ({ role: m.role, content: m.text || "" }))], max_tokens: max, stream: true });
-    if (s && typeof s.getReader === "function") await sse(s, take); else { const t = textOf(s); if (t) { text = t; onDelta(t); } }
+    if (s && typeof s.getReader === "function") await sse(s, take, null, ctl); else { const t = finalOnly(model, textOf(s)); if (t) { text = t; onDelta(t); } }
     return text;
   }
   let url, body;
@@ -233,10 +287,11 @@ export async function streamComplete(env, v, key, model, system, msgs, max, onDe
   const r = await (v.fetcher || fetch)(url, { method: "POST", headers: hdr(v, key), body: JSON.stringify(body), signal: ac.signal });
   if (!r.ok) { const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} const m = j && (j.error && (j.error.message || j.error) || j.message); const e = new Error((typeof m === "string" ? m : t.slice(0, 200)) || "HTTP " + r.status); e.status = r.status; throw e; }
   if (!/event-stream/.test(r.headers.get("content-type") || "")) { const j = await r.json().catch(() => null); const t = j ? (j.content ? (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("") : String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "")) : ""; if (t) { text = t; onDelta(t); } return text; }
-  await sse(r.body, take, () => wait(v.idle || 120000));
+  await sse(r.body, take, () => wait(v.idle || 120000), ctl);
   if (serr && !text) { const e = new Error(String(serr.message || serr)); e.status = serr.status; throw e; }
   return text;
   } finally { clearTimeout(quiet); }
+  } finally { clearTimeout(wall); }
 }
 
 // ── weather: Open-Meteo, the same keyless source as mentifaber.org/wx ──
