@@ -521,8 +521,9 @@ export default {
       h.set("x-robots-tag", "noindex"); h.set("cache-control", "no-cache");
       return new Response(r.body, { status: r.status, headers: h });
     }
-    if (path === "/store.apk" || path.startsWith("/store/")) { const r = await storeRoutes(req, ctx); if (r) return r; }
+    if (path === "/store.apk" || path.startsWith("/store/")) { const r = await storeRoutes(req, ctx, undefined, undefined, env.MODELS); if (r) return r; }
     if (path === "/autofaber.apk" || path === "/android") { // the AutoFaber Android app: the release-signed build when there is one, else the test build
+      if (env.MODELS && (await env.MODELS.head("apk/autofaber-android/AutoFaber.apk").catch(() => null))) return new Response(null, { status: 302, headers: { location: "/store/apk/org.mentifaber.autofaber", "cache-control": "public, max-age=300" } }); // mirrored in R2 (src/store.js)
       const base = "https://github.com/mentifaber/mentifaber.github.io/releases/download/", signed = base + "autofaber-android/AutoFaber.apk";
       const has = await fetch(signed, { method: "HEAD", redirect: "manual", cf: { cacheTtl: 600 } }).then((r) => r.status === 302 || r.status === 200).catch(() => false);
       return new Response(null, { status: 302, headers: { location: has ? signed : base + "autofaber-android-test/AutoFaber-test.apk", "cache-control": "public, max-age=300" } });

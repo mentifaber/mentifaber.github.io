@@ -72,6 +72,24 @@ r = await S.store(req("/store/apk/org.nope.app"), ctx, SHELF); assert.equal(r.st
 assert.equal(await S.store(req("/store/apk/../../x"), ctx, SHELF), null); assert.equal(await S.store(req("/store"), ctx, SHELF), null); assert.equal(await S.store(req("/store/"), ctx, SHELF), null);
 ok("/store/catalog.json, /store.apk and /store/apk/<id> answer; anything else under /store is left to the page");
 
+// 4b · builds mirrored in R2 are what's served (the repository can be private); a build not mirrored yet falls back to GitHub
+{ const objs = { "apk/autofaber-android/AutoFaber.apk": "APKBYTES", "apk/autofaber-android/AutoFaber.json": JSON.stringify(good("org.mentifaber.autofaber", { versionCode: 160 })) };
+  const obj = (k) => objs[k] === undefined ? null : { size: objs[k].length, httpEtag: '"e1"', body: new Response(objs[k]).body, json: async () => JSON.parse(objs[k]) };
+  const bucket = { get: async (k) => obj(k), head: async (k) => obj(k) }, seen3 = [];
+  c = await S.catalog(SHELF, fake({ "mentifaber-store/MentifaberStore.json": good("org.mentifaber.store") }, seen3), bucket);
+  const a = c.apps.find((x) => x.id === "org.mentifaber.autofaber"), st = c.apps.find((x) => x.id === "org.mentifaber.store");
+  assert.equal(a.versionCode, 160); assert.equal(a.apk, "https://mentifaber.org/store/apk/org.mentifaber.autofaber"); assert.ok(!seen3.some((u) => u.includes("autofaber-android/")), "not fetched from GitHub");
+  assert.equal(st.available, true); assert.equal(st.apk, S.RELEASES + "mentifaber-store/MentifaberStore.apk");
+  r = await S.store(req("/store/apk/org.mentifaber.autofaber"), ctx, SHELF, undefined, bucket);
+  assert.equal(r.status, 200); assert.equal(r.headers.get("content-type"), "application/vnd.android.package-archive"); assert.equal(r.headers.get("content-length"), "8"); assert.match(r.headers.get("content-disposition"), /filename="AutoFaber\.apk"/); assert.equal(await r.text(), "APKBYTES");
+  r = await S.store(new Request("https://mentifaber.org/store/apk/org.mentifaber.autofaber", { method: "HEAD" }), ctx, SHELF, undefined, bucket); assert.equal(r.status, 200); assert.equal(r.headers.get("content-length"), "8");
+  r = await S.store(req("/store.apk"), ctx, SHELF, undefined, bucket); assert.equal(r.status, 302); assert.equal(r.headers.get("location"), S.RELEASES + "mentifaber-store/MentifaberStore.apk");
+  objs["apk/autofaber-android/AutoFaber.json"] = JSON.stringify(good("org.mentifaber.autofaber", { signed: "test" }));
+  c = await S.catalog(SHELF, fake({}), bucket); assert.equal(c.apps.find((x) => x.id === "org.mentifaber.autofaber").available, false, "R2 gets the same checks");
+  const wf2 = readFileSync(REPO + "/.github/workflows/android.yml", "utf8"); assert.match(wf2, /r2 object put "mentifaber-models\/apk\/\$TAG\/\$FILE\.apk"[^\n]*\n[^\n]*r2 object put "mentifaber-models\/apk\/\$TAG\/\$FILE\.json"/, "the APK goes up before its details");
+  assert.match(readFileSync(REPO + "/.assetsignore", "utf8"), /^android$/m, "the Android sources and the encrypted key aren't served as site files"); }
+ok("builds mirrored in R2 are served from mentifaber.org itself (APK and HEAD), with the same checks; unmirrored ones still come from GitHub");
+
 // 5 · the Worker routes to it, and the Foundry app is vouched for at mentifaber.org/store
 const w = readFileSync(REPO + "/src/worker.js", "utf8"); assert.match(w, /import \{ store as storeRoutes \} from "\.\/store\.js"/); assert.match(w, /path === "\/store\.apk" \|\| path\.startsWith\("\/store\/"\)/);
 const links = JSON.parse(readFileSync(REPO + "/.well-known/assetlinks.json", "utf8")); assert.deepEqual(links.map((l) => l.target.package_name).sort(), ["org.mentifaber.autofaber", "org.mentifaber.mentiplayer", "org.mentifaber.store", ...SHELF.apps.filter((a) => a.twa).map((a) => a.id)].sort());

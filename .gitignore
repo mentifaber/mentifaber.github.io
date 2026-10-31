@@ -9,3 +9,4 @@ __pycache__/
 tests/gtest/src/
 tests/gtest/cf-shim.mjs
 tests/ui/shots/
+captures/
