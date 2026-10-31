@@ -1,0 +1,8 @@
+// The capture Worker (worker.js): deployed and deleted by .github/workflows/capture.yml within one run.
+{
+  "name": "mentifaber-capture",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "ai": { "binding": "AI" }
+}
