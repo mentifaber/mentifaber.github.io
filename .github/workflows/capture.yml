@@ -1,7 +1,9 @@
 name: AutoFaber stream capture
 
-# Records real reply streams (tools/capture-streams.mjs): Workers AI's raw stream with the deploy's Cloudflare credentials,
-# and what a visitor's browser receives from mentifaber.org. The summary is on the run's page; the raw captures are
+# Records real reply streams (tools/capture-streams.mjs): Workers AI's raw stream, through a throwaway Worker deployed for
+# the run with the deploy's Cloudflare credentials (tools/capture/: that token may deploy Workers but not call Workers AI
+# directly; the Worker needs the run's random key and is deleted at the end), and what a visitor's browser receives from
+# mentifaber.org. The summary is on the run's page; the raw captures are
 # attached to the run as an artifact for 30 days. Runs when the script or this file changes on main, or by hand.
 on:
   workflow_dispatch:
@@ -14,7 +16,7 @@ on:
         default: "2"
   push:
     branches: [main]
-    paths: ["tools/capture-streams.mjs", ".github/workflows/capture.yml"]
+    paths: ["tools/capture-streams.mjs", "tools/capture/**", ".github/workflows/capture.yml"]
 
 permissions:
   contents: read
@@ -28,12 +30,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Deploy the capture Worker
+        id: relay
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          KEY=$(openssl rand -hex 24); echo "::add-mask::$KEY"; echo "CAPTURE_KEY=$KEY" >> "$GITHUB_ENV"
+          npx -y wrangler@4 deploy -c tools/capture/wrangler.jsonc 2>&1 | tee deploy.log
+          URL=$(grep -oE 'https://mentifaber-capture\.[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          [ -n "$URL" ] || { echo "::warning::the capture Worker has no workers.dev address; the provider layer won't run"; exit 0; }
+          printf '%s' "$KEY" | npx -y wrangler@4 secret put CAPTURE_KEY -c tools/capture/wrangler.jsonc
+          # ready once it knows the key: a keyed request for a model it doesn't allow answers 400
+          for i in $(seq 1 24); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "x-capture-key: $KEY" -d '{"model":"none"}' "$URL")" = 400 ] && { echo "CAPTURE_URL=$URL" >> "$GITHUB_ENV"; echo "ready: $URL"; exit 0; }
+            sleep 5
+          done
+          echo "::warning::the capture Worker didn't come up; the provider layer won't run"
       - run: node tools/capture-streams.mjs --layer "${LAYER:-both}" --reps "${REPS:-2}" --out captures
         env:
           LAYER: ${{ github.event.inputs.layer }}
           REPS: ${{ github.event.inputs.reps }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Delete the capture Worker
+        if: always()
+        env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx -y wrangler@4 delete -c tools/capture/wrangler.jsonc --force || echo "::warning::the capture Worker (mentifaber-capture) wasn't deleted"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

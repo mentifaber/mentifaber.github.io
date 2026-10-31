@@ -5,7 +5,9 @@
 //
 // Two layers:
 //   provider  Workers AI's own stream, through its REST API, with the request src/hive-kit.js sends through the AI binding.
-//             Needs CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN (a token allowed to use Workers AI). Each recorded stream
+//             Needs CLOUDFLARE_API_TOKEN (a token allowed to use Workers AI; CLOUDFLARE_ACCOUNT_ID if it reaches several
+//             accounts), or CAPTURE_URL and CAPTURE_KEY: the capture Worker (tools/capture/worker.js), which the workflow
+//             deploys for the run because the deploy token may deploy Workers but not call Workers AI. Each recorded stream
 //             is then replayed through streamComplete, so the summary also shows what a visitor would now be shown.
 //   site      what a visitor's browser receives from mentifaber.org/api/hive/chat. No credentials: it uses one visitor's
 //             daily allowance (60 messages).
@@ -23,6 +25,7 @@ const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ?
 const LAYER = arg("layer", "both"), REPS = Math.max(1, Math.min(10, +arg("reps", 2))), MAX = Math.max(64, Math.min(4096, +arg("max", 2048)));
 const SITE = (process.env.LIVE_SITE || "https://mentifaber.org").replace(/\/$/, ""), API = (process.env.CF_API || "https://api.cloudflare.com/client/v4").replace(/\/$/, "");
 let ACCT = process.env.CLOUDFLARE_ACCOUNT_ID; const TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+const RELAY = process.env.CAPTURE_URL, RELAY_KEY = process.env.CAPTURE_KEY; // the capture Worker, when the workflow deployed one
 const MODELS = ["@cf/openai/gpt-oss-120b", "@cf/openai/gpt-oss-20b"];
 const today = new Date().toISOString().slice(0, 10);
 // a stand-in for the chat's system prompt (the real one is assembled on the server; the site layer goes through it)
@@ -54,7 +57,9 @@ const head = (t, n = 160) => t.replace(/\s+/g, " ").trim().slice(0, n);
 async function provider(model, [name, ask], rep) {
   const body = { messages: [{ role: "system", content: SYSTEM }, { role: "user", content: ask }], max_tokens: MAX, stream: true };
   const t0 = performance.now();
-  const res = await fetch(API + "/accounts/" + ACCT + "/ai/run/" + model, { method: "POST", headers: { authorization: "Bearer " + TOKEN, "content-type": "application/json" }, body: JSON.stringify(body) });
+  const res = RELAY // through the capture Worker's AI binding (tools/capture/worker.js), or straight to the REST API
+    ? await fetch(RELAY, { method: "POST", headers: { "x-capture-key": RELAY_KEY, "content-type": "application/json" }, body: JSON.stringify({ model, input: body }) })
+    : await fetch(API + "/accounts/" + ACCT + "/ai/run/" + model, { method: "POST", headers: { authorization: "Bearer " + TOKEN, "content-type": "application/json" }, body: JSON.stringify(body) });
   if (!res.ok || !/event-stream/.test(res.headers.get("content-type") || "")) {
     const t = await res.text(); let msg = t.slice(0, 300); try { const j = JSON.parse(t); msg = (j.errors || []).map((e) => e.code + " " + e.message).join("; ") || msg; } catch {}
     return { layer: "provider", model, case: name, rep, error: "HTTP " + res.status + ": " + msg };
@@ -103,8 +108,8 @@ const run = async (layer, fn, models) => { for (const model of models) for (cons
 } };
 const skipped = [];
 // the account ID is optional when the token belongs to one account: it is looked up, as wrangler does
-if (TOKEN && !ACCT) try { const j = await (await fetch(API + "/accounts", { headers: { authorization: "Bearer " + TOKEN } })).json(); if (j.success && j.result && j.result.length === 1) ACCT = j.result[0].id; else console.log("account lookup: " + (j.result ? j.result.length + " accounts; set CLOUDFLARE_ACCOUNT_ID" : JSON.stringify(j.errors || j).slice(0, 200))); } catch (e) { console.log("account lookup failed: " + e.message); }
-if (LAYER === "provider" || LAYER === "both") { if (ACCT && TOKEN) await run("provider", provider, MODELS); else skipped.push("provider (" + (TOKEN ? "the token's Cloudflare account couldn't be found; set CLOUDFLARE_ACCOUNT_ID" : "CLOUDFLARE_API_TOKEN isn't set") + ")"); }
+if (TOKEN && !ACCT && !RELAY) try { const j = await (await fetch(API + "/accounts", { headers: { authorization: "Bearer " + TOKEN } })).json(); if (j.success && j.result && j.result.length === 1) ACCT = j.result[0].id; else console.log("account lookup: " + (j.result ? j.result.length + " accounts; set CLOUDFLARE_ACCOUNT_ID" : JSON.stringify(j.errors || j).slice(0, 200))); } catch (e) { console.log("account lookup failed: " + e.message); }
+if (LAYER === "provider" || LAYER === "both") { if (RELAY ? RELAY_KEY : ACCT && TOKEN) await run("provider", provider, MODELS); else skipped.push("provider (" + (TOKEN ? "the token's Cloudflare account couldn't be found; set CLOUDFLARE_ACCOUNT_ID" : "CLOUDFLARE_API_TOKEN isn't set") + ")"); }
 if (LAYER === "site" || LAYER === "both") await run("site", site, MODELS.slice(0, 1)); // the model the audit saw, at the visitor allowance
 
 // the summary: counts and rates, never a verdict on a single run
