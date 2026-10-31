@@ -21,6 +21,11 @@ on:
 permissions:
   contents: read
 
+# one run at a time: each deploys, keys and deletes the same capture Worker
+concurrency:
+  group: capture
+  cancel-in-progress: false
+
 jobs:
   capture:
     runs-on: ubuntu-latest
