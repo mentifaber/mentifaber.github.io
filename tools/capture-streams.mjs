@@ -12,11 +12,13 @@
 //   site      what a visitor's browser receives from mentifaber.org/api/hive/chat. No credentials: it uses one visitor's
 //             daily allowance (60 messages).
 //
-//   node tools/capture-streams.mjs [--layer provider|site|both] [--reps 2] [--max 2048] [--out captures]
+//   node tools/capture-streams.mjs [--layer provider|site|both] [--reps 2] [--max 2048] [--cases opener,date,math,convo] [--out captures]
 //
 // Writes <out>/<time>/<layer>.<model>.<case>.<rep>.jsonl (one line per network read: ms since the request was sent, and
-// the bytes as text), summary.json and summary.md. The default run asks for 12 provider replies and 6 site replies of at
-// most 2,048 tokens each: well inside Workers AI's free daily allocation (10,000 neurons) even if every one runs to the cap.
+// the bytes as text), summary.json and summary.md. The default run asks for 16 provider replies and 8 site replies of at
+// most 2,048 tokens each: about 3,000 neurons even if every one ran to the cap (the free daily allocation is 10,000; a
+// typical reply measured 4 to 30). Ten reps is about 2,000 neurons at typical lengths, but could pass the free
+// allocation if replies run long.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -30,11 +32,25 @@ const MODELS = ["@cf/openai/gpt-oss-120b", "@cf/openai/gpt-oss-20b"];
 const today = new Date().toISOString().slice(0, 10);
 // a stand-in for the chat's system prompt (the real one is assembled on the server; the site layer goes through it)
 const SYSTEM = "You are AutoFaber, the assistant on mentifaber.org. Answer the visitor directly and concisely. Today's date: " + today + " (UTC).";
-const CASES = [
-  ["opener", "Hi! What are you, and what can you do?"], // the audit's runaway was a first reply
-  ["date", "What is today's date? One line."],
-  ["math", "What is 17 × 23? Reply with just the number."],
+// each case is a conversation, ending with the visitor's message; "convo" is a longer one, closer to a real session
+const U = (text) => ({ role: "user", text }), A = (text) => ({ role: "assistant", text });
+const ALL_CASES = [
+  ["opener", [U("Hi! What are you, and what can you do?")]], // the audit's runaway was a first reply
+  ["date", [U("What is today's date? One line.")]],
+  ["math", [U("What is 17 × 23? Reply with just the number.")]],
+  ["convo", [
+    U("hey, what is mentifaber.org?"),
+    A("It's Anders Powell's site: a collection of apps and experiments. I'm AutoFaber, the assistant that lives there."),
+    U("cool. can you plan a 3 day trip to Lisbon for me? I like food and old neighborhoods"),
+    A("**Day 1: Alfama and Baixa.** Walk the Alfama lanes up to the castle, lunch on grilled sardines, sunset at Miradouro da Senhora do Monte.\n**Day 2: Belém.** The monastery, the tower, and pastéis de Belém; dinner at Time Out Market.\n**Day 3: Bairro Alto and Príncipe Real.** Bookshops and gardens by day, fado and petiscos at night."),
+    U("make day 2 cheaper"),
+    A("Swap Time Out Market for a tasca in Belém (a prato do dia is usually under €12), take tram 15E instead of a taxi, and see the monastery's church, which is free, instead of the cloister."),
+    U("now put the whole plan in a table"),
+    A("| Day | Morning | Afternoon | Evening |\n|---|---|---|---|\n| 1 | Alfama lanes | Castle, sardines | Senhora do Monte sunset |\n| 2 | Tram 15E to Belém | Monastery church, pastéis | Tasca prato do dia |\n| 3 | Príncipe Real | Bookshops, gardens | Fado, petiscos |"),
+    U("perfect thanks. last thing: what's today's date, and what exactly are you?"),
+  ]],
 ];
+const PICK = arg("cases", ""), CASES = PICK ? ALL_CASES.filter(([n]) => PICK.split(",").includes(n)) : ALL_CASES;
 const OUT = (arg("out", fileURLToPath(new URL("../captures", import.meta.url)))) + "/" + new Date().toISOString().replace(/[:.]/g, "-");
 mkdirSync(OUT, { recursive: true });
 
@@ -54,8 +70,8 @@ const markers = (t) => ({ startsAnalysis: /^\s*(<\|start\|>assistant)?(<\|channe
 const loopAt = (t) => { const g = K.loopGuard(); for (let i = 40; i <= t.length; i += 40) if (g(t.slice(0, i))) return i; return g(t) ? t.length : null; };
 const head = (t, n = 160) => t.replace(/\s+/g, " ").trim().slice(0, n);
 
-async function provider(model, [name, ask], rep) {
-  const body = { messages: [{ role: "system", content: SYSTEM }, { role: "user", content: ask }], max_tokens: MAX, stream: true };
+async function provider(model, [name, turns], rep) {
+  const body = { messages: [{ role: "system", content: SYSTEM }, ...turns.map((m) => ({ role: m.role, content: m.text }))], max_tokens: MAX, stream: true };
   const t0 = performance.now();
   const res = RELAY // through the capture Worker's AI binding (tools/capture/worker.js), or straight to the REST API
     ? await fetch(RELAY, { method: "POST", headers: { "x-capture-key": RELAY_KEY, "content-type": "application/json" }, body: JSON.stringify({ model, input: body }) })
@@ -70,7 +86,7 @@ async function provider(model, [name, ask], rep) {
   // replay the recorded bytes through the production path: the channel filter, the loop guard and the wall cap
   const meta = { wall: 600000 }, shown = [];
   const replay = new ReadableStream({ start(c) { const e = new TextEncoder(); for (const r of reads) c.enqueue(e.encode(r.t)); c.close(); } });
-  const now = await K.streamComplete({ AI: { run: async () => replay } }, null, null, model, SYSTEM, [{ role: "user", text: ask }], MAX, (t) => shown.push(t), meta);
+  const now = await K.streamComplete({ AI: { run: async () => replay } }, null, null, model, SYSTEM, turns, MAX, (t) => shown.push(t), meta);
   writeFileSync(OUT + "/provider." + model.split("/").pop() + "." + name + "." + rep + ".jsonl", reads.map((r) => JSON.stringify(r)).join("\n") + "\n");
   return { layer: "provider", model, case: name, rep, ms: reads.at(-1) ? reads.at(-1).ms : 0, ttftMs: first >= 0 ? reads[first].ms : null, reads: reads.length, events: evs.length,
     eventKeys: [...keys].sort(), chars: text.length, reasoningChars: think.length, ...markers(text), loopAtChar: loopAt(text),
@@ -78,14 +94,14 @@ async function provider(model, [name, ask], rep) {
     rawHead: head(text), nowShown: head(now), nowChars: now.length, nowCut: meta.cut || null };
 }
 
-async function site(model, [name, ask], rep) {
+async function site(model, [name, turns], rep) {
   // Cloudflare's bot check sometimes challenges a datacenter address ("Just a moment..."): that is retried and counted
   // apart, since it says nothing about the model
   let res, t0, challenged = 0;
   for (let k = 0; k < 4; k++) {
     if (k) await new Promise((r) => setTimeout(r, 5000 * k));
     t0 = performance.now();
-    res = await fetch(SITE + "/api/hive/chat", { method: "POST", headers: { "content-type": "application/json", "user-agent": "AutoFaber capture (tools/capture-streams.mjs)" }, body: JSON.stringify({ model: "workers-ai|" + model, messages: [{ role: "user", text: ask }], stream: true }) });
+    res = await fetch(SITE + "/api/hive/chat", { method: "POST", headers: { "content-type": "application/json", "user-agent": "AutoFaber capture (tools/capture-streams.mjs)" }, body: JSON.stringify({ model: "workers-ai|" + model, messages: turns, stream: true }) });
     if (/event-stream/.test(res.headers.get("content-type") || "")) break;
     const t = await res.text();
     if (res.status === 403 && /Just a moment/i.test(t)) { challenged++; continue; }
