@@ -38,3 +38,16 @@ jobs:
           done < <(jq -r '.apps[] | select(.release and .file and .status != "soon") | .release + " " + .file' android/apps.json)
           echo "Mirrored $ok, skipped $skip, failed $fail" | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$fail" = 0 ]
+      - name: Check that the live store serves from R2
+        # the catalog must point every installable app at mentifaber.org, and one real download must match its checksum
+        run: |
+          get() { for k in 1 2 3 4; do curl -fsSL -A "Mentifaber store check" "$1" -o "$2" && return 0; sleep $((k * 10)); done; return 1; }
+          get https://mentifaber.org/store/catalog.json cat.json && jq -e .apps cat.json >/dev/null || { echo "::error::couldn't read the live catalog"; exit 1; }
+          R2=$(jq '[.apps[] | select(.available and (.apk | startswith("https://mentifaber.org/")))] | length' cat.json)
+          GH=$(jq '[.apps[] | select(.available and (.apk | startswith("https://mentifaber.org/") | not))] | length' cat.json)
+          echo "Live catalog: $R2 installable apps served from mentifaber.org, $GH from elsewhere" | tee -a "$GITHUB_STEP_SUMMARY"
+          A=$(jq -c '.apps[] | select(.id == "org.mentifaber.store")' cat.json)
+          get "$(jq -r .apk <<<"$A")" foundry.apk || { echo "::error::Foundry's APK didn't download"; exit 1; }
+          if [ "$(sha256sum foundry.apk | cut -d' ' -f1)" = "$(jq -r .sha256 <<<"$A")" ]; then echo "Foundry's APK downloads from $(jq -r .apk <<<"$A") and matches its checksum" | tee -a "$GITHUB_STEP_SUMMARY"
+          else echo "::error::Foundry's APK doesn't match the catalog's checksum"; exit 1; fi
+          [ "$GH" = 0 ] || { echo "::error::$GH apps still download from outside mentifaber.org"; exit 1; }
