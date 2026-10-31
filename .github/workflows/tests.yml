@@ -1,9 +1,10 @@
 name: Tests
 
-# Genesis's server tests (its Durable Object under Node) and browser tests (the app in Chromium), on every push and PR.
+# Genesis's server tests (its Durable Object under Node) and browser tests (the app in Chromium), on every PR and push to main.
+# (A branch's pushes are tested through its PR, so each push runs once: Actions minutes count on a private repository.)
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

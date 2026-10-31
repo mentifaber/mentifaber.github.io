@@ -1,7 +1,8 @@
 // The Foundry's catalog. android/apps.json is the shelf (names, words, icons); each app's latest build publishes
-// <file>.apk and <file>.json (version, size, SHA-256, signer, what changed) to its GitHub release
-// (.github/workflows/android.yml). The catalog joins the two, so a new build reaches Foundry within minutes of
-// publishing, with no deploy of the site.
+// <file>.apk and <file>.json (version, size, SHA-256, signer, what changed) to its GitHub release and to R2, under
+// apk/<release>/<file> in the MODELS bucket (.github/workflows/android.yml). R2 is what's served, so downloads don't depend
+// on the repository being public; a build not mirrored there yet is still read from its GitHub release. The catalog joins
+// the two, so a new build reaches Foundry within minutes of publishing, with no deploy of the site.
 //   GET /store/catalog.json   the catalog (the storefront page and the Foundry app both read it)
 //   GET /store.apk            the Foundry app itself, to install first
 //   GET /store/apk/<id>       any app's latest APK, by its id
@@ -16,6 +17,8 @@ const BUILT = ["versionCode", "versionName", "size", "sha256", "minSdk", "target
 
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
 const apkUrl = (a) => RELEASES + a.release + "/" + a.file + ".apk";
+export const r2Key = (a, ext) => "apk/" + a.release + "/" + a.file + ext;
+const SITE = "https://mentifaber.org";
 
 // One build's details, or null. A build is only offered when its details are complete and name this app.
 export function build(a, b) {
@@ -24,29 +27,33 @@ export function build(a, b) {
   return pick(b, BUILT);
 }
 
-export async function catalog(shelf = SHELF, get = fetch) {
+export async function catalog(shelf = SHELF, get = fetch, bucket = null) {
   const apps = await Promise.all(shelf.apps.filter((a) => ID.test(a.id || "")).map(async (a) => {
-    let b = null;
+    let b = null, apk = apkUrl(a);
     if (a.release && a.file && !soon(a)) {
-      try {
+      try { // the APK goes up before its details, so details in R2 mean the APK is there too
+        const o = bucket && (await bucket.get(r2Key(a, ".json")));
+        if (o) { b = build(a, await o.json()); apk = SITE + "/store/apk/" + a.id; }
+      } catch { b = null; }
+      if (!b) try {
         const r = await get(RELEASES + a.release + "/" + a.file + ".json", { cf: { cacheTtl: 90, cacheEverything: true } });
         if (r.ok) b = build(a, await r.json());
       } catch { b = null; }
     }
-    return b ? { ...pick(a, PUBLIC), ...b, apk: apkUrl(a), available: true } : { ...pick(a, PUBLIC), available: false };
+    return b ? { ...pick(a, PUBLIC), ...b, apk, available: true } : { ...pick(a, PUBLIC), available: false };
   }));
   const updated = apps.map((a) => a.built || "").sort().pop() || null;
   return { name: "Foundry", store: "org.mentifaber.store", updated, apps };
 }
 
 // The store's routes; null when the path isn't the store's.
-export async function store(req, ctx, shelf = SHELF, get = fetch) {
+export async function store(req, ctx, shelf = SHELF, get = fetch, bucket = null) {
   const path = new URL(req.url).pathname;
   if (path === "/store/catalog.json") {
     const cache = typeof caches !== "undefined" ? caches.default : null, key = new Request(new URL(req.url).origin + "/store/catalog.json");
     const hit = cache && (await cache.match(key));
     if (hit) return hit;
-    const res = new Response(JSON.stringify(await catalog(shelf, get)), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=60", "access-control-allow-origin": "*" } });
+    const res = new Response(JSON.stringify(await catalog(shelf, get, bucket)), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=60", "access-control-allow-origin": "*" } });
     if (cache) ctx.waitUntil(cache.put(key, res.clone()));
     return res;
   }
@@ -54,6 +61,8 @@ export async function store(req, ctx, shelf = SHELF, get = fetch) {
   if (m) {
     const a = shelf.apps.find((x) => x.id === m[1] && x.release && x.file && !soon(x));
     if (!a) return new Response("No such app in Foundry.", { status: 404, headers: { "content-type": "text/plain" } });
+    const o = bucket && (await (req.method === "HEAD" ? bucket.head(r2Key(a, ".apk")) : bucket.get(r2Key(a, ".apk"))).catch(() => null));
+    if (o) return new Response(req.method === "HEAD" ? null : o.body, { headers: { "content-type": "application/vnd.android.package-archive", "content-length": String(o.size), "content-disposition": 'attachment; filename="' + a.file + '.apk"', etag: o.httpEtag, "cache-control": "public, max-age=300" } });
     return new Response(null, { status: 302, headers: { location: apkUrl(a), "cache-control": "public, max-age=300" } });
   }
   return null;

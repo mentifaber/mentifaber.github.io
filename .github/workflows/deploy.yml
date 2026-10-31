@@ -12,6 +12,8 @@ permissions:
 
 jobs:
   deploy:
+    # mentifaber.org is served by Cloudflare (cloudflare.yml); this copy on GitHub Pages stops once the repository is private
+    if: ${{ !github.event.repository.private }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
