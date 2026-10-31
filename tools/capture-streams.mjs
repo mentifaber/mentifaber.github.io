@@ -22,7 +22,7 @@ const K = await import(new URL("../src/hive-kit.js", import.meta.url).href);
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ? process.argv[i + 1] : d; };
 const LAYER = arg("layer", "both"), REPS = Math.max(1, Math.min(10, +arg("reps", 2))), MAX = Math.max(64, Math.min(4096, +arg("max", 2048)));
 const SITE = (process.env.LIVE_SITE || "https://mentifaber.org").replace(/\/$/, ""), API = (process.env.CF_API || "https://api.cloudflare.com/client/v4").replace(/\/$/, "");
-const ACCT = process.env.CLOUDFLARE_ACCOUNT_ID, TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+let ACCT = process.env.CLOUDFLARE_ACCOUNT_ID; const TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 const MODELS = ["@cf/openai/gpt-oss-120b", "@cf/openai/gpt-oss-20b"];
 const today = new Date().toISOString().slice(0, 10);
 // a stand-in for the chat's system prompt (the real one is assembled on the server; the site layer goes through it)
@@ -74,14 +74,24 @@ async function provider(model, [name, ask], rep) {
 }
 
 async function site(model, [name, ask], rep) {
-  const t0 = performance.now();
-  const res = await fetch(SITE + "/api/hive/chat", { method: "POST", headers: { "content-type": "application/json", "user-agent": "AutoFaber capture (tools/capture-streams.mjs)" }, body: JSON.stringify({ model: "workers-ai|" + model, messages: [{ role: "user", text: ask }], stream: true }) });
-  if (!/event-stream/.test(res.headers.get("content-type") || "")) { const t = await res.text(); return { layer: "site", model, case: name, rep, error: "HTTP " + res.status + ": " + t.slice(0, 300) }; }
+  // Cloudflare's bot check sometimes challenges a datacenter address ("Just a moment..."): that is retried and counted
+  // apart, since it says nothing about the model
+  let res, t0, challenged = 0;
+  for (let k = 0; k < 4; k++) {
+    if (k) await new Promise((r) => setTimeout(r, 5000 * k));
+    t0 = performance.now();
+    res = await fetch(SITE + "/api/hive/chat", { method: "POST", headers: { "content-type": "application/json", "user-agent": "AutoFaber capture (tools/capture-streams.mjs)" }, body: JSON.stringify({ model: "workers-ai|" + model, messages: [{ role: "user", text: ask }], stream: true }) });
+    if (/event-stream/.test(res.headers.get("content-type") || "")) break;
+    const t = await res.text();
+    if (res.status === 403 && /Just a moment/i.test(t)) { challenged++; continue; }
+    return { layer: "site", model, case: name, rep, challenged, error: "HTTP " + res.status + ": " + t.slice(0, 300) };
+  }
+  if (!/event-stream/.test(res.headers.get("content-type") || "")) return { layer: "site", model, case: name, rep, challenged, error: "Cloudflare's bot check blocked all " + challenged + " tries" };
   const reads = await record(res, t0), evs = sseEvents(reads.map((r) => r.t).join(""));
   const text = evs.filter(([e]) => e === "delta").map(([, d]) => d.t || "").join(""), done = (evs.find(([e]) => e === "done") || [])[1] || null, err = (evs.find(([e]) => e === "error") || [])[1];
   const firstDelta = reads.findIndex((r) => /event: delta/.test(r.t)), meta = (evs.find(([e]) => e === "meta") || [])[1] || {};
   writeFileSync(OUT + "/site." + model.split("/").pop() + "." + name + "." + rep + ".jsonl", reads.map((r) => JSON.stringify(r)).join("\n") + "\n");
-  return { layer: "site", model, case: name, rep, ms: reads.at(-1) ? reads.at(-1).ms : 0, ttftMs: firstDelta >= 0 ? reads[firstDelta].ms : null, reads: reads.length,
+  return { layer: "site", model, case: name, rep, challenged, ms: reads.at(-1) ? reads.at(-1).ms : 0, ttftMs: firstDelta >= 0 ? reads[firstDelta].ms : null, reads: reads.length,
     deltas: evs.filter(([e]) => e === "delta").length, chars: text.length, ...markers(text), loopAtChar: loopAt(text), cut: done ? done.cut || null : null,
     answeredBy: (done && done.model) || meta.model || null, tools: (done && done.tools) || meta.tools || [], error: err ? err.error : undefined, shown: head(text) };
 }
@@ -92,7 +102,9 @@ const run = async (layer, fn, models) => { for (const model of models) for (cons
   rows.push(r); console.log(JSON.stringify(r));
 } };
 const skipped = [];
-if (LAYER === "provider" || LAYER === "both") { if (ACCT && TOKEN) await run("provider", provider, MODELS); else skipped.push("provider (CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN aren't set)"); }
+// the account ID is optional when the token belongs to one account: it is looked up, as wrangler does
+if (TOKEN && !ACCT) try { const j = await (await fetch(API + "/accounts", { headers: { authorization: "Bearer " + TOKEN } })).json(); if (j.success && j.result && j.result.length === 1) ACCT = j.result[0].id; else console.log("account lookup: " + (j.result ? j.result.length + " accounts; set CLOUDFLARE_ACCOUNT_ID" : JSON.stringify(j.errors || j).slice(0, 200))); } catch (e) { console.log("account lookup failed: " + e.message); }
+if (LAYER === "provider" || LAYER === "both") { if (ACCT && TOKEN) await run("provider", provider, MODELS); else skipped.push("provider (" + (TOKEN ? "the token's Cloudflare account couldn't be found; set CLOUDFLARE_ACCOUNT_ID" : "CLOUDFLARE_API_TOKEN isn't set") + ")"); }
 if (LAYER === "site" || LAYER === "both") await run("site", site, MODELS.slice(0, 1)); // the model the audit saw, at the visitor allowance
 
 // the summary: counts and rates, never a verdict on a single run
@@ -109,6 +121,7 @@ for (const [k, g] of Object.entries(groups)) {
     (ok[0] ? (ok[0].nowShown ?? ok[0].shown) : (g[0].error || "")).replace(/\|/g, "\\|").slice(0, 90)].join(" | ") + " |");
 }
 const keys = new Set(rows.filter((r) => r.eventKeys).flatMap((r) => r.eventKeys)); if (keys.size) md.push("", "Provider event fields seen: `" + [...keys].join("`, `") + "`");
+const ch = rows.reduce((n, r) => n + (r.challenged || 0), 0); if (ch) md.push("", "Cloudflare's bot check challenged " + ch + " request(s) to the site and they were retried (not counted as model errors).");
 const errs = rows.filter((r) => r.error); if (errs.length) md.push("", "Errors:", ...errs.map((r) => "- " + r.layer + " " + r.model + " " + r.case + " #" + r.rep + ": " + r.error));
 writeFileSync(OUT + "/summary.json", JSON.stringify({ when: new Date().toISOString(), reps: REPS, max: MAX, skipped, rows }, null, 2));
 writeFileSync(OUT + "/summary.md", md.join("\n") + "\n");
