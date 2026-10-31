@@ -141,7 +141,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS pub(slug TEXT PRIMARY KEY, pid TEXT UNIQUE, ts INTEGER, by_ TEXT, views INTEGER DEFAULT 0, live INTEGER DEFAULT 1)"); // results with a link (/p/<slug>): live = anyone can open it, else only the owner
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
       q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
-      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
+      try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN verdict TEXT"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
       mindTables(q); genesisTables(q); libraryTables(q); voiceTables(q);
       // indexes for the lookups every view and every agent step makes (each runs once; cheap if already there)
       for (const ix of ["task(pid, status)", "agent(pid)", "feed(pid, ts)", "proj(ts)", "act(kind, id)", "act(ts)", "thread(status, ok)", "mem(ok, pin)", "turn(cid)", "idea(status)", "journal(kind, id)", "alert(state, id)", "gdh(k, h)"])
@@ -211,7 +211,7 @@ export class Hive extends DurableObject {
     if (path.startsWith("/library")) { if (!owner) return J({ error: "the library is the owner's: sign in on Vigil first" }, 401); return Library.route(this, path, b, J); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "AutoFaber is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
-      return J({ owner, projects: q.exec("SELECT id,title,status,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
+      return J({ owner, projects: q.exec("SELECT id,title,status,verdict,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
     if (path === "/voice" || path.startsWith("/voice/")) return Voice.route(this, path, b, owner, req, J, url.origin).catch((e) => J({ error: String(e && e.message || e).slice(0, 200) }, 500)); // guest voice links (src/hive-voice.js)
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
@@ -253,7 +253,7 @@ export class Hive extends DurableObject {
     const ctl = owner || (b.ctok && p.ctok && b.ctok === p.ctok), cap = p.cap || MAX_CALLS;
     if (path === "/state") {
       const since = +b.since || 0;
-      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, owner,
+      return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, verdict: p.verdict || undefined, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, owner,
         versions: q.exec("SELECT v, ts, note FROM ver WHERE pid=? ORDER BY v DESC LIMIT 20", p.id).toArray(), pub: ((u) => (u ? { url: url.origin + "/p/" + u.slug, live: !!u.live } : undefined))(q.exec("SELECT slug, live FROM pub WHERE pid=?", p.id).toArray()[0]), join: ctl ? url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=YourName" : undefined },
         tasks: q.exec("SELECT id,role,title,detail,deps,status,agent,note,tries,length(output) n FROM task WHERE pid=? ORDER BY id", p.id).toArray(),
         agents: q.exec("SELECT id,name,src,model,roles,status,task,done,last,COALESCE(score,0) score,err FROM agent WHERE pid=? ORDER BY COALESCE(score,0) DESC, done DESC, name", p.id).toArray(),
@@ -307,7 +307,7 @@ export class Hive extends DurableObject {
     }
     if (path === "/rebuild") { // assemble the final result again (e.g. it came out too short)
       if (!ctl) return J({ error: "only whoever started this project can rebuild it" }, 401);
-      if (q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c) return J({ error: "some tasks aren't finished yet" }, 400);
+      if (q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status NOT IN ('done','needs_human')", p.id).one().c) return J({ error: "some tasks aren't finished yet" }, 400);
       q.exec("UPDATE proj SET status='working', final=NULL WHERE id=?", p.id); if (this._igTried) delete this._igTried[p.id]; this.say(p.id, "you", "chat", "rebuild the final result"); await this.ctx.storage.setAlarm(Date.now() + 200);
       return J({ ok: true });
     }
@@ -328,7 +328,7 @@ export class Hive extends DurableObject {
         if (!t || !text) return J({ error: "claim a task with /join first, then submit its text" }, 400);
         if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
         const noReview = this.quota && Date.now() < this.quota && !q.exec("SELECT COUNT(*) c FROM agent WHERE pid=? AND status NOT IN ('offline','retired') AND src NOT IN ('workers-ai','visitor')", p.id).one().c;
-        q.exec("UPDATE task SET status=?, output=?, note=?, ts=? WHERE id=?", noReview ? "done" : "review", text, noReview ? "accepted without review: the swarm's reviewers were paused" : null, Date.now(), t.id); q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), aid, p.id);
+        q.exec("UPDATE task SET status=?, output=?, note=?, ts=? WHERE id=?", noReview ? "needs_human" : "review", text, noReview ? "NEEDS HUMAN: not reviewed (the swarm's reviewers were paused)" : null, Date.now(), t.id); q.exec("UPDATE agent SET status='idle', task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), aid, p.id);
         this.say(p.id, ag.name, "work", "submitted #" + t.id + " " + t.title); await this.ctx.storage.setAlarm(Date.now() + 200);
         return J({ ok: true, next: url.origin + "/api/hive/join?project=" + p.id + "&key=" + p.tok + "&agent=" + encodeURIComponent(name) });
       }
@@ -355,8 +355,18 @@ export class Hive extends DurableObject {
     q.exec("UPDATE proj SET note='working' WHERE id=?", p.id);
     this.say(p.id, "hive", "plan", "laid out the built-in task board so visiting AIs can start now; the Workers AI agents join after the reset");
   }
+  // How a finished project is described: "verified" only when every task passed review and the pieces were assembled.
+  // Nothing here claims tests ran: Swarm's reviews are models reading the work, and the report says so.
+  verdict(pid, extra) {
+    const q = this.sql(), tasks = q.exec("SELECT id,title,status,note FROM task WHERE pid=? ORDER BY id", pid).toArray();
+    const bad = tasks.filter((t) => t.status === "needs_human"), why = [...(bad.length ? [bad.length + " of " + tasks.length + " tasks failed review or were never reviewed"] : []), ...(extra ? [extra] : [])];
+    const verdict = why.length ? "needs_human: " + why.join("; ") : "verified";
+    const report = "> **Completion report** (AutoFaber Swarm)\n> " + (why.length ? "**Needs a person to check it.** " + why.join("; ") + "." : "Every task passed a reviewer's reading.") +
+      " Reviews are models reading the work; no tests were executed." + (bad.length ? "\n> Not verified: " + bad.map((t) => "#" + t.id + " " + t.title).join(", ") + "." : "") + "\n\n";
+    return { verdict, report };
+  }
   claim(pid, ag, roles) {
-    const q = this.sql(), done = new Set(q.exec("SELECT id FROM task WHERE pid=? AND status='done'", pid).toArray().map((r) => r.id));
+    const q = this.sql(), done = new Set(q.exec("SELECT id FROM task WHERE pid=? AND status IN ('done','needs_human')", pid).toArray().map((r) => r.id));
     const open = q.exec("SELECT * FROM task WHERE pid=? AND status='open' ORDER BY id", pid).toArray().filter((t) => JSON.parse(t.deps || "[]").every((d) => done.has(d)));
     const t = open.find((x) => roles.includes(x.role)) || (ag.src === "visitor" ? open[0] : null); if (!t) return null;
     q.exec("UPDATE task SET status='claimed', agent=?, ts=? WHERE id=?", ag.id, Date.now(), t.id); q.exec("UPDATE agent SET status='working', task=?, last=? WHERE id=? AND pid=?", t.id, Date.now(), ag.id, pid);
@@ -364,7 +374,7 @@ export class Hive extends DurableObject {
   }
   context(pid, t) {
     const q = this.sql(), deps = JSON.parse(t.deps || "[]");
-    const rows = q.exec("SELECT id,role,title,output FROM task WHERE pid=? AND status='done' ORDER BY id", pid).toArray();
+    const rows = q.exec("SELECT id,role,title,output,status FROM task WHERE pid=? AND status IN ('done','needs_human') ORDER BY id", pid).toArray().map((r) => r.status === "needs_human" ? { ...r, title: r.title + " [UNVERIFIED: failed review]" } : r);
     const mine = rows.filter((r) => deps.includes(r.id)), rest = rows.filter((r) => !deps.includes(r.id));
     const chat = q.exec("SELECT text FROM feed WHERE pid=? AND who='you' ORDER BY ts DESC LIMIT 5", pid).toArray().map((r) => r.text).reverse();
     let s = (chat.length ? "OWNER NOTES:\n" + chat.join("\n") + "\n\n" : "") + mine.map((r) => "#" + r.id + " " + r.role + ": " + r.title + "\n" + r.output.slice(0, 6000)).join("\n\n");
@@ -485,10 +495,12 @@ export class Hive extends DurableObject {
           "\n\nJudge only this task: does the work do what THIS task asks, correctly and completely? Other tasks cover the rest of the brief, so never ask one task for the whole project. REDO only for real faults: wrong facts, numbers that don't add up or parts that don't fit, broken or unfinished code, text cut off, a contradiction of the brief, or part of this task left out. Reply with APPROVE or REDO on the first line, then one short paragraph (for REDO: the exact fixes).", 500);
         q.exec("UPDATE agent SET status=CASE WHEN status='offline' THEN 'offline' ELSE 'idle' END, task=NULL, done=done+1, last=? WHERE id=? AND pid=?", Date.now(), c.id, p.id);
         if (!out) { q.exec("UPDATE task SET status='review' WHERE id=?", t.id); return; }
-        const yes = /^\W*approve/i.test(out), ok = yes || t.tries >= 2; // after two redos it moves on, and the open points go to the final pass
+        // fail closed: work that fails review twice is never accepted. It becomes NEEDS HUMAN: the project can still finish,
+        // but the task, the project's verdict and the final report all say it was not verified, and why
+        const yes = /^\W*approve/i.test(out), gaveUp = !yes && t.tries >= 2, next = yes ? "done" : gaveUp ? "needs_human" : "open";
         if (t.agent) q.exec("UPDATE agent SET score=COALESCE(score,0)+? WHERE id=? AND pid=?", yes ? 2 : -1, t.agent, p.id); // agents earn their place
-        q.exec("UPDATE task SET status=?, note=?, tries=tries+?, agent=CASE WHEN ? THEN agent ELSE NULL END WHERE id=?", ok ? "done" : "open", (ok && !yes ? "UNRESOLVED: " : "") + out.slice(0, 1200), ok ? 0 : 1, ok ? 1 : 0, t.id);
-        this.say(p.id, c.name, yes ? "approve" : ok ? "accept" : "redo", "#" + t.id + " " + t.title + ": " + (ok && !yes ? "accepted after 2 redos; what the reviewer still wanted goes to the final pass. " : "") + out.split("\n").slice(0, 3).join(" ").slice(0, 300));
+        q.exec("UPDATE task SET status=?, note=?, tries=tries+?, agent=CASE WHEN ? THEN agent ELSE NULL END WHERE id=?", next, (gaveUp ? "NEEDS HUMAN: " : "") + out.slice(0, 1200), next === "open" ? 1 : 0, next === "open" ? 0 : 1, t.id);
+        this.say(p.id, c.name, yes ? "approve" : gaveUp ? "needs_human" : "redo", "#" + t.id + " " + t.title + ": " + (gaveUp ? "FAILED review 3 times; marked NEEDS HUMAN (not accepted). The reviewer's objections: " : "") + out.split("\n").slice(0, 3).join(" ").slice(0, 300));
       }));
     }
     // idle agents claim open work for their roles
@@ -507,14 +519,15 @@ export class Hive extends DurableObject {
     if (jobs.length) { const all = Promise.all(jobs); if (this.ctx.waitUntil) this.ctx.waitUntil(all); await Promise.race([all, new Promise((r) => setTimeout(r, +this.env.HIVE_SLOW_TICK || SLOW_TICK))]); return; } // a slow job carries on; the next tick starts the rest
     if (this.flying(p.id)) return; // still working: not the moment to assemble
     // all done? integrate
-    const left = q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status!='done'", p.id).one().c, total = q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c;
+    const left = q.exec("SELECT COUNT(*) c FROM task WHERE pid=? AND status NOT IN ('done','needs_human')", p.id).one().c, total = q.exec("SELECT COUNT(*) c FROM task WHERE pid=?", p.id).one().c;
     if (total && !left && p.status !== "integrating") {
       q.exec("UPDATE proj SET status='integrating' WHERE id=?", p.id);
       this._igTried = this._igTried || {}; const tried = (this._igTried[p.id] = this._igTried[p.id] || new Set()), tooBig = (this._tooBig && this._tooBig[p.id]) || new Set();
       const rows = q.exec("SELECT id,role,title,output FROM task WHERE pid=? ORDER BY id", p.id).toArray();
       const stitch = () => { // nobody could assemble it: hand over everything the swarm approved, in order
         const t = "# " + p.title + "\n\n_The integrators couldn't finish, so here is every approved piece of work in order. In the Run tab, Make it runnable turns it into something that runs._\n\n" + rows.map((r) => "## #" + r.id + " " + r.role + ": " + r.title + "\n\n" + r.output).join("\n\n---\n\n");
-        q.exec("UPDATE proj SET status='done', final=? WHERE id=?", t.slice(0, 200000), p.id); this.say(p.id, "hive", "done", "put together the approved work as the result (" + t.length + " chars)"); delete this._igTried[p.id];
+        const v = this.verdict(p.id, "no integrator could assemble the pieces into one deliverable");
+        q.exec("UPDATE proj SET status='done', final=?, verdict=? WHERE id=?", (v.report + t).slice(0, 200000), v.verdict, p.id); this.say(p.id, "hive", "needs_human", "NOT assembled: no integrator could finish, so the result is the separate pieces in order (" + t.length + " chars). Needs a person."); delete this._igTried[p.id];
       };
       // who assembles it: the strongest model free on the mission (integrators first among equals), never one that's already
       // tried; small models only when nothing better is there. Up to four tries before the stitched fallback.
@@ -530,7 +543,7 @@ export class Hive extends DurableObject {
       const squeeze = (t, n) => { if (t.length <= n) return t; const code = (t.match(/```[\s\S]*?```/g) || []).join("\n"), prose = t.replace(/```[\s\S]*?```/g, " ").replace(/\n{3,}/g, "\n\n").trim(), g = prose.slice(0, 700) + (code ? "\n" + code : ""); return g.length <= n ? g : g.slice(0, n) + "\n…(cut for length)"; };
       let all = rows.map((r) => head(r) + r.output.slice(0, 9000)).join("\n\n");
       if (all.length > room) { const per = Math.max(1200, Math.floor(room / Math.max(1, rows.length)) - 60); all = rows.map((r) => head(r) + squeeze(r.output, per)).join("\n\n").slice(0, room); }
-      const open = q.exec("SELECT id,title,note FROM task WHERE pid=? AND note LIKE 'UNRESOLVED:%' ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.title + ": " + r.note.slice(12, 700)).join("\n");
+      const open = q.exec("SELECT id,title,note FROM task WHERE pid=? AND (note LIKE 'NEEDS HUMAN:%' OR note LIKE 'UNRESOLVED:%') ORDER BY id", p.id).toArray().map((r) => "#" + r.id + " " + r.title + ": " + r.note.replace(/^(NEEDS HUMAN|UNRESOLVED):\s*/, "").slice(0, 700)).join("\n");
       // one focused job: the single file that runs, plus a few lines of notes. The team's other files are attached to the result
       // afterwards (no model call), so a reply never has to carry the whole project and run past its length limit
       let out = await this.call(p, ig, SYS("integrator") + " Assemble the team's approved work into the finished deliverable. If it is software or anything a browser can show (apps, games, tools, visualisations, simulations, dashboards; and server, library or hardware code, demonstrated in a page with in-page fakes for the server, APIs or devices and realistic sample data), reply with '## Run it' and ONE complete file he can run as-is: a self-contained HTML page in a ```html run block (inline CSS and JS; external scripts only from a CDN), or, for data or algorithm work better shown as a program, a Python program in a ```python run block that runs with sample input and prints its results (standard library, or numpy/pandas/matplotlib). It must genuinely work: every control wired up, no placeholders, no TODOs, no stubs. Then '## Notes': at most 12 lines on what it does, how to use it and what is simulated. Don't repeat the team's other source files: they're attached below your reply automatically." +
@@ -551,8 +564,8 @@ export class Hive extends DurableObject {
         this.say(p.id, ig.name, "redo", "final draft was " + (fences % 2 ? "cut off" : run ? "a stub (" + run[1].trim().length + " chars of code)" : "too short (" + out.length + " chars)") + "; handing it to another integrator"); return;
       }
       delete this._igTried[p.id];
-      const fin = out.trim() + (run ? teamFiles(rows) : "");
-      q.exec("UPDATE proj SET status='done', final=? WHERE id=?", fin.slice(0, 200000), p.id); this.say(p.id, ig.name, "done", "assembled the final deliverable (" + out.length + " chars" + (fin.length > out.trim().length ? ", plus the team's source files" : "") + ")");
+      const v = this.verdict(p.id), fin = v.report + out.trim() + (run ? teamFiles(rows) : "");
+      q.exec("UPDATE proj SET status='done', final=?, verdict=? WHERE id=?", fin.slice(0, 200000), v.verdict, p.id); this.say(p.id, ig.name, v.verdict === "verified" ? "done" : "needs_human", "assembled the final deliverable (" + out.length + " chars" + (fin.length > out.trim().length ? ", plus the team's source files" : "") + ")" + (v.verdict === "verified" ? "" : ". " + v.verdict.replace(/^needs_human: /, "NEEDS HUMAN: ")));
       const chk = this.precheck(p.id).catch(() => {}); if (this.ctx.waitUntil) this.ctx.waitUntil(chk);
       return;
     }
@@ -860,7 +873,7 @@ export class Hive extends DurableObject {
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") + (local ? "" : " Now: " + now + ".") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") +  (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
       (owner ? "\n\n" + OWNER_MODE + "\n\n" + who + (local ? mp.stable : mind) : "") + (local ? "" : recall +
-      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + aboutMe(b.me, owner) + (b.system ? "\n\n" + (owner ? "OWNER'S" : "THE USER'S OWN") + " INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (b.voice ? VOICE_RULE : "");
+      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + aboutMe(b.me, owner) + (b.system ? "\n\n" + (owner ? "OWNER'S" : "THE USER'S OWN") + " INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (b.voice ? VOICE_RULE : "") + (local ? "\n\nToday's date: " + now.slice(0, 10) + " (UTC)." : "");
     const turn = mindOn ? Genesis.startTurn(this, b.cid, b.model, asked + (last.images.length || b.frames ? " [with " + (b.frames ? "a video" : "images") + "]" : "")) : null; // what he said; the reply is added when it's finished
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
