@@ -822,3 +822,17 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
   #welcome .wgo { justify-content: space-between; }
 }
 #welcome .wc { grid-column: main; }
+
+/* visual answers (assets/hive/visual.js): charts drawn from a reply's ```chart block, widgets run sandboxed */
+.vchart { margin: 12px 0; } .vchart svg { width: 100%; height: auto; display: block; font-family: var(--ui); }
+.vchart .ct { fill: var(--ink); font-size: 14px; font-weight: 600; } .vchart .cx, .vchart .cy { fill: var(--dim); font-size: 11px; } .vchart .cl { fill: #0d1012; font-size: 11px; font-weight: 600; }
+.vchart .cg { stroke: var(--line); stroke-width: 1; } .vchart .ca { stroke: var(--line2); stroke-width: 1.2; }
+.vchart .s0 { fill: var(--m-azurite); } .vchart .s1 { fill: var(--m-copper); } .vchart .s2 { fill: var(--m-malachite); } .vchart .s3 { fill: var(--m-citrine); } .vchart .s4 { fill: var(--m-rhodo); } .vchart .s5 { fill: var(--m-lapis); } .vchart .s6 { fill: var(--m-peridot); } .vchart .s7 { fill: var(--m-hematite); }
+.vchart .l0 { stroke: var(--m-azurite); } .vchart .l1 { stroke: var(--m-copper); } .vchart .l2 { stroke: var(--m-malachite); } .vchart .l3 { stroke: var(--m-citrine); } .vchart .l4 { stroke: var(--m-rhodo); } .vchart .l5 { stroke: var(--m-lapis); } .vchart .l6 { stroke: var(--m-peridot); } .vchart .l7 { stroke: var(--m-hematite); }
+.vchart [class^="l"] { fill: none; stroke-width: 2.2; stroke-linejoin: round; } .vchart [class^="a"] { opacity: .18; } .vchart .a0 { fill: var(--m-azurite); } .vchart .a1 { fill: var(--m-copper); } .vchart .a2 { fill: var(--m-malachite); } .vchart .a3 { fill: var(--m-citrine); }
+.vchart path[class^="s"], .vchart circle[class^="s"] { stroke: var(--bed); stroke-width: 1; }
+.clegend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink2); margin: 4px 0 0 56px; } .clegend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.clegend i.s0 { background: var(--m-azurite); } .clegend i.s1 { background: var(--m-copper); } .clegend i.s2 { background: var(--m-malachite); } .clegend i.s3 { background: var(--m-citrine); } .clegend i.s4 { background: var(--m-rhodo); } .clegend i.s5 { background: var(--m-lapis); } .clegend i.s6 { background: var(--m-peridot); } .clegend i.s7 { background: var(--m-hematite); }
+.cdata { margin-top: 6px; font-size: 12px; } .cdata summary { cursor: pointer; color: var(--dim); }
+.vwidget { margin: 12px 0; } .vwidget iframe { width: 100%; height: 220px; border: 1px solid var(--line2); border-radius: 6px; background: #fff; display: block; } .vwidget small { display: block; margin-top: 4px; font-size: 11px; }
+.pyrun { border-top: 1px solid var(--line2); } .pyrun iframe { width: 100%; height: 240px; border: 0; display: block; resize: vertical; background: #0d0f12; } .pyrun header { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 11px; color: var(--dim); }
