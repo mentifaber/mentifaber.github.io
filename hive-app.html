@@ -177,6 +177,10 @@
         <p class="dim sm mt">Search uplinks (Tavily, Brave, Serper, Exa) power web search; without one, AutoFaber searches Wikipedia. Visitors only ever use the free Workers AI models; vault uplinks are yours alone.</p></div></div>
       <div class="bd core"><div class="rail"><span>track record</span></div><div class="bc"><h3>How your models are doing</h3>
         <p class="dim sm">Every chat and Swarm call is counted. A model that keeps failing, or that you 👎, moves down the order AutoFaber tries them in; your 👍 moves it up.</p><div id="k-perf" class="perf"></div></div></div>
+      <div class="bd core"><div class="rail"><span>reply health</span></div><div class="bc"><h3>How replies are going</h3>
+        <p class="dim sm">Every chat reply is counted (never its words): how long until the first word, and how it ended. "Looped" and "time cap" are replies the guards stopped; "empty" means the model said nothing and another answer stood in. Kept 30 days.</p>
+        <div class="row" role="group" aria-label="Period"><button class="ghost sm" data-rh="1">24 h</button><button class="ghost sm" data-rh="7">7 days</button><button class="ghost sm" data-rh="30">30 days</button></div>
+        <div id="k-health" class="perf mt"></div></div></div>
     </div>
   </div></section>
 

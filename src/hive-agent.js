@@ -24,8 +24,22 @@ export const toolsFor = (owner) => Object.keys(TOOLS).filter((k) => owner || !TO
 // Small talk, thanks, and commands that are about the app itself don't need a planner call.
 export function worthPlanning(text) {
   const t = String(text || "").trim();
-  if (t.length < 12 || !/[a-z]{3}/i.test(t)) return false;
+  if (t.length < 12 || !/[a-z]{3}/i.test(t) || quickAsk(t)) return false;
   return !/^(hi|hey|hello|yo|thanks?|thank you|cheers|ok(ay)?|cool|nice|great|lol|haha|good (morning|night|evening))\b[\s!.,?]*$/i.test(t);
+}
+// A short message that asks only what AutoFaber is or can do, the date or time, or a sum: the answer is already in hand
+// (the prompt says who it is and the time), so no planner call and no lookups. The planner once sent "what exactly are you?"
+// to Wikipedia, and every such call held the first word back a second or two.
+const SELF_Q = /\b(who|what)\s+(exactly\s+)?(are|r)\s+(you|u)\b(?!\s+(doing|working|reading|thinking|saying|going|up to|looking))|\bwhat (else )?can (you|u) do\b|\b(tell me )?about yourself\b|\byour (name|abilities|capabilities|features)\b|\bwho (made|built|created|owns) (you|this)\b/i;
+const DATE_Q = /\b(what('?s| is) (the |today'?s )?(date|time|day)( today| now| it is)?|what (day|time) is it|today'?s date|what year is it)\b/i;
+const FILLER = /\b(hi|hey|hello|ok(ay)?|thanks?|thank you|perfect|great|cool|last thing|one more|and|also|please|so|just|exactly|tell me|i'?d like to know|can you|could you)\b/gi;
+export function quickAsk(text) {
+  const t = String(text || "").trim(); if (t.length > 140) return false;
+  const sum = t.replace(/\b(what('?s| is)|calculate|compute|how much is|reply with just the number|just the number)\b/gi, "").replace(/[?!.,:]/g, "").trim();
+  if (/\d/.test(sum) && /[+\-*/×÷^%]|\bx\b/.test(sum) && /^[\d\s+\-*/×÷x^().%=]+$/i.test(sum)) return "sum";
+  if (!SELF_Q.test(t) && !DATE_Q.test(t)) return false;
+  const rest = t.replace(SELF_Q, " ").replace(DATE_Q, " ").replace(FILLER, " ").replace(/[^a-z]+/gi, " ").trim(); // anything else asked must be planned for
+  return rest.split(" ").filter((w) => w.length > 2).length <= 4 ? "self" : false;
 }
 
 export function plannerPrompt(owner, now) {

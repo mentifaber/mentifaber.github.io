@@ -133,12 +133,12 @@ const pct = (a, b) => b ? Math.round((100 * a) / b) + "%" : "n/a";
 const groups = {}; for (const r of rows) (groups[r.layer + " · " + r.model.split("/").pop() + " · " + r.case] ||= []).push(r);
 const md = ["# AutoFaber stream capture, " + new Date().toISOString(), "", "Reps per case: " + REPS + " · max tokens: " + MAX + " · system prompt (provider layer): a stand-in, not the live one.", ""];
 if (skipped.length) md.push("**Did not run:** " + skipped.join("; ") + ".", "");
-md.push("| layer · model · case | ran | errors | starts in analysis | assistantfinal | channel tags | looped | separate reasoning | cut (now) | median ms | first reply shown |", "|---|---|---|---|---|---|---|---|---|---|---|");
+md.push("| layer · model · case | ran | errors | starts in analysis | assistantfinal | channel tags | looped | separate reasoning | cut (now) | median ms | median first word ms | first reply shown |", "|---|---|---|---|---|---|---|---|---|---|---|---|");
 for (const [k, g] of Object.entries(groups)) {
-  const ok = g.filter((r) => !r.error), n = ok.length, ms = ok.map((r) => r.ms).sort((a, b) => a - b)[Math.floor(n / 2)];
+  const ok = g.filter((r) => !r.error), n = ok.length, med = (k) => ok.map((r) => r[k]).filter((x) => x != null).sort((a, b) => a - b)[Math.floor(n / 2)], ms = med("ms"), ft = med("ttftMs");
   const cut = ok.map((r) => r.nowCut || r.cut).filter(Boolean);
   md.push("| " + [k, g.length, g.length - n, pct(ok.filter((r) => r.startsAnalysis).length, n), pct(ok.filter((r) => r.assistantfinal).length, n), pct(ok.filter((r) => r.channelTags).length, n),
-    pct(ok.filter((r) => r.loopAtChar).length, n), pct(ok.filter((r) => r.reasoningChars > 0).length, n), cut.length ? cut.join(", ") : "none", n ? ms : "n/a",
+    pct(ok.filter((r) => r.loopAtChar).length, n), pct(ok.filter((r) => r.reasoningChars > 0).length, n), cut.length ? cut.join(", ") : "none", n ? ms : "n/a", ft ?? "n/a",
     (ok[0] ? (ok[0].nowShown ?? ok[0].shown) : (g[0].error || "")).replace(/\|/g, "\\|").slice(0, 90)].join(" | ") + " |");
 }
 const keys = new Set(rows.filter((r) => r.eventKeys).flatMap((r) => r.eventKeys)); if (keys.size) md.push("", "Provider event fields seen: `" + [...keys].join("`, `") + "`");
