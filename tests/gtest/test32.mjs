@@ -26,7 +26,7 @@ let c0 = calls.length; seen.length = 0;
 let ev = await sse({ model: OSS, messages: [{ role: "user", text: "hey" }, { role: "assistant", text: "Hi!" }, { role: "user", text: "perfect thanks. last thing: what's today's date, and what exactly are you?" }] });
 assert.ok(ev.some((e) => e[0] === "done")); const mine = calls.slice(c0);
 assert.equal(mine.filter((c) => /You decide which tools/.test(c.sys)).length, 0, "no planner call"); assert.equal(seen.filter((u) => /wikipedia|yahoo|finance/.test(u)).length, 0, "no lookups: " + seen.join(" "));
-const sys = mine.at(-1).sys; assert.match(sys, /Fit the length to the question/); assert.match(sys, /\n\nNow: \d{4}-\d\d-\d\d \d\d:\d\d UTC\.$/, "the time is the last thing in the prompt");
+const sys = mine.at(-1).sys; assert.match(sys, /Fit the length to the question/); assert.match(sys, /not a catalogue of every ability/); assert.match(sys, /\n\nNow: \d{4}-\d\d-\d\d \d\d:\d\d UTC\.$/, "the time is the last thing in the prompt");
 assert.doesNotMatch(sys.slice(0, -40), /Now: \d{4}/, "and nowhere earlier");
 ok("\"what's today's date, and what exactly are you?\" goes straight to the model: no planner, no Wikipedia; the time ends the prompt");
 
