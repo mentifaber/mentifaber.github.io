@@ -110,6 +110,18 @@ const THINKS = /qwq|deepseek-r1|-r1-|gpt-oss|qwen3(?!.*instruct)|\bo[134](-|$)|t
 const ACT = "build|make|create|write|draft|fix|add|remove|delete|rename|change|update|replace|refactor|run|test|check|deploy|ship|set|turn|send|generate|convert|translate|summari[sz]e|list|give me|show me|find|compare|plan|design|code|implement|finish|start|stop|clean|sort|format|rewrite|shorten|extend|edit";
 // what the person told the quick start about themselves (kept on their device, sent with each message): a name to use,
 // a line about them, and how long they like answers. It's their own description, not something to act on as instructions.
+// a project: the user's own group of chats, with standing instructions and reference files that go with every message in
+// it (the files are read in the browser; ~24k characters of them fit beside everything else the answer needs)
+export const PROJECT_ROOM = 24000;
+export function projectText(p) {
+  if (!p || typeof p !== "object") return "";
+  const name = String(p.name || "").replace(/\s+/g, " ").trim().slice(0, 80), ins = String(p.instructions || "").trim().slice(0, 4000);
+  let room = PROJECT_ROOM; const files = (Array.isArray(p.files) ? p.files : []).slice(0, 12).map((f) => { const all = String((f && f.text) || ""), t = all.slice(0, Math.max(0, room)); room -= t.length;
+    return t.trim() ? "--- " + String((f && f.name) || "file").replace(/\s+/g, " ").slice(0, 120) + (t.length < all.length ? " (only the first part fit)" : "") + " ---\n" + t : ""; }).filter(Boolean);
+  if (!name && !ins && !files.length) return "";
+  return "\n\nPROJECT “" + (name || "Untitled") + "” (this chat is in it; the user set it up so every chat in it shares these)" + (ins ? "\nTHE PROJECT'S INSTRUCTIONS, for every chat in it:\n" + ins : "") +
+    (files.length ? "\nTHE PROJECT'S FILES (reference material the user added; use them when they bear on the question, quote them where it helps, and say plainly when something isn't in them):\n" + files.join("\n\n") : "");
+}
 export function aboutMe(me, owner) {
   if (!me || typeof me !== "object") return "";
   const t = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u001f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
@@ -932,7 +944,7 @@ export class Hive extends DurableObject {
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") +  (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
       (owner ? "\n\n" + OWNER_MODE + "\n\n" + who + (local ? mp.stable : mind) : "") + (local ? "" : recall +
-      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, deep ? 45000 : 30000) : "")) + aboutMe(b.me, owner) + (b.system ? "\n\n" + (owner ? "OWNER'S" : "THE USER'S OWN") + " INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (deep ? RESEARCH_RULE : "") + (local ? "" : "\n\nNow: " + now + ".") + (b.voice ? VOICE_RULE : "") + (local ? "\n\nToday's date: " + now.slice(0, 10) + " (UTC)." : ""); // the time at the end: the long start stays the same from one message to the next
+      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, deep ? 45000 : 30000) : "")) + aboutMe(b.me, owner) + projectText(b.project) + (b.system ? "\n\n" + (owner ? "OWNER'S" : "THE USER'S OWN") + " INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (deep ? RESEARCH_RULE : "") + (local ? "" : "\n\nNow: " + now + ".") + (b.voice ? VOICE_RULE : "") + (local ? "\n\nToday's date: " + now.slice(0, 10) + " (UTC)." : ""); // the time at the end: the long start stays the same from one message to the next
     const turn = mindOn ? Genesis.startTurn(this, b.cid, b.model, asked + (last.images.length || b.frames ? " [with " + (b.frames ? "a video" : "images") + "]" : "")) : null; // what he said; the reply is added when it's finished
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer

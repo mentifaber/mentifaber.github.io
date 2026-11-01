@@ -83,11 +83,11 @@ const save = () => { chats.sort((a, b) => b.ts - a.ts); chats = chats.slice(0, 8
 const fx = (name, detail) => { try { dispatchEvent(new CustomEvent("af:" + name, { detail })); } catch (e) {} };
 const turns = () => (chat ? chat.msgs.filter((x) => x.role !== "user" && !x.pending && !x.error).length : 0);
 function drawHist() {
-  const q = ($("hsearch").value || "").trim().toLowerCase(), list = q ? chats.filter((c) => (c.title + " " + c.msgs.map((m) => m.text || "").join(" ")).toLowerCase().includes(q)) : chats;
+  const q = ($("hsearch").value || "").trim().toLowerCase(), pn = Object.fromEntries(Projects.all().map((p) => [p.id, p.name])), inP = proj ? chats.filter((c) => c.project === proj) : chats, list = q ? inP.filter((c) => (c.title + " " + c.msgs.map((m) => m.text || "").join(" ")).toLowerCase().includes(q)) : inP;
   const day = (t) => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], d.getFullYear() === n.getFullYear() ? { month: "short", day: "numeric" } : { month: "short", year: "numeric" }); };
   $("hist").innerHTML = list.map((c) => { const n = c.msgs.filter((m) => m.role === "user").length, last = [...c.msgs].reverse().find((m) => m.role !== "user" && m.model), mid = (last && last.model) || c.model || "";
-    return "<div data-c='" + esc(c.id) + "' class='sess" + (chat && chat.id === c.id ? " on" : "") + "' style='--m:" + pollen(mid) + "' tabindex='0' role='button'><time>" + esc(day(c.ts)) + "</time><span class='strip'></span><span class='t'>" + (window.Lattice ? Lattice.sigil(c.id, n + 2) : "") + "<span>" + esc(c.title || "Untitled") + "</span><small>" + n + " layer" + (n === 1 ? "" : "s") + (mid ? " · " + esc(String(mid).split("|").pop().split("/").pop()) : "") + "</small></span><span class='sbtn'><button data-ren title='Rename this session' aria-label='Rename'>✎</button><button data-del title='Delete this session' aria-label='Delete'>✕</button></span></div>"; }).join("")
-    || "<p>" + (q ? "No session matches “" + esc(q) + "”." : "No sessions yet. Every session you start becomes a constellation here.") + "</p>";
+    return "<div data-c='" + esc(c.id) + "' class='sess" + (chat && chat.id === c.id ? " on" : "") + "' style='--m:" + pollen(mid) + "' tabindex='0' role='button'><time>" + esc(day(c.ts)) + "</time><span class='strip'></span><span class='t'>" + (window.Lattice ? Lattice.sigil(c.id, n + 2) : "") + "<span>" + esc(c.title || "Untitled") + (!proj && pn[c.project] ? "<i class='ptag'>" + esc(pn[c.project]) + "</i>" : "") + "</span><small>" + n + " layer" + (n === 1 ? "" : "s") + (mid ? " · " + esc(String(mid).split("|").pop().split("/").pop()) : "") + "</small></span><span class='sbtn'><button data-ren title='Rename this session' aria-label='Rename'>✎</button><button data-del title='Delete this session' aria-label='Delete'>✕</button></span></div>"; }).join("")
+    || "<p>" + (q ? "No session matches “" + esc(q) + "”." : proj ? "No chats in this project yet. Ask something and it starts here." : "No sessions yet. Every session you start becomes a constellation here.") + "</p>";
 }
 $("hist").onclick = (e) => { const d = e.target.closest("[data-c]"); if (!d) return;
   if (e.target.closest("[data-ren]")) { const c = chats.find((x) => x.id === d.dataset.c); const t = c && prompt("Rename this session", c.title || ""); if (t && t.trim()) { c.title = t.trim().slice(0, 80); save(); } return; } if (e.target.closest("[data-del]")) { chats = chats.filter((c) => c.id !== d.dataset.c); if (chat && chat.id === d.dataset.c) newChat(); save(); return; } openChat(d.dataset.c); };
@@ -111,6 +111,41 @@ var privNext = false; const privMark = window.privMark = () => { const on = priv
 const newPrivate = () => { newChat(); privNext = true; privMark(); toast("Private session: not saved here, nothing remembered", 2600); };
 $("privchat").onclick = () => (privNext || (chat && chat.private) ? (newChat(), privNext = false, privMark()) : newPrivate());
 $("newchat").onclick = () => { privNext = false; newChat(); privMark(); }; $("hsearch").oninput = drawHist;
+// ── projects: chats grouped with shared instructions and files (kept on this device); the server puts them in the prompt ──
+const PROOM = 24000; // what fits beside everything else an answer needs (src/hive.js PROJECT_ROOM)
+const Projects = {
+  all: () => LS.get("projects", []), get: (id) => Projects.all().find((p) => p.id === id),
+  put(p) { const a = Projects.all().filter((x) => x.id !== p.id); a.unshift(p); return LS.set("projects", a); },
+  del(id) { LS.set("projects", Projects.all().filter((x) => x.id !== id)); for (const c of chats) if (c.project === id) delete c.project; if (chat && chat.project === id) delete chat.project; if (proj === id) proj = "", LS.set("proj", ""); save(); drawProjs(); },
+  body(id) { const p = id && Projects.get(id); return p ? { name: p.name, instructions: p.instructions, files: p.files } : undefined; },
+};
+let proj = LS.get("proj", ""), pFiles = [], pId = ""; // proj: the project new chats go into ("" = none)
+function drawProjs() {
+  const ps = Projects.all(); if (proj && !ps.some((p) => p.id === proj)) { proj = ""; LS.set("proj", ""); }
+  $("projs").innerHTML = (ps.length ? "<button data-proj='' class='" + (proj ? "" : "on") + "' aria-pressed='" + !proj + "'>All</button>" + ps.map((p) => "<button data-proj='" + esc(p.id) + "' class='" + (proj === p.id ? "on" : "") + "' aria-pressed='" + (proj === p.id) + "' title='" + esc(p.instructions ? p.instructions.slice(0, 160) : "This project's chats") + "'>" + esc(p.name) + "</button>").join("") : "") +
+    (proj ? "<button data-pedit='" + esc(proj) + "' title='Its name, instructions and files'>Edit project</button>" : "") + "<button data-pedit='' title='Chats grouped with shared instructions and files'>+ Project</button>";
+  const p = proj && Projects.get(proj); $("pnote").classList.toggle("hidden", !p); if (p) $("pnote").textContent = "New chats go into “" + p.name + "”: its instructions" + (p.files.length ? " and " + p.files.length + " file" + (p.files.length === 1 ? "" : "s") : "") + " go with every message.";
+}
+const setProj = (id) => { proj = id; LS.set("proj", id); drawProjs(); drawHist(); };
+function editProj(id) {
+  const p = id ? Projects.get(id) : null; pId = p ? p.id : ""; pFiles = p ? p.files.slice() : [];
+  $("p-head").textContent = p ? "Project" : "New project"; $("p-name").value = p ? p.name : ""; $("p-ins").value = p ? p.instructions : ""; $("p-del").classList.toggle("hidden", !p); $("p-msg").textContent = "";
+  drawPFiles(); $("pdlg").showModal(); $("p-name").focus();
+}
+function drawPFiles() {
+  const used = pFiles.reduce((a, f) => a + f.text.length, 0);
+  $("p-files").innerHTML = pFiles.map((f, k) => "<div><span>" + esc(f.name) + "</span><small class='dim'>" + Math.ceil(f.text.length / 1000) + "k</small><button type='button' data-pfx='" + k + "' aria-label='Remove " + esc(f.name) + "'>✕</button></div>").join("");
+  $("p-room").textContent = pFiles.length ? Math.ceil(used / 1000) + "k characters" + (used > PROOM ? ": only the first " + PROOM / 1000 + "k go with each message" : "") : "PDF, Word, spreadsheets or text; up to " + PROOM / 1000 + "k characters go with each message";
+}
+$("projs").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.pedit != null) return editProj(b.dataset.pedit);
+  setProj(b.dataset.proj); if (proj && chat && chat.project !== proj) newChat(); };
+$("p-files").onclick = (e) => { const x = e.target.closest("[data-pfx]"); if (x) { pFiles.splice(+x.dataset.pfx, 1); drawPFiles(); } };
+$("p-add").onchange = async (e) => { $("p-msg").textContent = ""; for (const f of [...e.target.files]) { try { for (const d of await readDocs(f)) pFiles.push({ name: d.name, text: d.text.slice(0, PROOM) }); } catch (x) { $("p-msg").textContent = x.message; } } e.target.value = ""; pFiles = pFiles.slice(0, 12); drawPFiles(); };
+$("p-form").onsubmit = (e) => { e.preventDefault(); const name = $("p-name").value.trim(); if (!name) return;
+  const fresh = !pId, p = { id: pId || Math.random().toString(36).slice(2, 10), name: name.slice(0, 60), instructions: $("p-ins").value.trim().slice(0, 4000), files: pFiles.slice(0, 12), ts: Date.now() };
+  if (!Projects.put(p)) return ($("p-msg").textContent = "Not enough room on this device: remove a file or two");
+  $("pdlg").close(); setProj(p.id); if (fresh && chat && chat.project !== p.id) newChat(); toast(fresh ? "Project made: new chats go into it" : "Project saved", 2400); };
+$("p-del").onclick = () => { const p = Projects.get(pId); if (!p || !confirm("Delete the project “" + p.name + "”? Its chats stay, outside any project.")) return; Projects.del(pId); $("pdlg").close(); drawHist(); };
 function greet() {
   const ideas = [["Council", "Several minds argue it out; one merges the best", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["Search", "The live web, with its sources in the margin", "What are the most important AI developments this week?", true], ["Imagine", "A picture from your words", "A forge in the dark where gold filament is spun into a glowing lattice, sparks drifting up, cinematic macro photograph", false, true], ["Build", "Code a small working thing", "Write a tiny snake game in one HTML file."], ["Swarm", "Agents plan, build and review a whole project", null, false, false, false, false, true], ["Voice", "Talk with it, hands-free", null, false, false, true]];
   const tint = ["var(--m-azurite)", "var(--m-malachite)", "var(--m-rhodo)", "var(--m-citrine)", "var(--m-jasper)", "var(--m-selenite)"];
@@ -260,7 +295,7 @@ $("log").onclick = async (e) => {
   if (a.dataset.act === "more") { if (i !== chat.msgs.length - 1) return toast("Continue works on the latest answer"); return send(resume(chat.msgs[i].text)); }
   if (a.dataset.act === "redo") { if (busy) return toast("Wait for the reply to finish"); const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; const vers = verList(m).slice(-(VMAX - 1)); chat.msgs.splice(i); unlayer(i); run(u.mode === "image", { vers }); }
   if (a.dataset.act === "branch") { if (busy) return toast("Wait for the reply to finish"); // a copy up to here, as its own chat; the original stays as it is
-    const c = JSON.parse(JSON.stringify({ id: Math.random().toString(36).slice(2, 10), title: ("↳ " + String(chat.title || "Untitled").replace(/^↳ /, "")).slice(0, 60), model: chat.model, msgs: chat.msgs.slice(0, i + 1), ts: Date.now(), private: chat.private || undefined, from: chat.id }));
+    const c = JSON.parse(JSON.stringify({ id: Math.random().toString(36).slice(2, 10), title: ("↳ " + String(chat.title || "Untitled").replace(/^↳ /, "")).slice(0, 60), model: chat.model, msgs: chat.msgs.slice(0, i + 1), ts: Date.now(), private: chat.private || undefined, project: chat.project, from: chat.id }));
     c.msgs.forEach((x) => { delete x.followups; delete x.checking; }); if (!c.private) chats.unshift(c); save(); openChat(c); toast("Branched: carry on from here", 2200); return; }
 };
 // select part of an answer: “Ask about this” quotes it into the message box, so the next question is about exactly that
@@ -301,21 +336,26 @@ async function addVideo(f) {
   URL.revokeObjectURL(u); drawAtt();
 }
 const DOCX = /\.(pdf|docx|xlsx|xlsm|xls|ods)$/i;
-async function addFile(f) { // text files as they are; PDFs, Word and spreadsheets read here in the browser (a spreadsheet becomes one CSV per sheet)
-  if (!DOCX.test(f.name)) { if (f.size > 400000) return toast(f.name + " is too big (400 KB max)"); att.push({ kind: "file", name: f.name, text: await readAs(f, "readAsText") }); return drawAtt(); }
-  if (f.size > 25e6) return toast(f.name + " is too big (25 MB max)");
+// a file as text: text files as they are; PDFs, Word and spreadsheets read here in the browser (a spreadsheet becomes one CSV
+// per sheet). Returns [{ name, text }]; throws with a message the person can act on.
+async function readDocs(f) {
+  if (!DOCX.test(f.name)) { if (f.size > 400000) throw new Error(f.name + " is too big (400 KB max)"); return [{ name: f.name, text: await readAs(f, "readAsText") }]; }
+  if (f.size > 25e6) throw new Error(f.name + " is too big (25 MB max)");
   toast("Reading " + f.name + "…", 1500);
   try {
     if (/\.(xlsx|xlsm|xls|ods)$/i.test(f.name)) { await loadJS(LIBJS.xlsx); const wb = XLSX.read(await f.arrayBuffer(), { type: "array" }), base = f.name.replace(/\.[^.]+$/, "");
       const sheets = wb.SheetNames.map((n) => ({ n, csv: XLSX.utils.sheet_to_csv(wb.Sheets[n], { blankrows: false }).trim() })).filter((x) => x.csv);
-      if (!sheets.length) return toast(f.name + " has no filled cells");
-      for (const x of sheets.slice(0, 8)) att.push({ kind: "file", name: base + (sheets.length > 1 ? " - " + x.n : "") + ".csv", text: x.csv });
-      if (sheets.length > 8) toast("Took the first 8 of " + sheets.length + " sheets", 3000); return drawAtt(); }
+      if (!sheets.length) throw new Error(f.name + " has no filled cells");
+      if (sheets.length > 8) toast("Took the first 8 of " + sheets.length + " sheets", 3000);
+      return sheets.slice(0, 8).map((x) => ({ name: base + (sheets.length > 1 ? " - " + x.n : "") + ".csv", text: x.csv })); }
     const t = String(await LibV.read(f)).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-    if (!t) return toast(/pdf$/i.test(f.name) ? f.name + " has no text to read (a scanned PDF? attach it as a picture instead)" : f.name + " is empty", 4500);
-    if (t.length > 100000) toast(f.name + ": the first 100k of " + Math.round(t.length / 1000) + "k characters go with it", 3500);
-    att.push({ kind: "file", name: f.name, text: t }); drawAtt();
-  } catch (e) { toast("Couldn't read " + f.name + ": " + (e.message || e), 4000); }
+    if (!t) throw new Error(/pdf$/i.test(f.name) ? f.name + " has no text to read (a scanned PDF? attach it as a picture instead)" : f.name + " is empty");
+    return [{ name: f.name, text: t }];
+  } catch (e) { throw new Error(/^Couldn't read|too big|no filled|no text|is empty/.test(e.message) ? e.message : "Couldn't read " + f.name + ": " + (e.message || e)); }
+}
+async function addFile(f) {
+  try { const docs = await readDocs(f); for (const d of docs) { if (d.text.length > 100000) toast(d.name + ": the first 100k of " + Math.round(d.text.length / 1000) + "k characters go with it", 3500); att.push({ kind: "file", name: d.name, text: d.text }); } drawAtt(); }
+  catch (e) { toast(e.message, 4500); }
 }
 const addAny = (f) => (/^image\//.test(f.type) ? addImage(f) : /^video\//.test(f.type) ? addVideo(f) : addFile(f));
 function drawAtt() { $("att").innerHTML = att.map((a, i) => "<div class='chip" + (a.thumb ? "" : " fileonly") + "'>" + (a.thumb ? "<img src='" + a.thumb + "' alt=''>" : "") + "<span class='t'>" + esc(a.name) + "<small>" + (a.kind === "video" ? a.frames.length + " frames · " + Math.round(a.dur) + "s" : a.kind === "file" ? Math.ceil(a.text.length / 1000) + "k chars" : "image") + "</small></span><button class='x' data-x='" + i + "' aria-label='Remove'>✕</button></div>").join(""); sync(); }
@@ -373,7 +413,7 @@ function send(text, opts) {
     if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); setTog("deep", map[c] === "deep"); text = rest; }
   }
   if (!$("model").value && !on("draw")) return toast("No model is available right now");
-  if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now(), private: privNext || undefined }; if (!chat.private) chats.unshift(chat); privNext = false; ground(false); privMark(); }
+  if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now(), private: privNext || undefined, project: proj || undefined }; if (!chat.private) chats.unshift(chat); privNext = false; ground(false); privMark(); }
   const files = att.filter((a) => a.kind === "file"), imgs = att.filter((a) => a.kind === "image"), vid = att.find((a) => a.kind === "video");
   const full = text + files.map((f) => "\n\n" + f.name + ":\n```\n" + f.text.slice(0, 100000) + "\n```").join("");
   const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), research: on("deep") && !on("draw") && !on("council") || undefined, skill: skill ? skill.title : undefined, skillDoes: skill ? skill.does : undefined, voice: !!opts.voice, ts: Date.now() };
@@ -388,7 +428,7 @@ async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.research ? "planning the research…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
-  const body = { mind: chat.private ? false : undefined, tz: TasksV.tz, me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, research: u.research || undefined, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [u.skillDoes ? "SKILL “" + u.skill + "” (the user called it for this message; follow it):\n" + u.skillDoes : "", LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
+  const body = { mind: chat.private ? false : undefined, project: Projects.body(chat.project), tz: TasksV.tz, me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, research: u.research || undefined, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [u.skillDoes ? "SKILL “" + u.skill + "” (the user called it for this message; follow it):\n" + u.skillDoes : "", LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
     cid: chat.id, sid: Math.random().toString(36).slice(2) + Date.now().toString(36), messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   // while the answer is being prepared, show what Genesis is doing (planning, searching, reading…) as it happens
   let polls = 0; const was = m.status, watchSteps = image ? 0 : setInterval(async () => {
@@ -444,7 +484,10 @@ async function stream(body, m, i, signal) {
 const CMDS = () => [
   ...Skills.all().map((sk) => ["/" + sk.name + " · " + sk.title, "skill", () => { inp.value = "/" + sk.name + " "; grow(); inp.focus(); }]),
   ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what AutoFaber knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
-  ["New private session", "not saved, not remembered", () => newPrivate()], ["Toggle search", "mode", () => $("web").click()], ["Toggle research", "mode · a cited report, every citation checked", () => $("deep").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
+  ["New private session", "not saved, not remembered", () => newPrivate()], ["New project", "chats with shared instructions and files", () => editProj("")],
+  ...Projects.all().map((p) => ["Project · " + p.name, "show its chats; new chats go into it", () => { setProj(p.id); newChat(); }]),
+  ...(chat && chat.msgs.length && !chat.private ? Projects.all().filter((p) => p.id !== chat.project).map((p) => ["Move this session to “" + p.name + "”", "project", () => { chat.project = p.id; save(); toast("Moved to “" + p.name + "”: its instructions and files go with your next message", 3000); }]) : []),
+  ...(chat && chat.project ? [["Take this session out of its project", "project", () => { delete chat.project; save(); toast("Out of the project"); }]] : []), ["Toggle search", "mode", () => $("web").click()], ["Toggle research", "mode · a cited report, every citation checked", () => $("deep").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
   ["Voice link", "voice", () => Voice.start()], ["Export session", "markdown", () => $("export").click()], ["Settings", "voice · stone · data", () => openSettings()], ["Basalt or limestone", "light or dark", () => $("theme").click()],
   ...chats.map((c) => [c.title || "Untitled", "session · " + new Date(c.ts).toLocaleDateString([], { month: "short", day: "numeric" }), () => openChat(c.id)]),
   ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
@@ -1105,5 +1148,5 @@ $("genp").closest(".pane").addEventListener("click", async (e) => {
 // down in the layers the surface thins to one line until you touch it (with a little slack, so it doesn't flicker)
 $("scroll").addEventListener("scroll", () => { const t = $("scroll").scrollTop, deep = $("scroll").classList.contains("deep"); if (!deep && t > 140 && chat) $("scroll").classList.add("deep"); else if (deep && t < 24) $("scroll").classList.remove("deep"); }, { passive: true });
 // ── start ──
-greet(); drawHist(); ground(true); stone(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); if (owner && !LS.get("mind-sync", 0)) MindV.importLocal(true); }); route(); sync();
+greet(); drawProjs(); drawHist(); ground(true); stone(); loadModels().then(() => { const c = new URLSearchParams(location.search).get("c"); if (c) openChat(c); if (owner && !LS.get("mind-sync", 0)) MindV.importLocal(true); }); route(); sync();
 })();
