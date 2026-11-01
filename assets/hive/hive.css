@@ -873,3 +873,15 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
 .acts .vers small { font-size: 12px; color: var(--faint); min-width: 2.4em; text-align: center; }
 .quote { position: fixed; z-index: 60; padding: 7px 12px; border-radius: 999px; font-size: 13px; background: var(--ink); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.25); white-space: nowrap; }
 .quote.hidden { display: none; }
+
+/* projects: chips over the sessions (All · each project · + Project); the active one files new chats into it */
+.projs { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 14px; }
+.projs button { font-size: 13px; padding: 5px 11px; border: 1px solid var(--line2); border-radius: 999px; color: var(--faint); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projs button.on { color: var(--ink); border-color: var(--ink); }
+.projs button[data-pedit] { border-style: dashed; }
+.pfiles { display: grid; gap: 4px; margin: 6px 0 8px; }
+.pfiles div { display: flex; align-items: center; gap: 8px; font-size: 13px; min-width: 0; } .pfiles span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pfiles button { color: var(--faint); padding: 2px 6px; } .pfiles button:hover { color: var(--bad); }
+.sess .ptag { font-size: 11px; border: 1px solid var(--line2); border-radius: 999px; padding: 0 6px; margin-left: 6px; }
+.projtag { display: inline-block; font-size: 12px; color: var(--faint); margin-bottom: 6px; }
+.skform label.filebtn { display: inline-flex; }

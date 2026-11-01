@@ -38,7 +38,7 @@
   <section id="v-studio" class="view">
     <div id="scroll">
       <div id="surface" class="core">
-        <div class="lede" id="lede"><h1 id="greet">What shall we <em>work on</em>?</h1><p id="esub">One mind, a council, or a whole swarm.</p></div>
+        <div class="lede" id="lede"><h1 id="greet">What shall we <em>work on</em>?</h1><p id="esub">One mind, a council, or a whole swarm.</p><p id="pnote" class="projtag hidden"></p></div>
         <div class="rail rs" aria-hidden="true"><span>forge</span></div>
         <div id="composer">
           <div class="cmdrow">
@@ -98,6 +98,7 @@
         <div class="unconf" aria-hidden="true"></div>
         <div class="rail"><span>constellations</span></div>
         <div class="bhead"><h2>Earlier sessions</h2><input id="hsearch" type="search" placeholder="Search your sessions…" aria-label="Search earlier sessions" autocomplete="off"></div>
+        <div id="projs" class="projs" role="group" aria-label="Projects"></div>
         <div id="hist"></div>
       </section>
       <div class="fine core"><p>Minds make mistakes; councils fewer. Verify what matters. <span id="who"></span> <span id="quota"></span></p></div>
@@ -339,6 +340,15 @@
       <div class="row mt"><button class="pri sm" type="submit">Save skill</button><button class="q sm" type="button" id="sk-make" title="AutoFaber reads this chat and drafts the instructions">Make one from this chat</button></div><p class="dim sm" id="sk-msg" aria-live="polite"></p></form></section>
   <section><h4>Data</h4><div class="row"><button class="q" id="s-export">Export all sessions</button><button class="q" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
   <div class="row mt"><a href="/" class="maker" title="mentifaber.org"><img src="assets/brand/mentifaber-mark-48.webp" alt="" width="24" height="24" loading="lazy" decoding="async">Mentifaber</a><span class="flex"></span><button class="pri" id="ssave">Done</button></div>
+</dialog>
+<dialog id="pdlg" class="settings" aria-label="Project">
+  <div class="row"><h3 id="p-head">Project</h3><span class="flex"></span><button class="inst" onclick="pdlg.close()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
+  <section><p class="dim sm">A project keeps related chats together. Its instructions and files go with every message in its chats. Kept on this device.</p>
+    <form id="p-form" class="skform"><label>Name<input id="p-name" maxlength="60" placeholder="e.g. Kitchen renovation" autocomplete="off" required></label>
+      <label>Instructions<textarea id="p-ins" rows="5" maxlength="4000" placeholder="e.g. We're redoing a 1960s kitchen on a €15k budget. Prices in euros, suppliers in Portugal, and flag anything that needs a permit."></textarea></label>
+      <div><b class="sm">Files</b> <span class="dim sm" id="p-room"></span><div id="p-files" class="pfiles"></div>
+        <label class="q filebtn sm">Add files<input id="p-add" type="file" hidden multiple accept=".pdf,.docx,.xlsx,.xlsm,.xls,.ods,.txt,.md,.csv,.json,.html,.xml,.yaml,.yml,.py,.js,.ts,.sql,text/*"></label></div>
+      <div class="row mt"><button class="pri sm" type="submit">Save project</button><span class="flex"></span><button class="q sm" type="button" id="p-del">Delete project</button></div><p class="dim sm" id="p-msg" aria-live="polite"></p></form></section>
 </dialog>
 <div id="toast" class="hidden" role="status"></div>
 
