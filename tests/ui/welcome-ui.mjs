@@ -18,7 +18,7 @@ assert.equal(await p.isVisible("#welcome"), true); assert.match(await p.textCont
 await p.fill("#w-name", "Sam"); await p.fill("#w-about", "I fix bikes and I'm learning Python"); await p.click("#welcome [data-len='short']"); await p.click("#w-go");
 assert.equal(await p.isVisible("#welcome"), false); assert.match(await p.textContent("#greet"), /, Sam\.$/); ok("Start: the card goes and the greeting uses the name");
 await p.fill("#inp", "What should I learn first?"); await p.click("#sendb"); await p.waitForSelector(".ex:not(.pending) .m.ai", { timeout: 10000 });
-const sys = H.calls.at(-1).sys; assert.match(sys, /call them Sam/); assert.match(sys, /"I fix bikes and I'm learning Python"/); assert.match(sys, /Keep answers short/); ok("the name, the line about them and “short” reach AutoFaber's prompt");
+const sys = H.calls.findLast((c) => !/follow-up questions/.test(c.sys)).sys; assert.match(sys, /call them Sam/); assert.match(sys, /"I fix bikes and I'm learning Python"/); assert.match(sys, /Keep answers short/); ok("the name, the line about them and “short” reach AutoFaber's prompt");
 await p.reload(); await p.waitForTimeout(700); assert.equal(await p.isVisible("#welcome"), false); assert.match(await p.textContent("#greet"), /Sam/); ok("after a reload: no quick start, still greeted by name");
 await p.click("#settings"); await p.waitForSelector("#sdlg[open]"); assert.equal(await p.inputValue("#s-name"), "Sam"); assert.equal(await p.inputValue("#s-len"), "short");
 await p.fill("#s-name", "Samira"); await p.dispatchEvent("#s-name", "change"); await p.selectOption("#s-len", "long");

@@ -1,0 +1,37 @@
+// Mind → Tasks in Chromium: start from a template, add a task, run it now, read the result in the inbox (its badge clears),
+// and open it as a chat.   node tasks-ui.mjs <repo> desktop|mobile
+import { createRequire } from "node:module"; import assert from "node:assert/strict";
+const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
+const DEV = process.argv[3] || "desktop";
+globalThis.fetch = async (u) => { throw new Error("offline: " + u); };
+const H = await import("../gtest/harness.mjs"); H.hive.sql(); const { calls } = H;
+H.setResponder((sys, user) => /follow-up questions/.test(sys) ? '{"q":[]}' : /You decide which tools/.test(sys) ? '{"calls":[]}' : /scheduled task “Morning brief”/.test(user) ? "## Today\n\nRain after 3 pm in Porto. **Two** things moved on your watchlist." : /reflecting privately|AutoFaber's analyst/.test(sys) ? null : "ok");
+const b = await chromium.launch({ args: ["--no-proxy-server"] });
+const ctx = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" });
+const bodies = []; ctx.on("request", (r) => { if (/\/api\/hive\/chat$/.test(r.url())) bodies.push(JSON.parse(r.postData() || "{}")); });
+await ctx.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: req.postData() || undefined }));
+  const h = {}; res.headers.forEach((v, k) => (h[k] = v)); return route.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) }); });
+await ctx.route(/\/api\/(?!hive)/, (rt) => rt.fulfill({ contentType: "application/json", body: "{}" }));
+await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
+const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => { if (!/Service worker is disabled/.test(e.message)) errs.push(e.message); }); p.on("dialog", (d) => d.accept());
+const ok = (m) => console.log("ok", DEV, m);
+await p.goto("http://localhost:8099/hive-app.html#mind/tasks"); await p.waitForSelector("#mt-tasks:not(.hidden)", { timeout: 10000 });
+await p.waitForFunction(() => /No tasks yet/.test(document.getElementById("tk-list").textContent), null, { timeout: 8000 });
+await p.click("[data-tpl='brief']"); assert.equal(await p.inputValue("#tk-title"), "Morning brief"); assert.equal(await p.inputValue("#tk-every"), "weekday"); assert.equal(await p.inputValue("#tk-mode"), "web");
+await p.click("#tk-form [type=submit]"); await p.waitForFunction(() => /Added: every weekday at 07:30/.test(document.getElementById("tk-msg").textContent), null, { timeout: 8000 });
+assert.match(await p.textContent("#tk-list"), /Morning brief[\s\S]*every weekday at 07:30[\s\S]*with search[\s\S]*next /);
+await p.screenshot({ path: new URL("./shots/", import.meta.url).pathname + DEV + "-tasks.png", fullPage: false });
+ok("a template fills the form; the task is added and says when it runs next");
+await p.click("#tk-list [data-tka='run']"); await p.waitForFunction(() => document.querySelectorAll("#tk-inbox details").length === 1, null, { timeout: 15000 });
+assert.equal(await p.textContent("#tk-badge"), "1"); assert.match(await p.textContent("#tk-inbox summary"), /Morning brief/);
+await p.click("#tk-inbox summary"); assert.match(await p.textContent("#tk-inbox .b"), /Rain after 3 pm in Porto/); assert.equal(await p.locator("#tk-inbox .b b").textContent(), "Two");
+await p.waitForFunction(() => document.getElementById("tk-badge").classList.contains("hidden"), null, { timeout: 6000 });
+ok("Run now puts the answer in the inbox with a badge; opening it renders it and clears the badge");
+await p.click("[data-tkopen]"); await p.waitForSelector("#v-studio:not(.hidden) .m.ai .b", { timeout: 8000 });
+assert.match(await p.textContent("#v-studio .m.ai .b"), /Rain after 3 pm in Porto/); assert.match(await p.textContent("#v-studio .m.user"), /Brief me for the day/);
+ok("Open as a chat carries the task and its answer into the Studio, to keep talking about it");
+await p.goto("http://localhost:8099/hive-app.html#mind/tasks"); await p.waitForSelector("#tk-list [data-tka='del']"); await p.click("#tk-list [data-tka='del']");
+await p.waitForFunction(() => /No tasks yet/.test(document.getElementById("tk-list").textContent), null, { timeout: 8000 });
+ok("a task can be removed");
+const wide = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth); assert.ok(wide <= 1, "sideways scroll " + wide);
+assert.deepEqual(errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);

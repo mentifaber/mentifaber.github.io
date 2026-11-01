@@ -14,6 +14,9 @@ import { trends, worldText } from "./hive-world.js";
 import { gather, wiki, papers, paperLine, hfSearch, hfText, hfRows, rowsText } from "./hive-know.js";
 import { worthPlanning, quickAsk, plannerPrompt, plannerInput, parseCalls } from "./hive-agent.js";
 import { research, evidenceCheck, ledgerText, RESEARCH_RULE } from "./hive-research.js";
+import { autoRoute, followUps, AUTO } from "./hive-route.js";
+import { Tasks } from "./hive-tasks.js";
+import { factCheck } from "./hive-check.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
@@ -98,7 +101,7 @@ const BUILTIN_PLAN = { tasks: [
 const VISUALS = " Visual answers: when numbers compare or change over time, you may add a chart as a fenced ```chart block holding JSON like {\"type\": \"bar\", \"title\": \"…\", \"labels\": [\"2023\", \"2024\"], \"series\": [{\"name\": \"…\", \"data\": [12, 15]}], \"unit\": \"%\"} (type bar, line, area or pie; the app draws it), only with real numbers you have. " +
   "When the user would want to use something rather than read about it (a calculator, converter, timer, small simulation or game), add a fenced ```widget block: one complete, self-contained HTML page with inline CSS and JavaScript and no external files or network (it runs sandboxed inside the chat). " +
   "Python in a ```python block can be run by the user in their browser, with the files they attached in the same folder.";
-const STUDIO_DAY = 60, IMAGINE_DAY = 8, RESEARCH_DAY = 6, MAX_KEYS = 500; // a researched report costs a dozen searches and several model calls
+const STUDIO_DAY = 60, IMAGINE_DAY = 8, RESEARCH_DAY = 6, CHECK_DAY = 10, MAX_KEYS = 500; // a researched report costs a dozen searches and several model calls
 const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, ALL_PARALLEL = 30, TICK = 1500, SLOW_TICK = 75e3; // ALL_PARALLEL: every mission together, under Workers AI's rate limits
 // models that think before they answer: they need room for both, or the answer comes back empty or cut off
 const THINKS = /qwq|deepseek-r1|-r1-|gpt-oss|qwen3(?!.*instruct)|\bo[134](-|$)|thinking|reason/i;
@@ -214,6 +217,15 @@ export class Hive extends DurableObject {
     if (path === "/mind/brief" && owner) { const p = await Mind.parts(this); return J({ brief: (p.stable + p.recent).slice(0, +b.max || 12000), stable: p.stable, owner: OWNER_MODE, genesis: await Genesis.block(this, "mentifaber-agent-1.0") }); } // the owner's apps on MENTIFABER AGENT talk to Genesis too
     if (path.startsWith("/mind")) { if (!owner) return J({ error: "AutoFaber's mind is the owner's: sign in on Vigil first" }, 401); return Mind.route(this, path, b, J, url.origin); }
     if (path.startsWith("/library")) { if (!owner) return J({ error: "the library is the owner's: sign in on Vigil first" }, 401); return Library.route(this, path, b, J); }
+    if (path === "/factcheck") { // any answer, checked on request (src/hive-check.js)
+      if (req.method !== "POST") return J({ error: "POST only" }, 405); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);
+      if (!owner && !this.meter(req, "check", CHECK_DAY)) return J({ error: "that's today's " + CHECK_DAY + " fact checks; come back tomorrow" }, 429);
+      const r = await factCheck(this, { text: String(b.text || ""), question: String(b.question || ""), writer: String(b.writer || ""), owner }).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      this.logReply({ model: "factcheck", who: owner ? "owner" : "visitor", kind: "check", ms: r.ms, chars: (r.claims || []).length, err: r.error });
+      return J(r, r.error ? 502 : 200);
+    }
+    if (path.startsWith("/tasks")) { if (!owner) return J({ error: "scheduled tasks are the owner's: sign in on Vigil first" }, 401); // src/hive-tasks.js
+      return Tasks.route(this, path, b, J, url.origin, async (a) => { Genesis.queueAlert(this, a); await Genesis.flush(this); }); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "AutoFaber is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
       return J({ owner, projects: q.exec("SELECT id,title,status,verdict,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
@@ -221,7 +233,7 @@ export class Hive extends DurableObject {
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
     if (path === "/listen-ok" && req.method === "POST") return J({ ok: b.vg ? await Voice.listenOk(this, String(b.vg)) : owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
-    if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
+    if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(this.env.AI ? [{ id: AUTO, name: "Auto", group: "AutoFaber", note: "picks the best free model for each message" }] : []), ...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (path === "/steps") { const k = String(b.sid || ""), x = this._steps && this._steps.get(k); return J(x && x.owner === owner ? { steps: x.list, now: x.now || null } : { steps: [] }); } // what a reply in the making is doing (keyed by a random id from the sender)
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
     if (path === "/new") {
@@ -760,6 +772,11 @@ export class Hive extends DurableObject {
       if (!r.id) throw new Error(r.error || "the Swarm couldn't start");
       return { label: "started a Swarm mission", items: [{ title: "Swarm mission: " + a.split(/[.\n]/)[0].slice(0, 80), url: origin + "/hive-app?p=" + r.id, text: "SWARM MISSION STARTED just now for this request (id " + r.id + "): the team is planning and building it; he can watch it and run the result at " + origin + "/hive-app?p=" + r.id + ". Tell him it's under way and give him that link; don't write the whole thing out yourself as well." }] };
     }
+    if (c.tool === "schedule") { // he asked for something to happen regularly: it becomes a task in Mind → Tasks (src/hive-tasks.js)
+      const [ev, at, mode, ...rest] = a.split("|").map((x) => x.trim()), [every, day] = ev.toLowerCase().split(":"), days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      const t = Tasks.add(this, { prompt: rest.join(" | "), every, dow: Math.max(0, days.indexOf(day || "")), at, mode, tz: ctx.tz }); if (t.error) throw new Error(t.error);
+      return { label: "scheduled a task: " + t.when, items: [{ title: "Scheduled task: " + t.title, url: origin + "/hive-app#mind/tasks", text: "SCHEDULED TASK CREATED just now: “" + t.title + "”, " + t.when + "; first run " + new Date(t.next).toISOString().slice(0, 16).replace("T", " ") + " UTC. Each run's answer goes to Mind → Tasks and a push to his phone. Tell him it's set and when it first runs (in his time), and that he can change or remove it in Mind → Tasks; don't do the task's work now." }] };
+    }
     if (c.tool === "library") { const lh = await Library.search(this, a, 5, 0.5); if (!lh.length) throw new Error("nothing in the library matches " + a); return { label: "searched your library: " + a.slice(0, 50), items: lh.map((x, i) => ({ title: x.title + " · passage " + x.n, url: x.src || origin + "/hive-app#mind/library", text: Library.text([x])[0] })) }; }
     if (c.tool === "site") { const st = siteText(await siteIndex(this, origin)); return { label: "read your site's project index", note: st || null, items: [] }; }
     throw new Error("unknown tool");
@@ -795,6 +812,10 @@ export class Hive extends DurableObject {
     }
     // chat
     let [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
+    let autoWhy = null; // Auto (src/hive-route.js): the best free model for what this message needs
+    if (b.model === AUTO) { const ms = Array.isArray(b.messages) ? b.messages : [], lm = ms[ms.length - 1] || {}, lt = String(lm.text || "");
+      const r = autoRoute({ text: lt, images: Array.isArray(lm.images) && lm.images.length > 0, research: !!b.research, voice: !!b.voice, quick: !b.research && !!quickAsk(lt) }, (c) => this.cooling(c) || this.sick(c));
+      src = "workers-ai"; model = r.model; b.model = src + "|" + model; autoWhy = "Auto chose " + model.split("/").pop() + ": " + r.why; }
     if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
     const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Uplinks and AutoFaber will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
@@ -805,7 +826,7 @@ export class Hive extends DurableObject {
     const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-24).map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text || "").slice(0, 16000), images: Array.isArray(m.images) ? m.images.filter((u) => typeof u === "string" && u.startsWith("data:image/") && u.length < 4e6).slice(0, 8) : [] }));
     const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
     msgs.forEach((m) => m !== last && (m.images = []));
-    const t0 = Date.now(), sources = [], notes = [], tools = [];
+    const t0 = Date.now(), sources = [], notes = [], tools = autoWhy ? [autoWhy] : [];
     // live progress: each step shows in the app while the answer is still being prepared (GET /steps?sid=…)
     const sid = /^[\w-]{8,40}$/.test(String(b.sid || "")) ? String(b.sid) : null, steps = sid ? (this._steps = this._steps || new Map()) : null;
     if (steps) { for (const [k, x] of steps) if (Date.now() - x.at > 120e3) steps.delete(k); steps.set(sid, { at: Date.now(), owner, list: [], now: null }); const push0 = tools.push.bind(tools); tools.push = (...a) => { const x = steps.get(sid); if (x) { x.list.push(...a); x.now = null; } return push0(...a); }; }
@@ -819,7 +840,7 @@ export class Hive extends DurableObject {
       mp0 = await Mind.parts(this, inChat, asked); mind = (mp0.stable + mp0.recent).slice(0, 12000); Mind.maybeAnalyze(this, new URL(req.url).origin); Mind.maybeNotice(this);
     }
     // Genesis: the owner talks to the mind that lives here, which remembers earlier conversations and learns from them
-    const gName = owner ? (await Genesis.self(this)).name : "", lesson = owner && Genesis.taught(last.text);
+    const gName = owner ? (await Genesis.self(this)).name : "", lesson = owner && b.mind !== false && Genesis.taught(last.text); // a private session teaches nothing either
     if (lesson && Genesis.teach(this, lesson, "anders")) tools.push("learned: " + lesson.slice(0, 70));
     const recall = mindOn ? await Genesis.recall(this, last.text, b.cid).catch(() => "") : "";
     // pasted links get read
@@ -874,7 +895,7 @@ export class Hive extends DurableObject {
     // after seeing the results it may ask once more (read the best page in full, say). Voice skips it: every second counts there.
     if (planning) try {
       const made = new Set([...urls.map((u) => "read:" + u.toLowerCase()), ...(tools.some((t) => /^checked the weather/.test(t)) ? ["weather:*"] : []), ...(tools.some((t) => /^read Vigil/.test(t)) ? ["vigil:*"] : []), ...(tools.some((t) => /world record/.test(t)) ? ["world:*"] : []), ...(tools.some((t) => /project index/.test(t)) ? ["site:*"] : [])]);
-      const ctx = { owner, req, geo: req.headers.get("x-geo"), text: last.text };
+      const ctx = { owner, req, geo: req.headers.get("x-geo"), text: last.text, tz: String(b.tz || "") };
       for (let round = 1; round <= 2; round++) {
         if (Date.now() - t0 > 12000) break; // the answer matters more than one more lookup
         doing(round === 1 ? "deciding what to look up" : "checking whether anything is missing");
@@ -984,6 +1005,7 @@ export class Hive extends DurableObject {
           }
           Genesis.finishTurn(this, turn, said, used);
           this.note(used, true, Date.now() - t0); logIt(used); emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined, cut: meta.cut || undefined });
+          if (!b.voice && !deep && !quick && !rescued && !meta.cut && b.followups !== false) { const fu = await followUps(this.env, asked, said).catch(() => []); if (fu.length) emit("followups", { q: fu }); } // after done: the answer never waits for them
         } catch (e) { logIt(used, tidyErr(e, model)); emit("error", { error: tidyErr(e, model) }); }
         clearInterval(ping); w.close().catch(() => {});
       })();

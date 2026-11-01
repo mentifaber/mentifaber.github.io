@@ -613,6 +613,7 @@ export default {
     // MENTIFABER AGENT 1.0, when it's always on: a nudge that brings it back if it stopped and nothing noticed
     if (env.AGENT) ctx.waitUntil(env.AGENT.get(env.AGENT.idFromName("agent")).fetch(new Request("http://agent/keep", { method: "POST" })).catch(() => {}));
     if (event.cron === "*/15 * * * *") { // Genesis keeps watch on Vigil's live board between the hourly ticks
+      if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/tasks/tick", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {})); // the owner's scheduled tasks that are due (src/hive-tasks.js)
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/watch", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {}));
       return;
     }
