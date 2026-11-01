@@ -161,7 +161,8 @@ input.tg:checked::after { left: 24px; background: var(--ink); }
 .cmdrow .q:hover { color: var(--ink); border-color: var(--line2); }
 #inp { display: block; width: 100%; resize: none; border: 0; background: transparent; padding: 12px 0 10px; font-size: 21px; line-height: 1.42; min-height: 54px; max-height: 40vh; }
 #inp:focus, #inp:focus-visible { border: 0; outline: none; }
-.ctl { display: flex; align-items: center; gap: 4px; padding-bottom: 2px; }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; row-gap: 2px; padding-bottom: 2px; }
+.ctl #voice { margin-left: auto; } /* when the modes fill the line (a phone), voice, dictate and Ask go to the next line, on the right: Ask never runs off */
 .plus { position: relative; }
 .menu { position: absolute; left: 0; top: calc(100% + 6px); background: var(--bed); border: 1px solid var(--line2); z-index: 30; min-width: 220px; padding: 4px 0; box-shadow: 0 14px 30px rgba(0, 0, 0, .3); }
 .menu button { display: block; width: 100%; text-align: left; padding: 9px 14px; font-size: 14.5px; }
