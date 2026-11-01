@@ -52,7 +52,7 @@ function page(f, fs, id) {
   const look = "<style>html{color-scheme:dark light}body{margin:0;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;background:#0d0f12;color:#d8dde3;padding:14px}#hive-out{white-space:pre-wrap;word-break:break-word}.err{color:#ff7b72}.dim{color:#7d8590}img{max-width:100%;background:#fff;margin:8px 0}</style>";
   if (f.lang === "js") return "<!doctype html><html><head><meta charset='utf-8'>" + SHIM(id) + look + "</head><body><div class='dim'>JavaScript · output below and in the console</div><div id='hive-out'></div><script>(function(){var o=document.getElementById('hive-out');['log','info','warn','error'].forEach(function(k){var c=console[k];console[k]=function(){var d=document.createElement('div');if(k==='error')d.className='err';d.textContent=[].slice.call(arguments).map(function(x){return typeof x==='string'?x:JSON.stringify(x)}).join(' ');o.appendChild(d);return c.apply(console,arguments)}})})()</script><script type='module'>\n" + f.code.replace(/<\/script/gi, "<\\/script") + "\n</script></body></html>";
   // Python: Pyodide in the frame; packages it imports (numpy, pandas, matplotlib…) load on demand; matplotlib figures are shown as images
-  const py = JSON.stringify(f.code), others = JSON.stringify(fs.filter((x) => x !== f && x.lang === "py").map((x) => [x.name, x.code]));
+  const py = JSON.stringify(f.code), others = JSON.stringify(fs.filter((x) => x !== f && x.lang !== "html").map((x) => [x.name, x.code])); // modules and data files (a CSV attached in chat, say), beside main.py
   return "<!doctype html><html><head><meta charset='utf-8'>" + SHIM(id) + look + "</head><body><div class='dim' id='st'>Python · loading (first run takes a few seconds)…</div><div id='hive-out'></div><i id='hive-py' hidden></i>" +
     "<script src='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js'></script><script>(async function(){var o=document.getElementById('hive-out'),st=document.getElementById('st'),line=function(t,c){var d=document.createElement('div');if(c)d.className=c;d.textContent=t;o.appendChild(d)};" +
     "try{var py=await loadPyodide({stdout:function(s){line(s);console.log(s)},stderr:function(s){line(s,'err');console.warn(s)}});st.textContent='Python · running';" +
@@ -72,7 +72,11 @@ function run(frame, f, fs, onEvent) {
   frame.srcdoc = page(f, fs || [f], id);
   return id;
 }
-const popout = (f, fs) => { const u = URL.createObjectURL(new Blob([page(f, fs, "popout")], { type: "text/html" })); open(u, "_blank", "noopener"); setTimeout(() => URL.revokeObjectURL(u), 60000); };
+// its own tab, but not the app's origin: the tab's page has no script, only a frame sandboxed without allow-same-origin
+const POP = "allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups allow-downloads";
+const popout = (f, fs) => { const h = page(f, fs, "popout").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const u = URL.createObjectURL(new Blob(["<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + String(f.name || "Preview").replace(/[<&]/g, "") + "</title><style>html,body{margin:0;height:100%;background:#fff}iframe{border:0;width:100%;height:100%;display:block}</style></head><body><iframe sandbox='" + POP + "' srcdoc=\"" + h + "\"></iframe></body></html>"], { type: "text/html" }));
+  open(u, "_blank", "noopener"); setTimeout(() => URL.revokeObjectURL(u), 60000); };
 // every file in one .zip (stored, no compression: small, and no library needed)
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 const crc32 = (u8) => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };

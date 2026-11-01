@@ -151,8 +151,13 @@ function md(src, sources, done) {
     out += "<p>" + inline(p.join("<br>")) + "</p>";
   }
   const note = done && md.bad ? "<div class='cknote' title='The model cited sources that weren&#39;t gathered for this answer'>⚠ " + md.bad + " citation" + (md.bad > 1 ? "s" : "") + " pointed at no source and " + (md.bad > 1 ? "were" : "was") + " removed</div>" : "";
-  return note + out.replace(/\u0000C(\d+)\u0000/g, (_, n) => { const [lang, body] = code[n]; return "<div class='pre'><header><span>" + esc(lang || "code") + "</span><span>" + (/^html?$/i.test(lang) ? "<button data-run='" + n + "'>Preview</button>" : "") + "<button data-copy='" + n + "'>Copy</button></span></header>" + ((ck) => ck ? "<div class='ck " + (ck[0] ? "ok" : "bad") + "' title='Checked in your browser, not run'>" + (ck[0] ? "✓ " : "⚠ ") + esc(ck[1]) + (ck[0] ? "" : " <button data-fixck='" + n + "' data-err='" + esc(ck[1]) + "' data-lang='" + esc(lang || "code") + "'>Fix it</button>") + "</div>" : "")(done ? checkCode(lang, body) : null) + "<pre><code>" + esc(body) + "</code></pre></div>"; });
+  return note + out.replace(/\u0000C(\d+)\u0000/g, (_, n) => { const [lang, body] = code[n], V = window.HiveVisual;
+    if (V && /^chart$/i.test(lang)) { const h = V.chart(body); if (h) return h; if (!done) return "<div class='vchart dim sm'>drawing the chart…</div>"; } // a chart that doesn't parse shows as code
+    if (V && /^widget$/i.test(lang)) return done ? V.widget(body) : "<div class='vwidget dim sm'>building the widget…</div>";
+    return "<div class='pre'><header><span>" + esc(lang || "code") + "</span><span>" + (/^html?$/i.test(lang) ? "<button data-run='" + n + "'>Preview</button>" : /^(py|python3?)$/i.test(lang) && done ? "<button data-py='" + n + "'>Run</button>" : "") + "<button data-copy='" + n + "'>Copy</button></span></header>" + ((ck) => ck ? "<div class='ck " + (ck[0] ? "ok" : "bad") + "' title='Checked in your browser, not run'>" + (ck[0] ? "✓ " : "⚠ ") + esc(ck[1]) + (ck[0] ? "" : " <button data-fixck='" + n + "' data-err='" + esc(ck[1]) + "' data-lang='" + esc(lang || "code") + "'>Fix it</button>") + "</div>" : "")(done ? checkCode(lang, body) : null) + "<pre><code>" + esc(body) + "</code></pre></div>"; });
 }
+// files attached earlier in this chat (their text rides in the message as "name:\n```\n…\n```"), for code run here
+const chatFiles = () => { const out = []; for (const m of (chat && chat.msgs) || []) for (const name of m.files || []) { const at = String(m.text || "").indexOf("\n\n" + name + ":\n```\n"); if (at < 0) continue; const from = at + name.length + 7, to = m.text.indexOf("\n```", from); if (to > from && !out.some((f) => f.name === name)) out.push({ name: name.replace(/[^\w.-]/g, "_"), lang: "txt", code: m.text.slice(from, to) }); } return out; };
 const codeOf = (el, n) => { const m = chat && chat.msgs[+el.closest(".m").dataset.i]; const all = []; String(m && m.text || "").replace(/```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g, (_, l, b) => all.push(b.replace(/\n$/, ""))); return all[n] || ""; };
 
 // ── drawing messages: each question and its answer are one layer; layers stack newest first, under the surface ──
@@ -197,7 +202,14 @@ $("log").onclick = async (e) => {
   if (c) { navigator.clipboard.writeText(codeOf(c, +c.dataset.copy)).then(() => { c.textContent = "Copied"; setTimeout(() => (c.textContent = "Copy"), 1400); }); return; }
   const fk = e.target.closest("[data-fixck]"); // a block that failed its check: ask for it corrected, in full
   if (fk) { if (busy) return toast("Wait for the current answer first"); return send("The " + fk.dataset.lang + " block (number " + (+fk.dataset.fixck + 1) + " in your last answer) doesn't check out: " + fk.dataset.err + ". Send the corrected block in full, nothing else."); }
-  if (r) { const w = window.open("", "_blank"); if (w) { w.document.open(); w.document.write(codeOf(r, +r.dataset.run)); w.document.close(); } return; }
+  if (r) { if (!HiveVisual.openSafe(codeOf(r, +r.dataset.run), "Preview")) toast("Allow pop-ups to preview it"); return; } // sandboxed: the page can't use this app's origin
+  const py = e.target.closest("[data-py]");
+  if (py) { // run it here: Pyodide in a sandboxed frame, with the files attached earlier in this chat beside it
+    const pre = py.closest(".pre"), code = codeOf(py, +py.dataset.py); let box = pre.querySelector(".pyrun"); if (box) box.remove();
+    box = document.createElement("div"); box.className = "pyrun"; box.innerHTML = "<header><span>Python · runs in your browser (Pyodide), sandboxed</span><button class='mini'>close</button></header><iframe sandbox='allow-scripts' title='Python output'></iframe>"; pre.appendChild(box);
+    box.querySelector("button").onclick = () => box.remove();
+    const data = chatFiles(); HiveRun.run(box.querySelector("iframe"), { name: "main.py", lang: "py", code }, [{ name: "main.py", lang: "py", code }, ...data], () => {});
+    if (data.length) toast("Beside it: " + data.map((f) => f.name).join(", "), 2500); return; }
   const ua = e.target.closest("[data-uact]");
   if (ua && chat) { const k = +ua.closest(".m").dataset.i, um = chat.msgs[k]; if (ua.dataset.uact === "copy") { navigator.clipboard.writeText(um.show || um.text || ""); return toast("Copied"); }
     if (busy) return toast("Wait for the reply to finish"); inp.value = um.show || um.text || ""; grow(); sync(); chat.msgs.splice(k); unlayer(k); save(); if (!chat.msgs.length) ground(true); inp.focus(); return toast("Edit and send again"); }
