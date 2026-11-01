@@ -13,6 +13,7 @@ import { vigilBrief, briefTopics } from "./vigil.js";
 import { trends, worldText } from "./hive-world.js";
 import { gather, wiki, papers, paperLine, hfSearch, hfText, hfRows, rowsText } from "./hive-know.js";
 import { worthPlanning, quickAsk, plannerPrompt, plannerInput, parseCalls } from "./hive-agent.js";
+import { research, evidenceCheck, ledgerText, RESEARCH_RULE } from "./hive-research.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
@@ -93,7 +94,7 @@ const BUILTIN_PLAN = { tasks: [
   { id: 5, role: "coder", title: "Build it", detail: "The complete working implementation of the plan.", deps: [1, 3, 4] },
   { id: 6, role: "tester", title: "Test and fix", detail: "Find bugs and missing cases in the build and give the corrected version.", deps: [5] },
 ] };
-const STUDIO_DAY = 60, IMAGINE_DAY = 8, MAX_KEYS = 500;
+const STUDIO_DAY = 60, IMAGINE_DAY = 8, RESEARCH_DAY = 6, MAX_KEYS = 500; // a researched report costs a dozen searches and several model calls
 const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, ALL_PARALLEL = 30, TICK = 1500, SLOW_TICK = 75e3; // ALL_PARALLEL: every mission together, under Workers AI's rate limits
 // models that think before they answer: they need room for both, or the answer comes back empty or cut off
 const THINKS = /qwq|deepseek-r1|-r1-|gpt-oss|qwen3(?!.*instruct)|\bo[134](-|$)|thinking|reason/i;
@@ -795,6 +796,8 @@ export class Hive extends DurableObject {
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
     if (src === "agent") { const ag = await this.agentInfo(); if (!ag || !ag.model) return J({ error: "MENTIFABER AGENT 1.0 has no model loaded yet" }, 400); if (!owner && !ag.public) return J({ error: "MENTIFABER AGENT 1.0 is private" }, 401); }
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
+    const deep = !!b.research && !b.voice && !b.swarm; // Deep Research (src/hive-research.js)
+    if (deep && !owner && !this.meter(req, "research", RESEARCH_DAY)) return J({ error: "that's today's " + RESEARCH_DAY + " researched reports; come back tomorrow, or ask without Research" }, 429);
     const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-24).map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text || "").slice(0, 16000), images: Array.isArray(m.images) ? m.images.filter((u) => typeof u === "string" && u.startsWith("data:image/") && u.length < 4e6).slice(0, 8) : [] }));
     const last = msgs[msgs.length - 1]; if (!last || last.role !== "user" || !(last.text || last.images.length)) return J({ error: "say something" }, 400);
     msgs.forEach((m) => m !== last && (m.images = []));
@@ -855,7 +858,7 @@ export class Hive extends DurableObject {
     // prices for anyone: any ticker, coin or name in the message (public data; the owner gets them through Vigil's board above)
     // open knowledge: Hugging Face datasets, their rows and models, papers (arXiv, OpenAlex), Wikipedia; when the message is about them.
     // A quick ask (what AutoFaber is, the date, a sum) needs neither lookups nor a planner call: its answer is already in the prompt.
-    const quick = quickAsk(last.text), planning = !quick && !b.voice && b.agent !== false && worthPlanning(last.text); // Genesis plans its own lookups below
+    const quick = !deep && quickAsk(last.text), planning = !quick && !deep && !b.voice && b.agent !== false && worthPlanning(last.text); // Genesis plans its own lookups below
     const [qt, kn] = await Promise.all([ // the two don't depend on each other, so neither waits for the other
       owner || quick ? null : symbolsFor(last.text).then((syms) => (syms.length ? quotes(syms).then((qs) => ({ syms, qs })) : null)).catch(() => null),
       gather(last.text, b.web, planning || !!quick).catch(() => null)]);
@@ -878,6 +881,12 @@ export class Hive extends DurableObject {
         for (const [i, g] of got.entries()) { made.add(calls[i].tool + ":" + calls[i].arg.toLowerCase()); if (calls[i].tool === "build") made.add("build:*"); if (g.note) notes.push(g.note); for (const x of g.items || []) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.text); } if (g.label) tools.push(g.label); }
       }
     } catch (e) {}
+    // Deep Research: its own plan of searches, run side by side, and the best pages read in full
+    if (deep) try {
+      const r = await research(this, { question: last.text, owner, step: (t) => doing(t) }); doing(null);
+      for (const x of r.items) { sources.push({ title: x.title, url: x.url }); notes.push("[" + sources.length + "] " + x.title + " — " + x.url + "\n" + x.text); }
+      tools.push("researched: " + r.queries.length + " searches, " + r.items.filter((x) => x.read).length + " pages read in full, " + sources.length + " sources");
+    } catch (e) { doing(null); notes.push("(the research couldn't run: " + String(e.message || e).slice(0, 120) + "; say so)"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
     let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
     if (src === "workers-ai" && (await this.resting()) && !(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
@@ -889,7 +898,7 @@ export class Hive extends DurableObject {
     // MENTIFABER AGENT keeps the start of the conversation cached between messages, so for it everything that changes
     // every message (the time, recent activity, gathered material) rides at the end of the newest message instead
     const local = src === "agent", mp = owner && mind && mp0 ? mp0 : { stable: "", recent: "" }, who = owner ? await Genesis.block(this, local ? "mentifaber-agent-1.0" : model.split("/").pop()) : "";
-    const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "");
+    const live = "Now: " + now + "." + (mp.recent && local ? mp.recent : "") + (local ? recall : "") + (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, deep ? 45000 : 30000) : "");
     if (local) last.text = "[BACKGROUND FOR YOUR REPLY: use it, don't repeat it]\n" + live + "\n[END BACKGROUND]\n\n" + last.text;
     const system = (owner ? "You are " + gName + ", the mind of the AutoFaber app on mentifaber.org (WHO YOU ARE is below), answering through the model " : "You are AutoFaber, the assistant on mentifaber.org, answering through the model ") + model.split("/").pop() + ". " +
       "AutoFaber is an app that brings many AI models together. Its abilities, which the user switches on with buttons (you don't call them yourself): Search (live web results are handed to you below as MATERIAL with numbered sources), reading links the user pastes (their text is handed to you), for the owner, Vigil's live board (aircraft worldwide and overhead, emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets: read automatically when he asks about them and handed to you as MATERIAL), open knowledge (when a message is about datasets, models, papers or research, or asks what or who something is, AutoFaber looks it up on the Hugging Face Hub, inside a named dataset\'s actual rows, on arXiv and OpenAlex, and on Wikipedia, and hands it to you as MATERIAL), live weather (when they ask about the weather, AutoFaber looks it up automatically from Open-Meteo, the source behind the owner's Quick Weather app at mentifaber.org/wx, and hands it to you as MATERIAL; if no MATERIAL came, ask which town), seeing photos and video (you get the pictures, or descriptions of them), Imagine (makes pictures from words), voice conversation, the Council (several models answer at once and a lead model merges the best), and the Swarm (a team of agents that plans, builds, reviews and assembles whole projects; any answer can be handed to it). Before you answer, AutoFaber plans its own lookups: a planning step reads each message and chooses which of these tools to use (web search, reading pages, Wikipedia, papers, Hugging Face, weather, prices and, for the owner, Vigil, the world record and his site), sometimes in two rounds; everything it found is in MATERIAL. If asked what you can do, describe these accurately; never say you lack them, and never claim to have used one unless its results appear below. You can't run tests, commands, deployments or code yourself: never present a test run, check, measurement or action as done unless its results appear below as MATERIAL. You also can't act between messages: never offer to look something up, pull quotes or check back later; if what you'd need isn't in the MATERIAL, say exactly what's missing and how to get it (for example: ask again with Search on). " +
@@ -898,7 +907,7 @@ export class Hive extends DurableObject {
       (directive(asked) ? " This message is an instruction: do it. Lead with the result itself, keep explanation to what's needed to use it, and don't end with a question or an offer of more." : "") +
       (b.frames ? " The user attached a video; you are given frames sampled in order (with times), treat them as one clip." : "") +  (b.live ? " The user is talking to you live with their camera or screen on: the attached image is exactly what it shows right now, so refer to what you see naturally." : "") +
       (owner ? "\n\n" + OWNER_MODE + "\n\n" + who + (local ? mp.stable : mind) : "") + (local ? "" : recall +
-      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, 30000) : "")) + aboutMe(b.me, owner) + (b.system ? "\n\n" + (owner ? "OWNER'S" : "THE USER'S OWN") + " INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (local ? "" : "\n\nNow: " + now + ".") + (b.voice ? VOICE_RULE : "") + (local ? "\n\nToday's date: " + now.slice(0, 10) + " (UTC)." : ""); // the time at the end: the long start stays the same from one message to the next
+      (notes.length ? "\n\nMATERIAL GATHERED FOR THIS ANSWER (cite with [n] where you use it):\n" + notes.join("\n\n").slice(0, deep ? 45000 : 30000) : "")) + aboutMe(b.me, owner) + (b.system ? "\n\n" + (owner ? "OWNER'S" : "THE USER'S OWN") + " INSTRUCTIONS:\n" + String(b.system).slice(0, 4000) : "") + (deep ? RESEARCH_RULE : "") + (local ? "" : "\n\nNow: " + now + ".") + (b.voice ? VOICE_RULE : "") + (local ? "\n\nToday's date: " + now.slice(0, 10) + " (UTC)." : ""); // the time at the end: the long start stays the same from one message to the next
     const turn = mindOn ? Genesis.startTurn(this, b.cid, b.model, asked + (last.images.length || b.frames ? " [with " + (b.frames ? "a video" : "images") + "]" : "")) : null; // what he said; the reply is added when it's finished
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
@@ -935,7 +944,7 @@ export class Hive extends DurableObject {
       const emit = (ev, o) => w.write(enc.encode("event: " + ev + "\ndata: " + JSON.stringify(o) + "\n\n")).catch(() => {});
       const ping = setInterval(() => w.write(enc.encode(": still thinking\n\n")).catch(() => {}), 15000); // keeps the line open while a slow model reads
       (async () => {
-        let got = 0, said = "", tFirst = 0, rescued = false; const tGo = Date.now(), who = owner ? "owner" : "visitor", kind = b.voice ? "voice" : "chat";
+        let got = 0, said = "", tFirst = 0, rescued = false; const tGo = Date.now(), who = owner ? "owner" : "visitor", kind = b.voice ? "voice" : deep ? "research" : "chat";
         const onDelta = (t) => { if (!got) tFirst = Date.now(); got++; said += t; emit("delta", { t }); };
         const logIt = (m, err) => this.logReply({ model: m, who, kind, ms: Date.now() - t0, prep: tGo - t0, ttft: tFirst ? tFirst - t0 : null, chars: said.length, cut: rescued ? "empty" : meta.cut, err });
         try {
@@ -961,6 +970,13 @@ export class Hive extends DurableObject {
             let t = await complete(this.env, v, key, model, system, msgs, Math.min(8192, Math.max(max * 2, 4096))).catch(() => "");
             if (!t) { const r = await this.rescue(system, msgs, used, owner).catch(() => null); if (r && r.text) { t = r.text; tools.push(model.split("/").pop() + " returned nothing; " + r.by + " answered"); emit("meta", { sources, tools, model: used, turn: turn || undefined }); } }
             rescued = true; onDelta(t || (b.voice ? "Sorry, I lost that one. Could you say it again?" : "(the model returned nothing, twice; try again or pick another model)")); meta.cut = false;
+          }
+          if (deep && got && !rescued && meta.cut !== "loop" && sources.length) { // the evidence check: another model reads each cited claim beside its source
+            tools.push("checking each citation against its source"); emit("meta", { sources, tools, model: used, turn: turn || undefined });
+            const by = {}; for (const nt of notes) { const mm = /^\[(\d+)\] /.exec(nt); if (mm) by[mm[1]] = nt.slice(mm[0].length); }
+            const ev = await evidenceCheck(this, said, sources.map((x, k) => ({ title: x.title, text: by[k + 1] || x.title })), used);
+            tools[tools.length - 1] = ev.error ? "evidence check couldn't run" : !ev.checked ? "evidence check: no cited claims to check" : "evidence check: " + ev.supported + " of " + ev.checked + " cited claims stated by their source";
+            onDelta(ledgerText(ev, sources.length));
           }
           Genesis.finishTurn(this, turn, said, used);
           this.note(used, true, Date.now() - t0); logIt(used); emit("done", { ms: Date.now() - t0, model: used, tools, turn: turn || undefined, cut: meta.cut || undefined });

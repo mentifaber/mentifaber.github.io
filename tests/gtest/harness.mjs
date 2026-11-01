@@ -2,7 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 const REPO = process.argv[2] || new URL("../..", import.meta.url).pathname.replace(/\/$/, ""), OUT = new URL("./src/", import.meta.url).pathname; mkdirSync(OUT, { recursive: true });
-for (const f of ["hive.js", "hive-kit.js", "hive-mind.js", "hive-genesis.js", "vigil.js", "push.js", "listen.js", "markets.js", "hive-world.js", "hive-know.js", "hive-agent.js", "hive-library.js", "hive-voice.js", "media.js"]) writeFileSync(OUT + f, readFileSync(REPO + "/src/" + f, "utf8").replace('from "cloudflare:workers"', 'from "../cf-shim.mjs"'));
+for (const f of ["hive.js", "hive-kit.js", "hive-mind.js", "hive-genesis.js", "vigil.js", "push.js", "listen.js", "markets.js", "hive-world.js", "hive-know.js", "hive-agent.js", "hive-research.js", "hive-library.js", "hive-voice.js", "media.js"]) writeFileSync(OUT + f, readFileSync(REPO + "/src/" + f, "utf8").replace('from "cloudflare:workers"', 'from "../cf-shim.mjs"'));
 writeFileSync(new URL("./cf-shim.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Hive } = await import(OUT + "hive.js");
 

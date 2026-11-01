@@ -51,7 +51,7 @@ const stone = () => { if (!window.HiveFX) return;
 // live telemetry in the header and the side panel
 let lastMs = 0, lastTtft = 0, lastCps = 0, lastBurst = false; window.tele = () => tele();
 function tele() {
-  const modes = [on("web") && "search", on("council") && "council", on("draw") && "imagine"].filter(Boolean), layers = chat ? chat.msgs.filter((m) => m.role === "user").length : 0;
+  const modes = [on("web") && "search", on("deep") && "research", on("council") && "council", on("draw") && "imagine"].filter(Boolean), layers = chat ? chat.msgs.filter((m) => m.role === "user").length : 0;
   $("tele").innerHTML = [modes.length ? "<b>" + modes.join(" + ") + "</b>" : "", lastTtft ? "first word <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? "<b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "", lastCps ? "<b>" + lastCps + "</b> ch/s" : lastBurst ? "delivered in one burst" : "", layers ? "<b>" + layers + "</b> layer" + (layers === 1 ? "" : "s") : ""].filter(Boolean).join(" · ");
 }
 const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = ok ? "online" : "offline"; $("led-link").className = "led " + (ok ? "ok" : "bad"); };
@@ -262,10 +262,11 @@ inp.addEventListener("input", () => { grow(); sync(); fx("type"); });
 inp.addEventListener("keydown", (e) => { if (e.key !== "Enter" || e.shiftKey || e.isComposing) return; const mod = e.metaKey || e.ctrlKey; if (mod || (S("enter") && !matchMedia("(pointer:coarse)").matches)) { e.preventDefault(); send(); } });
 const setTog = (id, v) => { $(id).setAttribute("aria-pressed", v ? "true" : "false"); if (id === "draw") { inp.placeholder = v ? "Describe a picture…" : "Ask anything…  ( / for commands )"; $("sendb").textContent = busy ? "Stop" : v ? "Paint" : "Ask"; } if (window.tele) tele(); };
 $("web").onclick = () => { setTog("web", $("web").getAttribute("aria-pressed") !== "true"); if ($("web").getAttribute("aria-pressed") === "true") setTog("draw", false); };
-$("council").onclick = () => { setTog("council", $("council").getAttribute("aria-pressed") !== "true"); if (on("council")) setTog("draw", false); };
-$("draw").onclick = () => { setTog("draw", $("draw").getAttribute("aria-pressed") !== "true"); if ($("draw").getAttribute("aria-pressed") === "true") setTog("web", false); };
+$("council").onclick = () => { setTog("council", $("council").getAttribute("aria-pressed") !== "true"); if (on("council")) { setTog("draw", false); setTog("deep", false); } };
+$("deep").onclick = () => { setTog("deep", !on("deep")); if (on("deep")) { setTog("council", false); setTog("draw", false); } };
+$("draw").onclick = () => { setTog("draw", $("draw").getAttribute("aria-pressed") !== "true"); if ($("draw").getAttribute("aria-pressed") === "true") { setTog("web", false); setTog("deep", false); } };
 const on = (id) => $(id).getAttribute("aria-pressed") === "true";
-["web", "council", "draw"].forEach((id) => $(id).addEventListener("click", () => setTimeout(tele)));
+["web", "deep", "council", "draw"].forEach((id) => $(id).addEventListener("click", () => setTimeout(tele)));
 let busy = null; // AbortController while a reply is coming
 $("sendb").onclick = () => (busy ? Date.now() - busyAt > 1500 && busy.abort() : send()); // a quick second tap on send isn't a stop
 
@@ -280,7 +281,7 @@ function resume(t) {
 }
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
-  const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /council /imagine /swarm /model /new /keep /teach /remember
+  const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /research /council /imagine /swarm /model /new /keep /teach /remember
   if (sl) { const [, c, rest] = sl;
     if (c === "new") { inp.value = ""; return newChat(); }
     if (c === "me" || c === "mind") { inp.value = ""; grow(); location.hash = "mind"; return; }
@@ -290,14 +291,14 @@ function send(text, opts) {
     if (c === "remember" && rest) { inp.value = ""; grow(); return api("/mind/remember", { text: rest }).then((j) => toast(j.error || "Remembered", 2500)); }
     if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
     if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); }); }
-    const map = { search: "web", web: "web", council: "council", imagine: "draw", draw: "draw" };
-    if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); text = rest; }
+    const map = { search: "web", web: "web", council: "council", imagine: "draw", draw: "draw", research: "deep", deep: "deep" };
+    if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); setTog("deep", map[c] === "deep"); text = rest; }
   }
   if (!$("model").value && !on("draw")) return toast("No model is available right now");
   if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now() }; chats.unshift(chat); ground(false); }
   const files = att.filter((a) => a.kind === "file"), imgs = att.filter((a) => a.kind === "image"), vid = att.find((a) => a.kind === "video");
   const full = text + files.map((f) => "\n\n" + f.name + ":\n```\n" + f.text.slice(0, 100000) + "\n```").join("");
-  const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), voice: !!opts.voice, ts: Date.now() };
+  const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), research: on("deep") && !on("draw") && !on("council") || undefined, voice: !!opts.voice, ts: Date.now() };
   u._images = opts.images || (vid ? vid.frames.map((f) => f.data) : imgs.map((a) => a.data)); u._frames = vid ? vid.frames.map((f) => f.t) : null;
   if (opts.images) { u.thumbs = opts.images.slice(); u.live = true; }
   chat.msgs.push(u); drawMsg(u, chat.msgs.length - 1); chat.ts = Date.now();
@@ -305,10 +306,10 @@ function send(text, opts) {
   return run(u.mode === "image", opts);
 }
 async function run(image, opts) {
-  opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
+  opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.research ? "planning the research…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
-  const body = { me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
+  const body = { me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, research: u.research || undefined, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
     cid: chat.id, sid: Math.random().toString(36).slice(2) + Date.now().toString(36), messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   // while the answer is being prepared, show what Genesis is doing (planning, searching, reading…) as it happens
   let polls = 0; const was = m.status, watchSteps = image ? 0 : setInterval(async () => {
@@ -361,7 +362,7 @@ async function stream(body, m, i, signal) {
 // ── command palette (⌘K) ──
 const CMDS = () => [
   ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what AutoFaber knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
-  ["Toggle search", "mode", () => $("web").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
+  ["Toggle search", "mode", () => $("web").click()], ["Toggle research", "mode · a cited report, every citation checked", () => $("deep").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
   ["Voice link", "voice", () => Voice.start()], ["Export session", "markdown", () => $("export").click()], ["Settings", "voice · stone · data", () => openSettings()], ["Basalt or limestone", "light or dark", () => $("theme").click()],
   ...chats.map((c) => [c.title || "Untitled", "session · " + new Date(c.ts).toLocaleDateString([], { month: "short", day: "numeric" }), () => openChat(c.id)]),
   ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
