@@ -327,10 +327,11 @@ img.gen { display: block; max-width: min(100%, 560px); border: 1px solid var(--l
 .sess > .t { grid-column: main; display: flex; align-items: baseline; gap: 12px; min-width: 0; padding: 10px 0; }
 .sess > .t span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15.5px; }
 .sess > .t small { color: var(--faint); font-size: 12.5px; white-space: nowrap; }
-.sess > button { grid-column: notes; justify-self: start; color: var(--faint); padding: 6px 10px; font-size: 13px; opacity: 0; }
+.sess > .sbtn { grid-column: notes; justify-self: start; display: inline-flex; opacity: 0; }
 .sess:hover { background: color-mix(in srgb, var(--ink) 3.5%, transparent); }
-.sess:hover > button, .sess > button:focus-visible { opacity: 1; }
-.sess > button:hover { color: var(--bad); }
+.sess:hover > .sbtn, .sess > .sbtn:focus-within { opacity: 1; }
+.sess > .sbtn button { color: var(--faint); padding: 6px 10px; font-size: 13px; }
+.sess > .sbtn [data-del]:hover { color: var(--bad); } .sess > .sbtn [data-ren]:hover { color: var(--ink); }
 .sess.on > .t span { font-weight: 600; }
 .sess.on > time { color: var(--m); }
 .fine { margin-top: 26px; font-size: 12.5px; color: var(--faint); }
@@ -664,7 +665,7 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
   .swgrid { grid-template-columns: 1fr; }
   .mapc { grid-row: auto; }
   #map { max-height: 380px; }
-  .sess > button { grid-column: main; grid-row: 1; justify-self: end; }
+  .sess > .sbtn { grid-column: main; grid-row: 1; justify-self: end; }
   .sess > .t { padding-right: 44px; }
 }
 @media (max-width: 900px) {
@@ -720,7 +721,7 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
   .sess > time { grid-column: main; grid-row: 2; padding: 0; font-size: 12px; }
   .sess > .t { grid-row: 1; padding: 0 44px 2px 0; }
   .sess > .t small { display: none; }
-  .sess > button { grid-column: main; grid-row: 1 / span 2; justify-self: end; align-self: center; opacity: 1; }
+  .sess > .sbtn { grid-column: main; grid-row: 1 / span 2; justify-self: end; align-self: center; opacity: 1; }
   .bhead h2 { font-size: 20px; }
   #hsearch { margin-left: 0; width: 100%; }
   .realm { padding-block: 24px 18px; }
@@ -864,3 +865,11 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
 .fc { margin: 10px 0 4px; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 6px; font-size: 13px; } .fc ul { margin: 8px 0 0; padding-left: 0; list-style: none; display: grid; gap: 6px; } .fc a { margin-left: 4px; }
 .fcsum { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; } .fc .v { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .04em; }
 .fc .v.supported { color: var(--ok); } .fc .v.contradicted { color: var(--bad); } .fc .v.unclear { color: var(--warn); } .acts .chk { font-size: 12px; }
+
+/* versions of an answer (‹ 2/3 ›), and the “Ask about this” chip over a selection */
+.acts .vers { display: inline-flex; align-items: center; gap: 2px; margin-right: 14px; font-variant-numeric: tabular-nums; }
+.acts .vers button { margin: 0; padding: 3px 6px; font-size: 15px; line-height: 1; }
+.acts .vers button:disabled { opacity: .35; cursor: default; }
+.acts .vers small { font-size: 12px; color: var(--faint); min-width: 2.4em; text-align: center; }
+.quote { position: fixed; z-index: 60; padding: 7px 12px; border-radius: 999px; font-size: 13px; background: var(--ink); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.25); white-space: nowrap; }
+.quote.hidden { display: none; }
