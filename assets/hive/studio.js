@@ -629,13 +629,26 @@ const Keys = {
     const j = await api("/keys"); $("k-locked").classList.toggle("hidden", !j.error); $("k-open").classList.toggle("hidden", !!j.error); if (j.error) return;
     Agent.draw(); Keys.presets = j.presets; const sel = $("k-prov");
     if (!sel.options.length) { const g = { compat: "Models", anthropic: "Models", search: "Web search", voice: "Voices" }, by = {}; for (const [k, p] of Object.entries(j.presets)) (by[g[p.kind]] = by[g[p.kind]] || []).push("<option value='" + k + "'>" + esc(p.name) + "</option>"); sel.innerHTML = Object.entries(by).map(([n, o]) => "<optgroup label='" + n + "'>" + o.join("") + "</optgroup>").join(""); sel.onchange(); }
-    Keys.draw(j.keys); Keys.perf();
+    Keys.draw(j.keys); Keys.perf(); Keys.health();
   },
   async perf() {
     const j = await api("/perf").catch(() => ({})), ms = (j.models || []).filter((m) => m.ok + m.fail > 0).slice(0, 24);
     $("k-perf").innerHTML = ms.length ? "<table><thead><tr><th>Model</th><th>Calls</th><th>Failed</th><th>Avg time</th><th>Order</th></tr></thead><tbody>" + ms.map((m) => { const n = m.ok + m.fail, fr = m.fail / n;
       return "<tr><td>" + esc(m.model.split("/").pop()) + "</td><td>" + n + "</td><td class='" + (fr > 0.2 ? "bad" : "") + "'>" + Math.round(fr * 100) + "%</td><td>" + (m.ms ? (m.ms / 1000).toFixed(1) + " s" : "—") + "</td><td>" + (m.rank >= 99 ? "—" : m.rank + 1) + "</td></tr>"; }).join("") + "</tbody></table>"
       : "<p class='dim' style='margin:0'>Nothing counted yet: talk to AutoFaber or run a mission.</p>";
+  },
+  async health(days) {
+    Keys.days = days || Keys.days || 7; document.querySelectorAll("[data-rh]").forEach((x) => { x.setAttribute("aria-pressed", String(+x.dataset.rh === Keys.days)); x.onclick = () => Keys.health(+x.dataset.rh); });
+    const j = await api("/replies?days=" + Keys.days).catch(() => ({})), a = j.all;
+    if (!a || !a.n) { $("k-health").innerHTML = "<p class='dim' style='margin:0'>No replies counted in this period yet.</p>"; return; }
+    const s = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + " s"), r = (k, n) => (k ? k + " <span class='dim'>(" + (k / n * 100).toFixed(k / n < 0.01 ? 1 : 0) + "%)</span>" : "0");
+    const head = "<p class='sm' style='margin:0 0 8px'>" + a.n + " replies" + (j.visitors && j.visitors.n ? " (" + j.visitors.n + " from visitors)" : "") + " · first word " + s(a.ttft50) + " typically, " + s(a.ttft90) + " for the slowest tenth · whole reply " + s(a.ms50) + " · lookups before the model " + s(a.prep50) +
+      " · looped " + r(a.loop, a.n) + " · time cap " + r(a.time, a.n) + " · empty " + r(a.empty, a.n) + " · failed " + r(a.failed, a.n) + "</p>";
+    const rows = j.models.slice(0, 20).map((m) => "<tr><td>" + esc(m.model.split("/").pop()) + "</td><td>" + m.n + "</td><td>" + s(m.ttft50) + " / " + s(m.ttft90) + "</td><td>" + s(m.ms50) + "</td><td class='" + (m.loop ? "bad" : "") + "'>" + r(m.loop, m.n) + "</td><td class='" + (m.time ? "bad" : "") + "'>" + r(m.time, m.n) + "</td><td>" + r(m.length, m.n) + "</td><td class='" + (m.empty ? "bad" : "") + "'>" + r(m.empty, m.n) + "</td><td class='" + (m.failed ? "bad" : "") + "'>" + r(m.failed, m.n) + "</td></tr>").join("");
+    const what = (p) => p.err ? "failed: " + p.err : p.cut === "loop" ? "stopped: looping" : p.cut === "time" ? "stopped: time cap" : "empty: another answer stood in";
+    const probs = (j.problems || []).map((p) => "<li><span class='dim'>" + new Date(p.ts).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + "</span> " + esc(p.model.split("/").pop()) + " · " + esc(p.who) + " · " + esc(what(p)) + "</li>").join("");
+    $("k-health").innerHTML = head + "<table><thead><tr><th>Model</th><th>Replies</th><th>First word (typical / slow)</th><th>Whole</th><th>Looped</th><th>Time cap</th><th>Token cap</th><th>Empty</th><th>Failed</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      (probs ? "<h4 class='sm' style='margin:12px 0 4px'>Recent problems</h4><ul class='sm' style='margin:0;padding-left:18px'>" + probs + "</ul>" : "<p class='dim sm' style='margin:10px 0 0'>No looped, capped, empty or failed replies in this period.</p>");
   },
   draw(keys) {
     Keys.keys = keys; $("kcount").textContent = keys.length + " key" + (keys.length === 1 ? "" : "s");
