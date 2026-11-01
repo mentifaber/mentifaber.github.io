@@ -105,7 +105,7 @@ export function genesisTables(q) {
   try { q.exec("ALTER TABLE idea ADD COLUMN by_ TEXT"); } catch (e) {} try { q.exec("ALTER TABLE idea ADD COLUMN done_ts INTEGER"); } catch (e) {}
   worldTables(q);
 }
-const ALERT_CATS = { air: "Air emergencies (7500 / 7700)", quakes: "Earthquakes (M6+, or near you)", space: "Space weather (G/R/S 3+, X flares)", hazards: "Tsunami warnings and red disaster alerts", world: "Great-power friction well above normal", markets: "Big moves in your watchlist", work: "AutoFaber's own missions" };
+const ALERT_CATS = { air: "Air emergencies (7500 / 7700)", quakes: "Earthquakes (M6+, or near you)", space: "Space weather (G/R/S 3+, X flares)", hazards: "Tsunami warnings and red disaster alerts", world: "Great-power friction well above normal", markets: "Big moves in your watchlist", work: "AutoFaber's own missions", tasks: "Your scheduled tasks, when each has run" };
 const PREFS0 = { cats: { air: true, quakes: true, space: true, hazards: true, world: true, markets: true, work: true }, level: "all", quiet: { on: true, from: 23, to: 7 }, tz: 0 }, RATE = 6; // RATE: non-critical alerts an hour
 const ago = (t) => { if (!t) return "never"; const m = (Date.now() - t) / 60e3; return m < 2 ? "just now" : m < 120 ? Math.round(m) + " min ago" : m < 2880 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
 // "test the systems", "run a health check", "is everything working?": Genesis runs the real checks and hands Genesis the results

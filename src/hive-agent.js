@@ -12,6 +12,7 @@ export const TOOLS = {
   hf: ["search the Hugging Face Hub for datasets and AI models", "keywords"],
   rows: ["read actual rows from a Hugging Face dataset, optionally searching inside it", "owner/dataset, then optional words to search for, separated by |"],
   weather: ["current weather and forecast for a place", "town or city"],
+  schedule: ["set up a scheduled task: something that runs by itself at a set time and sends him the result (a morning brief, a weekly digest, a recurring check). ONLY when he explicitly asks for something to happen regularly or at a set time (every morning, each Friday, daily at 7), never for a one-off question", "how often (day, weekday, hour, or week:monday…week:sunday) | the time as HH:MM, 24-hour, his time | depth (chat, web or research) | the instruction to run each time, written to stand on its own", true],
   quotes: ["live prices for stocks, crypto, indices or currencies", "tickers or names, comma-separated"],
   vigil: ["the owner's live board: aircraft and emergency squawks, earthquakes, space weather, conflict, alerts, volcanoes, launches, the ISS, markets", "topics, comma-separated: air, quakes, space, conflict, alerts, volcanoes, launches, iss, markets, summary", true],
   world: ["AutoFaber's own hourly record of world conflict and great-power tension, with trends over days", "", true],
@@ -69,6 +70,7 @@ export function parseCalls(out, owner, made) {
     if (TOOLS[tool][1] && !arg) continue; // a tool that needs an argument didn't get one
     if (tool === "read" && !/^https?:\/\/\S+\.\S+/.test(arg)) continue;
     if (tool === "build" && calls.some((x) => x.tool === "build")) continue; // one mission per message
+    if (tool === "schedule" && (calls.some((x) => x.tool === "schedule") || arg.split("|").length < 4)) continue; // one task per message, fully specified
     seen.add(key); calls.push({ tool, arg }); if (calls.length >= 4) break;
   }
   return calls;

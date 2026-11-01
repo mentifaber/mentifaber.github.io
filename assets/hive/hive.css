@@ -837,3 +837,30 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
 .cdata { margin-top: 6px; font-size: 12px; } .cdata summary { cursor: pointer; color: var(--dim); }
 .vwidget { margin: 12px 0; } .vwidget iframe { width: 100%; height: 220px; border: 1px solid var(--line2); border-radius: 6px; background: #fff; display: block; } .vwidget small { display: block; margin-top: 4px; font-size: 11px; }
 .pyrun { border-top: 1px solid var(--line2); } .pyrun iframe { width: 100%; height: 240px; border: 0; display: block; resize: vertical; background: #0d0f12; } .pyrun header { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 11px; color: var(--dim); }
+
+/* skills (settings) */
+.sklist { display: grid; gap: 8px; margin: 8px 0 12px; } .sk { border: 1px solid var(--line2); border-radius: 6px; padding: 8px 10px; } .sk b { font-family: var(--code); font-weight: 500; } .sk p { margin: 4px 0 6px; }
+.skform { display: grid; gap: 8px; } .skform label { display: grid; gap: 4px; font-size: 13px; } .skform label.chk { display: inline-flex; gap: 6px; align-items: center; margin-right: 14px; } .skform textarea, .skform input:not([type]) { width: 100%; box-sizing: border-box; }
+
+/* follow-ups: the next questions, under the newest answer */
+.fups { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; } .fups button { font: inherit; font-size: 13px; text-align: left; padding: 6px 10px; border: 1px solid var(--line2); border-radius: 14px; background: transparent; color: var(--ink2); cursor: pointer; }
+.fups button:hover, .fups button:focus-visible { border-color: var(--gold); color: var(--ink); } .fups button::before { content: "↳ "; color: var(--gold); }
+
+/* a private session: the composer says so */
+#composer.private { box-shadow: inset 0 0 0 1px var(--m-lapis); } #privchat[aria-pressed="true"] { color: var(--m-lapis); }
+
+/* downloads menu under an answer */
+.dlm { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; } .dlm button { font: inherit; font-size: 12px; padding: 5px 10px; border: 1px solid var(--line2); border-radius: 4px; background: var(--bed2); color: var(--ink2); cursor: pointer; } .dlm button:hover { color: var(--ink); border-color: var(--gold); }
+
+/* Mind → Tasks */
+.tkform { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; } .tkform label { display: grid; gap: 4px; font-size: 13px; } .tkform .wide { grid-column: 1 / -1; } .tkform textarea { width: 100%; box-sizing: border-box; }
+.tktpl { gap: 6px; flex-wrap: wrap; margin-top: 8px; } .tk { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; } .tk.off { opacity: .6; } .tk p { margin: 4px 0; }
+.tkr { border-top: 1px solid var(--line); padding: 8px 0; } .tkr summary { cursor: pointer; } .tkr.new summary b::after { content: " · new"; color: var(--gold); font-weight: 500; } .tkr .b { margin: 8px 0; }
+.tkform select, .tkform input { width: 100%; min-width: 0; box-sizing: border-box; } .tkform label { min-width: 0; }
+@media (max-width: 560px) { .tk { grid-template-columns: 1fr; } .tkform { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 420px) { .tkform { grid-template-columns: 1fr; } }
+
+/* fact check under an answer */
+.fc { margin: 10px 0 4px; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 6px; font-size: 13px; } .fc ul { margin: 8px 0 0; padding-left: 0; list-style: none; display: grid; gap: 6px; } .fc a { margin-left: 4px; }
+.fcsum { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; } .fc .v { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .04em; }
+.fc .v.supported { color: var(--ok); } .fc .v.contradicted { color: var(--bad); } .fc .v.unclear { color: var(--warn); } .acts .chk { font-size: 12px; }

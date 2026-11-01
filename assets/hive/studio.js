@@ -33,7 +33,7 @@ async function loadModels() {
   if (j.resting) { const t = new Date(j.resting).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); models.forEach((m) => { if (m.id.startsWith("workers-ai|")) m.group = "Cloudflare Workers AI (free) · resting until " + t; }); }
   const sel = $("model"), groups = {}; for (const m of models) (groups[m.group] = groups[m.group] || []).push(m);
   sel.innerHTML = Object.entries(groups).map(([g, ms]) => "<optgroup label='" + esc(g) + "'>" + ms.map((m) => "<option value='" + esc(m.id) + "'>" + esc(m.name) + "</option>").join("") + "</optgroup>").join("") || "<option value=''>No models available</option>";
-  const want = (chat && chat.model) || LS.get("model", ""); if (models.some((m) => m.id === want)) sel.value = want; else { const d = models.find((m) => /gpt-oss-120b/.test(m.id)) || models[0]; if (d) sel.value = d.id; }
+  const want = (chat && chat.model) || LS.get("model", ""); if (models.some((m) => m.id === want)) sel.value = want; else { const d = models.find((m) => m.id === "auto|best") || models.find((m) => /gpt-oss-120b/.test(m.id)) || models[0]; if (d) sel.value = d.id; }
   if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so AutoFaber switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
   const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: (() => { let x = k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, ""); if (x.includes(" · ")) x = x.split(" · ").pop(); x = x.replace(/^Cloudflare /, ""); return x.charAt(0).toUpperCase() + x.slice(1); })(), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
@@ -103,9 +103,13 @@ function setMe(m) { const o = { name: String(m.name || "").trim().slice(0, 40), 
   const done = () => { LS.set("intro", 1); $("welcome").classList.add("hidden"); $("inp").focus(); };
   $("w-form").onsubmit = (e) => { e.preventDefault(); setMe({ name: $("w-name").value, about: $("w-about").value, len: (lens.find((b) => b.classList.contains("on")) || {}).dataset?.len }); done(); };
   $("w-skip").onclick = done; }
-function newChat() { if (window.Lattice) Lattice.grow(0); chat = null; $("log").innerHTML = ""; ground(true); greet(); drawHist(); tele(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
-function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); if (chat.model && models.some((m) => m.id === chat.model)) { $("model").value = chat.model; showPick(); } ground(false); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i, true)); drawHist(); tele(); if (window.Lattice) Lattice.grow(turns(), chat.id); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
-$("newchat").onclick = newChat; $("hsearch").oninput = drawHist;
+function newChat() { if (window.Lattice) Lattice.grow(0); chat = null; $("log").innerHTML = ""; ground(true); greet(); drawHist(); tele(); if (window.privMark) privMark(); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
+function openChat(id) { chat = chats.find((c) => c.id === id); if (!chat) return newChat(); privNext = false; if (window.privMark) privMark(); if (chat.model && models.some((m) => m.id === chat.model)) { $("model").value = chat.model; showPick(); } ground(false); $("log").innerHTML = ""; chat.msgs.forEach((m, i) => drawMsg(m, i, true)); drawHist(); tele(); if (window.Lattice) Lattice.grow(turns(), chat.id); if (location.hash !== "#studio") location.hash = "studio"; else route(); $("scroll").scrollTop = 0; }
+// a private session: never saved on this device, and the server keeps nothing of it in memory (Mind and Genesis stay out)
+var privNext = false; const privMark = window.privMark = () => { const on = privNext || !!(chat && chat.private); $("privchat").setAttribute("aria-pressed", String(on)); $("privchat").textContent = on ? "Private · on" : "Private"; $("composer").classList.toggle("private", on); };
+const newPrivate = () => { newChat(); privNext = true; privMark(); toast("Private session: not saved here, nothing remembered", 2600); };
+$("privchat").onclick = () => (privNext || (chat && chat.private) ? (newChat(), privNext = false, privMark()) : newPrivate());
+$("newchat").onclick = () => { privNext = false; newChat(); privMark(); }; $("hsearch").oninput = drawHist;
 function greet() {
   const ideas = [["Council", "Several minds argue it out; one merges the best", "What's the best way to learn a new programming language fast? Disagree with each other if you need to.", false, false, false, true], ["Search", "The live web, with its sources in the margin", "What are the most important AI developments this week?", true], ["Imagine", "A picture from your words", "A forge in the dark where gold filament is spun into a glowing lattice, sparks drifting up, cinematic macro photograph", false, true], ["Build", "Code a small working thing", "Write a tiny snake game in one HTML file."], ["Swarm", "Agents plan, build and review a whole project", null, false, false, false, false, true], ["Voice", "Talk with it, hands-free", null, false, false, true]];
   const tint = ["var(--m-azurite)", "var(--m-malachite)", "var(--m-rhodo)", "var(--m-citrine)", "var(--m-jasper)", "var(--m-selenite)"];
@@ -156,6 +160,14 @@ function md(src, sources, done) {
     if (V && /^widget$/i.test(lang)) return done ? V.widget(body) : "<div class='vwidget dim sm'>building the widget…</div>";
     return "<div class='pre'><header><span>" + esc(lang || "code") + "</span><span>" + (/^html?$/i.test(lang) ? "<button data-run='" + n + "'>Preview</button>" : /^(py|python3?)$/i.test(lang) && done ? "<button data-py='" + n + "'>Run</button>" : "") + "<button data-copy='" + n + "'>Copy</button></span></header>" + ((ck) => ck ? "<div class='ck " + (ck[0] ? "ok" : "bad") + "' title='Checked in your browser, not run'>" + (ck[0] ? "✓ " : "⚠ ") + esc(ck[1]) + (ck[0] ? "" : " <button data-fixck='" + n + "' data-err='" + esc(ck[1]) + "' data-lang='" + esc(lang || "code") + "'>Fix it</button>") + "</div>" : "")(done ? checkCode(lang, body) : null) + "<pre><code>" + esc(body) + "</code></pre></div>"; });
 }
+// a fact check's verdicts, under its answer
+function factHtml(c) {
+  const n = (c.claims || []).length, by = { supported: 0, contradicted: 0, unclear: 0 }; (c.claims || []).forEach((x) => by[x.verdict]++);
+  if (!n) return "<div class='fc'><b>Fact check</b> <span class='dim sm'>" + esc(c.note || "nothing in this answer could be checked") + "</span></div>";
+  return "<div class='fc'><b>Fact check</b> <span class='dim sm'>" + n + " claim" + (n === 1 ? "" : "s") + " searched; " + esc(c.by || "a second model") + " weighed them against what was found (support, not proof)</span>" +
+    "<div class='fcsum'><span class='v supported'>" + by.supported + " supported</span><span class='v contradicted'>" + by.contradicted + " contradicted</span><span class='v unclear'>" + by.unclear + " unclear</span></div><ul>" +
+    c.claims.map((x) => "<li><span class='v " + x.verdict + "'>" + x.verdict + "</span> " + esc(x.claim) + (x.note ? "<small class='dim'> · " + esc(x.note) + "</small>" : "") + (x.source && x.source.url ? " <a href='" + esc(safeUrl(x.source.url)) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.source.title) + "</a>" : "") + "</li>").join("") + "</ul></div>";
+}
 // files attached earlier in this chat (their text rides in the message as "name:\n```\n…\n```"), for code run here
 const chatFiles = () => { const out = []; for (const m of (chat && chat.msgs) || []) for (const name of m.files || []) { const at = String(m.text || "").indexOf("\n\n" + name + ":\n```\n"); if (at < 0) continue; const from = at + name.length + 7, to = m.text.indexOf("\n```", from); if (to > from && !out.some((f) => f.name === name)) out.push({ name: name.replace(/[^\w.-]/g, "_"), lang: "txt", code: m.text.slice(from, to) }); } return out; };
 const codeOf = (el, n) => { const m = chat && chat.msgs[+el.closest(".m").dataset.i]; const all = []; String(m && m.text || "").replace(/```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g, (_, l, b) => all.push(b.replace(/\n$/, ""))); return all[n] || ""; };
@@ -177,7 +189,7 @@ function drawMsg(m, i, quiet) {
   const ex = layerOf(i), bed = ex.querySelector(".bed"), d = document.createElement("div"); d.className = "m " + (m.role === "user" ? "user" : "ai"); d.dataset.i = i;
   if (!quiet && m.role === "user") { ex.classList.add("fresh"); }
   if (m.role === "user") { const t = m.show || m.text || ""; if (t.length > 320 || t.split("\n").length > 6) d.classList.add("long");
-    d.innerHTML = (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.files && m.files.length ? "<div class='tools'>" + m.files.map((f) => "<span>" + esc(f) + "</span>").join("") + "</div>" : "") + (t ? "<div class='b'>" + esc(t) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and send again'>Edit</button><button data-uact='copy' title='Copy'>Copy</button></div>"; }
+    d.innerHTML = (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.skill ? "<div class='tools'><span title='A saved skill'>skill · " + esc(m.skill) + "</span></div>" : "") + (m.files && m.files.length ? "<div class='tools'>" + m.files.map((f) => "<span>" + esc(f) + "</span>").join("") + "</div>" : "") + (t ? "<div class='b'>" + esc(t) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and send again'>Edit</button><button data-uact='copy' title='Copy'>Copy</button></div>"; }
   else {
     const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "AutoFaber") + (m.council ? " · council" : "") + "</span></div>";
     const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.steps && m.steps.length || m.status ? "<div class='tools'>" + (m.steps || []).map((t) => "<span class='did'>" + esc(t) + "</span>").join("") + (m.status ? "<span class='now'>" + esc(m.status) + "</span>" : "") + "</div>" : "")
@@ -186,7 +198,9 @@ function drawMsg(m, i, quiet) {
       : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:8px'>" + esc(m.text) + "</p>" : md(m.text, m.sources, true)) + "</div>" +
         (m.drafts && m.drafts.length ? "<details class='drafts'><summary>" + m.drafts.filter((x) => x.text).length + " council drafts" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (open to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "' style='--dm:" + pollen(x.model) + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
         (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
-    d.innerHTML = body + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl'>" + SV.dl + "</button>" : m.error ? "" : "<button data-act='copy'>" + SV.copy + "</button><button data-act='say' title='Read it aloud'>" + SV.say + "</button>") + (m.cut && !m.error ? "<button data-act='more' class='more' title='Pick up exactly where it stopped'>Continue</button>" : "") + "<button data-act='redo' title='Ask again'>" + SV.redo + "</button>" + (m.image || m.error ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + (m.ttft ? "first word " + (m.ttft / 1000).toFixed(2) + "s · " : "") + (m.ms ? (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>");
+    d.innerHTML = body + (m.pending ? "" : "<div class='acts'>" + (m.image ? "<button data-act='dl'>" + SV.dl + "</button>" : m.error ? "" : "<button data-act='copy'>" + SV.copy + "</button><button data-act='say' title='Read it aloud'>" + SV.say + "</button><button data-act='dlm' title='Download as a document, slides, a spreadsheet or Markdown' aria-expanded='false'>" + SV.dl + "</button><button data-act='check' class='chk' title='Fact check: search each claim and see which ones the sources support'" + (m.checking ? " disabled" : "") + ">" + (m.checking ? "Checking…" : m.check ? "Checked" : "Check") + "</button>") + (m.cut && !m.error ? "<button data-act='more' class='more' title='Pick up exactly where it stopped'>Continue</button>" : "") + "<button data-act='redo' title='Ask again'>" + SV.redo + "</button>" + (m.image || m.error ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + (m.ttft ? "first word " + (m.ttft / 1000).toFixed(2) + "s · " : "") + (m.ms ? (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>");
+    if (m.check && !m.pending) d.insertAdjacentHTML("beforeend", factHtml(m.check));
+    if (m.followups && !m.pending && chat && i === chat.msgs.length - 1) document.querySelectorAll("#log .fups").forEach((x) => x.remove()), d.insertAdjacentHTML("beforeend", "<div class='fups' aria-label='Ask next'>" + m.followups.map((q) => "<button data-fu='" + esc(q) + "'>" + esc(q) + "</button>").join("") + "</div>");
     // the strip: the mind's mineral; dashed when it searched, fine lines for a picture, banded by every member of a council
     ex.style.setProperty("--m", pollen(mid)); ex.classList.toggle("pending", !!m.pending); ex.classList.toggle("failed", !!m.error); ex.classList.toggle("img", !!m.image || (m.pending && /paint/.test(m.status || "")));
     const u = chat.msgs[+ex.dataset.x]; ex.classList.toggle("web", !!(u && u.web)); ex.classList.toggle("council", !!m.council);
@@ -198,6 +212,9 @@ function drawMsg(m, i, quiet) {
 const scrollEnd = (now) => { if (now) $("scroll").scrollTo({ top: 0, behavior: "smooth" }); }; // the newest layer is just under the surface: nothing to chase
 const unlayer = (k) => { $("log").querySelectorAll(".m").forEach((n) => +n.dataset.i >= k && n.remove()); $("log").querySelectorAll(".ex").forEach((x) => !x.querySelector(".m") && x.remove()); };
 $("log").onclick = async (e) => {
+  const ex = e.target.closest("[data-exp]");
+  if (ex && chat) { const box = ex.closest(".m"), m = chat.msgs[+box.dataset.i], u = chat.msgs[+box.dataset.i - 1]; HiveExport.save(ex.dataset.exp, box.querySelector(".b") || box, m.text || "", (u && (u.show || u.text) || chat.title || "AutoFaber").split("\n")[0].slice(0, 80)); ex.parentNode.remove(); return; }
+  const fu = e.target.closest("[data-fu]"); if (fu) { if (busy) return toast("Wait for the reply to finish"); return send(fu.dataset.fu); } // a suggested next question
   const c = e.target.closest("[data-copy]"), r = e.target.closest("[data-run]"), a = e.target.closest("[data-act]");
   if (c) { navigator.clipboard.writeText(codeOf(c, +c.dataset.copy)).then(() => { c.textContent = "Copied"; setTimeout(() => (c.textContent = "Copy"), 1400); }); return; }
   const fk = e.target.closest("[data-fixck]"); // a block that failed its check: ask for it corrected, in full
@@ -216,6 +233,11 @@ $("log").onclick = async (e) => {
   if (!a || !chat) return; const i = +a.closest(".m").dataset.i, m = chat.msgs[i];
   if (a.dataset.act === "copy") { navigator.clipboard.writeText(m.text || ""); toast("Copied"); }
   if (a.dataset.act === "say") Voice.say(plain(m.text));
+  if (a.dataset.act === "check") { if (m.checking) return; const u = chat.msgs[i - 1]; m.checking = true; drawMsg(m, i); // fact check (src/hive-check.js)
+    const j = await api("/factcheck", { text: m.text, question: u && (u.show || u.text), writer: m.model }).catch(() => ({ error: "couldn't reach AutoFaber" }));
+    delete m.checking; if (j.error) { toast(j.error, 4000); drawMsg(m, i); return; } m.check = j; save(); drawMsg(m, i); return; }
+  if (a.dataset.act === "dlm") { const box = a.closest(".m"), open = box.querySelector(".dlm"); a.setAttribute("aria-expanded", String(!open)); if (open) return open.remove(); // downloads (assets/hive/export.js)
+    const hasT = HiveExport.tables(m.text).length; a.closest(".acts").insertAdjacentHTML("afterend", "<div class='dlm' role='menu'><button data-exp='doc' role='menuitem'>Document (.doc)</button><button data-exp='slides' role='menuitem'>Slides (.html)</button>" + (hasT ? "<button data-exp='csv' role='menuitem'>Table" + (hasT > 1 ? "s" : "") + " (.csv)</button>" : "") + "<button data-exp='md' role='menuitem'>Markdown (.md)</button></div>"); return; }
   if (a.dataset.act === "dl") { const x = document.createElement("a"); x.href = m.image; x.download = "hive-" + Date.now() + ".jpg"; x.click(); }
   if (a.dataset.act === "swarm") { const u = chat.msgs[i - 1], brief = ((u && u.text) || "") + "\n\nWhat we worked out so far:\n" + String(m.text || "").slice(0, 4000);
     if (!confirm("Release the swarm on this? It splits the work into tasks and builds it.")) return; const j = await api("/new", { brief }); if (j.error) return toast(j.error, 4000);
@@ -293,9 +315,11 @@ function resume(t) {
 }
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
+  let skill = null; // a saved skill called by its /name: its instructions ride with this message, with the modes it needs
   const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /research /council /imagine /swarm /model /new /keep /teach /remember
   if (sl) { const [, c, rest] = sl;
-    if (c === "new") { inp.value = ""; return newChat(); }
+    if (c === "new") { inp.value = ""; privNext = false; newChat(); return privMark(); }
+    if (c === "private") { inp.value = ""; newPrivate(); if (!rest) return; text = rest; }
     if (c === "me" || c === "mind") { inp.value = ""; grow(); location.hash = "mind"; return; }
     if (c === "teach" && rest) { inp.value = ""; grow(); return api("/genesis/teach", { text: rest }).then((j) => toast(j.error || (gname || "AutoFaber") + " learned it", 3000)); }
     if (c === "keep" && rest) { inp.value = ""; grow(); const r = rest.trim(), isUrl = /^https?:\/\/\S+$/.test(r); toast("Keeping it in your library…", 2000); // into the library, by link or as text
@@ -303,16 +327,20 @@ function send(text, opts) {
     if (c === "remember" && rest) { inp.value = ""; grow(); return api("/mind/remember", { text: rest }).then((j) => toast(j.error || "Remembered", 2500)); }
     if (c === "model") { const q = rest.toLowerCase(), m = models.find((x) => x.name.toLowerCase() === q) || models.find((x) => (x.name + " " + x.group).toLowerCase().includes(q)); inp.value = ""; grow(); if (!m) return toast("No model matches “" + rest + "”"); $("model").value = m.id; $("model").onchange(); return toast("Model: " + m.name); }
     if (c === "swarm") { inp.value = ""; grow(); if (!rest) { location.hash = "swarm"; return; } return api("/new", { brief: rest }).then((j) => { if (j.error) return toast(j.error, 4000); try { const mm = JSON.parse(localStorage.getItem("hive-mine") || "{}"); mm[j.id] = j.ctok; localStorage.setItem("hive-mine", JSON.stringify(mm)); } catch (x) {} history.replaceState(null, "", "/hive-app?p=" + j.id + "#swarm"); route(); }); }
+    const sk = Skills.get(c);
+    if (sk) { if (!rest && !att.length) { inp.value = "/" + c + " "; grow(); inp.focus(); return toast(sk.title + ": now say what to do it on"); }
+      skill = sk; setTog("web", sk.modes.web); setTog("deep", sk.modes.deep); setTog("council", sk.modes.council && !sk.modes.deep); setTog("draw", false); text = rest; }
     const map = { search: "web", web: "web", council: "council", imagine: "draw", draw: "draw", research: "deep", deep: "deep" };
     if (map[c] && rest) { setTog("web", c === "search" || c === "web" ? true : on("web") && map[c] !== "draw"); setTog("council", map[c] === "council"); setTog("draw", map[c] === "draw"); setTog("deep", map[c] === "deep"); text = rest; }
   }
   if (!$("model").value && !on("draw")) return toast("No model is available right now");
-  if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now() }; chats.unshift(chat); ground(false); }
+  if (!chat) { chat = { id: Math.random().toString(36).slice(2, 10), title: (text || att.map((a) => a.name).join(", ")).slice(0, 60), model: $("model").value, msgs: [], ts: Date.now(), private: privNext || undefined }; if (!chat.private) chats.unshift(chat); privNext = false; ground(false); privMark(); }
   const files = att.filter((a) => a.kind === "file"), imgs = att.filter((a) => a.kind === "image"), vid = att.find((a) => a.kind === "video");
   const full = text + files.map((f) => "\n\n" + f.name + ":\n```\n" + f.text.slice(0, 100000) + "\n```").join("");
-  const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), research: on("deep") && !on("draw") && !on("council") || undefined, voice: !!opts.voice, ts: Date.now() };
+  const u = { role: "user", text: full, show: text, files: files.map((f) => f.name), thumbs: [...imgs, ...(vid ? [vid] : [])].map((a) => a.thumb), mode: on("draw") ? "image" : "chat", web: on("web"), council: on("council") && !on("draw"), research: on("deep") && !on("draw") && !on("council") || undefined, skill: skill ? skill.title : undefined, skillDoes: skill ? skill.does : undefined, voice: !!opts.voice, ts: Date.now() };
   u._images = opts.images || (vid ? vid.frames.map((f) => f.data) : imgs.map((a) => a.data)); u._frames = vid ? vid.frames.map((f) => f.t) : null;
   if (opts.images) { u.thumbs = opts.images.slice(); u.live = true; }
+  document.querySelectorAll("#log .fups").forEach((x) => x.remove()); // the last answer's suggestions are spent once you ask
   chat.msgs.push(u); drawMsg(u, chat.msgs.length - 1); chat.ts = Date.now();
   inp.value = ""; att = []; drawAtt(); grow(); save(); scrollEnd(true);
   return run(u.mode === "image", opts);
@@ -321,7 +349,7 @@ async function run(image, opts) {
   opts = opts || {}; const u = chat.msgs[chat.msgs.length - 1], i = chat.msgs.length, m = { role: "assistant", pending: true, status: image ? "painting…" : u.council ? "the council is drafting…" : u.research ? "planning the research…" : u.web ? "searching the web…" : (u._images && u._images.length) ? (u._frames ? "watching the video…" : "looking…") : /https?:\/\//.test(u.text) ? "reading the page…" : "" };
   chat.msgs.push(m); drawMsg(m, i); scrollEnd(true); busy = new AbortController(); busyAt = Date.now(); $("sendb").classList.add("stop"); $("sendb").disabled = false; $("sendb").textContent = "Stop";
   const t0 = Date.now(); let j; m.council = !!u.council; m.model = opts.model || $("model").value;
-  const body = { me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, research: u.research || undefined, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
+  const body = { mind: chat.private ? false : undefined, tz: TasksV.tz, me: me().name || me().about || me().len ? me() : undefined, lang: navigator.language || "en", model: opts.model || $("model").value, live: !!(opts.live || u.live) || undefined, web: u.web, research: u.research || undefined, swarm: !!u.council, voice: !!opts.voice || u.voice, frames: u._frames || undefined, system: [u.skillDoes ? "SKILL “" + u.skill + "” (the user called it for this message; follow it):\n" + u.skillDoes : "", LS.get("sys", ""), (opts.voice || u.voice) && sayAs().length ? "HOW NAMES ARE SAID (the owner taught you; your words are read aloud through this list): " + sayAs().map(([w, h]) => w + " sounds like “" + h + "”").join("; ") + ". If asked how to say one, say it that way." : ""].filter(Boolean).join("\n\n") || undefined,
     cid: chat.id, sid: Math.random().toString(36).slice(2) + Date.now().toString(36), messages: chat.msgs.slice(0, -1).filter((x) => !x.error && !x.image).map((x, k, arr) => ({ role: x.role, text: x.text, images: k === arr.length - 1 ? x._images || [] : [] })) };
   // while the answer is being prepared, show what Genesis is doing (planning, searching, reading…) as it happens
   let polls = 0; const was = m.status, watchSteps = image ? 0 : setInterval(async () => {
@@ -340,7 +368,7 @@ async function run(image, opts) {
   busy = null; $("sendb").classList.remove("stop"); $("sendb").textContent = on("draw") ? "Paint" : "Ask"; sync();
   delete m.pending; delete m.status;
   delete m.streaming;
-  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text + (j.cut && !body.voice ? (j.cut === "loop" ? "\n\n_(stopped: the model started repeating itself. Ask again, or pick another model)_" : j.cut === "time" ? "\n\n_(stopped: the reply reached the two-minute limit. Say “continue” for the rest)_" : "\n\n_(cut off at the model's length limit: say “continue” for the rest)_") : ""), cut: j.cut || undefined, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn });
+  if (j.error) m.error = j.error; else if (image) { m.image = j.image; m.text = u.text; m.model = "flux-1-schnell"; } else Object.assign(m, { text: j.text + (j.cut && !body.voice ? (j.cut === "loop" ? "\n\n_(stopped: the model started repeating itself. Ask again, or pick another model)_" : j.cut === "time" ? "\n\n_(stopped: the reply reached the two-minute limit. Say “continue” for the rest)_" : "\n\n_(cut off at the model's length limit: say “continue” for the rest)_") : ""), cut: j.cut || undefined, sources: j.sources, tools: j.tools, drafts: j.drafts, model: j.model || opts.model || $("model").value, turn: j.turn || m.turn, followups: j.followups && j.followups.length ? j.followups : undefined });
   m.ms = Date.now() - t0; lastMs = m.ms; lastTtft = m.ttft || 0; { const sp = window.HiveMetrics ? HiveMetrics.speedOf((m.text || "").length, m.ttft, m.tLast, m.chunks) : { cps: 0, burst: false }; lastCps = sp.cps; lastBurst = sp.burst; } tele();
   if (chat.msgs[i] === m) { drawMsg(m, i); scrollEnd(); } delete u._images; save();
   return m;
@@ -362,6 +390,7 @@ async function stream(body, m, i, signal) {
       const chunk = buf.slice(0, k); buf = buf.slice(k + 2); const ev = (/^event: (.*)$/m.exec(chunk) || [])[1], data = (/^data: (.*)$/m.exec(chunk) || [])[1]; if (!ev || !data) continue; let d; try { d = JSON.parse(data); } catch (e) { continue; }
       if (ev === "meta") { lastWord = Date.now(); m.tools = d.tools; m.sources = d.sources; if (d.model) m.model = d.model; if (d.turn) m.turn = out.turn = d.turn; out.sources = d.sources; out.tools = d.tools; out.model = d.model; }
       else if (ev === "delta") { lastWord = Date.now(); if (!m.ttft) { m.ttft = Date.now() - tStart; m.chunks = 0; } m.chunks++; m.tLast = Date.now() - tStart; m.text += d.t; out.text = m.text; fx("token"); if (!raf) raf = requestAnimationFrame(paint); if (body.voice && Voice.live) { Voice.feed(m.text); if (Voice.playing) Voice.set("Speaking…", plain(m.text).slice(-280)); } }
+      else if (ev === "followups") out.followups = Array.isArray(d.q) ? d.q.slice(0, 3).map(String) : [];
       else if (ev === "done") { out.tools = d.tools || out.tools; out.model = d.model || out.model; out.turn = d.turn || out.turn; out.cut = d.cut || false; }
       else if (ev === "error") { if (!m.text) return { error: d.error }; out.text = m.text + "\n\n_(" + d.error + ")_"; }
     }
@@ -373,8 +402,9 @@ async function stream(body, m, i, signal) {
 }
 // ── command palette (⌘K) ──
 const CMDS = () => [
+  ...Skills.all().map((sk) => ["/" + sk.name + " · " + sk.title, "skill", () => { inp.value = "/" + sk.name + " "; grow(); inp.focus(); }]),
   ["New session", "⇧⌘O", () => newChat()], ["Studio", "view", () => (location.hash = "studio")], ["Swarm", "view", () => (location.hash = "swarm")], ["Uplinks · keys", "view", () => (location.hash = "keys")], ["Mind · what AutoFaber knows about you", "view", () => (location.hash = "mind")], ["Analyze me", "mind", () => { location.hash = "mind"; MindV.analyze(); }],
-  ["Toggle search", "mode", () => $("web").click()], ["Toggle research", "mode · a cited report, every citation checked", () => $("deep").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
+  ["New private session", "not saved, not remembered", () => newPrivate()], ["Toggle search", "mode", () => $("web").click()], ["Toggle research", "mode · a cited report, every citation checked", () => $("deep").click()], ["Toggle council", "mode", () => $("council").click()], ["Toggle imagine", "mode", () => $("draw").click()],
   ["Voice link", "voice", () => Voice.start()], ["Export session", "markdown", () => $("export").click()], ["Settings", "voice · stone · data", () => openSettings()], ["Basalt or limestone", "light or dark", () => $("theme").click()],
   ...chats.map((c) => [c.title || "Untitled", "session · " + new Date(c.ts).toLocaleDateString([], { month: "short", day: "numeric" }), () => openChat(c.id)]),
   ...models.map((m) => [m.name, "model · " + m.group.replace(/ ••.*$/, ""), () => { $("model").value = m.id; $("model").onchange(); toast("Model: " + m.name); }]),
@@ -586,6 +616,44 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && Voice.on
 document.addEventListener("keyup", (e) => { if (e.key === " " && Voice.on && S("hands") === "0") pttUp(); });
 
 // ── settings panel ──
+// ── skills: saved ways of working (instructions plus the modes they need), called with /name; kept on this device ──
+const RESERVED = ["new", "me", "mind", "teach", "keep", "remember", "model", "swarm", "search", "web", "council", "imagine", "draw", "research", "deep"];
+const MAKE_SKILL = "Turn how I've had you work in this conversation into a reusable skill for next time: the role, format, tone, steps and checks I asked for, written as instructions to you (not a summary of what we discussed). Reply with ONLY JSON: {\"name\": \"one_or_two_words\", \"title\": \"A short title\", \"instructions\": \"…\", \"search\": false}.";
+const Skills = {
+  all() { const l = LS.get("skills", []); return Array.isArray(l) ? l.filter((x) => x && x.name && x.does) : []; },
+  get(n) { return Skills.all().find((x) => x.name === String(n || "").toLowerCase()); },
+  slug(t) { return String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24); },
+  save(x) { // null when saved, or why not
+    const name = Skills.slug(x.name || x.title), does = String(x.does || "").trim();
+    if (!name) return "give it a name"; if (RESERVED.includes(name)) return "/" + name + " is already a command: pick another name"; if (does.length < 8) return "say what the skill should do";
+    const list = Skills.all().filter((y) => y.name !== name && y.name !== x.was), m = x.modes || {};
+    list.push({ name, title: String(x.title || name.replace(/_/g, " ")).slice(0, 60), does: does.slice(0, 1500), modes: { web: !!m.web, deep: !!m.deep, council: !!m.council && !m.deep } });
+    LS.set("skills", list.slice(-40)); Skills.draw(); return null;
+  },
+  del(n) { LS.set("skills", Skills.all().filter((x) => x.name !== n)); Skills.draw(); },
+  draw() {
+    const l = Skills.all(), mode = (x) => [x.modes.web && "Search", x.modes.deep && "Research", x.modes.council && "Council"].filter(Boolean).join(" · ");
+    $("sk-list").innerHTML = l.length ? l.map((x) => "<div class='sk' data-sk='" + esc(x.name) + "'><b>/" + esc(x.name) + "</b> <span>" + esc(x.title) + "</span>" + (mode(x) ? " <small class='dim'>" + mode(x) + "</small>" : "") + "<p class='dim sm'>" + esc(x.does.slice(0, 160)) + (x.does.length > 160 ? "…" : "") + "</p><button class='ghost sm' data-skact='edit'>Edit</button><button class='ghost sm' data-skact='del'>Remove</button></div>").join("")
+      : "<p class='dim sm' style='margin:0'>None yet. Save one below, or make one from a chat that went the way you like.</p>";
+  },
+  edit(x) { $("sk-name").value = x ? x.name : ""; $("sk-name").dataset.was = x ? x.name : ""; $("sk-does").value = x ? x.does : ""; $("sk-web").checked = !!(x && x.modes.web); $("sk-deep").checked = !!(x && x.modes.deep); $("sk-council").checked = !!(x && x.modes.council); },
+  async fromChat() {
+    const say = (t) => ($("sk-msg").textContent = t), said = chat ? chat.msgs.filter((x) => !x.error && !x.image && !x.pending) : [];
+    if (!said.some((x) => x.role === "assistant")) return say("Have a conversation first, then make a skill from it");
+    say("reading this chat…"); $("sk-make").disabled = true;
+    const j = await api("/chat", { model: $("model").value, mind: false, agent: false, messages: [...said.slice(-12).map((x) => ({ role: x.role, text: String(x.text || "").slice(0, 4000) })), { role: "user", text: MAKE_SKILL }] }).catch(() => ({ error: "couldn't reach AutoFaber" }));
+    $("sk-make").disabled = false; if (j.error) return say(j.error);
+    let x = null; try { x = JSON.parse((/\{[\s\S]*\}/.exec(j.text || "") || [])[0]); } catch (e) {}
+    if (!x || !(x.instructions || x.does)) return say("That didn't come back as a skill; try again");
+    Skills.edit({ name: Skills.slug(x.name || x.title), title: x.title, does: String(x.instructions || x.does), modes: { web: !!x.search } }); $("sk-name").dataset.title = String(x.title || "").slice(0, 60);
+    say("Drafted from this chat: check it, then save"); $("sk-does").focus();
+  },
+};
+$("sk-form").onsubmit = (e) => { e.preventDefault(); const why = Skills.save({ name: $("sk-name").value, was: $("sk-name").dataset.was, title: $("sk-name").dataset.title || $("sk-name").value.trim(), does: $("sk-does").value, modes: { web: $("sk-web").checked, deep: $("sk-deep").checked, council: $("sk-council").checked } });
+  $("sk-msg").textContent = why || "Saved: call it with /" + Skills.slug($("sk-name").value); if (!why) { Skills.edit(null); delete $("sk-name").dataset.title; } };
+$("sk-make").onclick = () => Skills.fromChat();
+$("sk-list").onclick = (e) => { const b = e.target.closest("[data-skact]"); if (!b) return; const x = Skills.get(b.closest("[data-sk]").dataset.sk); if (!x) return;
+  if (b.dataset.skact === "del") { if (confirm("Remove /" + x.name + "?")) Skills.del(x.name); } else { Skills.edit(x); $("sk-name").dataset.title = x.title; $("sk-does").focus(); } };
 function openSettings() {
   $("s-theme").value = LS.get("theme", "dark") === "light" ? "light" : "dark"; $("s-motion").checked = !!S("motion"); $("s-enter").checked = !!S("enter");
   $("s-rate").value = S("rate"); $("s-rate-v").textContent = (+S("rate")).toFixed(2) + "×"; $("s-hands").value = S("hands"); $("s-sil").value = S("sil"); $("s-sil-v").textContent = (S("sil") / 1000).toFixed(1) + " s";
@@ -595,7 +663,7 @@ function openSettings() {
   add($("model").value); if (vm && vm !== "fast" && vm !== $("model").value) add(vm); cur.value = vm; if (cur.value !== vm) cur.value = "";
   $("s-vl").classList.toggle("hidden", !owner); if (owner) voiceLinks();
   $("s-name").value = me().name || ""; $("s-about").value = me().about || ""; $("s-len").value = me().len || "";
-  $("s-say").value = S("say"); $("sys").value = LS.get("sys", ""); if (!$("sdlg").open) $("sdlg").showModal();
+  $("s-say").value = S("say"); $("sys").value = LS.get("sys", ""); Skills.draw(); if (!$("sdlg").open) $("sdlg").showModal();
 }
 ["s-name", "s-about", "s-len"].forEach((id) => ($(id).onchange = () => setMe({ name: $("s-name").value, about: $("s-about").value, len: $("s-len").value })));
 $("s-intro").onclick = () => { LS.set("intro", 0); $("sdlg").close(); newChat(); };
@@ -722,7 +790,41 @@ $("agentp").onclick = async (e) => {
 // ── MIND: what Genesis knows about the owner. Tabs: You (profile, what Genesis noticed), Memory (memories, open threads),
 // Timeline (rhythm, activity), Genesis; a search across all of it ──
 const agoT = (t) => { const d = (Date.now() - t) / 60e3; return d < 1 ? "just now" : d < 60 ? Math.round(d) + " min ago" : d < 1440 ? Math.round(d / 60) + " h ago" : Math.round(d / 1440) + " d ago"; };
-const MTABS = ["you", "mem", "lib", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
+// ── Mind → Tasks: standing requests on a schedule (src/hive-tasks.js); their answers wait in the inbox ──
+const TPL = { brief: ["Morning brief", "Brief me for the day: the weather where I am, what's on Vigil's board that matters, the top news in AI and tech, and anything in my watchlist that moved. Lead with what needs my attention.", "weekday", "07:30", "web"],
+  digest: ["Weekly research digest", "A research digest on AI agents and tool use: what was published or released this week, what's actually new, and what's worth my time. Cite everything.", "week", "08:00", "research"],
+  markets: ["Markets wrap", "Wrap up the markets today: indices, rates, oil, gold, the dollar, bitcoin, and my watchlist; what moved and why, in a few lines.", "weekday", "17:15", "web"] };
+const TasksV = {
+  tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; } })(),
+  async load() {
+    const j = await api("/tasks").catch(() => ({ error: "offline" })); if (j.error) return;
+    TasksV.j = j; $("tk-tz").textContent = "(" + TasksV.tz.split("/").pop().replace(/_/g, " ") + " time)";
+    $("tk-badge").textContent = j.unseen || ""; $("tk-badge").classList.toggle("hidden", !j.unseen);
+    const at = (t) => (t ? new Date(t).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "—"), mode = { chat: "an answer", web: "with search", research: "Deep Research" };
+    $("tk-list").innerHTML = j.tasks.length ? j.tasks.map((t) => "<div class='mi tk" + (t.on ? "" : " off") + "' data-tk='" + t.id + "'><div><b>" + esc(t.title) + "</b> <small class='dim'>" + esc(t.when) + " · " + mode[t.mode] + "</small><p class='dim sm'>" + esc(t.prompt.slice(0, 180)) + "</p><small class='dim'>" + (t.on ? "next " + at(t.next) : "paused") + (t.last ? " · last ran " + at(t.last) : "") + "</small></div>" +
+      "<div class='row'><button class='sw' role='switch' aria-checked='" + t.on + "' data-tka='toggle' title='On / off'></button><button class='ghost sm' data-tka='run'>Run now</button><button class='ghost sm' data-tka='del'>Remove</button></div></div>").join("")
+      : "<p class='dim sm' style='margin:0'>No tasks yet. Start from one of the templates above, or write your own.</p>";
+    $("tk-inbox").innerHTML = j.inbox.length ? j.inbox.map((r) => "<details class='tkr" + (r.seen ? "" : " new") + "' data-run='" + r.id + "'><summary><b>" + (r.ok ? "" : "⚠ ") + esc(r.title || "A removed task") + "</b> <small class='dim'>" + at(r.ts) + " · " + esc(String(r.model || "").split("|").pop().split("/").pop()) + " · " + Math.round(r.ms / 1000) + " s</small></summary>" +
+      (r.tools && r.tools.length ? "<div class='tools'>" + r.tools.map((x) => "<span>" + esc(x) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + md(r.text, [], true) + "</div><div class='row'><button class='ghost sm' data-tkopen='" + r.id + "'>Open as a chat</button></div></details>").join("")
+      : "<p class='dim sm' style='margin:0'>Results land here when a task runs.</p>";
+  },
+};
+$("tk-every").onchange = () => $("tk-dowl").classList.toggle("hidden", $("tk-every").value !== "week");
+document.querySelectorAll("[data-tpl]").forEach((b) => (b.onclick = () => { const [t, p, e, a, m] = TPL[b.dataset.tpl]; $("tk-title").value = t; $("tk-prompt").value = p; $("tk-every").value = e; $("tk-at").value = a; $("tk-mode").value = m; $("tk-every").onchange(); $("tk-prompt").focus(); }));
+$("tk-form").onsubmit = async (e) => { e.preventDefault(); $("tk-msg").textContent = "adding…";
+  const j = await api("/tasks/add", { prompt: $("tk-prompt").value, title: $("tk-title").value, every: $("tk-every").value, dow: +$("tk-dow").value, at: $("tk-at").value || "07:30", tz: TasksV.tz, mode: $("tk-mode").value, model: $("model").value || undefined });
+  if (j.error) { $("tk-msg").textContent = j.error; return; } $("tk-msg").textContent = "Added: " + j.task.when + ". First run " + new Date(j.task.next).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) + ".";
+  $("tk-prompt").value = ""; $("tk-title").value = ""; TasksV.load(); };
+$("tk-list").onclick = async (e) => { const b = e.target.closest("[data-tka]"); if (!b) return; const id = +b.closest("[data-tk]").dataset.tk, k = b.dataset.tka;
+  if (k === "del" && !confirm("Remove this task and its results?")) return;
+  if (k === "run") { b.disabled = true; b.textContent = "running…"; }
+  const j = await api("/tasks/" + k, { id }); if (j.error) toast(j.error); else if (k === "run") toast(j.ok ? "Done: it's in the inbox" : "It ran, but couldn't finish: see the inbox", 3000); TasksV.load(); };
+$("tk-inbox").addEventListener("toggle", (e) => { const d = e.target; if (d.open && d.classList.contains("new")) { d.classList.remove("new"); api("/tasks/seen", { run: +d.dataset.run }); // only the badge changes: reloading would close what you just opened
+    const n = Math.max(0, (TasksV.j.unseen || 1) - 1); TasksV.j.unseen = n; $("tk-badge").textContent = n || ""; $("tk-badge").classList.toggle("hidden", !n); } }, true);
+$("tk-inbox").onclick = (e) => { const b = e.target.closest("[data-tkopen]"); if (!b) return; const r = TasksV.j.inbox.find((x) => x.id === +b.dataset.tkopen), t = TasksV.j.tasks.find((x) => x.id === r.job);
+  chat = { id: Math.random().toString(36).slice(2, 10), title: (r.title || "Task") + " · " + new Date(r.ts).toLocaleDateString(), model: $("model").value, ts: Date.now(), msgs: [{ role: "user", text: t ? t.prompt : r.title || "", ts: r.ts }, { role: "assistant", text: r.text, model: r.model, tools: r.tools, ts: r.ts }] };
+  chats.unshift(chat); save(); location.hash = "studio"; openChat(chat.id); };
+const MTABS = ["you", "mem", "lib", "tasks", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
 // ── the library: documents Genesis keeps (src/hive-library.js) ──
 const LIBJS = { pdf: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", pdfw: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js", docx: "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" };
 const loadJS = (src) => new Promise((ok, no) => { if (document.querySelector("script[src='" + src + "']")) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the reader for this file")); document.head.appendChild(s); });
@@ -763,7 +865,7 @@ const MindV = {
     const h = location.hash.split("/")[1], sub = ({ genesis: "gen", memory: "mem", timeline: "time", library: "lib" })[h] || h; if (MTABS.includes(sub)) MindV.tab = sub; // "#mind/genesis" (the alerts' link) works too
     const j = await api("/mind?tz=" + -new Date().getTimezoneOffset());
     $("m-locked").classList.toggle("hidden", !j.error); $("m-open").classList.toggle("hidden", !!j.error); $("m-q").classList.toggle("hidden", !!j.error); if (j.error) return;
-    MindV.j = j; MindV.show(MindV.tab); GenV.load(); LibV.load(); MindV.you(j); MindV.mem(j); MindV.time(j);
+    MindV.j = j; MindV.show(MindV.tab); GenV.load(); LibV.load(); TasksV.load(); MindV.you(j); MindV.mem(j); MindV.time(j);
   },
   you(j) {
     const st = j.stats || {}, k = st.kinds || {}, hrs = Array(24).fill(0); (st.grid || []).forEach((row) => row.forEach((n, h) => { hrs[h] += n; }));

@@ -1,0 +1,41 @@
+// Skills in Chromium: save one (instructions plus the modes it needs), call it with /name, find it in ⌘K, and have
+// AutoFaber draft one from a chat.   node skills-ui.mjs <repo> desktop|mobile
+import { createRequire } from "node:module"; import assert from "node:assert/strict";
+const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
+const DEV = process.argv[3] || "desktop";
+globalThis.fetch = async (u) => { throw new Error("offline: " + u); };
+const H = await import("../gtest/harness.mjs"); H.hive.sql(); const { calls } = H;
+H.setResponder((sys, user) => /You plan web research/.test(sys) ? '{"queries":["q"]}' : /You check claims/.test(sys) ? '{"v":["S"]}' : /You decide which tools/.test(sys) ? '{"calls":[]}' :
+  /Turn how I've had you work/.test(user) ? 'Here: {"name": "exec brief", "title": "Executive brief", "instructions": "Answer in five bullets for a busy executive, then list risks.", "search": true}' : "Done.");
+const b = await chromium.launch({ args: ["--no-proxy-server"] });
+const ctx = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" });
+const bodies = []; ctx.on("request", (r) => { if (/\/api\/hive\/chat$/.test(r.url())) bodies.push(JSON.parse(r.postData() || "{}")); });
+await ctx.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: req.postData() || undefined }));
+  const h = {}; res.headers.forEach((v, k) => (h[k] = v)); return route.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) }); });
+await ctx.route(/\/api\/(?!hive)/, (rt) => rt.fulfill({ contentType: "application/json", body: "{}" }));
+await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
+const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => { if (!/Service worker is disabled/.test(e.message)) errs.push(e.message); }); p.on("dialog", (d) => d.accept());
+const ok = (m) => console.log("ok", DEV, m);
+await p.goto("http://localhost:8099/hive-app.html#studio"); await p.waitForTimeout(900);
+await p.click("#settings"); await p.waitForSelector("#sdlg[open]");
+assert.match(await p.textContent("#sk-list"), /None yet/);
+await p.fill("#sk-name", "search"); await p.fill("#sk-does", "Anything at all here"); await p.click("#sk-form [type=submit]"); assert.match(await p.textContent("#sk-msg"), /already a command/);
+await p.fill("#sk-name", "Tide Brief"); await p.fill("#sk-does", "Explain it for a sailor: one paragraph, then the three numbers that matter."); await p.check("#sk-deep"); await p.click("#sk-form [type=submit]");
+assert.match(await p.textContent("#sk-msg"), /Saved: call it with \/tide_brief/); assert.match(await p.textContent("#sk-list"), /\/tide_brief[\s\S]*Research/);
+ok("a skill is saved with its instructions and modes; a name that's already a command is refused");
+await p.click("#ssave");
+await p.fill("#inp", "/tide_brief spring tides at Brest"); await p.click("#sendb");
+await p.waitForSelector(".ex:not(.pending) .m.ai .b", { timeout: 15000 });
+const sent = bodies.at(-1); assert.equal(sent.research, true); assert.match(sent.system, /^SKILL “Tide Brief” \(the user called it for this message; follow it\):\nExplain it for a sailor/);
+assert.equal(sent.messages.at(-1).text, "spring tides at Brest"); assert.match(await p.textContent(".m.user .tools"), /skill · Tide Brief/);
+ok("/tide_brief sends its instructions with the message, switches on Research, and the message shows the skill");
+await p.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k"); await p.fill("#cq", "tide"); assert.match(await p.textContent("#clist"), /\/tide_brief · Tide Brief/); await p.keyboard.press("Escape");
+ok("the skill is in the command palette");
+await p.click("#settings"); await p.waitForSelector("#sdlg[open]"); await p.click("#sk-make");
+await p.waitForFunction(() => /Drafted from this chat/.test(document.getElementById("sk-msg").textContent), null, { timeout: 15000 });
+assert.equal(await p.inputValue("#sk-name"), "exec_brief"); assert.match(await p.inputValue("#sk-does"), /five bullets for a busy executive/); assert.equal(await p.isChecked("#sk-web"), true);
+assert.ok(calls.some((c) => /Turn how I've had you work/.test(c.user)), "the chat was read to draft it");
+await p.click("#sk-form [type=submit]"); assert.match(await p.textContent("#sk-list"), /\/exec_brief[\s\S]*Executive brief[\s\S]*Search/);
+ok("Make one from this chat: AutoFaber drafts a skill from the conversation, to check and save");
+const wide = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth); assert.ok(wide <= 1, "sideways scroll " + wide);
+assert.deepEqual(errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);

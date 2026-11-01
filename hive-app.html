@@ -51,6 +51,7 @@
             <span class="flex"></span>
             <span class="tele" id="tele"></span>
             <button class="q" id="newchat" title="A new session (⇧⌘O)">New</button>
+            <button class="q" id="privchat" aria-pressed="false" title="A private session: not saved on this device, and nothing goes into AutoFaber's memory">Private</button>
             <button class="q" id="export" title="This session, as Markdown">Export</button>
           </div>
           <div id="att"></div>
@@ -191,7 +192,7 @@
     <div id="m-locked" class="bd core hidden"><div class="rail"><span>sealed</span></div><div class="bc"><h3>The mind is sealed</h3><p class="dim">AutoFaber's memory of you is the owner's alone. Sign in on <a href="/vigil-app">Vigil</a>, then come back.</p></div></div>
     <div id="m-open" class="hidden">
       <div class="ptabs core mhead"><div class="rail"><span>read</span></div><div class="tabrow">
-        <nav class="mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="lib" role="tab">Library</button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">AutoFaber</button></nav>
+        <nav class="mtabs" id="mtabs" role="tablist" aria-label="Mind sections"><button data-mt="you" class="on" role="tab">You<i class="badge hidden" id="m-badge" title="Waiting for your yes"></i></button><button data-mt="mem" role="tab">Memory</button><button data-mt="lib" role="tab">Library</button><button data-mt="tasks" role="tab">Tasks<i class="badge hidden" id="tk-badge" title="Results you haven't read"></i></button><button data-mt="time" role="tab">Timeline</button><button data-mt="gen" role="tab">AutoFaber</button></nav>
         <span class="flex"></span><input id="m-q" class="msearch hidden" type="search" placeholder="Search everything AutoFaber knows…" aria-label="Search the mind"></div></div>
       <div id="m-results" class="hidden"></div>
       <div id="mt-you" class="mtp">
@@ -232,6 +233,20 @@
           <div id="l-hits" class="mlist mt hidden"></div>
           <div id="l-docs" class="mlist mt"></div><p class="dim sm mt" id="l-used"></p>
         </div></div>
+      </div>
+      <div id="mt-tasks" class="mtp hidden">
+        <div class="bd core"><div class="rail"><span>new task</span></div><div class="bc"><h3>Have it done for you, on a schedule</h3>
+          <p class="dim sm">A standing request that runs by itself: a morning brief, a weekly research digest, a check on something you're watching. Each run uses everything a chat does (search, Deep Research with its evidence check, Vigil's board, the weather), the answer waits here, and your phone gets a push.</p>
+          <div class="row tktpl" aria-label="Start from"><button class="q sm" data-tpl="brief">Morning brief</button><button class="q sm" data-tpl="digest">Weekly research digest</button><button class="q sm" data-tpl="markets">Markets wrap</button></div>
+          <form id="tk-form" class="tkform"><label class="wide">What should it do?<textarea id="tk-prompt" rows="3" maxlength="2000" placeholder="e.g. Brief me on what changed overnight in AI: new models, papers worth reading, and anything I should try."></textarea></label>
+            <label>Name <span class="dim">(optional)</span><input id="tk-title" maxlength="60" placeholder="AI morning brief"></label>
+            <label>How often<select id="tk-every"><option value="day">Every day</option><option value="weekday">Every weekday</option><option value="week">Every week</option><option value="hour">Every hour</option></select></label>
+            <label id="tk-dowl" class="hidden">On<select id="tk-dow"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></label>
+            <label>At <span class="dim" id="tk-tz"></span><input id="tk-at" type="time" value="07:30"></label>
+            <label>How deep<select id="tk-mode"><option value="chat">An answer</option><option value="web">With a web search</option><option value="research">Deep Research (cited, checked)</option></select></label>
+            <div class="row mt wide"><button class="pri" type="submit">Add task</button><span class="dim sm" id="tk-msg" aria-live="polite"></span></div></form></div></div>
+        <div class="bd core"><div class="rail"><span>tasks</span></div><div class="bc"><div id="tk-list" class="mlist"></div></div></div>
+        <div class="bd core"><div class="rail"><span>inbox</span></div><div class="bc"><div id="tk-inbox" class="mlist"></div></div></div>
       </div>
       <div id="mt-time" class="mtp hidden">
         <div class="bd core"><div class="rail"><span>rhythm</span></div><div class="bc"><p class="dim sm" id="m-streak"></p>
@@ -316,6 +331,12 @@
     <div id="vl-list" class="vllist" aria-live="polite"></div>
   </section>
   <section><h4>Directives</h4><p class="dim sm">Standing instructions for every answer: tone, who you are, what you care about.</p><textarea id="sys" rows="5"></textarea></section>
+  <section><h4>Skills</h4><p class="dim sm">Saved ways of working: instructions plus the modes they need. Call one with <code>/name</code> before your message, or from ⌘K. Kept on this device.</p>
+    <div id="sk-list" class="sklist"></div>
+    <form id="sk-form" class="skform"><label>Name<input id="sk-name" maxlength="24" placeholder="e.g. brief" autocomplete="off"></label>
+      <label>What it does<textarea id="sk-does" rows="4" maxlength="1500" placeholder="e.g. Summarise it in five bullets for a busy executive, then list the risks and what to decide."></textarea></label>
+      <div class="row"><label class="chk"><input type="checkbox" id="sk-web"> Search</label><label class="chk"><input type="checkbox" id="sk-deep"> Research</label><label class="chk"><input type="checkbox" id="sk-council"> Council</label></div>
+      <div class="row mt"><button class="pri sm" type="submit">Save skill</button><button class="q sm" type="button" id="sk-make" title="AutoFaber reads this chat and drafts the instructions">Make one from this chat</button></div><p class="dim sm" id="sk-msg" aria-live="polite"></p></form></section>
   <section><h4>Data</h4><div class="row"><button class="q" id="s-export">Export all sessions</button><button class="q" id="s-clear">Clear all sessions</button></div><p class="dim sm">Sessions live only on this device. Keys live only on the server.</p></section>
   <div class="row mt"><a href="/" class="maker" title="mentifaber.org"><img src="assets/brand/mentifaber-mark-48.webp" alt="" width="24" height="24" loading="lazy" decoding="async">Mentifaber</a><span class="flex"></span><button class="pri" id="ssave">Done</button></div>
 </dialog>
@@ -325,6 +346,7 @@
 <script src="assets/hive/field.js"></script>
 <script src="assets/hive/runner.js"></script>
 <script src="assets/hive/visual.js"></script>
+<script src="assets/hive/export.js"></script>
 <script src="assets/hive/swarm.js"></script>
 <script src="assets/hive/ears.js"></script>
 <script src="assets/hive/metrics.js"></script>
