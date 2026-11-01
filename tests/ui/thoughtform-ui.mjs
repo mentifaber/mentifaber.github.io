@@ -43,7 +43,10 @@ const kills0 = (await TF(() => TF.codex())).kills[6] || 0; await TF(() => { TF.h
 await TF(() => { TF.wave(3); TF.step(1); }); await TF(() => TF.hurtBy(4, 9999));
 await p.waitForSelector("#s-dead:not(.hidden)"); assert.match(await p.textContent("#d-stat"), /WRITTEN OUT BY LANCE/); assert.equal((await TF(() => TF.codex())).deaths[4], 1);
 await tap("#b-home"); await tap("#b-codex"); await p.waitForSelector("#s-codex:not(.hidden)");
-assert.match(await p.textContent("#x-sub"), /1 OF 11 THOUGHTS MET · ERASED 1 · LOST TO THEM 1/); const critic = await p.locator("#x-items .card:not(.unk)").first().textContent();
+// "met" counts every kind that has spawned so far, and the game keeps running between these steps, so a wave-3 kind can
+// spawn before the scripted death: the count shown must match the Codex's own record, with the Critic in it
+const metNow = Object.keys((await TF(() => TF.codex())).seen).length; assert.ok(metNow >= 1 && (await TF(() => TF.codex())).seen[6], "the Critic is met");
+assert.equal(await p.textContent("#x-sub"), metNow + " OF 11 THOUGHTS MET · ERASED 1 · LOST TO THEM 1"); const critic = await p.locator("#x-items .card:not(.unk)", { hasText: "THE CRITIC" }).first().textContent(); // by name: another kind met first comes first
 assert.match(critic, /THE CRITIC[\s\S]*ERASED 1[\s\S]*DEFEATED YOU 0[\s\S]*MET W1/); await tap("#b-xback");
 ok("an erased Critic and a death by a Lance are counted; the Codex shows who wrote you out");
 
