@@ -885,3 +885,21 @@ body.still *, body.still *::before, body.still *::after { animation-duration: .0
 .sess .ptag { font-size: 11px; border: 1px solid var(--line2); border-radius: 999px; padding: 0 6px; margin-left: 6px; }
 .projtag { display: inline-block; font-size: 12px; color: var(--faint); margin-bottom: 6px; }
 .skform label.filebtn { display: inline-flex; }
+
+/* the canvas: an answer as a document; edit it, or select a passage and ask for a change */
+.canvas { position: fixed; z-index: 55; top: 0; right: 0; height: 100vh; height: 100dvh; width: min(780px, 58vw); display: flex; flex-direction: column; background: var(--bed); border-left: 1px solid var(--line2); box-shadow: -14px 0 44px rgba(0,0,0,.35); }
+.canvas.hidden { display: none; }
+.canvas header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line2); }
+.canvas header b { font-weight: 400; font-size: 15px; flex: 1 1 180px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.canvas header button:not(.pri) { font-size: 13px; color: var(--faint); padding: 4px 4px; } .canvas header button:not(.pri):hover { color: var(--ink); }
+.canvas button:disabled { opacity: .35; cursor: default; }
+.cv-tabs { display: inline-flex; gap: 2px; border: 1px solid var(--line2); border-radius: 999px; padding: 1px 4px; } .cv-tabs button.on { color: var(--ink) !important; }
+#cv-text { flex: 1; min-height: 0; resize: none; border: 0; padding: 18px 22px; background: transparent; color: var(--ink); font: inherit; font-size: 15.5px; line-height: 1.65; outline: none; }
+#cv-text::selection { background: color-mix(in srgb, var(--m, #d9a441) 35%, transparent); }
+.cv-prev { flex: 1; min-height: 0; overflow: auto; padding: 18px 22px; } .cv-prev.hidden, #cv-text.hidden { display: none; }
+.canvas footer { border-top: 1px solid var(--line2); padding: 10px 16px 14px; display: grid; gap: 8px; }
+.cv-presets { display: flex; flex-wrap: wrap; gap: 6px; } .cv-presets button { font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--line2); border-radius: 999px; color: var(--faint); } .cv-presets button:hover { color: var(--ink); border-color: var(--ink); }
+.cv-ask { display: flex; gap: 8px; } .cv-ask input { flex: 1; min-width: 0; background: transparent; border: 0; border-bottom: 1px solid var(--line2); padding: 6px 2px; font-size: 14.5px; color: var(--ink); } .cv-ask input:focus { outline: none; border-bottom-color: var(--m, var(--ink)); }
+.canvas.busy #cv-text { opacity: .55; } .canvas.busy footer button, .canvas.busy footer input { pointer-events: none; opacity: .5; }
+@media (max-width: 820px) { .canvas { width: 100%; border-left: 0; box-shadow: none; } }

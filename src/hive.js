@@ -17,6 +17,7 @@ import { research, evidenceCheck, ledgerText, RESEARCH_RULE } from "./hive-resea
 import { autoRoute, followUps, AUTO } from "./hive-route.js";
 import { Tasks } from "./hive-tasks.js";
 import { factCheck } from "./hive-check.js";
+import { rewrite } from "./hive-canvas.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
@@ -101,7 +102,7 @@ const BUILTIN_PLAN = { tasks: [
 const VISUALS = " Visual answers: when numbers compare or change over time, you may add a chart as a fenced ```chart block holding JSON like {\"type\": \"bar\", \"title\": \"…\", \"labels\": [\"2023\", \"2024\"], \"series\": [{\"name\": \"…\", \"data\": [12, 15]}], \"unit\": \"%\"} (type bar, line, area or pie; the app draws it), only with real numbers you have. " +
   "When the user would want to use something rather than read about it (a calculator, converter, timer, small simulation or game), add a fenced ```widget block: one complete, self-contained HTML page with inline CSS and JavaScript and no external files or network (it runs sandboxed inside the chat). " +
   "Python in a ```python block can be run by the user in their browser, with the files they attached in the same folder.";
-const STUDIO_DAY = 60, IMAGINE_DAY = 8, RESEARCH_DAY = 6, CHECK_DAY = 10, MAX_KEYS = 500; // a researched report costs a dozen searches and several model calls
+const STUDIO_DAY = 60, IMAGINE_DAY = 8, RESEARCH_DAY = 6, CHECK_DAY = 10, CANVAS_DAY = 40, MAX_KEYS = 500; // a researched report costs a dozen searches and several model calls
 const MAX_CALLS = 400, PUBLIC_CALLS = 150, PER_IP_DAY = 2, PUBLIC_DAY = 25, PARALLEL = 12, ALL_PARALLEL = 30, TICK = 1500, SLOW_TICK = 75e3; // ALL_PARALLEL: every mission together, under Workers AI's rate limits
 // models that think before they answer: they need room for both, or the answer comes back empty or cut off
 const THINKS = /qwq|deepseek-r1|-r1-|gpt-oss|qwen3(?!.*instruct)|\bo[134](-|$)|thinking|reason/i;
@@ -235,6 +236,13 @@ export class Hive extends DurableObject {
       const r = await factCheck(this, { text: String(b.text || ""), question: String(b.question || ""), writer: String(b.writer || ""), owner }).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       this.logReply({ model: "factcheck", who: owner ? "owner" : "visitor", kind: "check", ms: r.ms, chars: (r.claims || []).length, err: r.error });
       return J(r, r.error ? 502 : 200);
+    }
+    if (path === "/canvas/rewrite") { // the canvas: rewrite a selected passage, or the whole document (src/hive-canvas.js)
+      if (req.method !== "POST") return J({ error: "POST only" }, 405); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);
+      if (!owner && !this.meter(req, "canvas", CANVAS_DAY)) return J({ error: "that's today's " + CANVAS_DAY + " canvas edits; come back tomorrow" }, 429);
+      const r = await rewrite(this, { doc: String(b.doc || ""), start: b.start, end: b.end, how: b.how, preset: b.preset }).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      this.logReply({ model: r.model || "canvas", who: owner ? "owner" : "visitor", kind: "canvas", ms: r.ms, chars: (r.text || "").length, err: r.error });
+      return J(r, r.error ? (/say what|nothing in|blank/.test(r.error) ? 400 : 502) : 200);
     }
     if (path.startsWith("/tasks")) { if (!owner) return J({ error: "scheduled tasks are the owner's: sign in on Vigil first" }, 401); // src/hive-tasks.js
       return Tasks.route(this, path, b, J, url.origin, async (a) => { Genesis.queueAlert(this, a); await Genesis.flush(this); }); }

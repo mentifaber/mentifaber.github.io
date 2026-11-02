@@ -7,7 +7,7 @@ const LS = { get(k, d) { try { const v = localStorage.getItem("hive:" + k); retu
 const api = async (path, body, signal, ms) => { if (ms && !signal && window.AbortSignal && AbortSignal.timeout) signal = AbortSignal.timeout(ms); const r = await fetch("/api/hive" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal } : { cache: "no-store", signal }); const j = await r.json().catch(() => ({ error: "the server said " + r.status })); if (!r.ok && !j.error) j.error = "the server said " + r.status; return j; };
 const toast = (t, ms) => { const e = $("toast"); e.textContent = t; e.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add("hidden"), ms || 2600); };
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "#"); // only real web links leave the page
-const SV = { up: "Good", down: "Off", swarm: "Build it", copy: "Copy", say: "Listen", redo: "Again", dl: "Download", branch: "Branch" }; // the actions under an answer, in words
+const SV = { up: "Good", down: "Off", swarm: "Build it", copy: "Copy", say: "Listen", redo: "Again", dl: "Download", branch: "Branch", canvas: "Canvas" }; // the actions under an answer, in words
 
 // ── theme ──
 const applyTheme = () => { const l = LS.get("theme", "dark") === "light"; document.documentElement.dataset.theme = l ? "light" : "dark"; const tc = document.querySelector("meta[name=theme-color]"); if (tc) tc.content = l ? "#e9eae4" : "#0d1012"; }; // basalt (dark) by default, limestone by day
@@ -233,14 +233,14 @@ function drawMsg(m, i, quiet) {
   if (m.role === "user") { const t = m.show || m.text || ""; if (t.length > 320 || t.split("\n").length > 6) d.classList.add("long");
     d.innerHTML = (m.thumbs && m.thumbs.length ? "<div class='thumbs'>" + m.thumbs.map((t) => "<img src='" + esc(t) + "' alt=''>").join("") + "</div>" : "") + (m.skill ? "<div class='tools'><span title='A saved skill'>skill · " + esc(m.skill) + "</span></div>" : "") + (m.files && m.files.length ? "<div class='tools'>" + m.files.map((f) => "<span>" + esc(f) + "</span>").join("") + "</div>" : "") + (t ? "<div class='b'>" + esc(t) + "</div>" : "") + "<div class='uacts'><button data-uact='edit' title='Edit and send again'>Edit</button><button data-uact='copy' title='Copy'>Copy</button></div>"; }
   else {
-    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "AutoFaber") + (m.council ? " · council" : "") + "</span></div>";
+    const mid = String(m.model || $("model").value || ""), who = "<div class='who-line'><i class='gem'></i><b>" + esc(mid.split("|").pop().split("/").pop()) + "</b><span>" + esc(gname || "AutoFaber") + (m.council ? " · council" : "") + (m.edited ? " · edited in canvas" : "") + "</span></div>";
     const body = m.pending && !m.text ? who + "<div class='dots'>" + "<i></i>".repeat(m.council ? 5 : 3) + "</div>" + (m.steps && m.steps.length || m.status ? "<div class='tools'>" + (m.steps || []).map((t) => "<span class='did'>" + esc(t) + "</span>").join("") + (m.status ? "<span class='now'>" + esc(m.status) + "</span>" : "") + "</div>" : "")
       : m.pending ? who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + md(m.text, m.sources).replace(/(<\/[a-z0-9]+>)?$/, "<span class='caret'></span>$1") + "</div>"
       : m.error ? who + "<p class='err'>" + esc(m.error) + "</p>"
       : who + (m.tools && m.tools.length ? "<div class='tools'>" + m.tools.map((t) => "<span>" + esc(t) + "</span>").join("") + "</div>" : "") + "<div class='b'>" + (m.image ? "<img class='gen' src='" + esc(m.image) + "' alt='" + esc(m.text) + "'><p class='dim' style='font-size:14px;margin-top:8px'>" + esc(m.text) + "</p>" : md(m.text, m.sources, true)) + "</div>" +
         (m.drafts && m.drafts.length ? "<details class='drafts'><summary>" + m.drafts.filter((x) => x.text).length + " council drafts" + (m.drafts.some((x) => x.error) ? " · " + m.drafts.filter((x) => x.error).length + " couldn't answer (open to see why)" : "") + "</summary><div class='grid-d'>" + m.drafts.map((x) => "<div class='d" + (x.error ? " err" : "") + "' style='--dm:" + pollen(x.model) + "'><h5>" + esc(x.model.split("|").pop().split("/").pop()) + " · " + (x.ms / 1000).toFixed(1) + "s</h5><div class='b'>" + (x.error ? esc(x.error) : md(x.text)) + "</div></div>").join("") + "</div></details>" : "") +
         (m.sources && m.sources.length ? "<div class='srcs'>" + m.sources.map((s, k) => "<a href='" + esc(safeUrl(s.url)) + "' target='_blank' rel='noopener noreferrer'><b>" + (k + 1) + "</b><span>" + esc(s.title) + "</span></a>").join("") + "</div>" : "");
-    d.innerHTML = body + (m.pending ? "" : "<div class='acts'>" + verNav(m) + (m.image ? "<button data-act='dl'>" + SV.dl + "</button>" : m.error ? "" : "<button data-act='copy'>" + SV.copy + "</button><button data-act='say' title='Read it aloud'>" + SV.say + "</button><button data-act='dlm' title='Download as a document, slides, a spreadsheet or Markdown' aria-expanded='false'>" + SV.dl + "</button><button data-act='check' class='chk' title='Fact check: search each claim and see which ones the sources support'" + (m.checking ? " disabled" : "") + ">" + (m.checking ? "Checking…" : m.check ? "Checked" : "Check") + "</button>") + (m.cut && !m.error ? "<button data-act='more' class='more' title='Pick up exactly where it stopped'>Continue</button>" : "") + "<button data-act='redo' title='Ask again: the answer you have now is kept as a version'>" + SV.redo + "</button>" + (m.image ? "" : "<button data-act='branch' title='Carry on from this answer in a new chat; this one stays as it is'>" + SV.branch + "</button>") + (m.image || m.error ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + (m.ttft ? "first word " + (m.ttft / 1000).toFixed(2) + "s · " : "") + (m.ms ? (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>");
+    d.innerHTML = body + (m.pending ? "" : "<div class='acts'>" + verNav(m) + (m.image ? "<button data-act='dl'>" + SV.dl + "</button>" : m.error ? "" : "<button data-act='copy'>" + SV.copy + "</button><button data-act='say' title='Read it aloud'>" + SV.say + "</button><button data-act='dlm' title='Download as a document, slides, a spreadsheet or Markdown' aria-expanded='false'>" + SV.dl + "</button><button data-act='check' class='chk' title='Fact check: search each claim and see which ones the sources support'" + (m.checking ? " disabled" : "") + ">" + (m.checking ? "Checking…" : m.check ? "Checked" : "Check") + "</button>") + (m.cut && !m.error ? "<button data-act='more' class='more' title='Pick up exactly where it stopped'>Continue</button>" : "") + "<button data-act='redo' title='Ask again: the answer you have now is kept as a version'>" + SV.redo + "</button>" + (m.image || m.error ? "" : "<button data-act='canvas' title='Open it as a document: edit it, or select a part and ask for a change'>" + SV.canvas + "</button>") + (m.image ? "" : "<button data-act='branch' title='Carry on from this answer in a new chat; this one stays as it is'>" + SV.branch + "</button>") + (m.image || m.error ? "" : "<button data-act='swarm' title='Hand this to the swarm to build'>" + SV.swarm + "</button>") + (owner && m.turn ? "<button data-act='up' class='rate" + (m.rating > 0 ? " on" : "") + "' title='Good answer: " + esc(gname) + " learns from this' aria-pressed='" + (m.rating > 0) + "'>" + SV.up + "</button><button data-act='down' class='rate" + (m.rating < 0 ? " on" : "") + "' title='Not right: tell " + esc(gname) + " what to change' aria-pressed='" + (m.rating < 0) + "'>" + SV.down + "</button>" : "") + (m.model ? "<span class='meta'>" + (m.ttft ? "first word " + (m.ttft / 1000).toFixed(2) + "s · " : "") + (m.ms ? (m.ms / 1000).toFixed(1) + "s" : "") + "</span>" : "") + "</div>");
     if (m.check && !m.pending) d.insertAdjacentHTML("beforeend", factHtml(m.check));
     if (m.followups && !m.pending && chat && i === chat.msgs.length - 1) document.querySelectorAll("#log .fups").forEach((x) => x.remove()), d.insertAdjacentHTML("beforeend", "<div class='fups' aria-label='Ask next'>" + m.followups.map((q) => "<button data-fu='" + esc(q) + "'>" + esc(q) + "</button>").join("") + "</div>");
     // the strip: the mind's mineral; dashed when it searched, fine lines for a picture, banded by every member of a council
@@ -294,6 +294,7 @@ $("log").onclick = async (e) => {
     m.rating = r; save(); drawMsg(m, i); if (r) toast(r > 0 ? "Noted: " + gname + " keeps doing that" : gname + " will learn from this", 2400); return; }
   if (a.dataset.act === "more") { if (i !== chat.msgs.length - 1) return toast("Continue works on the latest answer"); return send(resume(chat.msgs[i].text)); }
   if (a.dataset.act === "redo") { if (busy) return toast("Wait for the reply to finish"); const u = chat.msgs[i - 1]; if (!u || u.role !== "user") return; const vers = verList(m).slice(-(VMAX - 1)); chat.msgs.splice(i); unlayer(i); run(u.mode === "image", { vers }); }
+  if (a.dataset.act === "canvas") return cvOpen(i);
   if (a.dataset.act === "branch") { if (busy) return toast("Wait for the reply to finish"); // a copy up to here, as its own chat; the original stays as it is
     const c = JSON.parse(JSON.stringify({ id: Math.random().toString(36).slice(2, 10), title: ("↳ " + String(chat.title || "Untitled").replace(/^↳ /, "")).slice(0, 60), model: chat.model, msgs: chat.msgs.slice(0, i + 1), ts: Date.now(), private: chat.private || undefined, project: chat.project, from: chat.id }));
     c.msgs.forEach((x) => { delete x.followups; delete x.checking; }); if (!c.private) chats.unshift(c); save(); openChat(c); toast("Branched: carry on from here", 2200); return; }
@@ -308,6 +309,49 @@ let quoteT = 0; document.addEventListener("selectionchange", () => { clearTimeou
 quoteBtn.addEventListener("pointerdown", (e) => e.preventDefault()); // keep the selection while the button is pressed
 quoteBtn.onclick = () => { const p = pickedText(); if (!p) return quoteBtn.classList.add("hidden"); const q = p.t.slice(0, 1500).split("\n").map((l) => "> " + l).join("\n");
   inp.value = q + "\n\n" + inp.value.replace(/^(> .*\n)+\n?/, ""); getSelection().removeAllRanges(); quoteBtn.classList.add("hidden"); grow(); sync(); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); };
+// ── the canvas: an answer as a document you edit; ask for a change to a selected passage or the whole of it (src/hive-canvas.js) ──
+const Canvas = { i: -1, chatId: "", hist: [], at: 0, base: "", busy: false }, cvT = $("cv-text");
+const CV_PRESETS = { shorter: "Shorter", longer: "Longer", simpler: "Simpler", polish: "Polish", formal: "More formal", casual: "More casual", comments: "Comment the code", fix: "Fix bugs" };
+function cvOpen(i) {
+  const m = chat.msgs[i], u = chat.msgs[i - 1]; Canvas.i = i; Canvas.chatId = chat.id; Canvas.base = m.text || ""; Canvas.hist = [Canvas.base]; Canvas.at = 0;
+  cvT.value = Canvas.base; $("cv-title").textContent = String((u && (u.show || u.text)) || chat.title || "Canvas").split("\n")[0].slice(0, 90); $("cv-how").value = "";
+  cvTab(false); cvSync(); $("canvas").classList.remove("hidden"); document.body.classList.add("cv-on"); cvT.focus(); cvT.setSelectionRange(0, 0); cvT.scrollTop = 0; cvScope();
+}
+function cvClose(force) { if (!force && cvT.value !== Canvas.base && !confirm("Close the canvas? Changes you haven't used in the chat are lost.")) return; $("canvas").classList.add("hidden"); document.body.classList.remove("cv-on"); Canvas.i = -1; }
+function cvSync() { $("cv-undo").disabled = Canvas.at <= 0 && cvT.value === Canvas.hist[0]; $("cv-redo").disabled = Canvas.at >= Canvas.hist.length - 1; $("cv-use").disabled = cvT.value === Canvas.base || !cvT.value.trim();
+  const code = /```/.test(cvT.value); $("cv-presets").innerHTML = Object.keys(CV_PRESETS).filter((k) => code || !/comments|fix/.test(k)).map((k) => "<button type='button' data-pre='" + k + "'>" + CV_PRESETS[k] + "</button>").join(""); }
+const cvPush = (t) => { if (t === Canvas.hist[Canvas.at]) return cvSync(); Canvas.hist = Canvas.hist.slice(0, Canvas.at + 1); Canvas.hist.push(t); if (Canvas.hist.length > 80) Canvas.hist.shift(); Canvas.at = Canvas.hist.length - 1; cvSync(); };
+const cvSel = () => { const a = cvT.selectionStart, b = cvT.selectionEnd; return b > a && cvT.value.slice(a, b).trim() && !(a === 0 && b === cvT.value.length) ? [a, b] : null; };
+const cvScope = () => { if (Canvas.busy) return; const s = cvSel(); $("cv-scope").textContent = s ? "Changes go to the selected passage (" + (s[1] - s[0]) + " characters); the rest stays as it is" : "Nothing selected: changes go to the whole document. Select a passage to change just that."; };
+function cvTab(prev) { cvT.classList.toggle("hidden", prev); $("cv-prev").classList.toggle("hidden", !prev); $("cv-edit").classList.toggle("on", !prev); $("cv-view").classList.toggle("on", prev); $("cv-edit").setAttribute("aria-selected", String(!prev)); $("cv-view").setAttribute("aria-selected", String(prev)); if (prev) $("cv-prev").innerHTML = "<div class='b'>" + md(cvT.value) + "</div>"; }
+let cvTyping = 0; const cvFlush = () => { clearTimeout(cvTyping); cvPush(cvT.value); };
+cvT.addEventListener("input", () => { clearTimeout(cvTyping); cvTyping = setTimeout(cvFlush, 450); $("cv-use").disabled = cvT.value === Canvas.base || !cvT.value.trim(); $("cv-undo").disabled = false; });
+["select", "keyup", "mouseup", "touchend", "focus"].forEach((ev) => cvT.addEventListener(ev, cvScope));
+$("cv-undo").onclick = () => { cvFlush(); if (Canvas.at <= 0) return; cvT.value = Canvas.hist[--Canvas.at]; cvSync(); cvScope(); if (!$("cv-prev").classList.contains("hidden")) cvTab(true); };
+$("cv-redo").onclick = () => { if (Canvas.at >= Canvas.hist.length - 1) return; cvT.value = Canvas.hist[++Canvas.at]; cvSync(); cvScope(); if (!$("cv-prev").classList.contains("hidden")) cvTab(true); };
+$("cv-edit").onclick = () => cvTab(false); $("cv-view").onclick = () => { cvFlush(); cvTab(true); };
+$("cv-copy").onclick = () => { navigator.clipboard.writeText(cvT.value).then(() => toast("Copied"), () => toast("Couldn't copy")); };
+$("cv-close").onclick = () => cvClose();
+async function cvRewrite(body) {
+  if (Canvas.busy) return; cvFlush(); const doc = cvT.value, s = cvSel(); if (!doc.trim()) return toast("The canvas is empty");
+  Canvas.busy = true; $("canvas").classList.add("busy"); cvT.readOnly = true; $("cv-scope").textContent = "Rewriting " + (s ? "the selected passage" : "the whole document") + "…";
+  const j = await api("/canvas/rewrite", Object.assign({ doc, start: s ? s[0] : undefined, end: s ? s[1] : undefined }, body)).catch(() => ({ error: "couldn't reach AutoFaber" }));
+  Canvas.busy = false; $("canvas").classList.remove("busy"); cvT.readOnly = false;
+  if (j.error) { cvScope(); return toast(j.error, 4500); }
+  const next = j.whole ? j.text : doc.slice(0, s[0]) + j.text + doc.slice(s[1]); cvT.value = next; cvPush(next);
+  if (!$("cv-prev").classList.contains("hidden")) cvTab(true); else if (!j.whole) { cvT.focus(); cvT.setSelectionRange(s[0], s[0] + j.text.length); }
+  cvScope(); toast((j.whole ? "Rewrote the document" : "Rewrote the passage (now selected)") + " · " + j.model + " · Undo to go back", 2800);
+}
+$("cv-presets").onclick = (e) => { const b = e.target.closest("[data-pre]"); if (b) cvRewrite({ preset: b.dataset.pre }); };
+$("cv-presets").addEventListener("pointerdown", (e) => e.preventDefault()); // keep the passage selected while a quick change is tapped
+$("cv-ask").onsubmit = (e) => { e.preventDefault(); const how = $("cv-how").value.trim(); if (!how) return $("cv-how").focus(); cvRewrite({ how }); };
+$("cv-use").onclick = () => { // the canvas text becomes a new version of the answer (‹ › steps back to the original)
+  cvFlush(); const m = chat && chat.id === Canvas.chatId && chat.msgs[Canvas.i]; if (!m || m.role === "user") return toast("That chat isn't open any more");
+  if (busy && Canvas.i === chat.msgs.length - 1) return toast("Wait for the reply to finish"); const text = cvT.value; if (!text.trim()) return toast("The canvas is empty");
+  const vers = verList(m).slice(-(VMAX - 1)), nv = Object.assign(snap(m), { text, edited: true }); delete nv.check; delete nv.followups; delete nv.cut; vers.push(nv);
+  for (const k of Object.keys(m)) delete m[k]; Object.assign(m, nv, { vers, vi: vers.length - 1 }); save(); drawMsg(m, Canvas.i); Canvas.base = text; cvSync();
+  toast("In the chat as version " + vers.length + " of this answer; the chat carries on from it", 3000);
+};
 const SAY_AS = Object.fromEntries("NATO NASA NOAA GDACS OPEC UNESCO ASEAN UNICEF FEMA LIDAR RADAR SCUBA LASER COVID AIDS GIF JPEG ASCII CAPTCHA WIFI OK AM PM NOT AND THE YOU ARE BUT FOR NOW NEW ALL ONE TWO YES NO STOP GO NOTE WARNING ALERT HELP".split(" ").map((w) => [w, 1]));
 // say it like this: "Anders = Onders", one per line (Settings → Voice link), so names come out the way their owners say them
 const sayAs = () => String(S("say") || "").split("\n").map((l) => l.split("=").map((x) => x.trim())).filter((x) => x.length === 2 && x[0] && x[1]);
@@ -454,7 +498,7 @@ async function run(image, opts) {
   return m;
 }
 // Esc stops a reply that's still coming
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && busy && !Voice.on && !$("cmdk").open && !$("sdlg").open) busy.abort(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("canvas").classList.contains("hidden") && !$("cmdk").open) { if (!Canvas.busy) cvClose(); return; } if (e.key === "Escape" && busy && !Voice.on && !$("cmdk").open && !$("sdlg").open) busy.abort(); });
 // streamed replies: server-sent events meta → delta… → done; the message redraws at most once a frame
 async function stream(body, m, i, signal) {
   const tReq = performance.now();
