@@ -350,6 +350,16 @@
         <label class="q filebtn sm">Add files<input id="p-add" type="file" hidden multiple accept=".pdf,.docx,.xlsx,.xlsm,.xls,.ods,.txt,.md,.csv,.json,.html,.xml,.yaml,.yml,.py,.js,.ts,.sql,text/*"></label></div>
       <div class="row mt"><button class="pri sm" type="submit">Save project</button><span class="flex"></span><button class="q sm" type="button" id="p-del">Delete project</button></div><p class="dim sm" id="p-msg" aria-live="polite"></p></form></section>
 </dialog>
+<aside id="canvas" class="canvas hidden" aria-label="Canvas">
+  <header><b id="cv-title">Canvas</b>
+    <span class="cv-btns"><button id="cv-undo" title="Undo" aria-label="Undo">↶ Undo</button><button id="cv-redo" title="Redo" aria-label="Redo">Redo ↷</button>
+    <span class="cv-tabs" role="tablist"><button id="cv-edit" role="tab" class="on" aria-selected="true">Edit</button><button id="cv-view" role="tab" aria-selected="false">Preview</button></span>
+    <button id="cv-copy">Copy</button><button id="cv-use" class="pri sm" title="Save this as a new version of the answer in the chat">Use in chat</button><button id="cv-close" title="Close the canvas" aria-label="Close the canvas">✕</button></span></header>
+  <textarea id="cv-text" spellcheck="true" aria-label="The document: edit it, or select a passage and ask for a change below"></textarea><div id="cv-prev" class="cv-prev hidden"></div>
+  <footer><div id="cv-presets" class="cv-presets" role="group" aria-label="Quick changes"></div>
+    <form id="cv-ask" class="cv-ask"><input id="cv-how" placeholder="Ask for a change…" autocomplete="off" maxlength="800" aria-label="What to change"><button class="pri sm" id="cv-go" type="submit">Rewrite</button></form>
+    <small id="cv-scope" class="dim" aria-live="polite"></small></footer>
+</aside>
 <div id="toast" class="hidden" role="status"></div>
 
 <script src="assets/hive/lattice.js"></script>
