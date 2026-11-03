@@ -12,6 +12,8 @@
 //   POST /api/nest/lock      { path, ttlMs } → { acquired }
 //   POST /api/nest/invite    (owner) a new invite key; the old link stops letting new people in
 //   POST /api/nest/blob      an image (JPEG, PNG, WebP or GIF, 3 MB) → { id };  GET /api/nest/blob/<id>
+//   POST /api/nest/find      (parents) products for an item: brands, photos, prices, links (src/nest-find.js, through Hive)
+//   POST /api/nest/grab      (parents) { url }: a product photo the parents kept, copied into the registry's own storage
 import { DurableObject } from "cloudflare:workers";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
@@ -21,6 +23,8 @@ const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart
 const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+const FIND_DAY = 120;
+const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
 
 export class Nest extends DurableObject {
@@ -99,6 +103,23 @@ export class Nest extends DurableObject {
       if (!this.parent(me)) return J({ error: "only the parents add photos" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);
       const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!IMAGE.test(type)) return J({ error: "a JPEG, PNG, WebP or GIF, please" }, 415);
       const buf = await req.arrayBuffer(); if (!buf.byteLength) return J({ error: "that file is empty" }, 400); if (buf.byteLength > BLOB_MAX) return J({ error: "that photo is too big (3 MB at most)" }, 413);
+      const id = "b" + rnd(10); await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } }); return J({ id });
+    }
+    if (path === "/find" && post) {
+      if (!this.parent(me)) return J({ error: "only the parents look for products" }, 403); if (!this.env.HIVE) return J({ error: "the product finder isn't set up" }, 503);
+      const day = new Date().toISOString().slice(0, 10), used = this.kv("find:" + day) | 0; if (used >= FIND_DAY) return J({ error: "that's today's " + FIND_DAY + " product searches; more tomorrow" }, 429); this.kv("find:" + day, used + 1);
+      const ask = { name: body.name, cat: body.cat, notes: body.notes, brand: body.brand, color: body.color, size: body.size, price: body.price, look: body.look };
+      const r = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/find", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify(ask) }));
+      return J(await r.json().catch(() => ({ error: "the product finder didn't answer" })), r.ok ? 200 : 502);
+    }
+    if (path === "/grab" && post) {
+      if (!this.parent(me)) return J({ error: "only the parents keep products" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);
+      let u; try { u = new URL(String(body.url || "")); } catch (e) { return J({ error: "not a photo address" }, 400); }
+      if (u.protocol !== "https:" || privateHost(u.hostname)) return J({ error: "not a public photo" }, 400);
+      const r = await fetch(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(10000) }).catch(() => null);
+      const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!r || !r.ok || !IMAGE.test(type || "")) return J({ error: "couldn't fetch that photo" }, 502);
+      const buf = await r.arrayBuffer(); if (!buf.byteLength || buf.byteLength > BLOB_MAX) return J({ error: "that photo is too big" }, 413);
       const id = "b" + rnd(10); await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } }); return J({ id });
     }
     const bm = /^\/blob\/([a-z0-9]+)$/.exec(path);
