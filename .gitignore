@@ -8,5 +8,6 @@ __pycache__/
 # test scratch (tests/run.sh)
 tests/gtest/src/
 tests/gtest/cf-shim.mjs
+tests/gtest/cf-nest.mjs
 tests/ui/shots/
 captures/

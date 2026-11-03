@@ -1,0 +1,1466 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>The Nest Registry</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="A private baby gift registry.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a nursery-mobile header band (countdown + coverage ring) over a filterable card wall; parents get a back-office "room". */
+:root {
+  --bg: #f3f5fa;          /* cool milk */
+  --surface: #ffffff;
+  --surface-2: #e9edf6;
+  --ink: #1d2742;         /* night-nursery navy */
+  --ink-soft: #56617d;
+  --line: #d6dcea;
+  --accent: #d98c1f;      /* marigold */
+  --accent-ink: #ffffff;
+  --accent-soft: #fbecd3;
+  --plum: #8a5a83;        /* dream-gift plum */
+  --plum-soft: #f1e3ef;
+  --sage: #3f8a62;        /* covered / good */
+  --sage-soft: #dcefe3;
+  --rose: #c2475b;        /* must-have / danger */
+  --rose-soft: #f8dfe3;
+  --band: #1d2742;
+  --band-ink: #f3f5fa;
+  --band-soft: #9aa6c6;
+  --shadow: 0 1px 2px rgb(29 39 66 / .06), 0 8px 24px rgb(29 39 66 / .07);
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 14px;
+  --tile-mix: 100%;
+  --glyph-lift: 0%;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11162a; --surface: #1a2139; --surface-2: #232b47; --ink: #e9ecf6; --ink-soft: #a3acc8; --line: #2f3858;
+  --accent: #f0a83f; --accent-ink: #1b1405; --accent-soft: #3a2c14; --plum: #d39bcb; --plum-soft: #3a2639;
+  --sage: #6cc694; --sage-soft: #1d3a2b; --rose: #ef7d8f; --rose-soft: #47222a;
+  --band: #0b0f1f; --band-ink: #eef1f9; --band-soft: #8b96b8; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+  --tile-mix: 18%; --glyph-lift: 45%;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11162a; --surface: #1a2139; --surface-2: #232b47; --ink: #e9ecf6; --ink-soft: #a3acc8; --line: #2f3858;
+  --accent: #f0a83f; --accent-ink: #1b1405; --accent-soft: #3a2c14; --plum: #d39bcb; --plum-soft: #3a2639;
+  --sage: #6cc694; --sage-soft: #1d3a2b; --rose: #ef7d8f; --rose-soft: #47222a;
+  --band: #0b0f1f; --band-ink: #eef1f9; --band-soft: #8b96b8; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+  --tile-mix: 18%; --glyph-lift: 45%;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--band); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.label { font: 500 11px/1.2 var(--f-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-soft); }
+
+/* ---------- header band ---------- */
+.band { background: var(--band); color: var(--band-ink); position: relative; overflow: hidden; }
+.band .wrap { padding-block: 28px 30px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; position: relative; z-index: 1; }
+#mobile { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .55; }
+@media (max-width: 640px) { #mobile { opacity: .28; } }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--band-soft); }
+.babyname { font-size: clamp(34px, 6vw, 64px); font-weight: 800; letter-spacing: -.02em; margin-top: 10px; }
+.parents-line { color: var(--band-soft); margin-top: 8px; font-size: 16px; }
+.welcome { max-width: 60ch; margin-top: 12px; color: var(--band-ink); opacity: .9; }
+.dates { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 18px; }
+.date-chip { display: grid; gap: 3px; }
+.date-chip b { font: 600 15px/1.2 var(--f-body); }
+.date-chip span { font: 400 12px/1.2 var(--f-mono); color: var(--band-soft); letter-spacing: .04em; }
+.weeks { margin-top: 18px; max-width: 520px; }
+.weeks-track { display: grid; grid-template-columns: repeat(40, 1fr); gap: 2px; margin-top: 8px; }
+.weeks-track i { height: 10px; border-radius: 2px; background: rgb(255 255 255 / .12); }
+.weeks-track i.on { background: var(--accent); }
+.weeks-track i.now { background: var(--band-ink); box-shadow: 0 0 0 2px var(--accent); }
+.weeks-legend { display: flex; justify-content: space-between; margin-top: 6px; font: 400 11px var(--f-mono); color: var(--band-soft); }
+.ring-box { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.ring { width: 150px; height: 150px; }
+.ring text { font-family: var(--f-display); }
+.ring-stats { display: grid; gap: 2px; font-size: 13px; color: var(--band-soft); }
+.ring-stats b { color: var(--band-ink); font-weight: 600; }
+
+/* ---------- nav ---------- */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; gap: 6px; padding-block: 10px; overflow-x: auto; }
+.tab { border: 0; background: none; padding: 8px 14px; border-radius: 999px; font-weight: 600; color: var(--ink-soft); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.tab:hover { background: var(--surface-2); color: var(--ink); }
+.tab[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.tab .count { font: 500 11px var(--f-mono); background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 1px 7px; }
+.nav .spacer { flex: 1; }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.who img { width: 26px; height: 26px; border-radius: 50%; }
+.role-pill { font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- buttons & fields ---------- */
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .12s, background .12s; }
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.05); background: var(--accent); }
+.btn.dark { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.danger { color: var(--rose); border-color: color-mix(in srgb, var(--rose) 40%, var(--line)); }
+.btn.small { padding: 6px 11px; font-size: 13px; border-radius: 8px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; transform: none; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > span { font-size: 13px; font-weight: 600; }
+.field small { color: var(--ink-soft); font-size: 12px; }
+.input, select.input, textarea.input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+textarea.input { resize: vertical; min-height: 76px; }
+.input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+
+/* ---------- toolbar ---------- */
+.toolbar { display: grid; gap: 12px; padding-block: 20px 6px; }
+.toolbar-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.search { flex: 1 1 240px; position: relative; min-width: 0; }
+.search input { padding-left: 38px; }
+.search svg { position: absolute; left: 12px; top: 50%; translate: 0 -50%; color: var(--ink-soft); }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.chip { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { font-family: var(--f-mono); font-size: 11px; opacity: .65; margin-left: 4px; }
+.toolbar select.input { width: auto; padding: 8px 10px; font-size: 13px; }
+.result-line { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--ink-soft); font-size: 13px; padding-block: 8px 4px; }
+
+/* ---------- item cards ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; padding-block: 10px 60px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; min-width: 0; position: relative; transition: box-shadow .15s, transform .15s; }
+.card:hover { box-shadow: var(--shadow); }
+.card.covered { opacity: .72; }
+.card.mine { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.thumb { aspect-ratio: 4 / 3; background: var(--surface-2); position: relative; display: grid; place-items: center; overflow: hidden; max-width: 100%; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb .glyph { font: 800 64px/1 var(--f-display); color: color-mix(in srgb, var(--tile-ink), #fff var(--glyph-lift)); opacity: .9; }
+.thumb .glyph-sub { position: absolute; bottom: 10px; left: 12px; font: 500 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--tile-ink), #fff var(--glyph-lift)); opacity: .8; }
+.badges { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { font: 500 10.5px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.pill.must { background: var(--rose-soft); color: var(--rose); border-color: transparent; }
+.pill.love { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.pill.dream { background: var(--plum-soft); color: var(--plum); border-color: transparent; }
+.pill.star { background: var(--ink); color: var(--bg); border-color: transparent; }
+.pill.ok { background: var(--sage-soft); color: var(--sage); border-color: transparent; }
+.pill.you { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.card-body { padding: 14px 16px 16px; display: grid; gap: 10px; flex: 1; align-content: start; }
+.card h3 { font-size: 18px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.meta-line { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--ink-soft); }
+.price { font: 500 15px var(--f-mono); color: var(--ink); }
+.notes { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.links a { font-size: 12.5px; font-weight: 600; text-decoration: none; padding: 4px 9px; border-radius: 7px; background: var(--surface-2); color: var(--ink); overflow-wrap: anywhere; }
+.links a:hover { background: var(--accent-soft); color: var(--accent); }
+.qty { display: grid; gap: 6px; }
+.qty-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-soft); }
+.qty-row b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; }
+.bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; background: var(--sage); }
+.bar i.reserved { background: color-mix(in srgb, var(--sage) 45%, var(--surface-2)); }
+.card-foot { padding: 0 16px 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+.card-foot .btn { flex: 1 1 auto; }
+.claimers { font-size: 12.5px; color: var(--ink-soft); display: grid; gap: 3px; }
+.claimers b { color: var(--ink); font-weight: 600; }
+
+/* ---------- empty / status ---------- */
+.empty { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 40px 24px; text-align: center; display: grid; gap: 12px; justify-items: center; color: var(--ink-soft); margin-block: 20px 60px; }
+.empty h2 { color: var(--ink); font-size: 24px; }
+.empty p { max-width: 52ch; margin: 0; }
+.notice { display: flex; gap: 10px; align-items: flex-start; background: var(--accent-soft); color: var(--ink); border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-top: 16px; }
+.notice.rose { background: var(--rose-soft); }
+.notice.sage { background: var(--sage-soft); }
+
+/* ---------- panels (my gifts / parents) ---------- */
+.section { padding-block: 26px 60px; display: grid; gap: 22px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.panel h2 { font-size: 22px; font-weight: 600; }
+.panel p.sub { margin: 4px 0 0; color: var(--ink-soft); font-size: 14px; max-width: 64ch; }
+.cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.rows { display: grid; gap: 0; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row .mini { width: 46px; height: 46px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; overflow: hidden; font: 800 20px var(--f-display); color: color-mix(in srgb, var(--tile-ink, var(--ink)), #fff var(--glyph-lift)); }
+.row .mini img { width: 100%; height: 100%; object-fit: cover; }
+.row .avatar { width: 36px; height: 36px; border-radius: 50%; }
+.row-title { font-weight: 600; overflow-wrap: anywhere; }
+.row-sub { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.giver { border-top: 1px solid var(--line); padding-block: 14px; display: grid; gap: 10px; }
+.giver:first-child { border-top: 0; padding-top: 0; }
+.giver-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.giver-head img { width: 32px; height: 32px; border-radius: 50%; }
+.giver-head .name { font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.giver ul { list-style: none; margin: 0; padding: 0 0 0 42px; display: grid; gap: 6px; }
+.giver li { display: flex; gap: 10px; align-items: baseline; font-size: 14px; flex-wrap: wrap; }
+.giver li .note { flex-basis: 100%; font-size: 13px; color: var(--ink-soft); font-style: italic; }
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; user-select: none; }
+.check input { width: 18px; height: 18px; accent-color: var(--sage); }
+.toggle-group { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; flex-wrap: wrap; }
+.toggle-group button { border: 0; background: var(--surface); padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink-soft); }
+.toggle-group button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.statgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface-2); border-radius: 12px; padding: 14px; display: grid; gap: 4px; }
+.stat b { font: 600 26px/1 var(--f-display); }
+.stat span { font-size: 12.5px; color: var(--ink-soft); }
+.feed { display: grid; gap: 10px; font-size: 14px; }
+.feed div { display: flex; gap: 10px; align-items: baseline; }
+.feed time { font: 400 11.5px var(--f-mono); color: var(--ink-soft); white-space: nowrap; min-width: 70px; }
+.addr { white-space: pre-line; background: var(--surface-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; overflow-wrap: anywhere; }
+
+/* ---------- dialogs ---------- */
+dialog { border: 0; padding: 0; border-radius: 18px; background: var(--surface); color: var(--ink); width: min(620px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); box-shadow: 0 24px 80px rgb(0 0 0 / .35); }
+dialog::backdrop { background: rgb(13 17 34 / .55); backdrop-filter: blur(3px); }
+dialog.wide { width: min(940px, calc(100vw - 24px)); }
+.dlg { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); }
+.dlg-head { padding: 20px 22px 12px; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; border-bottom: 1px solid var(--line); }
+.dlg-head h2 { font-size: 22px; font-weight: 600; }
+.dlg-head p { margin: 4px 0 0; color: var(--ink-soft); font-size: 14px; }
+.dlg-body { padding: 18px 22px; overflow-y: auto; display: grid; gap: 16px; }
+.dlg-foot { padding: 14px 22px 18px; border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+.dlg-foot .left { margin-right: auto; }
+.x { border: 0; background: var(--surface-2); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stepper button { border: 0; background: var(--surface-2); width: 40px; height: 40px; font-size: 18px; cursor: pointer; }
+.stepper output { min-width: 48px; text-align: center; font: 500 16px var(--f-mono); }
+.choice { display: grid; gap: 8px; }
+.choice label { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+.choice label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.choice input { margin-top: 3px; accent-color: var(--accent); }
+.choice b { display: block; }
+.choice small { color: var(--ink-soft); }
+.confirm-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--rose-soft); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.photo-drop { border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.photo-drop img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; }
+.photo-drop.drag { border-color: var(--accent); background: var(--accent-soft); }
+.link-rows { display: grid; gap: 8px; }
+.link-row { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.6fr) auto; gap: 8px; }
+
+/* starter catalog */
+.cat-block { display: grid; gap: 8px; }
+.cat-block h3 { font-size: 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.starter-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.starter { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 14px; }
+.starter:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.starter input { margin-top: 3px; accent-color: var(--accent); }
+.starter.have { opacity: .5; cursor: default; }
+.starter small { display: block; color: var(--ink-soft); font-size: 12.5px; }
+
+/* toast */
+#toasts { position: fixed; left: 50%; translate: -50% 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; z-index: 50; width: min(440px, calc(100vw - 32px)); }
+.toast { background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 12px; font-size: 14px; box-shadow: var(--shadow); animation: up .25s ease-out; display: flex; gap: 12px; align-items: center; }
+.toast button { margin-left: auto; background: none; border: 0; color: var(--accent); font-weight: 700; cursor: pointer; }
+@keyframes up { from { transform: translateY(8px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+@media (max-width: 860px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .statgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .band .wrap { grid-template-columns: minmax(0, 1fr); }
+  .ring-box { grid-template-columns: auto minmax(0, 1fr); text-align: left; justify-items: start; align-items: center; }
+  .ring { width: 104px; height: 104px; }
+  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .link-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .link-row input:first-child { grid-column: 1 / -1; }
+  .who .who-name { display: none; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<header class="band">
+  <canvas id="mobile" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div id="hero"></div>
+    <div class="ring-box" id="ring"></div>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Registry sections">
+  <div class="wrap">
+    <button class="tab" data-view="registry" id="tab-registry">Registry</button>
+    <button class="tab" data-view="mine" id="tab-mine">My gifts</button>
+    <button class="tab" data-view="room" id="tab-room" hidden>Parents' room</button>
+    <span class="spacer"></span>
+    <div class="who" id="who"></div>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap" id="view-registry">
+    <div id="registry-notices"></div>
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <label class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input class="input" id="f-q" type="search" placeholder="Search the registry: stroller, swaddle, size 0-3M…" aria-label="Search the registry">
+        </label>
+        <select class="input" id="f-status" aria-label="Show">
+          <option value="all">Everything</option>
+          <option value="open">Still needed</option>
+          <option value="covered">Already covered</option>
+          <option value="mine">Gifts I'm giving</option>
+        </select>
+        <select class="input" id="f-prio" aria-label="Priority">
+          <option value="all">Any priority</option>
+          <option value="must">Must-haves</option>
+          <option value="love">Would love</option>
+          <option value="dream">Dream gifts</option>
+          <option value="star">Most wanted ★</option>
+        </select>
+        <select class="input" id="f-price" aria-label="Price">
+          <option value="all">Any price</option>
+          <option value="0-25">Under $25</option>
+          <option value="25-75">$25 – $75</option>
+          <option value="75-150">$75 – $150</option>
+          <option value="150-">$150+</option>
+          <option value="fund">Group funds</option>
+        </select>
+        <select class="input" id="f-sort" aria-label="Sort">
+          <option value="needed">Sort: still needed first</option>
+          <option value="prio">Sort: priority</option>
+          <option value="low">Sort: price, low to high</option>
+          <option value="high">Sort: price, high to low</option>
+          <option value="new">Sort: newest</option>
+          <option value="az">Sort: A to Z</option>
+        </select>
+        <span id="parent-tools" hidden style="display:contents">
+          <button class="btn" id="btn-starter" type="button">Quick-add from checklist</button>
+          <button class="btn primary" id="btn-add" type="button">+ Add item</button>
+        </span>
+      </div>
+      <div class="chips" id="f-cats" role="group" aria-label="Category"></div>
+    </div>
+    <div class="result-line" id="result-line"></div>
+    <div id="cards"></div>
+  </div>
+
+  <div class="wrap" id="view-mine" hidden></div>
+  <div class="wrap" id="view-room" hidden></div>
+</main>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+
+<script src="/assets/nest/nest-runtime.js"></script>
+<script>
+"use strict";
+/* ======================================================================
+   The Nest Registry
+   Data (artifact db):
+     items/{id}        registry items, written by parents
+     claims/{userId}   one doc per guest: { from, items: { [itemId]: {qty, status, amount, note, at} } }
+     people/{userId}   one doc per visitor: { firstSeen }
+     meta/settings     names, dates, address, co-parent ids
+     meta/thanks       { received: {"uid~itemId": true}, sent: {uid: true} }
+     locks/{itemId}    short leases so two people can't grab the last one at once
+   ====================================================================== */
+
+const CATS = {
+  nursery:  { name: "Nursery",          tile: "#dfe7f7", ink: "#2c4a8a", g: "N" },
+  sleep:    { name: "Sleep",            tile: "#e5def5", ink: "#5a3f96", g: "Z" },
+  feeding:  { name: "Feeding",          tile: "#fbe9d0", ink: "#9a5c0b", g: "F" },
+  diaper:   { name: "Diapering",        tile: "#dcefe5", ink: "#2d6b4c", g: "D" },
+  bath:     { name: "Bath & care",      tile: "#d7eef3", ink: "#1f6577", g: "B" },
+  clothes:  { name: "Clothing",         tile: "#f8dde3", ink: "#9c3248", g: "C" },
+  gear:     { name: "Gear & travel",    tile: "#e3e6ec", ink: "#38435c", g: "G" },
+  play:     { name: "Play & learning",  tile: "#fdf0c8", ink: "#8a6a00", g: "P" },
+  health:   { name: "Health & safety",  tile: "#fde0d6", ink: "#a33f1c", g: "H" },
+  mom:      { name: "For the parents",  tile: "#efe0ee", ink: "#7b3f75", g: "M" },
+  books:    { name: "Books",            tile: "#e6eedb", ink: "#4d6b1f", g: "R" },
+  funds:    { name: "Group funds",      tile: "#fbe3c4", ink: "#8b4f00", g: "$" },
+  other:    { name: "Other",            tile: "#e7e9ef", ink: "#4a5066", g: "+" },
+};
+const PRIO = { must: "Must-have", love: "Would love", dream: "Dream gift" };
+const PRIO_ORDER = { must: 0, love: 1, dream: 2 };
+const SIZES = ["", "Preemie", "Newborn", "0-3M", "3-6M", "6-9M", "9-12M", "12-18M", "18-24M", "2T", "One size"];
+
+/* Starter checklist: [category, name, qty, priority, approx price, tip] */
+const STARTER = [
+  ["nursery","Crib",1,"must",300,"Look for JPMA certification and a convertible frame."],
+  ["nursery","Crib mattress (firm, breathable)",1,"must",150,"Firm and flat; no gap at the edges."],
+  ["nursery","Waterproof mattress protectors",2,"must",25,"One on, one in the wash."],
+  ["nursery","Fitted crib sheets",4,"must",15,"Blowouts happen at 3am."],
+  ["nursery","Dresser / changing table combo",1,"love",350,"Anchor it to the wall."],
+  ["nursery","Changing pad + 2 covers",1,"must",45,""],
+  ["nursery","Glider or rocking chair",1,"dream",450,"You will live in this chair."],
+  ["nursery","Blackout curtains",1,"love",40,""],
+  ["nursery","Dimmable night light",1,"love",25,"Warm/red light keeps night feeds sleepy."],
+  ["nursery","Diaper caddy / storage bins",1,"love",30,""],
+  ["nursery","Laundry hamper",1,"love",30,""],
+  ["sleep","Bassinet",1,"must",200,"For the first few months beside your bed."],
+  ["sleep","Bassinet sheets",3,"must",15,""],
+  ["sleep","Swaddles (velcro/zip)",4,"must",20,"Try a couple of styles; babies have opinions."],
+  ["sleep","Sleep sacks (wearable blankets)",3,"must",30,"For after swaddling ends. Get a size up too."],
+  ["sleep","White noise machine",1,"must",35,""],
+  ["sleep","Video baby monitor",1,"love",180,""],
+  ["sleep","Smart sleep monitor / sock",1,"dream",300,""],
+  ["feeding","Nursing pillow",1,"must",45,""],
+  ["feeding","Bottles (slow-flow starter set)",1,"must",40,"Start small until you know what baby likes."],
+  ["feeding","Bottle brush + drying rack",1,"must",25,""],
+  ["feeding","Bottle sterilizer / dryer",1,"love",120,""],
+  ["feeding","Electric breast pump",1,"must",250,"Often covered by insurance: check first."],
+  ["feeding","Wearable breast pump",1,"dream",400,""],
+  ["feeding","Milk storage bags",2,"must",15,""],
+  ["feeding","Nursing bras",3,"must",35,""],
+  ["feeding","Nipple balm",2,"must",12,""],
+  ["feeding","Burp cloths",10,"must",3,"You cannot have too many."],
+  ["feeding","Bibs (newborn + bandana)",8,"love",4,""],
+  ["feeding","Formula dispenser / pitcher",1,"love",30,""],
+  ["feeding","High chair",1,"love",180,"Needed around 6 months."],
+  ["feeding","Silicone feeding set (plates, spoons, cups)",1,"love",40,"For starting solids."],
+  ["diaper","Diapers, newborn size",4,"must",30,"Boxes. Don't overbuy newborn size; they grow fast."],
+  ["diaper","Diapers, size 1",6,"must",30,"Boxes."],
+  ["diaper","Diapers, size 2",6,"must",32,"Boxes."],
+  ["diaper","Unscented wipes (bulk)",6,"must",20,""],
+  ["diaper","Diaper cream",2,"must",10,""],
+  ["diaper","Diaper pail + refills",1,"love",60,""],
+  ["diaper","Diaper bag / backpack",1,"must",90,""],
+  ["diaper","Portable changing mat",1,"love",25,""],
+  ["diaper","Wipe warmer",1,"dream",30,""],
+  ["bath","Infant bathtub with newborn sling",1,"must",35,""],
+  ["bath","Hooded towels",3,"must",18,""],
+  ["bath","Washcloths",10,"must",2,""],
+  ["bath","Gentle baby wash & shampoo",2,"must",10,""],
+  ["bath","Baby lotion / balm",1,"love",10,""],
+  ["bath","Grooming kit (nail file, brush, comb)",1,"must",20,"Baby nails are tiny razors."],
+  ["bath","Bath toys",1,"love",15,""],
+  ["clothes","Newborn bodysuits",8,"must",6,"Short and long sleeve."],
+  ["clothes","0-3M zip sleepers",8,"must",12,"Zippers beat snaps at 3am. Two-way zips are best."],
+  ["clothes","3-6M sleepers",6,"must",12,""],
+  ["clothes","6-9M outfits",6,"love",15,"Sizing ahead helps a lot."],
+  ["clothes","Socks & booties",8,"must",3,""],
+  ["clothes","Mittens & beanies",4,"must",5,""],
+  ["clothes","Going-home outfit",1,"love",30,""],
+  ["clothes","Seasonal outerwear (bunting / sun hat)",1,"love",40,"Depends on birth month."],
+  ["clothes","Pants / leggings",6,"love",8,""],
+  ["gear","Infant car seat + base",1,"must",300,"Never buy used. Check expiry date."],
+  ["gear","Extra car seat base (2nd car)",1,"love",120,""],
+  ["gear","Stroller (travel-system compatible)",1,"must",500,""],
+  ["gear","Baby carrier (structured)",1,"must",160,""],
+  ["gear","Stretchy wrap carrier",1,"love",50,""],
+  ["gear","Bouncer / rocker",1,"love",150,""],
+  ["gear","Infant swing",1,"dream",200,""],
+  ["gear","Pack 'n play / travel crib",1,"love",180,""],
+  ["gear","Car mirror (rear-facing)",1,"love",20,""],
+  ["gear","Stroller organizer & cup holder",1,"love",25,""],
+  ["play","Activity gym / play mat",1,"love",80,""],
+  ["play","High-contrast cards",1,"love",12,"Newborns see black-and-white best."],
+  ["play","Soft rattles & teethers",1,"love",15,""],
+  ["play","Pacifiers (0-3M)",4,"love",5,""],
+  ["play","Pacifier clips",3,"love",8,""],
+  ["play","Tummy-time mirror",1,"love",20,""],
+  ["play","Board-book & toy shelf",1,"dream",120,""],
+  ["health","Infant thermometer (rectal + forehead)",1,"must",30,""],
+  ["health","Nasal aspirator",1,"must",20,"The kind you suck through works best."],
+  ["health","Infant medicine kit (dropper, gas drops)",1,"must",25,"Ask the pediatrician before dosing anything."],
+  ["health","Humidifier (cool mist)",1,"love",50,""],
+  ["health","Outlet covers & cabinet locks",1,"love",30,""],
+  ["health","Baby gates",2,"love",50,"Needed once baby crawls."],
+  ["health","Infant first aid & CPR class",1,"love",80,"A great gift for both parents."],
+  ["mom","Postpartum recovery kit",1,"must",50,"Peri bottle, pads, cooling spray."],
+  ["mom","Comfy robe & nursing pajamas",1,"love",60,""],
+  ["mom","Big water bottle with straw",1,"must",30,""],
+  ["mom","Snack basket for night feeds",1,"love",40,""],
+  ["mom","Belly band / postpartum support",1,"love",40,""],
+  ["mom","Freezer meals",1,"must",0,"Sign up to cook one. Note what you're making."],
+  ["mom","Cleaning service, one visit",1,"dream",150,""],
+  ["books","Board books (a stack!)",10,"love",8,"Write a note inside the cover."],
+  ["books","Baby memory book",1,"love",35,""],
+  ["books","Bedtime story collection",1,"love",20,""],
+  ["funds","Diaper fund",1,"love",300,"Goal in dollars; chip in any amount."],
+  ["funds","College savings fund",1,"dream",1000,""],
+  ["funds","Postpartum doula / night nurse fund",1,"dream",800,""],
+  ["funds","Meal delivery fund",1,"love",250,""],
+];
+
+/* ---------------- state ---------------- */
+const S = {
+  db: null, user: null, assets: null, downloads: null,
+  myId: null, me: null, isOwner: false, readOnly: false, offline: false,
+  items: new Map(), claims: new Map(), people: new Map(),
+  settings: {}, thanks: { received: {}, sent: {} },
+  loaded: { items: false, claims: false, settings: false },
+  slow: false, profiles: {},
+  view: "registry",
+  f: { q: "", status: "all", prio: "all", price: "all", sort: "needed", cat: "all" },
+  spoiler: "all",
+  registered: false,
+};
+try { S.spoiler = localStorage.getItem("nest.spoiler") || "all"; } catch {}
+try { const sf = JSON.parse(localStorage.getItem("nest.filters") || "null"); if (sf) Object.assign(S.f, sf, { q: "" }); } catch {}
+
+/* ---------------- helpers ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "style") el.style.cssText = v;
+    else if (k === "html") el.innerHTML = v;
+    else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
+    else if (["value", "checked", "selected", "disabled", "indeterminate"].includes(k)) el[k] = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : String(kid));
+  }
+  return el;
+}
+const money = (n, dp) => n == null || n === "" || isNaN(n) ? "" : "$" + Number(n).toLocaleString(undefined, { minimumFractionDigits: dp ?? (n % 1 ? 2 : 0), maximumFractionDigits: 2 });
+const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + "s")}`;
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const safeUrl = (u) => { try { const x = new URL(String(u).trim()); return /^https?:$/.test(x.protocol) ? x.href : null; } catch { return null; } };
+const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return "link"; } };
+const ago = (t) => {
+  if (!t) return "";
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  if (s < 86400 * 7) return Math.floor(s / 86400) + "d ago";
+  return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
+const parseDate = (d) => { if (!d) return null; const [y, m, dd] = d.split("-").map(Number); return y ? new Date(y, m - 1, dd) : null; };
+const fmtDate = (d, opts) => d ? d.toLocaleDateString(undefined, opts || { weekday: "short", month: "long", day: "numeric", year: "numeric" }) : "";
+const daysUntil = (d) => { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d - t) / 86400000); };
+const cat = (k) => CATS[k] || CATS.other;
+const imgSrc = (item) => item.imageId ? "/api/nest/blob/" + encodeURIComponent(item.imageId) : null;
+
+function toast(msg, action) {
+  const t = h("div", { class: "toast" }, h("span", null, msg), action ? h("button", { onclick: () => { action.fn(); t.remove(); } }, action.label) : null);
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), action ? 7000 : 3800);
+}
+async function copyText(text, el) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch { if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast("Press Ctrl/Cmd+C to copy the selected text"); }
+}
+
+/* one write at a time per document */
+const chains = new Map();
+function queued(path, fn) {
+  const prev = chains.get(path) || Promise.resolve();
+  const next = prev.catch(() => {}).then(fn);
+  chains.set(path, next);
+  return next;
+}
+function writeError(e) {
+  console.warn(e);
+  if (e?.code === "invalid_argument") {
+    S.readOnly = true; scheduleRender();
+    toast("You can't change that. Only the parents edit the list; you can mark your own gifts.");
+  } else if (e?.code === "quota_exceeded") toast("The registry is full. Remove a few old items, then try again.");
+  else if (e?.code === "resource_exhausted") toast("That was a lot at once. Wait a few seconds and try again.");
+  else toast("Couldn't save that. Check your connection and try again.");
+}
+
+/* ---------------- derived data ---------------- */
+const isParent = () => S.isOwner || (S.myId && (S.settings.parents || []).includes(S.myId));
+function itemClaims(itemId) {
+  const out = [];
+  for (const [uid, doc] of S.claims) {
+    const c = doc.items?.[itemId];
+    if (c) out.push({ uid, from: doc.from, ...c });
+  }
+  return out;
+}
+function coverage(item) {
+  const cs = itemClaims(item.id);
+  if (item.kind === "fund") {
+    const raised = cs.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+    const goal = Number(item.goal) || 0;
+    return { cs, raised, goal, pct: goal ? clamp(raised / goal, 0, 1) : 0, covered: goal > 0 && raised >= goal, mine: cs.find(c => c.uid === S.myId) };
+  }
+  const want = Math.max(1, Number(item.qty) || 1);
+  const bought = cs.filter(c => c.status === "purchased").reduce((a, c) => a + (c.qty || 0), 0);
+  const reserved = cs.filter(c => c.status !== "purchased").reduce((a, c) => a + (c.qty || 0), 0);
+  const got = bought + reserved;
+  return { cs, want, bought, reserved, got, left: Math.max(0, want - got), covered: got >= want, mine: cs.find(c => c.uid === S.myId) };
+}
+/* what a parent should see given surprise mode */
+const showClaimsTo = () => !isParent() ? "guest" : S.spoiler;
+function giverName(uid, from) {
+  const p = S.profiles[uid];
+  return (from && String(from).trim()) || p?.name || "Someone";
+}
+
+/* ---------------- render scheduling ---------------- */
+let rq = 0;
+function scheduleRender() { if (!rq) rq = requestAnimationFrame(() => { rq = 0; render(); }); }
+function render() {
+  renderHero(); renderRing(); renderNav(); renderWho();
+  if (S.view === "registry") renderRegistry();
+  if (S.view === "mine") renderMine();
+  if (S.view === "room") renderRoom();
+  resolveProfiles();
+}
+let lastSig = "";
+function resolveProfiles() {
+  if (!S.user) return;
+  const ids = new Set([...S.claims.keys(), ...S.people.keys(), ...(S.settings.parents || [])]);
+  if (S.myId) ids.add(S.myId);
+  S.user.profiles([...ids]).then(ps => {
+    const sig = Object.values(ps).map(p => p.id + ":" + p.name).sort().join("|");
+    S.profiles = ps;
+    if (sig !== lastSig) { lastSig = sig; scheduleRenderSoft(); }
+  }).catch(() => {});
+}
+let softT = 0;
+function scheduleRenderSoft() { clearTimeout(softT); softT = setTimeout(() => { renderWho(); if (S.view !== "registry") scheduleRender(); else renderRegistry(); }, 30); }
+
+/* ---------------- hero / header ---------------- */
+function renderHero() {
+  const st = S.settings;
+  const due = parseDate(st.due), shower = parseDate(st.shower), born = parseDate(st.born);
+  const el = $("#hero"); el.replaceChildren();
+  const eyebrow = born ? "Welcome to the world" : "Baby registry";
+  el.append(...[
+    h("div", { class: "eyebrow" }, eyebrow),
+    h("h1", { class: "babyname" }, st.baby || "Baby on the way"),
+    h("div", { class: "parents-line" }, st.parentNames ? "with love from " + st.parentNames : (S.loaded.settings ? "A private registry" : "Loading the registry…")),
+    st.welcome ? h("p", { class: "welcome" }, st.welcome) : null,
+  ].filter(Boolean));
+  const dates = h("div", { class: "dates" });
+  if (born) dates.append(h("div", { class: "date-chip" }, h("span", null, "BORN"), h("b", null, fmtDate(born))));
+  else if (due) {
+    const d = daysUntil(due);
+    dates.append(h("div", { class: "date-chip" }, h("span", null, "DUE DATE"), h("b", null, fmtDate(due)), h("span", null, d > 0 ? plural(d, "day") + " to go" : d === 0 ? "today!" : plural(-d, "day") + " past due")));
+  }
+  if (shower) {
+    const d = daysUntil(shower);
+    dates.append(h("div", { class: "date-chip" }, h("span", null, "SHOWER"), h("b", null, fmtDate(shower, { weekday: "short", month: "long", day: "numeric" }) + (st.showerTime ? " · " + st.showerTime : "")),
+      h("span", null, (st.showerPlace ? st.showerPlace + " · " : "") + (d > 0 ? "in " + plural(d, "day") : d === 0 ? "today" : "done"))));
+  }
+  if (dates.childElementCount) el.append(dates);
+  if (due && !born) {
+    const daysLeft = daysUntil(due);
+    const week = clamp(Math.floor(40 - daysLeft / 7), 0, 40);
+    const track = h("div", { class: "weeks-track", role: "img", "aria-label": `Week ${week} of 40` });
+    for (let i = 1; i <= 40; i++) track.append(h("i", { class: i < week ? "on" : i === week ? "now" : "" }));
+    el.append(h("div", { class: "weeks" },
+      h("div", { class: "eyebrow" }, week >= 40 ? "Full term · any day now" : `Week ${week} of 40 · ${week < 14 ? "first" : week < 28 ? "second" : "third"} trimester`),
+      track,
+      h("div", { class: "weeks-legend" }, h("span", null, "wk 1"), h("span", null, "13"), h("span", null, "27"), h("span", null, "40"))));
+  }
+}
+function totals() {
+  let want = 0, got = 0, bought = 0, items = 0, raised = 0, goal = 0, mustLeft = 0;
+  for (const it of S.items.values()) {
+    const c = coverage(it); items++;
+    if (it.kind === "fund") { raised += c.raised; goal += c.goal; continue; }
+    want += c.want; got += Math.min(c.got, c.want); bought += c.bought;
+    if (it.prio === "must" && !c.covered) mustLeft++;
+  }
+  return { want, got, bought, items, raised, goal, mustLeft, pct: want ? got / want : 0 };
+}
+function renderRing() {
+  const t = totals(); const el = $("#ring"); el.replaceChildren();
+  const hide = isParent() && S.spoiler === "hidden";
+  const pct = hide ? 0 : t.pct;
+  const R = 62, C = 2 * Math.PI * R;
+  const svg = `<svg class="ring" viewBox="0 0 150 150" role="img" aria-label="${hide ? "Coverage hidden" : Math.round(pct * 100) + "% of the registry is covered"}">
+    <circle cx="75" cy="75" r="${R}" fill="none" style="stroke:rgb(255 255 255 / .12)" stroke-width="12"/>
+    <circle cx="75" cy="75" r="${R}" fill="none" style="stroke:var(--accent);transition:stroke-dasharray .6s" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * pct} ${C}" transform="rotate(-90 75 75)"/>
+    <text x="75" y="76" text-anchor="middle" style="fill:var(--band-ink)" font-size="34" font-weight="800">${hide ? "?" : Math.round(pct * 100) + "%"}</text>
+    <text x="75" y="98" text-anchor="middle" style="fill:var(--band-soft)" font-size="11" font-family="DM Mono, monospace" letter-spacing="1.5">COVERED</text></svg>`;
+  el.append(h("div", { html: svg }));
+  const stats = h("div", { class: "ring-stats" });
+  stats.append(h("div", null, h("b", null, String(t.items)), " items on the list"));
+  if (!hide) {
+    stats.append(h("div", null, h("b", null, `${t.got} of ${t.want}`), " pieces covered"));
+    if (t.mustLeft) stats.append(h("div", null, h("b", null, String(t.mustLeft)), " must-haves still open"));
+    if (t.goal) stats.append(h("div", null, h("b", null, money(t.raised)), " raised in funds"));
+  } else stats.append(h("div", null, "Surprise mode is on"));
+  el.append(stats);
+}
+
+/* ---------------- nav / identity ---------------- */
+function renderNav() {
+  for (const b of document.querySelectorAll(".tab")) b.setAttribute("aria-current", b.dataset.view === S.view ? "page" : "false");
+  $("#tab-room").hidden = !isParent();
+  const mine = S.claims.get(S.myId);
+  const n = mine ? Object.keys(mine.items || {}).filter(k => S.items.has(k)).length : 0;
+  const tm = $("#tab-mine"); tm.replaceChildren(...["My gifts", n ? h("span", { class: "count" }, String(n)) : null].filter(Boolean));
+  $("#parent-tools").hidden = !isParent();
+  for (const id of ["view-registry", "view-mine", "view-room"]) $("#" + id).hidden = id !== "view-" + S.view;
+}
+function renderWho() {
+  const el = $("#who"); el.replaceChildren();
+  if (!S.me) return;
+  const p = S.profiles[S.myId];
+  el.append(...[
+    isParent() ? h("span", { class: "role-pill" }, S.isOwner ? "Parent · owner" : "Parent") : (S.readOnly ? h("span", { class: "role-pill" }, "View only") : null),
+    h("span", { class: "who-name" }, p?.name || S.me.name || "You"),
+    h("img", { src: p?.avatarUrl || S.me.avatarUrl, alt: "" }),
+  ].filter(Boolean));
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => go(b.dataset.view)));
+function go(view) {
+  if (view === "room" && !isParent()) view = "registry";
+  S.view = view;
+  if (location.hash.slice(1) !== view) { try { history.replaceState(null, "", "#" + view); } catch { location.hash = view; } }
+  roomFormFresh = true;
+  render(); window.scrollTo({ top: Math.min(window.scrollY, $(".band").offsetHeight), behavior: "smooth" });
+}
+addEventListener("hashchange", () => { const v = location.hash.slice(1); if (["registry", "mine", "room"].includes(v) && v !== S.view) go(v); });
+
+/* ---------------- registry view ---------------- */
+function bindFilters() {
+  const q = $("#f-q");
+  q.addEventListener("input", () => { S.f.q = q.value; renderRegistry(); });
+  for (const k of ["status", "prio", "price", "sort"]) {
+    const el = $("#f-" + k); el.value = S.f[k];
+    el.addEventListener("change", () => { S.f[k] = el.value; saveFilters(); renderRegistry(); });
+  }
+  $("#btn-add").addEventListener("click", () => openItemEditor());
+  $("#btn-starter").addEventListener("click", openStarter);
+}
+function saveFilters() { try { localStorage.setItem("nest.filters", JSON.stringify(S.f)); } catch {} }
+
+function filteredItems() {
+  const q = S.f.q.trim().toLowerCase();
+  let list = [...S.items.values()].map(it => ({ it, c: coverage(it) }));
+  if (S.f.cat !== "all") list = list.filter(x => (x.it.cat || "other") === S.f.cat);
+  if (q) list = list.filter(({ it }) => [it.name, it.brand, it.notes, it.size, it.color, cat(it.cat).name].join(" ").toLowerCase().includes(q));
+  const spoil = showClaimsTo();
+  if (S.f.status === "open") list = list.filter(x => spoil === "hidden" || !x.c.covered);
+  if (S.f.status === "covered") list = list.filter(x => spoil !== "hidden" && x.c.covered);
+  if (S.f.status === "mine") list = list.filter(x => x.c.mine);
+  if (S.f.prio === "star") list = list.filter(x => x.it.star);
+  else if (S.f.prio !== "all") list = list.filter(x => x.it.prio === S.f.prio);
+  if (S.f.price === "fund") list = list.filter(x => x.it.kind === "fund");
+  else if (S.f.price !== "all") {
+    const [a, b] = S.f.price.split("-").map(v => v === "" ? Infinity : Number(v));
+    list = list.filter(x => x.it.kind !== "fund" && Number(x.it.price) >= a && Number(x.it.price) < (b || Infinity));
+  }
+  const pr = (x) => PRIO_ORDER[x.it.prio] ?? 1;
+  const sorters = {
+    needed: (a, b) => (spoil === "hidden" ? 0 : (a.c.covered - b.c.covered)) || ((b.it.star ? 1 : 0) - (a.it.star ? 1 : 0)) || pr(a) - pr(b) || (a.it.createdAt || 0) - (b.it.createdAt || 0),
+    prio: (a, b) => ((b.it.star ? 1 : 0) - (a.it.star ? 1 : 0)) || pr(a) - pr(b) || a.it.name.localeCompare(b.it.name),
+    low: (a, b) => (Number(a.it.price) || 0) - (Number(b.it.price) || 0),
+    high: (a, b) => (Number(b.it.price) || 0) - (Number(a.it.price) || 0),
+    new: (a, b) => (b.it.createdAt || 0) - (a.it.createdAt || 0),
+    az: (a, b) => a.it.name.localeCompare(b.it.name),
+  };
+  list.sort(sorters[S.f.sort] || sorters.needed);
+  return list;
+}
+function renderCats() {
+  const counts = {};
+  for (const it of S.items.values()) { const k = CATS[it.cat] ? it.cat : "other"; counts[k] = (counts[k] || 0) + 1; }
+  const el = $("#f-cats"); el.replaceChildren();
+  if (S.f.cat !== "all" && !counts[S.f.cat]) S.f.cat = "all";
+  const mk = (k, label, n) => h("button", { class: "chip", type: "button", "aria-pressed": String(S.f.cat === k), onclick: () => { S.f.cat = k; saveFilters(); renderRegistry(); } }, label, h("span", { class: "n" }, String(n)));
+  el.append(mk("all", "All", S.items.size));
+  for (const k of Object.keys(CATS)) if (counts[k]) el.append(mk(k, CATS[k].name, counts[k]));
+  el.hidden = S.items.size === 0;
+}
+function renderRegistryNotices() {
+  const el = $("#registry-notices"); el.replaceChildren();
+  if (S.offline) el.append(h("div", { class: "notice rose" }, "The registry can't be reached right now. It will load as soon as the connection is back."));
+  else if (S.slow && !S.loaded.items) el.append(h("div", { class: "notice" }, "The registry is taking a while to load. It will appear as soon as the connection catches up."));
+  if (S.readOnly && !isParent()) el.append(h("div", { class: "notice" }, "You can browse the registry, but marking gifts needs the invite link the parents sent you."));
+  if (isParent() && S.spoiler !== "all") el.append(h("div", { class: "notice sage" },
+    S.spoiler === "hidden" ? "Surprise mode: you can't see what's been claimed. Guests still can, so nothing gets doubled up." : "Surprise mode: you see what's covered, but not who's giving it.",
+    h("button", { class: "btn small", style: "margin-left:auto", onclick: () => setSpoiler("all") }, "Show everything")));
+}
+function renderRegistry() {
+  renderRegistryNotices(); renderCats();
+  const wrap = $("#cards"); wrap.replaceChildren();
+  const line = $("#result-line"); line.replaceChildren();
+  if (!S.loaded.items) {
+    if (!S.offline) wrap.append(h("div", { class: "empty" }, h("h2", null, "Loading the registry…"), h("p", null, "Items, gifts already claimed, and the latest from the parents.")));
+    return;
+  }
+  if (S.items.size === 0) {
+    wrap.append(isParent()
+      ? h("div", { class: "empty" }, h("h2", null, "Start your registry"), h("p", null, "Pick from a checklist of about a hundred baby essentials, or add exactly what you want with links, sizes and a photo. Guests see changes the moment you make them."),
+          h("div", { class: "toolbar-row", style: "justify-content:center" }, h("button", { class: "btn primary", onclick: openStarter }, "Quick-add from the checklist"), h("button", { class: "btn", onclick: () => openItemEditor() }, "Add one item")),
+          S.isOwner ? h("button", { class: "btn ghost small", onclick: () => go("room") }, "First, set the baby's name and dates in the Parents' room") : null)
+      : h("div", { class: "empty" }, h("h2", null, "The list is on its way"), h("p", null, "The parents haven't added anything yet. Check back soon; new items appear here automatically.")));
+    return;
+  }
+  const list = filteredItems();
+  const covered = [...S.items.values()].filter(i => coverage(i).covered).length;
+  line.append(...[h("span", null, `Showing ${list.length} of ${plural(S.items.size, "item")}` + (showClaimsTo() !== "hidden" ? ` · ${covered} fully covered` : "")),
+    (S.f.q || S.f.cat !== "all" || S.f.status !== "all" || S.f.prio !== "all" || S.f.price !== "all")
+      ? h("button", { class: "btn ghost small", onclick: () => { Object.assign(S.f, { q: "", cat: "all", status: "all", prio: "all", price: "all" }); $("#f-q").value = ""; for (const k of ["status", "prio", "price"]) $("#f-" + k).value = "all"; saveFilters(); renderRegistry(); } }, "Clear filters") : null].filter(Boolean));
+  if (!list.length) { wrap.append(h("div", { class: "empty" }, h("h2", null, "Nothing matches"), h("p", null, "Try a different search or clear the filters."))); return; }
+  const grid = h("div", { class: "cards" });
+  for (const x of list) grid.append(card(x.it, x.c));
+  wrap.append(grid);
+}
+
+function thumb(item, cls) {
+  const c = cat(item.cat); const src = imgSrc(item);
+  const t = h("div", { class: cls || "thumb", style: `--tile-ink:${c.ink};${src ? "" : `background:color-mix(in srgb, ${c.tile} var(--tile-mix), var(--surface))`}` });
+  if (src) t.append(h("img", { src, alt: item.name, loading: "lazy" }));
+  else if (cls) t.append(c.g);
+  else t.append(h("span", { class: "glyph" }, c.g), h("span", { class: "glyph-sub" }, c.name));
+  return t;
+}
+function card(item, c) {
+  const spoil = showClaimsTo();
+  const showCov = spoil !== "hidden";
+  const el = h("article", { class: "card" + (showCov && c.covered && !c.mine ? " covered" : "") + (c.mine ? " mine" : "") });
+  const t = thumb(item);
+  const badges = h("div", { class: "badges" });
+  if (item.star) badges.append(h("span", { class: "pill star" }, "★ Most wanted"));
+  if (item.prio) badges.append(h("span", { class: "pill " + item.prio }, PRIO[item.prio]));
+  if (c.mine) badges.append(h("span", { class: "pill you" }, c.mine.status === "purchased" ? "You bought this" : item.kind === "fund" ? "You chipped in" : "You're getting this"));
+  else if (showCov && c.covered) badges.append(h("span", { class: "pill ok" }, item.kind === "fund" ? "Goal reached" : "Covered"));
+  t.append(badges); el.append(t);
+
+  const body = h("div", { class: "card-body" });
+  body.append(h("h3", null, item.name));
+  const meta = h("div", { class: "meta-line" });
+  if (item.kind === "fund") meta.append(h("span", { class: "price" }, "Goal " + money(item.goal)));
+  else if (item.price) meta.append(h("span", { class: "price" }, money(item.price)));
+  if (item.brand) meta.append(h("span", null, item.brand));
+  if (item.size) meta.append(h("span", null, "Size " + item.size));
+  if (item.color) meta.append(h("span", null, item.color));
+  if (meta.childElementCount) body.append(meta);
+  if (item.notes) body.append(h("div", { class: "notes" }, item.notes));
+  const links = (item.links || []).map(l => ({ ...l, url: safeUrl(l.url) })).filter(l => l.url);
+  if (links.length) body.append(h("div", { class: "links" }, links.map(l => h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, (l.label || hostOf(l.url)) + " ↗"))));
+
+  if (showCov) {
+    if (item.kind === "fund") {
+      body.append(h("div", { class: "qty" },
+        h("div", { class: "qty-row" }, h("span", null, h("b", null, money(c.raised)), " raised"), h("span", null, c.goal ? Math.round(c.pct * 100) + "%" : "")),
+        h("div", { class: "bar" }, h("i", { style: `width:${c.pct * 100}%` }))));
+    } else {
+      const w = c.want;
+      body.append(h("div", { class: "qty" },
+        h("div", { class: "qty-row" }, h("span", null, w > 1 ? h("b", null, `${Math.min(c.got, w)} of ${w}`) : null, w > 1 ? " covered" : (c.covered ? "Covered" : "Still needed")), h("span", null, c.left ? `${c.left} still needed` : (c.got > w ? `${c.got - w} extra` : ""))),
+        h("div", { class: "bar" }, h("i", { style: `width:${clamp(c.bought / w, 0, 1) * 100}%` }), h("i", { class: "reserved", style: `width:${clamp(c.reserved / w, 0, 1 - clamp(c.bought / w, 0, 1)) * 100}%` }))));
+    }
+    if (spoil === "all" && isParent() && c.cs.length) {
+      body.append(h("div", { class: "claimers" }, c.cs.map(x => h("div", null, h("b", null, giverName(x.uid, x.from)), " · ",
+        item.kind === "fund" ? money(x.amount) : `${x.qty} ${x.status === "purchased" ? "bought" : "reserved"}`, x.note ? " · “" + x.note + "”" : ""))));
+    }
+  } else if (item.kind !== "fund" && (item.qty || 1) > 1) {
+    body.append(h("div", { class: "qty-row" }, h("span", null, `Asking for ${item.qty}`)));
+  }
+  el.append(body);
+
+  const foot = h("div", { class: "card-foot" });
+  if (!isParent()) {
+    if (c.mine) foot.append(h("button", { class: "btn", onclick: () => openClaim(item.id) }, "Change my gift"));
+    else if (c.covered) foot.append(h("button", { class: "btn", disabled: true }, item.kind === "fund" ? "Goal reached" : "Already covered"));
+    else foot.append(h("button", { class: "btn primary", disabled: S.readOnly || !S.db, onclick: () => openClaim(item.id) }, item.kind === "fund" ? "Chip in" : "I'll get this"));
+  } else {
+    foot.append(h("button", { class: "btn small", onclick: () => openItemEditor(item.id) }, "Edit"),
+      h("button", { class: "btn small ghost", title: item.star ? "Unmark most wanted" : "Mark as most wanted", "aria-label": item.star ? "Unmark most wanted" : "Mark as most wanted", onclick: () => saveItem(item.id, { star: !item.star }) }, item.star ? "★ Most wanted" : "☆ Most wanted"));
+    if (!c.mine && !c.covered) foot.append(h("button", { class: "btn small ghost", onclick: () => openClaim(item.id) }, "Mark gotten"));
+    if (c.mine) foot.append(h("button", { class: "btn small ghost", onclick: () => openClaim(item.id) }, "Edit my mark"));
+  }
+  el.append(foot);
+  return el;
+}
+
+/* ---------------- claim flow ---------------- */
+function openClaim(itemId) {
+  const item = S.items.get(itemId); if (!item) return;
+  const c = coverage(item);
+  const mine = c.mine;
+  const isFund = item.kind === "fund";
+  const others = isFund ? 0 : c.got - (mine?.qty || 0);
+  const maxQty = isFund ? 0 : Math.max(0, c.want - others);
+  let qty = mine?.qty || Math.min(1, maxQty) || 1;
+  const fromDefault = S.claims.get(S.myId)?.from || S.profiles[S.myId]?.name || S.me?.name || "";
+  const st = S.settings;
+  const out = h("output", null, String(qty));
+  const step = (d) => { qty = clamp(qty + d, 1, Math.max(1, maxQty)); out.textContent = qty; };
+  const body = h("div", { class: "dlg-body" });
+  const links = (item.links || []).map(l => ({ ...l, url: safeUrl(l.url) })).filter(l => l.url);
+
+  body.append(h("div", { class: "row", style: "border:0;padding:0" }, thumb(item, "mini"), h("div", null, h("div", { class: "row-title" }, item.name),
+    h("div", { class: "row-sub" }, [isFund ? `Goal ${money(item.goal)} · ${money(c.raised)} raised so far` : `${c.left} of ${c.want} still needed`, item.size ? " · size " + item.size : "", item.color ? " · " + item.color : "", item.price ? " · about " + money(item.price) : ""].join(""))), h("span")));
+  if (links.length) body.append(h("div", { class: "field" }, h("span", null, "Where to buy"), h("div", { class: "links" }, links.map(l => h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, (l.label || hostOf(l.url)) + " ↗")))));
+
+  if (isFund) {
+    body.append(h("label", { class: "field" }, h("span", null, "How much are you putting in?"),
+      h("input", { class: "input mono", id: "c-amount", type: "number", min: "1", step: "1", inputmode: "decimal", value: mine?.amount || "", placeholder: "50" }),
+      h("small", null, st.fundHow ? "How to send it: " + st.fundHow : "Send the money however the parents prefer; this just keeps the tally.")));
+  } else {
+    if (c.want > 1 || maxQty > 1) body.append(h("div", { class: "field" }, h("span", null, "How many?"),
+      h("div", { class: "toolbar-row" }, h("div", { class: "stepper" }, h("button", { type: "button", "aria-label": "One fewer", onclick: () => step(-1) }, "−"), out, h("button", { type: "button", "aria-label": "One more", onclick: () => step(1) }, "+")),
+        h("small", null, `Up to ${maxQty} available to you`))));
+    body.append(h("div", { class: "field" }, h("span", null, "Where are you at?"), h("div", { class: "choice" },
+      h("label", null, h("input", { type: "radio", name: "c-status", value: "reserved", checked: (mine?.status || "reserved") === "reserved" }), h("div", null, h("b", null, "Reserving it"), h("small", null, "I'm planning to buy this. Nobody else will be told to get it."))),
+      h("label", null, h("input", { type: "radio", name: "c-status", value: "purchased", checked: mine?.status === "purchased" }), h("div", null, h("b", null, "Already bought it"), h("small", null, "It's ordered or in hand."))))));
+  }
+  body.append(h("div", { class: "grid-2" },
+    h("label", { class: "field" }, h("span", null, "Gift from"), h("input", { class: "input", id: "c-from", value: fromDefault, placeholder: "Aunt Maria & Uncle Joe", maxlength: 80 }), h("small", null, "How the parents will see your name.")),
+    h("label", { class: "field" }, h("span", null, "Note for the parents (optional)"), h("input", { class: "input", id: "c-note", value: mine?.note || "", placeholder: "Bringing it to the shower!", maxlength: 280 }))));
+  if (st.address && !isFund) {
+    const a = h("div", { class: "addr" }, st.address);
+    body.append(h("div", { class: "field" }, h("span", null, "Shipping it? Send to"), a, h("div", null, h("button", { class: "btn small", type: "button", onclick: () => copyText(st.address, a) }, "Copy address"))));
+  }
+  const confirmSlot = h("div");
+  body.append(confirmSlot);
+
+  const saveBtn = h("button", { class: "btn primary", type: "button" }, mine ? "Save changes" : isFund ? "Count me in" : "Mark it as mine");
+  saveBtn.addEventListener("click", async () => {
+    const from = $("#c-from").value.trim().slice(0, 80);
+    const note = $("#c-note").value.trim().slice(0, 280);
+    let entry;
+    if (isFund) {
+      const amount = Math.round(Number($("#c-amount").value) * 100) / 100;
+      if (!(amount > 0)) { toast("Enter an amount above $0."); return; }
+      entry = { amount, status: "purchased", note, at: Date.now() };
+    } else {
+      const status = document.querySelector('input[name="c-status"]:checked')?.value || "reserved";
+      entry = { qty, status, note, at: mine?.at && mine.status === status && mine.qty === qty ? mine.at : Date.now() };
+    }
+    saveBtn.disabled = true;
+    const ok = await claimItem(item, entry, from, mine);
+    saveBtn.disabled = false;
+    if (ok) { closeDlg(); toast(isFund ? "Thank you! Your contribution is counted." : entry.status === "purchased" ? "Marked as bought. Thank you!" : "Reserved for you. Nobody else will buy it.", { label: "My gifts", fn: () => go("mine") }); }
+  });
+  const foot = h("div", { class: "dlg-foot" });
+  if (mine) {
+    const rel = h("button", { class: "btn danger left", type: "button", onclick: () => {
+      confirmSlot.replaceChildren(h("div", { class: "confirm-bar" }, "Release this so someone else can get it?",
+        h("button", { class: "btn small danger", type: "button", onclick: async () => { await releaseClaim(item.id); closeDlg(); toast("Released. It's back on the list."); } }, "Release"),
+        h("button", { class: "btn small", type: "button", onclick: () => confirmSlot.replaceChildren() }, "Keep it")));
+    } }, isFund ? "Remove my contribution" : "Release it");
+    foot.append(rel);
+  }
+  foot.append(h("button", { class: "btn", type: "button", onclick: closeDlg }, "Cancel"), saveBtn);
+  if (!isFund && maxQty <= 0 && !mine) { saveBtn.disabled = true; confirmSlot.replaceChildren(h("div", { class: "notice" }, "Someone just covered the last one.")); }
+  showDlg(h("div", { class: "dlg" }, dlgHead(isFund ? "Chip in" : mine ? "Your gift" : "I'll get this", isFund ? "Every bit helps toward the goal." : "The registry updates for everyone right away."), body, foot));
+}
+
+async function claimItem(item, entry, from, prevMine) {
+  if (!S.db || !S.myId) { toast("Open the invite link the parents sent you to mark gifts."); return false; }
+  const isFund = item.kind === "fund";
+  const growing = !isFund && entry.qty > (prevMine?.qty || 0);
+  try {
+    if (growing) {
+      // Short lease so two people can't take the last one at the same moment.
+      const lock = S.db.doc("locks/" + item.id);
+      let got = await lock.acquire({ holder: S.myId, ttlMs: 6000 });
+      if (!got.acquired) { await new Promise(r => setTimeout(r, 1500)); got = await lock.acquire({ holder: S.myId, ttlMs: 6000 }); }
+      if (!got.acquired) { toast("Someone else is grabbing this right now. Try again in a moment."); return false; }
+      const fresh = await S.db.collection("claims").get();
+      let others = 0;
+      for (const d of fresh.docs) if (d.id !== S.myId) others += d.data()?.items?.[item.id]?.qty || 0;
+      const avail = Math.max(0, (Number(item.qty) || 1) - others);
+      if (avail <= 0) { toast("Someone just covered the last one. Thanks anyway!"); return false; }
+      if (entry.qty > avail) { entry.qty = avail; toast(`Only ${avail} left, so you've got ${avail}.`); }
+    }
+    await writeMine(doc => { doc.items[item.id] = entry; if (from) doc.from = from; });
+    if (from) try { localStorage.setItem("nest.from", from); } catch {}
+    return true;
+  } catch (e) { writeError(e); return false; }
+}
+async function releaseClaim(itemId) {
+  try { await writeMine(doc => { delete doc.items[itemId]; }); } catch (e) { writeError(e); }
+}
+function writeMine(mutate) {
+  const path = "claims/" + S.myId;
+  return queued(path, async () => {
+    const cur = S.claims.get(S.myId);
+    const doc = cur ? JSON.parse(JSON.stringify(cur)) : { items: {} };
+    doc.items = doc.items || {};
+    mutate(doc);
+    doc.updatedAt = Date.now();
+    await S.db.doc(path).set(doc);
+  });
+}
+
+/* ---------------- my gifts view ---------------- */
+function renderMine() {
+  const el = $("#view-mine"); el.replaceChildren();
+  const sec = h("div", { class: "section" }); el.append(sec);
+  const mine = S.claims.get(S.myId);
+  const entries = Object.entries(mine?.items || {}).map(([id, c]) => ({ item: S.items.get(id), id, c })).filter(x => x.item);
+  const panel = h("div", { class: "panel" });
+  panel.append(h("div", { class: "panel-head" }, h("div", null, h("h2", null, "My gifts"), h("p", { class: "sub" }, entries.length ? "Everything you've reserved or bought. Mark reserved gifts as bought once you've ordered them." : "Nothing yet. Find something on the registry and tap “I'll get this.”")),
+    h("button", { class: "btn", onclick: () => go("registry") }, "Browse the registry")));
+  if (entries.length) {
+    const spend = entries.reduce((a, x) => a + (x.item.kind === "fund" ? Number(x.c.amount) || 0 : (Number(x.item.price) || 0) * (x.c.qty || 1)), 0);
+    const todo = entries.filter(x => x.item.kind !== "fund" && x.c.status !== "purchased").length;
+    panel.append(h("div", { class: "statgrid" },
+      stat(String(entries.length), "gifts"), stat(String(todo), "still to buy"), stat(money(Math.round(spend)), "estimated total"), stat(mine?.from || "—", "shown as")));
+    const rows = h("div", { class: "rows" });
+    entries.sort((a, b) => (a.c.status === "purchased") - (b.c.status === "purchased") || (b.c.at || 0) - (a.c.at || 0));
+    for (const { item, id, c } of entries) {
+      const isFund = item.kind === "fund";
+      const links = (item.links || []).map(l => safeUrl(l.url)).filter(Boolean);
+      rows.append(h("div", { class: "row" }, thumb(item, "mini"),
+        h("div", { style: "min-width:0" }, h("div", { class: "row-title" }, item.name),
+          h("div", { class: "row-sub" }, isFund ? `Chipped in ${money(c.amount)}` : `${c.qty} · ${c.status === "purchased" ? "bought" : "reserved"}` + (item.price ? ` · about ${money(item.price * c.qty)}` : "") + (item.size ? ` · size ${item.size}` : ""), c.note ? ` · “${c.note}”` : ""),
+          links.length ? h("div", { class: "links", style: "margin-top:6px" }, links.slice(0, 2).map(u => h("a", { href: u, target: "_blank", rel: "noopener noreferrer" }, hostOf(u) + " ↗"))) : null),
+        h("div", { class: "row-actions" },
+          !isFund && c.status !== "purchased" ? h("button", { class: "btn small primary", onclick: async () => { try { await writeMine(d => { d.items[id] = { ...d.items[id], status: "purchased", at: Date.now() }; }); toast("Marked as bought"); } catch (e) { writeError(e); } } }, "Mark bought") : null,
+          h("button", { class: "btn small", onclick: () => openClaim(id) }, "Edit"))));
+    }
+    panel.append(rows);
+  }
+  sec.append(panel);
+  const st = S.settings;
+  if (st.address || st.showerPlace || st.fundHow) {
+    const info = h("div", { class: "panel" }, h("h2", null, "Good to know"));
+    if (st.address) { const a = h("div", { class: "addr" }, st.address); info.append(h("div", { class: "field" }, h("span", null, "Ship gifts to"), a, h("div", null, h("button", { class: "btn small", onclick: () => copyText(st.address, a) }, "Copy address")))); }
+    if (st.showerPlace) info.append(h("div", { class: "field" }, h("span", null, "Shower"), h("div", null, [fmtDate(parseDate(st.shower)), st.showerTime, st.showerPlace].filter(Boolean).join(" · "))));
+    if (st.fundHow) info.append(h("div", { class: "field" }, h("span", null, "Contributing to a fund"), h("div", null, st.fundHow)));
+    sec.append(info);
+  }
+}
+function stat(big, small) { return h("div", { class: "stat" }, h("b", { class: "mono", style: "font-family:var(--f-display)" }, big), h("span", null, small)); }
+
+/* ---------------- parents' room ---------------- */
+let roomFormFresh = true;
+function renderRoom() {
+  if (!isParent()) { go("registry"); return; }
+  const el = $("#view-room");
+  let sec = $("#room-sec");
+  if (!sec || roomFormFresh) {
+    el.replaceChildren();
+    sec = h("div", { class: "section", id: "room-sec" });
+    el.append(sec);
+    sec.append(h("div", { id: "room-stats" }), h("div", { class: "cols" }, h("div", { id: "room-thanks", style: "display:grid;gap:22px;min-width:0" }), h("div", { style: "display:grid;gap:22px;min-width:0" }, h("div", { id: "room-surprise" }), h("div", { id: "room-feed" }), h("div", { id: "room-people" }), h("div", { id: "room-share" })))
+      , h("div", { id: "room-settings" }));
+    renderSettingsForm();
+    roomFormFresh = false;
+  }
+  renderRoomStats(); renderThanks(); renderSurprise(); renderFeed(); renderPeople(); renderShare();
+}
+function setSpoiler(v) { S.spoiler = v; try { localStorage.setItem("nest.spoiler", v); } catch {} render(); }
+function renderSurprise() {
+  const el = $("#room-surprise"); el.replaceChildren();
+  const tg = h("div", { class: "toggle-group", role: "group", "aria-label": "Surprise mode" },
+    [["all", "Show everything"], ["anon", "Hide who"], ["hidden", "Hide all gifts"]].map(([v, l]) => h("button", { type: "button", "aria-pressed": String(S.spoiler === v), onclick: () => setSpoiler(v) }, l)));
+  el.append(h("div", { class: "panel" }, h("div", null, h("h2", null, "Surprise mode"), h("p", { class: "sub" }, "Choose how much you see on this device. Guests always see what's covered so nothing gets bought twice. Adrianna can set hers separately.")), tg));
+}
+function allGifts() {
+  const out = [];
+  for (const [uid, doc] of S.claims) for (const [itemId, c] of Object.entries(doc.items || {})) {
+    const item = S.items.get(itemId); if (!item) continue;
+    out.push({ uid, from: doc.from, itemId, item, ...c });
+  }
+  return out;
+}
+function renderRoomStats() {
+  const el = $("#room-stats"); el.replaceChildren();
+  const t = totals(); const g = allGifts();
+  const givers = new Set(g.map(x => x.uid));
+  const sent = [...givers].filter(u => S.thanks.sent?.[u]).length;
+  const hide = S.spoiler === "hidden";
+  el.append(h("div", { class: "statgrid" },
+    stat(String(t.items), "items on the list"),
+    stat(hide ? "?" : `${Math.round(t.pct * 100)}%`, "of pieces covered"),
+    stat(hide ? "?" : String(givers.size), "people giving"),
+    stat(hide ? "?" : `${sent}/${givers.size}`, "thank-yous sent")));
+}
+function renderThanks() {
+  const el = $("#room-thanks"); el.replaceChildren();
+  const panel = h("div", { class: "panel" });
+  const g = allGifts();
+  const head = h("div", { class: "panel-head" }, h("div", null, h("h2", null, "Gifts & thank-yous"), h("p", { class: "sub" }, "Who's giving what. Tick gifts off as they arrive and track thank-you notes.")));
+  if (S.downloads && g.length && S.spoiler !== "hidden") head.append(h("button", { class: "btn small", onclick: exportCsv }, "Download as CSV"));
+  panel.append(head);
+  if (S.spoiler === "hidden") {
+    panel.append(h("div", { class: "empty", style: "margin:0" }, h("h2", null, "Surprise mode is on"), h("p", null, "Gifts are hidden on this device. Switch Surprise mode to “Show everything” when you're ready to write thank-you notes.")));
+  } else if (!g.length) {
+    panel.append(h("div", { class: "empty", style: "margin:0" }, h("h2", null, "No gifts yet"), h("p", null, "When someone reserves or buys something, it shows up here with their name and note.")));
+  } else {
+    const by = new Map();
+    for (const x of g) { if (!by.has(x.uid)) by.set(x.uid, []); by.get(x.uid).push(x); }
+    const givers = [...by.entries()].sort((a, b) => (!!S.thanks.sent?.[a[0]] - !!S.thanks.sent?.[b[0]]) || giverName(a[0], a[1][0].from).localeCompare(giverName(b[0], b[1][0].from)));
+    const list = h("div");
+    for (const [uid, gifts] of givers) {
+      const p = S.profiles[uid];
+      const anon = S.spoiler === "anon";
+      const name = anon ? "A guest" : giverName(uid, gifts[0].from);
+      const accountName = p?.name && p.name !== gifts[0].from ? p.name : "";
+      const sent = !!S.thanks.sent?.[uid];
+      const g2 = h("div", { class: "giver" },
+        h("div", { class: "giver-head" }, h("img", { src: anon ? "" : p?.avatarUrl || "", alt: "", hidden: anon || !p?.avatarUrl }), h("span", { class: "name" }, name, accountName && !anon ? h("span", { class: "row-sub" }, " · " + accountName) : null),
+          anon ? null : h("label", { class: "check" }, h("input", { type: "checkbox", checked: sent, onchange: (e) => setThanks("sent", uid, e.target.checked) }), sent ? "Thank-you sent" : "Thank-you to send")),
+        h("ul", null, gifts.sort((a, b) => (b.at || 0) - (a.at || 0)).map(x => {
+          const key = uid + "~" + x.itemId; const rec = !!S.thanks.received?.[key];
+          return h("li", null,
+            h("label", { class: "check" }, h("input", { type: "checkbox", checked: rec, onchange: (e) => setThanks("received", key, e.target.checked), "aria-label": "Received " + x.item.name }),
+              h("span", null, h("b", null, x.item.name), " ", h("span", { class: "row-sub" }, x.item.kind === "fund" ? money(x.amount) : `×${x.qty} · ${x.status === "purchased" ? "bought" : "reserved"}`))),
+            h("span", { class: "row-sub" }, rec ? "· arrived" : ""),
+            x.note && !anon ? h("span", { class: "note" }, "“" + x.note + "”") : null);
+        })));
+      list.append(g2);
+    }
+    panel.append(list);
+  }
+  el.append(panel);
+}
+async function setThanks(kind, key, val) {
+  if (!S.db) return;
+  try {
+    await queued("meta/thanks", async () => {
+      const cur = JSON.parse(JSON.stringify(S.thanks || {}));
+      cur.received = cur.received || {}; cur.sent = cur.sent || {};
+      if (val) cur[kind][key] = true; else delete cur[kind][key];
+      S.thanks = cur;
+      await S.db.doc("meta/thanks").set(cur);
+    });
+  } catch (e) { writeError(e); }
+}
+async function exportCsv() {
+  const rows = [["Gift from", "Item", "Qty / amount", "Status", "Received", "Thank-you sent", "Note", "Date"]];
+  for (const x of allGifts().sort((a, b) => giverName(a.uid, a.from).localeCompare(giverName(b.uid, b.from)))) {
+    rows.push([giverName(x.uid, x.from), x.item.name, x.item.kind === "fund" ? money(x.amount) : x.qty, x.item.kind === "fund" ? "contributed" : x.status, S.thanks.received?.[x.uid + "~" + x.itemId] ? "yes" : "", S.thanks.sent?.[x.uid] ? "yes" : "", x.note || "", x.at ? new Date(x.at).toISOString().slice(0, 10) : ""]);
+  }
+  const csv = rows.map(r => r.map(v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(",")).join("\n");
+  try { await S.downloads.save({ filename: "baby-registry-gifts.csv", data: csv }); }
+  catch (e) { if (e?.code !== "declined") toast("Couldn't save the file here."); }
+}
+function renderFeed() {
+  const el = $("#room-feed"); el.replaceChildren();
+  if (S.spoiler === "hidden") return;
+  const g = allGifts().sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 12);
+  const panel = h("div", { class: "panel" }, h("h2", null, "Latest activity"));
+  if (!g.length) panel.append(h("p", { class: "sub" }, "Nothing yet."));
+  else panel.append(h("div", { class: "feed" }, g.map(x => h("div", null, h("time", null, ago(x.at)),
+    h("span", null, h("b", null, S.spoiler === "anon" ? "Someone" : giverName(x.uid, x.from)), x.item.kind === "fund" ? ` chipped in ${money(x.amount)} to ` : x.status === "purchased" ? " bought " : " reserved ", x.item.name, x.item.kind !== "fund" && x.qty > 1 ? ` ×${x.qty}` : "")))));
+  el.append(panel);
+}
+function renderPeople() {
+  const el = $("#room-people"); el.replaceChildren();
+  const parents = new Set(S.settings.parents || []);
+  const ids = [...new Set([...S.people.keys(), ...S.claims.keys()])].filter(Boolean);
+  const panel = h("div", { class: "panel" }, h("div", null, h("h2", null, "People"), h("p", { class: "sub" },
+    S.isOwner ? "Everyone who has opened the registry. Make Adrianna a co-parent so she gets the Parents' room and can add items." : "Everyone who has opened the registry.")));
+  const rows = h("div", { class: "rows" });
+  for (const id of ids.sort((a, b) => (b === S.myId) - (a === S.myId) || (parents.has(b) - parents.has(a)))) {
+    const p = S.profiles[id];
+    const isP = parents.has(id) || (id === S.myId && S.isOwner);
+    const claims = Object.keys(S.claims.get(id)?.items || {}).filter(k => S.items.has(k)).length;
+    rows.append(h("div", { class: "row" }, h("img", { class: "avatar", src: p?.avatarUrl || "", alt: "", hidden: !p?.avatarUrl }),
+      h("div", { style: "min-width:0" }, h("div", { class: "row-title" }, (p?.name || S.claims.get(id)?.from || "Someone") + (id === S.myId ? " (you)" : "")),
+        h("div", { class: "row-sub" }, [isP ? (id === S.myId && S.isOwner ? "Parent · owner" : "Co-parent") : "Guest", S.spoiler !== "all" ? "" : plural(claims, "gift"), S.people.get(id)?.firstSeen ? "joined " + ago(S.people.get(id).firstSeen) : ""].filter(Boolean).join(" · "))),
+      S.isOwner && id !== S.myId ? h("button", { class: "btn small" + (parents.has(id) ? "" : " primary"), onclick: () => toggleParent(id) }, parents.has(id) ? "Remove co-parent" : "Make co-parent") : h("span")));
+  }
+  if (!ids.length) rows.append(h("p", { class: "sub" }, "Nobody else yet."));
+  panel.append(rows);
+  el.append(panel);
+}
+async function toggleParent(id) {
+  const parents = new Set(S.settings.parents || []);
+  parents.has(id) ? parents.delete(id) : parents.add(id);
+  await saveSettings({ parents: [...parents] });
+  toast(parents.has(id) ? "Co-parent added" : "Co-parent removed");
+}
+function renderShare() {
+  const el = $("#room-share"); el.replaceChildren();
+  const site = window.nestSite, link = site ? site.link() : "";
+  const box = h("div", { class: "addr mono", style: "white-space:normal;word-break:break-all;font-size:13px" }, link || "The invite link appears once the registry has loaded.");
+  el.append(h("div", { class: "panel" }, h("h2", null, "Sharing it"),
+    h("div", { class: "notes", style: "display:grid;gap:10px;color:var(--ink)" },
+      h("div", null, "1. Send guests this invite link. The registry is private: only people with the link can open it."),
+      box,
+      link ? h("div", { class: "toolbar-row" }, h("button", { class: "btn small primary", type: "button", onclick: () => copyText(site.link(), box) }, "Copy invite link"),
+        site.owner() ? h("button", { class: "btn small", type: "button", onclick: async () => {
+          if (!confirm("Make a new invite link? The old one stops letting new people in. Everyone who has already joined stays in.")) return;
+          try { await site.newLink(); renderShare(); toast("New invite link ready. Send this one from now on."); } catch (e) { writeError(e); } } }, "New link") : null) : null,
+      h("div", null, "2. Each guest types their name once and stays signed in on that device."),
+      h("div", null, "3. When Adrianna opens it, she appears under People. Make her a co-parent there."))));
+}
+function renderSettingsForm() {
+  const el = $("#room-settings"); el.replaceChildren();
+  const st = S.settings;
+  const f = (id, label, val, props = {}, hint) => h("label", { class: "field" }, h("span", null, label), props.tag === "textarea"
+    ? h("textarea", { class: "input", id, placeholder: props.placeholder || "", maxlength: props.maxlength || 600 }, val || "")
+    : h("input", { class: "input", id, value: val || "", type: props.type || "text", placeholder: props.placeholder || "", maxlength: props.maxlength || 120 }), hint ? h("small", null, hint) : null);
+  const form = h("form", { class: "panel", onsubmit: async (e) => {
+    e.preventDefault();
+    const v = (id) => $("#" + id).value.trim();
+    await saveSettings({ baby: v("s-baby"), parentNames: v("s-parents"), due: v("s-due"), born: v("s-born"), shower: v("s-shower"), showerTime: v("s-stime"), showerPlace: v("s-splace"), address: $("#s-address").value.trim(), welcome: $("#s-welcome").value.trim(), fundHow: v("s-fundhow") });
+    toast("Saved. Everyone sees the update now.");
+  } },
+    h("div", { class: "panel-head" }, h("div", null, h("h2", null, "Registry details"), h("p", { class: "sub" }, "What guests see at the top of the page, plus where to send gifts.")), h("button", { class: "btn primary", type: "submit" }, "Save details")),
+    h("div", { class: "grid-2" }, f("s-baby", "Baby's name or nickname", st.baby, { placeholder: "Baby Faber" }), f("s-parents", "Parents", st.parentNames, { placeholder: "You & Adrianna" })),
+    h("div", { class: "grid-3" }, f("s-due", "Due date", st.due, { type: "date" }), f("s-shower", "Shower date", st.shower, { type: "date" }), f("s-born", "Birthday (once baby arrives)", st.born, { type: "date" })),
+    h("div", { class: "grid-2" }, f("s-stime", "Shower time", st.showerTime, { placeholder: "2:00 PM" }), f("s-splace", "Shower place", st.showerPlace, { placeholder: "Grandma's house" })),
+    f("s-welcome", "Welcome message", st.welcome, { tag: "textarea", placeholder: "We're so grateful for all of you. No pressure, just love." }),
+    h("div", { class: "grid-2" }, f("s-address", "Ship-to address", st.address, { tag: "textarea", placeholder: "Name\nStreet\nCity, State ZIP" }, "Shown to guests when they mark a gift."),
+      f("s-fundhow", "How to send money for funds", st.fundHow, { placeholder: "Venmo @name, or a card at the shower", maxlength: 200 })));
+  el.append(form);
+}
+async function saveSettings(patch) {
+  if (!S.db) return;
+  try {
+    await queued("meta/settings", async () => {
+      const next = { ...JSON.parse(JSON.stringify(S.settings || {})), ...patch, updatedAt: Date.now() };
+      S.settings = next; scheduleRender();
+      await S.db.doc("meta/settings").set(next);
+    });
+  } catch (e) { writeError(e); }
+}
+
+/* ---------------- item editor ---------------- */
+function openItemEditor(id) {
+  const item = id ? S.items.get(id) : { kind: "item", prio: "love", qty: 1, cat: S.f.cat !== "all" ? S.f.cat : "nursery", links: [] };
+  if (!item) return;
+  let imageId = item.imageId || null;
+  const links = [...(item.links || [])];
+  while (links.length < 2) links.push({ label: "", url: "" });
+  const c = id ? coverage(item) : null;
+
+  const preview = h("div");
+  const drawPreview = () => preview.replaceChildren(imageId ? h("img", { src: "/api/nest/blob/" + encodeURIComponent(imageId), alt: "" }) : h("span", { class: "row-sub" }, "No photo yet"));
+  drawPreview();
+  const fileIn = h("input", { type: "file", accept: "image/*", id: "e-file", hidden: true });
+  const photoStatus = h("span", { class: "row-sub" });
+  const drop = h("div", { class: "photo-drop" }, preview, h("div", { style: "display:grid;gap:6px" },
+    S.assets ? h("div", { class: "toolbar-row" }, h("button", { class: "btn small", type: "button", onclick: () => fileIn.click() }, imageId ? "Replace photo" : "Add a photo"), imageId ? h("button", { class: "btn small ghost", type: "button", onclick: () => { imageId = null; drawPreview(); } }, "Remove") : null)
+      : h("span", { class: "row-sub" }, "Photo uploads need editor access."),
+    h("small", { class: "row-sub" }, "Drop or paste an image here. Screenshots from a store page work great."), photoStatus), fileIn);
+  async function takeFile(file) {
+    if (!file || !S.assets || !/^image\//.test(file.type)) return;
+    photoStatus.textContent = "Uploading…";
+    try { const blob = await shrink(file); const r = await S.assets.upload(blob); imageId = r.id; drawPreview(); photoStatus.textContent = "Photo added"; }
+    catch (e) { console.warn(e); photoStatus.textContent = "Upload failed. Try a smaller JPG or PNG."; }
+  }
+  fileIn.addEventListener("change", () => takeFile(fileIn.files[0]));
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("drag"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("drag"); takeFile(e.dataTransfer.files[0]); });
+
+  const linkWrap = h("div", { class: "link-rows" });
+  const drawLinks = () => {
+    linkWrap.replaceChildren(...links.map((l, i) => h("div", { class: "link-row" },
+      h("input", { class: "input", placeholder: "Store (Target, Amazon…)", value: l.label || "", "aria-label": "Store name", oninput: (e) => links[i].label = e.target.value, maxlength: 40 }),
+      h("input", { class: "input", placeholder: "https://…", value: l.url || "", "aria-label": "Product link", type: "url", oninput: (e) => links[i].url = e.target.value }),
+      h("button", { class: "btn small ghost", type: "button", "aria-label": "Remove link", onclick: () => { links.splice(i, 1); drawLinks(); } }, "×"))),
+      links.length < 5 ? h("div", null, h("button", { class: "btn small", type: "button", onclick: () => { links.push({ label: "", url: "" }); drawLinks(); } }, "+ Another store")) : null);
+  };
+  drawLinks();
+
+  const kindSel = h("select", { class: "input", id: "e-kind" }, h("option", { value: "item", selected: item.kind !== "fund" }, "A thing to buy"), h("option", { value: "fund", selected: item.kind === "fund" }, "A group fund (people chip in money)"));
+  const itemOnly = h("div", { class: "grid-3" },
+    h("label", { class: "field" }, h("span", null, "How many?"), h("input", { class: "input mono", id: "e-qty", type: "number", min: "1", max: "99", value: item.qty || 1 })),
+    h("label", { class: "field" }, h("span", null, "Price (each)"), h("input", { class: "input mono", id: "e-price", type: "number", min: "0", step: "0.01", value: item.price ?? "", placeholder: "49.99" })),
+    h("label", { class: "field" }, h("span", null, "Size"), h("select", { class: "input", id: "e-size" }, SIZES.map(s => h("option", { value: s, selected: (item.size || "") === s }, s || "—")))));
+  const fundOnly = h("div", { class: "grid-2" }, h("label", { class: "field" }, h("span", null, "Goal amount"), h("input", { class: "input mono", id: "e-goal", type: "number", min: "1", value: item.goal ?? "", placeholder: "500" })), h("span"));
+  const syncKind = () => { const f = kindSel.value === "fund"; itemOnly.hidden = f; fundOnly.hidden = !f; };
+  kindSel.addEventListener("change", syncKind); syncKind();
+
+  const confirmSlot = h("div");
+  const body = h("div", { class: "dlg-body" },
+    h("label", { class: "field" }, h("span", null, "What is it?"), h("input", { class: "input", id: "e-name", value: item.name || "", placeholder: "Convertible car seat", maxlength: 120, required: true })),
+    h("div", { class: "grid-3" },
+      h("label", { class: "field" }, h("span", null, "Category"), h("select", { class: "input", id: "e-cat" }, Object.entries(CATS).map(([k, v]) => h("option", { value: k, selected: (item.cat || "other") === k }, v.name)))),
+      h("label", { class: "field" }, h("span", null, "Priority"), h("select", { class: "input", id: "e-prio" }, Object.entries(PRIO).map(([k, v]) => h("option", { value: k, selected: item.prio === k }, v)))),
+      h("label", { class: "field" }, h("span", null, "Type"), kindSel)),
+    itemOnly, fundOnly,
+    h("div", { class: "grid-2" },
+      h("label", { class: "field" }, h("span", null, "Brand / model"), h("input", { class: "input", id: "e-brand", value: item.brand || "", placeholder: "Any brand is fine", maxlength: 80 })),
+      h("label", { class: "field" }, h("span", null, "Color / style"), h("input", { class: "input", id: "e-color", value: item.color || "", placeholder: "Sage, neutral, no pink", maxlength: 60 }))),
+    h("label", { class: "field" }, h("span", null, "Notes for guests"), h("textarea", { class: "input", id: "e-notes", maxlength: 500, placeholder: "Why we want it, what to avoid, gift receipt please…" }, item.notes || "")),
+    h("div", { class: "field" }, h("span", null, "Where to buy"), linkWrap),
+    h("div", { class: "field" }, h("span", null, "Photo"), drop),
+    h("label", { class: "check" }, h("input", { type: "checkbox", id: "e-star", checked: !!item.star }), "★ Most wanted: pin it to the top for guests"),
+    confirmSlot);
+  body.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find(f => /^image\//.test(f.type)); if (f) { e.preventDefault(); takeFile(f); } });
+
+  const save = h("button", { class: "btn primary", type: "button" }, id ? "Save changes" : "Add to registry");
+  save.addEventListener("click", async () => {
+    const name = $("#e-name").value.trim();
+    if (!name) { $("#e-name").focus(); toast("Give the item a name."); return; }
+    const kind = kindSel.value;
+    const data = {
+      name, kind, cat: $("#e-cat").value, prio: $("#e-prio").value,
+      brand: $("#e-brand").value.trim(), color: $("#e-color").value.trim(), notes: $("#e-notes").value.trim(),
+      links: links.map(l => ({ label: (l.label || "").trim(), url: safeUrl(l.url) })).filter(l => l.url),
+      star: $("#e-star").checked, imageId: imageId || null,
+    };
+    if (kind === "fund") { data.goal = Math.max(1, Number($("#e-goal").value) || 0); data.qty = 1; data.price = null; data.size = ""; }
+    else { data.qty = clamp(Math.round(Number($("#e-qty").value) || 1), 1, 99); const p = $("#e-price").value; data.price = p === "" ? null : Math.round(Number(p) * 100) / 100; data.size = $("#e-size").value; }
+    save.disabled = true;
+    const ok = await saveItem(id, data);
+    save.disabled = false;
+    if (ok) { closeDlg(); toast(id ? "Saved" : "Added to the registry"); }
+  });
+  const foot = h("div", { class: "dlg-foot" });
+  if (id) foot.append(h("button", { class: "btn danger left", type: "button", onclick: () => {
+    const n = c?.cs?.length || 0;
+    confirmSlot.replaceChildren(h("div", { class: "confirm-bar" }, n ? `${plural(n, "person has", "people have")} marked this. Delete it anyway?` : "Delete this item?",
+      h("button", { class: "btn small danger", type: "button", onclick: async () => { try { await S.db.doc("items/" + id).delete(); closeDlg(); toast("Deleted"); } catch (e) { writeError(e); } } }, "Delete"),
+      h("button", { class: "btn small", type: "button", onclick: () => confirmSlot.replaceChildren() }, "Keep it")));
+  } }, "Delete"));
+  foot.append(h("button", { class: "btn", type: "button", onclick: closeDlg }, "Cancel"), save);
+  showDlg(h("div", { class: "dlg" }, dlgHead(id ? "Edit item" : "Add an item", "Guests see it as soon as you save."), body, foot));
+  setTimeout(() => $("#e-name")?.focus(), 30);
+}
+async function saveItem(id, patch) {
+  if (!S.db) return false;
+  const docId = id || ("i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+  const path = "items/" + docId;
+  try {
+    await queued(path, async () => {
+      const cur = S.items.get(docId);
+      const base = cur ? JSON.parse(JSON.stringify(cur)) : { createdAt: Date.now(), createdBy: S.myId };
+      delete base.id;
+      const next = { ...base, ...patch, updatedAt: Date.now() };
+      await S.db.doc(path).set(next);
+    });
+    return true;
+  } catch (e) { writeError(e); return false; }
+}
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const max = 1200, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    if (s === 1 && file.size < 900000) return file;
+    const cv = document.createElement("canvas"); cv.width = Math.round(bmp.width * s); cv.height = Math.round(bmp.height * s);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    return await new Promise(r => cv.toBlob(b => r(b || file), "image/jpeg", 0.85));
+  } catch { return file; }
+}
+
+/* ---------------- starter checklist ---------------- */
+function openStarter() {
+  const have = new Set([...S.items.values()].map(i => i.name.toLowerCase()));
+  const picked = new Set();
+  const counter = h("span", { class: "row-sub" }, "Nothing selected");
+  const addBtn = h("button", { class: "btn primary", type: "button", disabled: true }, "Add selected");
+  const sync = () => { counter.textContent = picked.size ? plural(picked.size, "item") + " selected" : "Nothing selected"; addBtn.disabled = !picked.size; addBtn.textContent = picked.size ? `Add ${plural(picked.size, "item")}` : "Add selected"; };
+  const body = h("div", { class: "dlg-body" });
+  const byCat = {};
+  STARTER.forEach((row, i) => { (byCat[row[0]] ||= []).push(i); });
+  for (const [k, idxs] of Object.entries(byCat)) {
+    const boxes = [];
+    const block = h("div", { class: "cat-block" });
+    const allBtn = h("button", { class: "btn small ghost", type: "button", onclick: () => {
+      const free = boxes.filter(b => !b.disabled); const on = free.some(b => !b.checked);
+      for (const b of free) { b.checked = on; on ? picked.add(+b.value) : picked.delete(+b.value); } sync();
+    } }, "Select all");
+    block.append(h("h3", null, h("span", null, CATS[k].name), allBtn));
+    const list = h("div", { class: "starter-list" });
+    for (const i of idxs) {
+      const [, name, qty, prio, price, tip] = STARTER[i];
+      const exists = have.has(name.toLowerCase());
+      const box = h("input", { type: "checkbox", value: String(i), disabled: exists, onchange: (e) => { e.target.checked ? picked.add(i) : picked.delete(i); sync(); } });
+      boxes.push(box);
+      list.append(h("label", { class: "starter" + (exists ? " have" : "") }, box, h("div", null, h("b", null, name),
+        h("small", null, [exists ? "Already on your list" : PRIO[prio], k === "funds" ? (price ? "goal " + money(price) : "") : (qty > 1 ? "×" + qty : ""), k !== "funds" && price ? "~" + money(price) : "", tip].filter(Boolean).join(" · ")))));
+    }
+    block.append(list); body.append(block);
+  }
+  addBtn.addEventListener("click", async () => {
+    addBtn.disabled = true; let n = 0; const total = picked.size; const t0 = Date.now();
+    for (const i of picked) {
+      const [k, name, qty, prio, price, tip] = STARTER[i];
+      const data = k === "funds"
+        ? { name, kind: "fund", cat: k, prio, goal: price || 100, qty: 1, notes: tip, links: [], createdAt: t0 + n }
+        : { name, kind: "item", cat: k, prio, qty, price: price || null, notes: tip, links: [], size: "", createdAt: t0 + n };
+      const ok = await saveItem(null, data); if (!ok) break;
+      n++; addBtn.textContent = `Adding ${n} of ${total}…`;
+    }
+    closeDlg(); if (n) toast(`Added ${plural(n, "item")}. Edit any of them to add links, sizes and photos.`);
+  });
+  showDlg(h("div", { class: "dlg" }, dlgHead("Quick-add from the checklist", "A starting point built from what new parents actually use. Pick what you want; you can edit everything after."), body,
+    h("div", { class: "dlg-foot" }, h("span", { class: "left" }, counter), h("button", { class: "btn", type: "button", onclick: closeDlg }, "Cancel"), addBtn)), true);
+}
+
+/* ---------------- dialog plumbing ---------------- */
+function dlgHead(title, sub) { return h("div", { class: "dlg-head" }, h("div", null, h("h2", null, title), sub ? h("p", null, sub) : null), h("button", { class: "x", type: "button", "aria-label": "Close", onclick: closeDlg }, "×")); }
+function showDlg(content, wide) { const d = $("#dlg"); d.className = wide ? "wide" : ""; d.replaceChildren(content); if (!d.open) d.showModal(); }
+function closeDlg() { const d = $("#dlg"); if (d.open) d.close(); d.replaceChildren(); }
+$("#dlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeDlg(); });
+
+/* ---------------- header mobile (ambient canvas) ---------------- */
+(function mobile() {
+  const cv = $("#mobile"); const ctx = cv.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const shapes = [{ x: .50, len: .30, r: 9, k: "star" }, { x: .56, len: .46, r: 12, k: "moon" }, { x: .62, len: .24, r: 9, k: "cloud" }, { x: .68, len: .40, r: 10, k: "star" }, { x: .74, len: .28, r: 7, k: "moon" }];
+  let w = 0, hh = 0;
+  const size = () => { const r = cv.getBoundingClientRect(); const d = devicePixelRatio || 1; w = r.width; hh = r.height; cv.width = w * d; cv.height = hh * d; ctx.setTransform(d, 0, 0, d, 0, 0); };
+  const star = (x, y, r) => { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); };
+  const moon = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, Math.PI * .35, Math.PI * 1.65); ctx.arc(x + r * .45, y, r * .78, Math.PI * 1.55, Math.PI * .45, true); ctx.closePath(); ctx.fill(); };
+  const cloud = (x, y, r) => { ctx.beginPath(); ctx.arc(x - r * .6, y, r * .6, 0, Math.PI * 2); ctx.arc(x, y - r * .3, r * .75, 0, Math.PI * 2); ctx.arc(x + r * .7, y, r * .55, 0, Math.PI * 2); ctx.fill(); };
+  function frame(t) {
+    ctx.clearRect(0, 0, w, hh);
+    const style = getComputedStyle(document.documentElement);
+    const ink = style.getPropertyValue("--band-soft").trim() || "#9aa6c6", acc = style.getPropertyValue("--accent").trim() || "#d98c1f";
+    ctx.strokeStyle = ink; ctx.globalAlpha = .45; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(w * .48, 6); ctx.lineTo(w * .76, 6); ctx.stroke();
+    shapes.forEach((s, i) => {
+      const sway = reduce ? 0 : Math.sin(t / 1800 + i * 1.3) * 6;
+      const x = w * s.x + sway, y = 6 + hh * s.len;
+      ctx.globalAlpha = .45; ctx.beginPath(); ctx.moveTo(w * s.x, 6); ctx.lineTo(x, y - s.r); ctx.stroke();
+      ctx.globalAlpha = .75; ctx.fillStyle = i % 2 ? acc : ink;
+      (s.k === "star" ? star : s.k === "moon" ? moon : cloud)(x, y, s.r);
+    });
+    ctx.globalAlpha = 1;
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  size(); new ResizeObserver(size).observe(cv.parentElement); requestAnimationFrame(frame);
+})();
+
+/* ---------------- boot ---------------- */
+async function boot() {
+  bindFilters();
+  const v = location.hash.slice(1); if (["registry", "mine", "room"].includes(v)) S.view = v;
+  render();
+  if (!window.claude?.use) { S.offline = true; render(); return; }
+  const use = (n) => window.claude.use(n).catch(() => null);
+  const [db, user, assets, downloads] = await Promise.all([use("db"), use("user"), use("assets"), use("downloads")]);
+  Object.assign(S, { db, user, assets, downloads });
+  if (user) {
+    const [me, owner, canWrite] = await Promise.all([user.me(), user.isOwner(), user.can("data.write")]);
+    S.me = me; S.myId = me.id; S.isOwner = owner; if (canWrite === false) S.readOnly = true;
+  }
+  if (!db) { S.offline = true; render(); return; }
+  if (!S.myId) S.readOnly = true;
+
+  const slowT = setTimeout(() => { S.slow = true; scheduleRender(); }, 10000);
+  const settle = (k, snap) => { S.loaded[k] = true; if (!snap.metadata.fromCache) clearTimeout(slowT); };
+  const dead = (e) => { console.warn(e); clearTimeout(slowT); S.slow = true; scheduleRender(); };
+  db.collection("items").onSnapshot(snap => {
+    S.items = new Map(snap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
+    settle("items", snap); scheduleRender();
+  }, dead);
+  db.collection("claims").onSnapshot(snap => {
+    S.claims = new Map(snap.docs.map(d => [d.id, d.data()]));
+    settle("claims", snap); scheduleRender();
+  }, dead);
+  db.collection("people").onSnapshot(snap => {
+    S.people = new Map(snap.docs.map(d => [d.id, d.data()]));
+    if (!snap.metadata.fromCache) registerVisit();
+    scheduleRender();
+  }, dead);
+  db.doc("meta/settings").onSnapshot(snap => {
+    S.settings = snap.exists ? snap.data() : {};
+    settle("settings", snap);
+    if (S.view === "room" && !document.activeElement?.closest?.("#room-settings")) roomFormFresh = true;
+    scheduleRender();
+  }, dead);
+  db.doc("meta/thanks").onSnapshot(snap => {
+    S.thanks = snap.exists ? snap.data() : { received: {}, sent: {} };
+    scheduleRender();
+  }, dead);
+}
+async function registerVisit() {
+  if (S.registered || !S.myId || !S.db || S.people.has(S.myId)) { S.registered = S.registered || S.people.has(S.myId); return; }
+  S.registered = true;
+  try { await S.db.doc("people/" + S.myId).set({ firstSeen: Date.now() }); } catch (e) { if (e?.code === "invalid_argument") { S.readOnly = true; scheduleRender(); } }
+}
+setInterval(() => { if (S.view === "room") renderFeed(); }, 60000);
+boot();
+</script>
+
+</body></html>
