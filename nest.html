@@ -6,30 +6,38 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,650;1,9..144,500;1,9..144,650&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: a nursery-mobile header band (countdown + coverage ring) over a filterable card wall; parents get a back-office "room". */
 :root {
-  --bg: #f3f5fa;          /* cool milk */
+  /* The Faber nest: white, powder blue, blush pink and gold */
+  --bg: #fbfcfe;
   --surface: #ffffff;
-  --surface-2: #e9edf6;
-  --ink: #1d2742;         /* night-nursery navy */
-  --ink-soft: #56617d;
-  --line: #d6dcea;
-  --accent: #d98c1f;      /* marigold */
+  --surface-2: #eef4fb;
+  --ink: #1d2d55;          /* deep blue */
+  --ink-soft: #5a6a8e;
+  --line: #dce5f2;
+  --accent: #3a6fc4;       /* blue: actions */
   --accent-ink: #ffffff;
-  --accent-soft: #fbecd3;
-  --plum: #8a5a83;        /* dream-gift plum */
-  --plum-soft: #f1e3ef;
-  --sage: #3f8a62;        /* covered / good */
-  --sage-soft: #dcefe3;
-  --rose: #c2475b;        /* must-have / danger */
-  --rose-soft: #f8dfe3;
-  --band: #1d2742;
-  --band-ink: #f3f5fa;
-  --band-soft: #9aa6c6;
-  --shadow: 0 1px 2px rgb(29 39 66 / .06), 0 8px 24px rgb(29 39 66 / .07);
-  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --accent-soft: #e4eefb;
+  --pink: #d9779c;         /* blush */
+  --pink-ink: #b0466f;
+  --pink-soft: #fce8f0;
+  --gold: #c9a24a;         /* gold: what's covered, what matters most */
+  --gold-ink: #8a6716;
+  --gold-soft: #f8efd8;
+  --plum: #b0466f;         /* dream gifts: pink */
+  --plum-soft: #fce8f0;
+  --sage: #8a6716;         /* covered: gold */
+  --sage-soft: #f8efd8;
+  --rose: #c2416f;         /* must-haves */
+  --rose-soft: #fde4ec;
+  --band: linear-gradient(118deg, #e6f0fc 0%, #f4f0fb 42%, #fdeef4 72%, #fbf4e3 100%);
+  --band-ink: #1d2d55;
+  --band-soft: #66769a;
+  --ring-track: rgb(29 45 85 / .09);
+  --shadow: 0 1px 2px rgb(29 45 85 / .06), 0 8px 24px rgb(29 45 85 / .07);
+  --f-display: "Fraunces", "Iowan Old Style", Georgia, serif;
   --f-body: "Figtree", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --f-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --r: 14px;
@@ -37,18 +45,18 @@
   --glyph-lift: 0%;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #11162a; --surface: #1a2139; --surface-2: #232b47; --ink: #e9ecf6; --ink-soft: #a3acc8; --line: #2f3858;
-  --accent: #f0a83f; --accent-ink: #1b1405; --accent-soft: #3a2c14; --plum: #d39bcb; --plum-soft: #3a2639;
-  --sage: #6cc694; --sage-soft: #1d3a2b; --rose: #ef7d8f; --rose-soft: #47222a;
-  --band: #0b0f1f; --band-ink: #eef1f9; --band-soft: #8b96b8; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
-  --tile-mix: 18%; --glyph-lift: 45%;
+  --bg: #0e1630; --surface: #16213f; --surface-2: #1e2b50; --ink: #eef2fb; --ink-soft: #a9b4d2; --line: #2b3a63;
+  --accent: #8db3f0; --accent-ink: #0e1630; --accent-soft: #1f3260; --pink: #f1a0bf; --pink-ink: #f1a0bf; --pink-soft: #43233a;
+  --gold: #e3c06e; --gold-ink: #e3c06e; --gold-soft: #3a3018; --plum: #f1a0bf; --plum-soft: #43233a; --sage: #e3c06e; --sage-soft: #3a3018; --rose: #f38aa9; --rose-soft: #4a2133;
+  --band: linear-gradient(118deg, #13224a 0%, #221f45 50%, #33203a 78%, #2f2717 100%); --band-ink: #f3f5fb; --band-soft: #a9b4d2; --ring-track: rgb(255 255 255 / .12);
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25); --tile-mix: 18%; --glyph-lift: 45%;
   color-scheme: dark } }
 :root[data-theme="dark"] {
-  --bg: #11162a; --surface: #1a2139; --surface-2: #232b47; --ink: #e9ecf6; --ink-soft: #a3acc8; --line: #2f3858;
-  --accent: #f0a83f; --accent-ink: #1b1405; --accent-soft: #3a2c14; --plum: #d39bcb; --plum-soft: #3a2639;
-  --sage: #6cc694; --sage-soft: #1d3a2b; --rose: #ef7d8f; --rose-soft: #47222a;
-  --band: #0b0f1f; --band-ink: #eef1f9; --band-soft: #8b96b8; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
-  --tile-mix: 18%; --glyph-lift: 45%;
+  --bg: #0e1630; --surface: #16213f; --surface-2: #1e2b50; --ink: #eef2fb; --ink-soft: #a9b4d2; --line: #2b3a63;
+  --accent: #8db3f0; --accent-ink: #0e1630; --accent-soft: #1f3260; --pink: #f1a0bf; --pink-ink: #f1a0bf; --pink-soft: #43233a;
+  --gold: #e3c06e; --gold-ink: #e3c06e; --gold-soft: #3a3018; --plum: #f1a0bf; --plum-soft: #43233a; --sage: #e3c06e; --sage-soft: #3a3018; --rose: #f38aa9; --rose-soft: #4a2133;
+  --band: linear-gradient(118deg, #13224a 0%, #221f45 50%, #33203a 78%, #2f2717 100%); --band-ink: #f3f5fb; --band-soft: #a9b4d2; --ring-track: rgb(255 255 255 / .12);
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25); --tile-mix: 18%; --glyph-lift: 45%;
   color-scheme: dark }
 
 * { box-sizing: border-box; }
@@ -64,6 +72,12 @@ a { color: var(--accent); }
 
 /* ---------- header band ---------- */
 .band { background: var(--band); color: var(--band-ink); position: relative; overflow: hidden; }
+.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--pink), var(--gold)); }
+.crest { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--gold); color: var(--gold-ink); font: italic 600 16px/1 var(--f-display); letter-spacing: .02em; background: color-mix(in srgb, var(--surface) 55%, transparent); margin-bottom: 12px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 18%, transparent); }
+.babyname { background: linear-gradient(95deg, var(--ink) 10%, var(--accent) 45%, var(--pink-ink) 75%, var(--gold-ink)); -webkit-background-clip: text; background-clip: text; color: transparent; font-style: italic; padding-bottom: .08em; }
+.pill.star { background: var(--gold-soft) !important; color: var(--gold-ink) !important; border: 1px solid var(--gold) !important; }
+.card.mine { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold) !important; }
+.tab[aria-current="page"] { background: var(--ink); }
 .band .wrap { padding-block: 28px 30px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; position: relative; z-index: 1; }
 #mobile { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .55; }
 @media (max-width: 640px) { #mobile { opacity: .28; } }
@@ -77,9 +91,9 @@ a { color: var(--accent); }
 .date-chip span { font: 400 12px/1.2 var(--f-mono); color: var(--band-soft); letter-spacing: .04em; }
 .weeks { margin-top: 18px; max-width: 520px; }
 .weeks-track { display: grid; grid-template-columns: repeat(40, 1fr); gap: 2px; margin-top: 8px; }
-.weeks-track i { height: 10px; border-radius: 2px; background: rgb(255 255 255 / .12); }
-.weeks-track i.on { background: var(--accent); }
-.weeks-track i.now { background: var(--band-ink); box-shadow: 0 0 0 2px var(--accent); }
+.weeks-track i { height: 10px; border-radius: 2px; background: var(--ring-track); }
+.weeks-track i.on { background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 70%, var(--pink))); }
+.weeks-track i.now { background: var(--pink); box-shadow: 0 0 0 2px var(--accent); }
 .weeks-legend { display: flex; justify-content: space-between; margin-top: 6px; font: 400 11px var(--f-mono); color: var(--band-soft); }
 .ring-box { display: grid; justify-items: center; gap: 8px; text-align: center; }
 .ring { width: 150px; height: 150px; }
@@ -252,6 +266,31 @@ dialog.wide { width: min(940px, calc(100vw - 24px)); }
 .starter input { margin-top: 3px; accent-color: var(--accent); }
 .starter.have { opacity: .5; cursor: default; }
 .starter small { display: block; color: var(--ink-soft); font-size: 12.5px; }
+
+/* products: the parents' picks on a card, and the finder */
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.opt { display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 6px; background: var(--surface); min-width: 0; }
+.opt:hover { border-color: var(--gold); }
+.opt img, .find img, .pickrow img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; border-radius: 7px; display: block; }
+.opt .ph, .find .ph { aspect-ratio: 1; border-radius: 7px; background: var(--surface-2); display: grid; place-items: center; color: var(--ink-soft); font: italic 600 22px var(--f-display); }
+.opt b { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.opt small, .find small, .pickrow small { font: 500 11px var(--f-mono); color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opts-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+.opts-head b { color: var(--gold-ink); font-weight: 600; }
+.finds { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.find { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 6px; align-content: start; cursor: pointer; position: relative; background: var(--surface); min-width: 0; }
+.find:has(input:checked) { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); }
+.find input { position: absolute; top: 14px; right: 14px; width: 20px; height: 20px; accent-color: var(--gold); }
+.find b { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; } .find .why { font-size: 12.5px; color: var(--ink-soft); }
+.find .tier { justify-self: start; font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.find .tier.budget { background: var(--accent-soft); } .find .tier.mid { background: var(--pink-soft); color: var(--pink-ink); } .find .tier.premium { background: var(--gold-soft); color: var(--gold-ink); }
+.find a { font-size: 12.5px; font-weight: 600; color: var(--accent); overflow-wrap: anywhere; }
+.finding { display: grid; gap: 10px; justify-items: center; padding: 30px 10px; color: var(--ink-soft); text-align: center; }
+.spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--gold); animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) { .finds { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .find { padding: 8px; } .find b { font-size: 13px; } .find input { top: 12px; right: 12px; } }
+.pickrow { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: center; }
+.pickrow img, .pickrow .ph { width: 52px; height: 52px; }
 
 /* toast */
 #toasts { position: fixed; left: 50%; translate: -50% 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; z-index: 50; width: min(440px, calc(100vw - 32px)); }
@@ -535,7 +574,9 @@ const parseDate = (d) => { if (!d) return null; const [y, m, dd] = d.split("-").
 const fmtDate = (d, opts) => d ? d.toLocaleDateString(undefined, opts || { weekday: "short", month: "long", day: "numeric", year: "numeric" }) : "";
 const daysUntil = (d) => { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d - t) / 86400000); };
 const cat = (k) => CATS[k] || CATS.other;
-const imgSrc = (item) => item.imageId ? "/api/nest/blob/" + encodeURIComponent(item.imageId) : null;
+const optImg = (o) => o && (o.i ? "/api/nest/blob/" + encodeURIComponent(o.i) : o.r && safeUrl(o.r)) || null;
+const imgSrc = (item) => item.imageId ? "/api/nest/blob/" + encodeURIComponent(item.imageId) : optImg((item.options || []).find((o) => o.i || o.r));
+const cost = (n, cur) => n == null || n === "" || isNaN(n) ? "" : (!cur || cur === "USD" ? money(n) : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur);
 
 function toast(msg, action) {
   const t = h("div", { class: "toast" }, h("span", null, msg), action ? h("button", { onclick: () => { action.fn(); t.remove(); } }, action.label) : null);
@@ -625,7 +666,9 @@ function renderHero() {
   const due = parseDate(st.due), shower = parseDate(st.shower), born = parseDate(st.born);
   const el = $("#hero"); el.replaceChildren();
   const eyebrow = born ? "Welcome to the world" : "Baby registry";
+  const initials = String(st.parentNames || "").split(/\s*(?:&|\+|\band\b|,)\s*/i).map((w) => w.trim()[0]).filter(Boolean).slice(0, 2).map((c) => c.toUpperCase());
   el.append(...[
+    initials.length ? h("div", { class: "crest", "aria-hidden": "true" }, initials.join(" & ")) : null,
     h("div", { class: "eyebrow" }, eyebrow),
     h("h1", { class: "babyname" }, st.baby || "Baby on the way"),
     h("div", { class: "parents-line" }, st.parentNames ? "with love from " + st.parentNames : (S.loaded.settings ? "A private registry" : "Loading the registry…")),
@@ -670,8 +713,9 @@ function renderRing() {
   const pct = hide ? 0 : t.pct;
   const R = 62, C = 2 * Math.PI * R;
   const svg = `<svg class="ring" viewBox="0 0 150 150" role="img" aria-label="${hide ? "Coverage hidden" : Math.round(pct * 100) + "% of the registry is covered"}">
-    <circle cx="75" cy="75" r="${R}" fill="none" style="stroke:rgb(255 255 255 / .12)" stroke-width="12"/>
-    <circle cx="75" cy="75" r="${R}" fill="none" style="stroke:var(--accent);transition:stroke-dasharray .6s" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * pct} ${C}" transform="rotate(-90 75 75)"/>
+    <defs><linearGradient id="ringg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset=".55" style="stop-color:var(--pink)"/><stop offset="1" style="stop-color:var(--gold)"/></linearGradient></defs>
+    <circle cx="75" cy="75" r="${R}" fill="none" style="stroke:var(--ring-track)" stroke-width="12"/>
+    <circle cx="75" cy="75" r="${R}" fill="none" style="stroke:url(#ringg);transition:stroke-dasharray .6s" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * pct} ${C}" transform="rotate(-90 75 75)"/>
     <text x="75" y="76" text-anchor="middle" style="fill:var(--band-ink)" font-size="34" font-weight="800">${hide ? "?" : Math.round(pct * 100) + "%"}</text>
     <text x="75" y="98" text-anchor="middle" style="fill:var(--band-soft)" font-size="11" font-family="DM Mono, monospace" letter-spacing="1.5">COVERED</text></svg>`;
   el.append(h("div", { html: svg }));
@@ -771,6 +815,11 @@ function renderRegistryNotices() {
   if (S.offline) el.append(h("div", { class: "notice rose" }, "The registry can't be reached right now. It will load as soon as the connection is back."));
   else if (S.slow && !S.loaded.items) el.append(h("div", { class: "notice" }, "The registry is taking a while to load. It will appear as soon as the connection catches up."));
   if (S.readOnly && !isParent()) el.append(h("div", { class: "notice" }, "You can browse the registry, but marking gifts needs the invite link the parents sent you."));
+  if (isParent() && S.loaded.items) {
+    const bare = [...S.items.values()].filter((i) => i.kind !== "fund" && !(i.options || []).length);
+    if (bare.length) el.append(h("div", { class: "notice" }, `✦ ${plural(bare.length, "item")} without product picks yet. Find real products (photos, prices, store links) and keep the ones closest to what you want; guests choose from those.`,
+      h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(bare[0].id, true) }, "Find products")));
+  }
   if (isParent() && S.spoiler !== "all") el.append(h("div", { class: "notice sage" },
     S.spoiler === "hidden" ? "Surprise mode: you can't see what's been claimed. Guests still can, so nothing gets doubled up." : "Surprise mode: you see what's covered, but not who's giving it.",
     h("button", { class: "btn small", style: "margin-left:auto", onclick: () => setSpoiler("all") }, "Show everything")));
@@ -834,6 +883,7 @@ function card(item, c) {
   if (item.notes) body.append(h("div", { class: "notes" }, item.notes));
   const links = (item.links || []).map(l => ({ ...l, url: safeUrl(l.url) })).filter(l => l.url);
   if (links.length) body.append(h("div", { class: "links" }, links.map(l => h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, (l.label || hostOf(l.url)) + " ↗"))));
+  if (item.kind !== "fund" && (item.options || []).length) body.append(optsStrip(item));
 
   if (showCov) {
     if (item.kind === "fund") {
@@ -848,7 +898,7 @@ function card(item, c) {
     }
     if (spoil === "all" && isParent() && c.cs.length) {
       body.append(h("div", { class: "claimers" }, c.cs.map(x => h("div", null, h("b", null, giverName(x.uid, x.from)), " · ",
-        item.kind === "fund" ? money(x.amount) : `${x.qty} ${x.status === "purchased" ? "bought" : "reserved"}`, x.note ? " · “" + x.note + "”" : ""))));
+        item.kind === "fund" ? money(x.amount) : `${x.qty} ${x.status === "purchased" ? "bought" : "reserved"}`, x.pick ? " · " + x.pick : "", x.note ? " · “" + x.note + "”" : ""))));
     }
   } else if (item.kind !== "fund" && (item.qty || 1) > 1) {
     body.append(h("div", { class: "qty-row" }, h("span", null, `Asking for ${item.qty}`)));
@@ -861,6 +911,7 @@ function card(item, c) {
     else if (c.covered) foot.append(h("button", { class: "btn", disabled: true }, item.kind === "fund" ? "Goal reached" : "Already covered"));
     else foot.append(h("button", { class: "btn primary", disabled: S.readOnly || !S.db, onclick: () => openClaim(item.id) }, item.kind === "fund" ? "Chip in" : "I'll get this"));
   } else {
+    if (item.kind !== "fund") foot.append(h("button", { class: "btn small", onclick: () => openFinder(item.id) }, (item.options || []).length ? "✦ Products" : "✦ Find products"));
     foot.append(h("button", { class: "btn small", onclick: () => openItemEditor(item.id) }, "Edit"),
       h("button", { class: "btn small ghost", title: item.star ? "Unmark most wanted" : "Mark as most wanted", "aria-label": item.star ? "Unmark most wanted" : "Mark as most wanted", onclick: () => saveItem(item.id, { star: !item.star }) }, item.star ? "★ Most wanted" : "☆ Most wanted"));
     if (!c.mine && !c.covered) foot.append(h("button", { class: "btn small ghost", onclick: () => openClaim(item.id) }, "Mark gotten"));
@@ -890,6 +941,14 @@ function openClaim(itemId) {
     h("div", { class: "row-sub" }, [isFund ? `Goal ${money(item.goal)} · ${money(c.raised)} raised so far` : `${c.left} of ${c.want} still needed`, item.size ? " · size " + item.size : "", item.color ? " · " + item.color : "", item.price ? " · about " + money(item.price) : ""].join(""))), h("span")));
   if (links.length) body.append(h("div", { class: "field" }, h("span", null, "Where to buy"), h("div", { class: "links" }, links.map(l => h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, (l.label || hostOf(l.url)) + " ↗")))));
 
+  const opts = isFund ? [] : (item.options || []);
+  if (opts.length) {
+    const cur = mine?.pick || "";
+    body.append(h("div", { class: "field" }, h("span", null, "Which one?"), h("div", { class: "choice" },
+      opts.map((o) => h("label", null, h("input", { type: "radio", name: "c-pick", value: o.t, checked: cur === o.t }), h("div", { class: "pickrow" }, optImg(o) ? pic(optImg(o)) : h("div", { class: "ph" }, "✦"),
+        h("div", { style: "min-width:0" }, h("b", null, o.t), h("small", null, [o.p ? cost(o.p, o.c) : "", o.s].filter(Boolean).join(" · ")), o.u ? h("div", null, h("a", { href: safeUrl(o.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (o.s || hostOf(o.u)) + " ↗")) : null)))),
+      h("label", null, h("input", { type: "radio", name: "c-pick", value: "", checked: !cur }), h("div", null, h("b", null, "Something similar"), h("small", null, "Another brand or model that fits the bill."))))));
+  }
   if (isFund) {
     body.append(h("label", { class: "field" }, h("span", null, "How much are you putting in?"),
       h("input", { class: "input mono", id: "c-amount", type: "number", min: "1", step: "1", inputmode: "decimal", value: mine?.amount || "", placeholder: "50" }),
@@ -924,6 +983,7 @@ function openClaim(itemId) {
     } else {
       const status = document.querySelector('input[name="c-status"]:checked')?.value || "reserved";
       entry = { qty, status, note, at: mine?.at && mine.status === status && mine.qty === qty ? mine.at : Date.now() };
+      const pk = document.querySelector('input[name="c-pick"]:checked'); if (pk && pk.value) entry.pick = pk.value.slice(0, 160);
     }
     saveBtn.disabled = true;
     const ok = await claimItem(item, entry, from, mine);
@@ -1003,7 +1063,7 @@ function renderMine() {
       const links = (item.links || []).map(l => safeUrl(l.url)).filter(Boolean);
       rows.append(h("div", { class: "row" }, thumb(item, "mini"),
         h("div", { style: "min-width:0" }, h("div", { class: "row-title" }, item.name),
-          h("div", { class: "row-sub" }, isFund ? `Chipped in ${money(c.amount)}` : `${c.qty} · ${c.status === "purchased" ? "bought" : "reserved"}` + (item.price ? ` · about ${money(item.price * c.qty)}` : "") + (item.size ? ` · size ${item.size}` : ""), c.note ? ` · “${c.note}”` : ""),
+          h("div", { class: "row-sub" }, isFund ? `Chipped in ${money(c.amount)}` : `${c.qty} · ${c.status === "purchased" ? "bought" : "reserved"}` + (c.pick ? ` · ${c.pick}` : "") + (item.price ? ` · about ${money(item.price * c.qty)}` : "") + (item.size ? ` · size ${item.size}` : ""), c.note ? ` · “${c.note}”` : ""),
           links.length ? h("div", { class: "links", style: "margin-top:6px" }, links.slice(0, 2).map(u => h("a", { href: u, target: "_blank", rel: "noopener noreferrer" }, hostOf(u) + " ↗"))) : null),
         h("div", { class: "row-actions" },
           !isFund && c.status !== "purchased" ? h("button", { class: "btn small primary", onclick: async () => { try { await writeMine(d => { d.items[id] = { ...d.items[id], status: "purchased", at: Date.now() }; }); toast("Marked as bought"); } catch (e) { writeError(e); } } }, "Mark bought") : null,
@@ -1096,7 +1156,7 @@ function renderThanks() {
           const key = uid + "~" + x.itemId; const rec = !!S.thanks.received?.[key];
           return h("li", null,
             h("label", { class: "check" }, h("input", { type: "checkbox", checked: rec, onchange: (e) => setThanks("received", key, e.target.checked), "aria-label": "Received " + x.item.name }),
-              h("span", null, h("b", null, x.item.name), " ", h("span", { class: "row-sub" }, x.item.kind === "fund" ? money(x.amount) : `×${x.qty} · ${x.status === "purchased" ? "bought" : "reserved"}`))),
+              h("span", null, h("b", null, x.item.name), " ", h("span", { class: "row-sub" }, x.item.kind === "fund" ? money(x.amount) : `×${x.qty} · ${x.status === "purchased" ? "bought" : "reserved"}` + (x.pick ? ` · ${x.pick}` : "")))),
             h("span", { class: "row-sub" }, rec ? "· arrived" : ""),
             x.note && !anon ? h("span", { class: "note" }, "“" + x.note + "”") : null);
         })));
@@ -1119,9 +1179,9 @@ async function setThanks(kind, key, val) {
   } catch (e) { writeError(e); }
 }
 async function exportCsv() {
-  const rows = [["Gift from", "Item", "Qty / amount", "Status", "Received", "Thank-you sent", "Note", "Date"]];
+  const rows = [["Gift from", "Item", "Which one", "Qty / amount", "Status", "Received", "Thank-you sent", "Note", "Date"]];
   for (const x of allGifts().sort((a, b) => giverName(a.uid, a.from).localeCompare(giverName(b.uid, b.from)))) {
-    rows.push([giverName(x.uid, x.from), x.item.name, x.item.kind === "fund" ? money(x.amount) : x.qty, x.item.kind === "fund" ? "contributed" : x.status, S.thanks.received?.[x.uid + "~" + x.itemId] ? "yes" : "", S.thanks.sent?.[x.uid] ? "yes" : "", x.note || "", x.at ? new Date(x.at).toISOString().slice(0, 10) : ""]);
+    rows.push([giverName(x.uid, x.from), x.item.name, x.pick || "", x.item.kind === "fund" ? money(x.amount) : x.qty, x.item.kind === "fund" ? "contributed" : x.status, S.thanks.received?.[x.uid + "~" + x.itemId] ? "yes" : "", S.thanks.sent?.[x.uid] ? "yes" : "", x.note || "", x.at ? new Date(x.at).toISOString().slice(0, 10) : ""]);
   }
   const csv = rows.map(r => r.map(v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(",")).join("\n");
   try { await S.downloads.save({ filename: "baby-registry-gifts.csv", data: csv }); }
@@ -1331,6 +1391,66 @@ async function shrink(file) {
   } catch { return file; }
 }
 
+/* ---------------- products: find them, keep the closest, let guests choose ---------------- */
+const pic = (src) => h("img", { src, alt: "", loading: "lazy", referrerpolicy: "no-referrer", onerror: (e) => e.target.replaceWith(h("div", { class: "ph" }, "✦")) });
+function optsStrip(item) {
+  const o = item.options || [], wrap = h("div", { class: "qty" });
+  wrap.append(h("div", { class: "opts-head" }, h("span", null, h("b", null, "✦ " + plural(o.length, "pick")), isParent() ? "" : " · any of these is perfect"), o.length > 4 ? h("span", null, "+" + (o.length - 4) + " more when you choose") : null));
+  wrap.append(h("div", { class: "opts" }, o.slice(0, 4).map((x) => h("a", { class: "opt", href: safeUrl(x.u) || "#", target: "_blank", rel: "noopener noreferrer", title: x.t },
+    optImg(x) ? pic(optImg(x)) : h("div", { class: "ph" }, "✦"), h("b", null, x.t), h("small", null, [x.p ? cost(x.p, x.c) : "", x.s].filter(Boolean).join(" · "))))));
+  return wrap;
+}
+const finderSkipped = new Set();
+const nextBare = (not) => [...S.items.values()].filter((i) => i.id !== not && i.kind !== "fund" && !(i.options || []).length && !finderSkipped.has(i.id)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
+function openFinder(itemId, queue) {
+  const item = S.items.get(itemId); if (!item || !window.nestSite) return;
+  const kept = new Map((item.options || []).map((o) => [o.u || o.t, o]));
+  let found = [];
+  const look = h("input", { class: "input", placeholder: "What you're after: lightweight, neutral colours, under $300…", maxlength: 200, value: item.look || "" });
+  const status = h("div"), grid = h("div", { class: "finds" }), count = h("span", { class: "row-sub" });
+  const keyOf = (p) => p.u || p.t;
+  const sync = () => { count.textContent = kept.size ? plural(kept.size, "pick") + " kept" : "Tick the ones closest to what you'd like"; };
+  const tile = (p) => {
+    const box = h("input", { type: "checkbox", checked: kept.has(keyOf(p)), "aria-label": "Keep " + p.t, onchange: (e) => { e.target.checked ? kept.set(keyOf(p), p) : kept.delete(keyOf(p)); sync(); } });
+    return h("label", { class: "find" }, box, optImg(p) ? pic(optImg(p)) : h("div", { class: "ph" }, "✦"),
+      p.tier ? h("span", { class: "tier " + p.tier }, p.tier === "mid" ? "mid-range" : p.tier) : null, h("b", null, p.t), p.w ? h("div", { class: "why" }, p.w) : null,
+      h("small", null, [p.p ? cost(p.p, p.c) : p.a ? "about " + money(p.a) : "", p.s].filter(Boolean).join(" · ")),
+      p.u ? h("a", { href: safeUrl(p.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (p.s || hostOf(p.u)) + " ↗") : null);
+  };
+  const draw = () => { const shown = [...kept.values()].filter((k) => !found.some((f) => keyOf(f) === keyOf(k))); grid.replaceChildren(...shown.map(tile), ...found.map(tile)); sync(); };
+  async function search() {
+    go.disabled = true; status.replaceChildren(h("div", { class: "finding" }, h("div", { class: "spin" }), h("div", null, "Looking across brands and stores for " + item.name + "…"), h("small", null, "Usually 10 to 25 seconds.")));
+    try {
+      const r = await window.nestSite.find({ name: item.name, cat: cat(item.cat).name, notes: item.notes, brand: item.brand, color: item.color, size: item.size, price: item.price, look: look.value.trim() });
+      found = (r.products || []).map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, r: p.image, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
+      status.replaceChildren(found.length ? h("small", { class: "row-sub" }, plural(found.length, "product") + " found. Photos and prices come from each store's own page; check them there before buying.") : h("div", { class: "notice" }, "Nothing came back this time. Try describing what you're after above."));
+    } catch (e) { status.replaceChildren(h("div", { class: "notice rose" }, "Couldn't search right now: " + (e.message || e))); }
+    go.disabled = false; draw();
+  }
+  const go = h("button", { class: "btn", type: "button", onclick: search }, "Search again");
+  const save = h("button", { class: "btn primary", type: "button" }, queue ? "Save & next" : "Save picks");
+  save.addEventListener("click", async () => {
+    save.disabled = true; save.textContent = "Saving…";
+    const out = [];
+    for (const k of kept.values()) {
+      const o = { t: String(k.t || "").slice(0, 120), b: k.b || "", u: safeUrl(k.u) || "", p: k.p || null, c: k.c || "", s: k.s || "", w: String(k.w || "").slice(0, 160), i: k.i || null, r: k.r || null };
+      if (!o.i && o.r) { try { o.i = (await window.nestSite.grab(o.r)).id; } catch (e) {} } // a copy of the photo, so the pick doesn't depend on the store's server
+      out.push(o); if (out.length >= 8) break;
+    }
+    const ok = await saveItem(item.id, { options: out, look: look.value.trim().slice(0, 200) });
+    if (!ok) { save.disabled = false; save.textContent = queue ? "Save & next" : "Save picks"; return; }
+    toast(out.length ? `Kept ${plural(out.length, "pick")} for ${item.name}` : "No picks for " + item.name);
+    if (queue) { const next = nextBare(item.id); if (next) return openFinder(next.id, true); }
+    closeDlg();
+  });
+  const body = h("div", { class: "dlg-body" }, h("div", { class: "toolbar-row" }, h("div", { style: "flex:1 1 240px;min-width:0" }, look), go), status, grid);
+  const skip = queue ? h("button", { class: "btn ghost", type: "button", onclick: () => { finderSkipped.add(item.id); const next = nextBare(item.id); next ? openFinder(next.id, true) : closeDlg(); } }, "Skip") : null;
+  showDlg(h("div", { class: "dlg" }, dlgHead("Products for " + item.name, "Real products from different brands. Keep the ones closest to what you'd like; guests choose from your picks."), body,
+    h("div", { class: "dlg-foot" }, h("span", { class: "left" }, count), skip, h("button", { class: "btn", type: "button", onclick: closeDlg }, "Close"), save)), true);
+  look.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search(); } });
+  draw(); if (!kept.size) search(); else status.replaceChildren(h("small", { class: "row-sub" }, "Your picks so far. Search again to see more."));
+}
+
 /* ---------------- starter checklist ---------------- */
 function openStarter() {
   const have = new Set([...S.items.values()].map(i => i.name.toLowerCase()));
@@ -1395,14 +1515,14 @@ $("#dlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) c
   function frame(t) {
     ctx.clearRect(0, 0, w, hh);
     const style = getComputedStyle(document.documentElement);
-    const ink = style.getPropertyValue("--band-soft").trim() || "#9aa6c6", acc = style.getPropertyValue("--accent").trim() || "#d98c1f";
+    const ink = style.getPropertyValue("--band-soft").trim() || "#66769a", cols = ["--accent", "--pink", "--gold"].map((v, k) => style.getPropertyValue(v).trim() || ["#3a6fc4", "#d9779c", "#c9a24a"][k]);
     ctx.strokeStyle = ink; ctx.globalAlpha = .45; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(w * .48, 6); ctx.lineTo(w * .76, 6); ctx.stroke();
     shapes.forEach((s, i) => {
       const sway = reduce ? 0 : Math.sin(t / 1800 + i * 1.3) * 6;
       const x = w * s.x + sway, y = 6 + hh * s.len;
       ctx.globalAlpha = .45; ctx.beginPath(); ctx.moveTo(w * s.x, 6); ctx.lineTo(x, y - s.r); ctx.stroke();
-      ctx.globalAlpha = .75; ctx.fillStyle = i % 2 ? acc : ink;
+      ctx.globalAlpha = .75; ctx.fillStyle = cols[i % 3];
       (s.k === "star" ? star : s.k === "moon" ? moon : cloud)(x, y, s.r);
     });
     ctx.globalAlpha = 1;

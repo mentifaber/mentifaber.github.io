@@ -65,6 +65,8 @@
   window.nestSite = {
     link: () => (state && state.invite ? location.origin + "/nest?k=" + state.invite : ""),
     owner: () => !!(state && state.me.owner),
+    find: (item) => call("/find", { method: "POST", body: JSON.stringify(item) }),
+    grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
     async newLink() { await call("/invite", { method: "POST", body: "{}" }); ver = ""; await pull(); return window.nestSite.link(); },
   };
 

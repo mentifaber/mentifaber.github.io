@@ -18,6 +18,7 @@ import { autoRoute, followUps, AUTO } from "./hive-route.js";
 import { Tasks } from "./hive-tasks.js";
 import { factCheck } from "./hive-check.js";
 import { rewrite } from "./hive-canvas.js";
+import { findProducts } from "./nest-find.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
@@ -235,6 +236,12 @@ export class Hive extends DurableObject {
       if (!owner && !this.meter(req, "check", CHECK_DAY)) return J({ error: "that's today's " + CHECK_DAY + " fact checks; come back tomorrow" }, 429);
       const r = await factCheck(this, { text: String(b.text || ""), question: String(b.question || ""), writer: String(b.writer || ""), owner }).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       this.logReply({ model: "factcheck", who: owner ? "owner" : "visitor", kind: "check", ms: r.ms, chars: (r.claims || []).length, err: r.error });
+      return J(r, r.error ? 502 : 200);
+    }
+    if (path === "/nest/find") { // The Nest Registry's product finder (src/nest-find.js): called by the Nest object for the parents, with the owner's search key
+      if (!owner) return J({ error: "owner only" }, 401); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);
+      const t0 = Date.now(), r = await findProducts({ env: this.env, web: (q) => this.web(q, true) }, b || {}).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      this.logReply({ model: "nest-find", who: "owner", kind: "nest", ms: Date.now() - t0, chars: (r.products || []).length, err: r.error });
       return J(r, r.error ? 502 : 200);
     }
     if (path === "/canvas/rewrite") { // the canvas: rewrite a selected passage, or the whole document (src/hive-canvas.js)
