@@ -815,10 +815,16 @@ function renderRegistryNotices() {
   if (S.offline) el.append(h("div", { class: "notice rose" }, "The registry can't be reached right now. It will load as soon as the connection is back."));
   else if (S.slow && !S.loaded.items) el.append(h("div", { class: "notice" }, "The registry is taking a while to load. It will appear as soon as the connection catches up."));
   if (S.readOnly && !isParent()) el.append(h("div", { class: "notice" }, "You can browse the registry, but marking gifts needs the invite link the parents sent you."));
-  if (isParent() && S.loaded.items) {
-    const bare = [...S.items.values()].filter((i) => i.kind !== "fund" && !(i.options || []).length);
-    if (bare.length) el.append(h("div", { class: "notice" }, `✦ ${plural(bare.length, "item")} without product picks yet. Find real products (photos, prices, store links) and keep the ones closest to what you want; guests choose from those.`,
-      h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(bare[0].id, true) }, "Find products")));
+  if (isParent() && S.loaded.items && window.nestSite) {
+    const F = nestSite.finds(), Q = new Set(nestSite.queued()), things = [...S.items.values()].filter((i) => i.kind !== "fund");
+    const ready = things.filter((i) => !(i.options || []).length && (F[i.id]?.products || []).length), waiting = things.filter((i) => Q.has(i.id)), bare = things.filter((i) => !(i.options || []).length && !(F[i.id]?.products || []).length && !Q.has(i.id));
+    if (waiting.length) el.append(h("div", { class: "notice" }, h("span", { class: "spin", style: "width:18px;height:18px;border-width:2px;flex:none" }),
+      h("span", null, `Finding products for every item: ${plural(things.length - waiting.length - bare.length, "item")} ready, ${waiting.length} to go. It carries on by itself, even with this page closed.`),
+      ready.length ? h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(ready[0].id, true) }, "Start picking") : null));
+    else if (ready.length) el.append(h("div", { class: "notice sage" }, `✦ Products found for ${plural(ready.length, "item")}. Pick the ones closest to what you'd like; guests choose from your picks.`,
+      h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(ready[0].id, true) }, "Review & pick")));
+    else if (bare.length) el.append(h("div", { class: "notice" }, `✦ ${plural(bare.length, "item")} without products yet.`,
+      h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: async () => { try { await nestSite.findAll(); toast("Finding products for every item. Carry on; they appear as they're found."); } catch (e) { writeError(e); } } }, "Find them all")));
   }
   if (isParent() && S.spoiler !== "all") el.append(h("div", { class: "notice sage" },
     S.spoiler === "hidden" ? "Surprise mode: you can't see what's been claimed. Guests still can, so nothing gets doubled up." : "Surprise mode: you see what's covered, but not who's giving it.",
@@ -911,7 +917,10 @@ function card(item, c) {
     else if (c.covered) foot.append(h("button", { class: "btn", disabled: true }, item.kind === "fund" ? "Goal reached" : "Already covered"));
     else foot.append(h("button", { class: "btn primary", disabled: S.readOnly || !S.db, onclick: () => openClaim(item.id) }, item.kind === "fund" ? "Chip in" : "I'll get this"));
   } else {
-    if (item.kind !== "fund") foot.append(h("button", { class: "btn small", onclick: () => openFinder(item.id) }, (item.options || []).length ? "✦ Products" : "✦ Find products"));
+    if (item.kind !== "fund") { const F = window.nestSite ? nestSite.finds()[item.id] : null, n = (F?.products || []).length, q = window.nestSite && nestSite.queued().includes(item.id);
+      foot.append((item.options || []).length ? h("button", { class: "btn small", onclick: () => openFinder(item.id) }, "✦ " + plural(item.options.length, "pick"))
+        : n ? h("button", { class: "btn small primary", onclick: () => openFinder(item.id) }, "✦ Pick from " + n)
+        : q ? h("button", { class: "btn small", disabled: true }, "Finding…") : h("button", { class: "btn small", onclick: () => openFinder(item.id) }, "✦ Find products")); }
     foot.append(h("button", { class: "btn small", onclick: () => openItemEditor(item.id) }, "Edit"),
       h("button", { class: "btn small ghost", title: item.star ? "Unmark most wanted" : "Mark as most wanted", "aria-label": item.star ? "Unmark most wanted" : "Mark as most wanted", onclick: () => saveItem(item.id, { star: !item.star }) }, item.star ? "★ Most wanted" : "☆ Most wanted"));
     if (!c.mine && !c.covered) foot.append(h("button", { class: "btn small ghost", onclick: () => openClaim(item.id) }, "Mark gotten"));
@@ -1401,15 +1410,14 @@ function optsStrip(item) {
   return wrap;
 }
 const finderSkipped = new Set();
-const nextBare = (not) => [...S.items.values()].filter((i) => i.id !== not && i.kind !== "fund" && !(i.options || []).length && !finderSkipped.has(i.id)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
+let finderOpen = null; // redraws the open finder when new results arrive
 function openFinder(itemId, queue) {
   const item = S.items.get(itemId); if (!item || !window.nestSite) return;
   const kept = new Map((item.options || []).map((o) => [o.u || o.t, o]));
-  let found = [];
-  const look = h("input", { class: "input", placeholder: "What you're after: lightweight, neutral colours, under $300…", maxlength: 200, value: item.look || "" });
-  const status = h("div"), grid = h("div", { class: "finds" }), count = h("span", { class: "row-sub" });
   const keyOf = (p) => p.u || p.t;
-  const sync = () => { count.textContent = kept.size ? plural(kept.size, "pick") + " kept" : "Tick the ones closest to what you'd like"; };
+  const look = h("input", { class: "input", placeholder: "Something different? e.g. lightweight, neutral colours, under $300", maxlength: 200, value: item.look || "" });
+  const status = h("div"), grid = h("div", { class: "finds" }), count = h("span", { class: "row-sub" });
+  const sync = () => { count.textContent = kept.size ? plural(kept.size, "pick") + " kept" : "Tap the ones closest to what you'd like"; };
   const tile = (p) => {
     const box = h("input", { type: "checkbox", checked: kept.has(keyOf(p)), "aria-label": "Keep " + p.t, onchange: (e) => { e.target.checked ? kept.set(keyOf(p), p) : kept.delete(keyOf(p)); sync(); } });
     return h("label", { class: "find" }, box, optImg(p) ? pic(optImg(p)) : h("div", { class: "ph" }, "✦"),
@@ -1417,15 +1425,19 @@ function openFinder(itemId, queue) {
       h("small", null, [p.p ? cost(p.p, p.c) : p.a ? "about " + money(p.a) : "", p.s].filter(Boolean).join(" · ")),
       p.u ? h("a", { href: safeUrl(p.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (p.s || hostOf(p.u)) + " ↗") : null);
   };
-  const draw = () => { const shown = [...kept.values()].filter((k) => !found.some((f) => keyOf(f) === keyOf(k))); grid.replaceChildren(...shown.map(tile), ...found.map(tile)); sync(); };
+  let searching = false;
+  const draw = () => {
+    const f = nestSite.finds()[item.id], found = (f && f.products) || [], queued = nestSite.queued().includes(item.id);
+    const extra = [...kept.values()].filter((k) => !found.some((x) => keyOf(x) === keyOf(k)));
+    grid.replaceChildren(...extra.map(tile), ...found.map(tile)); sync();
+    status.replaceChildren(searching || (queued && !found.length) ? h("div", { class: "finding" }, h("div", { class: "spin" }), h("div", null, "Finding products for " + item.name + "…"), h("small", null, "Usually 15 to 30 seconds."))
+      : found.length ? h("small", { class: "row-sub" }, "Photos and prices come from each store's own page; check them there before buying.")
+      : f && f.error ? h("div", { class: "notice rose" }, f.error) : extra.length ? null : h("div", { class: "notice" }, "No products yet. Search below."));
+  };
   async function search() {
-    go.disabled = true; status.replaceChildren(h("div", { class: "finding" }, h("div", { class: "spin" }), h("div", null, "Looking across brands and stores for " + item.name + "…"), h("small", null, "Usually 10 to 25 seconds.")));
-    try {
-      const r = await window.nestSite.find({ name: item.name, cat: cat(item.cat).name, notes: item.notes, brand: item.brand, color: item.color, size: item.size, price: item.price, look: look.value.trim() });
-      found = (r.products || []).map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, r: p.image, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
-      status.replaceChildren(found.length ? h("small", { class: "row-sub" }, plural(found.length, "product") + " found. Photos and prices come from each store's own page; check them there before buying.") : h("div", { class: "notice" }, "Nothing came back this time. Try describing what you're after above."));
-    } catch (e) { status.replaceChildren(h("div", { class: "notice rose" }, "Couldn't search right now: " + (e.message || e))); }
-    go.disabled = false; draw();
+    if (searching) return; searching = true; go.disabled = true; draw();
+    try { await nestSite.find(item.id, look.value.trim()); } catch (e) { toast(e.message || "Couldn't search right now", 5000); }
+    searching = false; go.disabled = false; draw();
   }
   const go = h("button", { class: "btn", type: "button", onclick: search }, "Search again");
   const save = h("button", { class: "btn primary", type: "button" }, queue ? "Save & next" : "Save picks");
@@ -1433,23 +1445,25 @@ function openFinder(itemId, queue) {
     save.disabled = true; save.textContent = "Saving…";
     const out = [];
     for (const k of kept.values()) {
-      const o = { t: String(k.t || "").slice(0, 120), b: k.b || "", u: safeUrl(k.u) || "", p: k.p || null, c: k.c || "", s: k.s || "", w: String(k.w || "").slice(0, 160), i: k.i || null, r: k.r || null };
-      if (!o.i && o.r) { try { o.i = (await window.nestSite.grab(o.r)).id; } catch (e) {} } // a copy of the photo, so the pick doesn't depend on the store's server
+      const o = { t: String(k.t || "").slice(0, 120), b: k.b || "", u: safeUrl(k.u) || "", p: k.p || null, c: k.c || "", s: k.s || "", w: String(k.w || "").slice(0, 160), i: k.i || null, r: k.i ? null : k.r || null };
+      if (!o.i && o.r) { try { o.i = (await window.nestSite.grab(o.r)).id; o.r = null; } catch (e) {} }
       out.push(o); if (out.length >= 8) break;
     }
     const ok = await saveItem(item.id, { options: out, look: look.value.trim().slice(0, 200) });
     if (!ok) { save.disabled = false; save.textContent = queue ? "Save & next" : "Save picks"; return; }
     toast(out.length ? `Kept ${plural(out.length, "pick")} for ${item.name}` : "No picks for " + item.name);
-    if (queue) { const next = nextBare(item.id); if (next) return openFinder(next.id, true); }
+    if (queue) { const next = nextReady(item.id); if (next) return openFinder(next.id, true); }
     closeDlg();
   });
-  const body = h("div", { class: "dlg-body" }, h("div", { class: "toolbar-row" }, h("div", { style: "flex:1 1 240px;min-width:0" }, look), go), status, grid);
-  const skip = queue ? h("button", { class: "btn ghost", type: "button", onclick: () => { finderSkipped.add(item.id); const next = nextBare(item.id); next ? openFinder(next.id, true) : closeDlg(); } }, "Skip") : null;
+  const body = h("div", { class: "dlg-body" }, status, grid, h("div", { class: "toolbar-row" }, h("div", { style: "flex:1 1 240px;min-width:0" }, look), go));
+  const skip = queue ? h("button", { class: "btn ghost", type: "button", onclick: () => { finderSkipped.add(item.id); const next = nextReady(item.id); next ? openFinder(next.id, true) : closeDlg(); } }, "Skip") : null;
   showDlg(h("div", { class: "dlg" }, dlgHead("Products for " + item.name, "Real products from different brands. Keep the ones closest to what you'd like; guests choose from your picks."), body,
     h("div", { class: "dlg-foot" }, h("span", { class: "left" }, count), skip, h("button", { class: "btn", type: "button", onclick: closeDlg }, "Close"), save)), true);
   look.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search(); } });
-  draw(); if (!kept.size) search(); else status.replaceChildren(h("small", { class: "row-sub" }, "Your picks so far. Search again to see more."));
+  draw(); finderOpen = () => { if ($("#dlg").open && $("#dlg").contains(grid)) draw(); else finderOpen = null; };
+  const f = nestSite.finds()[item.id]; if (!(f && (f.products || []).length) && !nestSite.queued().includes(item.id) && !kept.size) search();
 }
+const nextReady = (not) => { const F = window.nestSite ? nestSite.finds() : {}; return [...S.items.values()].filter((i) => i.id !== not && i.kind !== "fund" && !(i.options || []).length && (F[i.id]?.products || []).length && !finderSkipped.has(i.id)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0]; };
 
 /* ---------------- starter checklist ---------------- */
 function openStarter() {
@@ -1580,6 +1594,7 @@ async function registerVisit() {
   try { await S.db.doc("people/" + S.myId).set({ firstSeen: Date.now() }); } catch (e) { if (e?.code === "invalid_argument") { S.readOnly = true; scheduleRender(); } }
 }
 setInterval(() => { if (S.view === "room") renderFeed(); }, 60000);
+addEventListener("nest:state", () => { if (isParent()) { scheduleRender(); if (finderOpen) finderOpen(); } });
 boot();
 </script>
 

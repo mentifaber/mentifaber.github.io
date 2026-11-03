@@ -13,12 +13,18 @@ class Cursor { constructor(r) { this.r = r; } toArray() { return this.r; } }
 const db = new DatabaseSync(":memory:"), sql = { exec(q, ...a) { const st = db.prepare(q); if (/^\s*select/i.test(q)) return new Cursor(st.all(...a).map((r) => ({ ...r }))); st.run(...a); return new Cursor([]); } };
 // the product finder: Hive answers with three products; their photos are fetched server-side when kept
 const png1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-const HIVE = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const b = await rq.json(); return Response.json({ products: [
-  { brand: "Babyletto", model: "Hudson 3-in-1", tier: "mid", why: "Converts to a toddler bed", url: "https://www.babyletto.com/hudson", store: "babyletto.com", image: "https://cdn.example.com/hudson.png", price: 399, currency: "USD" },
-  { brand: "IKEA", model: "SNIGLAR", tier: "budget", why: "Simple and sturdy", url: "https://www.ikea.com/sniglar", store: "ikea.com", image: "https://cdn.example.com/sniglar.png", price: 119, currency: "USD" },
-  { brand: "Nursery Works", model: "Novella", tier: "premium", why: "Statement piece", url: "https://nurseryworks.net/novella", store: "nurseryworks.net", image: null, price: null, approx: 1200 }].map((x) => ({ ...x, model: x.model + (b.look ? "" : "") })) }); } }) };
-globalThis.fetch = async (u) => /^https:\/\/cdn\.example\.com\//.test(String(u)) ? new Response(png1, { headers: { "content-type": "image/png" } }) : new Response("", { status: 404 });
-const r2 = new Map(), nest = new Nest({ storage: { sql } }, { HIVE, MODELS: { async put(k, v, o) { r2.set(k, { buf: Buffer.from(v), meta: o.httpMetadata }); }, async get(k) { const o = r2.get(k); return o && { body: o.buf, httpMetadata: o.meta }; } } });
+// the product finder (Hive) answers with three products whose photos it has already stored; the background queue runs on
+// the object's alarm, as on Cloudflare (here a timer)
+let seq = 0;
+const HIVE = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const b = await rq.json(); await new Promise((r) => setTimeout(r, 150));
+  const put = () => { const id = "b" + String(++seq).padStart(20, "0"); r2.set("nest/" + id, { buf: png1, meta: { contentType: "image/png" } }); return id; };
+  return Response.json({ products: [
+    { brand: "Babyletto", model: "Hudson 3-in-1", tier: "mid", why: "Converts to a toddler bed", url: "https://www.babyletto.com/hudson", store: "babyletto.com", i: put(), price: 399, currency: "USD" },
+    { brand: "IKEA", model: "SNIGLAR", tier: "budget", why: "Simple and sturdy", url: "https://www.ikea.com/sniglar", store: "ikea.com", i: put(), price: 119, currency: "USD" },
+    { brand: "Nursery Works", model: "Novella", tier: "premium", why: "Statement piece", url: "https://nurseryworks.net/novella", store: "nurseryworks.net", i: put(), price: null, approx: 1200 }] }); } }) };
+let alarmAt = null, alarmT = 0;
+const storage = { sql, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; clearTimeout(alarmT); alarmT = setTimeout(async () => { alarmAt = null; await nest.alarm(); }, Math.max(0, Math.min(t - Date.now(), 400))); } };
+const r2 = new Map(), nest = new Nest({ storage }, { HIVE, MODELS: { async put(k, v, o) { r2.set(k, { buf: Buffer.from(v), meta: o.httpMetadata }); }, async get(k) { const o = r2.get(k); return o && { body: o.buf, httpMetadata: o.meta }; } } });
 
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const opts = { viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1360, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" };
@@ -62,10 +68,12 @@ const img = await op.waitForSelector(".card img[src^='/api/nest/blob/b']"); awai
 await wide(op); ok("quick-add from the checklist and an item with a photo: the photo is stored and shows on its card");
 
 // products: the notice walks the parents through items without picks; they keep the closest; photos are copied in
-await op.waitForSelector("#registry-notices .notice:has-text('without product picks')"); assert.match(await op.textContent("#registry-notices"), /3 items without product picks/, "funds don't need products");
-await op.click("#registry-notices .notice .btn.primary"); await op.waitForSelector("#dlg[open] .find");
-await shot(op, "finder"); const first = await op.textContent("#dlg .dlg-head h2"); assert.equal(await op.locator("#dlg .find").count(), 3);
+await op.waitForSelector("#registry-notices .notice:has-text('Products found for 3 items')", { timeout: 15000 }); // found in the background as the items were added; funds aren't searched
+assert.equal(await op.locator(".card .btn.primary:has-text('Pick from 3')").count(), 3);
+await op.click("#registry-notices .notice .btn.primary:has-text('Review & pick')"); await op.waitForSelector("#dlg[open] .find");
+await shot(op, "finder"); const first = await op.textContent("#dlg .dlg-head h2"); assert.equal(await op.locator("#dlg .find").count(), 3); assert.equal(await op.locator("#dlg .spin").count(), 0, "already found: nothing to wait for");
 assert.match(await op.textContent("#dlg .finds"), /Babyletto Hudson 3-in-1[\s\S]*\$399[\s\S]*babyletto\.com[\s\S]*IKEA SNIGLAR[\s\S]*about \$1,200/);
+await op.waitForFunction(() => [...document.querySelectorAll("#dlg .find img")].length === 3 && [...document.querySelectorAll("#dlg .find img")].every((i) => i.complete && i.naturalWidth > 0 && /^\/api\/nest\/blob\//.test(i.getAttribute("src"))), null, { timeout: 8000 });
 await op.click("#dlg .find:has-text('Babyletto') input"); await op.click("#dlg .find:has-text('IKEA') input"); assert.match(await op.textContent("#dlg .dlg-foot"), /2 picks kept/);
 await op.click("#dlg .dlg-foot .btn.primary:has-text('Save & next')"); await op.waitForFunction((t) => document.querySelector("#dlg[open] .dlg-head h2") && document.querySelector("#dlg .dlg-head h2").textContent !== t && document.querySelectorAll("#dlg .find").length === 3, first, { timeout: 10000 });
 await op.click("#dlg .dlg-foot .btn:has-text('Close')");
@@ -74,7 +82,7 @@ await pc.locator(".opts .opt").first().waitFor(); assert.equal(await pc.locator(
 const oimg = await pc.locator(".opts img").first().getAttribute("src"); assert.match(oimg, /^\/api\/nest\/blob\/b[a-f0-9]{20}$/, "the kept photo was copied into the registry");
 await op.waitForFunction((n) => [...document.querySelectorAll(".card")].some((c) => c.querySelector("h3").textContent === n && c.querySelector(".opts img").naturalWidth > 0), pickedName);
 assert.ok(await pc.locator(".thumb img").count(), "an item without its own photo shows its first pick's");
-await op.evaluate(() => scrollTo(0, 0)); await shot(op, "registry"); await wide(op); ok("the parents find products for each item in turn (Save & next), keep the closest, and see them on the card with copied photos");
+await op.evaluate(() => scrollTo(0, 0)); await shot(op, "registry"); await wide(op); ok("products are found for every item in the background as it's added; the parents review and pick (Save & next) with the photos already there, and see their picks on the card");
 
 // ── a guest ──
 const G = await context(false), gp = G.p;

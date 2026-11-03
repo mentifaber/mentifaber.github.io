@@ -240,7 +240,9 @@ export class Hive extends DurableObject {
     }
     if (path === "/nest/find") { // The Nest Registry's product finder (src/nest-find.js): called by the Nest object for the parents, with the owner's search key
       if (!owner) return J({ error: "owner only" }, 401); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);
-      const t0 = Date.now(), r = await findProducts({ env: this.env, web: (q) => this.web(q, true) }, b || {}).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      if (!(await this.searchKey(true).catch(() => null))) return J({ error: "add a search key in AutoFaber's Uplinks (Tavily, Brave or Serper) so it can find products" }, 409);
+      const store = async (buf, type) => { const id = "b" + [...crypto.getRandomValues(new Uint8Array(10))].map((x) => x.toString(16).padStart(2, "0")).join(""); await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } }); return id; };
+      const t0 = Date.now(), r = await findProducts({ env: this.env, web: (q, o) => this.web(q, true, o), store: this.env.MODELS ? store : null }, b || {}).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       this.logReply({ model: "nest-find", who: "owner", kind: "nest", ms: Date.now() - t0, chars: (r.products || []).length, err: r.error });
       return J(r, r.error ? 502 : 200);
     }
@@ -765,7 +767,7 @@ export class Hive extends DurableObject {
     return [...el, ...a2, ...oa];
   }
   async searchKey(own) { if (!own) return null; const v = this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind='search' ORDER BY COALESCE(used,0) LIMIT 1").toArray()[0]; return v ? this.vaultGet(v.id) : null; }
-  async web(q, own) { const k = await this.searchKey(own).catch(() => null); try { return await search(k && k.v, k && k.key, q); } catch (e) { if (k) return search(null, null, q); throw e; } }
+  async web(q, own, opts) { const k = await this.searchKey(own).catch(() => null); try { return await search(k && k.v, k && k.key, q, undefined, opts); } catch (e) { if (k) return search(null, null, q); throw e; } }
   async webContext(q, own) {
     const [r, kn] = await Promise.all([this.web(q.slice(0, 300), own).catch(() => []), gather(q, true).catch(() => ({ out: [] }))]), all = [...r.map((x) => ({ title: x.title, url: x.url, text: String(x.text || "").slice(0, 900) })), ...kn.out.filter((x) => !x.note).map((x) => ({ title: x.title, url: x.url, text: x.text.slice(0, 1400) }))];
     return all.length ? "\n\nRESEARCH MATERIAL (web, Wikipedia, Hugging Face, papers; read just now):\n" + all.map((x, i) => "[" + (i + 1) + "] " + x.title + " — " + x.url + "\n" + x.text).join("\n\n") : "";
