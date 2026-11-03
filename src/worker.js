@@ -4,6 +4,7 @@ import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } 
 import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
 export { Agent } from "./agent.js";
+export { Nest } from "./nest.js"; // The Nest Registry (nest.html)
 import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
@@ -581,6 +582,10 @@ export default {
         const h = new Headers(req.headers); h.delete("x-hive-owner"); if (await session(req, env, "vigil")) h.set("x-hive-owner", "1");
         const cf = req.cf || {}; h.set("x-geo", JSON.stringify({ city: cf.city, region: cf.region, country: cf.country, lat: cf.latitude, lon: cf.longitude })); // where the visitor is, for "what's the weather?"
         return env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request(req, { headers: h }));
+      }
+      if (route === "nest") { // The Nest Registry (src/nest.js): the owner is the Vigil session; guests hold the cookie their invite link gave them
+        const h = new Headers(req.headers); h.delete("x-nest-owner"); if (await session(req, env, "vigil")) h.set("x-nest-owner", "1");
+        return env.NEST.get(env.NEST.idFromName("nest")).fetch(new Request(req, { headers: h }));
       }
       if (route === "thoughtform") return env.LOBBY.get(env.LOBBY.idFromName("tether")).fetch(req); // Thoughtform for AI agents (boards live with Tether's)
       if (route === "tf-ws") return env.LOBBY.get(env.LOBBY.idFromName("thoughtform")).fetch(req); // Thoughtform co-op: same lobby logic, its own room
