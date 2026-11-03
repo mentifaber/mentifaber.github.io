@@ -12,7 +12,9 @@
 //   POST /api/nest/lock      { path, ttlMs } → { acquired }
 //   POST /api/nest/invite    (owner) a new invite key; the old link stops letting new people in
 //   POST /api/nest/blob      an image (JPEG, PNG, WebP or GIF, 3 MB) → { id };  GET /api/nest/blob/<id>
-//   POST /api/nest/find      (parents) products for an item: brands, photos, prices, links (src/nest-find.js, through Hive)
+//   POST /api/nest/find      (parents) products for an item now: brands, photos, prices, links (src/nest-find.js, through Hive)
+//   POST /api/nest/findall   (parents) find products for every item that has none, in the background (an alarm works through
+//                            the queue a few at a time; new items join it as they're added); the results ride along in /state
 //   POST /api/nest/grab      (parents) { url }: a product photo the parents kept, copied into the registry's own storage
 import { DurableObject } from "cloudflare:workers";
 
@@ -23,7 +25,7 @@ const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart
 const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-const FIND_DAY = 120;
+const FIND_DAY = 400, FIND_BATCH = 3;
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
 
@@ -35,6 +37,8 @@ export class Nest extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS person(id TEXT PRIMARY KEY, name TEXT, sec TEXT, at INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS lock(path TEXT PRIMARY KEY, holder TEXT, until INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)");
+      q.exec("CREATE TABLE IF NOT EXISTS find(item TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER)");
+      q.exec("CREATE TABLE IF NOT EXISTS findq(item TEXT PRIMARY KEY, at INTEGER)");
       this.ready = true;
     }
     return q;
@@ -43,6 +47,40 @@ export class Nest extends DurableObject {
   bump() { const v = (+this.kv("v") || 0) + 1; this.kv("v", v); return v; }
   doc(path) { const r = this.q().exec("SELECT data FROM doc WHERE path=?", path).toArray()[0]; return r ? JSON.parse(r.data) : null; }
   invite() { let k = this.kv("invite"); if (!k) { k = rnd(12); this.kv("invite", k); } return k; }
+
+  // ── the product finder, in the background ──
+  findable(it) { return it && it.kind !== "fund" && String(it.name || "").trim(); }
+  async enqueue(ids) {
+    const q = this.q(); let n = 0;
+    for (const id of ids) { if (!this.findable(this.doc("items/" + id))) continue; q.exec("INSERT INTO findq(item,at) VALUES(?,?) ON CONFLICT(item) DO NOTHING", id, Date.now()); n++; }
+    if (n && this.ctx.storage.setAlarm) { const a = await this.ctx.storage.getAlarm(); if (!a) await this.ctx.storage.setAlarm(Date.now() + 200); }
+    return n;
+  }
+  findsFor() { const out = {}; for (const r of this.q().exec("SELECT item, data FROM find").toArray()) out[r.item] = JSON.parse(r.data); return out; }
+  queued() { return this.q().exec("SELECT item FROM findq").toArray().map((r) => r.item); }
+  used() { const u = new Set(); for (const r of this.q().exec("SELECT data FROM doc WHERE path LIKE 'items/%'").toArray()) { const it = JSON.parse(r.data); if (it.imageId) u.add(it.imageId); for (const o of it.options || []) if (o.i) u.add(o.i); } return u; }
+  async findOne(id, look) {
+    const it = this.doc("items/" + id); if (!this.findable(it)) return { error: "nothing to look for" };
+    const day = new Date().toISOString().slice(0, 10), usedToday = this.kv("find:" + day) | 0; if (usedToday >= FIND_DAY) return { error: "that's today's " + FIND_DAY + " product searches; more tomorrow", later: true }; this.kv("find:" + day, usedToday + 1);
+    const ask = { name: it.name, cat: it.cat, notes: it.notes, brand: it.brand, color: it.color, size: it.size, price: it.price, look: look != null ? look : it.look };
+    let r; try { const res = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/find", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify(ask) })); r = await res.json(); }
+    catch (e) { r = { error: "the product finder didn't answer" }; }
+    const prev = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
+    if (r.products) {
+      const keep = r.products.map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, i: p.i || null, r: p.i ? null : p.image, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
+      this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ products: keep, at: Date.now() }), Date.now());
+      if (prev && this.env.MODELS && this.env.MODELS.delete) { const used = this.used(), now = new Set(keep.map((k) => k.i)); for (const o of JSON.parse(prev.data).products || []) if (o.i && !used.has(o.i) && !now.has(o.i)) await this.env.MODELS.delete("nest/" + o.i).catch(() => {}); } // last search's photos nobody kept
+    } else if (!r.later) this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ ...(prev ? JSON.parse(prev.data) : {}), error: String(r.error || "nothing found").slice(0, 200), at: Date.now() }), Date.now());
+    this.bump(); return r;
+  }
+  async alarm() {
+    const ids = this.q().exec("SELECT item FROM findq ORDER BY at LIMIT ?", FIND_BATCH).toArray().map((r) => r.item); if (!ids.length) return;
+    const rs = await Promise.all(ids.map((id) => this.findOne(id).catch((e) => ({ error: String(e.message || e) }))));
+    if (rs.some((r) => r.later)) { await this.ctx.storage.setAlarm(Date.now() + 6 * 3600e3); return; } // today's searches are used up: carry on later
+    for (const id of ids) this.q().exec("DELETE FROM findq WHERE item=?", id);
+    this.bump();
+    if (this.queued().length) await this.ctx.storage.setAlarm(Date.now() + 300);
+  }
 
   async who(req) {
     if (req.headers.get("x-nest-owner") === "1") { const p = this.q().exec("SELECT name FROM person WHERE id='owner'").toArray()[0]; return { id: "owner", name: (p && p.name) || "", owner: true }; }
@@ -77,7 +115,8 @@ export class Nest extends DurableObject {
       const docs = {}; for (const r of this.q().exec("SELECT path, data FROM doc").toArray()) if (!r.path.startsWith("locks/")) docs[r.path] = JSON.parse(r.data);
       const profiles = {}; for (const r of this.q().exec("SELECT id, name FROM person").toArray()) profiles[r.id] = { name: r.name };
       const parent = this.parent(me);
-      return J({ v, me: { id: me.id, name: me.name, owner: me.owner, parent }, docs, profiles, invite: parent ? (me.owner ? this.invite() : this.kv("invite")) : undefined });
+      if (parent && !this.kv("seeded") && this.env.HIVE) { this.kv("seeded", 1); const have = new Set(Object.keys(this.findsFor())); await this.enqueue(Object.keys(docs).filter((p) => p.startsWith("items/")).map((p) => p.slice(6)).filter((id) => !have.has(id) && !(docs["items/" + id].options || []).length)); }
+      return J({ v, me: { id: me.id, name: me.name, owner: me.owner, parent }, docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, invite: parent ? (me.owner ? this.invite() : this.kv("invite")) : undefined });
     }
     if (path === "/doc" && post) {
       const p = String(body.path || ""); if (!PATH.test(p) || p.startsWith("locks/")) return J({ error: "not a registry document" }, 400);
@@ -88,7 +127,9 @@ export class Nest extends DurableObject {
       if (p === "meta/settings" && !me.owner) { const cur = this.doc(p) || {}; data = { ...data, parents: cur.parents || [] }; } // co-parents can't change who the parents are
       const text = JSON.stringify(data); if (text.length > MAX_DOC) return J({ error: "that's too much for one entry" }, 413);
       if (!this.doc(p) && (this.q().exec("SELECT COUNT(*) AS n FROM doc").toArray()[0] || {}).n >= MAX_DOCS) return J({ error: "the registry is full" }, 413);
+      const isNew = !this.doc(p);
       this.q().exec("INSERT INTO doc(path,data,at) VALUES(?,?,?) ON CONFLICT(path) DO UPDATE SET data=excluded.data, at=excluded.at", p, text, Date.now());
+      if (isNew && p.startsWith("items/") && this.env.HIVE && this.findable(data) && !(data.options || []).length) await this.enqueue([p.slice(6)]); // a new item: products are found for it in the background
       return J({ ok: true, v: this.bump() });
     }
     if (path === "/lock" && post) {
@@ -107,10 +148,14 @@ export class Nest extends DurableObject {
     }
     if (path === "/find" && post) {
       if (!this.parent(me)) return J({ error: "only the parents look for products" }, 403); if (!this.env.HIVE) return J({ error: "the product finder isn't set up" }, 503);
-      const day = new Date().toISOString().slice(0, 10), used = this.kv("find:" + day) | 0; if (used >= FIND_DAY) return J({ error: "that's today's " + FIND_DAY + " product searches; more tomorrow" }, 429); this.kv("find:" + day, used + 1);
-      const ask = { name: body.name, cat: body.cat, notes: body.notes, brand: body.brand, color: body.color, size: body.size, price: body.price, look: body.look };
-      const r = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/find", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify(ask) }));
-      return J(await r.json().catch(() => ({ error: "the product finder didn't answer" })), r.ok ? 200 : 502);
+      const id = String(body.item || ""); if (!/^[A-Za-z0-9_-]{1,64}$/.test(id) || !this.findable(this.doc("items/" + id))) return J({ error: "no such item" }, 404);
+      const r = await this.findOne(id, body.look != null ? String(body.look).slice(0, 200) : undefined); this.q().exec("DELETE FROM findq WHERE item=?", id);
+      return J(r.products ? { ok: true, find: this.findsFor()[id] } : { error: r.error }, r.products ? 200 : r.later ? 429 : 502);
+    }
+    if (path === "/findall" && post) {
+      if (!this.parent(me)) return J({ error: "only the parents look for products" }, 403); if (!this.env.HIVE) return J({ error: "the product finder isn't set up" }, 503);
+      const f = this.findsFor(), ids = this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray().filter((r) => !(JSON.parse(r.data).options || []).length && (!f[r.path.slice(6)] || !(f[r.path.slice(6)].products || []).length)).map((r) => r.path.slice(6));
+      const n = await this.enqueue(ids); this.bump(); return J({ ok: true, queued: n });
     }
     if (path === "/grab" && post) {
       if (!this.parent(me)) return J({ error: "only the parents keep products" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);

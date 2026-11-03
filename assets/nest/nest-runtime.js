@@ -19,7 +19,7 @@
   const snap = (l) => (l.col ? { docs: docsOf(l.key), metadata: { fromCache: false } } : { exists: l.key in state.docs, data: () => copy(state.docs[l.key]), metadata: { fromCache: false } });
   const sig = (l) => (l.col ? JSON.stringify(docsOf(l.key).map((d) => [d.id, state.docs[l.key + "/" + d.id]])) : JSON.stringify(state.docs[l.key] ?? null));
   function fire() { for (const l of listeners) { const s = sig(l); if (s !== l.last) { l.last = s; try { l.cb(snap(l)); } catch (e) { console.warn(e); } } } }
-  async function pull() { const j = await call("/state?v=" + encodeURIComponent(ver)); if (j.same) return; state = j; ver = j.v; fire(); }
+  async function pull() { const j = await call("/state?v=" + encodeURIComponent(ver)); if (j.same) return; state = j; ver = j.v; fire(); dispatchEvent(new Event("nest:state")); }
   let timer = 0, failing = false;
   async function poll() {
     clearTimeout(timer);
@@ -65,7 +65,10 @@
   window.nestSite = {
     link: () => (state && state.invite ? location.origin + "/nest?k=" + state.invite : ""),
     owner: () => !!(state && state.me.owner),
-    find: (item) => call("/find", { method: "POST", body: JSON.stringify(item) }),
+    find: async (item, look) => { const r = await call("/find", { method: "POST", body: JSON.stringify({ item, look }) }); await pull(); return r; },
+    findAll: async () => { const r = await call("/findall", { method: "POST", body: "{}" }); await pull(); return r; },
+    finds: () => (state && state.finds) || {},
+    queued: () => (state && state.findq) || [],
     grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
     async newLink() { await call("/invite", { method: "POST", body: "{}" }); ver = ""; await pull(); return window.nestSite.link(); },
   };
