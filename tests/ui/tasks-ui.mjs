@@ -19,6 +19,7 @@ await p.goto("http://localhost:8099/hive-app.html#mind/tasks"); await p.waitForS
 await p.waitForFunction(() => /No tasks yet/.test(document.getElementById("tk-list").textContent), null, { timeout: 8000 });
 await p.click("[data-tpl='brief']"); assert.equal(await p.inputValue("#tk-title"), "Morning brief"); assert.equal(await p.inputValue("#tk-every"), "weekday"); assert.equal(await p.inputValue("#tk-mode"), "web");
 await p.click("#tk-form [type=submit]"); await p.waitForFunction(() => /Added: every weekday at 07:30/.test(document.getElementById("tk-msg").textContent), null, { timeout: 8000 });
+await p.waitForFunction(() => /Morning brief/.test(document.getElementById("tk-list").textContent), null, { timeout: 8000 }); // "Added" shows first; the list reloads just after
 assert.match(await p.textContent("#tk-list"), /Morning brief[\s\S]*every weekday at 07:30[\s\S]*with search[\s\S]*next /);
 await p.screenshot({ path: new URL("./shots/", import.meta.url).pathname + DEV + "-tasks.png", fullPage: false });
 ok("a template fills the form; the task is added and says when it runs next");
