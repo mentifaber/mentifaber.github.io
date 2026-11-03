@@ -603,7 +603,7 @@ function writeError(e) {
     toast("You can't change that. Only the parents edit the list; you can mark your own gifts.");
   } else if (e?.code === "quota_exceeded") toast("The registry is full. Remove a few old items, then try again.");
   else if (e?.code === "resource_exhausted") toast("That was a lot at once. Wait a few seconds and try again.");
-  else toast("Couldn't save that. Check your connection and try again.");
+  else toast(e?.message && !/fetch|network|load failed/i.test(e.message) ? "That didn't work: " + e.message + ". Reload the page and try again." : "Couldn't save that. Check your connection and try again.");
 }
 
 /* ---------------- derived data ---------------- */
@@ -824,7 +824,7 @@ function renderRegistryNotices() {
     else if (ready.length) el.append(h("div", { class: "notice sage" }, `✦ Products found for ${plural(ready.length, "item")}. Pick the ones closest to what you'd like; guests choose from your picks.`,
       h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(ready[0].id, true) }, "Review & pick")));
     else if (bare.length) el.append(h("div", { class: "notice" }, `✦ ${plural(bare.length, "item")} without products yet.`,
-      h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: async () => { try { await nestSite.findAll(); toast("Finding products for every item. Carry on; they appear as they're found."); } catch (e) { writeError(e); } } }, "Find them all")));
+      h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: async (ev) => { ev.target.disabled = true; try { const r = await nestSite.findAll(); toast(r.queued ? `Finding products for ${plural(r.queued, "item")}. Carry on; they appear as they're found.` : "Nothing left to find."); } catch (e) { ev.target.disabled = false; toast("Couldn't start: " + (e.message || e) + ". Reload the page and try again.", { label: "Reload", fn: () => location.reload() }); } } }, "Find them all")));
   }
   if (isParent() && S.spoiler !== "all") el.append(h("div", { class: "notice sage" },
     S.spoiler === "hidden" ? "Surprise mode: you can't see what's been claimed. Guests still can, so nothing gets doubled up." : "Surprise mode: you see what's covered, but not who's giving it.",
