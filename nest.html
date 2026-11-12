@@ -818,7 +818,10 @@ function renderRegistryNotices() {
   if (isParent() && S.loaded.items && window.nestSite) {
     const F = nestSite.finds(), Q = new Set(nestSite.queued()), things = [...S.items.values()].filter((i) => i.kind !== "fund");
     const ready = things.filter((i) => !(i.options || []).length && (F[i.id]?.products || []).length), waiting = things.filter((i) => Q.has(i.id)), bare = things.filter((i) => !(i.options || []).length && !(F[i.id]?.products || []).length && !Q.has(i.id));
-    if (waiting.length) el.append(h("div", { class: "notice" }, h("span", { class: "spin", style: "width:18px;height:18px;border-width:2px;flex:none" }),
+    const paused = nestSite.paused();
+    if (waiting.length && paused && paused.until > Date.now()) el.append(h("div", { class: "notice" }, `✦ Product finding is paused: ${paused.why || "a daily allowance is used up"}. ${waiting.length} items will be done after midnight UTC, by themselves.`,
+      ready.length ? h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(ready[0].id, true) }, "Pick from what's ready") : null));
+    else if (waiting.length) el.append(h("div", { class: "notice" }, h("span", { class: "spin", style: "width:18px;height:18px;border-width:2px;flex:none" }),
       h("span", null, `Finding products for every item: ${plural(things.length - waiting.length - bare.length, "item")} ready, ${waiting.length} to go. It carries on by itself, even with this page closed.`),
       ready.length ? h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: () => openFinder(ready[0].id, true) }, "Start picking") : null));
     else if (ready.length) el.append(h("div", { class: "notice sage" }, `✦ Products found for ${plural(ready.length, "item")}. Pick the ones closest to what you'd like; guests choose from your picks.`,
@@ -1102,12 +1105,12 @@ function renderRoom() {
     el.replaceChildren();
     sec = h("div", { class: "section", id: "room-sec" });
     el.append(sec);
-    sec.append(h("div", { id: "room-stats" }), h("div", { class: "cols" }, h("div", { id: "room-thanks", style: "display:grid;gap:22px;min-width:0" }), h("div", { style: "display:grid;gap:22px;min-width:0" }, h("div", { id: "room-surprise" }), h("div", { id: "room-feed" }), h("div", { id: "room-people" }), h("div", { id: "room-share" })))
+    sec.append(h("div", { id: "room-stats" }), h("div", { class: "cols" }, h("div", { id: "room-thanks", style: "display:grid;gap:22px;min-width:0" }), h("div", { style: "display:grid;gap:22px;min-width:0" }, h("div", { id: "room-surprise" }), h("div", { id: "room-feed" }), h("div", { id: "room-people" }), h("div", { id: "room-share" }), h("div", { id: "room-backup" })))
       , h("div", { id: "room-settings" }));
     renderSettingsForm();
     roomFormFresh = false;
   }
-  renderRoomStats(); renderThanks(); renderSurprise(); renderFeed(); renderPeople(); renderShare();
+  renderRoomStats(); renderThanks(); renderSurprise(); renderFeed(); renderPeople(); renderShare(); renderBackup();
 }
 function setSpoiler(v) { S.spoiler = v; try { localStorage.setItem("nest.spoiler", v); } catch {} render(); }
 function renderSurprise() {
@@ -1246,6 +1249,14 @@ function renderShare() {
           try { await site.newLink(); renderShare(); toast("New invite link ready. Send this one from now on."); } catch (e) { writeError(e); } } }, "New link") : null) : null,
       h("div", null, "2. Each guest types their name once and stays signed in on that device."),
       h("div", null, "3. When Adrianna opens it, she appears under People. Make her a co-parent there."))));
+}
+function renderBackup() {
+  const el = $("#room-backup"); if (!el || !window.nestSite) return; el.replaceChildren();
+  const last = nestSite.lastBackup();
+  el.append(h("div", { class: "panel" }, h("h2", null, "Backups"),
+    h("p", { class: "sub" }, (last ? "A copy of everything is saved automatically every night. The last one: " + fmtDate(parseDate(last), { month: "long", day: "numeric", year: "numeric" }) + "." : "A copy of everything is saved automatically every night.") + " You can also keep your own copy."),
+    S.isOwner ? h("div", null, h("a", { class: "btn small primary", href: nestSite.exportUrl() }, "Download a backup")) : h("p", { class: "sub" }, "The owner can download a full backup."),
+    S.isOwner ? h("small", { class: "row-sub" }, "One file with the whole list, your picks, every guest's gifts and notes, names, details, thank-yous and the photos.") : null));
 }
 function renderSettingsForm() {
   const el = $("#room-settings"); el.replaceChildren();

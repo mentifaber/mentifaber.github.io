@@ -1,7 +1,9 @@
 // The Nest Registry on mentifaber.org: the page was made as a Claude artifact and asks window.claude for its database, who
 // is looking, photo storage and file saving. This answers those same calls from the site's own backend (/api/nest, see
 // src/nest.js), so the page itself barely changes. Changes appear for everyone within a few seconds (it polls, cheaply:
-// the server says "nothing new" until something is). Before anything loads, a guest joins with the invite link and a name.
+// the server says "nothing new" until something is: every 30 seconds while the page is on screen, never while it's hidden,
+// and slower still if the server can't be reached, so the site stays within its free plan's daily requests). Before
+// anything loads, a guest joins with the invite link and a name.
 (() => {
   "use strict";
   const API = "/api/nest";
@@ -20,15 +22,23 @@
   const sig = (l) => (l.col ? JSON.stringify(docsOf(l.key).map((d) => [d.id, state.docs[l.key + "/" + d.id]])) : JSON.stringify(state.docs[l.key] ?? null));
   function fire() { for (const l of listeners) { const s = sig(l); if (s !== l.last) { l.last = s; try { l.cb(snap(l)); } catch (e) { console.warn(e); } } } }
   async function pull() { const j = await call("/state?v=" + encodeURIComponent(ver)); if (j.same) return; state = j; ver = j.v; fire(); dispatchEvent(new Event("nest:state")); }
-  let timer = 0, failing = false;
+  const EVERY = +window.NEST_POLL_MS || 30e3; let timer = 0, failing = 0; // (tests shorten it)
   async function poll() {
-    clearTimeout(timer);
-    try { await pull(); failing = false; } catch (e) { if (!failing) { failing = true; for (const l of listeners) if (l.err) try { l.err(e); } catch (x) {} } }
-    timer = setTimeout(poll, document.hidden ? 20000 : 3000);
+    clearTimeout(timer); if (document.hidden) return; // a hidden page asks nothing; it catches up when it's back on screen
+    try { await pull(); if (failing) { failing = 0; down(false); } } catch (e) { if (!failing++) { down(true); for (const l of listeners) if (l.err) try { l.err(e); } catch (x) {} } }
+    timer = setTimeout(poll, failing ? Math.min(5 * 60e3, EVERY * 2 ** Math.min(failing, 4)) : EVERY);
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden && state) poll(); });
+  // when the server can't be reached: one calm line at the top, and slower retries, instead of errors on every tap
+  function down(on) {
+    let b = document.getElementById("nest-down");
+    if (!on) { if (b) b.remove(); return; }
+    if (b) return; b = document.createElement("div"); b.id = "nest-down"; b.setAttribute("role", "status");
+    b.setAttribute("style", "position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));translate:-50% 0;z-index:90;max-width:calc(100vw - 24px);padding:10px 14px;border-radius:12px;background:var(--rose-soft,#fde4ec);color:var(--ink,#1d2d55);font:14px/1.4 var(--f-body,system-ui);box-shadow:0 6px 24px rgb(0 0 0 / .18)");
+    b.textContent = "The registry can't be reached right now. It keeps trying by itself; nothing you've saved is lost."; document.body.append(b);
+  }
   const listen = (col, key, cb, err) => { const l = { col, key, cb, err, last: null }; listeners.push(l); if (state) { l.last = sig(l); cb(snap(l)); } return () => { const i = listeners.indexOf(l); if (i >= 0) listeners.splice(i, 1); }; };
-  const write = async (path, data) => { await call("/doc", { method: "POST", body: JSON.stringify({ path, data }) }); await pull(); };
+  const write = async (path, data) => { await call("/doc", { method: "POST", body: JSON.stringify({ path, data }) }); await pull().catch(() => {}); };
 
   const db = {
     collection: (name) => ({ onSnapshot: (cb, err) => listen(true, name, cb, err), async get() { await pull(); return snap({ col: true, key: name }); } }),
@@ -69,6 +79,9 @@
     findAll: async () => { const r = await call("/findall", { method: "POST", body: "{}" }); await pull(); return r; },
     finds: () => (state && state.finds) || {},
     queued: () => (state && state.findq) || [],
+    paused: () => (state && state.findpause) || null,
+    lastBackup: () => (state && state.backup) || "",
+    exportUrl: () => API + "/export",
     grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
     async newLink() { await call("/invite", { method: "POST", body: "{}" }); ver = ""; await pull(); return window.nestSite.link(); },
   };
@@ -100,10 +113,11 @@
   async function start() {
     const key = new URL(location.href).searchParams.get("k") || "";
     try { await pull(); }
-    catch (e) { if (e.code === "unauthenticated") return gate(key ? "guest" : "private", key); setTimeout(start, 4000); return; }
+    catch (e) { if (e.code === "unauthenticated") return gate(key ? "guest" : "private", key); failing++; down(true); setTimeout(start, Math.min(5 * 60e3, 15e3 * 2 ** Math.min(failing - 1, 4))); return; }
+    if (failing) { failing = 0; down(false); }
     if (key) { const u = new URL(location.href); u.searchParams.delete("k"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
     if (!state.me.name) return gate("owner", "");
-    resolveReady(); timer = setTimeout(poll, 3000);
+    resolveReady(); timer = setTimeout(poll, EVERY);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
