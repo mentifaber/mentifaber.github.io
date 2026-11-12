@@ -13,18 +13,20 @@ class Cursor { constructor(r) { this.r = r; } toArray() { return this.r; } }
 const db = new DatabaseSync(":memory:"), sql = { exec(q, ...a) { const st = db.prepare(q); if (/^\s*select/i.test(q)) return new Cursor(st.all(...a).map((r) => ({ ...r }))); st.run(...a); return new Cursor([]); } };
 // the product finder: Hive answers with three products; their photos are fetched server-side when kept
 const png1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-// the product finder (Hive) answers with three products whose photos it has already stored; the background queue runs on
-// the object's alarm, as on Cloudflare (here a timer)
-let seq = 0;
+// the product finder (Hive) answers with three products and their photos' addresses; the site has no R2 (as on the free
+// plan with R2 off), so the registry fetches each photo into its own storage. The background queue runs on the object's
+// alarm, as on Cloudflare (here a timer)
+let seq = 0; const realFetch = globalThis.fetch;
+globalThis.fetch = (u, o) => (/^https:\/\/img\.example\//.test(String(u)) ? Promise.resolve(new Response(png1, { headers: { "content-type": "image/png" } })) : realFetch(u, o));
 const HIVE = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const b = await rq.json(); await new Promise((r) => setTimeout(r, 150));
-  const put = () => { const id = "b" + String(++seq).padStart(20, "0"); r2.set("nest/" + id, { buf: png1, meta: { contentType: "image/png" } }); return id; };
+  const put = () => "https://img.example/p" + ++seq + ".png";
   return Response.json({ products: [
-    { brand: "Babyletto", model: "Hudson 3-in-1", tier: "mid", why: "Converts to a toddler bed", url: "https://www.babyletto.com/hudson", store: "babyletto.com", i: put(), price: 399, currency: "USD" },
-    { brand: "IKEA", model: "SNIGLAR", tier: "budget", why: "Simple and sturdy", url: "https://www.ikea.com/sniglar", store: "ikea.com", i: put(), price: 119, currency: "USD" },
-    { brand: "Nursery Works", model: "Novella", tier: "premium", why: "Statement piece", url: "https://nurseryworks.net/novella", store: "nurseryworks.net", i: put(), price: null, approx: 1200 }] }); } }) };
+    { brand: "Babyletto", model: "Hudson 3-in-1", tier: "mid", why: "Converts to a toddler bed", url: "https://www.babyletto.com/hudson", store: "babyletto.com", image: put(), price: 399, currency: "USD" },
+    { brand: "IKEA", model: "SNIGLAR", tier: "budget", why: "Simple and sturdy", url: "https://www.ikea.com/sniglar", store: "ikea.com", image: put(), price: 119, currency: "USD" },
+    { brand: "Nursery Works", model: "Novella", tier: "premium", why: "Statement piece", url: "https://nurseryworks.net/novella", store: "nurseryworks.net", image: put(), price: null, approx: 1200 }] }); } }) };
 let alarmAt = null, alarmT = 0;
 const storage = { sql, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; clearTimeout(alarmT); alarmT = setTimeout(async () => { alarmAt = null; await nest.alarm(); }, Math.max(0, Math.min(t - Date.now(), 400))); } };
-const r2 = new Map(), nest = new Nest({ storage }, { HIVE, MODELS: { async put(k, v, o) { r2.set(k, { buf: Buffer.from(v), meta: o.httpMetadata }); }, async get(k) { const o = r2.get(k); return o && { body: o.buf, httpMetadata: o.meta }; } } });
+const nest = new Nest({ storage }, { HIVE });
 
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const opts = { viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1360, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" };

@@ -30,9 +30,11 @@
   // OPENROUTER_KEY, GROQ_KEY, GEMINI_KEY (wrangler secret put …). Owner keys added at /hive#keys are sealed in the
   // Hive DO; set HIVE_VAULT_SECRET to seal them with a key that lives outside the DO.
   "ai": { "binding": "AI" },
-  // MENTIFABER AGENT 1.0 (src/agent.js): the model file lives in this R2 bucket and runs in one container
-  // (llama.cpp, agent/Dockerfile) that sleeps after 20 idle minutes. The bucket must exist before deploying.
-  "r2_buckets": [{ "binding": "MODELS", "bucket_name": "mentifaber-models" }],
+  // R2 is switched off on this account (Cloudflare refuses every deploy that binds a bucket while it is), so there is no
+  // MODELS binding: the Nest Registry keeps its photos and daily copies in its own Durable Object, the store serves APKs
+  // from GitHub, and MENTIFABER AGENT has nowhere for its model file. Once R2 is enabled again in the dashboard, add back:
+  //   "r2_buckets": [{ "binding": "MODELS", "bucket_name": "mentifaber-models" }],
+  // and the registry reads photos from either place.
   // Containers (MENTIFABER AGENT's own model) need the Workers Paid plan. To bring the agent back on a paid plan, add:
   //   "containers": [{ "class_name": "Agent", "image": "./agent/Dockerfile", "instance_type": "standard-4", "max_instances": 1 }],
   // Hourly: Flutterbloom's daily reminder and Genesis's tick. Every 15 minutes: Genesis keeps watch on Vigil's board.
