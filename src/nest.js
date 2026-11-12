@@ -5,7 +5,9 @@
 //   items/*, meta/*          the owner and co-parents (settings.parents; only the owner changes who those are)
 //   claims/{id}, people/{id} that person (the owner may change any)
 //   locks/{itemId}           anyone in the registry, for a few seconds, so two people can't take the last one at once
-//   photos                   the owner and co-parents upload; anyone in the registry sees them (R2: nest/<id>)
+//   photos                   the owner and co-parents upload; anyone in the registry sees them. Kept in R2 (nest/<id>)
+//                            when the Worker has R2, otherwise in this object's own SQLite (Cloudflare's free plan with
+//                            R2 off); a photo is read from whichever holds it
 //   GET  /api/nest/state?v=  everything, or { same: true } when nothing changed since version v
 //   POST /api/nest/join      { key, name }: a guest joins with the invite key (the owner just gives a name)
 //   POST /api/nest/doc       { path, data } writes a document; data: null deletes it
@@ -20,8 +22,8 @@
 //   POST /api/nest/grab      (parents) { url }: a product photo the parents kept, copied into the registry's own storage
 //   GET  /api/nest/export    (owner) everything in one file: the list, picks, gifts, notes, guests' names, details,
 //                            thank-yous and suggestions, with the photos of the items and picks inside it
-//   POST /api/nest/backup    (owner; the hourly cron) a copy of everything (photos stay in R2) saved to R2 as
-//                            nest/backups/<date>.json once a day; the last 30 days are kept
+//   POST /api/nest/backup    (owner; the hourly cron) a copy of everything (photos stay where they are) once a day: to R2 as
+//                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
 import { DurableObject } from "cloudflare:workers";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
@@ -31,6 +33,7 @@ const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart
 const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+const PHOTO_DB_MAX = 1.9e6;
 const FIND_DAY = 400, FIND_BATCH = 1, FIND_GAP = 15e3; // one item at a time, a breath apart: gentle on the free plan's limits
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
@@ -45,6 +48,8 @@ export class Nest extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)");
       q.exec("CREATE TABLE IF NOT EXISTS find(item TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS findq(item TEXT PRIMARY KEY, at INTEGER)");
+      q.exec("CREATE TABLE IF NOT EXISTS photo(id TEXT PRIMARY KEY, type TEXT, data BLOB, at INTEGER)"); // photos, when there's no R2
+      q.exec("CREATE TABLE IF NOT EXISTS backup(day TEXT PRIMARY KEY, data TEXT)"); // daily copies, when there's no R2
       this.ready = true;
     }
     return q;
@@ -76,9 +81,10 @@ export class Nest extends DurableObject {
     catch (e) { r = { error: "the product finder didn't answer" }; }
     const prev = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
     if (r.products) {
+      await Promise.all(r.products.map(async (p) => { if (!p.i && p.image) p.i = await this.fetchPhoto(p.image); })); // the Hive had no R2 to keep them in: the registry keeps them
       const keep = r.products.map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, i: p.i || null, r: p.i ? null : p.image, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
       this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ products: keep, at: Date.now() }), Date.now());
-      if (prev && this.env.MODELS && this.env.MODELS.delete) { const used = this.used(), now = new Set(keep.map((k) => k.i)); for (const o of JSON.parse(prev.data).products || []) if (o.i && !used.has(o.i) && !now.has(o.i)) await this.env.MODELS.delete("nest/" + o.i).catch(() => {}); } // last search's photos nobody kept
+      if (prev) { const used = this.used(), now = new Set(keep.map((k) => k.i)); for (const o of JSON.parse(prev.data).products || []) if (o.i && !used.has(o.i) && !now.has(o.i)) await this.dropPhoto(o.i); } // last search's photos nobody kept
     } else if (!r.later) this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ ...(prev ? JSON.parse(prev.data) : {}), error: String(r.error || "nothing found").slice(0, 200), at: Date.now() }), Date.now());
     this.bump(); return r;
   }
@@ -92,6 +98,29 @@ export class Nest extends DurableObject {
     if (this.queued().length) await this.ctx.storage.setAlarm(Date.now() + FIND_GAP);
   }
 
+  // ── photos: R2 when bound, else this object's SQLite (one value there holds up to 2 MB) ──
+  async putPhoto(buf, type) {
+    const id = "b" + rnd(10);
+    if (this.env.MODELS) await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } });
+    else { if (buf.byteLength > PHOTO_DB_MAX) throw new Error("that photo is too big (1.9 MB at most)"); this.q().exec("INSERT INTO photo(id,type,data,at) VALUES(?,?,?,?)", id, type, new Uint8Array(buf), Date.now()); }
+    return id;
+  }
+  async getPhoto(id) {
+    const r = this.q().exec("SELECT type, data FROM photo WHERE id=?", id).toArray()[0];
+    if (r) { const u = r.data instanceof ArrayBuffer ? new Uint8Array(r.data) : new Uint8Array(r.data); return { type: r.type, body: u.slice().buffer }; }
+    if (!this.env.MODELS) return null;
+    const o = await this.env.MODELS.get("nest/" + id).catch(() => null);
+    return o ? { type: (o.httpMetadata && o.httpMetadata.contentType) || "image/jpeg", body: await new Response(o.body).arrayBuffer() } : null;
+  }
+  async dropPhoto(id) { this.q().exec("DELETE FROM photo WHERE id=?", id); if (this.env.MODELS && this.env.MODELS.delete) await this.env.MODELS.delete("nest/" + id).catch(() => {}); }
+  async fetchPhoto(href) { // a product photo from a store, checked, into the registry's storage → id, or null
+    let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
+    const r = await fetch(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(10000) }).catch(() => null);
+    const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!r || !r.ok || !IMAGE.test(type || "")) return null;
+    const buf = await r.arrayBuffer().catch(() => null); if (!buf || !buf.byteLength || buf.byteLength > (this.env.MODELS ? BLOB_MAX : PHOTO_DB_MAX)) return null;
+    return this.putPhoto(buf, type).catch(() => null);
+  }
+
   // ── backups ──
   snapshot() {
     const docs = {}; for (const r of this.q().exec("SELECT path, data FROM doc").toArray()) if (!r.path.startsWith("locks/")) docs[r.path] = JSON.parse(r.data);
@@ -99,9 +128,12 @@ export class Nest extends DurableObject {
     return { kind: "the-nest-registry-backup", version: 1, saved: new Date().toISOString(), docs, people, finds: this.findsFor() };
   }
   async backup() {
-    if (!this.env.MODELS) return { error: "storage isn't set up" };
-    const day = new Date().toISOString().slice(0, 10), key = "nest/backups/" + day + ".json";
+    const day = new Date().toISOString().slice(0, 10), key = this.env.MODELS ? "nest/backups/" + day + ".json" : "db:" + day;
     if (this.kv("backup") === day) return { ok: true, key, already: true };
+    if (!this.env.MODELS) { // no R2: the copy stays in this object, the last 14 days
+      this.q().exec("INSERT INTO backup(day,data) VALUES(?,?) ON CONFLICT(day) DO UPDATE SET data=excluded.data", day, JSON.stringify(this.snapshot())); this.kv("backup", day);
+      this.q().exec("DELETE FROM backup WHERE day < ?", new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10)); return { ok: true, key };
+    }
     await this.env.MODELS.put(key, JSON.stringify(this.snapshot()), { httpMetadata: { contentType: "application/json" } }); this.kv("backup", day);
     if (this.env.MODELS.list && this.env.MODELS.delete) { const old = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), l = await this.env.MODELS.list({ prefix: "nest/backups/" }).catch(() => ({ objects: [] }));
       for (const o of l.objects || []) if (o.key.slice(13, 23) < old) await this.env.MODELS.delete(o.key).catch(() => {}); }
@@ -109,10 +141,10 @@ export class Nest extends DurableObject {
   }
   async photos(snap) { // the photos of the items and the parents' picks, inside the file (suggestions not kept are left out)
     const ids = new Set(); for (const [p, d] of Object.entries(snap.docs)) if (p.startsWith("items/")) { if (d.imageId) ids.add(d.imageId); for (const o of d.options || []) if (o.i) ids.add(o.i); }
-    const out = {}; if (!this.env.MODELS) return out;
-    for (const id of ids) { if (!BLOB_ID.test(id)) continue; const o = await this.env.MODELS.get("nest/" + id).catch(() => null); if (!o) continue;
-      const b = new Uint8Array(await new Response(o.body).arrayBuffer()); let bin = ""; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
-      out[id] = "data:" + ((o.httpMetadata && o.httpMetadata.contentType) || "image/jpeg") + ";base64," + btoa(bin); }
+    const out = {};
+    for (const id of ids) { if (!BLOB_ID.test(id)) continue; const o = await this.getPhoto(id); if (!o) continue;
+      const b = new Uint8Array(o.body); let bin = ""; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+      out[id] = "data:" + o.type + ";base64," + btoa(bin); }
     return out;
   }
 
@@ -191,10 +223,10 @@ export class Nest extends DurableObject {
       if (!me.owner) { this.makeParent(me.id); this.bump(); } return J({ ok: true, parent: true });
     }
     if (path === "/blob" && post) {
-      if (!this.parent(me)) return J({ error: "only the parents add photos" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);
+      if (!this.parent(me)) return J({ error: "only the parents add photos" }, 403);
       const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!IMAGE.test(type)) return J({ error: "a JPEG, PNG, WebP or GIF, please" }, 415);
       const buf = await req.arrayBuffer(); if (!buf.byteLength) return J({ error: "that file is empty" }, 400); if (buf.byteLength > BLOB_MAX) return J({ error: "that photo is too big (3 MB at most)" }, 413);
-      const id = "b" + rnd(10); await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } }); return J({ id });
+      try { return J({ id: await this.putPhoto(buf, type) }); } catch (e) { return J({ error: e.message }, 413); }
     }
     if (path === "/find" && post) {
       if (!this.parent(me)) return J({ error: "only the parents look for products" }, 403); if (!this.env.HIVE) return J({ error: "the product finder isn't set up" }, 503);
@@ -208,20 +240,16 @@ export class Nest extends DurableObject {
       const n = await this.enqueue(ids); this.bump(); return J({ ok: true, queued: n });
     }
     if (path === "/grab" && post) {
-      if (!this.parent(me)) return J({ error: "only the parents keep products" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);
+      if (!this.parent(me)) return J({ error: "only the parents keep products" }, 403);
       let u; try { u = new URL(String(body.url || "")); } catch (e) { return J({ error: "not a photo address" }, 400); }
       if (u.protocol !== "https:" || privateHost(u.hostname)) return J({ error: "not a public photo" }, 400);
-      const r = await fetch(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(10000) }).catch(() => null);
-      const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-      if (!r || !r.ok || !IMAGE.test(type || "")) return J({ error: "couldn't fetch that photo" }, 502);
-      const buf = await r.arrayBuffer(); if (!buf.byteLength || buf.byteLength > BLOB_MAX) return J({ error: "that photo is too big" }, 413);
-      const id = "b" + rnd(10); await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } }); return J({ id });
+      const id = await this.fetchPhoto(u.href); return id ? J({ id }) : J({ error: "couldn't fetch that photo" }, 502);
     }
     const bm = /^\/blob\/([a-z0-9]+)$/.exec(path);
     if (bm && !post) {
-      if (!BLOB_ID.test(bm[1]) || !this.env.MODELS) return J({ error: "no such photo" }, 404);
-      const o = await this.env.MODELS.get("nest/" + bm[1]); if (!o) return J({ error: "no such photo" }, 404);
-      const type = (o.httpMetadata && o.httpMetadata.contentType) || "image/jpeg";
+      if (!BLOB_ID.test(bm[1])) return J({ error: "no such photo" }, 404);
+      const o = await this.getPhoto(bm[1]); if (!o) return J({ error: "no such photo" }, 404);
+      const type = o.type;
       return new Response(o.body, { headers: { "content-type": IMAGE.test(type) ? type : "application/octet-stream", "cache-control": "private, max-age=86400", "x-content-type-options": "nosniff", "content-security-policy": "default-src 'none'; sandbox" } });
     }
     return J({ error: "not found" }, 404);
