@@ -113,4 +113,17 @@ ok("the owner downloads a backup: one file with the list, picks, gifts and choic
 await gp.reload(); await gp.waitForFunction(() => document.querySelectorAll(".card").length === 4); assert.equal(await gp.locator("#nest-gate").count(), 0, "still in after a reload");
 ok("the owner sees the guest's gift and note in the Parents' room within seconds; the guest stays signed in");
 
-assert.deepEqual(op.errs, []); assert.deepEqual(gp.errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);
+// Adrianna: her own co-parent link makes her a co-parent on her device; she adds and removes items herself
+await op.click("#tab-room"); await op.waitForSelector("#room-share .addr >> nth=1");
+const plink = await op.locator("#room-share .addr").nth(1).textContent(); assert.match(plink, /\/nest\?k=[a-f0-9]{24}$/); assert.notEqual(plink, link, "her link isn't the guests' link");
+const AD = await context(false), ap = AD.p;
+await ap.goto(URL0 + "?k=" + plink.split("k=")[1]); await ap.fill("#nest-gate input", "Adrianna"); await ap.click("#nest-gate button"); await ap.waitForSelector("#nest-gate", { state: "detached" });
+await ap.waitForFunction(() => document.querySelectorAll(".card").length === 4); assert.equal(await ap.isVisible("#tab-room"), true, "she has the Parents' room"); assert.equal(await ap.isVisible("#btn-add"), true);
+assert.match(await ap.textContent("#who"), /Parent[\s\S]*Adrianna/);
+await ap.click("#btn-add"); await ap.fill("#e-name", "Baby monitor"); await ap.click("#dlg .dlg-foot .btn.primary"); await ap.waitForSelector(".card h3:text-is('Baby monitor')");
+await op.click("#tab-registry"); await op.waitForSelector(".card h3:text-is('Baby monitor')", { timeout: 9000 }); // the owner sees her new item
+await ap.click(".card:has(h3:text-is('Baby monitor')) .btn:has-text('Edit')"); await ap.click("#dlg .btn.danger:has-text('Delete')"); await ap.click("#dlg .confirm-bar .btn.danger");
+await ap.waitForSelector(".card h3:text-is('Baby monitor')", { state: "detached" }); await op.waitForSelector(".card h3:text-is('Baby monitor')", { state: "detached", timeout: 9000 });
+await ap.click("#tab-room"); await ap.waitForSelector("#room-share .addr"); assert.equal(await ap.locator("#room-share .addr").count(), 1, "the co-parent link is the owner's to give");
+await wide(ap); ok("Adrianna opens her co-parent link, gets the Parents' room, and adds and removes items herself; the owner sees it");
+assert.deepEqual(op.errs, []); assert.deepEqual(gp.errs, []); assert.deepEqual(ap.errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);

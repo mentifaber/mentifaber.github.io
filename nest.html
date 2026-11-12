@@ -1214,7 +1214,7 @@ function renderPeople() {
   const parents = new Set(S.settings.parents || []);
   const ids = [...new Set([...S.people.keys(), ...S.claims.keys()])].filter(Boolean);
   const panel = h("div", { class: "panel" }, h("div", null, h("h2", null, "People"), h("p", { class: "sub" },
-    S.isOwner ? "Everyone who has opened the registry. Make Adrianna a co-parent so she gets the Parents' room and can add items." : "Everyone who has opened the registry.")));
+    S.isOwner ? "Everyone who has opened the registry. A co-parent can add, edit and remove items and sees the Parents' room. Make Adrianna one here, or send her the co-parent link under Sharing it (that works on every device she uses)." : "Everyone who has opened the registry.")));
   const rows = h("div", { class: "rows" });
   for (const id of ids.sort((a, b) => (b === S.myId) - (a === S.myId) || (parents.has(b) - parents.has(a)))) {
     const p = S.profiles[id];
@@ -1237,18 +1237,24 @@ async function toggleParent(id) {
 }
 function renderShare() {
   const el = $("#room-share"); el.replaceChildren();
-  const site = window.nestSite, link = site ? site.link() : "";
+  const site = window.nestSite, link = site ? site.link() : "", plink = site && site.owner() ? site.parentLink() : "";
   const box = h("div", { class: "addr mono", style: "white-space:normal;word-break:break-all;font-size:13px" }, link || "The invite link appears once the registry has loaded.");
-  el.append(h("div", { class: "panel" }, h("h2", null, "Sharing it"),
+  const renew = (which, what) => async () => { if (!confirm("Make a new " + what + "? The old one stops letting new people in. Everyone who has already joined stays in.")) return;
+    try { await site.newLink(which); renderShare(); toast("New " + what + " ready. Send this one from now on."); } catch (e) { writeError(e); } };
+  const panel = h("div", { class: "panel" }, h("h2", null, "Sharing it"),
     h("div", { class: "notes", style: "display:grid;gap:10px;color:var(--ink)" },
-      h("div", null, "1. Send guests this invite link. The registry is private: only people with the link can open it."),
+      h("div", null, h("b", null, "Guests: "), "send this invite link. The registry is private: only people with the link can open it. Each guest types their name once and stays signed in on that device."),
       box,
       link ? h("div", { class: "toolbar-row" }, h("button", { class: "btn small primary", type: "button", onclick: () => copyText(site.link(), box) }, "Copy invite link"),
-        site.owner() ? h("button", { class: "btn small", type: "button", onclick: async () => {
-          if (!confirm("Make a new invite link? The old one stops letting new people in. Everyone who has already joined stays in.")) return;
-          try { await site.newLink(); renderShare(); toast("New invite link ready. Send this one from now on."); } catch (e) { writeError(e); } } }, "New link") : null) : null,
-      h("div", null, "2. Each guest types their name once and stays signed in on that device."),
-      h("div", null, "3. When Adrianna opens it, she appears under People. Make her a co-parent there."))));
+        site.owner() ? h("button", { class: "btn small", type: "button", onclick: renew("guest", "invite link") }, "New link") : null) : null));
+  if (plink) { // the co-parent link: only the owner sees it
+    const pbox = h("div", { class: "addr mono", style: "white-space:normal;word-break:break-all;font-size:13px" }, plink);
+    panel.append(h("div", { class: "notes", style: "display:grid;gap:10px;color:var(--ink);border-top:1px solid var(--line);padding-top:14px" },
+      h("div", null, h("b", null, "Adrianna (co-parent): "), "send her this link instead. Opening it on any phone or computer makes her a co-parent there: she can add, edit and remove items, find products, and see the Parents' room. Keep it between the two of you."),
+      pbox, h("div", { class: "toolbar-row" }, h("button", { class: "btn small primary", type: "button", onclick: () => copyText(site.parentLink(), pbox) }, "Copy co-parent link"),
+        h("button", { class: "btn small", type: "button", onclick: renew("parent", "co-parent link") }, "New link"))));
+  }
+  el.append(panel);
 }
 function renderBackup() {
   const el = $("#room-backup"); if (!el || !window.nestSite) return; el.replaceChildren();
