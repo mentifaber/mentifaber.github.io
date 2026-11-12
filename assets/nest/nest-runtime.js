@@ -74,6 +74,7 @@
   // the invite link, for the parents' Sharing panel
   window.nestSite = {
     link: () => (state && state.invite ? location.origin + "/nest?k=" + state.invite : ""),
+    parentLink: () => (state && state.pinvite ? location.origin + "/nest?k=" + state.pinvite : ""),
     owner: () => !!(state && state.me.owner),
     find: async (item, look) => { const r = await call("/find", { method: "POST", body: JSON.stringify({ item, look }) }); await pull(); return r; },
     findAll: async () => { const r = await call("/findall", { method: "POST", body: "{}" }); await pull(); return r; },
@@ -83,7 +84,7 @@
     lastBackup: () => (state && state.backup) || "",
     exportUrl: () => API + "/export",
     grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
-    async newLink() { await call("/invite", { method: "POST", body: "{}" }); ver = ""; await pull(); return window.nestSite.link(); },
+    async newLink(which) { await call("/invite", { method: "POST", body: JSON.stringify({ which: which || "guest" }) }); ver = ""; await pull(); return which === "parent" ? window.nestSite.parentLink() : window.nestSite.link(); },
   };
 
   // ── the way in: the invite link and a name ──
@@ -115,7 +116,9 @@
     try { await pull(); }
     catch (e) { if (e.code === "unauthenticated") return gate(key ? "guest" : "private", key); failing++; down(true); setTimeout(start, Math.min(5 * 60e3, 15e3 * 2 ** Math.min(failing - 1, 4))); return; }
     if (failing) { failing = 0; down(false); }
-    if (key) { const u = new URL(location.href); u.searchParams.delete("k"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
+    if (key) { // already in on this device: the co-parent link still makes them a co-parent
+      if (!state.me.parent) { const up = await call("/upgrade", { method: "POST", body: JSON.stringify({ key }) }).catch(() => null); if (up && up.parent) { ver = ""; await pull().catch(() => {}); } }
+      const u = new URL(location.href); u.searchParams.delete("k"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
     if (!state.me.name) return gate("owner", "");
     resolveReady(); timer = setTimeout(poll, EVERY);
   }

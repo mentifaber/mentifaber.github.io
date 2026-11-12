@@ -57,6 +57,23 @@ hiveReply = () => Response.json({ products: [{ brand: "X", model: "Y", url: "htt
 const st2 = (await call("/state", null, O)).j; assert.equal(st2.findpause, undefined, "running again clears the pause"); assert.equal(st2.findq.length, 1); assert.ok(alarmAt - Date.now() >= 10e3, "and it goes on a breath apart");
 ok("when a daily allowance runs out the finder pauses until 00:10 UTC, says why, keeps its queue, and carries on one item at a time after");
 
+// Adrianna's co-parent link: whoever opens it can add, edit and remove items, on every device
+const own = (await call("/state", null, O)).j; const pkey = own.pinvite; assert.match(pkey, /^[a-f0-9]{24}$/); assert.notEqual(pkey, key);
+const P = await (async () => { const r = await nest.fetch(new Request("https://mentifaber.org/api/nest/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: pkey, name: "Adrianna" }) })); return { cookie: r.headers.get("set-cookie").split(";")[0], id: (await r.json()).id }; })();
+const ps = (await call("/state", null, P)).j; assert.equal(ps.me.parent, true, "joining with the co-parent link makes her a co-parent"); assert.equal(ps.pinvite, undefined, "only the owner sees the co-parent link, even from a cached reply"); assert.equal(ps.invite, key, "she sees the guest link to share");
+assert.equal((await call("/state", null, O)).j.pinvite, pkey); assert.equal((await call("/state", null, P)).j.pinvite, undefined);
+assert.equal((await call("/doc", { path: "items/n1", data: { name: "Nursing pillow", kind: "item" } }, P)).status, 200); assert.equal((await call("/doc", { path: "items/n1", data: { name: "Nursing pillow", kind: "item", qty: 2 } }, P)).status, 200);
+assert.equal((await call("/doc", { path: "items/i3", data: null }, P)).status, 200, "and remove them"); assert.ok(!("items/i3" in (await call("/state", null, O)).j.docs));
+// already in as a guest on a device: opening the co-parent link upgrades her there; a guest link changes nothing
+assert.equal((await call("/upgrade", { key }, B)).j.parent, false); assert.equal((await call("/state", null, B)).j.me.parent, false);
+assert.equal((await call("/upgrade", { key: pkey }, B)).j.parent, true); assert.equal((await call("/state", null, B)).j.me.parent, true);
+assert.deepEqual((await call("/state", null, O)).j.docs["meta/settings"].parents.sort(), [P.id, (await call("/state", null, B)).j.me.id].sort());
+assert.equal((await call("/invite", { which: "parent" }, P)).status, 403, "only the owner makes a new co-parent link");
+const pkey2 = (await call("/invite", { which: "parent" }, O)).j.pinvite; assert.notEqual(pkey2, pkey);
+assert.equal((await nest.fetch(new Request("https://mentifaber.org/api/nest/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: pkey, name: "Someone" }) }))).status, 403, "the old co-parent link no longer works");
+assert.equal((await call("/state", null, P)).j.me.parent, true, "and she stays a co-parent");
+ok("the co-parent link (the owner's only) makes whoever opens it a co-parent on that device, even one already in as a guest; she adds, edits and removes items; a new link retires the old one");
+
 const F = await import("../../src/nest-find.js".replace("../../src", REPO + "/src"));
 assert.equal(F.quota("AiError: 4006: you have used up your daily free allocation of 10,000 neurons"), true); assert.equal(F.quota("timed out"), false);
 ok("Workers AI's daily-allowance error is recognised");

@@ -10,7 +10,9 @@
 //   POST /api/nest/join      { key, name }: a guest joins with the invite key (the owner just gives a name)
 //   POST /api/nest/doc       { path, data } writes a document; data: null deletes it
 //   POST /api/nest/lock      { path, ttlMs } → { acquired }
-//   POST /api/nest/invite    (owner) a new invite key; the old link stops letting new people in
+//   POST /api/nest/invite    (owner) a new invite key; the old link stops letting new people in. { which: "parent" }: a new
+//                            co-parent key instead (the co-parent link: whoever opens it is a co-parent on that device)
+//   POST /api/nest/upgrade   { key }: someone already in opens the co-parent link and becomes a co-parent
 //   POST /api/nest/blob      an image (JPEG, PNG, WebP or GIF, 3 MB) → { id };  GET /api/nest/blob/<id>
 //   POST /api/nest/find      (parents) products for an item now: brands, photos, prices, links (src/nest-find.js, through Hive)
 //   POST /api/nest/findall   (parents) find products for every item that has none, in the background (an alarm works through
@@ -51,6 +53,9 @@ export class Nest extends DurableObject {
   bump() { const v = (+this.kv("v") || 0) + 1; this.kv("v", v); return v; }
   doc(path) { const r = this.q().exec("SELECT data FROM doc WHERE path=?", path).toArray()[0]; return r ? JSON.parse(r.data) : null; }
   invite() { let k = this.kv("invite"); if (!k) { k = rnd(12); this.kv("invite", k); } return k; }
+  pinvite() { let k = this.kv("pinvite"); if (!k) { k = rnd(12); this.kv("pinvite", k); } return k; }
+  makeParent(id) { const s = this.doc("meta/settings") || {}, ps = Array.isArray(s.parents) ? s.parents : []; if (ps.includes(id)) return;
+    this.q().exec("INSERT INTO doc(path,data,at) VALUES('meta/settings',?,?) ON CONFLICT(path) DO UPDATE SET data=excluded.data, at=excluded.at", JSON.stringify({ ...s, parents: [...ps, id], updatedAt: Date.now() }), Date.now()); }
 
   // ── the product finder, in the background ──
   findable(it) { return it && it.kind !== "fund" && String(it.name || "").trim(); }
@@ -131,25 +136,26 @@ export class Nest extends DurableObject {
     if (path === "/join" && post) {
       const name = cleanName(body.name); if (!name) return J({ error: "say your name, so the parents know who's giving what" }, 400);
       if (req.headers.get("x-nest-owner") === "1") { this.q().exec("INSERT INTO person(id,name,sec,at) VALUES('owner',?,'',?) ON CONFLICT(id) DO UPDATE SET name=excluded.name", name, Date.now()); this.invite(); this.bump(); return J({ ok: true, id: "owner" }); }
-      const key = this.kv("invite"); if (!key || !same(body.key, key)) return J({ error: "that invite link isn't valid any more: ask the parents for the current one" }, 403);
+      const key = this.kv("invite"), pkey = this.kv("pinvite"), asParent = !!pkey && same(body.key, pkey);
+      if (!asParent && (!key || !same(body.key, key))) return J({ error: "that invite link isn't valid any more: ask the parents for the current one" }, 403);
       if ((this.q().exec("SELECT COUNT(*) AS n FROM person").toArray()[0] || {}).n >= MAX_PEOPLE) return J({ error: "the registry is full of guests already" }, 429);
       const id = "g" + rnd(8), tok = rnd(24);
-      this.q().exec("INSERT INTO person(id,name,sec,at) VALUES(?,?,?,?)", id, name, await sha(tok), Date.now()); this.bump();
+      this.q().exec("INSERT INTO person(id,name,sec,at) VALUES(?,?,?,?)", id, name, await sha(tok), Date.now()); if (asParent) this.makeParent(id); this.bump();
       return J({ ok: true, id }, 200, { "set-cookie": "nest=" + id + "." + tok + "; Path=/api/nest; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax" });
     }
     const me = await this.who(req);
     if (!me) return J({ error: "this registry is private: open the invite link the parents sent you", need: "invite" }, 401);
     if (path === "/state" && !post) {
       const v = this.kv("v") || "0"; if (url.searchParams.get("v") === v) return J({ v, same: true });
-      const role = this.parent(me) ? "p" : "g", hit = this.cache && this.cache.v === v && this.cache[role];
-      if (hit) return new Response(hit.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent: role === "p" })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+      const role = me.owner ? "o" : this.parent(me) ? "p" : "g", hit = this.cache && this.cache.v === v && this.cache[role]; // the owner's reply carries the co-parent link: cached apart
+      if (hit) return new Response(hit.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent: role !== "g" })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
       const docs = {}; for (const r of this.q().exec("SELECT path, data FROM doc").toArray()) if (!r.path.startsWith("locks/")) docs[r.path] = JSON.parse(r.data);
       const profiles = {}; for (const r of this.q().exec("SELECT id, name FROM person").toArray()) profiles[r.id] = { name: r.name };
       const parent = this.parent(me);
       if (parent && !this.kv("seeded") && this.env.HIVE) { this.kv("seeded", 1); const have = new Set(Object.keys(this.findsFor())); await this.enqueue(Object.keys(docs).filter((p) => p.startsWith("items/")).map((p) => p.slice(6)).filter((id) => !have.has(id) && !(docs["items/" + id].options || []).length)); }
-      if (parent && me.owner) this.invite();
-      const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, invite: parent ? this.kv("invite") : undefined });
-      const v2 = this.kv("v") || "0"; if (v2 === v) { if (!this.cache || this.cache.v !== v) this.cache = { v }; this.cache[parent ? "p" : "g"] = body; } // nothing changed while it was built: keep it for the next asker
+      if (parent && me.owner) { this.invite(); this.pinvite(); }
+      const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, invite: parent ? this.kv("invite") : undefined, pinvite: parent && me.owner ? this.kv("pinvite") : undefined });
+      const v2 = this.kv("v") || "0"; if (v2 === v) { if (!this.cache || this.cache.v !== v) this.cache = { v }; this.cache[me.owner ? "o" : parent ? "p" : "g"] = body; } // nothing changed while it was built: keep it for the next asker
       return new Response(body.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
     if (path === "/doc" && post) {
@@ -179,7 +185,11 @@ export class Nest extends DurableObject {
       return new Response(JSON.stringify(snap), { headers: { "content-type": "application/json", "cache-control": "no-store", "content-disposition": 'attachment; filename="nest-registry-backup-' + snap.saved.slice(0, 10) + '.json"' } });
     }
     if (path === "/backup" && post) { if (!me.owner) return J({ error: "owner only" }, 403); const r = await this.backup(); this.bump(); return J(r, r.error ? 503 : 200); }
-    if (path === "/invite" && post) { if (!me.owner) return J({ error: "only the owner makes a new invite link" }, 403); const k = rnd(12); this.kv("invite", k); this.bump(); return J({ ok: true, invite: k }); }
+    if (path === "/invite" && post) { if (!me.owner) return J({ error: "only the owner makes a new invite link" }, 403); const which = body.which === "parent" ? "pinvite" : "invite", k = rnd(12); this.kv(which, k); this.bump(); return J({ ok: true, [which]: k }); }
+    if (path === "/upgrade" && post) { // already in on this device, and now opening the co-parent link
+      const pkey = this.kv("pinvite"); if (!pkey || !same(body.key, pkey)) return J({ ok: true, parent: this.parent(me) });
+      if (!me.owner) { this.makeParent(me.id); this.bump(); } return J({ ok: true, parent: true });
+    }
     if (path === "/blob" && post) {
       if (!this.parent(me)) return J({ error: "only the parents add photos" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);
       const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!IMAGE.test(type)) return J({ error: "a JPEG, PNG, WebP or GIF, please" }, 415);
