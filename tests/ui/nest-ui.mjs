@@ -35,6 +35,7 @@ async function context(owner) {
     const h = { "content-type": hd["content-type"] || "application/json" }; if (hd.cookie) h.cookie = hd.cookie; if (owner) h["x-nest-owner"] = "1";
     const res = await nest.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: q.method(), headers: h, body: q.method() === "POST" ? q.postDataBuffer() : undefined }));
     const out = {}; res.headers.forEach((v, k) => (out[k] = v)); return route.fulfill({ status: res.status, headers: out, body: Buffer.from(await res.arrayBuffer()) }); });
+  await ctx.addInitScript(() => { window.NEST_POLL_MS = 1500; }); // the page checks every 30 s on the site; quicker here
   const p = await ctx.newPage(); p.errs = []; p.on("pageerror", (e) => p.errs.push(e.message)); p.on("dialog", (d) => d.accept()); return { ctx, p };
 }
 const shot = async (p, name) => { if (process.env.SHOTS) await p.screenshot({ path: process.env.SHOTS + "/nest-" + DEV + "-" + name + ".png", fullPage: name === "registry" }); }; // SHOTS=<dir> to look at it
@@ -101,6 +102,14 @@ await wide(gp); ok("the invite link lets a guest in by name; they see the list (
 
 // the owner sees it within a poll; the guest stays in
 await op.click("#tab-room"); await op.waitForFunction((n) => new RegExp("Aunt Maria[\\s\\S]*" + n + "[\\s\\S]*IKEA SNIGLAR[\\s\\S]*Bringing it to the shower").test(document.querySelector("#room-thanks").textContent), pickedName.replace(/[()]/g, "."), { timeout: 9000 });
+assert.match(await op.textContent("#room-backup"), /saved automatically every night/);
+const dl = await Promise.all([op.waitForEvent("download"), op.click("#room-backup a:has-text('Download a backup')")]).then(([d]) => d);
+assert.match(dl.suggestedFilename(), /^nest-registry-backup-\d{4}-\d{2}-\d{2}\.json$/);
+const bk = JSON.parse(readFileSync(await dl.path(), "utf8")); assert.equal(bk.kind, "the-nest-registry-backup");
+assert.equal(Object.keys(bk.docs).filter((k) => k.startsWith("items/")).length, 4); assert.equal(bk.docs["meta/settings"].baby, "Baby Faber");
+assert.ok(Object.values(bk.docs).some((d) => d.items && Object.values(d.items).some((c) => c.pick === "IKEA SNIGLAR")), "the guest's gift and choice are in it");
+assert.ok(Object.values(bk.people).some((x) => x.name === "Aunt Maria")); assert.ok(Object.keys(bk.photos).length >= 3 && Object.values(bk.photos).every((u) => /^data:image\/png;base64,/.test(u)), "the photos are inside it");
+ok("the owner downloads a backup: one file with the list, picks, gifts and choices, names, details and photos");
 await gp.reload(); await gp.waitForFunction(() => document.querySelectorAll(".card").length === 4); assert.equal(await gp.locator("#nest-gate").count(), 0, "still in after a reload");
 ok("the owner sees the guest's gift and note in the Parents' room within seconds; the guest stays signed in");
 

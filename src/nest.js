@@ -16,6 +16,10 @@
 //   POST /api/nest/findall   (parents) find products for every item that has none, in the background (an alarm works through
 //                            the queue a few at a time; new items join it as they're added); the results ride along in /state
 //   POST /api/nest/grab      (parents) { url }: a product photo the parents kept, copied into the registry's own storage
+//   GET  /api/nest/export    (owner) everything in one file: the list, picks, gifts, notes, guests' names, details,
+//                            thank-yous and suggestions, with the photos of the items and picks inside it
+//   POST /api/nest/backup    (owner; the hourly cron) a copy of everything (photos stay in R2) saved to R2 as
+//                            nest/backups/<date>.json once a day; the last 30 days are kept
 import { DurableObject } from "cloudflare:workers";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
@@ -25,7 +29,7 @@ const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart
 const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-const FIND_DAY = 400, FIND_BATCH = 3;
+const FIND_DAY = 400, FIND_BATCH = 1, FIND_GAP = 15e3; // one item at a time, a breath apart: gentle on the free plan's limits
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
 
@@ -76,10 +80,35 @@ export class Nest extends DurableObject {
   async alarm() {
     const ids = this.q().exec("SELECT item FROM findq ORDER BY at LIMIT ?", FIND_BATCH).toArray().map((r) => r.item); if (!ids.length) return;
     const rs = await Promise.all(ids.map((id) => this.findOne(id).catch((e) => ({ error: String(e.message || e) }))));
-    if (rs.some((r) => r.later)) { await this.ctx.storage.setAlarm(Date.now() + 6 * 3600e3); return; } // today's searches are used up: carry on later
+    if (rs.some((r) => r.later)) { const t = new Date(); t.setUTCHours(24, 10, 0, 0); this.kv("findpause", JSON.stringify({ until: t.getTime(), why: rs.find((r) => r.later).error })); this.bump(); await this.ctx.storage.setAlarm(t.getTime()); return; } // a daily allowance is used up: carry on after it resets (00:10 UTC)
+    if (this.kv("findpause")) { this.q().exec("DELETE FROM kv WHERE k='findpause'"); }
     for (const id of ids) this.q().exec("DELETE FROM findq WHERE item=?", id);
     this.bump();
-    if (this.queued().length) await this.ctx.storage.setAlarm(Date.now() + 300);
+    if (this.queued().length) await this.ctx.storage.setAlarm(Date.now() + FIND_GAP);
+  }
+
+  // ── backups ──
+  snapshot() {
+    const docs = {}; for (const r of this.q().exec("SELECT path, data FROM doc").toArray()) if (!r.path.startsWith("locks/")) docs[r.path] = JSON.parse(r.data);
+    const people = {}; for (const r of this.q().exec("SELECT id, name, at FROM person").toArray()) people[r.id] = { name: r.name, joined: r.at };
+    return { kind: "the-nest-registry-backup", version: 1, saved: new Date().toISOString(), docs, people, finds: this.findsFor() };
+  }
+  async backup() {
+    if (!this.env.MODELS) return { error: "storage isn't set up" };
+    const day = new Date().toISOString().slice(0, 10), key = "nest/backups/" + day + ".json";
+    if (this.kv("backup") === day) return { ok: true, key, already: true };
+    await this.env.MODELS.put(key, JSON.stringify(this.snapshot()), { httpMetadata: { contentType: "application/json" } }); this.kv("backup", day);
+    if (this.env.MODELS.list && this.env.MODELS.delete) { const old = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), l = await this.env.MODELS.list({ prefix: "nest/backups/" }).catch(() => ({ objects: [] }));
+      for (const o of l.objects || []) if (o.key.slice(13, 23) < old) await this.env.MODELS.delete(o.key).catch(() => {}); }
+    return { ok: true, key };
+  }
+  async photos(snap) { // the photos of the items and the parents' picks, inside the file (suggestions not kept are left out)
+    const ids = new Set(); for (const [p, d] of Object.entries(snap.docs)) if (p.startsWith("items/")) { if (d.imageId) ids.add(d.imageId); for (const o of d.options || []) if (o.i) ids.add(o.i); }
+    const out = {}; if (!this.env.MODELS) return out;
+    for (const id of ids) { if (!BLOB_ID.test(id)) continue; const o = await this.env.MODELS.get("nest/" + id).catch(() => null); if (!o) continue;
+      const b = new Uint8Array(await new Response(o.body).arrayBuffer()); let bin = ""; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+      out[id] = "data:" + ((o.httpMetadata && o.httpMetadata.contentType) || "image/jpeg") + ";base64," + btoa(bin); }
+    return out;
   }
 
   async who(req) {
@@ -112,11 +141,16 @@ export class Nest extends DurableObject {
     if (!me) return J({ error: "this registry is private: open the invite link the parents sent you", need: "invite" }, 401);
     if (path === "/state" && !post) {
       const v = this.kv("v") || "0"; if (url.searchParams.get("v") === v) return J({ v, same: true });
+      const role = this.parent(me) ? "p" : "g", hit = this.cache && this.cache.v === v && this.cache[role];
+      if (hit) return new Response(hit.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent: role === "p" })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
       const docs = {}; for (const r of this.q().exec("SELECT path, data FROM doc").toArray()) if (!r.path.startsWith("locks/")) docs[r.path] = JSON.parse(r.data);
       const profiles = {}; for (const r of this.q().exec("SELECT id, name FROM person").toArray()) profiles[r.id] = { name: r.name };
       const parent = this.parent(me);
       if (parent && !this.kv("seeded") && this.env.HIVE) { this.kv("seeded", 1); const have = new Set(Object.keys(this.findsFor())); await this.enqueue(Object.keys(docs).filter((p) => p.startsWith("items/")).map((p) => p.slice(6)).filter((id) => !have.has(id) && !(docs["items/" + id].options || []).length)); }
-      return J({ v, me: { id: me.id, name: me.name, owner: me.owner, parent }, docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, invite: parent ? (me.owner ? this.invite() : this.kv("invite")) : undefined });
+      if (parent && me.owner) this.invite();
+      const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, invite: parent ? this.kv("invite") : undefined });
+      const v2 = this.kv("v") || "0"; if (v2 === v) { if (!this.cache || this.cache.v !== v) this.cache = { v }; this.cache[parent ? "p" : "g"] = body; } // nothing changed while it was built: keep it for the next asker
+      return new Response(body.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
     if (path === "/doc" && post) {
       const p = String(body.path || ""); if (!PATH.test(p) || p.startsWith("locks/")) return J({ error: "not a registry document" }, 400);
@@ -139,6 +173,12 @@ export class Nest extends DurableObject {
       this.q().exec("INSERT INTO lock(path,holder,until) VALUES(?,?,?) ON CONFLICT(path) DO UPDATE SET holder=excluded.holder, until=excluded.until", p, me.id, now + ttl);
       return J({ acquired: true, until: now + ttl });
     }
+    if (path === "/export" && !post) {
+      if (!me.owner) return J({ error: "only the owner downloads the backup" }, 403);
+      const snap = this.snapshot(); snap.photos = await this.photos(snap);
+      return new Response(JSON.stringify(snap), { headers: { "content-type": "application/json", "cache-control": "no-store", "content-disposition": 'attachment; filename="nest-registry-backup-' + snap.saved.slice(0, 10) + '.json"' } });
+    }
+    if (path === "/backup" && post) { if (!me.owner) return J({ error: "owner only" }, 403); const r = await this.backup(); this.bump(); return J(r, r.error ? 503 : 200); }
     if (path === "/invite" && post) { if (!me.owner) return J({ error: "only the owner makes a new invite link" }, 403); const k = rnd(12); this.kv("invite", k); this.bump(); return J({ ok: true, invite: k }); }
     if (path === "/blob" && post) {
       if (!this.parent(me)) return J({ error: "only the parents add photos" }, 403); if (!this.env.MODELS) return J({ error: "photo storage isn't set up" }, 503);

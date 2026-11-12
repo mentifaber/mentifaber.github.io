@@ -17,6 +17,9 @@ const unent = (s) => String(s || "").replace(/&amp;/g, "&").replace(/&quot;/g, '
 const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
 export const publicHttps = (u) => { try { const x = new URL(u); return x.protocol === "https:" && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(x.hostname) && /\./.test(x.hostname) ? x.href : null; } catch (e) { return null; } };
 
+// Workers AI's free daily allowance (and similar limits) running out: worth waiting for, not worth retrying now
+export const quota = (msg) => /4006|neurons|daily (free )?allocation|quota|rate.?limit|too many requests|\b429\b/i.test(String(msg || ""));
+
 export function parseProposals(out, max = 8) {
   const m = /\{[\s\S]*\}/.exec(String(out || "")); let j = null; try { j = m && JSON.parse(m[0]); } catch (e) {}
   const list = j && Array.isArray(j.products) ? j.products : [];
@@ -93,8 +96,9 @@ export async function findProducts(h, item) {
   const name = clip(item.name, 120); if (!name) return { error: "name the item first" };
   const wants = [item.look && "what they're looking for: " + clip(item.look, 200), item.notes && "their notes: " + clip(item.notes, 300), item.brand && "brand or model they mentioned: " + clip(item.brand, 80), item.color && "colour/style: " + clip(item.color, 60), item.size && "size: " + clip(item.size, 20), item.price && "around $" + Math.round(item.price) + " each"].filter(Boolean).join("; ");
   const sys = "You help new parents choose baby products. For the registry item, name 8 specific products that are on sale now: different brands, and a mix of price levels (budget, mid-range, premium) unless the parents' preferences say otherwise. Prefer well-reviewed, safety-certified products sold by major baby retailers. Use each product's exact model name. Reply with ONLY JSON: {\"products\": [{\"brand\": \"...\", \"model\": \"...\", \"tier\": \"budget|mid|premium\", \"price\": 199, \"why\": \"one short reason a parent might pick it\"}]}";
-  const ideas = parseProposals(await timed(complete(h.env, null, null, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch(() => ""));
-  if (!ideas.length) return { error: "couldn't come up with products for that; try again, or describe what you're after" };
+  let why = "";
+  const ideas = parseProposals(await timed(complete(h.env, null, null, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch((e) => { why = String((e && e.message) || e); return ""; }));
+  if (!ideas.length) return quota(why) ? { error: "the free daily AI allowance is used up; product finding carries on by itself tomorrow", later: true } : { error: "couldn't come up with products for that; try again, or describe what you're after" };
   const products = await Promise.all(ideas.map(async (p) => {
     const q = p.brand + " " + p.model + (new RegExp(name.split(/\s+/)[0], "i").test(p.model) ? "" : " " + name);
     const res = await timed(h.web(q, { images: true }), 15000).catch(() => []);

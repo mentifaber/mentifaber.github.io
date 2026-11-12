@@ -623,6 +623,7 @@ export default {
       return;
     }
     ctx.waitUntil(dailyReminders(env));
+    if (env.NEST) ctx.waitUntil(env.NEST.get(env.NEST.idFromName("nest")).fetch(new Request("https://mentifaber.org/api/nest/backup", { method: "POST", headers: { "x-nest-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {})); // The Nest Registry: a copy of everything, once a day
     // Genesis reflects on its recent conversations when enough has happened (it decides; most hours it's a no-op)
     if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/tick", { method: "POST", headers: { "x-hive-owner": "1" } })).catch(() => {}));
   },
