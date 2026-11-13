@@ -54,7 +54,8 @@ await call("/doc", { path: "items/i2", data: { name: "Swaddles", kind: "item" } 
 const before = Date.now(); alarmAt = null; await nest.alarm();
 const st = (await call("/state", null, O)).j; assert.match(st.findpause.why, /free daily AI allowance/); assert.deepEqual(st.findq.sort(), ["i2", "i3"], "nothing is dropped from the queue");
 const next = new Date(alarmAt); assert.equal(next.getUTCHours(), 0); assert.equal(next.getUTCMinutes(), 10); assert.ok(alarmAt > before && alarmAt - before <= 864e5 + 11 * 60e3);
-hiveReply = () => Response.json({ products: [{ brand: "X", model: "Y", url: "https://x.example", i: "b" + "2".repeat(20) }] }); alarmAt = null; await nest.alarm();
+hiveReply = () => Response.json({ products: [{ brand: "X", model: "Y", url: "https://x.example", i: "b" + "2".repeat(20) }] }); alarmAt = null;
+db.prepare("UPDATE kv SET v=json_set(v,'$.until',?) WHERE k='findpause'").run(Date.now() - 1); await nest.alarm(); // 00:10 UTC comes
 const st2 = (await call("/state", null, O)).j; assert.equal(st2.findpause, undefined, "running again clears the pause"); assert.equal(st2.findq.length, 1); assert.ok(alarmAt - Date.now() >= 10e3, "and it goes on a breath apart");
 ok("when a daily allowance runs out the finder pauses until 00:10 UTC, says why, keeps its queue, and carries on one item at a time after");
 

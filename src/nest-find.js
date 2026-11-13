@@ -51,6 +51,8 @@ export function imageSize(b) {
   return null;
 }
 // is this the kind of picture a product preview is? a real photo, big enough, roughly square (not a banner, not a logo)
+// a stored photo that is really the product: not a logo, icon or banner by name, a real size, roughly square
+export const checkPhoto = (url, buf) => { let path = ""; try { path = decodeURIComponent(new URL(url).pathname); } catch (e) { path = String(url || ""); } const n = buf && buf.byteLength; if (!n || n < 6000 || n > IMG_MAX || (url && BADIMG.test(path))) return false; return productShaped(imageSize(new Uint8Array(buf, 0, Math.min(n, 65536)))); };
 export const productShaped = (s) => !!s && s.w >= 250 && s.h >= 250 && s.w / s.h >= 0.62 && s.w / s.h <= 1.6;
 
 // a product page's own data: schema.org Product (its photo, name, price) and Open Graph
@@ -94,7 +96,7 @@ async function photo(u) {
 // h: { env, web(q, { images }), store(buf, type) → id }. item: { name, cat, notes, brand, color, size, price, look }. → { products } or { error }
 export async function findProducts(h, item) {
   const name = clip(item.name, 120); if (!name) return { error: "name the item first" };
-  const wants = [item.look && "what they're looking for: " + clip(item.look, 200), item.notes && "their notes: " + clip(item.notes, 300), item.brand && "brand or model they mentioned: " + clip(item.brand, 80), item.color && "colour/style: " + clip(item.color, 60), item.size && "size: " + clip(item.size, 20), item.price && "around $" + Math.round(item.price) + " each"].filter(Boolean).join("; ");
+  const wants = [item.for && "the baby is a " + clip(item.for, 10) + ": where it matters (clothes, bedding, swaddles, decor, toys) pick " + clip(item.for, 10) + "-friendly or neutral colours and designs, nothing pink or girly", item.look && "what they're looking for: " + clip(item.look, 200), item.notes && "their notes: " + clip(item.notes, 300), item.brand && "brand or model they mentioned: " + clip(item.brand, 80), item.color && "colour/style: " + clip(item.color, 60), item.size && "size: " + clip(item.size, 20), item.price && "around $" + Math.round(item.price) + " each"].filter(Boolean).join("; ");
   const sys = "You help new parents choose baby products. For the registry item, name 8 specific products that are on sale now: different brands, and a mix of price levels (budget, mid-range, premium) unless the parents' preferences say otherwise. Prefer well-reviewed, safety-certified products sold by major baby retailers. Use each product's exact model name. Reply with ONLY JSON: {\"products\": [{\"brand\": \"...\", \"model\": \"...\", \"tier\": \"budget|mid|premium\", \"price\": 199, \"why\": \"one short reason a parent might pick it\"}]}";
   let why = "";
   const ideas = parseProposals(await timed(complete(h.env, null, null, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch((e) => { why = String((e && e.message) || e); return ""; }));
@@ -116,4 +118,15 @@ export async function findProducts(h, item) {
   }));
   const found = products.filter(Boolean).slice(0, 6);
   return found.length ? { products: found, searched: ideas.length } : { error: "no products with a clear photo turned up; try describing what you're after", searched: ideas.length };
+}
+
+// a real product photo for a named product (a pick whose photo was lost): image search, then the product's own pages
+export async function findPhoto(h, q) {
+  q = clip(q, 160); if (!q) return { error: "nothing to look for" };
+  const res = await timed(h.web(q, { images: true }), 15000).catch(() => []);
+  const hits = res.map((x) => ({ ...x, url: publicHttps(x.url) })).filter((x) => x.url && !SKIP.test(host(x.url)));
+  const pages = (await Promise.all(hits.filter((x) => !NOFETCH.test(host(x.url))).slice(0, 2).map((x) => readPage(x.url).catch(() => null)))).filter(Boolean);
+  const cands = [...new Set([...pages.filter((x) => x.product).flatMap((x) => x.images), ...(res.images || [])])].slice(0, 8);
+  for (let i = 0; i < cands.length; i += 3) { const pic = (await Promise.all(cands.slice(i, i + 3).map((u) => photo(u).catch(() => null)))).find(Boolean); if (pic) return { image: pic.url }; }
+  return { error: "no product photo found" };
 }
