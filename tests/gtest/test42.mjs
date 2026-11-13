@@ -54,7 +54,7 @@ ok("each product's photo is the product (its page's own, or a search image that 
 
 // the registry: everything is worked through in the background; a search again replaces results and drops unkept photos
 const OUT = new URL("./src/", import.meta.url).pathname, REPO = process.argv[2] || new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
-writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"'));
+writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"'));
 writeFileSync(new URL("./cf-nest.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Nest } = await import(OUT + "nest.js?" + Date.now());
 class Cursor { constructor(r) { this.r = r; } toArray() { return this.r; } }
@@ -65,6 +65,7 @@ const HIVE = { idFromName: () => "hive", get: () => ({ fetch: async (rq) => { co
   return Response.json({ products: ids.map((i, k) => ({ brand: "Brand" + k, model: b.name + " " + k, url: "https://shop.example/" + i, image: "https://img.example/" + i + ".png", i, store: "shop.example", tier: "mid" })) }); } }) };
 const MODELS = { async put() {}, async get() {}, async delete(k) { deleted.push(k); r2.delete(k); } };
 const nest = new Nest({ storage: { sql, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; } } }, { HIVE, MODELS });
+await nest.alarm(); alarmAt = null; // the first tick mends photos lost with R2 (nothing to mend here)
 const call = async (path, body, h = {}) => { const res = await nest.fetch(new Request("https://mentifaber.org/api/nest" + path, { method: body ? "POST" : "GET", headers: { "content-type": "application/json", ...h }, body: body ? JSON.stringify(body) : undefined })); return { status: res.status, j: await res.json() }; };
 const runAlarms = async () => { let k = 0; while (alarmAt != null && k++ < 20) { alarmAt = null; await nest.alarm(); } };
 const O = { "x-nest-owner": "1" };
@@ -72,7 +73,7 @@ for (const [id, name, kind] of [["i1", "Crib"], ["i2", "Swaddles"], ["i3", "Diap
 assert.deepEqual(asks, [], "nothing is searched while a request waits"); assert.ok(alarmAt, "the new items are queued");
 let st = (await call("/state", null, O)).j; assert.deepEqual(st.findq.sort(), ["i1", "i2", "i4"], "funds aren't searched");
 await runAlarms(); assert.deepEqual(asks.map((a) => a.name).sort(), ["Bassinet", "Crib", "Swaddles"]);
-st = (await call("/state", null, O)).j; assert.deepEqual(st.findq, []); assert.equal(st.finds.i1.products.length, 2); assert.match(st.finds.i1.products[0].i, /^b\d{20}$/); assert.equal(st.finds.i1.products[0].r, null, "a stored photo, not the store's");
+st = (await call("/state", null, O)).j; assert.deepEqual(st.findq, []); assert.equal(st.finds.i1.products.length, 2); assert.match(st.finds.i1.products[0].i, /^b\d{20}$/); assert.match(st.finds.i1.products[0].r, /^https:/, "a stored photo, with the shop's address kept as a fallback");
 const key = st.invite, g = await nest.fetch(new Request("https://mentifaber.org/api/nest/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key, name: "Maria" }) }));
 const G = { cookie: g.headers.get("set-cookie").split(";")[0] }; const gs = (await call("/state", null, G)).j; assert.equal(gs.finds, undefined, "guests don't see the suggestions, only the parents' picks"); assert.equal((await call("/findall", {}, G)).status, 403);
 ok("every item is searched in the background, a few at a time, without anyone waiting; funds are skipped; only the parents see the results");

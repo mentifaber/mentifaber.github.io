@@ -252,6 +252,24 @@ dialog.wide { width: min(940px, calc(100vw - 24px)); }
 .choice small { color: var(--ink-soft); }
 .confirm-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--rose-soft); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
 .photo-drop { border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.quick-start { border: 1.5px dashed color-mix(in srgb, var(--accent) 60%, var(--line)); border-radius: 14px; padding: 14px; display: grid; gap: 12px; background: color-mix(in srgb, var(--accent-soft) 40%, transparent); min-width: 0; }
+.quick-start.drag { background: var(--accent-soft); border-color: var(--accent); }
+.qs-title { margin: 0; font-weight: 600; }
+.qs-row { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.qs-preview { flex: 0 0 auto; width: 76px; height: 76px; border-radius: 12px; overflow: hidden; display: grid; place-items: center; background: var(--surface-2); }
+.qs-preview img { width: 100%; height: 100%; object-fit: cover; }
+.qs-preview .row-sub { font-size: 11px; padding: 4px; text-align: center; }
+.qs-ph { font-size: 30px; opacity: .7; }
+.qs-btns { display: grid; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.btn.big { padding: 14px 16px; font-size: 16px; width: 100%; white-space: normal; }
+.qs-link { display: flex; gap: 8px; min-width: 0; }
+.qs-link .input { flex: 1 1 auto; min-width: 0; }
+.qs-link .btn { white-space: nowrap; flex: 0 0 auto; }
+.qs-status { font-size: 14px; color: var(--ink-soft); min-height: 1.2em; }
+.qs-status.bad { color: var(--rose); }
+details.more { border-top: 1px solid var(--line); padding-top: 6px; }
+details.more > summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: 8px 0; list-style-position: inside; }
+.more-body { display: grid; gap: 14px; margin-top: 8px; }
 .photo-drop img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; }
 .photo-drop.drag { border-color: var(--accent); background: var(--accent-soft); }
 .link-rows { display: grid; gap: 8px; }
@@ -373,7 +391,8 @@ dialog.wide { width: min(940px, calc(100vw - 24px)); }
         </select>
         <span id="parent-tools" hidden style="display:contents">
           <button class="btn" id="btn-starter" type="button">Quick-add from checklist</button>
-          <button class="btn primary" id="btn-add" type="button">+ Add item</button>
+          <button class="btn primary" id="btn-shot" type="button">📷 Add from a screenshot</button>
+          <button class="btn" id="btn-add" type="button">+ Add item</button>
         </span>
       </div>
       <div class="chips" id="f-cats" role="group" aria-label="Category"></div>
@@ -574,8 +593,17 @@ const parseDate = (d) => { if (!d) return null; const [y, m, dd] = d.split("-").
 const fmtDate = (d, opts) => d ? d.toLocaleDateString(undefined, opts || { weekday: "short", month: "long", day: "numeric", year: "numeric" }) : "";
 const daysUntil = (d) => { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d - t) / 86400000); };
 const cat = (k) => CATS[k] || CATS.other;
-const optImg = (o) => o && (o.i ? "/api/nest/blob/" + encodeURIComponent(o.i) : o.r && safeUrl(o.r)) || null;
-const imgSrc = (item) => item.imageId ? "/api/nest/blob/" + encodeURIComponent(item.imageId) : optImg((item.options || []).find((o) => o.i || o.r));
+// photos: the registry's own copy first, then the shop's, then a tidy tile; never a broken image
+const blobSrc = (id) => id ? "/api/nest/blob/" + encodeURIComponent(id) : null;
+const optImgs = (o) => o ? [blobSrc(o.i), o.r && safeUrl(o.r)].filter(Boolean) : [];
+const optImg = (o) => optImgs(o)[0] || null;
+const imgSrcs = (item) => [...new Set([blobSrc(item.imageId), ...(item.options || []).flatMap(optImgs)].filter(Boolean))];
+function chainImg(srcs, alt, fallback) {
+  const list = [...new Set([].concat(srcs || []).filter(Boolean))]; if (!list.length) return fallback();
+  let k = 0; const im = h("img", { src: list[0], alt: alt || "", loading: "lazy", referrerpolicy: "no-referrer" });
+  im.addEventListener("error", () => { if (++k < list.length) im.src = list[k]; else im.replaceWith(fallback()); });
+  return im;
+}
 const cost = (n, cur) => n == null || n === "" || isNaN(n) ? "" : (!cur || cur === "USD" ? money(n) : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur);
 
 function toast(msg, action) {
@@ -768,6 +796,7 @@ function bindFilters() {
     el.addEventListener("change", () => { S.f[k] = el.value; saveFilters(); renderRegistry(); });
   }
   $("#btn-add").addEventListener("click", () => openItemEditor());
+  $("#btn-shot").addEventListener("click", () => openItemEditor(null, { photo: true }));
   $("#btn-starter").addEventListener("click", openStarter);
 }
 function saveFilters() { try { localStorage.setItem("nest.filters", JSON.stringify(S.f)); } catch {} }
@@ -844,7 +873,7 @@ function renderRegistry() {
   if (S.items.size === 0) {
     wrap.append(isParent()
       ? h("div", { class: "empty" }, h("h2", null, "Start your registry"), h("p", null, "Pick from a checklist of about a hundred baby essentials, or add exactly what you want with links, sizes and a photo. Guests see changes the moment you make them."),
-          h("div", { class: "toolbar-row", style: "justify-content:center" }, h("button", { class: "btn primary", onclick: openStarter }, "Quick-add from the checklist"), h("button", { class: "btn", onclick: () => openItemEditor() }, "Add one item")),
+          h("div", { class: "toolbar-row", style: "justify-content:center" }, h("button", { class: "btn primary", onclick: openStarter }, "Quick-add from the checklist"), h("button", { class: "btn", onclick: () => openItemEditor(null, { photo: true }) }, "📷 Add from a screenshot"), h("button", { class: "btn", onclick: () => openItemEditor() }, "Add one item")),
           S.isOwner ? h("button", { class: "btn ghost small", onclick: () => go("room") }, "First, set the baby's name and dates in the Parents' room") : null)
       : h("div", { class: "empty" }, h("h2", null, "The list is on its way"), h("p", null, "The parents haven't added anything yet. Check back soon; new items appear here automatically.")));
     return;
@@ -861,11 +890,10 @@ function renderRegistry() {
 }
 
 function thumb(item, cls) {
-  const c = cat(item.cat); const src = imgSrc(item);
-  const t = h("div", { class: cls || "thumb", style: `--tile-ink:${c.ink};${src ? "" : `background:color-mix(in srgb, ${c.tile} var(--tile-mix), var(--surface))`}` });
-  if (src) t.append(h("img", { src, alt: item.name, loading: "lazy" }));
-  else if (cls) t.append(c.g);
-  else t.append(h("span", { class: "glyph" }, c.g), h("span", { class: "glyph-sub" }, c.name));
+  const c = cat(item.cat), srcs = imgSrcs(item), tile = `--tile-ink:${c.ink};background:color-mix(in srgb, ${c.tile} var(--tile-mix), var(--surface))`;
+  const t = h("div", { class: cls || "thumb", style: srcs.length ? `--tile-ink:${c.ink}` : tile });
+  const glyph = () => { t.setAttribute("style", tile); const f = document.createDocumentFragment(); if (cls) f.append(c.g); else f.append(h("span", { class: "glyph" }, c.g), h("span", { class: "glyph-sub" }, c.name)); return f; };
+  t.append(chainImg(srcs, item.name, glyph));
   return t;
 }
 function card(item, c) {
@@ -957,7 +985,7 @@ function openClaim(itemId) {
   if (opts.length) {
     const cur = mine?.pick || "";
     body.append(h("div", { class: "field" }, h("span", null, "Which one?"), h("div", { class: "choice" },
-      opts.map((o) => h("label", null, h("input", { type: "radio", name: "c-pick", value: o.t, checked: cur === o.t }), h("div", { class: "pickrow" }, optImg(o) ? pic(optImg(o)) : h("div", { class: "ph" }, "✦"),
+      opts.map((o) => h("label", null, h("input", { type: "radio", name: "c-pick", value: o.t, checked: cur === o.t }), h("div", { class: "pickrow" }, pic(optImgs(o)),
         h("div", { style: "min-width:0" }, h("b", null, o.t), h("small", null, [o.p ? cost(o.p, o.c) : "", o.s].filter(Boolean).join(" · ")), o.u ? h("div", null, h("a", { href: safeUrl(o.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (o.s || hostOf(o.u)) + " ↗")) : null)))),
       h("label", null, h("input", { type: "radio", name: "c-pick", value: "", checked: !cur }), h("div", null, h("b", null, "Something similar"), h("small", null, "Another brand or model that fits the bill."))))));
   }
@@ -1297,7 +1325,7 @@ async function saveSettings(patch) {
 }
 
 /* ---------------- item editor ---------------- */
-function openItemEditor(id) {
+function openItemEditor(id, opt) {
   const item = id ? S.items.get(id) : { kind: "item", prio: "love", qty: 1, cat: S.f.cat !== "all" ? S.f.cat : "nursery", links: [] };
   if (!item) return;
   let imageId = item.imageId || null;
@@ -1305,22 +1333,55 @@ function openItemEditor(id) {
   while (links.length < 2) links.push({ label: "", url: "" });
   const c = id ? coverage(item) : null;
 
-  const preview = h("div");
-  const drawPreview = () => preview.replaceChildren(imageId ? h("img", { src: "/api/nest/blob/" + encodeURIComponent(imageId), alt: "" }) : h("span", { class: "row-sub" }, "No photo yet"));
+  // the easy way in: a photo or screenshot (read for its name, price and shop) or a shop's link; the rest is optional
+  const preview = h("div", { class: "qs-preview" });
+  const drawPreview = () => preview.replaceChildren(imageId ? chainImg([blobSrc(imageId)], "", () => h("span", { class: "row-sub" }, "Photo missing: add it again")) : h("span", { class: "qs-ph", "aria-hidden": "true" }, "📷"));
   drawPreview();
   const fileIn = h("input", { type: "file", accept: "image/*", id: "e-file", hidden: true });
-  const photoStatus = h("span", { class: "row-sub" });
-  const drop = h("div", { class: "photo-drop" }, preview, h("div", { style: "display:grid;gap:6px" },
-    S.assets ? h("div", { class: "toolbar-row" }, h("button", { class: "btn small", type: "button", onclick: () => fileIn.click() }, imageId ? "Replace photo" : "Add a photo"), imageId ? h("button", { class: "btn small ghost", type: "button", onclick: () => { imageId = null; drawPreview(); } }, "Remove") : null)
-      : h("span", { class: "row-sub" }, "Photo uploads need editor access."),
-    h("small", { class: "row-sub" }, "Drop or paste an image here. Screenshots from a store page work great."), photoStatus), fileIn);
+  const photoStatus = h("div", { class: "qs-status", role: "status" });
+  const say = (t, bad) => { photoStatus.textContent = t; photoStatus.classList.toggle("bad", !!bad); };
+  const linkIn = h("input", { class: "input", id: "e-link", type: "url", inputmode: "url", placeholder: "…or paste a shop link here", "aria-label": "Paste a shop link" });
+  const fillBtn = h("button", { class: "btn", type: "button" }, "Fill in");
+  const removeBtn = h("button", { class: "btn small ghost", type: "button", hidden: !imageId, onclick: () => { imageId = null; drawPreview(); removeBtn.hidden = true; pickBtn.textContent = "📷 Add a photo or screenshot"; } }, "Remove photo");
+  const pickBtn = h("button", { class: "btn primary big", type: "button", onclick: () => fileIn.click() }, imageId ? "📷 Change the photo" : "📷 Add a photo or screenshot");
+  const drop = h("div", { class: "quick-start" },
+    h("p", { class: "qs-title" }, id ? "Photo" : "Start with a picture or a link. It fills in the rest."),
+    h("div", { class: "qs-row" }, preview, h("div", { class: "qs-btns" }, pickBtn, removeBtn)),
+    h("div", { class: "qs-link" }, linkIn, fillBtn),
+    photoStatus, fileIn);
+  const fill = (r) => { // only empty boxes are filled, so nothing typed is overwritten
+    const set = (sel, v) => { const el = $(sel); if (el && v != null && v !== "" && !String(el.value || "").trim()) el.value = v; };
+    set("#e-name", r.name); set("#e-brand", r.brand); if (r.price > 0 && (!r.currency || r.currency === "USD")) set("#e-price", r.price);
+    if (!id && r.cat && CATS[r.cat]) $("#e-cat").value = r.cat;
+    if (r.url && !links.some((l) => l.url === r.url)) { const k = links.findIndex((l) => !l.url); const l = { label: r.store || hostOf(r.url), url: r.url }; if (k >= 0) links[k] = l; else links.unshift(l); drawLinks(); }
+    else if (r.store && !links.some((l) => l.url)) { /* the shop's name alone isn't a link */ }
+  };
   async function takeFile(file) {
-    if (!file || !S.assets || !/^image\//.test(file.type)) return;
-    photoStatus.textContent = "Uploading…";
-    try { const blob = await shrink(file); const r = await S.assets.upload(blob); imageId = r.id; drawPreview(); photoStatus.textContent = "Photo added"; }
-    catch (e) { console.warn(e); photoStatus.textContent = "Upload failed. Try a smaller JPG or PNG."; }
+    if (!file || !S.assets) return;
+    if (!/^image\//.test(file.type) && !/\.(heic|heif|jpe?g|png|webp|gif)$/i.test(file.name || "")) { say("That isn't a photo. Pick a photo or a screenshot.", true); return; }
+    pickBtn.disabled = true; say("Adding the photo…");
+    try { const blob = await shrink(file); const r = await S.assets.upload(blob); imageId = r.id; drawPreview(); removeBtn.hidden = false; pickBtn.textContent = "📷 Change the photo"; }
+    catch (e) { console.warn(e); pickBtn.disabled = false; say("That photo didn't go up: " + (e.message || "try another one") + ".", true); return; }
+    pickBtn.disabled = false;
+    if (id && $("#e-name").value.trim()) { say("Photo added."); return; }
+    say("Photo added. Reading what it is…");
+    try { const r = await window.nestSite.read(imageId); fill(r); say("Filled in from the photo. Check the name and price, then tap Add to registry."); $("#e-name").focus(); }
+    catch (e) { say("Photo added. " + (/allowance|readings/i.test(e.message || "") ? "Type what it is below." : "Couldn't read it, so type what it is below."), false); $("#e-name").focus(); }
   }
-  fileIn.addEventListener("change", () => takeFile(fileIn.files[0]));
+  async function takeLink() {
+    const u = safeUrl(linkIn.value.trim()); if (!u) { say("Paste a whole link, starting with https://", true); linkIn.focus(); return; }
+    fillBtn.disabled = true; say("Looking at that page…");
+    try { const r = await window.nestSite.fromLink(u);
+      if (r.imageId && !imageId) { imageId = r.imageId; drawPreview(); removeBtn.hidden = false; pickBtn.textContent = "📷 Change the photo"; }
+      fill({ ...r, url: r.url || u }); linkIn.value = "";
+      say(r.name ? "Filled in from the link. Check it, then tap Add to registry." : "Link added. That shop doesn't let us read its page, so add a screenshot of it, or type the name.", !r.name);
+    } catch (e) { fill({ url: u, store: hostOf(u) }); linkIn.value = ""; say("Link added. Couldn't read the page, so add a screenshot or type the name.", true); }
+    fillBtn.disabled = false;
+  }
+  fillBtn.addEventListener("click", takeLink);
+  linkIn.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); takeLink(); } });
+  linkIn.addEventListener("paste", () => setTimeout(() => { if (/^https?:\/\//i.test(linkIn.value.trim())) takeLink(); }, 0));
+  fileIn.addEventListener("change", () => { takeFile(fileIn.files[0]); fileIn.value = ""; });
   drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("drag"); });
   drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
   drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("drag"); takeFile(e.dataTransfer.files[0]); });
@@ -1336,29 +1397,34 @@ function openItemEditor(id) {
   drawLinks();
 
   const kindSel = h("select", { class: "input", id: "e-kind" }, h("option", { value: "item", selected: item.kind !== "fund" }, "A thing to buy"), h("option", { value: "fund", selected: item.kind === "fund" }, "A group fund (people chip in money)"));
-  const itemOnly = h("div", { class: "grid-3" },
-    h("label", { class: "field" }, h("span", null, "How many?"), h("input", { class: "input mono", id: "e-qty", type: "number", min: "1", max: "99", value: item.qty || 1 })),
-    h("label", { class: "field" }, h("span", null, "Price (each)"), h("input", { class: "input mono", id: "e-price", type: "number", min: "0", step: "0.01", value: item.price ?? "", placeholder: "49.99" })),
-    h("label", { class: "field" }, h("span", null, "Size"), h("select", { class: "input", id: "e-size" }, SIZES.map(s => h("option", { value: s, selected: (item.size || "") === s }, s || "—")))));
+  const itemOnly = h("div", { class: "grid-2" },
+    h("label", { class: "field" }, h("span", null, "Price (each)"), h("input", { class: "input mono", id: "e-price", type: "number", inputmode: "decimal", min: "0", step: "0.01", value: item.price ?? "", placeholder: "49.99" })),
+    h("label", { class: "field" }, h("span", null, "How many?"), h("input", { class: "input mono", id: "e-qty", type: "number", inputmode: "numeric", min: "1", max: "99", value: item.qty || 1 })));
   const fundOnly = h("div", { class: "grid-2" }, h("label", { class: "field" }, h("span", null, "Goal amount"), h("input", { class: "input mono", id: "e-goal", type: "number", min: "1", value: item.goal ?? "", placeholder: "500" })), h("span"));
   const syncKind = () => { const f = kindSel.value === "fund"; itemOnly.hidden = f; fundOnly.hidden = !f; };
   kindSel.addEventListener("change", syncKind); syncKind();
 
+  const more = h("details", { class: "more" }, h("summary", null, "More details (optional)"),
+    h("div", { class: "more-body" },
+      h("div", { class: "grid-2" },
+        h("label", { class: "field" }, h("span", null, "Priority"), h("select", { class: "input", id: "e-prio" }, Object.entries(PRIO).map(([k, v]) => h("option", { value: k, selected: item.prio === k }, v)))),
+        h("label", { class: "field" }, h("span", null, "Type"), kindSel)),
+      h("div", { class: "grid-3" },
+        h("label", { class: "field" }, h("span", null, "Brand / model"), h("input", { class: "input", id: "e-brand", value: item.brand || "", placeholder: "Any brand is fine", maxlength: 80 })),
+        h("label", { class: "field" }, h("span", null, "Color / style"), h("input", { class: "input", id: "e-color", value: item.color || "", placeholder: "Sage, neutral", maxlength: 60 })),
+        h("label", { class: "field" }, h("span", null, "Size"), h("select", { class: "input", id: "e-size" }, SIZES.map(s => h("option", { value: s, selected: (item.size || "") === s }, s || "—"))))),
+      h("label", { class: "field" }, h("span", null, "Notes for guests"), h("textarea", { class: "input", id: "e-notes", maxlength: 500, placeholder: "Why we want it, what to avoid, gift receipt please…" }, item.notes || "")),
+      h("div", { class: "field" }, h("span", null, "Where to buy"), linkWrap),
+      h("label", { class: "check" }, h("input", { type: "checkbox", id: "e-star", checked: !!item.star }), "★ Most wanted: pin it to the top for guests")));
+  if (id && (item.notes || item.brand || item.color || item.size || item.kind === "fund" || item.star)) more.open = true;
+
   const confirmSlot = h("div");
   const body = h("div", { class: "dlg-body" },
-    h("label", { class: "field" }, h("span", null, "What is it?"), h("input", { class: "input", id: "e-name", value: item.name || "", placeholder: "Convertible car seat", maxlength: 120, required: true })),
-    h("div", { class: "grid-3" },
-      h("label", { class: "field" }, h("span", null, "Category"), h("select", { class: "input", id: "e-cat" }, Object.entries(CATS).map(([k, v]) => h("option", { value: k, selected: (item.cat || "other") === k }, v.name)))),
-      h("label", { class: "field" }, h("span", null, "Priority"), h("select", { class: "input", id: "e-prio" }, Object.entries(PRIO).map(([k, v]) => h("option", { value: k, selected: item.prio === k }, v)))),
-      h("label", { class: "field" }, h("span", null, "Type"), kindSel)),
+    S.assets ? drop : null,
+    h("label", { class: "field" }, h("span", null, "What is it?"), h("input", { class: "input", id: "e-name", value: item.name || "", placeholder: "e.g. Convertible car seat", maxlength: 120, required: true, enterkeyhint: "done" })),
     itemOnly, fundOnly,
-    h("div", { class: "grid-2" },
-      h("label", { class: "field" }, h("span", null, "Brand / model"), h("input", { class: "input", id: "e-brand", value: item.brand || "", placeholder: "Any brand is fine", maxlength: 80 })),
-      h("label", { class: "field" }, h("span", null, "Color / style"), h("input", { class: "input", id: "e-color", value: item.color || "", placeholder: "Sage, neutral, no pink", maxlength: 60 }))),
-    h("label", { class: "field" }, h("span", null, "Notes for guests"), h("textarea", { class: "input", id: "e-notes", maxlength: 500, placeholder: "Why we want it, what to avoid, gift receipt please…" }, item.notes || "")),
-    h("div", { class: "field" }, h("span", null, "Where to buy"), linkWrap),
-    h("div", { class: "field" }, h("span", null, "Photo"), drop),
-    h("label", { class: "check" }, h("input", { type: "checkbox", id: "e-star", checked: !!item.star }), "★ Most wanted: pin it to the top for guests"),
+    h("label", { class: "field" }, h("span", null, "Category"), h("select", { class: "input", id: "e-cat" }, Object.entries(CATS).map(([k, v]) => h("option", { value: k, selected: (item.cat || "other") === k }, v.name)))),
+    more,
     confirmSlot);
   body.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find(f => /^image\//.test(f.type)); if (f) { e.preventDefault(); takeFile(f); } });
 
@@ -1388,8 +1454,9 @@ function openItemEditor(id) {
       h("button", { class: "btn small", type: "button", onclick: () => confirmSlot.replaceChildren() }, "Keep it")));
   } }, "Delete"));
   foot.append(h("button", { class: "btn", type: "button", onclick: closeDlg }, "Cancel"), save);
-  showDlg(h("div", { class: "dlg" }, dlgHead(id ? "Edit item" : "Add an item", "Guests see it as soon as you save."), body, foot));
-  setTimeout(() => $("#e-name")?.focus(), 30);
+  showDlg(h("div", { class: "dlg" }, dlgHead(id ? "Edit item" : "Add something", id ? "Guests see changes as soon as you save." : "A screenshot from any shop's app or website works best."), body, foot));
+  if (opt && opt.photo && S.assets) fileIn.click(); // straight to the camera roll
+  else if (id || !matchMedia("(pointer: coarse)").matches) setTimeout(() => $("#e-name")?.focus(), 30); // on a phone, no keyboard popping up over the photo button
 }
 async function saveItem(id, patch) {
   if (!S.db) return false;
@@ -1409,7 +1476,7 @@ async function saveItem(id, patch) {
 async function shrink(file) {
   try {
     const bmp = await createImageBitmap(file);
-    const max = 1200, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const max = 1600, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
     if (s === 1 && file.size < 900000) return file;
     const cv = document.createElement("canvas"); cv.width = Math.round(bmp.width * s); cv.height = Math.round(bmp.height * s);
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
@@ -1418,12 +1485,12 @@ async function shrink(file) {
 }
 
 /* ---------------- products: find them, keep the closest, let guests choose ---------------- */
-const pic = (src) => h("img", { src, alt: "", loading: "lazy", referrerpolicy: "no-referrer", onerror: (e) => e.target.replaceWith(h("div", { class: "ph" }, "✦")) });
+const pic = (srcs) => chainImg(srcs, "", () => h("div", { class: "ph" }, "✦"));
 function optsStrip(item) {
   const o = item.options || [], wrap = h("div", { class: "qty" });
   wrap.append(h("div", { class: "opts-head" }, h("span", null, h("b", null, "✦ " + plural(o.length, "pick")), isParent() ? "" : " · any of these is perfect"), o.length > 4 ? h("span", null, "+" + (o.length - 4) + " more when you choose") : null));
   wrap.append(h("div", { class: "opts" }, o.slice(0, 4).map((x) => h("a", { class: "opt", href: safeUrl(x.u) || "#", target: "_blank", rel: "noopener noreferrer", title: x.t },
-    optImg(x) ? pic(optImg(x)) : h("div", { class: "ph" }, "✦"), h("b", null, x.t), h("small", null, [x.p ? cost(x.p, x.c) : "", x.s].filter(Boolean).join(" · "))))));
+    pic(optImgs(x)), h("b", null, x.t), h("small", null, [x.p ? cost(x.p, x.c) : "", x.s].filter(Boolean).join(" · "))))));
   return wrap;
 }
 const finderSkipped = new Set();
@@ -1437,7 +1504,7 @@ function openFinder(itemId, queue) {
   const sync = () => { count.textContent = kept.size ? plural(kept.size, "pick") + " kept" : "Tap the ones closest to what you'd like"; };
   const tile = (p) => {
     const box = h("input", { type: "checkbox", checked: kept.has(keyOf(p)), "aria-label": "Keep " + p.t, onchange: (e) => { e.target.checked ? kept.set(keyOf(p), p) : kept.delete(keyOf(p)); sync(); } });
-    return h("label", { class: "find" }, box, optImg(p) ? pic(optImg(p)) : h("div", { class: "ph" }, "✦"),
+    return h("label", { class: "find" }, box, pic(optImgs(p)),
       p.tier ? h("span", { class: "tier " + p.tier }, p.tier === "mid" ? "mid-range" : p.tier) : null, h("b", null, p.t), p.w ? h("div", { class: "why" }, p.w) : null,
       h("small", null, [p.p ? cost(p.p, p.c) : p.a ? "about " + money(p.a) : "", p.s].filter(Boolean).join(" · ")),
       p.u ? h("a", { href: safeUrl(p.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (p.s || hostOf(p.u)) + " ↗") : null);
@@ -1462,8 +1529,8 @@ function openFinder(itemId, queue) {
     save.disabled = true; save.textContent = "Saving…";
     const out = [];
     for (const k of kept.values()) {
-      const o = { t: String(k.t || "").slice(0, 120), b: k.b || "", u: safeUrl(k.u) || "", p: k.p || null, c: k.c || "", s: k.s || "", w: String(k.w || "").slice(0, 160), i: k.i || null, r: k.i ? null : k.r || null };
-      if (!o.i && o.r) { try { o.i = (await window.nestSite.grab(o.r)).id; o.r = null; } catch (e) {} }
+      const o = { t: String(k.t || "").slice(0, 120), b: k.b || "", u: safeUrl(k.u) || "", p: k.p || null, c: k.c || "", s: k.s || "", w: String(k.w || "").slice(0, 160), i: k.i || null, r: k.r || null };
+      if (!o.i && o.r) { try { o.i = (await window.nestSite.grab(o.r)).id; } catch (e) {} } // the shop's address stays as a fallback
       out.push(o); if (out.length >= 8) break;
     }
     const ok = await saveItem(item.id, { options: out, look: look.value.trim().slice(0, 200) });

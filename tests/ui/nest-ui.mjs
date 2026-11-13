@@ -6,7 +6,7 @@ import { createRequire } from "node:module"; import assert from "node:assert/str
 import { DatabaseSync } from "node:sqlite"; import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const REPO = process.argv[2], DEV = process.argv[3] || "desktop", OUT = new URL("../gtest/src/", import.meta.url).pathname; mkdirSync(OUT, { recursive: true });
-writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"'));
+writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"'));
 writeFileSync(new URL("../gtest/cf-nest.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Nest } = await import(OUT + "nest.js");
 class Cursor { constructor(r) { this.r = r; } toArray() { return this.r; } }
@@ -17,7 +17,11 @@ const png1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQV
 // plan with R2 off), so the registry fetches each photo into its own storage. The background queue runs on the object's
 // alarm, as on Cloudflare (here a timer)
 let seq = 0; const realFetch = globalThis.fetch;
-globalThis.fetch = (u, o) => (/^https:\/\/img\.example\//.test(String(u)) ? Promise.resolve(new Response(png1, { headers: { "content-type": "image/png" } })) : realFetch(u, o));
+const shopPage = '<html><head><meta property="og:type" content="product"><meta property="og:title" content="Owlet Dream Duo baby monitor"><meta property="og:image" content="https://img.example/monitor.png"><meta property="product:price:amount" content="129.00"><meta property="product:price:currency" content="USD"></head></html>';
+globalThis.fetch = (u, o) => /^https:\/\/img\.example\//.test(String(u)) ? Promise.resolve(new Response(png1, { headers: { "content-type": "image/png" } }))
+  : /^https:\/\/shop\.example\//.test(String(u)) ? Promise.resolve(new Response(shopPage, { headers: { "content-type": "text/html" } })) : realFetch(u, o);
+// the vision model that reads a screenshot (Workers AI on the site)
+const AI = { async run(m, inp) { assert.ok(inp.image || JSON.stringify(inp.messages).includes("data:image/"), "the photo goes to the model"); return { response: 'Here you go: {"name": "Hatch Rest sound machine", "brand": "Hatch", "price": 69.99, "currency": "USD", "store": "Target", "category": "sleep"}' }; } };
 const HIVE = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const b = await rq.json(); await new Promise((r) => setTimeout(r, 150));
   const put = () => "https://img.example/p" + ++seq + ".png";
   return Response.json({ products: [
@@ -26,7 +30,7 @@ const HIVE = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const
     { brand: "Nursery Works", model: "Novella", tier: "premium", why: "Statement piece", url: "https://nurseryworks.net/novella", store: "nurseryworks.net", image: put(), price: null, approx: 1200 }] }); } }) };
 let alarmAt = null, alarmT = 0;
 const storage = { sql, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; clearTimeout(alarmT); alarmT = setTimeout(async () => { alarmAt = null; await nest.alarm(); }, Math.max(0, Math.min(t - Date.now(), 400))); } };
-const nest = new Nest({ storage }, { HIVE });
+const nest = new Nest({ storage }, { HIVE, AI });
 
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const opts = { viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1360, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" };
@@ -65,10 +69,19 @@ for (const name of ["Crib", "Swaddles (velcro/zip)", "Diaper fund"]) await op.cl
 await op.click("#dlg .dlg-foot .btn.primary"); await op.waitForFunction(() => document.querySelectorAll(".card").length === 3, null, { timeout: 10000 });
 await op.click("#btn-add"); await op.fill("#e-name", "Convertible car seat"); await op.fill("#e-price", "289");
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-await op.setInputFiles("#e-file", { name: "seat.png", mimeType: "image/png", buffer: png }); await op.waitForSelector("#dlg .photo-drop img");
+await op.setInputFiles("#e-file", { name: "seat.png", mimeType: "image/png", buffer: png }); await op.waitForSelector("#dlg .qs-preview img");
+await op.waitForFunction(() => /Check the name/.test(document.querySelector("#dlg .qs-status").textContent));
+assert.equal(await op.inputValue("#e-name"), "Convertible car seat", "what she typed isn't overwritten by the photo reading"); assert.equal(await op.inputValue("#e-price"), "289");
 await op.click("#dlg .dlg-foot .btn.primary"); await op.waitForFunction(() => document.querySelectorAll(".card").length === 4, null, { timeout: 10000 });
 const img = await op.waitForSelector(".card img[src^='/api/nest/blob/b']"); await op.waitForFunction((el) => el.complete && el.naturalWidth > 0, img);
 await wide(op); ok("quick-add from the checklist and an item with a photo: the photo is stored and shows on its card");
+// a photo that's gone (R2 switched off): the shop's copy if it loads, else a tidy tile; never a broken image
+await nest.fetch(new Request("https://mentifaber.org/api/nest/doc", { method: "POST", headers: { "content-type": "application/json", "x-nest-owner": "1" }, body: JSON.stringify({ path: "items/gone1", data: { name: "Old photo", kind: "item", cat: "bath", imageId: "b" + "7".repeat(20), options: [{ t: "Tub", i: "b" + "8".repeat(20), r: "https://elsewhere.example/tub.png" }] } }) }));
+await op.waitForSelector(".card:has(h3:text-is('Old photo')) .thumb .glyph", { timeout: 9000 }); assert.equal(await op.locator(".card:has(h3:text-is('Old photo')) .thumb img").count(), 0);
+await op.waitForSelector(".card:has(h3:text-is('Old photo')) .opt .ph"); assert.equal(await op.locator(".card:has(h3:text-is('Old photo')) .opt img").count(), 0);
+await nest.fetch(new Request("https://mentifaber.org/api/nest/doc", { method: "POST", headers: { "content-type": "application/json", "x-nest-owner": "1" }, body: JSON.stringify({ path: "items/gone1", data: null }) }));
+await op.waitForSelector(".card h3:text-is('Old photo')", { state: "detached", timeout: 9000 });
+ok("a missing photo falls back to the shop's copy, then to a tidy tile; never a broken image");
 
 // products: the notice walks the parents through items without picks; they keep the closest; photos are copied in
 await op.waitForSelector("#registry-notices .notice:has-text('Products found for 3 items')", { timeout: 15000 }); // found in the background as the items were added; funds aren't searched
@@ -123,6 +136,19 @@ await ap.goto(URL0 + "?k=" + plink.split("k=")[1]); await ap.fill("#nest-gate in
 await ap.waitForFunction(() => document.querySelectorAll(".card").length === 4); assert.equal(await ap.isVisible("#tab-room"), true, "she has the Parents' room"); assert.equal(await ap.isVisible("#btn-add"), true);
 assert.match(await ap.textContent("#who"), /Parent[\s\S]*Adrianna/);
 await ap.click("#btn-add"); await ap.fill("#e-name", "Baby monitor"); await ap.click("#dlg .dlg-foot .btn.primary"); await ap.waitForSelector(".card h3:text-is('Baby monitor')");
+// the easy way: one tap, pick a screenshot, and it fills itself in
+const [chooser] = await Promise.all([ap.waitForEvent("filechooser"), ap.click("#btn-shot")]);
+await chooser.setFiles({ name: "Screenshot_20261113.png", mimeType: "image/png", buffer: png });
+await ap.waitForFunction(() => document.querySelector("#e-name").value === "Hatch Rest sound machine", null, { timeout: 9000 });
+assert.equal(await ap.inputValue("#e-price"), "69.99"); assert.equal(await ap.inputValue("#e-cat"), "sleep"); assert.equal(await ap.inputValue("#e-brand"), "Hatch"); assert.equal(await ap.isVisible("#e-brand"), false, "the extra details stay folded away");
+assert.match(await ap.textContent("#dlg .qs-status"), /Filled in from the photo/); await shot(ap, "screenshot-add");
+await ap.click("#dlg .dlg-foot .btn.primary"); const hatch = await ap.waitForSelector(".card:has(h3:text-is('Hatch Rest sound machine')) img[src^='/api/nest/blob/b']"); await ap.waitForFunction((el) => el.complete && el.naturalWidth > 0, hatch);
+// or paste a shop's link: name, price and photo come from the page
+await ap.click("#btn-add"); await ap.fill("#e-link", "https://shop.example/p/owlet"); await ap.click("#dlg .qs-link .btn");
+await ap.waitForFunction(() => document.querySelector("#e-name").value === "Owlet Dream Duo baby monitor", null, { timeout: 9000 });
+assert.equal(await ap.inputValue("#e-price"), "129"); await ap.waitForSelector("#dlg .qs-preview img");
+await ap.click("#dlg .dlg-foot .btn.primary"); await ap.waitForSelector(".card:has(h3:text-is('Owlet Dream Duo baby monitor')) .links a[href='https://shop.example/p/owlet']");
+ok("Adrianna adds from a screenshot in one tap (it reads the name, price and category) or by pasting a shop's link");
 await op.click("#tab-registry"); await op.waitForSelector(".card h3:text-is('Baby monitor')", { timeout: 9000 }); // the owner sees her new item
 await ap.click(".card:has(h3:text-is('Baby monitor')) .btn:has-text('Edit')"); await ap.click("#dlg .btn.danger:has-text('Delete')"); await ap.click("#dlg .confirm-bar .btn.danger");
 await ap.waitForSelector(".card h3:text-is('Baby monitor')", { state: "detached" }); await op.waitForSelector(".card h3:text-is('Baby monitor')", { state: "detached", timeout: 9000 });

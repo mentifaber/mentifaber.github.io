@@ -84,6 +84,8 @@
     lastBackup: () => (state && state.backup) || "",
     exportUrl: () => API + "/export",
     grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
+    read: (id) => call("/read", { method: "POST", body: JSON.stringify({ id }) }), // a photo or screenshot → name, brand, price, shop, category
+    fromLink: (url) => call("/fromlink", { method: "POST", body: JSON.stringify({ url }) }), // a shop's link → name, price, photo
     async newLink(which) { await call("/invite", { method: "POST", body: JSON.stringify({ which: which || "guest" }) }); ver = ""; await pull(); return which === "parent" ? window.nestSite.parentLink() : window.nestSite.link(); },
   };
 

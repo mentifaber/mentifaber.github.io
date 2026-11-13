@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 const REPO = process.argv[2] || new URL("../..", import.meta.url).pathname.replace(/\/$/, ""), OUT = new URL("./src/", import.meta.url).pathname; mkdirSync(OUT, { recursive: true });
-writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"'));
+writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"'));
 writeFileSync(new URL("./cf-nest.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Nest } = await import(OUT + "nest.js?" + Date.now());
 let n = 0; const ok = (m) => console.log("  ✓ " + (++n) + " " + m);
@@ -17,6 +17,7 @@ const r2 = new Map(), MODELS = { async put(k, v, o) { r2.set(k, { buf: Buffer.fr
 let alarmAt = null, hiveReply = null;
 const HIVE = { idFromName: () => "h", get: () => ({ fetch: async () => hiveReply() }) };
 const nest = new Nest({ storage: { sql, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; } } }, { MODELS, HIVE });
+await nest.alarm(); alarmAt = null; // the first tick mends photos lost with R2 (nothing to mend here)
 const call = async (path, body, h = {}) => { const r = await nest.fetch(new Request("https://mentifaber.org/api/nest" + path, { method: body ? "POST" : "GET", headers: { "content-type": "application/json", ...h }, body: body ? JSON.stringify(body) : undefined })); return { status: r.status, r, j: /json/.test(r.headers.get("content-type") || "") ? await r.clone().json() : null }; };
 const O = { "x-nest-owner": "1" };
 hiveReply = () => Response.json({ products: [] });
