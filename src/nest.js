@@ -20,11 +20,17 @@
 //   POST /api/nest/findall   (parents) find products for every item that has none, in the background (an alarm works through
 //                            the queue a few at a time; new items join it as they're added); the results ride along in /state
 //   POST /api/nest/grab      (parents) { url }: a product photo the parents kept, copied into the registry's own storage
+//   POST /api/nest/read      (parents) { id }: a photo or screenshot they just added, read by a vision model → the name,
+//                            brand, price, shop and category to fill in, so adding a thing is: take a screenshot, tap Add
+//   POST /api/nest/fromlink  (parents) { url }: a product link → its name, price and photo (the photo kept here)
+//   (in the background, once) photos lost when R2 was switched off: cleared from the items, and each pick's photo fetched
+//                            again from its shop
 //   GET  /api/nest/export    (owner) everything in one file: the list, picks, gifts, notes, guests' names, details,
 //                            thank-yous and suggestions, with the photos of the items and picks inside it
 //   POST /api/nest/backup    (owner; the hourly cron) a copy of everything (photos stay where they are) once a day: to R2 as
 //                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
 import { DurableObject } from "cloudflare:workers";
+import { pageProduct, quota } from "./nest-find.js";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
 const MAX_DOC = 64 * 1024, MAX_DOCS = 3000, MAX_PEOPLE = 400, BLOB_MAX = 3e6, IMAGE = /^image\/(jpeg|png|webp|gif)$/;
@@ -33,7 +39,13 @@ const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart
 const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-const PHOTO_DB_MAX = 1.9e6;
+const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "1", REPAIR_TICK = 6;
+const CAT_KEYS = ["nursery", "sleep", "feeding", "diaper", "bath", "clothes", "gear", "play", "health", "mom", "books", "other"];
+const READ_ASK = 'This is a photo or a screenshot of something a family wants on their baby registry, often a shop\'s product page. Reply with JSON only, no other words: {"name": "what it is, as a guest would search for it: brand and model if you can see them, under 80 characters", "brand": "brand or empty", "price": a number or null, "currency": "3-letter code or empty", "store": "the shop if you can see it, or empty", "category": one of "' + CAT_KEYS.join('", "') + '"}';
+const READ_MODELS = ["@cf/meta/llama-3.2-11b-vision-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct", "@cf/llava-hf/llava-1.5-7b-hf"];
+const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
+const textOf = (r) => (r && typeof r.response === "object" && r.response ? JSON.stringify(r.response) : String((r && (r.response ?? r.description ?? (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content))) || ""));
+const shopOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
 const FIND_DAY = 400, FIND_BATCH = 1, FIND_GAP = 15e3; // one item at a time, a breath apart: gentle on the free plan's limits
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
@@ -82,13 +94,41 @@ export class Nest extends DurableObject {
     const prev = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
     if (r.products) {
       await Promise.all(r.products.map(async (p) => { if (!p.i && p.image) p.i = await this.fetchPhoto(p.image); })); // the Hive had no R2 to keep them in: the registry keeps them
-      const keep = r.products.map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, i: p.i || null, r: p.i ? null : p.image, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
+      const keep = r.products.map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, i: p.i || null, r: p.image || null, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
       this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ products: keep, at: Date.now() }), Date.now());
       if (prev) { const used = this.used(), now = new Set(keep.map((k) => k.i)); for (const o of JSON.parse(prev.data).products || []) if (o.i && !used.has(o.i) && !now.has(o.i)) await this.dropPhoto(o.i); } // last search's photos nobody kept
     } else if (!r.later) this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ ...(prev ? JSON.parse(prev.data) : {}), error: String(r.error || "nothing found").slice(0, 200), at: Date.now() }), Date.now());
     this.bump(); return r;
   }
+  // photos lost when R2 was switched off: a missing item photo is cleared (kept as imageOld, should R2 come back), and each
+  // pick's photo is fetched again: from the shop's photo address, else from its product page. A few per alarm tick.
+  async repair() {
+    let budget = REPAIR_TICK;
+    for (const row of this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray()) {
+      const it = JSON.parse(row.data); let changed = false;
+      if (it.imageId && !(await this.hasPhoto(it.imageId))) { it.imageOld = it.imageId; it.imageId = null; changed = true; }
+      for (const o of it.options || []) {
+        if (o.i && !(await this.hasPhoto(o.i))) { o.i = null; changed = true; }
+        if (o.i || o.x || budget <= 0) continue;
+        budget--; let got = o.r ? await this.fetchPhoto(o.r) : null; if (got) o.i = got;
+        else if (o.u) { const pg = await this.readPage(o.u); const ph = await this.pagePhoto(pg); if (ph) { o.i = ph.id; o.r = ph.r; } }
+        if (!o.i) o.x = 1; changed = true; // tried; the card shows a tidy tile instead
+      }
+      if (changed) { const cur = this.doc(row.path); if (!cur) continue; // written against the latest copy, so a parent's edit meanwhile isn't lost
+        const byKey = new Map((it.options || []).map((o) => [o.u || o.t, o])); const next = { ...cur, options: (cur.options || []).map((o) => { const f = byKey.get(o.u || o.t); return f ? { ...o, i: f.i, r: f.r || o.r || null, x: f.x } : o; }) };
+        if (cur.imageId === it.imageOld && it.imageOld) { next.imageId = null; next.imageOld = it.imageOld; }
+        this.q().exec("UPDATE doc SET data=?, at=? WHERE path=?", JSON.stringify(next), Date.now(), row.path); this.bump(); }
+      if (budget <= 0) return true;
+    }
+    for (const r of this.q().exec("SELECT item, data FROM find").toArray()) { // the finder's suggestions: a missing photo shows from the shop instead
+      const f = JSON.parse(r.data); let changed = false;
+      for (const p of f.products || []) if (p.i && !(await this.hasPhoto(p.i))) { p.i = null; changed = true; }
+      if (changed) { this.q().exec("UPDATE find SET data=? WHERE item=?", JSON.stringify(f), r.item); this.bump(); }
+    }
+    return false;
+  }
   async alarm() {
+    if (this.kv("repair") !== REPAIR_V) { const more = await this.repair().catch((e) => { console.warn("repair", e); return false; }); if (!more) this.kv("repair", REPAIR_V); await this.ctx.storage.setAlarm(Date.now() + (more ? 3000 : 1000)); return; }
     const ids = this.q().exec("SELECT item FROM findq ORDER BY at LIMIT ?", FIND_BATCH).toArray().map((r) => r.item); if (!ids.length) return;
     const rs = await Promise.all(ids.map((id) => this.findOne(id).catch((e) => ({ error: String(e.message || e) }))));
     if (rs.some((r) => r.later)) { const t = new Date(); t.setUTCHours(24, 10, 0, 0); this.kv("findpause", JSON.stringify({ until: t.getTime(), why: rs.find((r) => r.later).error })); this.bump(); await this.ctx.storage.setAlarm(t.getTime()); return; } // a daily allowance is used up: carry on after it resets (00:10 UTC)
@@ -112,6 +152,34 @@ export class Nest extends DurableObject {
     const o = await this.env.MODELS.get("nest/" + id).catch(() => null);
     return o ? { type: (o.httpMetadata && o.httpMetadata.contentType) || "image/jpeg", body: await new Response(o.body).arrayBuffer() } : null;
   }
+  async readShot(bytes, type) { // a vision model reads the photo; the first that answers with something usable wins
+    let last = "";
+    for (const m of READ_MODELS) {
+      const run = (inp) => this.env.AI.run(m, inp);
+      const inp = /llama-3\.2/.test(m) ? { messages: [{ role: "user", content: READ_ASK }], image: [...bytes], max_tokens: 300 }
+        : /llava/.test(m) ? { prompt: READ_ASK, image: [...bytes], max_tokens: 300 }
+        : { messages: [{ role: "user", content: [{ type: "text", text: READ_ASK }, { type: "image_url", image_url: { url: "data:" + type + ";base64," + b64(bytes) } }] }], max_tokens: 300 };
+      let out; try { out = await run(inp); } catch (e) {
+        last = String(e.message || e); if (quota(last)) return { error: "today's free AI allowance is used up: type the name in, the photo is saved", later: true };
+        if (/agree|licen[cs]e|5016/i.test(last)) { try { await run({ prompt: "agree" }); out = await run(inp); } catch (e2) { last = String(e2.message || e2); continue; } } else continue; }
+      const t = textOf(out), j = /\{[\s\S]*\}/.exec(t); let o = null; try { o = j && JSON.parse(j[0]); } catch (e) {}
+      const name = cleanName(o && o.name).slice(0, 80); if (!name) { last = "no name in " + t.slice(0, 80); continue; }
+      const price = Number(String((o.price ?? "")).replace(/[^0-9.]/g, "")); const c = String(o.category || "").toLowerCase();
+      return { name, brand: cleanName(o.brand).slice(0, 80), price: price > 0 && price < 1e5 ? Math.round(price * 100) / 100 : null, currency: /^[A-Z]{3}$/.test(o.currency || "") ? o.currency : "", store: cleanName(o.store).slice(0, 40), cat: CAT_KEYS.includes(c) ? c : "" };
+    }
+    return { error: "couldn't read that photo: type the name in, the photo is saved", detail: last.slice(0, 160) };
+  }
+  async hasPhoto(id) {
+    if (!id || !BLOB_ID.test(id)) return false; if (this.q().exec("SELECT 1 AS y FROM photo WHERE id=?", id).toArray().length) return true;
+    if (!this.env.MODELS) return false; const o = this.env.MODELS.head ? await this.env.MODELS.head("nest/" + id).catch(() => null) : await this.env.MODELS.get("nest/" + id).catch(() => null); return !!o;
+  }
+  async readPage(href) { // a shop's product page → { title, price, currency, images }
+    let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
+    const r = await fetch(u.href, { headers: { accept: "text/html", "accept-language": "en-US,en;q=0.9", "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" }, redirect: "follow", signal: AbortSignal.timeout(8000) }).catch(() => null);
+    if (!r || !r.ok || !/html/i.test(r.headers.get("content-type") || "")) return null;
+    const p = pageProduct((await r.text().catch(() => "")).slice(0, 900000), r.url || u.href); p.images = [...new Set([...(p.images || []), p.og].filter(Boolean))].slice(0, 4); return p;
+  }
+  async pagePhoto(page) { for (const im of (page && page.images) || []) { const id = await this.fetchPhoto(im); if (id) return { id, r: im }; } return null; }
   async dropPhoto(id) { this.q().exec("DELETE FROM photo WHERE id=?", id); if (this.env.MODELS && this.env.MODELS.delete) await this.env.MODELS.delete("nest/" + id).catch(() => {}); }
   async fetchPhoto(href) { // a product photo from a store, checked, into the registry's storage → id, or null
     let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
@@ -186,6 +254,7 @@ export class Nest extends DurableObject {
       const parent = this.parent(me);
       if (parent && !this.kv("seeded") && this.env.HIVE) { this.kv("seeded", 1); const have = new Set(Object.keys(this.findsFor())); await this.enqueue(Object.keys(docs).filter((p) => p.startsWith("items/")).map((p) => p.slice(6)).filter((id) => !have.has(id) && !(docs["items/" + id].options || []).length)); }
       if (parent && me.owner) { this.invite(); this.pinvite(); }
+      if (parent && this.kv("repair") !== REPAIR_V && this.ctx.storage.setAlarm && !(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 500); // photos lost with R2: mended in the background
       const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, invite: parent ? this.kv("invite") : undefined, pinvite: parent && me.owner ? this.kv("pinvite") : undefined });
       const v2 = this.kv("v") || "0"; if (v2 === v) { if (!this.cache || this.cache.v !== v) this.cache = { v }; this.cache[me.owner ? "o" : parent ? "p" : "g"] = body; } // nothing changed while it was built: keep it for the next asker
       return new Response(body.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -227,6 +296,20 @@ export class Nest extends DurableObject {
       const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!IMAGE.test(type)) return J({ error: "a JPEG, PNG, WebP or GIF, please" }, 415);
       const buf = await req.arrayBuffer(); if (!buf.byteLength) return J({ error: "that file is empty" }, 400); if (buf.byteLength > BLOB_MAX) return J({ error: "that photo is too big (3 MB at most)" }, 413);
       try { return J({ id: await this.putPhoto(buf, type) }); } catch (e) { return J({ error: e.message }, 413); }
+    }
+    if (path === "/read" && post) {
+      if (!this.parent(me)) return J({ error: "only the parents add things" }, 403); if (!this.env.AI) return J({ error: "reading photos isn't set up" }, 503);
+      const id = String(body.id || ""); const ph = BLOB_ID.test(id) ? await this.getPhoto(id) : null; if (!ph) return J({ error: "no such photo" }, 404);
+      const day = new Date().toISOString().slice(0, 10), n = this.kv("read:" + day) | 0; if (n >= 300) return J({ error: "that's today's photo readings; type the name in" }, 429); this.kv("read:" + day, n + 1);
+      const r = await this.readShot(new Uint8Array(ph.body), ph.type); return J(r, r.error ? (r.later ? 429 : 502) : 200);
+    }
+    if (path === "/fromlink" && post) {
+      if (!this.parent(me)) return J({ error: "only the parents add things" }, 403);
+      let u; try { u = new URL(String(body.url || "").trim()); } catch (e) { return J({ error: "that isn't a link" }, 400); }
+      if (u.protocol !== "https:" || privateHost(u.hostname)) return J({ error: "that isn't a shop's link" }, 400);
+      const pg = await this.readPage(u.href), ph = await this.pagePhoto(pg), store = shopOf(u.href);
+      if (!pg || !pg.title) return J({ url: u.href, store, imageId: ph ? ph.id : null, error: "that shop didn't let us read the page" });
+      return J({ url: u.href, store, name: pg.title, price: pg.price || null, currency: pg.currency || "", imageId: ph ? ph.id : null });
     }
     if (path === "/find" && post) {
       if (!this.parent(me)) return J({ error: "only the parents look for products" }, 403); if (!this.env.HIVE) return J({ error: "the product finder isn't set up" }, 503);
