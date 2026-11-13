@@ -17,8 +17,12 @@ const png1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQV
 // plan with R2 off), so the registry fetches each photo into its own storage. The background queue runs on the object's
 // alarm, as on Cloudflare (here a timer)
 let seq = 0; const realFetch = globalThis.fetch;
+const { deflateSync, crc32 } = await import("node:zlib");
+const chunk = (t, d) => { const b = Buffer.alloc(12 + d.length); b.writeUInt32BE(d.length, 0); b.write(t, 4); d.copy(b, 8); b.writeUInt32BE(crc32(Buffer.concat([Buffer.from(t), d])) >>> 0, 8 + d.length); return b; };
+const photoPng = (() => { const w = 400, hh = 400, ih = Buffer.alloc(13); ih.writeUInt32BE(w, 0); ih.writeUInt32BE(hh, 4); ih[8] = 8; ih[9] = 2; const raw = Buffer.alloc((w * 3 + 1) * hh); for (let i = 0; i < raw.length; i++) raw[i] = (i * 2654435761) >>> 24;
+  return Buffer.concat([Buffer.from("89504e470d0a1a0a", "hex"), chunk("IHDR", ih), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]); })(); // a real product-sized photo
 const shopPage = '<html><head><meta property="og:type" content="product"><meta property="og:title" content="Owlet Dream Duo baby monitor"><meta property="og:image" content="https://img.example/monitor.png"><meta property="product:price:amount" content="129.00"><meta property="product:price:currency" content="USD"></head></html>';
-globalThis.fetch = (u, o) => /^https:\/\/img\.example\//.test(String(u)) ? Promise.resolve(new Response(png1, { headers: { "content-type": "image/png" } }))
+globalThis.fetch = (u, o) => /^https:\/\/img\.example\//.test(String(u)) ? Promise.resolve(new Response(/monitor/.test(String(u)) ? photoPng : png1, { headers: { "content-type": "image/png" } }))
   : /^https:\/\/shop\.example\//.test(String(u)) ? Promise.resolve(new Response(shopPage, { headers: { "content-type": "text/html" } })) : realFetch(u, o);
 // the vision model that reads a screenshot (Workers AI on the site)
 const AI = { async run(m, inp) { assert.ok(inp.image || JSON.stringify(inp.messages).includes("data:image/"), "the photo goes to the model"); return { response: 'Here you go: {"name": "Hatch Rest sound machine", "brand": "Hatch", "price": 69.99, "currency": "USD", "store": "Target", "category": "sleep"}' }; } };
@@ -58,7 +62,7 @@ assert.match(await op.textContent("#who"), /Parent · owner[\s\S]*Anders/);
 ok("the owner names themself once, then sees an empty registry with the Parents' room");
 
 await op.click("#tab-room"); await op.waitForSelector("#s-baby");
-await op.fill("#s-baby", "Baby Faber"); await op.fill("#s-parents", "Anders & Adrianna"); await op.fill("#s-address", "A. Faber\n1 Rua Nova\nLisboa");
+await op.selectOption("#s-sex", "boy"); await op.fill("#s-baby", "Baby Faber"); await op.fill("#s-parents", "Anders & Adrianna"); await op.fill("#s-address", "A. Faber\n1 Rua Nova\nLisboa");
 await op.evaluate(() => { const d = new Date(Date.now() + 70 * 864e5); document.getElementById("s-due").value = d.toISOString().slice(0, 10); });
 await op.click("#room-settings button[type=submit]"); await op.waitForFunction(() => /Baby Faber/.test(document.querySelector(".babyname").textContent));
 const link = await op.textContent("#room-share .addr"); assert.match(link, /^http:\/\/localhost:8099\/nest\?k=[a-f0-9]{24}$/); const key = link.split("k=")[1];
@@ -108,7 +112,7 @@ await gp.waitForFunction(() => /isn't valid/.test(document.querySelector("#nest-
 
 await gp.goto(URL0 + "?k=" + key); await gp.fill("#nest-gate input", "Aunt Maria"); await gp.click("#nest-gate button"); await gp.waitForSelector("#nest-gate", { state: "detached" });
 await gp.waitForFunction(() => document.querySelectorAll(".card").length === 4); assert.doesNotMatch(gp.url(), /k=/, "the key leaves the address bar");
-assert.match(await gp.textContent(".babyname"), /Baby Faber/); assert.equal(await gp.isVisible("#tab-room"), false); assert.equal(await gp.isVisible("#btn-add"), false);
+assert.match(await gp.textContent(".babyname"), /Baby Faber/); assert.match(await gp.textContent(".its-a"), /It's a boy/, "guests see it's a boy"); assert.equal(await gp.isVisible("#tab-room"), false); assert.equal(await gp.isVisible("#btn-add"), false);
 await gp.click(`.card:has(h3:text-is("${pickedName}")) .btn.primary`); await gp.waitForSelector("#dlg[open] #c-from");
 assert.match(await gp.textContent("#dlg"), /Which one\?[\s\S]*Babyletto Hudson 3-in-1[\s\S]*IKEA SNIGLAR[\s\S]*Something similar/); await gp.click("#dlg .choice label:has-text('IKEA SNIGLAR') input"); await shot(gp, "choose");
 assert.match(await gp.textContent("#dlg .addr"), /1 Rua Nova/); await gp.fill("#c-note", "Bringing it to the shower!");

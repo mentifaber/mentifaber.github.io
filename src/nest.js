@@ -30,7 +30,7 @@
 //   POST /api/nest/backup    (owner; the hourly cron) a copy of everything (photos stay where they are) once a day: to R2 as
 //                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
 import { DurableObject } from "cloudflare:workers";
-import { pageProduct, quota } from "./nest-find.js";
+import { pageProduct, quota, checkPhoto } from "./nest-find.js";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
 const MAX_DOC = 64 * 1024, MAX_DOCS = 3000, MAX_PEOPLE = 400, BLOB_MAX = 3e6, IMAGE = /^image\/(jpeg|png|webp|gif)$/;
@@ -39,7 +39,8 @@ const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart
 const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
-const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "1", REPAIR_TICK = 6;
+const MIGRATE_V = "boy-millie-1";
+const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "2", REPAIR_TICK = 6, PHOTO_SEARCH_DAY = 150, READ_WAIT = 20e3;
 const CAT_KEYS = ["nursery", "sleep", "feeding", "diaper", "bath", "clothes", "gear", "play", "health", "mom", "books", "other"];
 const READ_ASK = 'This is a photo or a screenshot of something a family wants on their baby registry, often a shop\'s product page. Reply with JSON only, no other words: {"name": "what it is, as a guest would search for it: brand and model if you can see them, under 80 characters", "brand": "brand or empty", "price": a number or null, "currency": "3-letter code or empty", "store": "the shop if you can see it, or empty", "category": one of "' + CAT_KEYS.join('", "') + '"}';
 const READ_MODELS = ["@cf/meta/llama-3.2-11b-vision-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct", "@cf/llava-hf/llava-1.5-7b-hf"];
@@ -88,7 +89,7 @@ export class Nest extends DurableObject {
   async findOne(id, look) {
     const it = this.doc("items/" + id); if (!this.findable(it)) return { error: "nothing to look for" };
     const day = new Date().toISOString().slice(0, 10), usedToday = this.kv("find:" + day) | 0; if (usedToday >= FIND_DAY) return { error: "that's today's " + FIND_DAY + " product searches; more tomorrow", later: true }; this.kv("find:" + day, usedToday + 1);
-    const ask = { name: it.name, cat: it.cat, notes: it.notes, brand: it.brand, color: it.color, size: it.size, price: it.price, look: look != null ? look : it.look };
+    const ask = { for: (this.doc("meta/settings") || {}).sex || "", name: it.name, cat: it.cat, notes: it.notes, brand: it.brand, color: it.color, size: it.size, price: it.price, look: look != null ? look : it.look };
     let r; try { const res = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/find", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify(ask) })); r = await res.json(); }
     catch (e) { r = { error: "the product finder didn't answer" }; }
     const prev = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
@@ -108,11 +109,12 @@ export class Nest extends DurableObject {
       const it = JSON.parse(row.data); let changed = false;
       if (it.imageId && !(await this.hasPhoto(it.imageId))) { it.imageOld = it.imageId; it.imageId = null; changed = true; }
       for (const o of it.options || []) {
-        if (o.i && !(await this.hasPhoto(o.i))) { o.i = null; changed = true; }
-        if (o.i || o.x || budget <= 0) continue;
-        budget--; let got = o.r ? await this.fetchPhoto(o.r) : null; if (got) o.i = got;
-        else if (o.u) { const pg = await this.readPage(o.u); const ph = await this.pagePhoto(pg); if (ph) { o.i = ph.id; o.r = ph.r; } }
-        if (!o.i) o.x = 1; changed = true; // tried; the card shows a tidy tile instead
+        if (o.i && o.x !== REPAIR_V && !(await this.hasPhoto(o.i) && await this.storedShaped(o.i))) { await this.dropPhoto(o.i); o.i = null; changed = true; } // gone, or a shop's logo
+        if (o.i || o.x === REPAIR_V || budget <= 0) { if (o.i && o.x !== REPAIR_V) { o.x = REPAIR_V; changed = true; } continue; }
+        budget--; let got = o.r ? await this.fetchPhoto(o.r, true) : null; if (got) o.i = got;
+        if (!o.i && o.u) { const ph = await this.pagePhoto(await this.readPage(o.u)); if (ph) { o.i = ph.id; o.r = ph.r; } }
+        if (!o.i) { const ph = await this.searchPhoto([o.b && !String(o.t || "").toLowerCase().includes(String(o.b).toLowerCase()) ? o.b : "", o.t].filter(Boolean).join(" ")); if (ph) { o.i = ph.id; o.r = ph.r; } }
+        o.x = REPAIR_V; changed = true; // tried; without a photo the card shows a tidy tile
       }
       if (changed) { const cur = this.doc(row.path); if (!cur) continue; // written against the latest copy, so a parent's edit meanwhile isn't lost
         const byKey = new Map((it.options || []).map((o) => [o.u || o.t, o])); const next = { ...cur, options: (cur.options || []).map((o) => { const f = byKey.get(o.u || o.t); return f ? { ...o, i: f.i, r: f.r || o.r || null, x: f.x } : o; }) };
@@ -127,15 +129,35 @@ export class Nest extends DurableObject {
     }
     return false;
   }
-  async alarm() {
-    if (this.kv("repair") !== REPAIR_V) { const more = await this.repair().catch((e) => { console.warn("repair", e); return false; }); if (!more) this.kv("repair", REPAIR_V); await this.ctx.storage.setAlarm(Date.now() + (more ? 3000 : 1000)); return; }
-    const ids = this.q().exec("SELECT item FROM findq ORDER BY at LIMIT ?", FIND_BATCH).toArray().map((r) => r.item); if (!ids.length) return;
+  async alarm() { // products for queued items first, one at a time; then a few mended photos; so a new item never waits
+    let next = null; const pause = this.kv("findpause") ? JSON.parse(this.kv("findpause")) : null;
+    if (this.queued().length) next = pause && pause.until > Date.now() ? pause.until : await this.findTick();
+    if (this.kv("migrate") !== MIGRATE_V) await this.migrate().catch((e) => console.warn("migrate", e));
+    if (this.kv("repair") !== REPAIR_V) { const more = await this.repair().catch((e) => { console.warn("repair", e); return false; }); if (!more) this.kv("repair", REPAIR_V); else next = Math.min(next || Infinity, Date.now() + 3000); }
+    if (this.queued().length && !next) next = Date.now() + FIND_GAP;
+    if (next) await this.ctx.storage.setAlarm(next);
+  }
+  async findTick() { // → when to come back
+    const ids = this.q().exec("SELECT item FROM findq ORDER BY at LIMIT ?", FIND_BATCH).toArray().map((r) => r.item); if (!ids.length) return null;
     const rs = await Promise.all(ids.map((id) => this.findOne(id).catch((e) => ({ error: String(e.message || e) }))));
-    if (rs.some((r) => r.later)) { const t = new Date(); t.setUTCHours(24, 10, 0, 0); this.kv("findpause", JSON.stringify({ until: t.getTime(), why: rs.find((r) => r.later).error })); this.bump(); await this.ctx.storage.setAlarm(t.getTime()); return; } // a daily allowance is used up: carry on after it resets (00:10 UTC)
-    if (this.kv("findpause")) { this.q().exec("DELETE FROM kv WHERE k='findpause'"); }
+    if (rs.some((r) => r.later)) { const t = new Date(); t.setUTCHours(24, 10, 0, 0); this.kv("findpause", JSON.stringify({ until: t.getTime(), why: rs.find((r) => r.later).error })); this.bump(); return t.getTime(); } // a daily allowance is used up: carry on after it resets (00:10 UTC)
+    if (this.kv("findpause")) this.q().exec("DELETE FROM kv WHERE k='findpause'");
     for (const id of ids) this.q().exec("DELETE FROM findq WHERE item=?", id);
-    this.bump();
-    if (this.queued().length) await this.ctx.storage.setAlarm(Date.now() + FIND_GAP);
+    this.bump(); return this.queued().length ? Date.now() + FIND_GAP : null;
+  }
+  // one-time changes to the registry's contents, asked for by the parents
+  async migrate() {
+    if (!this.q().exec("SELECT 1 AS y FROM doc WHERE path LIKE 'items/%' LIMIT 1").toArray().length) { this.kv("migrate", MIGRATE_V); return; } // a new, empty registry: nothing to change
+    const s = this.doc("meta/settings") || {}; const put = (p, d) => { this.q().exec("INSERT INTO doc(path,data,at) VALUES(?,?,?) ON CONFLICT(path) DO UPDATE SET data=excluded.data, at=excluded.at", p, JSON.stringify(d), Date.now()); };
+    if (!s.sex) put("meta/settings", { ...s, sex: "boy" }); // it's a boy
+    const items = this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray().map((r) => ({ path: r.path, ...JSON.parse(r.data) }));
+    const nb = items.find((x) => x.kind !== "fund" && /diaper/i.test(x.name || "") && /newborn|\bnb\b/i.test(x.name || ""));
+    const mm = { t: "Millie Moon Luxury Diapers, Newborn", b: "Millie Moon", u: "https://www.babylist.com/gp/millie-moon-luxury-diapers/87471", p: 39.99, c: "USD", s: "babylist.com", w: "Soft, ultra-absorbent, up to 12 hours of leak protection", i: null, r: null };
+    if (nb) { const { path, ...it } = nb; if (!(it.options || []).some((o) => /millie moon/i.test(o.t || ""))) put(path, { ...it, options: [mm, ...(it.options || [])].slice(0, 8), updatedAt: Date.now() }); }
+    else put("items/i" + Date.now().toString(36) + "mm", { name: "Diapers, newborn size", kind: "item", cat: "diaper", prio: "must", qty: 4, price: 39.99, notes: "Boxes. Don't overbuy newborn size; they grow fast.", options: [mm], createdAt: Date.now(), createdBy: "owner" });
+    // suggestions that weren't made for a boy: found again where colour and design matter, for items without picks yet
+    const have = this.findsFor(); await this.enqueue(items.filter((x) => ["clothes", "sleep", "nursery", "bath", "play"].includes(x.cat) && !(x.options || []).length && have[x.path.slice(6)]).map((x) => x.path.slice(6)));
+    this.kv("migrate", MIGRATE_V); this.bump();
   }
 
   // ── photos: R2 when bound, else this object's SQLite (one value there holds up to 2 MB) ──
@@ -153,13 +175,14 @@ export class Nest extends DurableObject {
     return o ? { type: (o.httpMetadata && o.httpMetadata.contentType) || "image/jpeg", body: await new Response(o.body).arrayBuffer() } : null;
   }
   async readShot(bytes, type) { // a vision model reads the photo; the first that answers with something usable wins
-    let last = "";
+    let last = ""; const t0 = Date.now();
     for (const m of READ_MODELS) {
       const run = (inp) => this.env.AI.run(m, inp);
       const inp = /llama-3\.2/.test(m) ? { messages: [{ role: "user", content: READ_ASK }], image: [...bytes], max_tokens: 300 }
         : /llava/.test(m) ? { prompt: READ_ASK, image: [...bytes], max_tokens: 300 }
         : { messages: [{ role: "user", content: [{ type: "text", text: READ_ASK }, { type: "image_url", image_url: { url: "data:" + type + ";base64," + b64(bytes) } }] }], max_tokens: 300 };
-      let out; try { out = await run(inp); } catch (e) {
+      if (Date.now() - t0 > 2 * READ_WAIT) break;
+      let out; try { out = await Promise.race([run(inp), new Promise((_, no) => setTimeout(() => no(new Error("timed out")), READ_WAIT))]); } catch (e) {
         last = String(e.message || e); if (quota(last)) return { error: "today's free AI allowance is used up: type the name in, the photo is saved", later: true };
         if (/agree|licen[cs]e|5016/i.test(last)) { try { await run({ prompt: "agree" }); out = await run(inp); } catch (e2) { last = String(e2.message || e2); continue; } } else continue; }
       const t = textOf(out), j = /\{[\s\S]*\}/.exec(t); let o = null; try { o = j && JSON.parse(j[0]); } catch (e) {}
@@ -179,13 +202,21 @@ export class Nest extends DurableObject {
     if (!r || !r.ok || !/html/i.test(r.headers.get("content-type") || "")) return null;
     const p = pageProduct((await r.text().catch(() => "")).slice(0, 900000), r.url || u.href); p.images = [...new Set([...(p.images || []), p.og].filter(Boolean))].slice(0, 4); return p;
   }
-  async pagePhoto(page) { for (const im of (page && page.images) || []) { const id = await this.fetchPhoto(im); if (id) return { id, r: im }; } return null; }
+  async pagePhoto(page) { for (const im of (page && page.images) || []) { const id = await this.fetchPhoto(im, true); if (id) return { id, r: im }; } return null; }
+  async searchPhoto(q) { // image search through the Hive (the owner's search key), a few a day
+    if (!this.env.HIVE) return null; const day = new Date().toISOString().slice(0, 10), n = this.kv("psearch:" + day) | 0; if (n >= PHOTO_SEARCH_DAY) return null; this.kv("psearch:" + day, n + 1);
+    const res = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/photo", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ q }) })).catch(() => null);
+    const j = res && res.ok ? await res.json().catch(() => null) : null; if (!j || !j.image) return null;
+    const id = await this.fetchPhoto(j.image, true); return id ? { id, r: j.image } : null;
+  }
+  async storedShaped(id) { const ph = await this.getPhoto(id); return !!ph && checkPhoto("", ph.body); }
   async dropPhoto(id) { this.q().exec("DELETE FROM photo WHERE id=?", id); if (this.env.MODELS && this.env.MODELS.delete) await this.env.MODELS.delete("nest/" + id).catch(() => {}); }
-  async fetchPhoto(href) { // a product photo from a store, checked, into the registry's storage → id, or null
+  async fetchPhoto(href, check) { // a product photo from a store, checked, into the registry's storage → id, or null
     let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
     const r = await fetch(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(10000) }).catch(() => null);
     const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!r || !r.ok || !IMAGE.test(type || "")) return null;
     const buf = await r.arrayBuffer().catch(() => null); if (!buf || !buf.byteLength || buf.byteLength > (this.env.MODELS ? BLOB_MAX : PHOTO_DB_MAX)) return null;
+    if (check && !checkPhoto(u.href, buf)) return null; // a logo, an icon, a banner: not the product
     return this.putPhoto(buf, type).catch(() => null);
   }
 
@@ -254,7 +285,7 @@ export class Nest extends DurableObject {
       const parent = this.parent(me);
       if (parent && !this.kv("seeded") && this.env.HIVE) { this.kv("seeded", 1); const have = new Set(Object.keys(this.findsFor())); await this.enqueue(Object.keys(docs).filter((p) => p.startsWith("items/")).map((p) => p.slice(6)).filter((id) => !have.has(id) && !(docs["items/" + id].options || []).length)); }
       if (parent && me.owner) { this.invite(); this.pinvite(); }
-      if (parent && this.kv("repair") !== REPAIR_V && this.ctx.storage.setAlarm && !(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 500); // photos lost with R2: mended in the background
+      if (parent && (this.kv("repair") !== REPAIR_V || this.kv("migrate") !== MIGRATE_V) && this.ctx.storage.setAlarm && !(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 500); // photos lost with R2: mended in the background
       const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, invite: parent ? this.kv("invite") : undefined, pinvite: parent && me.owner ? this.kv("pinvite") : undefined });
       const v2 = this.kv("v") || "0"; if (v2 === v) { if (!this.cache || this.cache.v !== v) this.cache = { v }; this.cache[me.owner ? "o" : parent ? "p" : "g"] = body; } // nothing changed while it was built: keep it for the next asker
       return new Response(body.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });

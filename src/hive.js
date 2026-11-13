@@ -18,7 +18,7 @@ import { autoRoute, followUps, AUTO } from "./hive-route.js";
 import { Tasks } from "./hive-tasks.js";
 import { factCheck } from "./hive-check.js";
 import { rewrite } from "./hive-canvas.js";
-import { findProducts } from "./nest-find.js";
+import { findProducts, findPhoto } from "./nest-find.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
@@ -245,6 +245,11 @@ export class Hive extends DurableObject {
       const t0 = Date.now(), r = await findProducts({ env: this.env, web: (q, o) => this.web(q, true, o), store: this.env.MODELS ? store : null }, b || {}).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       this.logReply({ model: "nest-find", who: "owner", kind: "nest", ms: Date.now() - t0, chars: (r.products || []).length, err: r.error });
       return J(r, r.error ? (r.later ? 429 : 502) : 200);
+    }
+    if (path === "/nest/photo") { // a product photo for one of the registry's picks whose photo was lost (src/nest.js repair)
+      if (!owner) return J({ error: "owner only" }, 401); if (!(await this.searchKey(true).catch(() => null))) return J({ error: "no search key" }, 409);
+      const r = await findPhoto({ env: this.env, web: (q, o) => this.web(q, true, o) }, String((b && b.q) || "")).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      return J(r, r.error ? 404 : 200);
     }
     if (path === "/canvas/rewrite") { // the canvas: rewrite a selected passage, or the whole document (src/hive-canvas.js)
       if (req.method !== "POST") return J({ error: "POST only" }, 405); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);
