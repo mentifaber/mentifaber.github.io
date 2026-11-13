@@ -99,6 +99,20 @@ assert.ok(searched.includes("find:Sleep sacks for a boy"), "the sleep sacks' sug
 al2 = null; await n2.alarm(); assert.equal(al2, null, "done once: no more background ticks");
 await c2("/state"); al2 = null; await n2.alarm(); assert.equal((await c2("/state")).j.docs["items/d1"].options.filter((o) => /Millie/.test(o.t)).length, 1, "only once");
 ok("photos lost with R2 are mended in the background: from the shop's photo address, its product page, or an image search; banners and logos aren't kept as photos");
+// a card with no photo and no picks gets a photo of the thing; progress is shown; "Refresh all photos" starts a new round
+const sugg = (await c2("/blob", {}, { type: "image/png", body: product })).j.id;
+await c2("/doc", { path: "items/b1", data: { name: "Bouncer", kind: "item", cat: "gear" } }); db2.prepare("DELETE FROM findq").run();
+db2.prepare("INSERT INTO find(item,data,at) VALUES('b1',?,1) ON CONFLICT(item) DO UPDATE SET data=excluded.data").run(JSON.stringify({ products: [{ t: "BabyBjorn Bliss", u: "https://bb.example", i: sugg }] }));
+await c2("/doc", { path: "items/w1", data: { name: "Wipe warmer", kind: "item", cat: "diaper" } }); db2.prepare("DELETE FROM findq").run();
+let ps = await c2("/photos", {}); assert.ok(ps.j.ok); assert.ok(ps.j.left >= 2, "how many photos are left to try: " + ps.j.left);
+assert.ok((await c2("/state")).j.photosLeft >= 2, "the parents see the progress"); assert.equal((await call("/photos", {}, G)).status, 403);
+for (let k = 0; k < 15 && al2; k++) { al2 = null; await n2.alarm(); }
+const st3 = (await c2("/state")).j; assert.equal(st3.photosLeft, undefined, "all tried: no more progress shown");
+assert.equal(st3.docs["items/b1"].imageAuto, sugg, "a bare card shows the finder's suggestion photo"); assert.ok(searched.includes("Wipe warmer baby"), "or an image search for the thing: " + searched.join(" | "));
+assert.equal(st3.docs["items/t1"].options[0].i, t1.options[0].i, "photos already right are kept on a refresh");
+await c2("/doc", { path: "items/b1", data: { ...st3.docs["items/b1"], options: [{ t: "BabyBjorn Bliss", i: sugg }] } }); await c2("/photos", {}); for (let k = 0; k < 15 && al2; k++) { al2 = null; await n2.alarm(); }
+assert.equal((await c2("/state")).j.docs["items/b1"].imageAuto, null, "once it has picks, those show instead"); assert.equal((await c2("/blob/" + sugg)).status, 200, "and the photo itself stays, for the pick");
+ok("every card gets a photo: a bare one shows a suggestion's photo or an image search's; progress is shown; Refresh all photos runs it again");
 ok("the one-time changes: it's a boy, Millie Moon among the newborn diapers' picks (with its photo), and suggestions where colour matters found again for a boy");
 
 // a screenshot read for its name, price, shop and category; a shop's link read for its name, price and photo

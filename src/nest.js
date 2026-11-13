@@ -40,7 +40,7 @@ const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
 const MIGRATE_V = "boy-millie-1";
-const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "2", REPAIR_TICK = 6, PHOTO_SEARCH_DAY = 150, READ_WAIT = 20e3;
+const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "2", REPAIR_TICK = 5, PHOTO_SEARCH_DAY = 300, READ_WAIT = 20e3;
 const CAT_KEYS = ["nursery", "sleep", "feeding", "diaper", "bath", "clothes", "gear", "play", "health", "mom", "books", "other"];
 const READ_ASK = 'This is a photo or a screenshot of something a family wants on their baby registry, often a shop\'s product page. Reply with JSON only, no other words: {"name": "what it is, as a guest would search for it: brand and model if you can see them, under 80 characters", "brand": "brand or empty", "price": a number or null, "currency": "3-letter code or empty", "store": "the shop if you can see it, or empty", "category": one of "' + CAT_KEYS.join('", "') + '"}';
 const READ_MODELS = ["@cf/meta/llama-3.2-11b-vision-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct", "@cf/llava-hf/llava-1.5-7b-hf"];
@@ -85,7 +85,7 @@ export class Nest extends DurableObject {
   }
   findsFor() { const out = {}; for (const r of this.q().exec("SELECT item, data FROM find").toArray()) out[r.item] = JSON.parse(r.data); return out; }
   queued() { return this.q().exec("SELECT item FROM findq").toArray().map((r) => r.item); }
-  used() { const u = new Set(); for (const r of this.q().exec("SELECT data FROM doc WHERE path LIKE 'items/%'").toArray()) { const it = JSON.parse(r.data); if (it.imageId) u.add(it.imageId); for (const o of it.options || []) if (o.i) u.add(o.i); } return u; }
+  used() { const u = new Set(); for (const r of this.q().exec("SELECT data FROM doc WHERE path LIKE 'items/%'").toArray()) { const it = JSON.parse(r.data); if (it.imageId) u.add(it.imageId); if (it.imageAuto) u.add(it.imageAuto); for (const o of it.options || []) if (o.i) u.add(o.i); } return u; }
   async findOne(id, look) {
     const it = this.doc("items/" + id); if (!this.findable(it)) return { error: "nothing to look for" };
     const day = new Date().toISOString().slice(0, 10), usedToday = this.kv("find:" + day) | 0; if (usedToday >= FIND_DAY) return { error: "that's today's " + FIND_DAY + " product searches; more tomorrow", later: true }; this.kv("find:" + day, usedToday + 1);
@@ -101,39 +101,82 @@ export class Nest extends DurableObject {
     } else if (!r.later) this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ ...(prev ? JSON.parse(prev.data) : {}), error: String(r.error || "nothing found").slice(0, 200), at: Date.now() }), Date.now());
     this.bump(); return r;
   }
-  // photos lost when R2 was switched off: a missing item photo is cleared (kept as imageOld, should R2 come back), and each
-  // pick's photo is fetched again: from the shop's photo address, else from its product page. A few per alarm tick.
+  // every photo on the registry, mended in the background: a missing or not-the-product photo is replaced, from the shop's
+  // photo address, its product page, or an image search; a card with no photo and no picks gets a photo of the thing
+  // itself (imageAuto); the finder's suggestions get theirs from their product pages. Several at once, each tick.
+  // "Refresh all photos" starts a new round (the round is part of the mark each photo is checked against).
+  mark() { return REPAIR_V + "." + (this.kv("photoRound") || "0"); }
+  async pickPhoto(o) {
+    let id = o.r ? await this.fetchPhoto(o.r, true) : null; if (id) return { id, r: o.r };
+    if (o.u) { const ph = await this.pagePhoto(await this.readPage(o.u)); if (ph) return ph; }
+    return this.searchPhoto([o.b && !String(o.t || "").toLowerCase().includes(String(o.b).toLowerCase()) ? o.b : "", o.t].filter(Boolean).join(" "));
+  }
+  async itemPhoto(it, id) { // a suggestion's photo the finder already has, else an image search for the thing
+    const f = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
+    for (const p of f ? JSON.parse(f.data).products || [] : []) if (p.i && (await this.hasPhoto(p.i)) && (await this.storedShaped(p.i))) return { id: p.i };
+    const sex = (this.doc("meta/settings") || {}).sex;
+    return this.searchPhoto([it.brand, it.name, "baby"].filter(Boolean).join(" ") + (sex && ["clothes", "sleep", "nursery", "bath", "play"].includes(it.cat) ? " " + sex : ""));
+  }
+  photosLeft() { // how many photos the mending still has to try this round
+    const mark = this.mark(); let n = 0;
+    for (const r of this.q().exec("SELECT data FROM doc WHERE path LIKE 'items/%'").toArray()) { const it = JSON.parse(r.data);
+      for (const o of it.options || []) if (o.x !== mark) n++;
+      if (it.kind !== "fund" && !it.imageId && !(it.options || []).length && it.autoX !== mark) n++; }
+    return n;
+  }
   async repair() {
-    let budget = REPAIR_TICK;
+    const mark = this.mark(), jobs = [], plans = []; let more = false;
     for (const row of this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray()) {
-      const it = JSON.parse(row.data); let changed = false;
-      if (it.imageId && !(await this.hasPhoto(it.imageId))) { it.imageOld = it.imageId; it.imageId = null; changed = true; }
+      const it = JSON.parse(row.data), id = row.path.slice(6), plan = { path: row.path, set: {}, opts: new Map() };
+      if (it.imageId && !(await this.hasPhoto(it.imageId))) { plan.set.imageOld = it.imageId; plan.set.imageId = null; }
       for (const o of it.options || []) {
-        if (o.i && o.x !== REPAIR_V && !(await this.hasPhoto(o.i) && await this.storedShaped(o.i))) { await this.dropPhoto(o.i); o.i = null; changed = true; } // gone, or a shop's logo
-        if (o.i || o.x === REPAIR_V || budget <= 0) { if (o.i && o.x !== REPAIR_V) { o.x = REPAIR_V; changed = true; } continue; }
-        budget--; let got = o.r ? await this.fetchPhoto(o.r, true) : null; if (got) o.i = got;
-        if (!o.i && o.u) { const ph = await this.pagePhoto(await this.readPage(o.u)); if (ph) { o.i = ph.id; o.r = ph.r; } }
-        if (!o.i) { const ph = await this.searchPhoto([o.b && !String(o.t || "").toLowerCase().includes(String(o.b).toLowerCase()) ? o.b : "", o.t].filter(Boolean).join(" ")); if (ph) { o.i = ph.id; o.r = ph.r; } }
-        o.x = REPAIR_V; changed = true; // tried; without a photo the card shows a tidy tile
+        if (o.x === mark) continue; const key = o.u || o.t;
+        if (o.i && (await this.hasPhoto(o.i)) && (await this.storedShaped(o.i))) { plan.opts.set(key, { x: mark }); continue; } // it's the product: checked
+        if (o.i) { await this.dropPhoto(o.i); plan.opts.set(key, { i: null }); } // gone, or a shop's logo or banner
+        if (jobs.length >= REPAIR_TICK) { more = true; continue; }
+        jobs.push(this.pickPhoto(o).catch(() => null).then((ph) => plan.opts.set(key, ph ? { i: ph.id, r: ph.r || o.r || null, x: mark } : { i: null, x: mark })));
       }
-      if (changed) { const cur = this.doc(row.path); if (!cur) continue; // written against the latest copy, so a parent's edit meanwhile isn't lost
-        const byKey = new Map((it.options || []).map((o) => [o.u || o.t, o])); const next = { ...cur, options: (cur.options || []).map((o) => { const f = byKey.get(o.u || o.t); return f ? { ...o, i: f.i, r: f.r || o.r || null, x: f.x } : o; }) };
-        if (cur.imageId === it.imageOld && it.imageOld) { next.imageId = null; next.imageOld = it.imageOld; }
-        this.q().exec("UPDATE doc SET data=?, at=? WHERE path=?", JSON.stringify(next), Date.now(), row.path); this.bump(); }
-      if (budget <= 0) return true;
+      const bare = it.kind !== "fund" && !(it.imageId && !plan.set.imageOld) && !(it.options || []).length;
+      if (it.imageAuto && (!bare || !(await this.hasPhoto(it.imageAuto)))) plan.set.imageAuto = null; // picks or their own photo now show instead
+      else if (bare && !it.imageAuto && it.autoX !== mark) {
+        if (jobs.length >= REPAIR_TICK) more = true;
+        else jobs.push(this.itemPhoto(it, id).catch(() => null).then((ph) => { plan.set.imageAuto = ph ? ph.id : null; plan.set.autoX = mark; }));
+      }
+      plans.push(plan);
     }
-    for (const r of this.q().exec("SELECT item, data FROM find").toArray()) { // the finder's suggestions: a missing photo shows from the shop instead
-      const f = JSON.parse(r.data); let changed = false;
-      for (const p of f.products || []) if (p.i && !(await this.hasPhoto(p.i))) { p.i = null; changed = true; }
+    await Promise.all(jobs);
+    for (const plan of plans) {
+      if (!Object.keys(plan.set).length && !plan.opts.size) continue;
+      const cur = this.doc(plan.path); if (!cur) continue; // written against the latest copy, so a parent's edit meanwhile isn't lost
+      const next = { ...cur, ...plan.set, options: (cur.options || []).map((o) => { const f = plan.opts.get(o.u || o.t); return f ? { ...o, ...f } : o; }) };
+      if ("imageOld" in plan.set && cur.imageId !== plan.set.imageOld) { next.imageId = cur.imageId; delete next.imageOld; } // changed meanwhile: theirs stands
+      if (!(cur.options || []).length) delete next.options;
+      if (JSON.stringify(next) !== JSON.stringify(cur)) { this.q().exec("UPDATE doc SET data=?, at=? WHERE path=?", JSON.stringify(next), Date.now(), plan.path); this.bump(); }
+    }
+    if (more) return true;
+    // the finder's suggestions: a missing photo is cleared, then fetched again from the product page (no searches)
+    let pages = Math.max(0, REPAIR_TICK - jobs.length) * 2; // page reads are cheaper than searches
+    for (const r of this.q().exec("SELECT item, data FROM find").toArray()) {
+      const f = JSON.parse(r.data); let changed = false; const work = [];
+      for (const p of f.products || []) {
+        if (p.x === mark) continue;
+        if (p.i && (await this.hasPhoto(p.i))) { p.x = mark; changed = true; continue; }
+        if (p.i) { p.i = null; changed = true; }
+        if (pages <= 0) { more = true; continue; } pages--;
+        work.push((async () => { let id = p.r ? await this.fetchPhoto(p.r, true) : null; if (!id && p.u) { const ph = await this.pagePhoto(await this.readPage(p.u).catch(() => null)); if (ph) { id = ph.id; p.r = ph.r; } } p.i = id || null; p.x = mark; })().catch(() => { p.x = mark; }));
+        changed = true;
+      }
+      await Promise.all(work);
       if (changed) { this.q().exec("UPDATE find SET data=? WHERE item=?", JSON.stringify(f), r.item); this.bump(); }
+      if (pages <= 0 && more) return true;
     }
-    return false;
+    return more;
   }
   async alarm() { // products for queued items first, one at a time; then a few mended photos; so a new item never waits
     let next = null; const pause = this.kv("findpause") ? JSON.parse(this.kv("findpause")) : null;
     if (this.queued().length) next = pause && pause.until > Date.now() ? pause.until : await this.findTick();
     if (this.kv("migrate") !== MIGRATE_V) await this.migrate().catch((e) => console.warn("migrate", e));
-    if (this.kv("repair") !== REPAIR_V) { const more = await this.repair().catch((e) => { console.warn("repair", e); return false; }); if (!more) this.kv("repair", REPAIR_V); else next = Math.min(next || Infinity, Date.now() + 3000); }
+    if (this.kv("repair") !== this.mark()) { const more = await this.repair().catch((e) => { console.warn("repair", e); return false; }); if (!more) this.kv("repair", this.mark()); else next = Math.min(next || Infinity, Date.now() + 1000); }
     if (this.queued().length && !next) next = Date.now() + FIND_GAP;
     if (next) await this.ctx.storage.setAlarm(next);
   }
@@ -202,7 +245,7 @@ export class Nest extends DurableObject {
     if (!r || !r.ok || !/html/i.test(r.headers.get("content-type") || "")) return null;
     const p = pageProduct((await r.text().catch(() => "")).slice(0, 900000), r.url || u.href); p.images = [...new Set([...(p.images || []), p.og].filter(Boolean))].slice(0, 4); return p;
   }
-  async pagePhoto(page) { for (const im of (page && page.images) || []) { const id = await this.fetchPhoto(im, true); if (id) return { id, r: im }; } return null; }
+  async pagePhoto(page) { for (const im of ((page && page.images) || []).slice(0, 2)) { const id = await this.fetchPhoto(im, true); if (id) return { id, r: im }; } return null; }
   async searchPhoto(q) { // image search through the Hive (the owner's search key), a few a day
     if (!this.env.HIVE) return null; const day = new Date().toISOString().slice(0, 10), n = this.kv("psearch:" + day) | 0; if (n >= PHOTO_SEARCH_DAY) return null; this.kv("psearch:" + day, n + 1);
     const res = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/photo", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ q }) })).catch(() => null);
@@ -285,8 +328,8 @@ export class Nest extends DurableObject {
       const parent = this.parent(me);
       if (parent && !this.kv("seeded") && this.env.HIVE) { this.kv("seeded", 1); const have = new Set(Object.keys(this.findsFor())); await this.enqueue(Object.keys(docs).filter((p) => p.startsWith("items/")).map((p) => p.slice(6)).filter((id) => !have.has(id) && !(docs["items/" + id].options || []).length)); }
       if (parent && me.owner) { this.invite(); this.pinvite(); }
-      if (parent && (this.kv("repair") !== REPAIR_V || this.kv("migrate") !== MIGRATE_V) && this.ctx.storage.setAlarm && !(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 500); // photos lost with R2: mended in the background
-      const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, invite: parent ? this.kv("invite") : undefined, pinvite: parent && me.owner ? this.kv("pinvite") : undefined });
+      if (parent && (this.kv("repair") !== this.mark() || this.kv("migrate") !== MIGRATE_V) && this.ctx.storage.setAlarm && !(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 500); // photos lost with R2: mended in the background
+      const body = JSON.stringify({ v, me: "__ME__", docs, profiles, finds: parent ? this.findsFor() : undefined, findq: parent ? this.queued() : undefined, findpause: parent && this.kv("findpause") ? JSON.parse(this.kv("findpause")) : undefined, backup: parent ? this.kv("backup") || "" : undefined, photosLeft: parent && this.kv("repair") !== this.mark() ? this.photosLeft() : undefined, invite: parent ? this.kv("invite") : undefined, pinvite: parent && me.owner ? this.kv("pinvite") : undefined });
       const v2 = this.kv("v") || "0"; if (v2 === v) { if (!this.cache || this.cache.v !== v) this.cache = { v }; this.cache[me.owner ? "o" : parent ? "p" : "g"] = body; } // nothing changed while it was built: keep it for the next asker
       return new Response(body.replace('"__ME__"', JSON.stringify({ id: me.id, name: me.name, owner: me.owner, parent })), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
@@ -333,6 +376,11 @@ export class Nest extends DurableObject {
       const id = String(body.id || ""); const ph = BLOB_ID.test(id) ? await this.getPhoto(id) : null; if (!ph) return J({ error: "no such photo" }, 404);
       const day = new Date().toISOString().slice(0, 10), n = this.kv("read:" + day) | 0; if (n >= 300) return J({ error: "that's today's photo readings; type the name in" }, 429); this.kv("read:" + day, n + 1);
       const r = await this.readShot(new Uint8Array(ph.body), ph.type); return J(r, r.error ? (r.later ? 429 : 502) : 200);
+    }
+    if (path === "/photos" && post) { // "Refresh all photos": every photo checked and found again where it's missing
+      if (!this.parent(me)) return J({ error: "only the parents" }, 403);
+      this.kv("photoRound", String((+this.kv("photoRound") || 0) + 1)); if (this.ctx.storage.setAlarm) await this.ctx.storage.setAlarm(Date.now() + 200);
+      this.bump(); return J({ ok: true, left: this.photosLeft() });
     }
     if (path === "/fromlink" && post) {
       if (!this.parent(me)) return J({ error: "only the parents add things" }, 403);

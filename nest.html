@@ -599,7 +599,7 @@ const cat = (k) => CATS[k] || CATS.other;
 const blobSrc = (id) => id ? "/api/nest/blob/" + encodeURIComponent(id) : null;
 const optImgs = (o) => o ? [blobSrc(o.i), o.r && safeUrl(o.r)].filter(Boolean) : [];
 const optImg = (o) => optImgs(o)[0] || null;
-const imgSrcs = (item) => [...new Set([blobSrc(item.imageId), ...(item.options || []).flatMap(optImgs)].filter(Boolean))];
+const imgSrcs = (item) => [...new Set([blobSrc(item.imageId), ...(item.options || []).flatMap(optImgs), blobSrc(item.imageAuto)].filter(Boolean))]; // imageAuto: a photo of the thing, for a card with no picks yet
 function chainImg(srcs, alt, fallback) {
   const list = [...new Set([].concat(srcs || []).filter(Boolean))]; if (!list.length) return fallback();
   let k = 0; const im = h("img", { src: list[0], alt: alt || "", loading: "lazy", referrerpolicy: "no-referrer" });
@@ -861,6 +861,8 @@ function renderRegistryNotices() {
     else if (bare.length) el.append(h("div", { class: "notice" }, `✦ ${plural(bare.length, "item")} without products yet.`,
       h("button", { class: "btn small primary", style: "margin-left:auto;flex:none", onclick: async (ev) => { ev.target.disabled = true; try { const r = await nestSite.findAll(); toast(r.queued ? `Finding products for ${plural(r.queued, "item")}. Carry on; they appear as they're found.` : "Nothing left to find."); } catch (e) { ev.target.disabled = false; toast("Couldn't start: " + (e.message || e) + ". Reload the page and try again.", { label: "Reload", fn: () => location.reload() }); } } }, "Find them all")));
   }
+  if (isParent() && window.nestSite && nestSite.photosLeft()) el.append(h("div", { class: "notice" }, h("span", { class: "spin", style: "width:18px;height:18px;border-width:2px;flex:none" }),
+    h("span", null, `Finding product photos: ${plural(nestSite.photosLeft(), "photo")} to go. They appear as they're found, for everyone.`)));
   if (isParent() && S.spoiler !== "all") el.append(h("div", { class: "notice sage" },
     S.spoiler === "hidden" ? "Surprise mode: you can't see what's been claimed. Guests still can, so nothing gets doubled up." : "Surprise mode: you see what's covered, but not who's giving it.",
     h("button", { class: "btn small", style: "margin-left:auto", onclick: () => setSpoiler("all") }, "Show everything")));
@@ -1293,7 +1295,10 @@ function renderBackup() {
   el.append(h("div", { class: "panel" }, h("h2", null, "Backups"),
     h("p", { class: "sub" }, (last ? "A copy of everything is saved automatically every night. The last one: " + fmtDate(parseDate(last), { month: "long", day: "numeric", year: "numeric" }) + "." : "A copy of everything is saved automatically every night.") + " You can also keep your own copy."),
     S.isOwner ? h("div", null, h("a", { class: "btn small primary", href: nestSite.exportUrl() }, "Download a backup")) : h("p", { class: "sub" }, "The owner can download a full backup."),
-    S.isOwner ? h("small", { class: "row-sub" }, "One file with the whole list, your picks, every guest's gifts and notes, names, details, thank-yous and the photos.") : null));
+    S.isOwner ? h("small", { class: "row-sub" }, "One file with the whole list, your picks, every guest's gifts and notes, names, details, thank-yous and the photos.") : null),
+    h("div", { class: "panel" }, h("h2", null, "Photos"),
+      h("p", { class: "sub" }, nestSite.photosLeft() ? `Finding photos: ${plural(nestSite.photosLeft(), "photo")} to go. It carries on by itself, even with this page closed.` : "Every item and pick is checked for a real product photo. A missing one, or a shop's logo, is found again by itself."),
+      h("div", null, h("button", { class: "btn small", type: "button", onclick: async (ev) => { ev.target.disabled = true; try { const r = await nestSite.refreshPhotos(); toast(`Checking every photo again: ${plural(r.left || 0, "photo")} to look at.`); } catch (e) { writeError(e); } ev.target.disabled = false; } }, "Refresh all photos"))));
 }
 function renderSettingsForm() {
   const el = $("#room-settings"); el.replaceChildren();
