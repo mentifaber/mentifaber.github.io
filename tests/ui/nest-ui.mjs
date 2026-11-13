@@ -158,4 +158,7 @@ await ap.click(".card:has(h3:text-is('Baby monitor')) .btn:has-text('Edit')"); a
 await ap.waitForSelector(".card h3:text-is('Baby monitor')", { state: "detached" }); await op.waitForSelector(".card h3:text-is('Baby monitor')", { state: "detached", timeout: 9000 });
 await ap.click("#tab-room"); await ap.waitForSelector("#room-share .addr"); assert.equal(await ap.locator("#room-share .addr").count(), 1, "the co-parent link is the owner's to give");
 await wide(ap); ok("Adrianna opens her co-parent link, gets the Parents' room, and adds and removes items herself; the owner sees it");
+await op.click("#tab-room"); await op.click("#room-backup .btn:has-text('Refresh all photos')"); await op.waitForSelector(".toast:has-text('Checking every photo again')");
+await op.click("#tab-registry"); await op.waitForFunction(() => !/Finding product photos/.test(document.querySelector("#registry-notices").textContent), null, { timeout: 15000 });
+ok("the parents can refresh every photo; progress shows while it works, and goes when it's done");
 assert.deepEqual(op.errs, []); assert.deepEqual(gp.errs, []); assert.deepEqual(ap.errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);

@@ -82,6 +82,8 @@
     queued: () => (state && state.findq) || [],
     paused: () => (state && state.findpause) || null,
     lastBackup: () => (state && state.backup) || "",
+    photosLeft: () => (state && state.photosLeft) || 0,
+    refreshPhotos: async () => { const r = await call("/photos", { method: "POST", body: "{}" }); await pull(); return r; },
     exportUrl: () => API + "/export",
     grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
     read: (id) => call("/read", { method: "POST", body: JSON.stringify({ id }) }), // a photo or screenshot → name, brand, price, shop, category
