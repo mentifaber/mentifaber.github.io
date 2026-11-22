@@ -5,7 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { groqHear, PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
 import { Genesis, genesisTables, asksSystems } from "./hive-genesis.js";
@@ -67,6 +67,17 @@ function unbalanced(js) { // brackets outside strings, template literals and com
 }
 const PLANNER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"; // decides which tools a message needs (src/hive-agent.js)
 // Keyed providers: OpenAI-compatible chat endpoints, used only when their secret is set.
+// Providers with a free tier. Their keys (the owner's, added under Uplinks, or the site secrets below) may answer for
+// visitors and the apps when Cloudflare's daily allowance is used up, and carry the background work so that allowance
+// lasts for chat, voice, pictures and eyes. Keys from paid-only providers stay the owner's. On OpenRouter only the
+// ":free" models count.
+const FREE_PROV = new Set(["cerebras", "groq", "gemini", "mistral", "github", "openrouter"]);
+const freeModel = (prov, model) => FREE_PROV.has(prov) && (prov !== "openrouter" || /:free$/.test(model));
+const SWARM_WAI_DAY = 20;
+// Voice is the dearest thing on the free allowance: Aura-2 speech is ~2,700 neurons per 1,000 characters and Flux's live
+// listening ~700 a minute. A small share a day for each; past it, MeloTTS speaks (~1/100 the cost) and the voice link's
+// ears switch themselves to Whisper (assets/hive/ears.js falls back by itself), on Groq's free tier when there's a key.
+const AURA_DAY_CHARS = 1500, FLUX_DAY_TURNS = 20; // Workers AI calls the build swarm may make a day (one costs ~300 of the 10,000 daily neurons); the rest is kept for people
 const KEYED = [
   { env: "OPENROUTER_KEY", id: "openrouter", url: "https://openrouter.ai/api/v1/chat/completions", list: "https://openrouter.ai/api/v1/models", free: true },
   { env: "GROQ_KEY", id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", list: "https://api.groq.com/openai/v1/models" },
@@ -182,7 +193,7 @@ export class Hive extends DurableObject {
     let st = null; try { st = await (await this.env.AGENT.get(this.env.AGENT.idFromName("agent")).fetch(new Request("http://agent/status"))).json(); } catch (e) {}
     this._ag = { at: Date.now(), st }; return st;
   }
-  agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
+  agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: st.state === "hosted" ? "Mentifaber · Qwen3, hosted (free plan)" : "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
   async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
     const out = CF_MODELS.filter(([, , roles]) => this.env.AI && roles.length).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
     // MENTIFABER AGENT isn't on the swarm: on CPU a task takes it minutes, and the swarm moves at the pace of its slowest member
@@ -242,9 +253,24 @@ export class Hive extends DurableObject {
       if (!owner) return J({ error: "owner only" }, 401); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);
       if (!(await this.searchKey(true).catch(() => null))) return J({ error: "add a search key in AutoFaber's Uplinks (Tavily, Brave or Serper) so it can find products" }, 409);
       const store = async (buf, type) => { const id = "b" + [...crypto.getRandomValues(new Uint8Array(10))].map((x) => x.toString(16).padStart(2, "0")).join(""); await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: type } }); return id; };
-      const t0 = Date.now(), r = await findProducts({ env: this.env, web: (q, o) => this.web(q, true, o), store: this.env.MODELS ? store : null }, b || {}).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      const t0 = Date.now(), r = await findProducts({ env: this.env, web: (q, o) => this.web(q, true, o), store: this.env.MODELS ? store : null, cheap: (m, s, ms, mx) => this.cheap(m, s, ms, mx) }, b || {}).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       this.logReply({ model: "nest-find", who: "owner", kind: "nest", ms: Date.now() - t0, chars: (r.products || []).length, err: r.error });
       return J(r, r.error ? (r.later ? 429 : 502) : 200);
+    }
+    if (path === "/standin") { // MENTIFABER AGENT 1.0 without containers (src/agent.js): Qwen3 on a free key, else on Workers AI
+      if (!owner) return J({ error: "owner only" }, 401);
+      const ms = (Array.isArray(b.messages) ? b.messages : []).slice(-24), max = Math.min(4096, Math.max(64, +b.max || 2048));
+      const system = ms.filter((m) => m.role === "system").map((m) => String(m.text || "")).join("\n\n").slice(0, 20000) || "You are MENTIFABER AGENT 1.0, a helpful assistant on mentifaber.org. Answer clearly and directly.";
+      const msgs = ms.filter((m) => m.role !== "system").map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", text: String(m.text || "").slice(0, 16000) }));
+      if (!msgs.length) return J({ error: "say something" }, 400);
+      const ids = (await this.freeAll()).filter((x) => !this.sick(x)).sort((a, c) => (/qwen-?3/i.test(c) - /qwen-?3/i.test(a)) || this.rank(a) - this.rank(c)).slice(0, 2);
+      const strip = (t) => String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+      for (const id of ids) { const src = id.split("|")[0], model = id.split("|").slice(1).join("|");
+        try { const { v, key } = await this.vaultGet(src.slice(2)); const text = strip(await complete(this.env, v, key, model, system, msgs, max)); if (text) { this.note(id, true, 0); return J({ text, by: model.split("/").pop() }); } }
+        catch (e) { this.cool(id, e); } }
+      if (!this.env.AI || (await this.resting())) return J({ error: "Cloudflare's free AI allowance is used up until midnight UTC, and no free key is set up" }, 429);
+      try { const text = strip(await complete(this.env, null, null, "@cf/qwen/qwen3-30b-a3b-fp8", system, msgs, max)); return text ? J({ text, by: "qwen3-30b-a3b" }) : J({ error: "the model returned nothing" }, 502); }
+      catch (e) { if (/4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); return J({ error: "Cloudflare's free AI allowance is used up until midnight UTC" }, 429); } return J({ error: String(e.message || e).slice(0, 200) }, 502); }
     }
     if (path === "/nest/photo") { // a product photo for one of the registry's picks whose photo was lost (src/nest.js repair)
       if (!owner) return J({ error: "owner only" }, 401); if (!(await this.searchKey(true).catch(() => null))) return J({ error: "no search key" }, 409);
@@ -266,7 +292,9 @@ export class Hive extends DurableObject {
     if (path === "/voice" || path.startsWith("/voice/")) return Voice.route(this, path, b, owner, req, J, url.origin).catch((e) => J({ error: String(e && e.message || e).slice(0, 200) }, 500)); // guest voice links (src/hive-voice.js)
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
-    if (path === "/listen-ok" && req.method === "POST") return J({ ok: b.vg ? await Voice.listenOk(this, String(b.vg)) : owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
+    if (path === "/listen-ok" && req.method === "POST") { // src/listen.js: one live-recognition turn is one voice turn
+      const ok = b.vg ? await Voice.listenOk(this, String(b.vg)) : owner || this.meter(req, "stt", STUDIO_DAY * 2);
+      return J({ ok: ok && this.siteShare("flux", 1, FLUX_DAY_TURNS) }); } // past today's share of live listening: the ears use Whisper instead
     if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(this.env.AI ? [{ id: AUTO, name: "Auto", group: "AutoFaber", note: "picks the best free model for each message" }] : []), ...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (path === "/steps") { const k = String(b.sid || ""), x = this._steps && this._steps.get(k); return J(x && x.owner === owner ? { steps: x.list, now: x.now || null } : { steps: [] }); } // what a reply in the making is doing (keyed by a random id from the sender)
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
@@ -437,7 +465,7 @@ export class Hive extends DurableObject {
   async alarm() {
     const q = this.sql(); let busy = false, resting = false;
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
-    const out = this.quota && Date.now() < this.quota;
+    const offUntil = this.waiOff(), out = !!offUntil;
     const runs = []; this._adv = this._adv || {}; // every mission moves on the same tick: one waiting on slow models no longer holds up the rest
     for (const p of q.exec("SELECT * FROM proj WHERE status IN ('planning','working','integrating','replanning','paused')").toArray()) {
       q.exec("UPDATE agent SET status='idle', task=NULL WHERE pid=? AND status='offline' AND src NOT IN ('workers-ai','visitor') AND COALESCE(last,0)<?", p.id, Date.now() - 600e3); // a key that failed gets another try every 10 minutes
@@ -445,7 +473,7 @@ export class Hive extends DurableObject {
       this._rec = this._rec || {}; // the owner's projects pick up keys added after they started (checked every few minutes)
       if (p.own && Date.now() - (this._rec[p.id] || 0) > 180e3) { this._rec[p.id] = Date.now(); if (await this.recruit(p.id)) others = 1; }
       if (out && !others) { // only Workers AI here and it's resting: pause until the allowance resets
-        if (p.status !== "paused") { q.exec("UPDATE proj SET status='paused', note=? WHERE id=?", p.status, p.id); this.say(p.id, "hive", "quota", "Cloudflare's free AI allowance for today is used up. Paused; the swarm picks up again automatically after " + new Date(this.quota).toISOString().slice(11, 16) + " UTC."); }
+        if (p.status !== "paused") { q.exec("UPDATE proj SET status='paused', note=? WHERE id=?", p.status, p.id); this.say(p.id, "hive", "quota", (this.quota && Date.now() < this.quota ? "Cloudflare's free AI allowance for today is used up." : "The swarm has used its share of Cloudflare's free AI allowance for today (the rest is kept for chat and the apps). Add a free key under Uplinks (Cerebras, Groq, Gemini or Mistral) and it carries on now.") + " Paused; the swarm picks up again automatically after " + new Date(offUntil).toISOString().slice(11, 16) + " UTC."); }
         this.layBoard(p); resting = true; continue;
       }
       if (p.status === "paused") { // allowance back: wake everyone, including agents an earlier version marked offline for the quota
@@ -461,10 +489,10 @@ export class Hive extends DurableObject {
     const all = Promise.all(runs); if (this.ctx.waitUntil) this.ctx.waitUntil(all);
     await Promise.race([all, new Promise((r) => setTimeout(r, +this.env.HIVE_SLOW_TICK || SLOW_TICK))]);
     if (busy) await this.ctx.storage.setAlarm(Date.now() + TICK);
-    else if (resting) await this.ctx.storage.setAlarm(this.quota + 1000);
+    else if (resting) await this.ctx.storage.setAlarm((this.waiOff() || Date.now() + 60e3) + 1000);
   }
   // Workers AI's free plan has a daily allowance; when it runs out, its agents rest until it resets (00:00 UTC)
-  qx() { return this.quota && Date.now() < this.quota ? " AND src!='workers-ai'" : ""; }
+  qx() { return this.waiOff() ? " AND src!='workers-ai'" : ""; }
   agentsFor(pid, role) { return this.sql().exec("SELECT * FROM agent WHERE pid=? AND status='idle' AND src NOT IN ('visitor','agent')" + this.qx() + " ORDER BY COALESCE(score,0) DESC, done", pid).toArray().filter((a) => JSON.parse(a.roles).includes(role)); }
   // jobs run alongside the alarm: a slow model holds up only its own task, never the whole swarm
   fly(pid, job) { this._fly = this._fly || {}; this._fly[pid] = (this._fly[pid] || 0) + 1; return job().catch((e) => this.say(pid, "hive", "error", String(e && e.message || e).slice(0, 200))).finally(() => { this._fly[pid]--; }); }
@@ -472,6 +500,7 @@ export class Hive extends DurableObject {
   full(pid) { return this.flying(pid) >= PARALLEL || Object.values(this._fly || {}).reduce((a, n) => a + n, 0) >= ALL_PARALLEL; } // this mission's share, and everyone's
   async call(p, a, system, user, max) {
     const q = this.sql(); q.exec("UPDATE proj SET calls=calls+1 WHERE id=?", p.id);
+    if (a.src === "workers-ai") q.exec("INSERT INTO limits(k,n) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET n=n+1", "swarm-wai:" + new Date().toISOString().slice(0, 10)); // the swarm's share of the allowance
     let room = THINKS.test(a.model) ? Math.min(8000, Math.max(max * 3, 4000)) : max; const c0 = Date.now();
     try {
       let out = clean(await this.ask(a, system, user, room));
@@ -749,7 +778,54 @@ export class Hive extends DurableObject {
   async resting() { if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0; return this.quota && Date.now() < this.quota ? this.quota : 0; }
   async rest() { const d = new Date(); this.quota = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); await this.ctx.storage.put("quota", this.quota); }
   // When Cloudflare's free allowance is out, the owner's own keys answer instead: a sensible everyday model first.
-  async standIn(not) {
+  async freeAll() { // every model on a free tier: the owner's free-provider keys, then the site secrets
+    const out = [];
+    for (const v of this.sql().exec("SELECT id, provider, models, pick FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
+      if (!FREE_PROV.has(v.provider)) continue; const all = JSON.parse(v.models || "[]").filter(isChat), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
+      for (const m of pick.length && v.pick !== "*" ? pick : all) if (freeModel(v.provider, m)) out.push("k:" + v.id + "|" + m);
+    }
+    for (const m of await this.envModels()) { const prov = m.id.slice(6).split("|")[0]; if (freeModel(prov, m.id.split("|").slice(1).join("|"))) out.push(m.id); }
+    return [...new Set(out)];
+  }
+  async pickFree(kind, not) { // the best free model for this kind of ask ("quick" wants a fast one), or null
+    const ok = (await this.freeAll()).filter((id) => id !== not && !this.sick(id)).sort((a, b) => this.rank(a) - this.rank(b));
+    if (kind === "quick") { const f = ok.find((id) => /(?<![\d.])(?:[1-9]|1\d|20)b\b|instant|flash|scout|mini|small|lite/i.test(id.split("|").pop())); if (f) return f; }
+    return ok[0] || null;
+  }
+  // background asks (the product finder, research plans, fact checks, rewrites): a free key first, Workers AI after
+  async cheap(waiModel, system, msgs, max) {
+    let err = null;
+    for (const id of (await this.freeAll()).filter((x) => !this.sick(x)).sort((a, b) => this.rank(a) - this.rank(b)).slice(0, 2)) {
+      const [src, model] = [id.split("|")[0], id.split("|").slice(1).join("|")];
+      try { const { v, key } = await this.vaultGet(src.slice(2)); const t = await complete(this.env, v, key, model, system, msgs, max); this.note(id, true, 0); return t; }
+      catch (e) { err = e; this.cool(id, e); }
+    }
+    if (this.env.AI && waiModel && !(await this.resting())) return complete(this.env, null, null, waiModel, system, msgs, max);
+    throw err || new Error("no free model is available just now");
+  }
+  siteShare(kind, n, max) { // a site-wide daily share of something dear on the free allowance; false once it's spent
+    const q = this.sql(), k = kind + "-share:" + new Date().toISOString().slice(0, 10), used = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n;
+    if (used + n > max) return false; q.exec("INSERT INTO limits(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); return true;
+  }
+  get AURA_DAY() { return AURA_DAY_CHARS; }
+  async hear(audio, lang, names) { // speech to words: Whisper on Groq's free tier when there's a key, Workers AI's Whisper after
+    const gk = await this.groqKey();
+    if (gk && !this.sick("groq|stt")) try { return await groqHear(gk, /^data:/.test(audio) ? audio : "data:audio/wav;base64," + audio, lang, names); } catch (e) { this.cool("groq|stt", e); }
+    return transcribe(this.env, String(audio).replace(/^data:[^,]*,/, ""), lang, names);
+  }
+  async groqKey() { // a Groq key (vault or site secret): its free tier transcribes speech too
+    const v = this.sql().exec("SELECT id FROM vault WHERE live=1 AND provider='groq' ORDER BY ts LIMIT 1").toArray()[0];
+    if (v) try { return (await this.vaultGet(v.id)).key; } catch (e) {}
+    return this.env.GROQ_KEY || null;
+  }
+  swarmWai() { const k = "swarm-wai:" + new Date().toISOString().slice(0, 10); return (this.sql().exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n; }
+  waiOff() { // until when the swarm leaves Workers AI alone: its allowance is resting, or the swarm has had its share today
+    if (this.quota && Date.now() < this.quota) return this.quota;
+    if (this.swarmWai() >= SWARM_WAI_DAY) { const d = new Date(); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); }
+    return 0;
+  }
+  async standIn(not, freeOnly) { // a model to answer when Workers AI is resting; for visitors and the apps, only a free-tier one
+    if (freeOnly) return this.pickFree("full", not);
     const ms = [...this.models(true).filter((m) => m.id.startsWith("k:")), ...(await this.envModels())].filter((m) => m.id !== not);
     const ok = ms.filter((m) => !this.sick(m.id)).sort((a, b) => this.rank(a.id) - this.rank(b.id) || (/:free$/.test(b.id) ? 1 : 0) - (/:free$/.test(a.id) ? 1 : 0));
     return (ok[0] || ms[0] || {}).id || null;
@@ -782,7 +858,9 @@ export class Hive extends DurableObject {
     const sys = plannerPrompt(owner, new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"), user = plannerInput(msgs, gathered, round);
     const timed = (p) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("planner took too long")), 7000))]);
     let out = null;
-    if (this.env.AI && !(await this.resting())) out = await timed(complete(this.env, null, null, PLANNER, sys, [{ role: "user", text: user }], 300)).catch(() => null);
+    const f = await this.pickFree("full").catch(() => null); // a free key first: the planner runs before every answer, so on Workers AI it would double what each message costs
+    if (f) { const [src1, m1] = [f.split("|")[0], f.split("|").slice(1).join("|")]; out = await timed((async () => { const kv = await this.vaultGet(src1.slice(2)); return complete(this.env, kv.v, kv.key, m1, sys, [{ role: "user", text: user }], 300); })()).catch((e) => { this.cool(f, e); return null; }); }
+    if (out == null && this.env.AI && !(await this.resting())) out = await timed(complete(this.env, null, null, PLANNER, sys, [{ role: "user", text: user }], 300)).catch(() => null);
     if (out == null && owner) { const s2 = await this.standIn().catch(() => null); if (s2) { const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2)); out = await timed(complete(this.env, kv.v, kv.key, m2, sys, [{ role: "user", text: user }], 300)).catch(() => null); } }
     return parseCalls(out, owner, made);
   }
@@ -833,7 +911,7 @@ export class Hive extends DurableObject {
       const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
       if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
       const names = owner ? [(await Genesis.self(this)).name || "AutoFaber", "Fabe", "Anders", "Vigil", "Mentifaber", "Swarm"] : ["AutoFaber", "Fabe", "Mentifaber"];
-      const h = await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase(), [...new Set(names.filter(Boolean))]);
+      const h = await this.hear(String(b.audio || ""), String(b.lang || "").slice(0, 2).toLowerCase(), [...new Set(names.filter(Boolean))]);
       return J({ text: h.text, dropped: h.dropped, voiced: h.voiced });
     }
     if (path === "/tts") {
@@ -841,17 +919,22 @@ export class Hive extends DurableObject {
       if (!owner && !this.meter(req, "tts", STUDIO_DAY * 4)) return J({ error: "voice allowance used up for today" }, 429);
       const spec = owner ? String(b.voice || "") : (/^a2:\w+$/.test(String(b.voice || "")) ? b.voice : "a2:thalia"); // visitors: the free voices only
       const keyFor = async (kid, full) => { const r = await this.vaultGet(kid); return full ? r : r.key; };
-      const out = await voiceOut(this.env, t, spec || (await this.voices(owner))[0].id, owner ? keyFor : null);
+      let sp = spec || (await this.voices(owner))[0].id;
+      if (!/^(el|oa):/.test(sp) && !this.siteShare("aura", Math.min(2400, t.length), AURA_DAY_CHARS)) sp = "melo"; // today's share of Aura is spent: MeloTTS speaks
+      const out = await voiceOut(this.env, t, sp, owner ? keyFor : null);
       return J({ audio: "data:audio/mpeg;base64," + out.audio, used: out.used });
     }
     // chat
     let [src, model] = String(b.model || "").split("|"); if (!src || !model) return J({ error: "pick a model" }, 400);
-    let autoWhy = null; // Auto (src/hive-route.js): the best free model for what this message needs
+    let autoWhy = null, autoFree = false; // Auto (src/hive-route.js): the best free model for what this message needs
     if (b.model === AUTO) { const ms = Array.isArray(b.messages) ? b.messages : [], lm = ms[ms.length - 1] || {}, lt = String(lm.text || "");
       const r = autoRoute({ text: lt, images: Array.isArray(lm.images) && lm.images.length > 0, research: !!b.research, voice: !!b.voice, quick: !b.research && !!quickAsk(lt) }, (c) => this.cooling(c) || this.sick(c));
-      src = "workers-ai"; model = r.model; b.model = src + "|" + model; autoWhy = "Auto chose " + model.split("/").pop() + ": " + r.why; }
-    if (src.startsWith("k:") && !owner) return J({ error: "vault models are the owner's" }, 401);
-    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a key under Uplinks and AutoFaber will switch to it automatically." : "Come back then.");
+      src = "workers-ai"; model = r.model; b.model = src + "|" + model; autoWhy = "Auto chose " + model.split("/").pop() + ": " + r.why;
+      // text goes to a free-tier key when there is one: as good, often faster, and Cloudflare's allowance is kept for voice, pictures and eyes
+      const hasImg = Array.isArray(lm.images) && lm.images.length > 0, f = !hasImg && !b.voice ? await this.pickFree(r.model === "@cf/openai/gpt-oss-20b" ? "quick" : "full") : null;
+      if (f) { src = f.split("|")[0]; model = f.split("|").slice(1).join("|"); b.model = f; autoFree = true; autoWhy = "Auto chose " + model.split("/").pop() + " on a free key: " + r.why; } }
+    if (src.startsWith("k:") && !owner && !autoFree) return J({ error: "vault models are the owner's" }, 401);
+    const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a free key under Uplinks (Cerebras, Groq, Gemini or Mistral) and AutoFaber will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
     if (src === "agent") { const ag = await this.agentInfo(); if (!ag || !ag.model) return J({ error: "MENTIFABER AGENT 1.0 has no model loaded yet" }, 400); if (!owner && !ag.public) return J({ error: "MENTIFABER AGENT 1.0 is private" }, 401); }
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
@@ -947,8 +1030,8 @@ export class Hive extends DurableObject {
       tools.push("researched: " + r.queries.length + " searches, " + r.items.filter((x) => x.read).length + " pages read in full, " + sources.length + " sources");
     } catch (e) { doing(null); notes.push("(the research couldn't run: " + String(e.message || e).slice(0, 120) + "; say so)"); }
     // eyes: Workers AI and models without vision get descriptions instead of pixels
-    let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
-    if (src === "workers-ai" && (await this.resting()) && !(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
+    let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(undefined, !owner); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
+    if (src === "workers-ai" && (await this.resting()) && !(await tryIn())) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
     if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
     if (src === "agent") v = this.agentV();
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
@@ -1019,7 +1102,7 @@ export class Hive extends DurableObject {
               if (!got) onDelta(b.voice ? "Sorry, I lost that one. Could you say it again?" : "(no model could answer just now; try again in a moment)");
               Genesis.finishTurn(this, turn, said, alt.id); this.note(alt.id, true, Date.now() - t0); logIt(alt.id); emit("done", { ms: Date.now() - t0, model: alt.id, tools, turn: turn || undefined, cut: meta.cut || undefined }); clearInterval(ping); w.close().catch(() => {}); return;
             }
-            if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) throw new Error(outMsg(this.quota)); }
+            if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(await tryIn())) throw new Error(outMsg(this.quota)); }
             else if (last.images.length) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); }
             else throw e;
             emit("meta", { sources, tools, model: used, turn: turn || undefined });
@@ -1049,7 +1132,7 @@ export class Hive extends DurableObject {
     catch (e) {
       if (BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { if (!e.cooled) this.cool(used, e); const alt = await this.fallback(used, owner); if (!alt) return J({ error: tidyErr(e, model) }, 503);
         text = await complete(this.env, alt.v, alt.key, alt.model, system, msgs, 3000).catch((e2) => { throw new Error(tidyErr(e2, alt.model)); }); tools.push(model.split("/").pop() + " was busy, so " + alt.by + " answered"); Genesis.finishTurn(this, turn, text, alt.id); return J({ text: text || "(no model could answer just now; try again in a moment)", sources, tools, ms: Date.now() - t0, model: alt.id, turn: turn || undefined }); }
-      if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(owner && (await tryIn()))) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); Genesis.finishTurn(this, turn, text, used); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined }); }
+      if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(await tryIn())) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); Genesis.finishTurn(this, turn, text, used); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
     if (!text) { const r = await this.rescue(system, msgs, used, owner).catch(() => null); if (r && r.text) { text = r.text; tools.push(model.split("/").pop() + " returned nothing; " + r.by + " answered"); } }
     Genesis.finishTurn(this, turn, text, used);
@@ -1061,8 +1144,7 @@ export class Hive extends DurableObject {
   async fallback(used, owner) {
     const alts = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/openai/gpt-oss-120b", "@cf/meta/llama-4-scout-17b-16e-instruct"].map((m) => "workers-ai|" + m).filter((c) => c !== used && !this.cooling(c));
     if (this.env.AI && alts.length && !(await this.resting())) return { v: null, key: null, model: alts[0].split("|")[1], id: alts[0], by: alts[0].split("/").pop().replace(/-instruct.*$/, "") };
-    if (!owner) return null;
-    const s2 = await this.standIn(used); if (!s2 || s2 === used || this.cooling(s2)) return null; const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2));
+    const s2 = await this.standIn(used, !owner); if (!s2 || s2 === used || this.cooling(s2)) return null; const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2));
     return { v: kv.v, key: kv.key, model: m2, id: s2, by: m2.split("/").pop() };
   }
   async rescue(system, msgs, used, owner) {

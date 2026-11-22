@@ -2,7 +2,7 @@
 // dates, names; not opinions or advice) and writes a search for each; the searches run side by side (the web, Wikipedia);
 // then a model that didn't write the answer reads each claim beside what was found and says: supported, contradicted, or
 // unclear, citing the source it relied on. The reader sees which parts of an answer stand up, and where to look.
-import { complete } from "./hive-kit.js";
+import { complete, cheapAsk } from "./hive-kit.js";
 import { wiki } from "./hive-know.js";
 
 const PICK = "@cf/meta/llama-3.3-70b-instruct-fp8-fast", JUDGES = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"];
@@ -23,7 +23,7 @@ export async function factCheck(h, { text, question, writer, owner, step = () =>
   step("picking out the claims to check");
   const pickSys = "You pick out the claims in an answer that can be checked against sources: facts, figures, dates, names, events, quotes. Not opinions, advice, instructions, or code. " +
     "Choose the up to 6 that matter most to the answer. For each, write a search engine query that would find a source for it. Reply with ONLY JSON: {\"claims\": [{\"claim\": \"...\", \"search\": \"...\"}]}. If nothing can be checked, reply {\"claims\": []}.";
-  const claims = parseClaims(await timed(complete(h.env, null, null, PICK, pickSys, [{ role: "user", text: (question ? "QUESTION: " + clip(question, 600) + "\n\n" : "") + "ANSWER: " + answer }], 700), 15000).catch(() => ""));
+  const claims = parseClaims(await timed(cheapAsk(h, PICK, pickSys, [{ role: "user", text: (question ? "QUESTION: " + clip(question, 600) + "\n\n" : "") + "ANSWER: " + answer }], 700), 15000).catch(() => ""));
   if (!claims.length) return { claims: [], ms: Date.now() - t0, note: "no checkable claims (opinion, advice or code), or they couldn't be picked out" };
   step("searching for " + claims.length + " claim" + (claims.length === 1 ? "" : "s"));
   const found = await Promise.all(claims.map((c) => Promise.all([timed(h.web(c.q, owner), 12000).catch(() => []), timed(wiki(c.q, 1), 9000).catch(() => [])])
@@ -33,7 +33,7 @@ export async function factCheck(h, { text, question, writer, owner, step = () =>
   const user = claims.map((c, i) => "CLAIM " + (i + 1) + ": " + c.claim + "\n" + (found[i].length ? found[i].map((s, k) => "  SOURCE " + (i + 1) + "." + (k + 1) + " (" + s.title + "): " + s.text).join("\n") : "  (no sources found)")).join("\n\n");
   const judgeSys = "You check claims against the sources found for them. Use only those sources, not what you know. For each claim, in order: S if a source states it, C if a source states something that contradicts it, U if the sources don't settle it (or there are none). " +
     "Name the source you relied on as \"1.2\" (claim 1, source 2), or null. Add a short note (under 20 words) saying what the source says. Reply with ONLY JSON: {\"v\": [{\"verdict\": \"S\", \"source\": \"1.2\", \"note\": \"...\"}]}.";
-  const out = json(await timed(complete(h.env, null, null, judge, judgeSys, [{ role: "user", text: user }], 900), 30000).catch(() => ""));
+  const out = json(await timed(cheapAsk(h, judge, judgeSys, [{ role: "user", text: user }], 900), 30000).catch(() => ""));
   const v = out && Array.isArray(out.v) ? out.v : null;
   if (!v || v.length < claims.length) return { error: "the checker didn't give a verdict for every claim; try again", ms: Date.now() - t0 };
   return {

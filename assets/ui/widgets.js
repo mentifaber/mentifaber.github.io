@@ -75,8 +75,8 @@
     },
     async agent() {
       const v = await get("/api/agent/status", 8000);
-      const st = { online: "Online", waking: "Waking", asleep: "Asleep", empty: "No model" }[v.state] || v.state;
-      return { label: "Mentifaber Agent", value: st, sub: v.model ? v.model.label : "", href: "hive#keys", tone: v.state === "online" ? "up" : "" };
+      const st = { online: "Online", hosted: "Online", waking: "Waking", asleep: "Asleep", empty: "No model" }[v.state] || v.state;
+      return { label: "Mentifaber Agent", value: st, sub: v.state === "hosted" ? "Qwen3, hosted free" : v.model ? v.model.label : "", href: "hive#keys", tone: v.state === "online" || v.state === "hosted" ? "up" : "" };
     },
   };
 

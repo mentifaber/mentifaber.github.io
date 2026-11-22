@@ -36,7 +36,8 @@ export class Agent extends DurableObject {
     const st = await this.st(), s = st.seed, run = !!(this.box && this.box.running);
     if (run && !this.ready) try { const r = await this.port().fetch("http://agent/health"); this.ready = r.ok; } catch (e) {}
     return { name: AGENT.name, model: st.meta ? { ...st.meta, ctx: this.nctx || ctxFor(st.meta.size) } : null, public: this.env.AGENT_PUBLIC !== "0", container: !!this.box,
-      state: !st.meta ? "empty" : !run ? "asleep" : this.ready ? "online" : "waking", idleMin: this.last ? Math.round((Date.now() - this.last) / 60e3) : null, error: this.err || null,
+      state: !this.box && this.env.HIVE ? "hosted" : !st.meta ? "empty" : !run ? "asleep" : this.ready ? "online" : "waking", // hosted: no containers on this plan, so Qwen3 answers through the Hive's free keys
+      hosted: !this.box && !!this.env.HIVE, idleMin: this.last ? Math.round((Date.now() - this.last) / 60e3) : null, error: this.err || null,
       always: alwaysOn(st), upSince: run && this.upAt ? this.upAt : null, restarts: st.heals || 0, healed: this.healed || null,
       seed: s && !s.done ? { label: s.label, done: Math.min(s.size, s.next * this.part()), size: s.size, error: s.error || null } : null };
   }
@@ -82,6 +83,21 @@ export class Agent extends DurableObject {
   async stop() { if (this.box && this.box.running) await this.box.destroy().catch(() => {}); this.ready = false; }
   touch() { this.last = Date.now(); if (this._touched && Date.now() - this._touched < 30e3) return; this._touched = Date.now(); this.ctx.storage.getAlarm().then((a) => { if (!a) this.ctx.storage.setAlarm(Date.now() + 60e3); }); }
 
+  // Containers need a paid plan. Without them the same family of model (Qwen3), hosted, answers through the Hive: a
+  // free-tier key first, Cloudflare's Workers AI after. Same OpenAI-style replies, streamed or whole, so apps don't change.
+  async hosted(body) {
+    const flat = (c) => (typeof c === "string" ? c : Array.isArray(c) ? c.map((x) => (x && (x.text || "")) || "").join("\n") : "");
+    const ms = (Array.isArray(body.messages) ? body.messages : []).map((m) => ({ role: String(m.role || "user"), text: flat(m.content) }));
+    const r = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/standin", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ messages: ms, max: body.max_tokens }) })).catch(() => null);
+    const j = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok || !j.text) return J({ error: j.error || "no model could answer just now; try again in a moment" }, r && r.status >= 400 ? r.status : 503);
+    const id = "hosted-" + Date.now(), model = AGENT.name + " (hosted: " + j.by + ")";
+    if (body.stream) {
+      const chunk = (delta, fin) => "data: " + JSON.stringify({ id, object: "chat.completion.chunk", model, choices: [{ index: 0, delta, finish_reason: fin }] }) + "\n\n";
+      return new Response(chunk({ role: "assistant", content: j.text }, null) + chunk({}, "stop") + "data: [DONE]\n\n", { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store" } });
+    }
+    return J({ id, object: "chat.completion", model, choices: [{ index: 0, message: { role: "assistant", content: j.text }, finish_reason: "stop" }] });
+  }
   async chat(req, owner) {
     if (!owner && this.env.AGENT_PUBLIC === "0") return J({ error: AGENT.name + " is private" }, 401);
     if (!owner) { // visitors get a daily allowance; the owner (and Genesis, which meters its own visitors) has none
@@ -90,7 +106,7 @@ export class Agent extends DurableObject {
       await this.ctx.storage.put(k, n + 1);
     }
     let body; try { body = await req.json(); } catch (e) { return J({ error: "send JSON" }, 400); }
-    try { await this.boot(); } catch (e) { return J({ error: e.message }, 503); }
+    try { await this.boot(); } catch (e) { if (!this.box && this.env.HIVE) return this.hosted(body); return J({ error: e.message }, 503); }
     if (!this.ready && !(await this.waitReady(READY_WAIT))) return J({ error: AGENT.name + " is still waking up (loading its model from R2); try again in a minute", waking: true }, 503);
     body.model = AGENT.alias; if (!body.chat_template_kwargs) body.chat_template_kwargs = { enable_thinking: false }; // straight to the answer: faster on CPU
     body.cache_prompt = true; delete body.mind; // the conversation so far stays loaded: only the new message is read

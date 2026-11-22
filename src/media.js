@@ -193,9 +193,24 @@ export function parseRss(xml) {
   return { title: plain(tagOf(head, "title"), 140), image: safe(unent(image)), episodes: eps };
 }
 const podItem = (r) => mk({ source: "podcasts", type: "podcast", key: r.collectionId || r.id, title: r.collectionName || r.name, creator: r.artistName, description: r.primaryGenreName || [].concat(r.genres || []).map((g) => g.name).filter((g) => g && g !== "Podcasts").join(", "), thumb: String(r.artworkUrl600 || r.artworkUrl100 || "").replace("100x100", "600x600"), page: r.collectionViewUrl || r.url, license: "Public RSS feed: © its publisher", meta: r.trackCount ? r.trackCount + " episodes" : "Podcast" });
-async function podSearch(q, limit) { const j = await get("https://itunes.apple.com/search?media=podcast&entity=podcast&limit=" + Math.min(50, limit * 2) + "&term=" + enc(words(q) || "news"), { ttl: 600 }); return (j.results || []).filter((r) => r.collectionId && r.collectionExplicitness !== "explicit").slice(0, limit).map(podItem); }
+// Apple's directory rate-limits Cloudflare's shared servers (429) and the shows still exist: gpodder.net's open directory
+// answers instead, with each show's own feed (key "g" + the feed address, base64url), so playing it needs no lookup at Apple
+const b64u = (t) => btoa(unescape(encodeURIComponent(t))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""), unb64u = (t) => { try { return decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))); } catch (e) { return ""; } };
+const turnedAway = (e) => e instanceof Upstream && /answered (403|429)|didn't answer/.test(e.message);
+async function gpSearch(q, limit) {
+  const j = await get("https://gpodder.net/search.json?q=" + enc(words(q) || "news"), { ttl: 600, ms: 8000 });
+  return (Array.isArray(j) ? j : []).map((r) => { const feed = safe(r.url); if (!feed) return null; const key = "g" + b64u(feed); if (key.length > 260) return null;
+    return mk({ source: "podcasts", type: "podcast", key, title: r.title, creator: r.author || "", description: clip(plain(r.description || "", 300), 300), thumb: r.scaled_logo_url || r.logo_url, page: safe(r.website) || feed, license: "Public RSS feed: © its publisher", meta: r.subscribers ? r.subscribers.toLocaleString("en-US") + " listeners on gpodder" : "Podcast" }); }).filter(Boolean).slice(0, limit);
+}
+async function podSearch(q, limit) { try { return await podSearchApple(q, limit); } catch (e) { if (turnedAway(e)) return gpSearch(q, limit); throw e; } }
+async function podSearchApple(q, limit) { const j = await get("https://itunes.apple.com/search?media=podcast&entity=podcast&limit=" + Math.min(50, limit * 2) + "&term=" + enc(words(q) || "news"), { ttl: 600 }); return (j.results || []).filter((r) => r.collectionId && r.collectionExplicitness !== "explicit").slice(0, limit).map(podItem); }
 async function podTop(limit) { const j = await get("https://rss.marketingtools.apple.com/api/v2/us/podcasts/top/" + Math.min(25, limit) + "/podcasts.json", { ttl: 1800 }); return ((j.feed && j.feed.results) || []).map(podItem); }
 async function podGetItem(key) {
+  if (/^g[\w-]{8,260}$/.test(key)) { // a show found through gpodder: its own feed, read directly
+    const feed = safe(unb64u(key.slice(1))); if (!feed) throw new Upstream("bad podcast id", 400);
+    const f = parseRss(await get(feed, { text: true, ms: 9000, max: 3e6, ttl: 900, headers: { accept: "application/rss+xml, application/xml, text/xml, */*" } }));
+    return { item: mk({ source: "podcasts", type: "podcast", key, title: f.title || "Podcast", thumb: f.image, page: feed, license: "Public RSS feed: © its publisher", meta: f.episodes.length + " episodes" }), play: f.episodes.length ? { kind: "audio", url: f.episodes[0].url, tracks: f.episodes } : { kind: "none" }, links: [{ label: "RSS feed", url: feed }] };
+  }
   if (!/^\d{1,12}$/.test(key)) throw new Upstream("bad podcast id", 400);
   const l = await get("https://itunes.apple.com/lookup?id=" + key + "&entity=podcast", { ttl: 3600 }), r = (l.results || [])[0], feed = r && safe(r.feedUrl); if (!feed) throw new Upstream("that podcast has no public feed", 404);
   const f = parseRss(await get(feed, { text: true, ms: 9000, max: 3e6, ttl: 900, headers: { accept: "application/rss+xml, application/xml, text/xml, */*" } }));
@@ -250,9 +265,15 @@ export async function poster(title, year, kind) {
 
 // ── Apple Music's catalogue (the iTunes Search API): every artist's songs, with Apple's own 30-second previews ──
 const itItem = (t, sm) => t && t.trackId && /^https:\/\//.test(t.previewUrl || "") && !(sm && t.trackExplicitness === "explicit") ? mk({ source: "itunes", type: "music", key: t.trackId, title: t.trackName, creator: t.artistName, year: t.releaseDate, description: [t.collectionName, t.primaryGenreName].filter(Boolean).join(" · "), thumb: String(t.artworkUrl100 || "").replace(/\/\d+x\d+bb\./, "/600x600bb."), page: t.trackViewUrl, license: "Preview from Apple Music: © the artist", meta: "Preview" + (t.trackTimeMillis ? " · " + fmtDur(t.trackTimeMillis / 1000) : ""), play: { kind: "audio", url: t.previewUrl } }) : null;
-async function itSearch(q, limit, o) { const sm = o && o.safe, j = await get("https://itunes.apple.com/search?media=music&entity=song&limit=" + Math.min(50, limit * 2) + "&term=" + enc(words(q) || "hits"), { ttl: 900 }); return (j.results || []).map((t) => itItem(t, sm)).filter(Boolean).slice(0, limit); }
+// Deezer's open API: the same kind of 30-second previews, for when Apple turns Cloudflare's servers away (429)
+const dzItem = (t, sm) => t && t.id && /^https:\/\//.test(t.preview || "") && !(sm && t.explicit_lyrics) ? mk({ source: "deezer", type: "music", key: t.id, title: t.title, creator: t.artist && t.artist.name, description: t.album && t.album.title, thumb: t.album && (t.album.cover_xl || t.album.cover_big), page: t.link, license: "Preview from Deezer: © the artist", meta: "Preview" + (t.duration ? " · " + fmtDur(t.duration) : ""), play: { kind: "audio", url: t.preview } }) : null;
+async function dzSearch(q, limit, o) { const j = await get("https://api.deezer.com/search?limit=" + Math.min(50, limit * 2) + "&q=" + enc(words(q) || "hits"), { ttl: 900 }); return (j.data || []).map((t) => dzItem(t, o && o.safe)).filter(Boolean).slice(0, limit); }
+async function dzTop(limit, o) { const j = await get("https://api.deezer.com/chart/0/tracks?limit=" + Math.min(50, limit * 2), { ttl: 3600 }); return (j.data || []).map((t) => dzItem(t, o && o.safe)).filter(Boolean).slice(0, limit); }
+async function itSearch(q, limit, o) { try { return await itSearchApple(q, limit, o); } catch (e) { if (turnedAway(e)) return dzSearch(q, limit, o); throw e; } }
+async function itSearchApple(q, limit, o) { const sm = o && o.safe, j = await get("https://itunes.apple.com/search?media=music&entity=song&limit=" + Math.min(50, limit * 2) + "&term=" + enc(words(q) || "hits"), { ttl: 900 }); return (j.results || []).map((t) => itItem(t, sm)).filter(Boolean).slice(0, limit); }
 // the songs most played on Apple Music now, with their previews (the chart has no previews, so they are looked up in one call)
-async function itTop(limit, o) {
+async function itTop(limit, o) { try { return await itTopApple(limit, o); } catch (e) { if (turnedAway(e)) return dzTop(limit, o); throw e; } }
+async function itTopApple(limit, o) {
   const c = await get("https://rss.marketingtools.apple.com/api/v2/us/music/most-played/" + Math.min(50, limit * 2) + "/songs.json", { ttl: 3600 }), ids = ((c.feed && c.feed.results) || []).map((r) => r.id).filter((x) => /^\d+$/.test(x)).slice(0, 40);
   if (!ids.length) return []; const l = await get("https://itunes.apple.com/lookup?entity=song&id=" + ids.join(","), { ttl: 3600 }), by = new Map((l.results || []).map((t) => [String(t.trackId), t]));
   return ids.map((id) => itItem(by.get(id), o && o.safe)).filter(Boolean).slice(0, limit);
@@ -378,6 +399,7 @@ export const SOURCES = {
   livetv: { name: "Live TV", url: "https://www.youtube.com", types: ["live"], safe: true, on: true, note: "News and public channels that stream free, shown in the channel's own player", search: (t, q, n) => liveSearch(q, n) },
   openverse: { name: "Openverse", url: "https://openverse.org", types: ["music"], safe: true, on: true, note: "Openly licensed audio", search: (t, q, n, p) => ovSearch(q, n, p) },
   ccmixter: { name: "ccMixter", url: "https://ccmixter.org", types: ["music"], safe: false, on: false, note: "Remixes and samples under Creative Commons licences. Off by default: its server sends headers some hosts refuse, so it may not answer", search: (t, q, n, p) => ccSearch(q, n, p) },
+  deezer: { name: "Deezer previews", url: "https://www.deezer.com", types: ["music"], safe: true, on: false, note: "30-second previews, used when Apple's directory is busy (explicit songs left out in Safe mode)", search: (t, q, n, p, o) => dzSearch(q, n, o) },
   itunes: { name: "Apple Music previews", url: "https://music.apple.com", types: ["music"], safe: true, on: true, note: "Every artist's songs, as Apple's own 30-second previews (explicit songs left out in Safe mode)", search: (t, q, n, p, o) => itSearch(q, n, o) },
   audius: { name: "Audius", url: "https://audius.co", types: ["music"], safe: false, on: true, note: "Artist-uploaded music through Audius's open API", search: (t, q, n) => auSearch(q, n) },
   commons: { name: "Wikimedia Commons", url: "https://commons.wikimedia.org", types: ["video", "music"], safe: false, on: true, note: "Freely licensed video and audio (WebM and Ogg: some browsers may not play them)", search: (t, q, n, p) => cmSearch(t, q, n, p) },
@@ -408,7 +430,7 @@ export const RAILS = [
   { id: "topsongs", src: "itunes", title: "Top songs now", type: "music", make: (n, o) => itTop(n, o) },
   { id: "trending", src: "audius", title: "Trending music", type: "music", make: (n) => auTrending(n) },
   { id: "concerts", src: "archive", title: "Live concerts", type: "music", make: (n, o) => iaSearch("music", "", n, 1, "mediatype:etree AND collection:etree", false, o && o.safe) },
-  { id: "jukebox", src: "loc", title: "Library of Congress recordings", type: "music", make: (n) => locSearch("music", "", n, 1) },
+  { id: "jukebox", src: "loc", title: "Historic recordings", type: "music", make: (n, o) => locSearch("music", "", n, 1).catch((e) => { if (turnedAway(e)) return iaSearch("music", "", n, 1, "mediatype:audio AND collection:georgeblood", false, o && o.safe); throw e; }) }, // loc.gov turns Cloudflare away (403): the Great 78 Project's restored records instead
   { id: "oldradio", src: "archive", title: "Old-time radio", type: "podcast", make: (n, o) => iaSearch("podcast", "", n, 1, null, false, o && o.safe) },
   { id: "books", src: "archive", title: "Audiobooks", type: "audiobook", make: (n, o) => iaSearch("audiobook", "", n, 1, null, false, o && o.safe) },
   { id: "podcasts", src: "podcasts", title: "Top podcasts", type: "podcast", make: (n) => podTop(n) },

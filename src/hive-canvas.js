@@ -1,7 +1,7 @@
 // Canvas: an answer opened as a document the user edits. Asked for a change, a model rewrites only the passage the user
 // selected (or the whole document when nothing is selected) and leaves everything else exactly as it was. The passage goes
 // to the model in place, between ⟦ ⟧, so the rewrite fits where it sits.
-import { complete } from "./hive-kit.js";
+import { complete, cheapAsk } from "./hive-kit.js";
 
 const WRITERS = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"], MAX_DOC = 40000;
 export const PRESETS = {
@@ -44,7 +44,7 @@ export async function rewrite(h, { doc, start, end, how, preset }) {
   let why = "";
   for (const model of WRITERS) {
     try {
-      const text = cleanRewrite(await timed(complete(h.env, null, null, model, sys, [{ role: "user", text: user }], max), 60000), part);
+      const text = cleanRewrite(await timed(cheapAsk(h, model, sys, [{ role: "user", text: user }], max), 60000), part);
       if (text) return { text, whole, model: model.split("/").pop(), ms: Date.now() - t0 };
       why = "the model sent back nothing";
     } catch (x) { why = String(x.message || x).slice(0, 160); }

@@ -12,7 +12,7 @@
   const hhmm = (ts) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const ago = (ts) => { const s = (Date.now() - ts) / 1000; return s < 60 ? Math.round(s) + "s" : s < 3600 ? Math.round(s / 60) + "m" : s < 86400 ? Math.round(s / 3600) + "h" : Math.round(s / 86400) + "d"; };
   const LIVE = /planning|working|integrating|replanning|paused/;
-  let cur = null, timer = null, last = null, owner = false, tab = null;
+  let cur = null, timer = null, last = null, owner = false, tab = null, polled = 0;
   const R = { final: "", files: [], entry: null, log: [], errors: [], ran: 0, view: null, fixing: false, auto: 0, size: LSG("swarm-size", 0) }; // view: a version number, or null for the current result
 
   // ── home: launch, and the missions so far (finished ones can be run straight from the list) ──
@@ -71,7 +71,7 @@
   // ── one mission ──
   function open(id, want) {
     cur = id; tab = want || null; Object.assign(R, { final: "", files: [], entry: null, view: null, auto: 0 }); $("home").classList.add("hidden"); $("proj").classList.remove("hidden");
-    history.replaceState(null, "", "/hive-app?p=" + id + "#swarm"); $("feed").innerHTML = ""; $("vers").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) poll(); }, 2500);
+    history.replaceState(null, "", "/hive-app?p=" + id + "#swarm"); $("feed").innerHTML = ""; $("vers").innerHTML = ""; last = null; poll(); clearInterval(timer); timer = setInterval(() => { if (document.hidden) return; const p = last && last.project, live = p && /planning|working|integrating|replanning/.test(p.status) && !p.quota_until; if (live || Date.now() - polled > 30000) poll(); }, 2500); // every 2.5 s while the swarm works; every 30 s once it's done or paused (the free plan's daily requests)
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cur) poll(); });
   function show(t) { // tabs: what it made (run, code, write-up) once there is a result; how it's being built (swarm) always
@@ -83,7 +83,7 @@
   }
   $("ptabs").onclick = (e) => { const b = e.target.closest("[data-pt]"); if (b && !b.disabled) show(b.dataset.pt); };
   async function poll() {
-    if (!cur) return; let j; try { j = await api("/state?id=" + cur + "&ctok=" + (mine()[cur] || "")); } catch (e) { return; } if (j.error || !j.project) return;
+    if (!cur) return; polled = Date.now(); let j; try { j = await api("/state?id=" + cur + "&ctok=" + (mine()[cur] || "")); } catch (e) { return; } if (j.error || !j.project) return;
     const p = j.project; last = j;
     $("squota").classList.toggle("hidden", !p.quota_until && p.status !== "paused");
     if (p.quota_until || p.status === "paused") $("squota").textContent = "⏸ Cloudflare's free AI allowance for today is used up. This project is paused and resumes on its own" + (p.quota_until ? " at " + new Date(p.quota_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " your time" : "") + (p.owner ? ", or bring in your own keys with “Retry & bring in my keys”." : ".");
