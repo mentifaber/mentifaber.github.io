@@ -31,6 +31,7 @@
 //                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
 import { DurableObject } from "cloudflare:workers";
 import { pageProduct, quota, checkPhoto } from "./nest-find.js";
+import { metered, newBag, report as rowReport } from "./rowmeter.js";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
 const MAX_DOC = 64 * 1024, MAX_DOCS = 3000, MAX_PEOPLE = 400, BLOB_MAX = 3e6, IMAGE = /^image\/(jpeg|png|webp|gif)$/;
@@ -53,7 +54,7 @@ const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").repla
 
 export class Nest extends DurableObject {
   q() {
-    const q = this.ctx.storage.sql;
+    this._rows = this._rows || newBag(); const q = this._q || (this._q = metered(this.ctx.storage.sql, this._rows)); // rows read per statement (src/rowmeter.js)
     if (!this.ready) {
       q.exec("CREATE TABLE IF NOT EXISTS doc(path TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS person(id TEXT PRIMARY KEY, name TEXT, sec TEXT, at INTEGER)");
@@ -306,6 +307,7 @@ export class Nest extends DurableObject {
 
   async fetch(req) {
     const url = new URL(req.url), path = url.pathname.replace(/^\/api\/nest/, "") || "/", post = req.method === "POST";
+    if (path === "/rows") { if (req.headers.get("x-nest-owner") !== "1") return J({ error: "owner only" }, 401); this.q(); return J(rowReport(this._rows)); } // which statements spent the free plan's rows-read allowance (shapes and counts only)
     const body = post && !/^\/blob/.test(path) ? await req.json().catch(() => ({})) : {};
     if (path === "/join" && post) {
       const name = cleanName(body.name); if (!name) return J({ error: "say your name, so the parents know who's giving what" }, 400);

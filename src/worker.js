@@ -3,7 +3,8 @@ import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
 import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } from "./us.js";
 import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
-import { hiveLite } from "./hive-lite.js"; // AutoFaber's backup line, for when its Durable Object can't answer
+import { hiveLite } from "./hive-lite.js";
+import { metered, newBag, report as rowReport } from "./rowmeter.js"; // AutoFaber's backup line, for when its Durable Object can't answer
 export { Agent } from "./agent.js";
 export { Nest } from "./nest.js"; // The Nest Registry (nest.html)
 import { vigil } from "./vigil.js";
@@ -741,7 +742,7 @@ Be a good guest: 40 runs per IP per hour.`;
 const MODE_LEN = { dash: 1000, race: 2500, marathon: 5000, moon: 2500, hard: 2500 };
 export class Lobby extends DurableObject {
   sql() {
-    const q = this.ctx.storage.sql;
+    this._rows = this._rows || newBag(); const q = this._q || (this._q = metered(this.ctx.storage.sql, this._rows)); // rows read per statement (src/rowmeter.js)
     if (!this._init) { q.exec("CREATE TABLE IF NOT EXISTS board(mode TEXT, name TEXT, v REAL, m INTEGER, ts INTEGER, PRIMARY KEY(mode,name))"); q.exec("CREATE TABLE IF NOT EXISTS matches(ts INTEGER, mode TEXT, w TEXT, l TEXT, wd INTEGER, ld INTEGER, t REAL)"); q.exec("CREATE TABLE IF NOT EXISTS ai(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, frames INTEGER, over INTEGER, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS bots(id TEXT PRIMARY KEY, st TEXT, out TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS ghosts(id TEXT PRIMARY KEY, agent TEXT, mode TEXT, seed INTEGER, log TEXT, t REAL, m INTEGER, ts INTEGER, UNIQUE(agent,mode))"); q.exec("CREATE TABLE IF NOT EXISTS tally(k TEXT PRIMARY KEY, n REAL)"); q.exec("CREATE TABLE IF NOT EXISTS tfp(k TEXT PRIMARY KEY, name TEXT, h TEXT, save TEXT, devs TEXT, ts INTEGER)"); q.exec("CREATE TABLE IF NOT EXISTS tffeed(ts INTEGER, name TEXT, mode TEXT, v REAL, m INTEGER)"); this._init = 1;
       // one-time: forfeits used to count as wins; they were stored with a 0s time. Take them back off the board.
       if (!q.exec("SELECT n FROM tally WHERE k='mig_forfeits_v1'").toArray().length) {
@@ -1056,6 +1057,7 @@ export class Lobby extends DurableObject {
       this.match(win ? { name, x: 220 + m * 10, mode: r.mode } : { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10, mode: r.mode }, win ? { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10 } : { name, x: 220 + m * 10 }, 0, win ? +b.time || 0 : r.t);
       return J({ ok: true });
     }
+    if (url.pathname.endsWith("/rows")) { this.sql(); return Response.json(rowReport(this._rows)); } // which statements spent the free plan's rows-read allowance
     if (url.pathname.endsWith("/board")) {
       const mode = MODES.includes(url.searchParams.get("mode")) ? url.searchParams.get("mode") : "classic";
       const kind = url.searchParams.get("kind"), kf = kind === "ai" ? " AND name LIKE '\u{1F916}%'" : kind === "human" ? " AND name NOT LIKE '\u{1F916}%'" : "";
