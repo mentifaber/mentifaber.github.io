@@ -199,7 +199,11 @@ const b64u = (t) => btoa(unescape(encodeURIComponent(t))).replace(/\+/g, "-").re
 const turnedAway = (e) => e instanceof Upstream && /answered (403|429)|didn't answer/.test(e.message);
 async function gpSearch(q, limit) {
   const j = await get("https://gpodder.net/search.json?q=" + enc(words(q) || "news"), { ttl: 600, ms: 8000 });
-  return (Array.isArray(j) ? j : []).map((r) => { const feed = safe(r.url); if (!feed) return null; const key = "g" + b64u(feed); if (key.length > 260) return null;
+  // the directory keeps feeds that have since moved or died: the best-followed few are read first, and only those that answer
+  // with a feed are shown (a dead show listed is worse than one left out)
+  const cand = (Array.isArray(j) ? j : []).filter((r) => safe(r.url)).sort((a, b) => (b.subscribers || 0) - (a.subscribers || 0)).slice(0, Math.min(16, limit + 4));
+  const live = await Promise.all(cand.map((r) => get(safe(r.url), { text: true, ms: 4000, max: 4096, ttl: 3600, headers: { accept: "application/rss+xml, application/xml, text/xml, */*" } }).then((t) => /<(rss|feed|channel)\b/i.test(t)).catch(() => false)));
+  return cand.filter((r, i) => live[i]).map((r) => { const feed = safe(r.url); if (!feed) return null; const key = "g" + b64u(feed); if (key.length > 260) return null;
     return mk({ source: "podcasts", type: "podcast", key, title: r.title, creator: r.author || "", description: clip(plain(r.description || "", 300), 300), thumb: r.scaled_logo_url || r.logo_url, page: safe(r.website) || feed, license: "Public RSS feed: © its publisher", meta: r.subscribers ? r.subscribers.toLocaleString("en-US") + " listeners on gpodder" : "Podcast" }); }).filter(Boolean).slice(0, limit);
 }
 async function podSearch(q, limit) { try { return await podSearchApple(q, limit); } catch (e) { if (turnedAway(e)) return gpSearch(q, limit); throw e; } }

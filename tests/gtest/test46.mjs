@@ -12,7 +12,8 @@ globalThis.fetch = async (u, o) => { const url = String(u), host = new URL(url).
   if (host === "itunes.apple.com" || host === "rss.marketingtools.apple.com") { if (apple) return new Response("Too Many Requests", { status: apple }); }
   if (host === "www.loc.gov" && loc) return new Response("Forbidden", { status: loc });
   if (host === "api.deezer.com") return J({ data: [track(1, "Blue in Green"), track(2, "So What"), track(3, "Rude Song", true), { id: 4, title: "No preview" }] });
-  if (host === "gpodder.net") return J([{ url: "https://feeds.example.org/science.xml", title: "Science & Wonder", author: "Dr. Q", description: "<b>Big</b> questions", subscribers: 1234, logo_url: "https://img.example.org/cover.jpg", website: "https://science.example.org" }, { url: "http://127.0.0.1/evil.xml", title: "Local" }, { url: "javascript:alert(1)", title: "Bad" }]);
+  if (host === "gpodder.net") return J([{ url: "https://feeds.example.org/gone.xml", title: "Moved Away", subscribers: 99999 }, { url: "https://feeds.example.org/science.xml", title: "Science & Wonder", author: "Dr. Q", description: "<b>Big</b> questions", subscribers: 1234, logo_url: "https://img.example.org/cover.jpg", website: "https://science.example.org" }, { url: "http://127.0.0.1/evil.xml", title: "Local" }, { url: "javascript:alert(1)", title: "Bad" }]);
+  if (url.endsWith("/gone.xml")) return new Response("Not Found", { status: 404 });
   if (host === "feeds.example.org") return new Response(RSS, { headers: { "content-type": "application/rss+xml" } });
   return fixtures(u, o); };
 const get = async (path) => { const r = await M.media(new Request("https://mentifaber.org/api/media" + path + (path.includes("?") ? "&" : "?") + "safe=0", { headers: { "cf-connecting-ip": "9.9.9.9" } }), {}, { waitUntil() {} }, (o, s = 200, h = {}) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json", ...h } }), async () => false); return { r, j: await r.json() }; };
@@ -29,7 +30,7 @@ ok("the Top songs shelf fills from Deezer's chart");
 
 // podcasts
 ({ r, j } = await get("/search?q=science&src=podcasts&type=podcast")); assert.equal(r.status, 200, JSON.stringify(j));
-assert.equal(j.items.length, 1, "only the public https feed: no local addresses, no scripts"); const show = j.items[0];
+assert.equal(j.items.length, 1, "only a public https feed that answers: no local addresses, no scripts, no dead feeds, however popular"); const show = j.items[0];
 assert.equal(show.title, "Science & Wonder"); assert.match(show.id, /^podcasts\|podcast\|g[\w-]+$/); assert.match(show.meta, /1,234 listeners/);
 asked.length = 0; ({ r, j } = await get("/item?id=" + encodeURIComponent(show.id))); assert.equal(r.status, 200, JSON.stringify(j));
 assert.equal(j.play.kind, "audio"); assert.equal(j.play.tracks.length, 2); assert.equal(j.play.url, "https://cdn.example.org/ep2.mp3?x=1&y=2"); assert.ok(!asked.includes("itunes.apple.com"), "played straight from its feed");
