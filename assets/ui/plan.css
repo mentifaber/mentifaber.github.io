@@ -188,6 +188,59 @@ body.wk > * { position: relative; z-index: 1; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
 kbd { font: 600 10px/1 var(--mono); color: var(--gold-hi); border: 1px solid var(--line-2); padding: 4px 6px; border-radius: 3px; background: var(--floor-2); justify-self: start; }
 
+/* ── detail A, first time in: five benches that run the moment you open them ── */
+.start { margin: 14px 14px 0; padding: 18px 22px 20px; border: 1px solid var(--line-2); background: rgba(13, 11, 8, .72); }
+.start > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 14px; }
+.start h2 { margin: 0; font: 400 clamp(20px, 2vw, 26px)/1.1 var(--display); letter-spacing: .06em; color: var(--gold-hi); }
+.start > header p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+.picks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.pick { --c: 10px; position: relative; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 14px 14px 13px; clip-path: var(--cut); background: linear-gradient(180deg, rgba(246, 206, 120, .1), rgba(214, 166, 71, .025)); }
+.pick::before { content: ""; position: absolute; inset: 0; clip-path: var(--cut); padding: 1px; background: var(--line-2); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); pointer-events: none; }
+.pick:hover::before, .pick:focus-within::before { background: var(--gold); }
+.pick-h { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 6px; align-items: center; }
+.pick-h .g { width: 26px; height: 26px; grid-row: span 2; color: var(--gold-hi); }
+.pick h3 { margin: 0; font: 400 19px/1.1 var(--display); letter-spacing: .05em; color: var(--ink); }
+.pick .tag { justify-self: start; padding: 3px 8px; font-size: 9.5px; }
+.pick p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.pick-go { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick-go .key { min-height: 32px; padding: 0 11px; font-size: 10.5px; }
+/* show: sort the benches by what they are; the plan keeps its shape, what's left out goes dim */
+.sift { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px 14px 0; }
+.sift .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.sift .chip { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; box-sizing: border-box; padding: 0 11px; font-size: 13px; }
+.sift .chip b { color: var(--gold); font-weight: 600; } .sift .chip[aria-pressed="true"] b { color: inherit; } .sift .chip .lamp { animation: none; }
+.sift output:empty { display: none; }
+.sift .sp { flex: 1; }
+.sift [data-find] kbd { margin-left: 2px; padding: 3px 5px; }
+.sift .hint { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+@media (hover: none) { .sift .hint, .sift [data-find] kbd { display: none; } }
+.benches li { transition: opacity .3s; } .benches li[inert] { opacity: .18; filter: grayscale(1); }
+@media (max-width: 760px) {
+  .start { margin: 10px 10px 0; padding: 14px 14px 16px; }
+  .picks { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(230px, 80%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; overscroll-behavior-x: contain; }
+  .pick { scroll-snap-align: start; }
+  .picks.tries { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); overflow: visible; } /* on a datasheet they stack */
+  .sift { margin: 10px 10px 0; } .sift .sp { display: none; }
+}
+
+/* a datasheet's own sections: the plain line, Try it (the home page's picks), Ratings (visitor | owner), Interlocks */
+.say1 { margin: 16px 0 0; font-size: 18px; line-height: 1.5; font-weight: 600; color: var(--ink); }
+.say1 + .tagline { margin-top: 10px; font-size: 15px; }
+.picks.tries { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.rate-wrap { overflow-x: auto; }
+.rate { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; }
+.rate th, .rate td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-top: 1px solid var(--line); }
+.rate thead th { font: 500 10px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-top: 0; }
+.rate tbody th { width: 24%; font-weight: 600; color: var(--ink); }
+.rate td { color: var(--ink-2); width: 38%; }
+@media (max-width: 760px) { /* a phone: each row stacks, its two answers labelled */
+  .rate thead { display: none; } .rate, .rate tbody, .rate tr, .rate th, .rate td { display: block; width: auto; }
+  .rate tr { padding: 10px 0; border-top: 1px solid var(--line); } .rate th, .rate td { border: 0; padding: 2px 0; } .rate tbody th, .rate td { width: auto; }
+  .rate td::before { content: attr(data-h); display: block; margin-top: 6px; font: 500 9.5px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+}
+.locks { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); max-width: 52em; }
+.locks li::marker { color: var(--gold); }
+
 /* ── find: the parts index ── */
 .find { position: fixed; inset: 0; z-index: 50; display: none; place-items: start center; padding: 12vh 14px 14px; background: rgba(5, 4, 3, .78); backdrop-filter: blur(3px); }
 .find.on { display: grid; }
