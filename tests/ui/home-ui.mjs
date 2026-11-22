@@ -43,4 +43,13 @@ assert.match(await p.textContent(".find ol"), /Tether/); await p.keyboard.press(
 ok("Find a bench: on the page, finds by name");
 assert.equal(await p.$$eval(".bench .sr", (xs) => xs.length), plan.all); ok("every bench says its status to a screen reader");
 
+// AutoFaber's datasheet: something to try, who gets what, and what it may do on its own, without widening a phone
+await p.goto("http://localhost:8099/hive.html"); await p.waitForSelector(".sec");
+const heads = await p.$$eval(".sec h2", (xs) => xs.map((x) => x.textContent.replace(/^\d+/, "")));
+for (const h of ["Try it", "Ratings", "Interlocks"]) assert.ok(heads.includes(h), heads.join(", "));
+assert.equal(await p.$$eval(".tries .key.pri", (xs) => xs.filter((x) => /^hive-app\.html#(studio|swarm)$/.test(x.getAttribute("href"))).length), 4);
+assert.ok(await p.$$eval(".rate tbody tr", (xs) => xs.length) >= 8);
+assert.equal(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, "no sideways scroll on the datasheet");
+ok("AutoFaber's datasheet: " + heads.filter((h) => ["Try it", "Ratings", "Interlocks"].includes(h)).join(", ") + ", and it fits the screen");
+
 assert.deepEqual(errs, []); await b.close();

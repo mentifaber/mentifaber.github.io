@@ -65,7 +65,7 @@
   },
   {
    "n": "built on",
-   "html": "<p>Cloudflare Workers AI for the free models, any OpenAI-compatible or Anthropic provider through the vault, one Durable Object holding the conversations, the mind and the swarm, and MENTIFABER AGENT 1.0, a local model in a container that sleeps when idle. Its typeface, Hive Strata, was drawn for it.</p>",
+   "html": "<p>Cloudflare Workers AI for the free models, any OpenAI-compatible or Anthropic provider through the vault, one Durable Object holding the conversations, the mind and the swarm, and MENTIFABER AGENT 1.0, Qwen3 hosted on a free key, or in its own container where the plan allows one. Its typeface, Hive Strata, was drawn for it.</p>",
    "stack": [
     "Workers AI",
     "Durable Objects",
@@ -116,5 +116,89 @@
    "src": "assets/previews/genesis-mind.webp",
    "cap": "AutoFaber itself: what it knows and how it grows"
   }
+ ],
+ "plain": "Ask it anything, talk to it out loud, or describe a project and watch a team of AI models plan, build and check it in front of you. Free to use, no account.",
+ "tryit": [
+  {
+   "t": "Ask",
+   "k": "Ask a question",
+   "href": "hive-app.html#studio",
+   "d": "Type anything. Auto picks a free model that suits the question, and the answer says which one gave it."
+  },
+  {
+   "t": "Talk",
+   "k": "Open the Studio",
+   "href": "hive-app.html#studio",
+   "d": "Press Talk and speak. It hears when you've finished a thought and answers out loud; the ring glows while it listens, thinks and speaks."
+  },
+  {
+   "t": "Council",
+   "k": "Convene a council",
+   "href": "hive-app.html#studio",
+   "d": "Switch on Council for one message: several models draft the same answer at once and a lead merges the best. Their drafts stay one tap below it."
+  },
+  {
+   "t": "Swarm",
+   "k": "Release a swarm",
+   "href": "hive-app.html#swarm",
+   "d": "Describe something small, like “a pomodoro timer with a chime”. Agents take roles, critics send weak work back, and what they build runs in the page."
+  }
+ ],
+ "ratings": {
+  "note": "There is no paid tier. AutoFaber has one owner, who signs in on Vigil; everyone else is a visitor, and the server checks which you are on every request.",
+  "rows": [
+   [
+    "Chat with the free models",
+    "60 messages a day",
+    "No cap from AutoFaber; each provider's own limits still apply"
+   ],
+   [
+    "Models",
+    "Cloudflare Workers AI and the site's shared free keys, chosen by Auto or by you",
+    "Those, plus any provider in the vault: OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Mistral, xAI and 20 more, or a local server through Ollama or LM Studio"
+   ],
+   [
+    "Council",
+    "Yes; each council uses a few of the 60",
+    "Yes"
+   ],
+   [
+    "Talk out loud",
+    "Yes, with the free voices",
+    "Yes, plus ElevenLabs and OpenAI voices from the vault"
+   ],
+   [
+    "Swarm",
+    "Watch any mission; start 2 a day, up to 150 model calls each",
+    "6 at once, up to 3,000 calls each; publish what they build"
+   ],
+   [
+    "Pictures, research, fact checks",
+    "8 pictures, 6 researched reports and 10 fact checks a day",
+    "No cap from AutoFaber; pictures still come out of Cloudflare's free daily allowance"
+   ],
+   [
+    "Memory",
+    "None kept for you on the server; your conversation list stays in your browser",
+    "Profile, memories and open threads, each one kept only after a yes"
+   ],
+   [
+    "AutoFaber's own mind",
+    "—",
+    "Journal, lessons, ideas, autonomy, scheduled tasks, the daily brief and phone alerts"
+   ],
+   [
+    "Key vault",
+    "—",
+    "Any number of keys, sealed with AES-GCM, never shown again"
+   ]
+  ]
+ },
+ "interlocks": [
+  "The vault, the Mind, AutoFaber's memory and the owner's missions answer only to the owner. The server checks, not the page.",
+  "What it notices about its owner waits in the Mind view for a yes before it's kept, unless the owner has told it to trust its noticing. Nothing proposed goes into a chat until then.",
+  "Autonomy is a switch the owner holds. With it on, AutoFaber may start at most 8 Swarm missions and 1,100 model calls of its own in any 24 hours, two at a time. What they build is a result to review: nothing deploys, and nothing touches the site's code, without the owner.",
+  "Phone alerts are rate-limited per hour and wait out quiet hours, except a critical one.",
+  "If a model is busy, out of allowance or retired by its provider, another answers that turn and says so."
  ]
 }

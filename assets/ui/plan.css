@@ -219,8 +219,27 @@ kbd { font: 600 10px/1 var(--mono); color: var(--gold-hi); border: 1px solid var
   .start { margin: 10px 10px 0; padding: 14px 14px 16px; }
   .picks { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(230px, 80%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; overscroll-behavior-x: contain; }
   .pick { scroll-snap-align: start; }
+  .picks.tries { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); overflow: visible; } /* on a datasheet they stack */
   .sift { margin: 10px 10px 0; } .sift .sp { display: none; }
 }
+
+/* a datasheet's own sections: the plain line, Try it (the home page's picks), Ratings (visitor | owner), Interlocks */
+.say1 { margin: 16px 0 0; font-size: 18px; line-height: 1.5; font-weight: 600; color: var(--ink); }
+.say1 + .tagline { margin-top: 10px; font-size: 15px; }
+.picks.tries { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.rate-wrap { overflow-x: auto; }
+.rate { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; }
+.rate th, .rate td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-top: 1px solid var(--line); }
+.rate thead th { font: 500 10px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-top: 0; }
+.rate tbody th { width: 24%; font-weight: 600; color: var(--ink); }
+.rate td { color: var(--ink-2); width: 38%; }
+@media (max-width: 760px) { /* a phone: each row stacks, its two answers labelled */
+  .rate thead { display: none; } .rate, .rate tbody, .rate tr, .rate th, .rate td { display: block; width: auto; }
+  .rate tr { padding: 10px 0; border-top: 1px solid var(--line); } .rate th, .rate td { border: 0; padding: 2px 0; } .rate tbody th, .rate td { width: auto; }
+  .rate td::before { content: attr(data-h); display: block; margin-top: 6px; font: 500 9.5px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+}
+.locks { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); max-width: 52em; }
+.locks li::marker { color: var(--gold); }
 
 /* ── find: the parts index ── */
 .find { position: fixed; inset: 0; z-index: 50; display: none; place-items: start center; padding: 12vh 14px 14px; background: rgba(5, 4, 3, .78); backdrop-filter: blur(3px); }

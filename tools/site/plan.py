@@ -207,6 +207,17 @@ def keyplan(a):
     return f'<figure class="keyplan"><svg viewBox="-10 0 {W + 11} {top + hall + bot + 1}" role="group" aria-label="Key plan: where {esc(a["name"])} is in the workshop">{"".join(out)}</svg><figcaption class="lbl">Key plan · room {ROOMNO[a["cat"]]:02d}, {esc(NAMES[a["cat"]][0])}</figcaption></figure>'
 
 
+def try_card(x):  # "Try it": one thing to do, said plainly, and a key that goes straight there
+    return (f'<li class="pick"><div class="pick-h"><h3>{esc(x["t"])}</h3></div><p>{esc(x["d"])}</p>'
+            f'<div class="pick-go"><a class="key pri" href="{esc(x["href"])}">{esc(x["k"])}</a></div></li>')
+
+
+def ratings(r):  # who gets what: visitor and owner, side by side
+    rows = "".join(f'<tr><th scope="row">{esc(a)}</th><td data-h="A visitor">{esc(v)}</td><td data-h="The owner">{esc(o)}</td></tr>' for a, v, o in r["rows"])
+    return (f'<div class="rate-wrap"><table class="rate"><thead><tr><th scope="col"><span class="sr">What</span></th><th scope="col">A visitor</th><th scope="col">The owner</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>' + (f'<p class="prose" style="margin-top:12px">{esc(r["note"])}</p>' if r.get("note") else ""))
+
+
 def page(i):
     a, c = A[i], json.load(open(os.path.join(CONTENT, i + ".json"), encoding="utf-8"))
     n, _ = NAMES[a["cat"]]; op, _ = links(a); app = a.get("app"); shot = c.get("shot") or preview(i)
@@ -231,8 +242,11 @@ def page(i):
     story = c.get("story") or {}
     body = "".join([
         S("Why it exists", (f'<h3 class="story">{story["title"]}</h3>' if story.get("title") else "") + f'<div class="prose">{c.get("lede", "")}</div>') if c.get("lede") else "",
+        S("Try it", f'<ol class="picks tries">{"".join(try_card(x) for x in c["tryit"])}</ol>') if c.get("tryit") else "",
         S("Views", '<div class="figs">' + "".join(f'<figure class="fig{" tall" if f.get("tall") else ""}"><a href="{esc(f["src"])}" target="_blank" rel="noopener" aria-label="Open full size"><img src="{esc(f["src"])}" alt="{esc(a["name"])}: {esc(f["cap"])}" loading="lazy"></a><figcaption class="lbl">Fig. {n_ + 2} · {esc(f["cap"])}</figcaption></figure>' for n_, f in enumerate(c["figs"])) + "</div>") if c.get("figs") else "",
         S("Parts list", f'<ol class="bom">{feats}</ol>' + (f'<p class="prose" style="margin-top:14px">{c["featuresNote"]}</p>' if c.get("featuresNote") else "")) if feats else "",
+        S("Ratings", ratings(c["ratings"])) if c.get("ratings") else "",
+        S("Interlocks", '<ul class="locks">' + "".join(f"<li>{esc(x)}</li>" for x in c["interlocks"]) + '</ul><p class="lbl" style="margin-top:8px">what it may and may not do on its own</p>') if c.get("interlocks") else "",
         S("Instruments", f'<div class="instr">{instruments(c["widgets"])}</div>') if c.get("widgets") else "",
         S("Construction", cards) if cards else "",
         S("Tolerances", f'<div class="prose">{c["scope"]}</div><p class="lbl" style="margin-top:6px">what it is not, said plainly</p>') if c.get("scope") else "",
@@ -258,7 +272,7 @@ def page(i):
     <span class="pno">{pno(a)} · {esc(n)}</span>
     <h1 style="--vt:bench-name">{esc(a["name"])}</h1>
     <span class="tag {st}">{esc(STATUS.get(a["status"], a["status"]))}</span>
-    <p class="tagline">{c.get("tagline", "")}</p>
+    {f'<p class="say1">{esc(c["plain"])}</p>' if c.get("plain") else ""}<p class="tagline">{c.get("tagline", "")}</p>
     <div class="acts">{acts}</div>
     <table class="specs">{specs}</table>
     {keyplan(a)}
