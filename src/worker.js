@@ -3,6 +3,7 @@ import { createThoughtform, TF_MODES } from "./thoughtform-core.js";
 import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } from "./us.js";
 import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
+import { hiveLite } from "./hive-lite.js"; // AutoFaber's backup line, for when its Durable Object can't answer
 export { Agent } from "./agent.js";
 export { Nest } from "./nest.js"; // The Nest Registry (nest.html)
 import { vigil } from "./vigil.js";
@@ -513,8 +514,16 @@ async function sealedPage(req, env, app) {
   return new HTMLRewriter().on("script#mf-blob", { element(el) { el.setInnerContent(""); } }).transform(out);
 }
 
-export default {
+const worker = {
+  // a Durable Object that can't answer (on the free plan: the account's daily allowance spent, until 00:00 UTC) used to
+  // surface as Cloudflare's bare "error code: 1101" for the whole of that app. Now AutoFaber falls back to its backup line
+  // (src/hive-lite.js: chat on Workers AI, no stored state) and every other API says what's wrong, in JSON.
   async fetch(req, env, ctx) {
+    const spare = req.method === "POST" && new URL(req.url).pathname === "/api/hive/chat" ? req.clone() : null; // the Durable Object reads the body; the backup line needs its own copy
+    try { return await worker.serve(req, env, ctx); }
+    catch (e) { return backup(spare || req, env, e); }
+  },
+  async serve(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
     if (/^\/p\/[\w-]{3,60}\/?$/.test(path)) { // a published Swarm result: build.html reads the slug from the address and runs it sandboxed
@@ -628,6 +637,15 @@ export default {
     if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/tick", { method: "POST", headers: { "x-hive-owner": "1" } })).catch(() => {}));
   },
 };
+export default worker;
+
+async function backup(req, env, e) {
+  const path = new URL(req.url).pathname;
+  console.error("backup line for " + path + ": " + String(e && (e.stack || e.message) || e).slice(0, 500));
+  if (path.startsWith("/api/hive/") || path === "/api/hive") return hiveLite(req, env, path.replace(/^\/api\/hive/, "") || "/");
+  if (path.startsWith("/api/")) return json({ error: "This part of mentifaber.org keeps its data in storage that isn't answering right now. It usually comes back within hours, and by 00:00 UTC at the latest.", down: true }, 503, { "retry-after": "300" });
+  throw e;
+}
 
 // ── Tether online: one lobby, WebSockets (hibernation-safe: every player's state lives on their socket)
 const AI_SPEC = `TETHER FOR AI AGENTS

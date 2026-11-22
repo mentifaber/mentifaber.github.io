@@ -40,6 +40,7 @@ async function loadModels() {
   $("esub").textContent = real.length + " minds from " + provs.size + " provider" + (provs.size === 1 ? "" : "s") + ". One, a council, or a whole swarm.";
   $("t-models").textContent = real.length + " minds · " + provs.size + " provider" + (provs.size === 1 ? "" : "s"); $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
   serverDown = !!j.error && !models.length; clearTimeout(loadModels.t); if (serverDown) loadModels.t = setTimeout(loadModels, 60e3); // the server itself failed, not "no models": say so and look again each minute
+  if (j.lite && !serverDown) { $("esub").textContent = j.note || "AutoFaber is on its backup line."; $("t-free").textContent = "backup line"; $("led-free").className = "led warn"; } // its storage is away: chat on Workers AI only
   if (serverDown) { $("esub").textContent = "AutoFaber's server isn't answering right now (" + j.error + "). This page keeps trying, every minute."; $("t-models").textContent = "unreachable"; $("t-free").textContent = "—"; $("led-free").className = "led warn"; }
   link(); stone(); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
