@@ -144,6 +144,16 @@ export async function describe(env, dataUrl, ask) {
 // Whisper, told which names it's likely to hear, and made to skip what isn't speech: its own VAD drops silent stretches,
 // segments it judges to be silence are dropped, and so are its stock phrases for silence ("you", "thanks for watching").
 // A language hint stops short clips being heard as Russian or Icelandic.
+// Whisper on Groq's free tier: the same model, at no cost to Cloudflare's allowance. audio: a data URL or base64.
+export async function groqHear(key, audio, lang, names) {
+  const m = /^data:([^;,]+)[^,]*,/.exec(audio), type = (m && m[1]) || "audio/webm", raw = audio.replace(/^data:[^,]*,/, ""), bin = atob(raw), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const fd = new FormData(); fd.append("file", new Blob([u8], { type }), "speech." + (/wav/.test(type) ? "wav" : /ogg/.test(type) ? "ogg" : /mp4|m4a|aac/.test(type) ? "m4a" : /mpeg|mp3/.test(type) ? "mp3" : "webm"));
+  fd.append("model", "whisper-large-v3-turbo"); fd.append("response_format", "verbose_json"); if (/^[a-z]{2}$/.test(lang || "")) fd.append("language", lang);
+  const prompt = names && names.length ? "Glossary: " + names.join(", ") + "." : ""; if (prompt) fd.append("prompt", prompt);
+  const r = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", { method: "POST", headers: { authorization: "Bearer " + key }, body: fd, signal: AbortSignal.timeout(20000) });
+  if (!r.ok) throw Object.assign(new Error("Groq Whisper " + r.status + " " + (await r.text().catch(() => "")).slice(0, 120)), { status: r.status });
+  return heard(await r.json(), prompt);
+}
 export async function transcribe(env, audioB64, lang, names) {
   const base = { audio: audioB64, ...(/^[a-z]{2}$/.test(lang || "") ? { language: lang } : {}) }, prompt = names && names.length ? "Glossary: " + names.join(", ") + "." : "";
   let r; try { r = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { ...base, vad_filter: true, condition_on_previous_text: false, hallucination_silence_threshold: 1, ...(prompt ? { initial_prompt: prompt } : {}) }); }
@@ -177,7 +187,8 @@ export async function voiceOut(env, text, spec, keyFor) { // spec: "el:<kid>:<vo
     if (!r.ok) throw new Error("OpenAI voice " + r.status + " " + (await r.text()).slice(0, 120)); return { audio: b64(new Uint8Array(await r.arrayBuffer())), used: "OpenAI " + (b2 || "sage") }; } catch (e) { tried.push(e.message); }
   if (!env.AI) throw new Error(tried.join("; ") || "no voice available");
   // Aura only speaks English: read Japanese with it and it sounds drunk. Other languages go to MeloTTS, which speaks them.
-  const lang = spokenLang(text); if (lang !== "en") try { const au = await speak(env, text, lang); if (au) return { audio: au, used: "MeloTTS " + lang }; } catch (e) { tried.push(e.message); }
+  const lang = spokenLang(text); if (kind === "melo") return { audio: await speak(env, text, lang !== "en" ? lang : "en"), used: "MeloTTS" }; // asked for, or today's share of Aura is spent
+  if (lang !== "en") try { const au = await speak(env, text, lang); if (au) return { audio: au, used: "MeloTTS " + lang }; } catch (e) { tried.push(e.message); }
   const sp = kind === "a2" && AURA2.includes(a) ? a : "thalia";
   try { const r = await env.AI.run("@cf/deepgram/aura-2-en", { text, speaker: sp, encoding: "mp3" }); const au = await bytes64(r); if (au) return { audio: au, used: "Aura-2 " + sp }; } catch (e) { tried.push(e.message); }
   try { const r = await env.AI.run("@cf/deepgram/aura-1", { text, speaker: AURA1.includes(sp) ? sp : "asteria", encoding: "mp3" }); const au = await bytes64(r); if (au) return { audio: au, used: "Aura-1" }; } catch (e) { tried.push(e.message); }

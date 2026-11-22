@@ -133,7 +133,7 @@ async function openLink(raw) {
   catch (e) { $("status").textContent = ""; toast(e.message, 6000); }
 }
 const LINKY = /^(https?:\/\/|(www\.|m\.)?(ok\.ru|youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|dai\.ly|soundcloud\.com|mixcloud\.com|archive\.org)\/)/i;
-$("find").addEventListener("submit", (e) => { e.preventDefault(); const typed = $("q").value.trim(); if (LINKY.test(typed)) { showSugg([]); $("q").value = ""; return openLink(/^https?:/i.test(typed) ? typed : "https://" + typed); } S.q = typed; showSugg([]); if (S.q) LS.set("searches", [S.q, ...LS.get("searches", []).filter((x) => x !== S.q)].slice(0, 8)); go(); });
+$("find").addEventListener("submit", (e) => { e.preventDefault(); clearTimeout(sgTimer); sgTok++; if (matchMedia("(pointer: coarse)").matches) $("q").blur(); /* a suggestion still on its way never reopens the list over the results; on a phone the keyboard goes too */ const typed = $("q").value.trim(); if (LINKY.test(typed)) { showSugg([]); $("q").value = ""; return openLink(/^https?:/i.test(typed) ? typed : "https://" + typed); } S.q = typed; showSugg([]); if (S.q) LS.set("searches", [S.q, ...LS.get("searches", []).filter((x) => x !== S.q)].slice(0, 8)); go(); });
 $("tabs").addEventListener("click", (e) => { const b = e.target.closest("button[data-t]"); if (!b) return; [...$("tabs").children].forEach((x) => x.classList.toggle("on", x === b)); S.type = b.dataset.t; go(); });
 $("more").addEventListener("click", () => runSearch(true));
 

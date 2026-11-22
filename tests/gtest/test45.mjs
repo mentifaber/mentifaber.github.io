@@ -8,8 +8,9 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 const sent = []; let cerebrasDown = false;
-globalThis.fetch = async (u, o = {}) => { const url = String(u && u.url || u), body = o.body ? JSON.parse(o.body) : null;
+globalThis.fetch = async (u, o = {}) => { const url = String(u && u.url || u), body = o.body && typeof o.body === "string" ? JSON.parse(o.body) : null;
   if (/\/models$/.test(url)) return Response.json({ data: /cerebras/.test(url) ? [{ id: "gpt-oss-120b" }, { id: "qwen-3-32b" }, { id: "llama3.1-8b" }] : /openai/.test(url) ? [{ id: "gpt-4.1" }] : [] });
+  if (/audio\/transcriptions$/.test(url)) { sent.push({ url, form: o.body }); return Response.json({ text: " hello there", segments: [{ text: " hello there", no_speech_prob: 0.01, avg_logprob: -0.2, compression_ratio: 1.1 }] }); }
   if (/chat\/completions$/.test(url)) { sent.push({ url, model: body.model, msgs: body.messages });
     if (/cerebras/.test(url) && cerebrasDown) return new Response(JSON.stringify({ error: { message: "rate limit" } }), { status: 429 });
     return Response.json({ choices: [{ message: { content: (/cerebras/.test(url) ? "FREE " : "PAID ") + body.model } }] }); }
@@ -71,4 +72,16 @@ a = await ag.fetch(areq(false)); aj = await a.json(); assert.equal(a.status, 200
 assert.ok(H.calls.some((c) => c.model === "@cf/qwen/qwen3-30b-a3b-fp8"));
 await hive.rest(); a = await ag.fetch(areq(false)); assert.equal(a.status, 429); assert.match((await a.json()).error, /allowance is used up/);
 ok("MENTIFABER AGENT 1.0 works without paid Containers: hosted Qwen3 (a free key, else Workers AI), streamed or whole, as before");
+// 7. voice, the dearest thing on the allowance: a daily share of Aura and of live listening; Groq's free Whisper hears
+hive.quota = 0; db.prepare("DELETE FROM limits").run(); H.ttsCalls.length = 0;
+const say = (text) => call("/tts", { text, voice: "a2:thalia" }, false, V);
+let used = []; for (let k = 0; k < 4; k++) used.push((await say("x".repeat(450))).j.used);
+assert.deepEqual(used, ["Aura-2 thalia", "Aura-2 thalia", "Aura-2 thalia", "MeloTTS"], "1,500 characters of Aura a day, then MeloTTS");
+const listen = () => call("/listen-ok", { }, true).then((r) => r.j.ok); let oks = 0; for (let k = 0; k < 22; k++) if (await listen()) oks++;
+assert.equal(oks, 20, "20 live-listening turns a day; after that the ears use Whisper");
+H.calls.length = 0; sent.length = 0; let sx = await call("/stt", { audio: "data:audio/wav;base64,UklGRg==", lang: "en" }, false, V);
+assert.equal(sx.j.text, "", "no Groq key: Whisper on Workers AI (the fake hears nothing)"); assert.ok(!sent.some((x) => /groq/.test(x.url)));
+await add("groq", "gsk-free-0123456789"); sx = await call("/stt", { audio: "data:audio/wav;base64,UklGRg==", lang: "en" }, false, V);
+assert.equal(sx.j.text, "hello there"); assert.ok(sent.some((x) => /api\.groq\.com\/openai\/v1\/audio\/transcriptions/.test(x.url)), "Groq's free Whisper heard it");
+ok("voice keeps to a daily share: Aura-2 for 1,500 characters then MeloTTS, live listening for 20 turns then Whisper, and Whisper on Groq's free tier when there's a key");
 console.log("the AI on the free plan: all checks passed");

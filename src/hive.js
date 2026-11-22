@@ -5,7 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
+import { groqHear, PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
 import { Genesis, genesisTables, asksSystems } from "./hive-genesis.js";
@@ -73,7 +73,11 @@ const PLANNER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"; // decides which too
 // ":free" models count.
 const FREE_PROV = new Set(["cerebras", "groq", "gemini", "mistral", "github", "openrouter"]);
 const freeModel = (prov, model) => FREE_PROV.has(prov) && (prov !== "openrouter" || /:free$/.test(model));
-const SWARM_WAI_DAY = 20; // Workers AI calls the build swarm may make a day (one costs ~300 of the 10,000 daily neurons); the rest is kept for people
+const SWARM_WAI_DAY = 20;
+// Voice is the dearest thing on the free allowance: Aura-2 speech is ~2,700 neurons per 1,000 characters and Flux's live
+// listening ~700 a minute. A small share a day for each; past it, MeloTTS speaks (~1/100 the cost) and the voice link's
+// ears switch themselves to Whisper (assets/hive/ears.js falls back by itself), on Groq's free tier when there's a key.
+const AURA_DAY_CHARS = 1500, FLUX_DAY_TURNS = 20; // Workers AI calls the build swarm may make a day (one costs ~300 of the 10,000 daily neurons); the rest is kept for people
 const KEYED = [
   { env: "OPENROUTER_KEY", id: "openrouter", url: "https://openrouter.ai/api/v1/chat/completions", list: "https://openrouter.ai/api/v1/models", free: true },
   { env: "GROQ_KEY", id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", list: "https://api.groq.com/openai/v1/models" },
@@ -288,7 +292,9 @@ export class Hive extends DurableObject {
     if (path === "/voice" || path.startsWith("/voice/")) return Voice.route(this, path, b, owner, req, J, url.origin).catch((e) => J({ error: String(e && e.message || e).slice(0, 200) }, 500)); // guest voice links (src/hive-voice.js)
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
-    if (path === "/listen-ok" && req.method === "POST") return J({ ok: b.vg ? await Voice.listenOk(this, String(b.vg)) : owner || this.meter(req, "stt", STUDIO_DAY * 2) }); // src/listen.js: one live-recognition turn is one voice turn
+    if (path === "/listen-ok" && req.method === "POST") { // src/listen.js: one live-recognition turn is one voice turn
+      const ok = b.vg ? await Voice.listenOk(this, String(b.vg)) : owner || this.meter(req, "stt", STUDIO_DAY * 2);
+      return J({ ok: ok && this.siteShare("flux", 1, FLUX_DAY_TURNS) }); } // past today's share of live listening: the ears use Whisper instead
     if (path === "/models") { const ag = this.agentModel(await this.agentInfo()); if (ag && !owner && !(await this.agentInfo()).public) ag.skip = true; return J({ owner, agent: await this.agentInfo(), models: [...(this.env.AI ? [{ id: AUTO, name: "Auto", group: "AutoFaber", note: "picks the best free model for each message" }] : []), ...(ag && !ag.skip ? [ag] : []), ...this.models(owner), ...(owner ? await this.envModels() : [])], genesis: owner ? (await Genesis.self(this)).name : undefined, resting: (await this.resting()) || undefined, standIn: owner && (await this.resting()) ? await this.standIn() : undefined, search: owner ? this.sql().exec("SELECT COUNT(*) c FROM vault WHERE live=1 AND kind='search'").one().c : 0, ai: !!this.env.AI }); }
     if (path === "/steps") { const k = String(b.sid || ""), x = this._steps && this._steps.get(k); return J(x && x.owner === owner ? { steps: x.list, now: x.now || null } : { steps: [] }); } // what a reply in the making is doing (keyed by a random id from the sender)
     if (["/chat", "/stt", "/tts", "/imagine"].includes(path)) { if (req.method !== "POST") return J({ error: "POST only" }, 405); return this.studio(path, b, owner, req, J).catch((e) => J({ error: String(e && e.message || e).slice(0, 300) }, 502)); }
@@ -797,6 +803,15 @@ export class Hive extends DurableObject {
     if (this.env.AI && waiModel && !(await this.resting())) return complete(this.env, null, null, waiModel, system, msgs, max);
     throw err || new Error("no free model is available just now");
   }
+  siteShare(kind, n, max) { // a site-wide daily share of something dear on the free allowance; false once it's spent
+    const q = this.sql(), k = kind + "-share:" + new Date().toISOString().slice(0, 10), used = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n;
+    if (used + n > max) return false; q.exec("INSERT INTO limits(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); return true;
+  }
+  async groqKey() { // a Groq key (vault or site secret): its free tier transcribes speech too
+    const v = this.sql().exec("SELECT id FROM vault WHERE live=1 AND provider='groq' ORDER BY ts LIMIT 1").toArray()[0];
+    if (v) try { return (await this.vaultGet(v.id)).key; } catch (e) {}
+    return this.env.GROQ_KEY || null;
+  }
   swarmWai() { const k = "swarm-wai:" + new Date().toISOString().slice(0, 10); return (this.sql().exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n; }
   waiOff() { // until when the swarm leaves Workers AI alone: its allowance is resting, or the swarm has had its share today
     if (this.quota && Date.now() < this.quota) return this.quota;
@@ -890,7 +905,10 @@ export class Hive extends DurableObject {
       const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
       if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
       const names = owner ? [(await Genesis.self(this)).name || "AutoFaber", "Fabe", "Anders", "Vigil", "Mentifaber", "Swarm"] : ["AutoFaber", "Fabe", "Mentifaber"];
-      const h = await transcribe(this.env, a, String(b.lang || "").slice(0, 2).toLowerCase(), [...new Set(names.filter(Boolean))]);
+      const lang = String(b.lang || "").slice(0, 2).toLowerCase(), glossary = [...new Set(names.filter(Boolean))], gk = await this.groqKey();
+      let h = null;
+      if (gk && !this.sick("groq|stt")) try { h = await groqHear(gk, String(b.audio || ""), lang, glossary); } catch (e) { this.cool("groq|stt", e); }
+      if (!h) h = await transcribe(this.env, a, lang, glossary);
       return J({ text: h.text, dropped: h.dropped, voiced: h.voiced });
     }
     if (path === "/tts") {
@@ -898,7 +916,9 @@ export class Hive extends DurableObject {
       if (!owner && !this.meter(req, "tts", STUDIO_DAY * 4)) return J({ error: "voice allowance used up for today" }, 429);
       const spec = owner ? String(b.voice || "") : (/^a2:\w+$/.test(String(b.voice || "")) ? b.voice : "a2:thalia"); // visitors: the free voices only
       const keyFor = async (kid, full) => { const r = await this.vaultGet(kid); return full ? r : r.key; };
-      const out = await voiceOut(this.env, t, spec || (await this.voices(owner))[0].id, owner ? keyFor : null);
+      let sp = spec || (await this.voices(owner))[0].id;
+      if (!/^(el|oa):/.test(sp) && !this.siteShare("aura", Math.min(2400, t.length), AURA_DAY_CHARS)) sp = "melo"; // today's share of Aura is spent: MeloTTS speaks
+      const out = await voiceOut(this.env, t, sp, owner ? keyFor : null);
       return J({ audio: "data:audio/mpeg;base64," + out.audio, used: out.used });
     }
     // chat
