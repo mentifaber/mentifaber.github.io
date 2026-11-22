@@ -43,7 +43,8 @@ ok("30 messages a day per visitor on the backup line, then a plain 429; another 
 // 4 · what needs the stored state says it's paused; other apps' APIs answer in JSON instead of a 1101 page
 r = await go("/api/hive/keys/list", {}); assert.equal(r.status, 503); assert.match((await r.json()).error, /paused/);
 r = await go("/api/hive/list"); assert.equal(r.status, 200); assert.deepEqual((await r.json()).projects, []);
-r = await go("/api/tether/board"); assert.equal(r.status, 503); j = await r.json(); assert.ok(j.down); assert.match(j.error, /isn't answering/);
+r = await go("/api/tether/board"); assert.equal(r.status, 503); j = await r.json(); assert.ok(j.down); assert.match(j.error, /isn't answering/); assert.match(j.reason, /free tier/, "Cloudflare's words about a limit are passed on");
+r = await go("/api/hive/models"); assert.match(r.headers.get("x-backup-reason") || "", /free tier/);
 ok("the vault says it's paused, the swarm list is empty, and Tether's board explains itself in JSON (503, retry-after)");
 
 // 5 · with the objects healthy, the public reads every visitor makes the same way come from the edge cache for a minute:

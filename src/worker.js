@@ -650,8 +650,9 @@ const SHARED_READS = { "/api/hive/models": 60, "/api/hive/list": 15, "/api/agent
 async function backup(req, env, e) {
   const path = new URL(req.url).pathname;
   console.error("backup line for " + path + ": " + String(e && (e.stack || e.message) || e).slice(0, 500));
-  if (path.startsWith("/api/hive/") || path === "/api/hive") return hiveLite(req, env, path.replace(/^\/api\/hive/, "") || "/");
-  if (path.startsWith("/api/")) return json({ error: "This part of mentifaber.org keeps its data in storage that isn't answering right now. It usually comes back within hours, and by 00:00 UTC at the latest.", down: true }, 503, { "retry-after": "300" });
+  const msg = String(e && e.message || e), reason = /exceed|limit|quota|free tier|overload|too many/i.test(msg) ? msg.slice(0, 160) : undefined; // Cloudflare's own words about a limit help say why; anything else stays in the log
+  if (path.startsWith("/api/hive/") || path === "/api/hive") { const r = await hiveLite(req, env, path.replace(/^\/api\/hive/, "") || "/"); if (reason) r.headers.set("x-backup-reason", reason.replace(/[^\x20-\x7e]/g, "")); return r; }
+  if (path.startsWith("/api/")) return json({ error: "This part of mentifaber.org keeps its data in storage that isn't answering right now. It usually comes back within hours, and by 00:00 UTC at the latest.", down: true, reason }, 503, { "retry-after": "300" });
   throw e;
 }
 
