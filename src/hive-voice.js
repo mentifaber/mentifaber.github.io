@@ -81,7 +81,7 @@ export const Voice = {
       if (audio.length > MAX_AUDIO) return J({ error: "that's too much for one turn" }, 413);
       if (used(q, "vs:" + day + ":" + g.id) >= l.per_day * 4) return J({ error: "this device's listening for today is used up", left: left(a) }, 429);
       bump(q, "vs:" + day + ":" + g.id);
-      const r = await transcribe(h.env, audio, lang, ["AutoFaber", "Fabe", "Mentifaber"]).catch(() => null);
+      const r = await (h.hear ? h.hear(audio, lang, ["AutoFaber", "Fabe", "Mentifaber"]) : transcribe(h.env, audio, lang, ["AutoFaber", "Fabe", "Mentifaber"])).catch(() => null);
       text = clip(r && r.text, MAX_TEXT); heard = text; if (!text) return J({ heard: "", text: "", left: left(a) });
     }
     if (used(q, "vt:" + day + ":" + g.id) >= l.per_day) return J({ error: "that's all of today's turns for this device: it resets tomorrow", left: 0 }, 429);
@@ -96,7 +96,7 @@ export const Voice = {
     q.exec("UPDATE vguest SET seen=?, turns=turns+1 WHERE id=?", Date.now(), g.id);
     const say = String(j.text).replace(/[*_`#>|]/g, "").trim().slice(0, 1200), want = String(b.voice || "").replace(/^a2:/, ""), spec = /^a2:/.test(String(b.voice || "")) && AURA2.includes(want) ? b.voice : "a2:thalia";
     let audio = null, ttsError;
-    if (say) try { audio = "data:audio/mpeg;base64," + (await voiceOut(h.env, say, spec, null)).audio; } catch (e) { ttsError = clip(e && e.message || e, 120); }
+    if (say) try { audio = "data:audio/mpeg;base64," + (await voiceOut(h.env, say, h.siteShare && !h.siteShare("aura", say.length, h.AURA_DAY) ? "melo" : spec, null)).audio; } /* today's share of Aura spent: MeloTTS */ catch (e) { ttsError = clip(e && e.message || e, 120); }
     return J({ ...(heard != null ? { heard } : {}), text: j.text, audio, ...(ttsError ? { ttsError } : {}), left: left(a), model: j.model });
   },
   async stt(h, b, req, J) {
@@ -104,7 +104,7 @@ export const Voice = {
     const audio = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!audio || audio.length > MAX_AUDIO) return J({ error: "no audio, or more than a few minutes of it" }, 400);
     const k = "vs:" + today() + ":" + a.g.id; if (used(a.q, k) >= a.l.per_day * 4) return J({ error: "this device's listening for today is used up" }, 429);
     bump(a.q, k);
-    const r = await transcribe(h.env, audio, String(b.lang || "").slice(0, 2).toLowerCase(), ["AutoFaber", "Fabe", "Mentifaber"]);
+    const lg = String(b.lang || "").slice(0, 2).toLowerCase(), r = await (h.hear ? h.hear(audio, lg, ["AutoFaber", "Fabe", "Mentifaber"]) : transcribe(h.env, audio, lg, ["AutoFaber", "Fabe", "Mentifaber"]));
     return J({ text: r.text, dropped: r.dropped, voiced: r.voiced });
   },
   // the live-listening socket asks this before it opens (src/worker.js → /api/hive/listen-ok)

@@ -193,7 +193,7 @@ export class Hive extends DurableObject {
     let st = null; try { st = await (await this.env.AGENT.get(this.env.AGENT.idFromName("agent")).fetch(new Request("http://agent/status"))).json(); } catch (e) {}
     this._ag = { at: Date.now(), st }; return st;
   }
-  agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
+  agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: st.state === "hosted" ? "Mentifaber · Qwen3, hosted (free plan)" : "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
   async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
     const out = CF_MODELS.filter(([, , roles]) => this.env.AI && roles.length).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
     // MENTIFABER AGENT isn't on the swarm: on CPU a task takes it minutes, and the swarm moves at the pace of its slowest member
@@ -807,6 +807,12 @@ export class Hive extends DurableObject {
     const q = this.sql(), k = kind + "-share:" + new Date().toISOString().slice(0, 10), used = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n;
     if (used + n > max) return false; q.exec("INSERT INTO limits(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); return true;
   }
+  get AURA_DAY() { return AURA_DAY_CHARS; }
+  async hear(audio, lang, names) { // speech to words: Whisper on Groq's free tier when there's a key, Workers AI's Whisper after
+    const gk = await this.groqKey();
+    if (gk && !this.sick("groq|stt")) try { return await groqHear(gk, /^data:/.test(audio) ? audio : "data:audio/wav;base64," + audio, lang, names); } catch (e) { this.cool("groq|stt", e); }
+    return transcribe(this.env, String(audio).replace(/^data:[^,]*,/, ""), lang, names);
+  }
   async groqKey() { // a Groq key (vault or site secret): its free tier transcribes speech too
     const v = this.sql().exec("SELECT id FROM vault WHERE live=1 AND provider='groq' ORDER BY ts LIMIT 1").toArray()[0];
     if (v) try { return (await this.vaultGet(v.id)).key; } catch (e) {}
@@ -905,10 +911,7 @@ export class Hive extends DurableObject {
       const a = String(b.audio || "").replace(/^data:[^,]*,/, ""); if (!a || a.length > 8e6) return J({ error: "no audio, or more than a few minutes of it" }, 400);
       if (!owner && !this.meter(req, "stt", STUDIO_DAY * 2)) return J({ error: "voice allowance used up for today" }, 429);
       const names = owner ? [(await Genesis.self(this)).name || "AutoFaber", "Fabe", "Anders", "Vigil", "Mentifaber", "Swarm"] : ["AutoFaber", "Fabe", "Mentifaber"];
-      const lang = String(b.lang || "").slice(0, 2).toLowerCase(), glossary = [...new Set(names.filter(Boolean))], gk = await this.groqKey();
-      let h = null;
-      if (gk && !this.sick("groq|stt")) try { h = await groqHear(gk, String(b.audio || ""), lang, glossary); } catch (e) { this.cool("groq|stt", e); }
-      if (!h) h = await transcribe(this.env, a, lang, glossary);
+      const h = await this.hear(String(b.audio || ""), String(b.lang || "").slice(0, 2).toLowerCase(), [...new Set(names.filter(Boolean))]);
       return J({ text: h.text, dropped: h.dropped, voiced: h.voiced });
     }
     if (path === "/tts") {
