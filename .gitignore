@@ -11,3 +11,4 @@ tests/gtest/cf-shim.mjs
 tests/gtest/cf-nest.mjs
 tests/ui/shots/
 captures/
+tests/gtest/w48/
