@@ -519,9 +519,15 @@ const worker = {
   // surface as Cloudflare's bare "error code: 1101" for the whole of that app. Now AutoFaber falls back to its backup line
   // (src/hive-lite.js: chat on Workers AI, no stored state) and every other API says what's wrong, in JSON.
   async fetch(req, env, ctx) {
-    const spare = req.method === "POST" && new URL(req.url).pathname === "/api/hive/chat" ? req.clone() : null; // the Durable Object reads the body; the backup line needs its own copy
-    try { return await worker.serve(req, env, ctx); }
+    const url = new URL(req.url), spare = req.method === "POST" && url.pathname === "/api/hive/chat" ? req.clone() : null; // the Durable Object reads the body; the backup line needs its own copy
+    // public reads that are the same for every visitor come from this data centre's cache for a few seconds, so a busy
+    // home page or an open Swarm tab doesn't wake a Durable Object each time (the free plan counts every request)
+    const ttl = SHARED_READS[url.pathname], key = ttl && req.method === "GET" && !url.search && !/(?:^|;\s*)mf_vigil=/.test(req.headers.get("cookie") || "") && typeof caches !== "undefined" && caches.default ? new Request(url.origin + "/__shared" + url.pathname) : null;
+    if (key) { const hit = await caches.default.match(key).catch(() => null); if (hit) return hit; }
+    let res; try { res = await worker.serve(req, env, ctx); }
     catch (e) { return backup(spare || req, env, e); }
+    if (key && res.status === 200) { const copy = new Response(res.clone().body, res); copy.headers.set("cache-control", "public, max-age=" + ttl); ctx.waitUntil(caches.default.put(key, copy).catch(() => {})); }
+    return res;
   },
   async serve(req, env, ctx) {
     const url = new URL(req.url);
@@ -638,6 +644,8 @@ const worker = {
   },
 };
 export default worker;
+
+const SHARED_READS = { "/api/hive/models": 60, "/api/hive/list": 15, "/api/agent/status": 60, "/api/tether/board": 30 }; // seconds; visitors only (no owner cookie)
 
 async function backup(req, env, e) {
   const path = new URL(req.url).pathname;

@@ -45,3 +45,16 @@ r = await go("/api/hive/keys/list", {}); assert.equal(r.status, 503); assert.mat
 r = await go("/api/hive/list"); assert.equal(r.status, 200); assert.deepEqual((await r.json()).projects, []);
 r = await go("/api/tether/board"); assert.equal(r.status, 503); j = await r.json(); assert.ok(j.down); assert.match(j.error, /isn't answering/);
 ok("the vault says it's paused, the swarm list is empty, and Tether's board explains itself in JSON (503, retry-after)");
+
+// 5 · with the objects healthy, the public reads every visitor makes the same way come from the edge cache for a minute:
+//     two home-page visits wake AutoFaber's object once; the owner (session cookie) always goes straight through
+let hiveHits = 0; const up = { get: () => ({ fetch: async (rq) => { hiveHits++; return new Response(JSON.stringify({ owner: rq.headers.get("x-hive-owner") === "1", models: [] }), { headers: { "content-type": "application/json", "cache-control": "no-store" } }); } }), idFromName: (x) => x };
+const env2 = { ...env, HIVE: up, STORE: { get: () => ({ getSession: async () => ({ app: "vigil", user: "owner" }) }), idFromName: (x) => x } };
+const get2 = (path, h = {}) => worker.fetch(new Request("https://mentifaber.org" + path, { headers: { "cf-connecting-ip": "198.51.100.9", ...h } }), env2, { waitUntil: (p) => p, passThroughOnException() {} });
+cache.clear();
+r = await get2("/api/hive/models"); assert.equal(r.status, 200); await new Promise((s) => setTimeout(s, 10));
+r = await get2("/api/hive/models"); assert.equal(r.status, 200); assert.equal((await r.json()).owner, false);
+assert.equal(hiveHits, 1, "the second visitor read came from the cache");
+r = await get2("/api/hive/models", { cookie: "mf_vigil=" + "b".repeat(64) }); assert.equal((await r.json()).owner, true); assert.equal(hiveHits, 2, "the owner is never served from the shared cache");
+r = await get2("/api/hive/models?x=1"); assert.equal(hiveHits, 3, "a read with a query string isn't shared");
+ok("public reads are shared from the edge cache (1 object request for 2 visitors); the owner and query strings go straight through");
