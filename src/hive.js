@@ -5,6 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
+import { metered, newBag, report as rowReport } from "./rowmeter.js";
 import { groqHear, PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
@@ -159,7 +160,7 @@ export function teamFiles(rows) {
 }
 export class Hive extends DurableObject {
   sql() {
-    const q = this.ctx.storage.sql;
+    this._rows = this._rows || newBag(); const q = this._q || (this._q = metered(this.ctx.storage.sql, this._rows)); // rows read per statement (src/rowmeter.js)
     if (!this._init) {
       q.exec("CREATE TABLE IF NOT EXISTS proj(id TEXT PRIMARY KEY, title TEXT, brief TEXT, status TEXT, final TEXT, calls INTEGER, tok TEXT, ts INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS task(id INTEGER PRIMARY KEY AUTOINCREMENT, pid TEXT, role TEXT, title TEXT, detail TEXT, deps TEXT, status TEXT, agent TEXT, output TEXT, note TEXT, tries INTEGER, ts INTEGER)");
@@ -173,8 +174,9 @@ export class Hive extends DurableObject {
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN verdict TEXT"); } catch (e) {} q.exec("CREATE TABLE IF NOT EXISTS reply(ts INTEGER, model TEXT, who TEXT, kind TEXT, ms INTEGER, prep INTEGER, ttft INTEGER, chars INTEGER, cut TEXT, err TEXT)"); q.exec("CREATE INDEX IF NOT EXISTS reply_ts ON reply(ts)"); try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
       mindTables(q); genesisTables(q); libraryTables(q); voiceTables(q);
       // indexes for the lookups every view and every agent step makes (each runs once; cheap if already there)
-      for (const ix of ["task(pid, status)", "agent(pid)", "feed(pid, ts)", "proj(ts)", "act(kind, id)", "act(ts)", "thread(status, ok)", "mem(ok, pin)", "turn(cid)", "idea(status)", "journal(kind, id)", "alert(state, id)", "gdh(k, h)"])
+      for (const ix of ["proj(status)", "task(pid, status)", "agent(pid)", "feed(pid, ts)", "proj(ts)", "act(kind, id)", "act(ts)", "thread(status, ok)", "mem(ok, pin)", "turn(cid)", "idea(status)", "journal(kind, id)", "alert(state, id)", "gdh(k, h)"])
         try { q.exec("CREATE INDEX IF NOT EXISTS ix_" + ix.replace(/\W+/g, "_").replace(/_$/, "") + " ON " + ix); } catch (e) {}
+      try { q.exec("CREATE INDEX IF NOT EXISTS ix_turn_rated ON turn(model, rating) WHERE rating IS NOT NULL"); } catch (e) {} // track(): only the rated turns, not every turn ever said
       this._init = 1;
     }
     return q;
@@ -230,6 +232,7 @@ export class Hive extends DurableObject {
     const url = new URL(req.url), q = this.sql(), owner = req.headers.get("x-hive-owner") === "1", path = url.pathname.replace(/^\/api\/hive/, "") || "/";
     const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
+    if (path === "/rows") return J(rowReport(this._rows || newBag())); // which statements spent the free plan's rows-read allowance since this object woke (shapes and counts only)
     if (path === "/purge") { // the owner clears every finished, stopped or failed project at once
       if (!owner) return J({ error: "only the owner can clear projects" }, 401);
       const ids = q.exec("SELECT id FROM proj WHERE status IN ('done','stopped','failed') AND id NOT IN (SELECT pid FROM pub)").toArray().map((r) => r.id); // published ones keep their link
@@ -732,7 +735,7 @@ export class Hive extends DurableObject {
   }
   // what a model has shown, on top of its name: failing often or drawing his 👎 moves it down; his 👍 moves it up
   track(m) {
-    if (!this._perf || Date.now() - this._perf.at > 60e3) { const q = this.sql(), by = {};
+    if (!this._perf || Date.now() - this._perf.at > 600e3) { const q = this.sql(), by = {}; // every 10 minutes: ratings change slowly, and each look reads rows the free plan counts
       for (const r of q.exec("SELECT model, ok, fail FROM perf").toArray()) by[r.model] = { ok: r.ok, fail: r.fail, up: 0, down: 0 };
       try { for (const r of q.exec("SELECT model, SUM(rating > 0) up, SUM(rating < 0) down FROM turn WHERE rating IS NOT NULL AND model IS NOT NULL GROUP BY model").toArray()) { const k = String(r.model).split("|").pop(); by[k] = by[k] || { ok: 0, fail: 0, up: 0, down: 0 }; by[k].up += r.up || 0; by[k].down += r.down || 0; } } catch (e) {}
       this._perf = { at: Date.now(), by }; }

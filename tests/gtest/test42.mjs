@@ -54,7 +54,7 @@ ok("each product's photo is the product (its page's own, or a search image that 
 
 // the registry: everything is worked through in the background; a search again replaces results and drops unkept photos
 const OUT = new URL("./src/", import.meta.url).pathname, REPO = process.argv[2] || new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
-writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"'));
+writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"').replace('from "./rowmeter.js"', 'from "' + REPO + '/src/rowmeter.js"'));
 writeFileSync(new URL("./cf-nest.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Nest } = await import(OUT + "nest.js?" + Date.now());
 class Cursor { constructor(r) { this.r = r; } toArray() { return this.r; } }
