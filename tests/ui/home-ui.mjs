@@ -52,4 +52,12 @@ assert.ok(await p.$$eval(".rate tbody tr", (xs) => xs.length) >= 8);
 assert.equal(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, "no sideways scroll on the datasheet");
 ok("AutoFaber's datasheet: " + heads.filter((h) => ["Try it", "Ratings", "Interlocks"].includes(h)).join(", ") + ", and it fits the screen");
 
+// AutoFaber with its server failing (Cloudflare's 1101): the page says so, and Ask explains instead of doing nothing
+const p2 = await ctx.newPage(); await p2.route(/\/api\//, (rt) => rt.fulfill({ status: 500, contentType: "text/plain", body: "error code: 1101" }));
+await p2.goto("http://localhost:8099/hive-app.html"); await p2.waitForFunction(() => document.getElementById("t-link").textContent === "server down");
+assert.match(await p2.textContent("#esub"), /isn't answering/); assert.equal(await p2.textContent("#t-models"), "unreachable");
+await p2.fill("#inp", "hello"); await p2.click("#sendb"); await p2.waitForFunction(() => /answering/.test(document.getElementById("toast").textContent));
+assert.match(await p2.textContent("#toast"), /isn't answering/); assert.equal(await p2.inputValue("#inp"), "hello");
+ok("AutoFaber with its server down: the lights say so, Ask explains and keeps the message");
+
 assert.deepEqual(errs, []); await b.close();

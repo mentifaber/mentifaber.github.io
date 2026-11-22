@@ -39,7 +39,9 @@ async function loadModels() {
   const real = models.filter((m) => m.id !== "auto|best"), provs = new Set(real.map((m) => m.id.startsWith("agent|") ? "Mentifaber" : m.id.startsWith("workers-ai|") ? "Cloudflare" : m.group.split(" · ")[0].replace(/\s*\(.*?\)/g, "").trim())); // Auto picks among them: not a mind or a provider of its own
   $("esub").textContent = real.length + " minds from " + provs.size + " provider" + (provs.size === 1 ? "" : "s") + ". One, a council, or a whole swarm.";
   $("t-models").textContent = real.length + " minds · " + provs.size + " provider" + (provs.size === 1 ? "" : "s"); $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
-  stone(); tele();
+  serverDown = !!j.error && !models.length; clearTimeout(loadModels.t); if (serverDown) loadModels.t = setTimeout(loadModels, 60e3); // the server itself failed, not "no models": say so and look again each minute
+  if (serverDown) { $("esub").textContent = "AutoFaber's server isn't answering right now (" + j.error + "). This page keeps trying, every minute."; $("t-models").textContent = "unreachable"; $("t-free").textContent = "—"; $("led-free").className = "led warn"; }
+  link(); stone(); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
   $("quota").textContent = owner ? "" : "Visitors get the free models and a daily allowance.";
 }
@@ -54,7 +56,8 @@ function tele() {
   const modes = [on("web") && "search", on("deep") && "research", on("council") && "council", on("draw") && "imagine"].filter(Boolean), layers = chat ? chat.msgs.filter((m) => m.role === "user").length : 0;
   $("tele").innerHTML = [modes.length ? "<b>" + modes.join(" + ") + "</b>" : "", lastTtft ? "first word <b>" + (lastTtft / 1000).toFixed(2) + "s</b>" : lastMs ? "<b>" + (lastMs / 1000).toFixed(1) + "s</b>" : "", lastCps ? "<b>" + lastCps + "</b> ch/s" : lastBurst ? "delivered in one burst" : "", layers ? "<b>" + layers + "</b> layer" + (layers === 1 ? "" : "s") : ""].filter(Boolean).join(" · ");
 }
-const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = ok ? "online" : "offline"; $("led-link").className = "led " + (ok ? "ok" : "bad"); };
+let serverDown = false; // the page loaded but AutoFaber's server didn't answer: the lights say so, and Ask explains instead of doing nothing
+const link = () => { const ok = navigator.onLine !== false; $("t-link").textContent = !ok ? "offline" : serverDown ? "server down" : "online"; $("led-link").className = "led " + (!ok ? "bad" : serverDown ? "warn" : "ok"); };
 addEventListener("online", link); addEventListener("offline", link); link();
 // the picker: thousands of models, searchable
 const nameOf = (id) => { const m = models.find((x) => x.id === id); return m ? m.name : "Choose a model"; };
@@ -438,6 +441,7 @@ function resume(t) {
 }
 function send(text, opts) {
   opts = opts || {}; text = (text != null ? text : inp.value).trim(); if (busy || (!text && !att.length)) return;
+  if (serverDown) { toast("AutoFaber's server isn't answering right now. Your message is still here; try again in a minute.", 5000); loadModels(); return; }
   let skill = null; // a saved skill called by its /name: its instructions ride with this message, with the modes it needs
   const sl = /^\/(\w+)\s*([\s\S]*)$/.exec(text); // slash commands: /search /research /council /imagine /swarm /model /new /keep /teach /remember
   if (sl) { const [, c, rest] = sl;
