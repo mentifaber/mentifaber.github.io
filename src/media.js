@@ -322,7 +322,11 @@ export async function link(raw, sm) {
 
 // ── SomaFM: listener-supported radio, with its own stream addresses ──
 async function somaAll() { const j = await get("https://somafm.com/channels.json", { ttl: 900 }); return (j.channels || []).filter((c) => /^[\w-]{1,40}$/.test(c.id || "") && c.title); }
-const somaItem = (c) => mk({ source: "somafm", type: "radio", key: c.id, title: "SomaFM · " + c.title, creator: c.dj ? "DJ " + c.dj : "", description: c.description + (c.genre ? " (" + String(c.genre).split("|").join(", ") + ")" : ""), thumb: c.xlimage || c.largeimage || c.image, page: "https://somafm.com/" + c.id + "/", license: "Listener-supported radio: © SomaFM", meta: "SomaFM" + (c.listeners ? " · " + c.listeners + " listening" : ""), play: { kind: "live", url: "https://ice1.somafm.com/" + c.id + "-128-mp3" } });
+// SomaFM's logos come without an image type, so Chrome's cross-site image protection (ORB) blocks them: they're passed
+// through our own address instead (/api/media/img, SomaFM's hosts only, cached a day)
+const IMG_HOSTS = /^(api\.)?somafm\.com$/i;
+const viaUs = (u) => { const x = safe(u); try { return x && IMG_HOSTS.test(new URL(x).hostname) ? "https://mentifaber.org/api/media/img?u=" + encodeURIComponent(x) : x; } catch (e) { return x; } };
+const somaItem = (c) => mk({ source: "somafm", type: "radio", key: c.id, title: "SomaFM · " + c.title, creator: c.dj ? "DJ " + c.dj : "", description: c.description + (c.genre ? " (" + String(c.genre).split("|").join(", ") + ")" : ""), thumb: viaUs(c.xlimage || c.largeimage || c.image), page: "https://somafm.com/" + c.id + "/", license: "Listener-supported radio: © SomaFM", meta: "SomaFM" + (c.listeners ? " · " + c.listeners + " listening" : ""), play: { kind: "live", url: "https://ice1.somafm.com/" + c.id + "-128-mp3" } });
 async function somaSearch(q, limit) {
   const all = await somaAll(), w = words(q).toLowerCase().split(" ").filter(Boolean), hit = w.length ? all.filter((c) => { const t = (c.title + " " + c.description + " " + c.genre).toLowerCase(); return w.every((x) => t.includes(x)); }) : all;
   return hit.sort((a, b) => (+b.listeners || 0) - (+a.listeners || 0)).slice(0, limit).map(somaItem);
@@ -452,7 +456,7 @@ export const RAILS = [
   { id: "drama", src: "archive", more: true, title: "Drama", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:feature_films OR collection:silent_films OR collection:Film_Noir) AND subject:(drama)", false, o && o.safe) },
   { id: "war", src: "archive", more: true, title: "War films", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:feature_films OR collection:silent_films OR collection:Film_Noir) AND subject:(war OR wwii OR \"world war\")", false, o && o.safe) },
   { id: "musicals", src: "archive", more: true, title: "Musicals", type: "movie", make: (n, o) => iaSearch("movie", "", n, 1, "mediatype:movies AND (collection:feature_films OR collection:silent_films OR collection:Film_Noir) AND subject:(musical OR musicals)", false, o && o.safe) },
-  { id: "locfilm", src: "loc", title: "Library of Congress films", type: "movie", make: (n) => locSearch("movie", "", n, 1) },
+  { id: "locfilm", src: "loc", title: "Historic films", type: "movie", make: (n, o) => locSearch("movie", "", n, 1).catch((e) => { if (turnedAway(e)) return iaSearch("movie", "", n, 1, "mediatype:movies AND collection:prelinger", false, o && o.safe); throw e; }) }, // loc.gov turns Cloudflare away (403): the Prelinger Archives' historic films instead
 ];
 const RESOLVE = { archive: iaItem, tvmaze: (t, k, sm) => tvItem(k, sm), nasa: (t, k) => nasaGetItem(k), podcasts: (t, k) => podGetItem(k), loc: locGetItem };
 
@@ -528,6 +532,15 @@ export async function media(req, env, ctx, json, isOwner) {
     }
     if (sub === "/link") { const raw = clip(q.get("url"), 600); return reply(await cached(ctx, url.origin, "ln:" + JSON.stringify([raw, sm]), 86400, () => link(raw, sm)), 3600); }
     if (sub === "/suggest") { const t = clip(q.get("q"), 80); return reply(await cached(ctx, url.origin, "sg:" + JSON.stringify([t.toLowerCase(), sm]), 86400, async () => ({ q: t, items: await suggest(t, sm) })), 3600); }
+    if (sub === "/img") { // a picture from a source whose images browsers block (SomaFM): only those hosts, only pictures
+      const u = safe(q.get("u")); let host = ""; try { host = new URL(u).hostname; } catch (e) {} if (!u || !IMG_HOSTS.test(host)) return json({ error: "not a picture we pass through" }, 400, cors);
+      const cache = typeof caches !== "undefined" ? caches.default : null, key = new Request(url.origin + "/__media_img/" + enc(u)), hit = cache ? await cache.match(key).catch(() => null) : null; if (hit) return hit;
+      const r = await fetch(u, { headers: { "user-agent": UA, accept: "image/*" }, signal: AbortSignal.timeout(8000) }).catch(() => null); if (!r || !r.ok) return json({ error: "the picture didn't load" }, 502, cors);
+      const buf = await r.arrayBuffer(); if (buf.byteLength > 2e6) return json({ error: "too big" }, 413, cors);
+      const type = /\.png(\?|$)/i.test(u) ? "image/png" : /\.gif(\?|$)/i.test(u) ? "image/gif" : /\.webp(\?|$)/i.test(u) ? "image/webp" : "image/jpeg";
+      const out = new Response(buf, { headers: { "content-type": type, "cache-control": "public, max-age=86400", "x-content-type-options": "nosniff", ...cors } }); if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(key, out.clone()).catch(() => {}));
+      return out;
+    }
     if (sub === "/poster") {
       const t = clip(q.get("t"), 140), y = /^\d{4}$/.test(q.get("y") || "") ? q.get("y") : "", k = q.get("k") === "tv" ? "tv" : "movie"; if (!t) return json({ error: "which title?" }, 400, cors);
       if (sm && explicit({ title: t }, true)) return json({ url: null }, 200, { ...cors, "cache-control": "public, max-age=86400" });

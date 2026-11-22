@@ -1,0 +1,9 @@
+# Static-asset headers (Workers Static Assets reads this file).
+# CryptoVault promises no network and no third-party code, and its page's CSP enforces that. "no-transform" asks
+# Cloudflare not to inject its analytics beacon or bot-check script into those pages, so the CSP has nothing to block.
+/cryptovault-app
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/cryptovault-app.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/cryptovault
+  Cache-Control: public, max-age=0, must-revalidate, no-transform

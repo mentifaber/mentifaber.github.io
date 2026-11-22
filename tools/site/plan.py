@@ -22,7 +22,8 @@ LOGO = '<img src="assets/brand/mentifaber-mark-96.png" alt="" width="52" height=
 FIND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>'
 SUITE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM17 14v6M14 17h6"/></svg>'
 DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>'
-SHEETS = len([a for a in ORDER if B.has_page(a["id"])]) + 1
+SHEET_OF = {a["id"]: n + 2 for n, a in enumerate(x for x in ORDER if B.has_page(x["id"]))}  # sheet 01 is the plan; each datasheet after it
+SHEETS = len(SHEET_OF) + 1
 
 
 def pno(a):  # part number: room · bench
@@ -210,7 +211,7 @@ def page(i):
     cfg = json.dumps({"id": i, "name": a["name"], "app": app, "h": a["hue"]})
     page_ = f"""{head(title, desc, a, og)}
 <body class="wk sheet-page" style="--h:{a["hue"]}">
-{titleblock(crumb, k_ + 2, pno(a), "")}
+{titleblock(crumb, SHEET_OF[a["id"]], pno(a), "")}
 <main class="ds">
   <aside class="spec"><div class="stick">
     <span class="pno">{pno(a)} · {esc(n)}</span>

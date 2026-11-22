@@ -14,6 +14,7 @@ globalThis.fetch = async (u, o) => { const url = String(u), host = new URL(url).
   if (host === "api.deezer.com") return J({ data: [track(1, "Blue in Green"), track(2, "So What"), track(3, "Rude Song", true), { id: 4, title: "No preview" }] });
   if (host === "gpodder.net") return J([{ url: "https://feeds.example.org/gone.xml", title: "Moved Away", subscribers: 99999 }, { url: "https://feeds.example.org/science.xml", title: "Science & Wonder", author: "Dr. Q", description: "<b>Big</b> questions", subscribers: 1234, logo_url: "https://img.example.org/cover.jpg", website: "https://science.example.org" }, { url: "http://127.0.0.1/evil.xml", title: "Local" }, { url: "javascript:alert(1)", title: "Bad" }]);
   if (url.endsWith("/gone.xml")) return new Response("Not Found", { status: 404 });
+  if (/(^|\.)somafm\.com$/.test(host) && /\/(logos|img\d*)\//.test(url)) return new Response(new Uint8Array([137, 80, 78, 71]), { headers: { "content-type": "application/octet-stream" } });
   if (host === "feeds.example.org") return new Response(RSS, { headers: { "content-type": "application/rss+xml" } });
   return fixtures(u, o); };
 const get = async (path) => { const r = await M.media(new Request("https://mentifaber.org/api/media" + path + (path.includes("?") ? "&" : "?") + "safe=0", { headers: { "cf-connecting-ip": "9.9.9.9" } }), {}, { waitUntil() {} }, (o, s = 200, h = {}) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json", ...h } }), async () => false); return { r, j: await r.json() }; };
@@ -40,6 +41,16 @@ ok("Apple answers 429: podcasts come from gpodder.net's open directory and play 
 // the historic-recordings shelf
 ({ r, j } = await get("/featured?rail=jukebox")); assert.equal(r.status, 200, JSON.stringify(j)); assert.equal(j.title, "Historic recordings"); assert.ok(j.items.length && j.items.every((i) => i.source === "archive"));
 ok("loc.gov answers 403: the historic-recordings shelf fills from the Internet Archive's restored 78s");
+
+({ r, j } = await get("/featured?rail=locfilm")); assert.equal(r.status, 200, JSON.stringify(j)); assert.equal(j.title, "Historic films"); assert.ok(j.items.length && j.items.every((i) => i.source === "archive"));
+ok("loc.gov answers 403: the historic-films shelf fills from the Internet Archive's Prelinger films");
+
+// SomaFM's logos: through our own address, as pictures
+({ j } = await get("/featured?rail=soma")); const logo = j.items.map((i) => i.thumb).find(Boolean); assert.match(logo, /^https:\/\/mentifaber\.org\/api\/media\/img\?u=https%3A%2F%2F(api\.)?somafm\.com%2F/, logo);
+const imgRes = await M.media(new Request(logo.replace("https://mentifaber.org", "https://mentifaber.org")), {}, { waitUntil() {} }, (o, s2 = 200) => new Response(JSON.stringify(o), { status: s2 }), async () => false);
+assert.equal(imgRes.status, 200); assert.match(imgRes.headers.get("content-type"), /^image\//); assert.equal(imgRes.headers.get("x-content-type-options"), "nosniff");
+for (const bad of ["https://evil.example/x.png", "http://127.0.0.1/x.png", "javascript:alert(1)"]) assert.equal((await M.media(new Request("https://mentifaber.org/api/media/img?u=" + encodeURIComponent(bad)), {}, { waitUntil() {} }, (o, s2 = 200) => new Response(JSON.stringify(o), { status: s2 }), async () => false)).status, 400, bad);
+ok("SomaFM's logos come through our own address as images (Chrome blocked them); nothing else passes through");
 
 // sources that answer: unchanged
 apple = 0; loc = 0; asked.length = 0;

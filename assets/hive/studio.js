@@ -36,9 +36,9 @@ async function loadModels() {
   const want = (chat && chat.model) || LS.get("model", ""); if (models.some((m) => m.id === want)) sel.value = want; else { const d = models.find((m) => m.id === "auto|best") || models.find((m) => /gpt-oss-120b/.test(m.id)) || models[0]; if (d) sel.value = d.id; }
   if (j.resting && j.standIn && sel.value.startsWith("workers-ai|")) { sel.value = j.standIn; toast("Cloudflare's free allowance is resting, so AutoFaber switched to " + nameOf(j.standIn), 5000); }
   $("mtot").textContent = models.length + " models"; showPick();
-  const pg = {}; for (const m of models) { const k = m.group.split(" · resting")[0]; (pg[k] = pg[k] || { label: (() => { let x = k.replace(/\s*\(.*?\)/g, "").replace(/ ••.*$/, ""); if (x.includes(" · ")) x = x.split(" · ").pop(); x = x.replace(/^Cloudflare /, ""); return x.charAt(0).toUpperCase() + x.slice(1); })(), n: 0, free: m.id.startsWith("workers-ai|") }).n++; }
-  const gl = Object.values(pg); $("esub").textContent = models.length + " minds from " + gl.length + " provider" + (gl.length === 1 ? "" : "s") + ". One, a council, or a whole swarm.";
-  $("t-models").textContent = models.length + " minds · " + gl.length + " provider" + (gl.length === 1 ? "" : "s"); $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
+  const real = models.filter((m) => m.id !== "auto|best"), provs = new Set(real.map((m) => m.id.startsWith("agent|") ? "Mentifaber" : m.id.startsWith("workers-ai|") ? "Cloudflare" : m.group.split(" · ")[0].replace(/\s*\(.*?\)/g, "").trim())); // Auto picks among them: not a mind or a provider of its own
+  $("esub").textContent = real.length + " minds from " + provs.size + " provider" + (provs.size === 1 ? "" : "s") + ". One, a council, or a whole swarm.";
+  $("t-models").textContent = real.length + " minds · " + provs.size + " provider" + (provs.size === 1 ? "" : "s"); $("t-free").textContent = j.resting ? "resting" : "online"; $("led-free").className = "led " + (j.resting ? "warn" : "ok");
   stone(); tele();
   $("who").textContent = owner ? (j.search ? "owner · " + j.search + " search key" + (j.search > 1 ? "s" : "") : "owner") : "";
   $("quota").textContent = owner ? "" : "Visitors get the free models and a daily allowance.";

@@ -185,6 +185,21 @@ def seo():
         if s != o: open(path, "w", encoding="utf-8").write(s); n += 1
     return f"search basics on {n} pages"
 
+def atlas():  # the atlas's record (atlas.html's SYSTEMS) from site.json, so it counts what the home page counts
+    path = os.path.join(ROOT, "atlas.html"); s = open(path, encoding="utf-8").read()
+    m = re.search(r"var SYSTEMS = (\[[\s\S]*?\n\]);", s)
+    if not m: return "atlas.html (no record found)"
+    old = [x["name"] for x in json.loads(m.group(1))]
+    ST = {"android": "live", "soon": "build"}  # the atlas's own words for these
+    rows = [{"href": j["href"], "name": j["name"], "desc": j.get("desc", ""), "status": ST.get(j["status"], j["status"]), "cat": j.get("cat"), "added": j.get("added")} for j in json.load(open(os.path.join(ROOT, "tools/site/site.json"), encoding="utf-8"))]
+    rows.sort(key=lambda r: old.index(r["name"]) if r["name"] in old else len(old))  # the flight keeps its order; new entries join at the end
+    newest = max((r for r in rows if r["added"]), key=lambda r: r["added"], default=None)
+    if newest: newest["latest"] = True
+    body = "[\n" + ",\n".join("  " + json.dumps(r, ensure_ascii=False) for r in rows) + "\n]"
+    t = s[:m.start(1)] + body + s[m.end(1):]
+    if t != s: open(path, "w", encoding="utf-8").write(t)
+    return f"atlas.html ({len(rows)} entries)"
+
 def sitemap():  # sitemap.xml: every public page, skipping noindex pages and whatever robots.txt keeps out
     import subprocess, datetime
     blocked = [l.split(":", 1)[1].strip() for l in open(os.path.join(ROOT, "robots.txt")) if l.lower().startswith("disallow:")]
@@ -204,4 +219,4 @@ if __name__ == "__main__":
     icons(list(A)); brand_icons()
     import plan
     for i in ids: print("built", plan.page(i))
-    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.aliases()); print("built", suite()); print("built", seo()); print("built", sitemap())
+    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.aliases()); print("built", suite()); print("built", atlas()); print("built", seo()); print("built", sitemap())

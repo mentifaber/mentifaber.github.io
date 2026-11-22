@@ -68,8 +68,8 @@ assert.equal(aj.choices[0].message.content, "FREE qwen-3-32b", "Qwen3 on the fre
 assert.equal(sent[0].msgs[0].content, "Be brief.", "the app's system prompt is kept");
 a = await ag.fetch(areq(true)); const sse = await a.text(); assert.match(a.headers.get("content-type"), /event-stream/); assert.match(sse, /"content":"FREE qwen-3-32b"/); assert.match(sse, /data: \[DONE\]/);
 await hive.fetch(new Request("https://mentifaber.org/api/hive/keys/del", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ kid: free.key.id }) }));
-a = await ag.fetch(areq(false)); aj = await a.json(); assert.equal(a.status, 200, JSON.stringify(aj)); assert.match(aj.model, /hosted: qwen3-30b-a3b/, "no free key: Qwen3 on Workers AI");
-assert.ok(H.calls.some((c) => c.model === "@cf/qwen/qwen3-30b-a3b-fp8"));
+a = await ag.fetch(areq(false)); aj = await a.json(); assert.equal(a.status, 200, JSON.stringify(aj)); assert.match(aj.model, /hosted: gpt-oss-120b/, "no free key: GPT-OSS 120B on Workers AI");
+assert.ok(H.calls.some((c) => c.model === "@cf/openai/gpt-oss-120b"));
 await hive.rest(); a = await ag.fetch(areq(false)); assert.equal(a.status, 429); assert.match((await a.json()).error, /allowance is used up/);
 ok("MENTIFABER AGENT 1.0 works without paid Containers: hosted Qwen3 (a free key, else Workers AI), streamed or whole, as before");
 // 7. voice, the dearest thing on the allowance: a daily share of Aura and of live listening; Groq's free Whisper hears
@@ -84,4 +84,15 @@ assert.equal(sx.j.text, "", "no Groq key: Whisper on Workers AI (the fake hears 
 await add("groq", "gsk-free-0123456789"); sx = await call("/stt", { audio: "data:audio/wav;base64,UklGRg==", lang: "en" }, false, V);
 assert.equal(sx.j.text, "hello there"); assert.ok(sent.some((x) => /api\.groq\.com\/openai\/v1\/audio\/transcriptions/.test(x.url)), "Groq's free Whisper heard it");
 ok("voice keeps to a daily share: Aura-2 for 1,500 characters then MeloTTS, live listening for 20 turns then Whisper, and Whisper on Groq's free tier when there's a key");
+// 8. a model Cloudflare retires: the asker gets another, and it's gone from the menu, Auto, Council and the swarm
+db.prepare("DELETE FROM limits").run(); hive.quota = 0; await H.call("/keys/del", { kid: (db.prepare("SELECT id FROM vault WHERE provider='groq'").get() || {}).id });
+for (const r of db.prepare("SELECT id FROM vault").all()) await H.call("/keys/del", { kid: r.id });
+const dead = "@cf/meta/llama-3.1-70b-instruct"; H.setResponder((sys, user) => null);
+const realRun = H.env.AI.run; H.env.AI.run = async (m, inp) => { if (m === dead) throw new Error("5028: " + m + " was deprecated on 2026-11-20. See the model catalog for alternatives"); return realRun(m, inp); };
+let rr = await chat("workers-ai|" + dead, "hello there"); assert.equal(rr.status, 200, JSON.stringify(rr.j)); assert.match(rr.j.text, /steady/); assert.ok(rr.j.tools.some((t) => /answered/.test(t)), JSON.stringify(rr.j.tools));
+let menu = (await call("/models", null, false, V)).j.models.map((m) => m.id); assert.ok(!menu.includes("workers-ai|" + dead), "gone from the menu");
+rr = await chat("workers-ai|" + dead, "hello again"); assert.equal(rr.status, 200); assert.ok(rr.j.tools.some((t) => /retired by Cloudflare/.test(t)), "an old menu still gets an answer, and says why");
+assert.ok(!(await hive.roster(true)).some((a) => a.model === dead), "and the swarm leaves it out");
+H.env.AI.run = realRun;
+ok("a model Cloudflare retires (error 5028) is retired by itself: the asker gets another, and it leaves the menu, Auto, Council and the swarm");
 console.log("the AI on the free plan: all checks passed");
