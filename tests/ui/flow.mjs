@@ -31,7 +31,7 @@ await p.click("#council"); await p.fill("#inp", "Rust or Go first?"); await p.cl
 assert.ok(await p.$(".ex.council .drafts")); ok("Council: drafts below the answer, the strip banded by every member"); await p.click("#council");
 await p.click("#web"); await p.fill("#inp", "What's the weather in Porto?"); await p.click("#sendb"); await until(() => !document.querySelector(".ex.pending") && document.querySelector(".ex.web"), 15000, "search"); await p.click("#web"); ok("Search mode marks its layer");
 // picker, palette, sessions
-await p.click("#mpick"); await p.fill("#mq", "gemma"); await until(() => document.querySelectorAll("#mlist [data-m]").length > 0, 3000, "picker"); await p.keyboard.press("Enter"); assert.match(await txt("#mname"), /gemma/i); ok("the picker finds and picks a mind by name");
+await p.click("#mpick"); await p.fill("#mq", "scout"); await until(() => document.querySelectorAll("#mlist [data-m]").length > 0, 3000, "picker"); await p.keyboard.press("Enter"); assert.match(await txt("#mname"), /scout/i); ok("the picker finds and picks a mind by name");
 await p.click("#newchat"); assert.ok(await p.isVisible("#lede")); assert.ok((await p.$$("#hist .sess")).length >= 1); ok("New: an empty surface, the session settles into the bedrock");
 await p.fill("#hsearch", "Porto"); await p.waitForTimeout(200); assert.equal((await p.$$("#hist .sess")).length, 1); await p.fill("#hsearch", ""); ok("digging the bedrock finds a session by a word in it");
 await p.click("#cmdk-btn"); await p.fill("#cq", "Hello there"); await p.waitForTimeout(150); await p.keyboard.press("Enter"); await until(() => document.querySelectorAll(".ex").length > 0, 3000, "palette open"); ok("⌘K opens a session by name");

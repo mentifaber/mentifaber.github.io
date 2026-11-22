@@ -24,13 +24,13 @@ import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
+// Cloudflare retires models now and then (Qwen3 30B, QwQ, R1 Distill, Llama 3.2 1B and Gemma 7B on 2026-11-20; Hermes 2 Pro
+// on 2026-05-30) and Mistral 7B v0.1 ignored instructions, so those are gone. A model that answers "deprecated" (error 5028)
+// from now on is retired by itself (retire()): out of the menu, Auto, Council and the swarm, and the asker gets another.
 const CF_MODELS = [
   ["@cf/openai/gpt-oss-120b", "GPT-OSS 120B", ["coordinator", "architect", "coder", "integrator", "critic"]],
   ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "Llama 3.3 70B", ["coordinator", "architect", "integrator", "critic"]],
   ["@cf/meta/llama-4-scout-17b-16e-instruct", "Llama 4 Scout", ["designer", "writer", "coder", "critic"]],
-  ["@cf/qwen/qwen3-30b-a3b-fp8", "Qwen3 30B", ["coder", "researcher", "critic", "security"]],
-  ["@cf/qwen/qwq-32b", "QwQ 32B (reasoning)", ["architect", "tester", "security", "critic"]],
-  ["@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", "DeepSeek R1 Distill 32B", ["architect", "tester", "researcher"]],
   ["@cf/qwen/qwen2.5-coder-32b-instruct", "Qwen2.5 Coder 32B", ["coder", "tester", "optimizer"]],
   ["@cf/openai/gpt-oss-20b", "GPT-OSS 20B", ["coder", "tester", "optimizer"]],
   ["@cf/mistralai/mistral-small-3.1-24b-instruct", "Mistral Small 3.1", ["writer", "designer", "researcher"]],
@@ -39,10 +39,6 @@ const CF_MODELS = [
   ["@cf/ibm-granite/granite-4.0-h-micro", "Granite 4.0 Micro", []], // [] = chat only: too small to hold up a swarm task
   ["@cf/meta/llama-3.1-8b-instruct-fast", "Llama 3.1 8B", ["writer", "tester", "researcher"]],
   ["@cf/meta/llama-3.2-3b-instruct", "Llama 3.2 3B", []],
-  ["@cf/meta/llama-3.2-1b-instruct", "Llama 3.2 1B", []],
-  ["@hf/nousresearch/hermes-2-pro-mistral-7b", "Hermes 2 Pro 7B", []],
-  ["@hf/google/gemma-7b-it", "Gemma 7B", []],
-  ["@cf/mistral/mistral-7b-instruct-v0.1", "Mistral 7B", []],
 ];
 // what would break a page the moment it loads: a <script> or <style> left open, or a script cut off part-way (its
 // brackets never close: what a reply stopped by a length limit looks like). An unclosed <div> doesn't count: browsers mend those.
@@ -195,7 +191,7 @@ export class Hive extends DurableObject {
   }
   agentModel(st) { return st && st.model ? { id: "agent|mentifaber-agent-1.0", name: "MENTIFABER AGENT 1.0", group: st.state === "hosted" ? "Mentifaber · Qwen3, hosted (free plan)" : "Mentifaber · your R2 · " + st.model.label + (st.state === "online" ? " · online" : " · wakes on first message"), agent: true } : null; }
   async roster(own) { // every model the swarm may use right now; the owner's vault keys only join the owner's projects
-    const out = CF_MODELS.filter(([, , roles]) => this.env.AI && roles.length).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
+    const out = CF_MODELS.filter(([m, , roles]) => this.env.AI && roles.length && !this.isRetired("workers-ai|" + m)).map(([m, name, roles]) => ({ src: "workers-ai", model: m, name, roles }));
     // MENTIFABER AGENT isn't on the swarm: on CPU a task takes it minutes, and the swarm moves at the pace of its slowest member
     const rr = Object.keys(ROLES).filter((r) => r !== "integrator");
     if (own) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
@@ -230,6 +226,7 @@ export class Hive extends DurableObject {
   }
 
   async fetch(req) {
+    await this.loadRetired();
     const url = new URL(req.url), q = this.sql(), owner = req.headers.get("x-hive-owner") === "1", path = url.pathname.replace(/^\/api\/hive/, "") || "/";
     const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
@@ -269,7 +266,7 @@ export class Hive extends DurableObject {
         try { const { v, key } = await this.vaultGet(src.slice(2)); const text = strip(await complete(this.env, v, key, model, system, msgs, max)); if (text) { this.note(id, true, 0); return J({ text, by: model.split("/").pop() }); } }
         catch (e) { this.cool(id, e); } }
       if (!this.env.AI || (await this.resting())) return J({ error: "Cloudflare's free AI allowance is used up until midnight UTC, and no free key is set up" }, 429);
-      try { const text = strip(await complete(this.env, null, null, "@cf/qwen/qwen3-30b-a3b-fp8", system, msgs, max)); return text ? J({ text, by: "qwen3-30b-a3b" }) : J({ error: "the model returned nothing" }, 502); }
+      try { const text = strip(await complete(this.env, null, null, "@cf/openai/gpt-oss-120b", system, msgs, max)); return text ? J({ text, by: "gpt-oss-120b" }) : J({ error: "the model returned nothing" }, 502); }
       catch (e) { if (/4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); return J({ error: "Cloudflare's free AI allowance is used up until midnight UTC" }, 429); } return J({ error: String(e.message || e).slice(0, 200) }, 502); }
     }
     if (path === "/nest/photo") { // a product photo for one of the registry's picks whose photo was lost (src/nest.js repair)
@@ -463,6 +460,7 @@ export class Hive extends DurableObject {
   }
 
   async alarm() {
+    await this.loadRetired();
     const q = this.sql(); let busy = false, resting = false;
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const offUntil = this.waiOff(), out = !!offUntil;
@@ -766,7 +764,7 @@ export class Hive extends DurableObject {
     const m = String(id || "").split("|").pop(); if (!m) return;
     try { this.sql().exec("INSERT INTO perf(model, ok, fail, ms) VALUES(?,?,?,?) ON CONFLICT(model) DO UPDATE SET ok=ok+excluded.ok, fail=fail+excluded.fail, ms=CASE WHEN excluded.ms IS NULL THEN ms WHEN ms IS NULL THEN excluded.ms ELSE ms*0.8+excluded.ms*0.2 END", m, ok ? 1 : 0, ok ? 0 : 1, ok && ms ? ms : null); } catch (e) {}
   }
-  sick(c) { this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3 || this.cooling(c); }
+  sick(c) { if (this.isRetired(c)) return true; this._bad = this._bad || {}; this._badM = this._badM || {}; const k = c.split("|")[0]; return Date.now() - (this._bad[k] || 0) < 3600e3 || Date.now() - (this._badM[c] || 0) < 6 * 3600e3 || this.cooling(c); }
   // busy, or over a per-minute limit (Groq's free tier allows 8,000 tokens a minute): sit out as long as the provider asks
   cool(c, e) { const em = String(e && e.message || e), m = /try again in\s*(?:(\d+)m)?\s*([\d.]+)\s*s/i.exec(em), s = m ? (+m[1] || 0) * 60 + +m[2] : 20; this._cool = this._cool || {}; this._cool[c] = Date.now() + Math.min(120, Math.max(3, s + 1)) * 1000; }
   cooling(c) { return !!(this._cool && this._cool[c] > Date.now()); }
@@ -803,6 +801,13 @@ export class Hive extends DurableObject {
     if (this.env.AI && waiModel && !(await this.resting())) return complete(this.env, null, null, waiModel, system, msgs, max);
     throw err || new Error("no free model is available just now");
   }
+  isRetiredErr(e) { return /\b5028\b|was deprecated on \d{4}-\d\d-\d\d|model (has been|was) (retired|removed)/i.test(String(e && e.message || e)); }
+  isRetired(c) { return !!(this._retired && this._retired.has(c)); }
+  async retire(c) { // a model Cloudflare has retired: hidden everywhere from now on (kept in storage)
+    this._retired = this._retired || new Set(); if (this._retired.has(c)) return; this._retired.add(c); await this.ctx.storage.put("retired", [...this._retired]);
+    const m = c.split("|").slice(1).join("|"); if (c.startsWith("workers-ai|")) this.sql().exec("UPDATE agent SET status='retired', task=NULL WHERE src='workers-ai' AND model=? AND status NOT IN ('retired')", m);
+  }
+  async loadRetired() { if (!this._retired) this._retired = new Set((await this.ctx.storage.get("retired")) || []); }
   siteShare(kind, n, max) { // a site-wide daily share of something dear on the free allowance; false once it's spent
     const q = this.sql(), k = kind + "-share:" + new Date().toISOString().slice(0, 10), used = (q.exec("SELECT n FROM limits WHERE k=?", k).toArray()[0] || { n: 0 }).n;
     if (used + n > max) return false; q.exec("INSERT INTO limits(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=n+?", k, n, n); return true;
@@ -831,7 +836,7 @@ export class Hive extends DurableObject {
     return (ok[0] || ms[0] || {}).id || null;
   }
   models(owner) { // what the Studio can talk to
-    const out = this.env.AI ? CF_MODELS.map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
+    const out = this.env.AI ? CF_MODELS.filter(([m]) => !this.isRetired("workers-ai|" + m)).map(([m, name]) => ({ id: "workers-ai|" + m, name, group: "Cloudflare Workers AI (free)" })) : [];
     if (owner) for (const v of this.sql().exec("SELECT * FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
       const g = (v.label ? v.label + " · " : "") + ((PRESETS[v.provider] || {}).name || v.provider) + " ••" + v.tail, pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
       for (const m of [...new Set([...pick, ...JSON.parse(v.models || "[]").filter(isChat)])]) out.push({ id: "k:" + v.id + "|" + m, name: m, group: g, vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|grok-(2-vision|4)|qwen.*vl|-vl/i.test(m) });
@@ -936,6 +941,7 @@ export class Hive extends DurableObject {
     if (src.startsWith("k:") && !owner && !autoFree) return J({ error: "vault models are the owner's" }, 401);
     const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a free key under Uplinks (Cerebras, Groq, Gemini or Mistral) and AutoFaber will switch to it automatically." : "Come back then.");
     if (src === "workers-ai" && !CF_MODELS.some((m) => m[0] === model)) return J({ error: "unknown model" }, 400);
+    if (src === "workers-ai" && this.isRetired(src + "|" + model)) { const r = autoRoute({ text: "" }, (c) => this.sick(c)); autoWhy = model.split("/").pop() + " was retired by Cloudflare, so " + r.model.split("/").pop() + " answered"; model = r.model; b.model = src + "|" + model; } // a menu from before it was retired
     if (src === "agent") { const ag = await this.agentInfo(); if (!ag || !ag.model) return J({ error: "MENTIFABER AGENT 1.0 has no model loaded yet" }, 400); if (!owner && !ag.public) return J({ error: "MENTIFABER AGENT 1.0 is private" }, 401); }
     if (!owner && !this.meter(req, "chat", STUDIO_DAY)) return J({ error: "that's today's " + STUDIO_DAY + " messages; come back tomorrow, or sign in" }, 429);
     const deep = !!b.research && !b.voice && !b.swarm; // Deep Research (src/hive-research.js)
@@ -1053,7 +1059,7 @@ export class Hive extends DurableObject {
     const turn = mindOn ? Genesis.startTurn(this, b.cid, b.model, asked + (last.images.length || b.frames ? " [with " + (b.frames ? "a video" : "images") + "]" : "")) : null; // what he said; the reply is added when it's finished
     let text;
     if (b.swarm) { // council: several models draft in parallel, the chosen model weighs them and writes one answer
-      const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"];
+      const free = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/openai/gpt-oss-20b", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct"].filter((m) => !this.isRetired("workers-ai|" + m));
       let crew = (Array.isArray(b.crew) ? b.crew : []).map(String).filter((c) => owner ? /^(workers-ai|k:[\w-]+)\|/.test(c) : c.startsWith("workers-ai|")).slice(0, 8);
       if (await this.resting()) crew = crew.filter((c) => !c.startsWith("workers-ai|"));
       // MENTIFABER AGENT leads a council when it's picked, but isn't called in as a member: the council waits for its slowest draft
@@ -1064,7 +1070,7 @@ export class Hive extends DurableObject {
       if (!owner) for (let k = 0; k < Math.ceil(crew.length / 2); k++) if (!this.meter(req, "chat", STUDIO_DAY)) return J({ error: "a council uses several messages of your daily allowance, and there aren't enough left" }, 429);
       const draft = async (c, n) => { const [cs, cm] = c.split("|"), t1 = Date.now(); tried.add(c); if (cs === "workers-ai" && !CF_MODELS.some((x) => x[0] === cm)) return null;
         try { const kv = cs === "agent" ? { v: this.agentV(150e3), key: null } : cs.startsWith("k:") ? await this.vaultGet(cs.slice(2)) : { v: null, key: null }; const out = await complete(this.env, kv.v, kv.key, cm, system + "\n\nCOUNCIL: you are one of " + n + " models on AutoFaber's council answering this message independently and in parallel; the lead model (" + model.split("/").pop() + ") will merge the drafts into one reply. Give your own best answer to the user; don't talk about the council unless asked.", msgs, 1800); const t = String(out || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(); return t ? { model: c, text: t, ms: Date.now() - t1 } : { model: c, error: "empty reply", ms: Date.now() - t1 }; }
-        catch (e) { if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
+        catch (e) { if (this.isRetiredErr(e)) await this.retire(c); else if (!cs.startsWith("workers-ai")) this.blame(c, e); else if (/4006|neurons/i.test(String(e.message))) await this.rest(); return { model: c, error: String(e.message || e).slice(0, 160), ms: Date.now() - t1 }; } };
       let drafts = (await Promise.all(crew.map((c) => draft(c, crew.length)))).filter(Boolean);
       for (let wave = 0; wave < 2 && !b.crew && drafts.filter((d) => d.text).length < Math.min(3, want); wave++) { // members failed: call in the next-best models
         const more = ranked().slice(0, Math.min(3, want) - drafts.filter((d) => d.text).length + 1); if (!more.length) break;
@@ -1095,7 +1101,8 @@ export class Hive extends DurableObject {
           try { if (this.cooling(used)) throw Object.assign(new Error(model.split("/").pop() + " is cooling down after a rate limit"), { status: 429, cooled: true }); out = await streamComplete(this.env, v, key, model, system, msgs, max, onDelta, meta); }
           catch (e) {
             if (got) throw e;
-            if (BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { // busy or rate-limited: another mind answers this one
+            if (this.isRetiredErr(e)) await this.retire(used);
+            if (this.isRetiredErr(e) || BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { // busy, rate-limited or retired: another mind answers this one
               if (!e.cooled) this.cool(used, e); const alt = await this.fallback(used, owner); if (!alt) throw new Error(tidyErr(e, model));
               tools.push(model.split("/").pop() + " was busy (" + (/per minute|TPM|RPM|rate.?limit|429/i.test(String(e.message || e) + e.status) ? "its per-minute limit" : "overloaded") + "), so " + alt.by + " answered"); emit("meta", { sources, tools, model: alt.id, turn: turn || undefined });
               out = await streamComplete(this.env, alt.v, alt.key, alt.model, system, msgs, max, onDelta, meta).catch((e2) => { if (got) throw e2; throw new Error(tidyErr(e2, alt.model)); });
@@ -1130,7 +1137,8 @@ export class Hive extends DurableObject {
     }
     try { if (this.cooling(used)) throw Object.assign(new Error(model.split("/").pop() + " is cooling down after a rate limit"), { status: 429, cooled: true }); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || (b.voice ? 2400 : local ? 8192 : 4096))); }
     catch (e) {
-      if (BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { if (!e.cooled) this.cool(used, e); const alt = await this.fallback(used, owner); if (!alt) return J({ error: tidyErr(e, model) }, 503);
+      if (this.isRetiredErr(e)) await this.retire(used);
+      if (this.isRetiredErr(e) || BUSY.test(String(e.message || e)) || [429, 500, 502, 503, 504, 529].includes(e && e.status)) { if (!e.cooled) this.cool(used, e); const alt = await this.fallback(used, owner); if (!alt) return J({ error: tidyErr(e, model) }, 503);
         text = await complete(this.env, alt.v, alt.key, alt.model, system, msgs, 3000).catch((e2) => { throw new Error(tidyErr(e2, alt.model)); }); tools.push(model.split("/").pop() + " was busy, so " + alt.by + " answered"); Genesis.finishTurn(this, turn, text, alt.id); return J({ text: text || "(no model could answer just now; try again in a moment)", sources, tools, ms: Date.now() - t0, model: alt.id, turn: turn || undefined }); }
       if (!v && /4006|daily free allocation|neurons/i.test(String(e.message || e))) { await this.rest(); if (!(await tryIn())) return J({ error: outMsg(this.quota), quota: this.quota }, 429); text = await complete(this.env, v, key, model, system, msgs, Math.min(8192, +b.max || 3000)); Genesis.finishTurn(this, turn, text, used); return J({ text: text || "(the model returned nothing)", sources, tools, ms: Date.now() - t0, model: used, turn: turn || undefined }); }
       if (!last.images.length) throw e; last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("described the images (the model has no eyes)"); text = await complete(this.env, v, key, model, system, msgs, 3000); }
@@ -1142,7 +1150,7 @@ export class Hive extends DurableObject {
   }
   // A model came back empty: the free fast Llama answers instead (or, while the free allowance rests, the owner's best key)
   async fallback(used, owner) {
-    const alts = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/openai/gpt-oss-120b", "@cf/meta/llama-4-scout-17b-16e-instruct"].map((m) => "workers-ai|" + m).filter((c) => c !== used && !this.cooling(c));
+    const alts = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/openai/gpt-oss-120b", "@cf/meta/llama-4-scout-17b-16e-instruct"].map((m) => "workers-ai|" + m).filter((c) => c !== used && !this.cooling(c) && !this.isRetired(c));
     if (this.env.AI && alts.length && !(await this.resting())) return { v: null, key: null, model: alts[0].split("|")[1], id: alts[0], by: alts[0].split("/").pop().replace(/-instruct.*$/, "") };
     const s2 = await this.standIn(used, !owner); if (!s2 || s2 === used || this.cooling(s2)) return null; const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2));
     return { v: kv.v, key: kv.key, model: m2, id: s2, by: m2.split("/").pop() };
