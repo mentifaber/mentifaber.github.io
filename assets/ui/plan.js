@@ -208,7 +208,7 @@
   if (!reduce) patrol = requestAnimationFrame(patrolTick);
   function showNote(b) {
     if (!note || !fine) return; const r = b.getBoundingClientRect(), right = r.right + 300 < innerWidth;
-    $(".lbl", note).textContent = b.dataset.pn + " · " + b.dataset.room + " · " + b.dataset.st; $("h4", note).textContent = $("b", b).textContent; $("p", note).textContent = b.dataset.desc;
+    $(".lbl", note).textContent = b.dataset.pn + " · " + b.dataset.room + " · " + b.dataset.st + ("inst" in b.dataset ? " · installs as an app" : "") + (b.dataset.since ? " · since " + b.dataset.since : ""); $("h4", note).textContent = $("b", b).textContent; $("p", note).textContent = b.dataset.desc;
     note.style.left = (right ? r.right + 18 : Math.max(10, r.left - 288)) + "px"; note.style.top = Math.max(10, Math.min(innerHeight - 190, r.top - 8)) + "px"; note.classList.add("on");
   }
   const hideNote = () => note && note.classList.remove("on");
@@ -227,13 +227,23 @@
   // arrow keys walk from bench to bench
   addEventListener("keydown", (e) => {
     if (!/^Arrow/.test(e.key) || /input|textarea|select/i.test((document.activeElement || {}).tagName || "") || (fd && fd.classList.contains("on"))) return;
-    const all = $$(".bench", floor), cur = document.activeElement && document.activeElement.classList.contains("bench") ? document.activeElement : null;
+    const all = $$(".bench", floor).filter((b) => !b.closest("[inert]")), cur = document.activeElement && document.activeElement.classList.contains("bench") ? document.activeElement : null;
     if (!cur) { e.preventDefault(); (goal || all[0]).focus(); return; }
     const c = cur.getBoundingClientRect(), cx = c.left + c.width / 2, cy = c.top + c.height / 2, v = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key];
     let best = null, bd = Infinity;
     for (const o of all) { if (o === cur) continue; const r = o.getBoundingClientRect(), dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy, along = dx * v[0] + dy * v[1]; if (along <= 4) continue; const off = Math.abs(dx * v[1]) + Math.abs(dy * v[0]), s = along + off * 2.2; if (s < bd) { bd = s; best = o; } }
     if (best) { e.preventDefault(); best.focus(); best.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" }); }
   });
+
+  // show: only the benches that are running, install as an app, are private or are being built (the rest go dim, out of reach)
+  const chips = $$(".sift [data-show]"), shown = $(".sift output");
+  const show = (k) => { let n = 0;
+    chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.show === k)));
+    $$(".bench", floor).forEach((b) => { const ok = k === "all" || (k === "install" ? "inst" in b.dataset : b.dataset.k === k); b.parentNode.inert = !ok; if (ok) n++; });
+    if (shown) shown.textContent = k === "all" ? "" : n + " of " + $$(".bench", floor).length + " benches";
+    try { sessionStorage.setItem("wk:show", k); } catch (e) {} };
+  chips.forEach((c) => (c.onclick = () => show(c.dataset.show)));
+  try { const k = sessionStorage.getItem("wk:show"); if (k && chips.some((c) => c.dataset.show === k)) show(k); } catch (e) {}
 
   // the corridor's instruments move below the plan on a phone (the corridor is a narrow strip there)
   const inst = $(".instruments"), slot = $(".instruments-slot"), hallEl = $(".hall", floor);
