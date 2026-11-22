@@ -3,7 +3,7 @@
 // the evidence check: a second model, never the one that wrote the report, reads each cited claim beside the source it
 // cites and says whether that source supports it. Citations to sources that don't exist are caught without any model. The
 // reader sees which claims stand on their sources, which only partly do, and which don't, instead of trusting the report.
-import { complete, readPage } from "./hive-kit.js";
+import { complete, readPage, cheapAsk } from "./hive-kit.js";
 import { wiki, papers, paperLine } from "./hive-know.js";
 
 const PLAN = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
@@ -34,7 +34,7 @@ export async function research(h, { question, owner, step = () => {}, budget = 4
   const add = (x) => { const k = String(x.url || x.title).toLowerCase().replace(/[#?].*$/, "").replace(/\/$/, ""); if (!x.text || seen.has(k)) return; seen.add(k); items.push(x); };
   step("planning the research");
   let queries = [];
-  if (h.env.AI) queries = parsePlan(await timed(complete(h.env, null, null, PLAN, planPrompt(now || new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"), [{ role: "user", text: clip(question, 2000) }], 400), 9000, "planning").catch(() => ""));
+  if (h.env.AI) queries = parsePlan(await timed(cheapAsk(h, PLAN, planPrompt(now || new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"), [{ role: "user", text: clip(question, 2000) }], 400), 9000, "planning").catch(() => ""));
   if (!queries.length) queries = [clip(question, 160)];
   step("searching " + queries.length + " ways: " + queries.join(" · "));
   const academic = ACADEMIC.test(question);
@@ -86,7 +86,7 @@ export async function evidenceCheck(h, text, sources, writer, max = 12) {
   const sys = "You check claims against source text. For each claim, read only the source text given with it, not what you know, and judge whether that text states the claim. " +
     "Reply with ONLY JSON: {\"v\": [\"S\", \"P\", \"N\", ...]}, one letter per claim, in order. S: the source text states it. P: the source text supports part of it, or something close but not the same. N: the source text doesn't say it.";
   try {
-    const out = await timed(complete(h.env, null, null, by, sys, [{ role: "user", text: user }], 500), 25000, "the evidence check");
+    const out = await timed(cheapAsk(h, by, sys, [{ role: "user", text: user }], 500), 25000, "the evidence check");
     const m = /\{[\s\S]*\}/.exec(String(out || "")), v = m ? JSON.parse(m[0]).v : null;
     if (!Array.isArray(v) || v.length < pick.length) throw new Error("the checker didn't give a verdict for every claim");
     const at = (i) => String(v[i] || "").trim().toUpperCase()[0];

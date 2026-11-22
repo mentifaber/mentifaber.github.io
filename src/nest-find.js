@@ -4,7 +4,7 @@
 // the search's image results, downloaded, and checked (a real photo, big enough, roughly square: not a logo, an icon or a
 // 1200×630 share banner). A product without such a photo is left out; nothing is shown with a placeholder. Kept photos go
 // straight into the registry's storage, so the previews never depend on a store's server.
-import { complete } from "./hive-kit.js";
+import { complete, cheapAsk } from "./hive-kit.js";
 
 const PICKER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const SKIP = /(^|\.)(youtube\.com|youtu\.be|reddit\.com|wikipedia\.org|pinterest\.[a-z.]+|facebook\.com|instagram\.com|tiktok\.com|x\.com|twitter\.com|quora\.com)$/i;
@@ -99,7 +99,7 @@ export async function findProducts(h, item) {
   const wants = [item.for && "the baby is a " + clip(item.for, 10) + ": where it matters (clothes, bedding, swaddles, decor, toys) pick " + clip(item.for, 10) + "-friendly or neutral colours and designs, nothing pink or girly", item.look && "what they're looking for: " + clip(item.look, 200), item.notes && "their notes: " + clip(item.notes, 300), item.brand && "brand or model they mentioned: " + clip(item.brand, 80), item.color && "colour/style: " + clip(item.color, 60), item.size && "size: " + clip(item.size, 20), item.price && "around $" + Math.round(item.price) + " each"].filter(Boolean).join("; ");
   const sys = "You help new parents choose baby products. For the registry item, name 8 specific products that are on sale now: different brands, and a mix of price levels (budget, mid-range, premium) unless the parents' preferences say otherwise. Prefer well-reviewed, safety-certified products sold by major baby retailers. Use each product's exact model name. Reply with ONLY JSON: {\"products\": [{\"brand\": \"...\", \"model\": \"...\", \"tier\": \"budget|mid|premium\", \"price\": 199, \"why\": \"one short reason a parent might pick it\"}]}";
   let why = "";
-  const ideas = parseProposals(await timed(complete(h.env, null, null, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch((e) => { why = String((e && e.message) || e); return ""; }));
+  const ideas = parseProposals(await timed(cheapAsk(h, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch((e) => { why = String((e && e.message) || e); return ""; }));
   if (!ideas.length) return quota(why) ? { error: "the free daily AI allowance is used up; product finding carries on by itself tomorrow", later: true } : { error: "couldn't come up with products for that; try again, or describe what you're after" };
   const products = await Promise.all(ideas.map(async (p) => {
     const q = p.brand + " " + p.model + (new RegExp(name.split(/\s+/)[0], "i").test(p.model) ? "" : " " + name);

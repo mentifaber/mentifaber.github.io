@@ -92,6 +92,8 @@ export async function complete(env, v, key, model, system, msgs, max) {
 }
 
 // Workers AI replies come in several shapes; turn any of them into text.
+// a background ask: the Hive's free-tier keys first (h.cheap, src/hive.js), Workers AI after; plain Workers AI elsewhere
+export const cheapAsk = (h, model, system, msgs, max) => (h.cheap ? h.cheap(model, system, msgs, max) : complete(h.env, null, null, model, system, msgs, max));
 export function textOf(r) {
   if (r == null) return "";
   if (typeof r === "string") return r.trim();
