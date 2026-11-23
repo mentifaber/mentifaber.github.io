@@ -28,7 +28,8 @@ function draw() {
 }
 function pick(i) {
   const x = D[i]; S.sel = i; const t = TIER[x.tier];
-  $("detail").hidden = false; $("detail").innerHTML = '<button aria-label="Close" id="dx">✕</button><div class="meta" style="color:' + t[1] + '">' + esc(t[0] + " · " + x.region + " · " + x.status) + "</div><h2>" + esc(x.t) + "</h2><p>" + esc(x.p) + "</p>";
+  $("detail").hidden = false; $("detail").innerHTML = '<button aria-label="Close" id="dx">✕</button><div class="meta" style="color:' + t[1] + '">' + esc(t[0] + " · " + x.region + " · " + x.status) + "</div><h2>" + esc(x.t) + "</h2><p>" + esc(x.p) + "</p>" + // where each summary comes from: the reader can check it
+    (x.src && x.src.length ? '<div class="src">Sources: ' + x.src.map((s) => /^https:\/\//.test(s.u) ? '<a href="' + esc(s.u) + '" target="_blank" rel="noopener">' + esc(s.n) + "</a>" : esc(s.n)).join(" · ") + "</div>" : "");
   $("dx").onclick = () => { $("detail").hidden = true; S.sel = null; draw(); };
   if (map) map.flyTo([x.lat, x.lon], Math.max(map.getZoom(), 4), { duration: 0.8 });
   draw(); const li = document.querySelector('#list li[data-i="' + i + '"]'); if (li) li.scrollIntoView({ block: "nearest" });
