@@ -138,9 +138,9 @@ def refs(cls, items): return f'<div class="refs {cls}" aria-hidden="true">{"".jo
 
 def home():
     L = ORDER; live = sum(1 for a in L if a["status"] in ("live", "music", "android"))
-    title = "Mentifaber · builder of minds and the systems that hold them"
-    desc = f"{len(L)} projects by Anders: AI swarms and agents, private messengers, live atlases of the sky and the world, local-first tools and games, drawn as the workshop they're built in."
-    say = f'<p class="tb-say"><span><b>Builder of minds and the systems that hold them.</b> {len(L)} things on the benches of one workshop, {live} of them running right now. Walk in and point at a bench: someone will take you there.</span></p>'
+    title = "Mentifaber · Anders Powell, builder of minds and the systems that hold them"
+    desc = f"{len(L)} projects by Anders Powell: AI swarms and agents, private messengers, live atlases of the sky and the world, local-first tools and games, drawn as the workshop they're built in."
+    say = f'<p class="tb-say"><span><b>Anders Powell, builder of minds and the systems that hold them.</b> {len(L)} things on the benches of one workshop, {live} of them running right now. Walk in and point at a bench: someone will take you there.</span></p>'
     acts = f'<button class="key" data-suite aria-label="Install the suite">{SUITE}<span>Suite</span></button><button class="key" data-install hidden>{DOWN}<span>Install</span></button>'
     X, Y = "ABCDEFGH", "12345"
     page_ = f"""{head(title, desc, og="https://mentifaber.org/assets/brand/og.jpg")}
@@ -171,8 +171,8 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
-    <p class="copy">© Mentifaber · mens, faber: a mind, a maker</p></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+    <p class="copy">© Anders Powell · Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
 <div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
