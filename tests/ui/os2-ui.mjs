@@ -35,10 +35,23 @@ if (!M) {
   ok("\"tile windows\" lays them side by side; a window let go at the left edge takes the left half");
 }
 
+// an app that takes focus by itself (as it loads) stays where it is; clicking into a window's app brings it forward
+if (!M) {
+  await p.click("#dock-apps [data-app='cartograph']").catch(() => {}); if (!(await p.$eval(".win[data-id='cartograph']", (w) => w.classList.contains("focus")))) await p.click("#dock-apps [data-app='cartograph']");
+  const bf = await frameOf("ballast"); await bf.evaluate(() => { const x = document.querySelector("input, button, [tabindex]"); window.focus(); if (x) x.focus(); });
+  await p.waitForTimeout(150); assert.ok(await p.$eval(".win[data-id='cartograph']", (w) => w.classList.contains("focus")), "a background app that grabs focus doesn't jump in front");
+  const vis = await p.evaluate(() => { const b = document.querySelector(".win[data-id='ballast'] iframe").getBoundingClientRect(), c = document.querySelector(".win[data-id='cartograph']").getBoundingClientRect();
+    for (let y = b.top + 20; y < b.bottom - 10; y += 20) for (let x = b.left + 20; x < b.right - 10; x += 20) if (!(x >= c.left && x <= c.right && y >= c.top && y <= c.bottom)) return [x, y]; return null; });
+  assert.ok(vis, "some of Ballast shows"); await p.mouse.move(vis[0] - 40, vis[1]); await p.mouse.move(vis[0], vis[1], { steps: 4 }); await p.mouse.click(vis[0], vis[1]);
+  await p.waitForFunction(() => document.querySelector(".win[data-id='ballast']").classList.contains("focus"), null, { timeout: 3000 });
+  ok("a background app that takes focus by itself stays behind; a click into it brings it forward");
+}
+
 // a notification from an app, through the Faber kit
 await p.click("#all-btn"); await p.fill("#l-q", "doccrawler"); await p.keyboard.press("Enter"); await p.waitForSelector(".win[data-id='doccrawler'] iframe");
 const dc = await frameOf("doccrawler"); await dc.waitForFunction(() => window.Faber && window.Faber.inOS === true);
 await p.click("#dock-apps [data-app='ballast']").catch(() => {}); if (!(await p.$eval(".win[data-id='ballast']", (w) => w.classList.contains("focus")))) await p.click("#dock-apps [data-app='ballast']");
+await p.click("#bell"); await p.click("#notes-clear"); await p.click("#bell"); // start from none (a newer FaberOS adds its own "what's new")
 await dc.evaluate(() => Faber.notify("Indexed", "3 files are ready to search"));
 await p.waitForSelector("#badge:not([hidden])"); assert.equal(await p.textContent("#badge"), "1");
 await p.click("#bell"); assert.match(await p.textContent("#notes"), /Indexed[\s\S]*3 files are ready[\s\S]*DocCrawler/); assert.equal(await p.isHidden("#badge"), true, "read once seen");

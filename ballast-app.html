@@ -933,6 +933,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
 
 <div id="toast-host" aria-live="polite"></div>
 
+<script src="assets/os/faber.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -1992,6 +1993,7 @@ function resetDailySpend(){
 /* ---- data management ---- */
 function exportBackup(){
   const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  if (window.Faber && Faber.inOS) { Faber.save(blob, `ballast-backup-${todayISO()}.json`); toast('Backup saved to the FaberOS Shelf.'); return; } // inside FaberOS the backup lands on the Shelf
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -2387,6 +2389,7 @@ document.addEventListener('click', e => {
 document.getElementById('help-btn').addEventListener('click', startWizard);
 document.getElementById('bill-freq').addEventListener('change', billFreqFields);
 document.getElementById('import-file').addEventListener('change', importBackup);
+if (window.Faber) Faber.onFiles((files) => importBackup({ target: { files } })); // FaberOS's Shelf: "Open in Ballast" restores a backup
 document.getElementById('txn-search').addEventListener('input', renderTransactions);
 // Enter submits the form row you're standing in
 document.addEventListener('keydown', e => {

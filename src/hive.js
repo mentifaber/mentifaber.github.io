@@ -23,6 +23,7 @@ import { rewrite } from "./hive-canvas.js";
 import { findProducts, findPhoto } from "./nest-find.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
+import { osPlan, OS_DAY } from "./hive-os.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -279,6 +280,13 @@ export class Hive extends DurableObject {
       if (!owner) return J({ error: "owner only" }, 401); if (!(await this.searchKey(true).catch(() => null))) return J({ error: "no search key" }, 409);
       const r = await findPhoto({ env: this.env, web: (q, o) => this.web(q, true, o) }, String((b && b.q) || "")).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       return J(r, r.error ? 404 : 200);
+    }
+    if (path === "/os/plan") { // FaberOS: a sentence becomes a few checked actions (src/hive-os.js)
+      if (req.method !== "POST") return J({ error: "POST only" }, 405);
+      if (!owner && !this.meter(req, "os", OS_DAY)) return J({ error: "that's today's " + OS_DAY + " FaberOS requests; the command bar's own commands still work" }, 429);
+      const r = await osPlan(this, b).catch((e) => ({ error: String(e.message || e).slice(0, 200), status: e.status || 502 }));
+      this.logReply({ model: "os", who: owner ? "owner" : "visitor", kind: "os", ms: r.ms, chars: JSON.stringify(r.actions || "").length, err: r.error });
+      return J(r.error ? { error: r.error } : r, r.error ? r.status : 200);
     }
     if (path === "/canvas/rewrite") { // the canvas: rewrite a selected passage, or the whole document (src/hive-canvas.js)
       if (req.method !== "POST") return J({ error: "POST only" }, 405); if (!this.env.AI) return J({ error: "Workers AI is not bound on this deployment" }, 503);

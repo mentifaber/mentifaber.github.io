@@ -65,7 +65,7 @@ def manifest():
          "cat": "system", "status": "live", "entry": "privacy.html", "page": "privacy", "icon": None, "glyph": registry.GLYPH.get("lexicon"), "hue": 38,
          "version": None, "permissions": [], "platforms": {"web": True, "android": None, "install": False}, "widgets": [], "system": True},
     ]
-    out = {"format": "faberos/1", "os": "FaberOS", "version": "0.2",
+    out = {"format": "faberos/1", "os": "FaberOS", "version": "0.3",
            "cats": [{"id": k, "name": n, "desc": d} for k, n, d in registry.CATS] + [{"id": "system", "name": "System", "desc": "FaberOS and Foundry."}],
            "apps": apps + system}
     os.makedirs(os.path.join(ROOT, "assets/os"), exist_ok=True)

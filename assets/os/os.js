@@ -1,4 +1,4 @@
-/* FaberOS 0.2 · the shell. Reads the app manifest (assets/os/apps.json, built from the one project registry), puts each
+/* FaberOS 0.3 · the shell. Reads the app manifest (assets/os/apps.json, built from the one project registry), puts each
    app in its own window, and lets an app use only the browser features its manifest declares: the sensitive ones
    (camera, microphone, location, motion sensors, reading the clipboard) only after you say yes here, and your browser
    still asks again before anything is used. Everything FaberOS remembers (open windows, where they sit, the dock, your
@@ -90,7 +90,7 @@
       '<button class="wb close" data-w="close" aria-label="Close ' + esc(a.name) + '" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
       (a.builtin ? '<div class="inner"></div>' : '<iframe title="' + esc(a.name) + '" loading="eager"></iframe><div class="shield"></div>') + '<div class="grip" aria-hidden="true"></div>';
     if (a.builtin) RENDER[a.id]($(".inner", el));
-    else { const f = $("iframe", el); f.allow = allowed(a).join("; "); f.src = url; }
+    else { const f = $("iframe", el); f.allow = allowed(a).join("; "); f.addEventListener("load", () => hook(f, a.id)); f.src = url; }
     wins.appendChild(el); open.set(a.id, { el, app: a });
     wire(el, a.id); focus(a.id);
   }
@@ -116,8 +116,21 @@
     });
     drag($(".win-bar", el), "move"); drag($(".grip", el), "size");
   }
-  // a click inside an app's frame never reaches this page; the page losing focus to that frame says which window it was
-  addEventListener("blur", () => setTimeout(() => { const f = document.activeElement; if (f && f.tagName === "IFRAME") { const w = f.closest(".win"); if (w && w.dataset.id !== front) focus(w.dataset.id); } }, 0));
+  // Which app you're using: every app here is on this site, so FaberOS listens inside its page for a real press, which
+  // brings its window forward the way a desktop does. An app can also take focus by itself as it loads, in the
+  // background; that's no press, so it stays where it is and focus goes back to the window in front. (This page can't
+  // tell from its own activeElement: moving focus between two frames doesn't update it reliably; each frame's own
+  // hasFocus() does.)
+  let pressed = { id: null, t: 0 }, handed = {};
+  const hook = (f, id) => { try { f.contentWindow.addEventListener("pointerdown", () => { pressed = { id, t: Date.now() }; if (front !== id) focus(id); }, true); } catch (e) {} };
+  const focusedApp = () => { for (const [id, o] of open) { const f = $("iframe", o.el); try { if (f && f.contentDocument && f.contentDocument.hasFocus()) return id; } catch (e) {} } return null; };
+  const watchFocus = () => {
+    const id = focusedApp(); if (!id || id === front) return;
+    if (pressed.id === id && Date.now() - pressed.t < 2000) return focus(id);
+    if (handed[id] && Date.now() - handed[id] < 5000) return; handed[id] = Date.now(); // hand it back once, not in a tug of war
+    const o = front && open.get(front), fr = o && $("iframe", o.el); try { if (fr) fr.contentWindow.focus(); else window.focus(); } catch (e) {}
+  };
+  addEventListener("blur", () => setTimeout(watchFocus, 0)); setInterval(watchFocus, 300);
 
   // ── the dock and the desktop ──
   function drawDock() {
@@ -205,7 +218,8 @@
         '<h3>Where it\'s going</h3><ul class="road">' +
         '<li class="done">0.1 · App manifests from one registry, windows, widgets, a permission per app ✓</li>' +
         '<li class="done">0.2 · A command bar that opens and arranges apps or asks AutoFaber; snapping and tiling; notifications; the Shelf, a file shelf apps share; the Faber app kit ✓</li>' +
-        "<li>AutoFaber that can act: open, arrange and hand files to apps when you ask it in words</li>" +
+        '<li class="done">0.3 · AutoFaber acts: say "put Overhead next to the Conflict Atlas" and it\'s done; more apps save to the Shelf ✓</li>' +
+        "<li>AutoFaber that can hand files to apps and read what's on the Shelf when you ask</li>" +
         "<li>More apps on the Faber kit, and a Shelf that follows you between devices when you sign in</li>" +
         "<li>Foundry for everyone: developer registration, signed packages, declared permissions, versions with rollback, review, ratings, security scanning, and install, update and uninstall from here</li></ul>" +
         "<h3>For app makers</h3><p>An app talks to FaberOS by loading <code>assets/os/faber.js</code>: <code>Faber.notify(title, body)</code>, <code>Faber.open(app)</code>, <code>Faber.save(blob, name)</code> to put a file on the Shelf, and <code>Faber.onFiles(fn)</code> to take files from it. It declares the file types it opens in its manifest (<code>accepts</code>).</p>" +
@@ -340,18 +354,60 @@
     { k: "right", words: /^(snap|move|put) .*right/, name: "Snap this window right", icon: "◨", run: () => front ? snap(front, "right") : toast("Nothing in front to snap") },
     { k: "notes", words: /^(notifications?|alerts?)$/, name: "Notifications", icon: "◔", run: () => notesOpen(true) },
   ];
-  const score = (a, q) => { const n = a.name.toLowerCase(), t = (n + " " + (a.desc || "") + " " + (a.tags || "") + " " + a.cat).toLowerCase(), ws = q.split(/\s+/).filter((w) => w.length > 1);
+  // an app is found by its name, its id ("conflict atlas" finds Unlit), what it does and its tags
+  const score = (a, q) => { const n = a.name.toLowerCase(), t = (n + " " + String(a.id).replace(/-/g, " ") + " " + (a.desc || "") + " " + (a.tags || "") + " " + a.cat).toLowerCase(), ws = q.split(/\s+/).filter((w) => w.length > 1);
     if (n === q) return 100; if (n.startsWith(q)) return 80; if (n.split(/\s+/).some((x) => x.startsWith(q))) return 70; if (!ws.length || !ws.every((w) => t.includes(w.replace(/s$/, "")))) return 0;
     const at = (txt, w) => new RegExp("\\b" + w.replace(/s$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(txt.toLowerCase()); // a word that starts with what was typed counts most in the name and tags
-    return Math.min(60, 20 + ws.reduce((k, w) => k + (at(n, w) ? 12 : 0) + (at(a.tags || "", w) ? 8 : 0) + (at(a.desc || "", w) ? 4 : 0), 0)); }; // under 70: a loose match never outranks asking AutoFaber
+    return Math.min(60, 20 + ws.reduce((k, w) => k + (at(n + " " + String(a.id).replace(/-/g, " "), w) ? 12 : 0) + (at(a.tags || "", w) ? 8 : 0) + (at(a.desc || "", w) ? 4 : 0), 0)); }; // under 70: a loose match never outranks asking AutoFaber
   const findApps = (q) => [...M.apps, SYS.shelf, SYS.about, SYS.settings].map((a) => [a, score(a, q)]).filter(([a, s]) => s > 0 && runs(a)).sort((x, y) => y[1] - x[1]).map(([a]) => a);
+
+  // ── AutoFaber acts: a sentence becomes a few FaberOS actions. Common phrasings are read right here, on the device;
+  //    anything else can go to AutoFaber (/api/hive/os/plan), whose actions are checked against this manifest before
+  //    any of them runs ──
+  const best = (term) => { term = term.replace(/^(the|my|a)\s+/, "").replace(/\s+(app|window)$/, "").trim(); if (!term) return null; const a = findApps(term)[0]; return a && score(a, term) >= 24 ? a : null; };
+  function localPlan(q) {
+    let m = /^(?:put|place|open|show|set|move)?\s*(.+?)\s+(?:next to|beside|alongside|by)\s+(.+)$/.exec(q) || /^(?:compare|open|show|put)?\s*(.+?)\s+(?:and|&|with)\s+(.+?)\s+(?:side by side|together|next to each other)$/.exec(q) || /^compare\s+(.+?)\s+(?:and|&|with|to)\s+(.+)$/.exec(q);
+    if (m) { const a = best(m[1]), b = best(m[2]); if (a && b && a.id !== b.id) return { label: a.name + " and " + b.name + ", side by side", actions: [{ do: "open", app: a.id }, { do: "open", app: b.id }, { do: "snap", app: a.id, side: "left" }, { do: "snap", app: b.id, side: "right" }] }; }
+    m = /^(?:open|launch|start|show)\s+(.+?)(?:\s+for me)?$/.exec(q);
+    if (m && /,|\band\b|&/.test(m[1])) { const parts = m[1].split(/\s*(?:,|\band\b|&)\s*/).filter(Boolean), found = parts.map(best);
+      if (parts.length > 1 && found.every(Boolean) && new Set(found.map((a) => a.id)).size === found.length) return { label: "Open " + found.map((a) => a.name).join(", ") + (found.length > 2 ? " and tile them" : ""), actions: [...found.map((a) => ({ do: "open", app: a.id })), ...(found.length > 2 ? [{ do: "tile" }] : [])] }; }
+    m = /^(?:maximi[sz]e|enlarge|make)\s+(.+?)(?:\s+(?:full ?screen|bigger|big|fill the screen))?$/.exec(q);
+    if (m) { const a = best(m[1]); if (a) return { label: a.name + ", full screen", actions: [{ do: "open", app: a.id }, { do: "maximize", app: a.id }] }; }
+    m = /^(?:snap|move|put)\s+(.+?)\s+(?:to the |on the )?(left|right)(?: side| half)?$/.exec(q);
+    if (m) { const a = best(m[1]); if (a) return { label: a.name + " on the " + m[2], actions: [{ do: "open", app: a.id }, { do: "snap", app: a.id, side: m[2] }] }; }
+    return null;
+  }
+  const ARRANGE = /\b(next to|beside|side by side|alongside|together|compare|arrange|layout|lay out|split|left|right|full ?screen|maximi[sz]e|and then|then)\b/;
+  async function runPlan(actions) {
+    const known = (id) => app(id) && runs(app(id));
+    for (const a of actions) {
+      if (a.do === "open" && known(a.app)) await launch(a.app);
+      else if (a.do === "close" && open.has(a.app)) close(a.app);
+      else if (a.do === "snap" && open.has(a.app) && /^(left|right)$/.test(a.side)) snap(a.app, a.side);
+      else if (a.do === "maximize" && open.has(a.app)) { open.get(a.app).el.classList.add("max"); focus(a.app); }
+      else if (a.do === "tile") tileAll();
+      else if (a.do === "desktop") showDesk();
+      else if (a.do === "ask" && a.text) await launch("hive", { src: "hive-app.html?ask=" + encodeURIComponent(String(a.text).slice(0, 2000)) });
+    }
+  }
+  async function aiPlan(text) {
+    toast("AutoFaber is working out how…");
+    const body = { text: text.slice(0, 500), open: [...open.keys()].filter((id) => byId[id]), apps: M.apps.filter(runs).map((a) => ({ id: a.id, name: a.name, desc: (a.tags || a.desc || "").slice(0, 90) })) };
+    let j = null; try { const r = await fetch("/api/hive/os/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); j = await r.json(); } catch (e) {}
+    if (!j || j.error || !Array.isArray(j.actions)) { toast(j && j.error ? j.error : "AutoFaber couldn't plan that just now; asking it instead"); return runPlan([{ do: "ask", text }]); }
+    const acts = j.actions.filter((a) => a && typeof a.do === "string"); const n = acts.filter((a) => a.do !== "ask").length;
+    if (n) toast("AutoFaber: " + acts.filter((a) => a.do !== "ask").map((a) => a.do + (a.app && app(a.app) ? " " + app(a.app).name : "") + (a.side ? " " + a.side : "")).join(", "));
+    return runPlan(acts);
+  }
   function suggest(raw) {
     const q = raw.trim().toLowerCase(); if (!q) return [];
     const out = [], verb = /^(open|launch|start|run|show|go to)\s+(?:the\s+|my\s+)?(.+?)(?:\s+app)?$/.exec(q), shut = /^(close|quit)\s+(?:the\s+)?(.+?)(?:\s+app)?$/.exec(q);
-    const cmd = CMDS.find((c) => c.words.test(q)); if (cmd) out.push({ cmd });
+    const lp = localPlan(q); if (lp) out.push({ plan: lp });
+    const cmd = !lp && CMDS.find((c) => c.words.test(q)); if (cmd) out.push({ cmd });
     if (shut && !cmd) { const a = [...open.values()].map((o) => o.app).find((x) => score(x, shut[2]) > 0); if (a) out.push({ close: a }); }
     const apps = findApps(verb ? verb[2] : q), strong = apps.length && score(apps[0], verb ? verb[2] : q) >= 70;
     if (verb || strong) out.push(...apps.slice(0, 4).map((a) => ({ app: a })));
+    if (!lp && !cmd && ARRANGE.test(q) && q.split(/\s+/).length >= 3) out.push({ ai: raw.trim() }); // reads like arranging: AutoFaber can work it out
     out.push({ ask: raw.trim() });
     if (!verb && !strong) out.push(...apps.slice(0, 3).map((a) => ({ app: a })));
     return out.slice(0, 7);
@@ -363,6 +419,8 @@
       (s.app ? tile(s.app) + '<span class="t">Open <b>' + esc(s.app.name) + "</b></span><small>" + (open.has(s.app.id) ? "open" : "app") + "</small>"
         : s.close ? tile(s.close) + '<span class="t">Close <b>' + esc(s.close.name) + "</b></span><small>window</small>"
         : s.cmd ? '<span class="k" aria-hidden="true">' + s.cmd.icon + '</span><span class="t">' + esc(s.cmd.name) + "</span><small>command</small>"
+        : s.plan ? '<span class="k" aria-hidden="true">◫</span><span class="t">' + esc(s.plan.label) + "</span><small>arrange</small>"
+        : s.ai ? tile(app("hive") || { hue: 42 }) + '<span class="t">Let AutoFaber arrange it: <b>' + esc(s.ai) + "</b></span><small>do it</small>"
         : tile(app("hive") || { hue: 42 }) + '<span class="t">Ask AutoFaber: <b>' + esc(s.ask) + "</b></span><small>ask</small>") + "</li>").join("");
     askIn.setAttribute("aria-activedescendant", sugs.length ? "sg0" : "");
   };
@@ -370,7 +428,7 @@
   const hideSug = () => { sugEl.hidden = true; askIn.setAttribute("aria-expanded", "false"); };
   function runSug(s) {
     hideSug(); askIn.value = ""; askIn.blur();
-    if (s.app) launch(s.app.id); else if (s.close) close(s.close.id); else if (s.cmd) s.cmd.run();
+    if (s.app) launch(s.app.id); else if (s.close) close(s.close.id); else if (s.cmd) s.cmd.run(); else if (s.plan) runPlan(s.plan.actions); else if (s.ai) aiPlan(s.ai);
     else launch("hive", { src: "hive-app.html?ask=" + encodeURIComponent(s.ask.slice(0, 2000)) });
   }
   askIn.addEventListener("input", drawSug);
@@ -379,7 +437,8 @@
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { if (sugEl.hidden) return; e.preventDefault(); sugSel = (sugSel + (e.key === "ArrowDown" ? 1 : -1) + sugs.length) % sugs.length; markSug(); }
     else if (e.key === "Escape") { hideSug(); }
   });
-  askIn.addEventListener("blur", () => setTimeout(hideSug, 150));
+  // the list closes on a click elsewhere, not on blur: an app loading in a window may take focus while you type
+  document.addEventListener("pointerdown", (e) => { if (!$("#ask").contains(e.target)) hideSug(); });
   sugEl.addEventListener("mousedown", (e) => { const li = e.target.closest("li"); if (li) { e.preventDefault(); runSug(sugs[+li.dataset.i]); } });
   $("#ask").onsubmit = (e) => { e.preventDefault(); const q = askIn.value.trim(); if (!q) return launch("hive"); if (!sugs.length) sugs = suggest(q); runSug(sugs[sugSel] || { ask: q }); };
 
@@ -388,7 +447,7 @@
   fetch("assets/os/apps.json").then((r) => r.json()).then(async (m) => {
     M = m; byId = Object.fromEntries(m.apps.map((a) => [a.id, a]));
     drawIcons(); drawDock(); drawBell();
-    if (LS.get("ver", null) !== M.version) { if (LS.get("seen", false)) note({ app: "about", title: "FaberOS " + M.version, body: "New: type a command in the top bar (\"open budget\", \"tile windows\"), snap windows to the edges, notifications, and the Shelf for your files." }); LS.set("ver", M.version); }
+    if (LS.get("ver", null) !== M.version) { if (LS.get("seen", false)) note({ app: "about", title: "FaberOS " + M.version, body: "New: tell the top bar what you want arranged (\"put Overhead next to the Conflict Atlas\", \"open Ballast and DocCrawler\") and AutoFaber does it; Ballast and CryptoVault save to the Shelf." }); LS.set("ver", M.version); }
     const want = new URLSearchParams(location.search).get("open");
     for (const id of LS.get("open", [])) if (app(id) && id !== want) await launch(id, { quiet: true }); // apps that still need an answer wait to be opened again
     if (want && app(want)) launch(want);

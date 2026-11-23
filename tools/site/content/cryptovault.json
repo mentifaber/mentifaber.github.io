@@ -56,5 +56,9 @@
   "id": "/cryptovault-app.html",
   "background_color": "#050b0d",
   "theme_color": "#050b0d"
- }
+ },
+ "accepts": [
+  ".cv",
+  ".cvmsg"
+ ]
 }
