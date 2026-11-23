@@ -71,6 +71,19 @@ assert.equal(t.movers[0].name, "Sudan"); ok("countries: Sudan ~4× its baseline 
 const ur = t.dyads.find((d) => d.k === "USA-RUS"), uc = t.dyads.find((d) => d.k === "USA-CHN"), nr = t.dyads.find((d) => d.k === "NATO-RUS");
 assert.equal(ur.trend, "rising"); assert.ok(ur.hostile > 0.6 && ur.hostileBase < 0.4, JSON.stringify(ur)); assert.ok(ur.threats > 150); assert.ok(ur.tone < 0 && ur.toneBase > 0);
 assert.equal(uc.trend, "steady"); assert.equal(nr.trend, "rising"); assert.equal(t.dyads.find((d) => d.k === "CHN-TWN").trend, "quiet"); ok("pairs: US–Russia rising (" + Math.round(ur.hostile * 100) + "% hostile vs " + Math.round(ur.hostileBase * 100) + "%), US–China steady, China–Taiwan quiet");
+// what reading the record costs: Durable Object storage is billed by rows read, 5 million a day across the account. The
+// record used to take seven passes over the week (≈52,000 rows) every 15 minutes, most of the account's allowance.
+{ const q = hive.sql(), ex = q.exec.bind(q), seen = []; q.exec = (sql, ...a) => { seen.push([sql, a]); return ex(sql, ...a); }; hive.sql = () => q;
+  hive._trends = null; const t1 = W.trends(hive), reads = seen.filter(([x]) => /^\s*SELECT/i.test(x));
+  assert.deepEqual(t1.countries, t.countries); assert.deepEqual(t1.dyads, t.dyads);
+  assert.equal(reads.length, 2, "one pass over the file log and one over the hourly counts: " + reads.map(([x]) => x.slice(0, 60)).join(" / "));
+  seen.length = 0; W.trends(hive); assert.equal(seen.length, 0, "a second reading in the same hour touches no storage");
+  // every statement the record runs reads a range through an index: no full table scans
+  const all = [...reads, ["SELECT name FROM gdf WHERE ts > ?", [0]], ["DELETE FROM gdf WHERE ts < ?", [0]], ["DELETE FROM gdh WHERE h < ?", [0]]];
+  for (const [sql, a] of all) { const plan = db.prepare("EXPLAIN QUERY PLAN " + sql).all(...a.map((x) => (typeof x === "boolean" ? +x : x))).map((r) => r.detail).join(" | ");
+    assert.ok(!/\bSCAN (gdf|gdh)\b(?! USING)/.test(plan) && /SEARCH (gdf|gdh) USING/.test(plan), sql.slice(0, 70) + " → " + plan); }
+  hive.sql = () => q; q.exec = ex; }
+ok("reading the record: one indexed pass over each table, once an hour, and no full table scans");
 const text = W.worldText(t); assert.match(text, /^AUTOFABER'S OWN WORLD RECORD .*6[67]\d of the last 672 files/); assert.match(text, /United States – Russia: \d+ interactions .*% hostile \(baseline \d+%\).*: rising\./); assert.match(text, /How to read it/); ok("the record in words, with baselines and a caution about news attention");
 const fe = W.frictionEvents(t); assert.ok(fe.some((e) => e.key.startsWith("fr:USA-RUS:"))); assert.ok(fe.every((e) => e.cat === "world" && e.level === "notable")); ok("friction well above baseline becomes an alert (notable, never critical)");
 // AutoFaber's watch: the record, friction and watchlist moves become journal notes and alerts
