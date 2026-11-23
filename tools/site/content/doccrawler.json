@@ -74,5 +74,16 @@
   ],
   "background_color": "#0b0d0a",
   "theme_color": "#0b0d0a"
- }
+ },
+ "accepts": [
+  ".pdf",
+  ".docx",
+  ".txt",
+  ".md",
+  ".markdown",
+  ".csv",
+  ".json",
+  ".html",
+  "image/*"
+ ]
 }
