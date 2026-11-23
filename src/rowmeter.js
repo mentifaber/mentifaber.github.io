@@ -32,13 +32,26 @@ export async function keep(bag, storage, force) {
   const k = dayKey(), cur = (await storage.get(k)) || {};
   for (const [sql, e] of bag.by) { const c = cur[sql] || { calls: 0, rows: 0 }; c.calls += e.calls; c.rows += e.rows; cur[sql] = c; }
   const top = Object.entries(cur).sort((a, b) => b[1].rows - a[1].rows).slice(0, 150); // a day's shapes, the heaviest kept
-  await storage.put(k, Object.fromEntries(top)); bag.by = new Map();
+  await storage.put(k, Object.fromEntries(top)); bag.by = new Map(); bag.day = k; bag.dayRows = top.reduce((t, [, e]) => t + e.rows, 0);
 }
+// a daily budget for an object's own BACKGROUND work (alarms, scheduled jobs): when today's rows read pass its share, the
+// background waits for 00:00 UTC, so it can never spend the allowance the people using the site need. Requests aren't gated.
+export function spent(bag) {
+  let n = bag.day === dayKey() ? bag.dayRows || 0 : 0;
+  for (const e of bag.by.values()) n += e.rows; for (const [, c] of bag.cs) n += +(c && c.rowsRead) || 0;
+  return n;
+}
+export const over = async (bag, share) => { if (bag.loading) await bag.loading; return spent(bag) >= share; };
+export const nextDay = () => { const d = new Date(); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 5); }; // 00:05 UTC
 export function touch(bag, storage) {
+  if (storage && storage.get && bag.day !== dayKey() && !bag.loading) { // woke up (or a new day): learn what today has spent already
+    const k = dayKey(); bag.loading = Promise.resolve(storage.get(k)).then((cur) => { bag.day = k; bag.dayRows = Object.values(cur || {}).reduce((t, e) => t + e.rows, 0); }).catch(() => {}).finally(() => { bag.loading = null; });
+  }
   keep(bag, storage).catch(() => {});
   if (!bag.timer && typeof setTimeout === "function") { bag.timer = setTimeout(() => { bag.timer = null; keep(bag, storage, true).catch(() => {}); }, 20e3); if (bag.timer && bag.timer.unref) bag.timer.unref(); }
 }
 export async function dayReport(bag, storage) {
+  if (storage && storage.get && bag.day !== dayKey()) { const cur0 = (await storage.get(dayKey())) || {}; bag.day = dayKey(); bag.dayRows = Object.values(cur0).reduce((t, e) => t + e.rows, 0); }
   await keep(bag, storage, true); const cur = (storage && storage.get && (await storage.get(dayKey()))) || {};
   const all = Object.entries(cur).map(([sql, e]) => ({ sql, ...e }));
   return { day: dayKey().slice(5), limit: 5e6, rows: all.reduce((t, x) => t + x.rows, 0), calls: all.reduce((t, x) => t + x.calls, 0), top: all.sort((a, b) => b.rows - a.rows).slice(0, 30) };

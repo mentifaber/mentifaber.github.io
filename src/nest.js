@@ -31,7 +31,8 @@
 //                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
 import { DurableObject } from "cloudflare:workers";
 import { pageProduct, quota, checkPhoto } from "./nest-find.js";
-import { metered, newBag, touch as rowTouch, dayReport } from "./rowmeter.js";
+import { metered, newBag, touch as rowTouch, dayReport, over as rowsOver, nextDay } from "./rowmeter.js";
+const NEST_BG_ROWS = 400000; // the registry's background work (finding products, mending photos) reads at most this many rows a day
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
 const MAX_DOC = 64 * 1024, MAX_DOCS = 3000, MAX_PEOPLE = 400, BLOB_MAX = 3e6, IMAGE = /^image\/(jpeg|png|webp|gif)$/;
@@ -86,7 +87,7 @@ export class Nest extends DurableObject {
   }
   findsFor() { const out = {}; for (const r of this.q().exec("SELECT item, data FROM find").toArray()) out[r.item] = JSON.parse(r.data); return out; }
   queued() { return this.q().exec("SELECT item FROM findq").toArray().map((r) => r.item); }
-  used() { const u = new Set(); for (const r of this.q().exec("SELECT data FROM doc WHERE path LIKE 'items/%'").toArray()) { const it = JSON.parse(r.data); if (it.imageId) u.add(it.imageId); if (it.imageAuto) u.add(it.imageAuto); for (const o of it.options || []) if (o.i) u.add(o.i); } return u; }
+  used() { const u = new Set(); for (const r of this.q().exec("SELECT data FROM doc WHERE path >= 'items/' AND path < 'items0'").toArray()) { const it = JSON.parse(r.data); if (it.imageId) u.add(it.imageId); if (it.imageAuto) u.add(it.imageAuto); for (const o of it.options || []) if (o.i) u.add(o.i); } return u; }
   async findOne(id, look) {
     const it = this.doc("items/" + id); if (!this.findable(it)) return { error: "nothing to look for" };
     const day = new Date().toISOString().slice(0, 10), usedToday = this.kv("find:" + day) | 0; if (usedToday >= FIND_DAY) return { error: "that's today's " + FIND_DAY + " product searches; more tomorrow", later: true }; this.kv("find:" + day, usedToday + 1);
@@ -120,14 +121,14 @@ export class Nest extends DurableObject {
   }
   photosLeft() { // how many photos the mending still has to try this round
     const mark = this.mark(); let n = 0;
-    for (const r of this.q().exec("SELECT data FROM doc WHERE path LIKE 'items/%'").toArray()) { const it = JSON.parse(r.data);
+    for (const r of this.q().exec("SELECT data FROM doc WHERE path >= 'items/' AND path < 'items0'").toArray()) { const it = JSON.parse(r.data);
       for (const o of it.options || []) if (o.x !== mark) n++;
       if (it.kind !== "fund" && !it.imageId && !(it.options || []).length && it.autoX !== mark) n++; }
     return n;
   }
   async repair() {
     const mark = this.mark(), jobs = [], plans = []; let more = false;
-    for (const row of this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray()) {
+    for (const row of this.q().exec("SELECT path, data FROM doc WHERE path >= 'items/' AND path < 'items0'").toArray()) {
       const it = JSON.parse(row.data), id = row.path.slice(6), plan = { path: row.path, set: {}, opts: new Map() };
       if (it.imageId && !(await this.hasPhoto(it.imageId))) { plan.set.imageOld = it.imageId; plan.set.imageId = null; }
       for (const o of it.options || []) {
@@ -175,6 +176,7 @@ export class Nest extends DurableObject {
   }
   async alarm() { // products for queued items first, one at a time; then a few mended photos; so a new item never waits
     this.q(); rowTouch(this._rows, this.ctx.storage);
+    if (await rowsOver(this._rows, NEST_BG_ROWS)) { await this.ctx.storage.setAlarm(nextDay()); return; } // today's share for background work is spent: it carries on after midnight UTC, and the registry itself keeps working
     let next = null; const pause = this.kv("findpause") ? JSON.parse(this.kv("findpause")) : null;
     if (this.queued().length) next = pause && pause.until > Date.now() ? pause.until : await this.findTick();
     if (this.kv("migrate") !== MIGRATE_V) await this.migrate().catch((e) => console.warn("migrate", e));
@@ -192,10 +194,10 @@ export class Nest extends DurableObject {
   }
   // one-time changes to the registry's contents, asked for by the parents
   async migrate() {
-    if (!this.q().exec("SELECT 1 AS y FROM doc WHERE path LIKE 'items/%' LIMIT 1").toArray().length) { this.kv("migrate", MIGRATE_V); return; } // a new, empty registry: nothing to change
+    if (!this.q().exec("SELECT 1 AS y FROM doc WHERE path >= 'items/' AND path < 'items0' LIMIT 1").toArray().length) { this.kv("migrate", MIGRATE_V); return; } // a new, empty registry: nothing to change
     const s = this.doc("meta/settings") || {}; const put = (p, d) => { this.q().exec("INSERT INTO doc(path,data,at) VALUES(?,?,?) ON CONFLICT(path) DO UPDATE SET data=excluded.data, at=excluded.at", p, JSON.stringify(d), Date.now()); };
     if (!s.sex) put("meta/settings", { ...s, sex: "boy" }); // it's a boy
-    const items = this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray().map((r) => ({ path: r.path, ...JSON.parse(r.data) }));
+    const items = this.q().exec("SELECT path, data FROM doc WHERE path >= 'items/' AND path < 'items0'").toArray().map((r) => ({ path: r.path, ...JSON.parse(r.data) }));
     const nb = items.find((x) => x.kind !== "fund" && /diaper/i.test(x.name || "") && /newborn|\bnb\b/i.test(x.name || ""));
     const mm = { t: "Millie Moon Luxury Diapers, Newborn", b: "Millie Moon", u: "https://www.babylist.com/gp/millie-moon-luxury-diapers/87471", p: 39.99, c: "USD", s: "babylist.com", w: "Soft, ultra-absorbent, up to 12 hours of leak protection", i: null, r: null };
     if (nb) { const { path, ...it } = nb; if (!(it.options || []).some((o) => /millie moon/i.test(o.t || ""))) put(path, { ...it, options: [mm, ...(it.options || [])].slice(0, 8), updatedAt: Date.now() }); }
@@ -401,7 +403,7 @@ export class Nest extends DurableObject {
     }
     if (path === "/findall" && post) {
       if (!this.parent(me)) return J({ error: "only the parents look for products" }, 403); if (!this.env.HIVE) return J({ error: "the product finder isn't set up" }, 503);
-      const f = this.findsFor(), ids = this.q().exec("SELECT path, data FROM doc WHERE path LIKE 'items/%'").toArray().filter((r) => !(JSON.parse(r.data).options || []).length && (!f[r.path.slice(6)] || !(f[r.path.slice(6)].products || []).length)).map((r) => r.path.slice(6));
+      const f = this.findsFor(), ids = this.q().exec("SELECT path, data FROM doc WHERE path >= 'items/' AND path < 'items0'").toArray().filter((r) => !(JSON.parse(r.data).options || []).length && (!f[r.path.slice(6)] || !(f[r.path.slice(6)].products || []).length)).map((r) => r.path.slice(6));
       const n = await this.enqueue(ids); this.bump(); return J({ ok: true, queued: n });
     }
     if (path === "/grab" && post) {
