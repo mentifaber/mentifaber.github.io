@@ -17,6 +17,7 @@ export const DYADS = [
 const GREAT = new Set(["USA-RUS", "NATO-RUS", "USA-CHN", "CHN-TWN", "USA-IRN", "ISR-IRN", "IND-PAK", "PRK-OPP", "CHN-IND"]); // pairs whose friction is worth a phone alert
 export function worldTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS gdf(name TEXT PRIMARY KEY, ts INTEGER, rows INTEGER)"); // files read
+  q.exec("CREATE INDEX IF NOT EXISTS gdf_ts ON gdf(ts)"); // every read of the file log is a time range: without this each was a full scan
   q.exec("CREATE TABLE IF NOT EXISTS gdh(h INTEGER, k TEXT, n INTEGER, m INTEGER, q3 INTEGER, q4 INTEGER, v INTEGER, th INTEGER, gs REAL, PRIMARY KEY(h, k))"); // hourly counts
 }
 const stamp = (t) => new Date(t).toISOString().replace(/[-:T]/g, "").slice(0, 14);
@@ -48,7 +49,7 @@ function record(q, hour, dg) {
 // read the newest file and, until a week is on file, older ones (newest first); a file GDELT never published counts as read
 export async function ingest(h, max = 16) {
   if (h._world) return { read: 0, busy: true }; h._world = true; // the 15-minute watch and the hourly tick can overlap: one reader at a time, or a file is counted twice
-  try { return await ingestNow(h, max); } finally { h._world = false; }
+  try { const r = await ingestNow(h, max); if (r.read && h._trends && h._trends.t.empty) h._trends = null; return r; } finally { h._world = false; } // the first files: don't keep "nothing on file" for the rest of the hour
 }
 async function ingestNow(h, max) {
   const q = h.sql(); worldTables(q);
@@ -69,26 +70,41 @@ async function ingestNow(h, max) {
 
 // ── reading the record ──
 const F = (n) => Math.round(n).toLocaleString("en-US"), P = (x) => (x >= 0 ? "+" : "") + Math.round(x * 100) + "%";
+// The record is hourly counts, so it's read at most once an hour (the 15-minute watch, chat and Vigil's panels all ask),
+// and in one pass: each day of the week per key, from which the last 24 hours (day 6), the baseline (days 0-5) and the
+// daily line all come. It used to take seven passes over the week, about 52,000 rows read a time, every 15 minutes:
+// most of AutoFaber's share of the account's 5 million rows a day.
 export function trends(h) {
+  const cur = Math.floor(Date.now() / HOUR) * HOUR + HOUR;
+  if (h._trends && h._trends.cur === cur) return h._trends.t;
+  const t = readTrends(h, cur); h._trends = { cur, t }; return t;
+}
+function readTrends(h, cur) {
   const q = h.sql(); worldTables(q);
-  const cur = Math.floor(Date.now() / HOUR) * HOUR + HOUR, d24 = cur - DAY, d7 = cur - WEEK;
-  const files = (a, b) => q.exec("SELECT COUNT(*) c FROM gdf WHERE ts >= ? AND ts < ?", a, b).one().c;
-  const f24 = files(d24, cur), fb = files(d7, d24), all = f24 + fb;
+  const d24 = cur - DAY, d7 = cur - WEEK;
+  const perDayFiles = new Array(7).fill(0); for (const r of q.exec("SELECT (ts - ?) / ? AS d, COUNT(*) c FROM gdf WHERE ts >= ? AND ts < ? GROUP BY d", d7, DAY, d7, cur).toArray()) perDayFiles[Math.min(6, Math.max(0, Math.floor(r.d)))] += r.c;
+  const f24 = perDayFiles[6], fb = perDayFiles.slice(0, 6).reduce((a, b) => a + b, 0), all = f24 + fb;
   if (!f24) return { files: all, week: 672, empty: true };
+  const zero = () => ({ n: 0, m: 0, q3: 0, q4: 0, v: 0, th: 0, gs: 0 }), add = (a, r) => { for (const f of ["n", "m", "q3", "q4", "v", "th", "gs"]) a[f] += r[f] || 0; return a; };
+  const last = new Map(), before = new Map(), daily = new Map(); // key → its last 24 h; key → its baseline; country → 7 daily counts
+  for (const r of q.exec("SELECT k, (h - ?) / ? AS d, SUM(n) n, SUM(m) m, SUM(q3) q3, SUM(q4) q4, SUM(v) v, SUM(th) th, SUM(gs) gs FROM gdh WHERE h >= ? AND h < ? GROUP BY k, d", d7, DAY, d7, cur).toArray()) {
+    const d = Math.min(6, Math.max(0, Math.floor(r.d)));
+    if (d === 6) last.set(r.k, add(last.get(r.k) || zero(), r)); else before.set(r.k, add(before.get(r.k) || zero(), r));
+    if (r.k.startsWith("c:")) { const a = daily.get(r.k) || new Array(7).fill(0); a[d] += r.n; daily.set(r.k, a); }
+  }
+  const pick = (m, pre) => new Map([...m].filter(([k]) => (pre === "g" ? k === "g" : k.startsWith(pre))).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)));
+  const sums = (from, to, pre) => pick(from === d24 ? last : before, pre); // the same answers the separate range queries gave
   const scale24 = 96 / f24, scaleB = fb ? 96 / fb : 0; // everything as "per day", so a part-filled week compares fairly
-  const sums = (a, b, like) => new Map(q.exec("SELECT k, SUM(n) n, SUM(m) m, SUM(q3) q3, SUM(q4) q4, SUM(v) v, SUM(th) th, SUM(gs) gs FROM gdh WHERE h >= ? AND h < ? AND k LIKE ? GROUP BY k", a, b, like).toArray().map((r) => [r.k, r]));
   const g24 = sums(d24, cur, "g").get("g") || { n: 0, v: 0 }, gb = sums(d7, d24, "g").get("g") || { n: 0, v: 0 };
   const global = { day: g24.v * scale24, base: fb ? gb.v * scaleB : null };
   // countries: violence per day, last 24 h vs the days before, with a daily line for the week
-  const c24 = sums(d24, cur, "c:%"), cb = sums(d7, d24, "c:%"), daily = new Map();
-  for (const r of q.exec("SELECT k, (h - ?) / ? AS d, SUM(n) n FROM gdh WHERE h >= ? AND k LIKE 'c:%' GROUP BY k, d", d7, DAY, d7).toArray()) { const a = daily.get(r.k) || new Array(7).fill(0); a[Math.min(6, Math.max(0, Math.floor(r.d)))] += r.n; daily.set(r.k, a); }
-  const perDayFiles = new Array(7).fill(0); for (const r of q.exec("SELECT (ts - ?) / ? AS d, COUNT(*) c FROM gdf WHERE ts >= ? GROUP BY d", d7, DAY, d7).toArray()) perDayFiles[Math.min(6, Math.max(0, Math.floor(r.d)))] += r.c;
+  const c24 = sums(d24, cur, "c:"), cb = sums(d7, d24, "c:");
   const countries = [...c24.entries()].map(([k, r]) => { const b = cb.get(k), day = r.n * scale24, base = fb ? (b ? b.n : 0) * scaleB : null;
     return { name: k.slice(2), day: Math.round(day), base: base == null ? null : Math.round(base * 10) / 10, change: base ? day / base - 1 : null, spark: (daily.get(k) || []).map((n, i) => (perDayFiles[i] ? Math.round(n * 96 / perDayFiles[i]) : null)) }; })
     .sort((a, b) => b.day - a.day);
   const lifted = countries.filter((c) => c.day >= 15 && c.base != null).map((c) => ({ ...c, lift: (c.day + 5) / (c.base + 5) })).sort((a, b) => b.lift - a.lift), movers = lifted.filter((c) => c.lift >= 1.3);
   // pairs of powers: how much of what passed between them was hostile, and is that more than usual?
-  const d24s = sums(d24, cur, "d:%"), dbs = sums(d7, d24, "d:%");
+  const d24s = sums(d24, cur, "d:"), dbs = sums(d7, d24, "d:");
   const dyads = DYADS.map(([k, , , label]) => {
     const r = d24s.get("d:" + k) || { n: 0, q3: 0, q4: 0, v: 0, th: 0, gs: 0 }, b = dbs.get("d:" + k) || { n: 0, q3: 0, q4: 0, v: 0, th: 0, gs: 0 };
     const hs = r.n ? (r.q3 + r.q4) / r.n : null, hb = b.n ? (b.q3 + b.q4) / b.n : null, th = r.th * scale24, thb = fb ? b.th * scaleB : null, v = r.v * scale24, vb = fb ? b.v * scaleB : null;
