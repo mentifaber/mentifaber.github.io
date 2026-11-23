@@ -18,6 +18,7 @@ const GREAT = new Set(["USA-RUS", "NATO-RUS", "USA-CHN", "CHN-TWN", "USA-IRN", "
 export function worldTables(q) {
   q.exec("CREATE TABLE IF NOT EXISTS gdf(name TEXT PRIMARY KEY, ts INTEGER, rows INTEGER)"); // files read
   q.exec("CREATE INDEX IF NOT EXISTS gdf_ts ON gdf(ts)"); // every read of the file log is a time range: without this each was a full scan
+  q.exec("CREATE TABLE IF NOT EXISTS gdt(cur INTEGER PRIMARY KEY, t TEXT)"); // this hour's reading, kept: the object is put to sleep between watches
   q.exec("CREATE TABLE IF NOT EXISTS gdh(h INTEGER, k TEXT, n INTEGER, m INTEGER, q3 INTEGER, q4 INTEGER, v INTEGER, th INTEGER, gs REAL, PRIMARY KEY(h, k))"); // hourly counts
 }
 const stamp = (t) => new Date(t).toISOString().replace(/[-:T]/g, "").slice(0, 14);
@@ -77,7 +78,14 @@ const F = (n) => Math.round(n).toLocaleString("en-US"), P = (x) => (x >= 0 ? "+"
 export function trends(h) {
   const cur = Math.floor(Date.now() / HOUR) * HOUR + HOUR;
   if (h._trends && h._trends.cur === cur) return h._trends.t;
-  const t = readTrends(h, cur); h._trends = { cur, t }; return t;
+  // memory doesn't last: Cloudflare puts the object to sleep between the 15-minute watches. So the hour's reading is kept
+  // in storage too, where finding it costs one row, not the ~15,000 a fresh reading does
+  const q = h.sql(); worldTables(q);
+  const kept = q.exec("SELECT t FROM gdt WHERE cur = ?", cur).toArray()[0];
+  if (kept) { try { const t = JSON.parse(kept.t); h._trends = { cur, t }; return t; } catch (e) {} }
+  const t = readTrends(h, cur); h._trends = { cur, t };
+  if (!t.empty) { q.exec("INSERT OR REPLACE INTO gdt(cur, t) VALUES(?, ?)", cur, JSON.stringify(t)); q.exec("DELETE FROM gdt WHERE cur < ?", cur); }
+  return t;
 }
 function readTrends(h, cur) {
   const q = h.sql(); worldTables(q);

@@ -74,16 +74,21 @@ assert.equal(uc.trend, "steady"); assert.equal(nr.trend, "rising"); assert.equal
 // what reading the record costs: Durable Object storage is billed by rows read, 5 million a day across the account. The
 // record used to take seven passes over the week (≈52,000 rows) every 15 minutes, most of the account's allowance.
 { const q = hive.sql(), ex = q.exec.bind(q), seen = []; q.exec = (sql, ...a) => { seen.push([sql, a]); return ex(sql, ...a); }; hive.sql = () => q;
-  hive._trends = null; const t1 = W.trends(hive), reads = seen.filter(([x]) => /^\s*SELECT/i.test(x));
+  hive._trends = null; db.prepare("DELETE FROM gdt").run(); const t1 = W.trends(hive), sel = seen.filter(([x]) => /^\s*SELECT/i.test(x)), reads = sel.filter(([x]) => !/FROM gdt/.test(x));
+  assert.equal(sel.length - reads.length, 1, "one look for a kept reading first");
   assert.deepEqual(t1.countries, t.countries); assert.deepEqual(t1.dyads, t.dyads);
   assert.equal(reads.length, 2, "one pass over the file log and one over the hourly counts: " + reads.map(([x]) => x.slice(0, 60)).join(" / "));
   seen.length = 0; W.trends(hive); assert.equal(seen.length, 0, "a second reading in the same hour touches no storage");
+  // Cloudflare puts the object to sleep between watches, so memory is gone: the hour's reading comes back from storage, one row
+  hive._trends = null; seen.length = 0; const t3 = W.trends(hive), r3 = seen.filter(([x]) => /^\s*SELECT/i.test(x));
+  assert.deepEqual(r3.map(([x]) => x), ["SELECT t FROM gdt WHERE cur = ?"], "after a sleep, only the kept reading is read: " + r3.map(([x]) => x.slice(0, 50)).join(" / "));
+  assert.deepEqual(t3.countries, t.countries); assert.deepEqual(t3.dyads, t.dyads);
   // every statement the record runs reads a range through an index: no full table scans
-  const all = [...reads, ["SELECT name FROM gdf WHERE ts > ?", [0]], ["DELETE FROM gdf WHERE ts < ?", [0]], ["DELETE FROM gdh WHERE h < ?", [0]]];
+  const all = [...sel, ...r3, ["SELECT name FROM gdf WHERE ts > ?", [0]], ["DELETE FROM gdf WHERE ts < ?", [0]], ["DELETE FROM gdh WHERE h < ?", [0]], ["DELETE FROM gdt WHERE cur < ?", [0]]];
   for (const [sql, a] of all) { const plan = db.prepare("EXPLAIN QUERY PLAN " + sql).all(...a.map((x) => (typeof x === "boolean" ? +x : x))).map((r) => r.detail).join(" | ");
-    assert.ok(!/\bSCAN (gdf|gdh)\b(?! USING)/.test(plan) && /SEARCH (gdf|gdh) USING/.test(plan), sql.slice(0, 70) + " → " + plan); }
+    assert.ok(!/\bSCAN (gdf|gdh|gdt)\b(?! USING)/.test(plan) && /SEARCH (gdf|gdh|gdt) USING/.test(plan), sql.slice(0, 70) + " → " + plan); }
   hive.sql = () => q; q.exec = ex; }
-ok("reading the record: one indexed pass over each table, once an hour, and no full table scans");
+ok("reading the record: one indexed pass over each table, once an hour (kept across the object's sleeps), and no full table scans");
 const text = W.worldText(t); assert.match(text, /^AUTOFABER'S OWN WORLD RECORD .*6[67]\d of the last 672 files/); assert.match(text, /United States – Russia: \d+ interactions .*% hostile \(baseline \d+%\).*: rising\./); assert.match(text, /How to read it/); ok("the record in words, with baselines and a caution about news attention");
 const fe = W.frictionEvents(t); assert.ok(fe.some((e) => e.key.startsWith("fr:USA-RUS:"))); assert.ok(fe.every((e) => e.cat === "world" && e.level === "notable")); ok("friction well above baseline becomes an alert (notable, never critical)");
 // AutoFaber's watch: the record, friction and watchlist moves become journal notes and alerts
