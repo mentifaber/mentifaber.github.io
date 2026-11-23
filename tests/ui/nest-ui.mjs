@@ -6,7 +6,7 @@ import { createRequire } from "node:module"; import assert from "node:assert/str
 import { DatabaseSync } from "node:sqlite"; import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const REPO = process.argv[2], DEV = process.argv[3] || "desktop", OUT = new URL("../gtest/src/", import.meta.url).pathname; mkdirSync(OUT, { recursive: true });
-writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"'));
+writeFileSync(OUT + "nest.js", readFileSync(REPO + "/src/nest.js", "utf8").replace('from "cloudflare:workers"', 'from "../cf-nest.mjs"').replace('from "./nest-find.js"', 'from "' + REPO + '/src/nest-find.js"').replace('from "./rowmeter.js"', 'from "' + REPO + '/src/rowmeter.js"'));
 writeFileSync(new URL("../gtest/cf-nest.mjs", import.meta.url), "export class DurableObject { constructor(ctx, env) { this.ctx = ctx; this.env = env; } }\n");
 const { Nest } = await import(OUT + "nest.js");
 class Cursor { constructor(r) { this.r = r; } toArray() { return this.r; } }
@@ -161,4 +161,13 @@ await wide(ap); ok("Adrianna opens her co-parent link, gets the Parents' room, a
 await op.click("#tab-room"); await op.click("#room-backup .btn:has-text('Refresh all photos')"); await op.waitForSelector(".toast:has-text('Checking every photo again')");
 await op.click("#tab-registry"); await op.waitForFunction(() => !/Finding product photos/.test(document.querySelector("#registry-notices").textContent), null, { timeout: 15000 });
 ok("the parents can refresh every photo; progress shows while it works, and goes when it's done");
+// the registry's storage can't answer (the site's backup line says so, 503): a guest who has been before still opens it,
+// read-only, from the copy kept on their device; reserving waits; when it's back, the live registry returns by itself
+let down = true; await G.ctx.route(/\/api\/nest\/(state|doc|lock)/, (rt) => down ? rt.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "storage isn't answering", down: true }) }) : rt.fallback());
+await gp.reload(); await gp.waitForSelector("#nest-down"); assert.match(await gp.textContent("#nest-down"), /resting[\s\S]*last visit/);
+await gp.waitForFunction(() => document.querySelectorAll(".card").length >= 4); assert.match(await gp.textContent(".babyname"), /Baby Faber/);
+const before = await gp.evaluate(() => document.querySelectorAll(".pill.you").length); assert.ok(before >= 1, "her reservation shows in the kept copy");
+down = false; await gp.waitForSelector("#nest-down", { state: "detached", timeout: 60000 }); await gp.waitForFunction(() => document.querySelectorAll(".card").length >= 4);
+ok("storage down: a guest who's been before opens the registry read-only from her device, with a calm note; it goes live again by itself");
+
 assert.deepEqual(op.errs, []); assert.deepEqual(gp.errs, []); assert.deepEqual(ap.errs, []); await b.close(); console.log("all passed", DEV); process.exit(0);

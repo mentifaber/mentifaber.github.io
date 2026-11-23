@@ -5,7 +5,8 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { metered, newBag, report as rowReport } from "./rowmeter.js";
+import { metered, newBag, touch as rowTouch, dayReport, over as rowsOver, nextDay } from "./rowmeter.js";
+const HIVE_BG_ROWS = 2500000; // AutoFaber's own rows read in a day past which its background work (missions, reflection, scheduled jobs) waits for 00:00 UTC: half the account's free 5,000,000, so the Nest, Tether and the rest always have theirs
 import { groqHear, PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
@@ -228,11 +229,12 @@ export class Hive extends DurableObject {
   }
 
   async fetch(req) {
-    await this.loadRetired();
+    await this.loadRetired(); this.sql(); rowTouch(this._rows, this.ctx.storage);
     const url = new URL(req.url), q = this.sql(), owner = req.headers.get("x-hive-owner") === "1", path = url.pathname.replace(/^\/api\/hive/, "") || "/";
     const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
-    if (path === "/rows") return J(rowReport(this._rows || newBag())); // which statements spent the free plan's rows-read allowance since this object woke (shapes and counts only)
+    if (path === "/rows") { this.sql(); return J(await dayReport(this._rows, this.ctx.storage)); }
+    if ((path === "/genesis/tick" || path === "/genesis/watch" || path === "/tasks/tick") && (await rowsOver(this._rows, HIVE_BG_ROWS))) return J({ skipped: "AutoFaber has used its share of today's free storage reads; this waits for 00:00 UTC" }); // which statements spent the free plan's rows-read allowance since this object woke (shapes and counts only)
     if (path === "/purge") { // the owner clears every finished, stopped or failed project at once
       if (!owner) return J({ error: "only the owner can clear projects" }, 401);
       const ids = q.exec("SELECT id FROM proj WHERE status IN ('done','stopped','failed') AND id NOT IN (SELECT pid FROM pub)").toArray().map((r) => r.id); // published ones keep their link
@@ -463,7 +465,11 @@ export class Hive extends DurableObject {
   }
 
   async alarm() {
-    await this.loadRetired();
+    await this.loadRetired(); this.sql(); rowTouch(this._rows, this.ctx.storage);
+    if (await rowsOver(this._rows, HIVE_BG_ROWS)) { // its share of today's free storage reads is spent: missions wait for 00:00 UTC (said once in each)
+      const day = new Date().toISOString().slice(0, 10); if (this._bgPaused !== day) { this._bgPaused = day; for (const p of this.sql().exec("SELECT id FROM proj WHERE status IN ('planning','working','integrating','replanning')").toArray()) this.say(p.id, "hive", "quota", "Resting until 00:05 UTC: AutoFaber has used its share of today's free storage reads, and the rest is kept for the people using the site."); }
+      await this.ctx.storage.setAlarm(nextDay()); return;
+    }
     const q = this.sql(); let busy = false, resting = false;
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const offUntil = this.waiOff(), out = !!offUntil;

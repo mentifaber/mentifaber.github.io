@@ -4,7 +4,7 @@ import { usHandle, usAlarm, usLiveUpgrade, usLiveMessage, usLiveClose, usPoke } 
 import { nsFetch, nsAlarm, nsMessage, nsClose } from "./nullspace.js";
 export { Hive } from "./hive.js";
 import { hiveLite } from "./hive-lite.js";
-import { metered, newBag, report as rowReport } from "./rowmeter.js"; // AutoFaber's backup line, for when its Durable Object can't answer
+import { metered, newBag, touch as rowTouch, dayReport } from "./rowmeter.js"; // AutoFaber's backup line, for when its Durable Object can't answer
 export { Agent } from "./agent.js";
 export { Nest } from "./nest.js"; // The Nest Registry (nest.html)
 import { vigil } from "./vigil.js";
@@ -1057,7 +1057,7 @@ export class Lobby extends DurableObject {
       this.match(win ? { name, x: 220 + m * 10, mode: r.mode } : { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10, mode: r.mode }, win ? { name: r.agent, x: 220 + (MODE_LEN[r.mode] || 2500) * 10 } : { name, x: 220 + m * 10 }, 0, win ? +b.time || 0 : r.t);
       return J({ ok: true });
     }
-    if (url.pathname.endsWith("/rows")) { this.sql(); return Response.json(rowReport(this._rows)); } // which statements spent the free plan's rows-read allowance
+    if (url.pathname.endsWith("/rows")) { this.sql(); return Response.json(await dayReport(this._rows, this.ctx.storage)); } // which statements spent the free plan's rows-read allowance
     if (url.pathname.endsWith("/board")) {
       const mode = MODES.includes(url.searchParams.get("mode")) ? url.searchParams.get("mode") : "classic";
       const kind = url.searchParams.get("kind"), kf = kind === "ai" ? " AND name LIKE '\u{1F916}%'" : kind === "human" ? " AND name NOT LIKE '\u{1F916}%'" : "";
@@ -1093,7 +1093,7 @@ export class Lobby extends DurableObject {
     return new Response("not found", { status: 404 });
   }
   async fetch(req) {
-    const url = new URL(req.url);
+    const url = new URL(req.url); this.sql(); rowTouch(this._rows, this.ctx.storage);
     if (url.pathname.startsWith("/api/tether/ai")) return this.ai(req, url);
     if (url.pathname.startsWith("/api/thoughtform/ai")) return this.tfai(req, url);
     if (url.pathname.startsWith("/api/tether/")) return this.api(req, url);
@@ -1122,7 +1122,7 @@ export class Lobby extends DurableObject {
     for (const s of this.socks()) if (this.me(s).name) this.send(s, { t: "lobby", players });
   }
   async alarm() {
-    const q = this.sql(), now = Date.now();
+    const q = this.sql(), now = Date.now(); rowTouch(this._rows, this.ctx.storage);
     for (const b of this.bots()) {
       const a = b.st, row = this.botRow(b.id), idle = now - row.ts;
       if (a.status === "racing") {
@@ -1167,6 +1167,7 @@ export class Lobby extends DurableObject {
     return this.lobby();
   }
   async webSocketMessage(ws, raw) {
+    this.sql(); rowTouch(this._rows, this.ctx.storage);
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
     const a = this.me(ws);
     if (m.t === "hello") { const name = String(m.name || "").replace(/[^\w .'-]/g, "").trim().slice(0, 16) || "Player";

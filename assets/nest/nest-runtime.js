@@ -21,7 +21,12 @@
   const snap = (l) => (l.col ? { docs: docsOf(l.key), metadata: { fromCache: false } } : { exists: l.key in state.docs, data: () => copy(state.docs[l.key]), metadata: { fromCache: false } });
   const sig = (l) => (l.col ? JSON.stringify(docsOf(l.key).map((d) => [d.id, state.docs[l.key + "/" + d.id]])) : JSON.stringify(state.docs[l.key] ?? null));
   function fire() { for (const l of listeners) { const s = sig(l); if (s !== l.last) { l.last = s; try { l.cb(snap(l)); } catch (e) { console.warn(e); } } } }
-  async function pull() { const j = await call("/state?v=" + encodeURIComponent(ver)); if (j.same) return; state = j; ver = j.v; fire(); dispatchEvent(new Event("nest:state")); }
+  // the last registry this device loaded, kept on the device: if the server can't be reached (on the free plan, the
+  // account's daily storage allowance can run out until midnight UTC), the page still opens and shows it, read-only
+  const LAST = "nest.last", keepLast = (j) => { try { localStorage.setItem(LAST, JSON.stringify({ ...j, at: Date.now() })); } catch (e) {} };
+  const lastKept = () => { try { const j = JSON.parse(localStorage.getItem(LAST) || "null"); return j && j.docs && j.me ? j : null; } catch (e) { return null; } };
+  let resting = false; // showing the kept copy: nothing can be saved until the server answers again
+  async function pull() { const j = await call("/state?v=" + encodeURIComponent(ver)); if (j.same) return; state = j; ver = j.v; resting = false; keepLast(j); fire(); dispatchEvent(new Event("nest:state")); }
   const EVERY = +window.NEST_POLL_MS || 30e3; let timer = 0, failing = 0; // (tests shorten it)
   async function poll() {
     clearTimeout(timer); if (document.hidden) return; // a hidden page asks nothing; it catches up when it's back on screen
@@ -35,10 +40,12 @@
     if (!on) { if (b) b.remove(); return; }
     if (b) return; b = document.createElement("div"); b.id = "nest-down"; b.setAttribute("role", "status");
     b.setAttribute("style", "position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));translate:-50% 0;z-index:90;max-width:calc(100vw - 24px);padding:10px 14px;border-radius:12px;background:var(--rose-soft,#fde4ec);color:var(--ink,#1d2d55);font:14px/1.4 var(--f-body,system-ui);box-shadow:0 6px 24px rgb(0 0 0 / .18)");
-    b.textContent = "The registry can't be reached right now. It keeps trying by itself; nothing you've saved is lost."; document.body.append(b);
+    b.textContent = resting ? "The registry is resting for a little while, so this is how it looked on your last visit. You can look around; saving waits until it's back (by midnight UTC at the latest). Nothing you've saved is lost."
+      : "The registry can't be reached right now. It keeps trying by itself; nothing you've saved is lost."; document.body.append(b);
   }
   const listen = (col, key, cb, err) => { const l = { col, key, cb, err, last: null }; listeners.push(l); if (state) { l.last = sig(l); cb(snap(l)); } return () => { const i = listeners.indexOf(l); if (i >= 0) listeners.splice(i, 1); }; };
-  const write = async (path, data) => { await call("/doc", { method: "POST", body: JSON.stringify({ path, data }) }); await pull().catch(() => {}); };
+  const restingErr = () => fail("unavailable", "The registry is resting for a little while, so nothing can be saved just now. Try again later; nothing you've saved is lost.");
+  const write = async (path, data) => { if (resting) throw restingErr(); await call("/doc", { method: "POST", body: JSON.stringify({ path, data }) }); await pull().catch(() => {}); };
 
   const db = {
     collection: (name) => ({ onSnapshot: (cb, err) => listen(true, name, cb, err), async get() { await pull(); return snap({ col: true, key: name }); } }),
@@ -46,7 +53,7 @@
       onSnapshot: (cb, err) => listen(false, path, cb, err),
       set: (data) => write(path, data),
       delete: () => write(path, null),
-      acquire: (o) => call("/lock", { method: "POST", body: JSON.stringify({ path, ttlMs: o && o.ttlMs }) }),
+      acquire: (o) => (resting ? Promise.reject(restingErr()) : call("/lock", { method: "POST", body: JSON.stringify({ path, ttlMs: o && o.ttlMs }) })),
     }),
   };
   const HUES = [24, 200, 280, 140, 340, 46, 180, 310];
@@ -118,7 +125,10 @@
   async function start() {
     const key = new URL(location.href).searchParams.get("k") || "";
     try { await pull(); }
-    catch (e) { if (e.code === "unauthenticated") return gate(key ? "guest" : "private", key); failing++; down(true); setTimeout(start, Math.min(5 * 60e3, 15e3 * 2 ** Math.min(failing - 1, 4))); return; }
+    catch (e) {
+      if (e.code === "unauthenticated") return gate(key ? "guest" : "private", key);
+      if (!state) { const kept = lastKept(); if (kept) { state = kept; ver = ""; resting = true; fire(); dispatchEvent(new Event("nest:state")); resolveReady(); } } // open on the kept copy meanwhile
+      failing++; down(false); down(true); setTimeout(start, Math.min(5 * 60e3, 15e3 * 2 ** Math.min(failing - 1, 4))); return; }
     if (failing) { failing = 0; down(false); }
     if (key) { // already in on this device: the co-parent link still makes them a co-parent
       if (!state.me.parent) { const up = await call("/upgrade", { method: "POST", body: JSON.stringify({ key }) }).catch(() => null); if (up && up.parent) { ver = ""; await pull().catch(() => {}); } }
