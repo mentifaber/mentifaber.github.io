@@ -429,6 +429,10 @@ PRIVACY = [
         ("Autonomy", "When the owner turns it on, AutoFaber may start at most 8 Swarm missions and 1,100 model calls of its own a day, two at a time. What it builds waits for the owner: nothing deploys on its own."),
         ("Scheduled jobs", "Reflection on recent conversations, the owner's scheduled tasks and alerts run in the background, for the owner only, within a daily budget."),
     ]),
+    ("FaberOS", [
+        ("On your device", "Its settings, your permission answers, notifications and the files on the Shelf stay in your browser. Nothing is sent anywhere, and Settings can forget all of it."),
+        ("Asking it to arrange", "Commands like \"open Ballast\" or \"put Overhead next to Unlit\" are read on your device. Only when you choose \"Let AutoFaber arrange it\" do your sentence and the names of the apps go to AutoFaber's model, which sends back which apps to open and where; nothing is kept."),
+    ]),
     ("The other apps", [
         ("Private messengers", "Barycenter and Pilotfish are encrypted end to end and kept on the devices of the people who use them."),
         ("The Nest Registry", "Kept in its own storage, open only to the parents and the guests they invite; each device keeps a copy of the list it last saw so it still opens when the site is resting."),

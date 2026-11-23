@@ -45,5 +45,8 @@
  "ledeLabel": "the problem",
  "featuresLabel": "what it does",
  "scope": "<p>This is a personal budgeting tool, not a bank integration or a financial advisor. Balances and projections are only as accurate as what's entered — <em>it doesn't see your actual accounts, and it won't warn you about anything it wasn't told about.</em></p>",
- "closing": "Ballast keeps the ship upright. Not the cargo — just the weight."
+ "closing": "Ballast keeps the ship upright. Not the cargo — just the weight.",
+ "accepts": [
+  ".json"
+ ]
 }

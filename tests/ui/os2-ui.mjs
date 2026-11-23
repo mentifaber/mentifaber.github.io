@@ -39,6 +39,7 @@ if (!M) {
 await p.click("#all-btn"); await p.fill("#l-q", "doccrawler"); await p.keyboard.press("Enter"); await p.waitForSelector(".win[data-id='doccrawler'] iframe");
 const dc = await frameOf("doccrawler"); await dc.waitForFunction(() => window.Faber && window.Faber.inOS === true);
 await p.click("#dock-apps [data-app='ballast']").catch(() => {}); if (!(await p.$eval(".win[data-id='ballast']", (w) => w.classList.contains("focus")))) await p.click("#dock-apps [data-app='ballast']");
+await p.click("#bell"); await p.click("#notes-clear"); await p.click("#bell"); // start from none (a newer FaberOS adds its own "what's new")
 await dc.evaluate(() => Faber.notify("Indexed", "3 files are ready to search"));
 await p.waitForSelector("#badge:not([hidden])"); assert.equal(await p.textContent("#badge"), "1");
 await p.click("#bell"); assert.match(await p.textContent("#notes"), /Indexed[\s\S]*3 files are ready[\s\S]*DocCrawler/); assert.equal(await p.isHidden("#badge"), true, "read once seen");

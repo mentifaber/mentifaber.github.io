@@ -338,12 +338,13 @@ $("encBtn").onclick = async () => {
   } catch (e) { st("encSt", "err", "Encryption failed: " + e.message); }
 };
 $("encCopy").onclick = () => copy($("encOut").textContent, "encSt", "Copied.");
-$("encSave").onclick = () => lastOut && (lastOut.file ? save(new Blob([lastOut.packet], { type: "application/octet-stream" }), lastOut.file + ".cv") : save(new Blob([armor(lastOut.packet)], { type: "text/plain" }), "message.cvmsg"));
+$("encSave").onclick = () => lastOut && (lastOut.file ? sealed(new Blob([lastOut.packet], { type: "application/octet-stream" }), lastOut.file + ".cv") : sealed(new Blob([armor(lastOut.packet)], { type: "text/plain" }), "message.cvmsg"));
 if (navigator.share) { $("encShare").hidden = false; $("encShare").onclick = () => navigator.share({ text: $("encOut").textContent }).catch(() => {}); }
 
 // decrypt
 let decPacket = null;
-dropZone($("decDrop"), $("decFileIn"), async (f) => { const u = new Uint8Array(await f.arrayBuffer()); if (u[0] === 0x43 && u[1] === 0x56) { decPacket = u; $("cipher").value = ""; $("decDrop").innerHTML = "<b></b> loaded"; $("decDrop").querySelector("b").textContent = f.name; } else { $("cipher").value = td.decode(u); decPacket = null; } });
+const decLoad = async (f) => { const u = new Uint8Array(await f.arrayBuffer()); if (u[0] === 0x43 && u[1] === 0x56) { decPacket = u; $("cipher").value = ""; $("decDrop").innerHTML = "<b></b> loaded"; $("decDrop").querySelector("b").textContent = f.name; } else { $("cipher").value = td.decode(u); decPacket = null; } };
+dropZone($("decDrop"), $("decFileIn"), decLoad);
 $("cipher").oninput = () => { decPacket = null; $("decDrop").innerHTML = "…or drop a <b>.cv</b> file here"; };
 $("decBtn").onclick = async () => {
   if (!S.me) return st("decSt", "err", "Unlock or create your identity first: decrypting needs your private key.");
@@ -360,6 +361,14 @@ $("decBtn").onclick = async () => {
 };
 
 // ── plumbing ──
+/* FaberOS (assets/os/faber.js, cut down and written in here: this page's policy loads no outside script). Only what is
+   already encrypted goes to the FaberOS Shelf; keys, backups and decrypted files are only ever downloaded. */
+const FOS = (() => { let on = false; try { on = parent !== window && parent.location.origin === location.origin && /^\/os(\.html)?$/.test(parent.location.pathname); } catch (e) {}
+  const post = (m) => parent.postMessage(Object.assign({ faberos: 1 }, m), location.origin);
+  return { on, save(blob, name) { post({ type: "save", file: new File([blob], name, { type: blob.type }) }); },
+    files(fn) { if (!on) return; addEventListener("message", (e) => { if (e.origin === location.origin && e.source === parent && e.data && e.data.faberos === 1 && e.data.type === "files" && Array.isArray(e.data.files)) fn(e.data.files); }); post({ type: "ready", files: true }); } }; })();
+function sealed(blob, name) { if (FOS.on) { FOS.save(blob, name); return st("encSt", "ok", "Saved to the FaberOS Shelf, still encrypted."); } save(blob, name); }
+FOS.files((fs) => { const f = fs.find((x) => /\.(cv|cvmsg)$/i.test(x.name)); if (f) { tab("dec"); decLoad(f); } }); // "Open in CryptoVault" from the Shelf: to decrypt
 function save(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
 function copy(text, sid, msg) { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => st(sid, "ok", msg), () => st(sid, "err", "Copy didn't work here; select the text and copy it by hand.")); }
 function dropZone(zone, input, onFile) {
