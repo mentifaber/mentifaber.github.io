@@ -12,3 +12,4 @@ tests/gtest/cf-nest.mjs
 tests/ui/shots/
 captures/
 tests/gtest/w48/
+tests/gtest/w50/

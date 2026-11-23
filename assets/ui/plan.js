@@ -20,10 +20,15 @@
     const inp = $("input", fd), ol = $("ol", fd); let sel = 0, hits = [];
     const draw = () => { const ws = inp.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
       const score = (x) => { const n = x.n.toLowerCase(); return ws.reduce((t, w) => t + (n.startsWith(w) ? 4 : n.includes(w) ? 3 : x.r.toLowerCase().includes(w) ? 1 : 0), 0); }; // names first, then rooms, then words in the description
-      hits = idx.filter((x) => ws.every((w) => (x.n + " " + x.d + " " + x.r + " " + x.s + " " + x.p).toLowerCase().includes(w))).map((x, i) => [x, score(x), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map((x) => x[0]).slice(0, 40);
+      hits = idx.filter((x) => ws.every((w) => (x.n + " " + x.d + " " + x.r + " " + x.s + " " + x.p).toLowerCase().includes(w))).map((x, i) => [x, score(x), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map((x) => x[0]);
       sel = Math.min(sel, Math.max(0, hits.length - 1));
       ol.innerHTML = hits.map((x, i) => '<li><a href="' + esc(x.h) + '"' + (i === sel ? ' class="on"' : "") + '><span class="pn">' + esc(x.p) + "</span><span><b>" + esc(x.n) + "</b><small>" + esc(x.d) + '</small></span><span class="pn">' + esc(x.s) + "</span></a></li>").join("") || '<li style="padding:14px 18px;color:var(--dim)">No bench matches. Fewer words?</li>'; };
-    const open = () => { fd.classList.add("on"); inp.value = ""; sel = 0; draw(); setTimeout(() => inp.focus(), 20); }, close = () => fd.classList.remove("on");
+    let back = null; // the control that opened it gets focus again when it closes
+    const open = () => { back = document.activeElement; fd.classList.add("on"); inp.value = ""; sel = 0; draw(); setTimeout(() => inp.focus(), 20); },
+      close = () => { fd.classList.remove("on"); if (back && back.focus && document.contains(back)) back.focus(); back = null; };
+    const x = $(".find-x", fd); if (x) x.onclick = close;
+    fd.addEventListener("keydown", (e) => { if (e.key !== "Tab") return; const f = [...fd.querySelectorAll("input, button, a[href]")].filter((n) => n.offsetParent !== null); if (!f.length) return;
+      const first = f[0], last = f[f.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } });
     $$("[data-find]").forEach((b) => (b.onclick = open));
     fd.addEventListener("click", (e) => { if (e.target === fd) close(); });
     inp.addEventListener("input", () => { sel = 0; draw(); });
@@ -37,7 +42,7 @@
   $$("[data-power]").forEach((b) => (b.onclick = () => {
     if (!piece || !piece.dataset.app) return; const box = $(".frame > div", piece);
     if (!$("iframe", box)) { const f = document.createElement("iframe"); f.src = piece.dataset.app; f.title = ($("h1") ? $("h1").textContent : "the app") + ", running";
-      f.allow = "fullscreen; autoplay; clipboard-read; clipboard-write; camera; microphone; geolocation; screen-wake-lock; web-share; xr-spatial-tracking; gyroscope; accelerometer; magnetometer"; box.appendChild(f); }
+      f.allow = piece.dataset.allow || "fullscreen; autoplay; clipboard-write"; box.appendChild(f); }
     piece.classList.add("on"); $$("[data-power]").forEach((x) => { x.textContent = "Running"; x.disabled = true; });
     piece.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }));
@@ -228,7 +233,7 @@
   addEventListener("keydown", (e) => {
     if (!/^Arrow/.test(e.key) || /input|textarea|select/i.test((document.activeElement || {}).tagName || "") || (fd && fd.classList.contains("on"))) return;
     const all = $$(".bench", floor).filter((b) => !b.closest("[inert]")), cur = document.activeElement && document.activeElement.classList.contains("bench") ? document.activeElement : null;
-    if (!cur) { e.preventDefault(); (goal || all[0]).focus(); return; }
+    if (!cur) return; // nothing on the plan has focus: the arrows are the page's (Tab onto a bench to walk them)
     const c = cur.getBoundingClientRect(), cx = c.left + c.width / 2, cy = c.top + c.height / 2, v = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key];
     let best = null, bd = Infinity;
     for (const o of all) { if (o === cur) continue; const r = o.getBoundingClientRect(), dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy, along = dx * v[0] + dy * v[1]; if (along <= 4) continue; const off = Math.abs(dx * v[1]) + Math.abs(dy * v[0]), s = along + off * 2.2; if (s < bd) { bd = s; best = o; } }

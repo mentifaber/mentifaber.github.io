@@ -2,7 +2,7 @@
 every project a bench, live instruments on the corridor wall); a project's page is that bench's datasheet, with the thing
 itself running on it. Same registry and content as before; build.py calls home() and page().
 Styles: assets/ui/plan.css · behaviour: assets/ui/plan.js (walls, lantern, walker, compass, find) + shell.js (install, suite)."""
-import html, json, os, datetime
+import html, json, os, re, datetime
 from registry import ROOT, CATS
 import build as B
 
@@ -74,7 +74,7 @@ def titleblock(middle, sheet, at, acts):
   <a class="tb-mark" href="./" aria-label="Mentifaber, the workshop">{LOGO}</a>
   <a class="tb-name" href="./"><b class="gold-text">MENTIFABER</b><span>The workshop · drawn at night</span></a>
   {middle}
-  <dl class="tb-meta"><div><dt>Sheet</dt><dd>{f"{sheet:02d} / {SHEETS:02d}" if sheet else "—"}</dd></div><div><dt>Grid</dt><dd class="at">{at}</dd></div><div><dt>Drawn</dt><dd>Anders</dd></div><div><dt>Date</dt><dd>{today}</dd></div></dl>
+  <dl class="tb-meta"><div title="Sheet 01 is this plan; each project with a datasheet has a sheet after it"><dt>Sheet</dt><dd>{f"{sheet:02d} / {SHEETS:02d}" if sheet else "—"}</dd></div><div><dt>Grid</dt><dd class="at">{at}</dd></div><div><dt>Drawn</dt><dd>Anders</dd></div><div><dt>Date</dt><dd>{today}</dd></div></dl>
   <div class="tb-act"><button class="key" data-find aria-label="Find a project">{FIND}<span>Find</span></button>{acts}</div>
 </header>"""
 
@@ -103,7 +103,8 @@ def pick(i, why):  # a "Start here" card: what it is in a sentence, its status, 
 
 def start():
     return (f'<section class="start" aria-labelledby="start-h"><header><span class="lbl">Detail A · first time in</span><h2 id="start-h">Start with one of these</h2>'
-            f'<p>Five that run the moment you open them, no account needed. Every other bench is on the plan below.</p></header>'
+            f'<p>Five that run the moment you open them, no account needed. Every other bench is on the plan below.</p>'
+            f'<nav class="paths" aria-label="Three ways in"><a class="key" href="#signals">Explore the workshop</a><a class="key" href="hive#try-it">Try AutoFaber</a><a class="key" href="store">Install the apps · Foundry</a></nav></header>'
             f'<ol class="picks">{"".join(pick(i, w) for i, w in START if i in A)}</ol></section>')
 
 
@@ -139,7 +140,7 @@ def refs(cls, items): return f'<div class="refs {cls}" aria-hidden="true">{"".jo
 def home():
     L = ORDER; live = sum(1 for a in L if a["status"] in ("live", "music", "android"))
     title = "Mentifaber · Anders Powell, builder of minds and the systems that hold them"
-    desc = f"{len(L)} projects by Anders Powell: AI swarms and agents, private messengers, live atlases of the sky and the world, local-first tools and games, drawn as the workshop they're built in."
+    desc = f"{len(L)} projects by Anders Powell: AI agents and swarms, private messengers, live atlases of the sky and the world, local-first tools and games."
     say = f'<p class="tb-say"><span><b>Anders Powell, builder of minds and the systems that hold them.</b> {len(L)} things on the benches of one workshop, {live} of them running right now. Walk in and point at a bench: someone will take you there.</span></p>'
     acts = f'<button class="key" data-suite aria-label="Install the suite">{SUITE}<span>Suite</span></button><button class="key" data-install hidden>{DOWN}<span>Install</span></button>'
     X, Y = "ABCDEFGH", "12345"
@@ -171,11 +172,11 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="store">Foundry: the apps</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Anders Powell · Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
-<div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
+<div class="find" role="dialog" aria-modal="true" aria-label="Find a project"><div class="box"><div class="find-top"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><button class="find-x" type="button" aria-label="Close">✕</button></div><ol></ol></div></div>
 <script type="application/json" id="wk-index">{index_json()}</script>
 <script type="application/json" id="mf-app">{json.dumps({"name": "Mentifaber"})}</script>
 <script src="assets/ui/shell.js?v={ver("assets/ui/shell.js")}" defer></script>
@@ -218,6 +219,22 @@ def ratings(r):  # who gets what: visitor and owner, side by side
             f'<tbody>{rows}</tbody></table></div>' + (f'<p class="prose" style="margin-top:12px">{esc(r["note"])}</p>' if r.get("note") else ""))
 
 
+FEATURES = [  # what an app's code uses → the permission its iframe needs
+    (r"getUserMedia|mediaDevices", "camera; microphone"), (r"geolocation", "geolocation"), (r"wakeLock", "screen-wake-lock"),
+    (r"navigator\.share\b|navigator\.canShare", "web-share"), (r"clipboard\.(read|readText)\(", "clipboard-read"),
+    (r"DeviceOrientation|DeviceMotion|Gyroscope|Accelerometer|Magnetometer", "gyroscope; accelerometer; magnetometer"), (r"navigator\.xr\b", "xr-spatial-tracking")]
+def allow_for(app):
+    if not app or "://" in app: return ""
+    path = os.path.join(ROOT, app.split("#")[0].split("?")[0])
+    if not os.path.exists(path): return ""
+    code = open(path, encoding="utf-8", errors="ignore").read()
+    for src in re.findall(r'<script[^>]+src="(?!https?:)/?([^"?#]+)', code):  # its own scripts too
+        f = os.path.join(ROOT, src)
+        if os.path.exists(f): code += open(f, encoding="utf-8", errors="ignore").read()
+    out = ["fullscreen", "autoplay", "clipboard-write"] + [perm for pat, perm in FEATURES if re.search(pat, code)]
+    return "; ".join(out)
+
+
 def page(i):
     a, c = A[i], json.load(open(os.path.join(CONTENT, i + ".json"), encoding="utf-8"))
     n, _ = NAMES[a["cat"]]; op, _ = links(a); app = a.get("app"); shot = c.get("shot") or preview(i)
@@ -228,7 +245,8 @@ def page(i):
     caps = c.get("caps", [])
     rows = [("Part no.", pno(a)), ("Room", f'<a href="./#{a["cat"]}">{ROOMNO[a["cat"]]:02d} · {esc(n)}</a>'), ("Status", esc(STATUS.get(a["status"], a["status"]))),
             ("Does", esc(" · ".join(caps))) if caps else None, ("Runs as", esc(c.get("launchSub", ""))) if c.get("launchSub") else None,
-            ("Made with", esc(" · ".join(stack[:8]))) if stack else None]
+            ("Made with", esc(" · ".join(stack[:8]))) if stack else None,
+            ("Data", esc(c["data"])) if c.get("data") else None]
     specs = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in [r for r in rows if r])
     st = {"live": "live", "android": "live", "music": "music", "private": "lock"}.get(a["status"], "build")
     feats = "".join(f'<li><b>{esc(f["t"])}</b><span>{B.cap(f["d"])}</span></li>' for f in c.get("features", []))
@@ -238,7 +256,7 @@ def page(i):
     crumb = f'<nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="./#{a["cat"]}">Room {ROOMNO[a["cat"]]:02d} · {esc(n)}</a><a href="#" aria-current="page">{pno(a)} · {esc(a["name"])}</a></nav>'
     k = [0]
     def S(t, body):
-        k[0] += 1; return f'<section class="sec"><h2><i>{k[0]:02d}</i>{t}</h2><div>{body}</div></section>'
+        k[0] += 1; sid = re.sub(r"[^a-z0-9]+", "-", re.sub(r"<[^>]+>", "", t).lower()).strip("-"); return f'<section class="sec" id="{sid}"><h2><i>{k[0]:02d}</i>{t}</h2><div>{body}</div></section>'
     story = c.get("story") or {}
     body = "".join([
         S("Why it exists", (f'<h3 class="story">{story["title"]}</h3>' if story.get("title") else "") + f'<div class="prose">{c.get("lede", "")}</div>') if c.get("lede") else "",
@@ -258,7 +276,7 @@ def page(i):
     elif app: acts = f'<button class="key pri big" data-power>Power on</button><a class="key big" href="{esc(app)}">Full screen</a><button class="key big" data-install hidden>{DOWN}Install</button>'
     elif op and op != a.get("href"): acts = f'<a class="key pri big" href="{esc(op)}">Open</a>'
     else: acts = ""
-    piece = (f"""<figure class="piece" data-app="{esc(app or "")}">
+    piece = (f"""<figure class="piece" data-app="{esc(app or "")}" data-allow="{esc(allow_for(app))}">
       <span class="dimw" aria-hidden="true"><span>workpiece · {esc(a["name"])}</span></span><span class="dimh" aria-hidden="true"><span>{"live" if app else "as built"}</span></span>
       <div class="frame"><div style="background-image:url('{esc(shot)}')">{'<button class="key pri big power" data-power>Power on</button>' if app else ""}</div></div>
       <figcaption><span>Fig. 1 · {esc(a["name"])}, {"on the bench: power it on to run it here" if app else "as it stands"}</span><span>{pno(a)}</span></figcaption>
@@ -283,7 +301,7 @@ def page(i):
     <nav class="walkon" aria-label="Walk on"><a class="prev" href="{esc(href(prv))}"><span class="lbl">← {pno(prv)}</span><b>{esc(prv["name"])}</b></a><a class="next" href="{esc(href(nxt))}"><span class="lbl">{pno(nxt)} →</span><b>{esc(nxt["name"])}</b></a></nav>
   </section>
 </main>
-<div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
+<div class="find" role="dialog" aria-modal="true" aria-label="Find a project"><div class="box"><div class="find-top"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><button class="find-x" type="button" aria-label="Close">✕</button></div><ol></ol></div></div>
 <script type="application/json" id="wk-index">{index_json()}</script>
 <script type="application/json" id="mf-app">{cfg}</script>
 <script src="assets/ui/shell.js?v={ver("assets/ui/shell.js")}" defer></script>
@@ -304,7 +322,7 @@ def plain(file, title, desc, crumb, body, extra="", base=""):
 <body class="wk plain-page">
 {titleblock(f'<nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="#" aria-current="page">{crumb}</a></nav>', 0, "—", "")}
 <main class="plain">{body}</main>
-<div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
+<div class="find" role="dialog" aria-modal="true" aria-label="Find a project"><div class="box"><div class="find-top"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><button class="find-x" type="button" aria-label="Close">✕</button></div><ol></ol></div></div>
 <script type="application/json" id="wk-index">{index_json()}</script>
 <script src="assets/ui/plan.js?v={ver("assets/ui/plan.js")}" defer></script>
 {extra}
@@ -385,6 +403,47 @@ CREDITS = [
         ("Mentifaber Display and Hive Strata", "drawn here, by our own scripts"),
     ]),
 ]
+
+# P1.04 / P2.07: one place that says, plainly, where things go (each line checked against the code it describes)
+PRIVACY = [
+    ("AutoFaber: your conversations", [
+        ("Visitors", "Your list of conversations is kept in your own browser, not on the server. Nothing you say is added to AutoFaber's memory."),
+        ("The owner", "With the Mind on, the owner's messages are kept in AutoFaber's storage so it can remember them; things it notices wait for a yes before they're kept, and the Mind view can export or forget everything."),
+        ("No-memory sessions", "Not saved on the device and not added to memory. The message still goes to the model that answers it: no memory doesn't mean no provider."),
+        ("Reply health", "For every reply: which model, how long it took and how long it was, never the text. Kept for 30 days, to route around slow or failing models."),
+    ]),
+    ("Who reads your message", [
+        ("The model you use", "Each message goes to the model that answers it: Cloudflare Workers AI for the free models, or the provider of a key in the vault (OpenAI, Anthropic, Google, Groq and others). Their own terms apply to what they receive."),
+        ("Visitors", "Only the free models: Workers AI and free-tier keys the owner has chosen to share with visitors. Paid keys answer only the owner."),
+        ("Web search", "When search is on, your question goes to the owner's search provider, or to Wikipedia when there isn't one."),
+    ]),
+    ("Keys and accounts", [
+        ("API keys", "Sealed with AES-GCM in AutoFaber's storage the moment they're added, never shown again, and used only for the calls they're meant for."),
+        ("Sign-ins", "The site keeps only a fingerprint (a hash) of each password, never the password itself. Sessions are a cookie that holds a random token."),
+    ]),
+    ("Your location", [
+        ("Weather and the sky", "The home page asks Cloudflare for a city-level guess from your connection, to show your weather and the next ISS pass. No prompt, nothing stored."),
+        ("Apps that ask", "An app that wants your exact location (Overhead, for passes over you) asks through your browser first, and only the apps that use a feature are allowed to ask for it."),
+    ]),
+    ("Running on its own", [
+        ("Autonomy", "When the owner turns it on, AutoFaber may start at most 8 Swarm missions and 1,100 model calls of its own a day, two at a time. What it builds waits for the owner: nothing deploys on its own."),
+        ("Scheduled jobs", "Reflection on recent conversations, the owner's scheduled tasks and alerts run in the background, for the owner only, within a daily budget."),
+    ]),
+    ("The other apps", [
+        ("Private messengers", "Barycenter and Pilotfish are encrypted end to end and kept on the devices of the people who use them."),
+        ("The Nest Registry", "Kept in its own storage, open only to the parents and the guests they invite; each device keeps a copy of the list it last saw so it still opens when the site is resting."),
+        ("Contact", "The contact form opens your own email app; nothing you write is stored on the site."),
+    ]),
+]
+def privacy():
+    rows = "".join(f'<h2 class="lbl" style="margin-top:30px">{esc(h)}</h2><dl class="priv">' + "".join(f"<div><dt>{esc(a)}</dt><dd>{esc(b)}</dd></div>" for a, b in items) + "</dl>" for h, items in PRIVACY)
+    body = f"""<span class="pno">Privacy · where things go</span>
+  <h1>What happens to <span class="gold-text">what you send</span></h1>
+  <p class="tagline">Mentifaber is one person's workshop, not a company that sells data. This page says, in one place, what each part keeps, who else sees it, and for how long.</p>
+  {rows}
+  <p class="fine" style="margin-top:30px">A question about your data, or something here that doesn't match what you see? Write to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>"""
+    css = "<style>.priv{margin:10px 0 0}.priv div{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 18px;padding:10px 0;border-top:1px solid var(--line)}.priv dt{font-weight:600}.priv dd{margin:0;color:var(--ink-2,#c9bc9f)}@media (max-width:620px){.priv div{grid-template-columns:1fr}}</style>"
+    return plain("privacy.html", "Privacy · Mentifaber", "Where what you send goes on Mentifaber: conversations, memory, keys, location and models, said plainly in one place.", "Privacy", body, css)
 
 
 def credits():
@@ -477,7 +536,7 @@ def lexicon():
 <body class="wk lex-page">
 {titleblock('<nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="#" aria-current="page">Lexicon</a></nav>', 0, "—", "")}
 {body}
-<div class="find" role="dialog" aria-label="Find a project"><div class="box"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><ol></ol></div></div>
+<div class="find" role="dialog" aria-modal="true" aria-label="Find a project"><div class="box"><div class="find-top"><input type="search" placeholder="Find a bench…" aria-label="Find a bench"><button class="find-x" type="button" aria-label="Close">✕</button></div><ol></ol></div></div>
 <script type="application/json" id="wk-index">{index_json()}</script>
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False, indent=1)}</script>
 <script src="assets/ui/plan.js?v={ver("assets/ui/plan.js")}" defer></script>

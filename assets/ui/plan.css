@@ -501,7 +501,7 @@ html.docked .suitebar { bottom: calc(76px + env(safe-area-inset-bottom)); }
   .row.top .room { padding-bottom: 22px; }
   .benches { grid-template-columns: 1fr 1fr; gap: 8px; }
   .bench { padding: 9px 8px 8px; column-gap: 7px; grid-template-columns: auto 1fr; } .bench .g { width: 18px; height: 18px; grid-row: auto; }
-  .bench b { font-size: 13px; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; } .bench small { display: none; }
+  .bench b { font-size: 13px; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; } .bench small { font-size: 11px; -webkit-line-clamp: 2; } /* what it is, even without hover */
   .bench .lamp { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; }
   .room .dimx { left: 18px; right: 16px; }
   .sheetnotes { grid-template-columns: 1fr; margin: 14px 10px 10px; padding: 18px; }
@@ -528,3 +528,12 @@ html.docked .dock.tuck { transform: translate(-50%, calc(-100% + 8px)); opacity:
 .dock .tile { --s: 24px; } .dock .tile svg { filter: none; }
 @media (max-width: 520px) { .dock .lbl { display: none; } .dock button, .dock a { padding: 0 10px; } }
 @media (prefers-reduced-motion: reduce) { .dock { transition: none; } }
+
+/* the find dialog's top row: the field and a close key */
+.find-top { display: flex; align-items: center; border-bottom: 1px solid var(--line-2); }
+.find-top input { border-bottom: 0; flex: 1; }
+.find-x { all: unset; cursor: pointer; padding: 0 16px; align-self: stretch; display: grid; place-items: center; color: var(--dim); font-size: 16px; }
+.find-x:hover, .find-x:focus-visible { color: var(--gold-hi); }
+/* three ways in, under "Start with one of these" */
+.start .paths { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; margin-top: 4px; }
+.start .paths .key { min-height: 32px; padding: 0 12px; font-size: 10.5px; }

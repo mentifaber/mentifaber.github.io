@@ -30,7 +30,8 @@ await p.click('[data-show="private"]');
 assert.equal(await p.$$eval(".benches li:not([inert])", (xs) => xs.length), plan.private);
 assert.match(await p.textContent(".sift output"), new RegExp("^" + plan.private + " of " + plan.all));
 assert.equal(await p.getAttribute('[data-show="private"]', "aria-pressed"), "true");
-if (DEV === "desktop") { await p.keyboard.press("ArrowRight"); for (let i = 0; i < 4; i++) { await p.keyboard.press("ArrowRight"); await p.keyboard.press("ArrowDown"); }
+if (DEV === "desktop") { await p.keyboard.press("ArrowRight"); assert.ok(!(await p.evaluate(() => !!document.activeElement.closest(".benches"))), "with nothing focused the arrows are the page's (they don't grab a bench)");
+  await p.focus(".benches li:not([inert]) .bench"); for (let i = 0; i < 4; i++) { await p.keyboard.press("ArrowRight"); await p.keyboard.press("ArrowDown"); }
   assert.equal(await p.evaluate(() => document.activeElement.dataset.k), "private", "the arrows only walk the benches on show"); }
 await p.reload(); await p.waitForSelector(".bench");
 assert.equal(await p.getAttribute('[data-show="private"]', "aria-pressed"), "true", "the choice holds for the visit");

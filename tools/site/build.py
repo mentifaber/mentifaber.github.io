@@ -135,9 +135,13 @@ def short_desc(d, cap=155):  # whole sentences up to ~155 characters; a long fir
     for sent in re.split(r"(?<=[.!?])\s+", d):
         if len(out + (" " if out else "") + sent) > cap: break
         out = out + (" " if out else "") + sent
-    if len(out) >= 110: return out
-    cut = d[:cap - 1].rsplit(" ", 1)[0].rstrip(",;:—–-· ")
-    return cut + "…"
+    if len(out) >= 80: return out  # whole sentences read better than a longer cut
+    # a long first sentence ends at its last clause break that fits (a colon, semicolon, dash or comma), as a whole phrase,
+    # rather than mid-phrase with an ellipsis; a word cut is the last resort
+    head = d[:cap]; best = max((head.rfind(b) for b in (": ", "; ", " — ", " – ", ", ", " (")), default=-1)
+    cut = d[:best] if best >= 60 else head.rsplit(" ", 1)[0]
+    cut = cut.rstrip(",;:—–-· ")
+    return cut + ("." if best >= 60 else "…")
 
 def seo():
     """Every page: a canonical tag on its clean address, og:url, a meta description of the right length, and one H1."""
@@ -221,4 +225,4 @@ if __name__ == "__main__":
     icons(list(A)); brand_icons()
     import plan
     for i in ids: print("built", plan.page(i))
-    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.aliases()); print("built", suite()); print("built", atlas()); print("built", seo()); print("built", sitemap())
+    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.privacy()); import faberos; print("built", faberos.manifest()); print("built", plan.aliases()); print("built", suite()); print("built", atlas()); print("built", seo()); print("built", sitemap())

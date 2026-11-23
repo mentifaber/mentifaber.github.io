@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/os">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FaberOS · Mentifaber</title>
+<meta name="description" content="FaberOS: Mentifaber&#x27;s operating environment in the browser. Every app in its own window, live widgets on the desktop.">
+<meta name="theme-color" content="#080705">
+<meta property="og:url" content="https://mentifaber.org/os"><meta property="og:title" content="FaberOS · Mentifaber">
+<meta property="og:description" content="Mentifaber's operating environment in the browser: the apps in windows, live widgets, one place for permissions.">
+<meta property="og:image" content="https://mentifaber.org/assets/icons/v2/mentifaber-512.png">
+<link rel="icon" href="assets/brand/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icons/v2/mentifaber-180.png">
+<link rel="preload" href="assets/fonts/MentifaberDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/SchibstedGrotesk-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/os/apps.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="assets/os/os.css">
+</head>
+<body>
+<h1 class="sr">FaberOS</h1>
+<div id="os" class="os" data-wall="forge">
+  <header class="bar" role="banner">
+    <button class="bar-mark" id="menu-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="menu"><img src="assets/brand/mark.svg" alt="" width="18" height="18"><b>FaberOS</b></button>
+    <div class="bar-title" id="bar-title" aria-live="polite">Desktop</div>
+    <form class="ask" id="ask" role="search" aria-label="Ask AutoFaber">
+      <input id="ask-in" type="text" placeholder="Ask AutoFaber…" aria-label="Ask AutoFaber" autocomplete="off" enterkeyhint="go">
+    </form>
+    <time class="bar-clock" id="clock"></time>
+  </header>
+  <nav class="menu" id="menu" role="menu" aria-label="FaberOS" hidden>
+    <button role="menuitem" data-open="about">About FaberOS</button>
+    <button role="menuitem" data-open="settings">Settings and permissions</button>
+    <button role="menuitem" data-open="foundry">Foundry: install the apps</button>
+    <button role="menuitem" data-open="privacy">Privacy</button>
+    <a role="menuitem" href="./">Back to the workshop</a>
+  </nav>
+
+  <main class="desk" id="desk" aria-label="Desktop">
+    <section class="widgets" id="widgets" aria-label="Widgets">
+      <div class="w clockw" aria-label="Time"><span class="wl"><span>Local time</span></span><div class="wv" id="big-time">--:--</div><div class="ws" id="big-date"></div></div>
+      <a class="w skel" data-w="weather" data-label="Weather"></a>
+      <a class="w skel" data-w="iss" data-label="ISS"></a>
+      <a class="w skel" data-w="moon" data-label="Moon"></a>
+      <a class="w skel" data-w="kp" data-label="Space weather"></a>
+      <a class="w skel" data-w="hive" data-label="AutoFaber"></a>
+    </section>
+    <section class="icons" id="icons" aria-label="Pinned apps"></section>
+    <div class="windows" id="windows"></div>
+  </main>
+
+  <footer class="dock" id="dock" aria-label="Dock">
+    <button class="dock-home" id="home-btn" aria-label="Show the desktop" title="Desktop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></button>
+    <button class="dock-all" id="all-btn" aria-label="All apps" aria-haspopup="dialog" title="All apps (Ctrl K)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h4v4H5zM10 5h4v4h-4zM15 5h4v4h-4zM5 10h4v4H5zM10 10h4v4h-4zM15 10h4v4h-4zM5 15h4v4H5zM10 15h4v4h-4zM15 15h4v4h-4z"/></svg></button>
+    <div class="dock-apps" id="dock-apps" role="toolbar" aria-label="Pinned and open apps"></div>
+  </footer>
+
+  <div class="launcher" id="launcher" role="dialog" aria-modal="true" aria-label="All apps" hidden>
+    <div class="l-box">
+      <div class="l-top"><input id="l-q" type="search" placeholder="Find an app…" aria-label="Find an app" autocomplete="off"><button class="x" id="l-x" type="button" aria-label="Close">✕</button></div>
+      <div class="l-body" id="l-body"></div>
+    </div>
+  </div>
+
+  <div class="consent" id="consent" role="dialog" aria-modal="true" aria-labelledby="c-h" hidden>
+    <div class="c-box">
+      <h2 id="c-h"></h2>
+      <p id="c-p"></p>
+      <ul id="c-list"></ul>
+      <p class="fine">Your browser asks again before anything is actually used. You can change this any time in Settings.</p>
+      <div class="c-act"><button id="c-no" type="button">Open without them</button><button id="c-yes" type="button" class="pri">Allow and open</button></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+<noscript><p style="padding:24px">FaberOS needs JavaScript. Every app is also on <a href="./">the workshop</a>.</p></noscript>
+<script src="assets/ui/widgets.js" defer></script>
+<script src="assets/os/os.js" defer></script>
+</body>
+</html>
