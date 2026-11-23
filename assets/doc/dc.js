@@ -146,7 +146,10 @@ $("ask").addEventListener("submit", (e) => { e.preventDefault(); const q = $("aq
 addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("dragging"); });
 addEventListener("dragleave", (e) => { if (!e.relatedTarget) document.body.classList.remove("dragging"); });
 addEventListener("drop", (e) => { e.preventDefault(); document.body.classList.remove("dragging"); if (e.dataTransfer.files.length) add([...e.dataTransfer.files]); });
-$("export").addEventListener("click", () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify({ doccrawler: 1, docs: S.docs })], { type: "application/json" })); a.download = "doccrawler-library.json"; a.click(); });
+$("export").addEventListener("click", () => { const blob = new Blob([JSON.stringify({ doccrawler: 1, docs: S.docs })], { type: "application/json" });
+  if (window.Faber && Faber.inOS) { Faber.save(blob, "doccrawler-library.json"); return toast("Library saved to the FaberOS Shelf"); } // inside FaberOS the export lands on the Shelf
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "doccrawler-library.json"; a.click(); });
+if (window.Faber) Faber.onFiles((files) => add(files)); // FaberOS's Shelf: "Open in DocCrawler"
 $("import").addEventListener("change", async (e) => { try { const j = JSON.parse(await e.target.files[0].text()); let n = 0; for (const d of j.docs || []) if (d.id && !S.docs.some((x) => x.id === d.id)) { await DB.put(d); S.docs.push(d); n++; } rebuild(); draw(); toast(n + " imported"); } catch (err) { toast("That isn't a DocCrawler export"); } e.target.value = ""; });
 $("wipe").addEventListener("click", async () => { if (!confirm("Remove every document from this browser's library?")) return; await DB.clear(); S.docs = []; rebuild(); draw(); });
 (async () => { try { await DB.open(); S.docs = await DB.all(); } catch (e) { toast("This browser won't keep a library (private mode?); it works until you close the tab."); } rebuild(); draw(); })();
