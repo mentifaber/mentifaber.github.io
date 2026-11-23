@@ -20,3 +20,26 @@ export function report(bag) {
   settle(bag); const all = [...bag.by].map(([sql, e]) => ({ sql, ...e }));
   return { since: new Date(bag.at).toISOString(), rows: all.reduce((t, x) => t + x.rows, 0), calls: all.reduce((t, x) => t + x.calls, 0), top: all.sort((a, b) => b.rows - a.rows).slice(0, 30) };
 }
+
+// The counts above live in memory, and an object that goes quiet is evicted, so they'd only ever cover "since it last
+// woke". keep() folds them into a running total for the UTC day in the object's own storage, at most every 30 seconds
+// (one row written each time), and touch() also schedules one last fold shortly after activity stops, before the object
+// is evicted; dayReport() is that total plus what hasn't been folded in yet.
+const dayKey = () => "rows:" + new Date().toISOString().slice(0, 10);
+export async function keep(bag, storage, force) {
+  if (!storage || !storage.get || (!force && Date.now() - (bag.saved || bag.at) < 30e3)) return;
+  settle(bag); bag.saved = Date.now(); if (!bag.by.size) return;
+  const k = dayKey(), cur = (await storage.get(k)) || {};
+  for (const [sql, e] of bag.by) { const c = cur[sql] || { calls: 0, rows: 0 }; c.calls += e.calls; c.rows += e.rows; cur[sql] = c; }
+  const top = Object.entries(cur).sort((a, b) => b[1].rows - a[1].rows).slice(0, 150); // a day's shapes, the heaviest kept
+  await storage.put(k, Object.fromEntries(top)); bag.by = new Map();
+}
+export function touch(bag, storage) {
+  keep(bag, storage).catch(() => {});
+  if (!bag.timer && typeof setTimeout === "function") { bag.timer = setTimeout(() => { bag.timer = null; keep(bag, storage, true).catch(() => {}); }, 20e3); if (bag.timer && bag.timer.unref) bag.timer.unref(); }
+}
+export async function dayReport(bag, storage) {
+  await keep(bag, storage, true); const cur = (storage && storage.get && (await storage.get(dayKey()))) || {};
+  const all = Object.entries(cur).map(([sql, e]) => ({ sql, ...e }));
+  return { day: dayKey().slice(5), limit: 5e6, rows: all.reduce((t, x) => t + x.rows, 0), calls: all.reduce((t, x) => t + x.calls, 0), top: all.sort((a, b) => b.rows - a.rows).slice(0, 30) };
+}

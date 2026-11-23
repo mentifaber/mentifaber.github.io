@@ -5,7 +5,7 @@
 // (Grok, ChatGPT, …) that join a project by following links. The Studio is the one-to-one side: chat with any
 // model, with web search, page reading, vision, video frames, voice and image generation.
 import { DurableObject } from "cloudflare:workers";
-import { metered, newBag, report as rowReport } from "./rowmeter.js";
+import { metered, newBag, touch as rowTouch, dayReport } from "./rowmeter.js";
 import { groqHear, PRESETS, AURA2, OPENAI_VOICES, voiceOut, isChat, pullModel, vaultKey, seal, unseal, probe, complete, streamComplete, textOf, search, readPage, describe, transcribe, speak, imagine } from "./hive-kit.js";
 import { Mind, mindTables, OWNER_MODE, siteIndex, siteText, asksAboutWork } from "./hive-mind.js";
 import { asksWeather, placeIn, weather } from "./hive-kit.js";
@@ -228,11 +228,11 @@ export class Hive extends DurableObject {
   }
 
   async fetch(req) {
-    await this.loadRetired();
+    await this.loadRetired(); this.sql(); rowTouch(this._rows, this.ctx.storage);
     const url = new URL(req.url), q = this.sql(), owner = req.headers.get("x-hive-owner") === "1", path = url.pathname.replace(/^\/api\/hive/, "") || "/";
     const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { "content-type": "application/json", "cache-control": "no-store", "access-control-allow-origin": "*" } });
     let b = Object.fromEntries(url.searchParams); if (req.method === "POST") { try { Object.assign(b, await req.json()); } catch (e) {} }
-    if (path === "/rows") return J(rowReport(this._rows || newBag())); // which statements spent the free plan's rows-read allowance since this object woke (shapes and counts only)
+    if (path === "/rows") { this.sql(); return J(await dayReport(this._rows, this.ctx.storage)); } // which statements spent the free plan's rows-read allowance since this object woke (shapes and counts only)
     if (path === "/purge") { // the owner clears every finished, stopped or failed project at once
       if (!owner) return J({ error: "only the owner can clear projects" }, 401);
       const ids = q.exec("SELECT id FROM proj WHERE status IN ('done','stopped','failed') AND id NOT IN (SELECT pid FROM pub)").toArray().map((r) => r.id); // published ones keep their link
@@ -463,7 +463,7 @@ export class Hive extends DurableObject {
   }
 
   async alarm() {
-    await this.loadRetired();
+    await this.loadRetired(); this.sql(); rowTouch(this._rows, this.ctx.storage);
     const q = this.sql(); let busy = false, resting = false;
     if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0;
     const offUntil = this.waiOff(), out = !!offUntil;

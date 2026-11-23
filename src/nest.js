@@ -31,7 +31,7 @@
 //                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
 import { DurableObject } from "cloudflare:workers";
 import { pageProduct, quota, checkPhoto } from "./nest-find.js";
-import { metered, newBag, report as rowReport } from "./rowmeter.js";
+import { metered, newBag, touch as rowTouch, dayReport } from "./rowmeter.js";
 
 const PATH = /^(items|claims|people|locks)\/[A-Za-z0-9_-]{1,64}$|^meta\/(settings|thanks)$/, BLOB_ID = /^b[a-f0-9]{20}$/;
 const MAX_DOC = 64 * 1024, MAX_DOCS = 3000, MAX_PEOPLE = 400, BLOB_MAX = 3e6, IMAGE = /^image\/(jpeg|png|webp|gif)$/;
@@ -174,6 +174,7 @@ export class Nest extends DurableObject {
     return more;
   }
   async alarm() { // products for queued items first, one at a time; then a few mended photos; so a new item never waits
+    this.q(); rowTouch(this._rows, this.ctx.storage);
     let next = null; const pause = this.kv("findpause") ? JSON.parse(this.kv("findpause")) : null;
     if (this.queued().length) next = pause && pause.until > Date.now() ? pause.until : await this.findTick();
     if (this.kv("migrate") !== MIGRATE_V) await this.migrate().catch((e) => console.warn("migrate", e));
@@ -306,8 +307,8 @@ export class Nest extends DurableObject {
   }
 
   async fetch(req) {
-    const url = new URL(req.url), path = url.pathname.replace(/^\/api\/nest/, "") || "/", post = req.method === "POST";
-    if (path === "/rows") { if (req.headers.get("x-nest-owner") !== "1") return J({ error: "owner only" }, 401); this.q(); return J(rowReport(this._rows)); } // which statements spent the free plan's rows-read allowance (shapes and counts only)
+    const url = new URL(req.url), path = url.pathname.replace(/^\/api\/nest/, "") || "/", post = req.method === "POST"; this.q(); rowTouch(this._rows, this.ctx.storage);
+    if (path === "/rows") { if (req.headers.get("x-nest-owner") !== "1") return J({ error: "owner only" }, 401); this.q(); return J(await dayReport(this._rows, this.ctx.storage)); } // which statements spent the free plan's rows-read allowance (shapes and counts only)
     const body = post && !/^\/blob/.test(path) ? await req.json().catch(() => ({})) : {};
     if (path === "/join" && post) {
       const name = cleanName(body.name); if (!name) return J({ error: "say your name, so the parents know who's giving what" }, 400);
