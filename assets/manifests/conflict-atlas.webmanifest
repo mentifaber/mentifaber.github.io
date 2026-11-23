@@ -2,7 +2,7 @@
   "id": "/conflict-atlas",
   "name": "Unlit · Mentifaber",
   "short_name": "Unlit",
-  "description": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of June 2026.",
+  "description": "Twenty-eight active conflicts, tiered by scale rather than by how much coverage they get. Data as of 23 November 2026, with sources.",
   "start_url": "/conflict-atlas-app.html",
   "scope": "/conflict-atlas",
   "display": "standalone",

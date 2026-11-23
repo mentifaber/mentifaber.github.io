@@ -22,3 +22,7 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: 380px minma
 .nomap { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mute); } .nomap[hidden] { display: none; }
 .leaflet-container { font: inherit; } .leaflet-tooltip { background: #14110f; color: #efe6dc; border: 1px solid rgba(239,230,220,.15); box-shadow: none; } .leaflet-tooltip-top:before { border-top-color: #14110f; }
 @media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 46vh 1fr; } .side { order: 2; border-right: 0; border-top: 1px solid var(--line); } .mapwrap { order: 1; } .counts { display: none; } }
+
+/* the sources under a summary */
+.detail .src { margin-top: 10px; font-size: 12px; line-height: 1.5; opacity: .8; }
+.detail .src a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
