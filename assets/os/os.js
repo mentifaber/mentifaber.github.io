@@ -90,7 +90,7 @@
       '<button class="wb close" data-w="close" aria-label="Close ' + esc(a.name) + '" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
       (a.builtin ? '<div class="inner"></div>' : '<iframe title="' + esc(a.name) + '" loading="eager"></iframe><div class="shield"></div>') + '<div class="grip" aria-hidden="true"></div>';
     if (a.builtin) RENDER[a.id]($(".inner", el));
-    else { const f = $("iframe", el); f.allow = allowed(a).join("; "); f.src = url; }
+    else { const f = $("iframe", el); f.allow = allowed(a).join("; "); f.addEventListener("load", () => hook(f, a.id)); f.src = url; }
     wins.appendChild(el); open.set(a.id, { el, app: a });
     wire(el, a.id); focus(a.id);
   }
@@ -116,8 +116,21 @@
     });
     drag($(".win-bar", el), "move"); drag($(".grip", el), "size");
   }
-  // a click inside an app's frame never reaches this page; the page losing focus to that frame says which window it was
-  addEventListener("blur", () => setTimeout(() => { const f = document.activeElement; if (f && f.tagName === "IFRAME") { const w = f.closest(".win"); if (w && w.dataset.id !== front) focus(w.dataset.id); } }, 0));
+  // Which app you're using: every app here is on this site, so FaberOS listens inside its page for a real press, which
+  // brings its window forward the way a desktop does. An app can also take focus by itself as it loads, in the
+  // background; that's no press, so it stays where it is and focus goes back to the window in front. (This page can't
+  // tell from its own activeElement: moving focus between two frames doesn't update it reliably; each frame's own
+  // hasFocus() does.)
+  let pressed = { id: null, t: 0 }, handed = {};
+  const hook = (f, id) => { try { f.contentWindow.addEventListener("pointerdown", () => { pressed = { id, t: Date.now() }; if (front !== id) focus(id); }, true); } catch (e) {} };
+  const focusedApp = () => { for (const [id, o] of open) { const f = $("iframe", o.el); try { if (f && f.contentDocument && f.contentDocument.hasFocus()) return id; } catch (e) {} } return null; };
+  const watchFocus = () => {
+    const id = focusedApp(); if (!id || id === front) return;
+    if (pressed.id === id && Date.now() - pressed.t < 2000) return focus(id);
+    if (handed[id] && Date.now() - handed[id] < 5000) return; handed[id] = Date.now(); // hand it back once, not in a tug of war
+    const o = front && open.get(front), fr = o && $("iframe", o.el); try { if (fr) fr.contentWindow.focus(); else window.focus(); } catch (e) {}
+  };
+  addEventListener("blur", () => setTimeout(watchFocus, 0)); setInterval(watchFocus, 300);
 
   // ── the dock and the desktop ──
   function drawDock() {
