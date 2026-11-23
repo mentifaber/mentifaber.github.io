@@ -29,7 +29,7 @@ r = await chat("workers-ai|@cf/openai/gpt-oss-120b", "what's a good name for a b
 ok("allowance used up with only a paid key: a visitor is told when to come back; the owner's paid key answers only for the owner");
 
 // 2. a free key: visitors and the apps carry on
-const free = await add("cerebras", "csk-free-0123456789"); assert.ok(free.ok, JSON.stringify(free)); sent.length = 0;
+const free = await add("cerebras", "csk-free-0123456789"); assert.ok(free.ok, JSON.stringify(free)); await call("/keys/set", { kid: free.key.id, guests: true }); sent.length = 0; // shared with visitors (a new key is the owner's until switched on)
 r = await chat("workers-ai|@cf/openai/gpt-oss-120b", "what's a good name for a bakery?"); assert.equal(r.status, 200, JSON.stringify(r.j));
 assert.match(r.j.text, /^FREE /); assert.ok(r.j.tools.some((t) => /free allowance resting/.test(t))); assert.ok(sent.every((s) => /cerebras/.test(s.url)), "only the free key was asked");
 ok("allowance used up: a visitor (or an app asking for a Workers AI model) is answered by a free-tier key");

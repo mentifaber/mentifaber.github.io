@@ -69,6 +69,7 @@ const PLANNER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"; // decides which too
 // visitors and the apps when Cloudflare's daily allowance is used up, and carry the background work so that allowance
 // lasts for chat, voice, pictures and eyes. Keys from paid-only providers stay the owner's. On OpenRouter only the
 // ":free" models count.
+const GUEST_KEY_DAY = 200; // visitor calls a day on any one owner key (the owner's own use is never counted against it)
 const FREE_PROV = new Set(["cerebras", "groq", "gemini", "mistral", "github", "openrouter"]);
 const freeModel = (prov, model) => FREE_PROV.has(prov) && (prov !== "openrouter" || /:free$/.test(model));
 const SWARM_WAI_DAY = 20;
@@ -171,7 +172,7 @@ export class Hive extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS perf(model TEXT PRIMARY KEY, ok INTEGER DEFAULT 0, fail INTEGER DEFAULT 0, ms REAL)"); // how each model actually does, for routing
       q.exec("CREATE TABLE IF NOT EXISTS pub(slug TEXT PRIMARY KEY, pid TEXT UNIQUE, ts INTEGER, by_ TEXT, views INTEGER DEFAULT 0, live INTEGER DEFAULT 1)"); // results with a link (/p/<slug>): live = anyone can open it, else only the owner
       q.exec("CREATE TABLE IF NOT EXISTS ver(pid TEXT, v INTEGER, ts INTEGER, final TEXT, note TEXT, PRIMARY KEY(pid, v))"); // earlier versions of a result, kept when a fix replaces it
-      q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)");
+      q.exec("CREATE TABLE IF NOT EXISTS vault(id TEXT PRIMARY KEY, provider TEXT, kind TEXT, label TEXT, base TEXT, sealed TEXT, tail TEXT, models TEXT, pick TEXT, live INTEGER, err TEXT, used INTEGER, ts INTEGER)"); try { q.exec("ALTER TABLE vault ADD COLUMN guests INTEGER DEFAULT 1"); } catch (e) {} // P1.03: keys from before stay shared with visitors
       try { q.exec("ALTER TABLE proj ADD COLUMN own INTEGER"); } catch (e) {} try { q.exec("ALTER TABLE proj ADD COLUMN verdict TEXT"); } catch (e) {} q.exec("CREATE TABLE IF NOT EXISTS reply(ts INTEGER, model TEXT, who TEXT, kind TEXT, ms INTEGER, prep INTEGER, ttft INTEGER, chars INTEGER, cut TEXT, err TEXT)"); q.exec("CREATE INDEX IF NOT EXISTS reply_ts ON reply(ts)"); try { q.exec("ALTER TABLE agent ADD COLUMN score INTEGER DEFAULT 0"); } catch (e) {} try { q.exec("ALTER TABLE agent ADD COLUMN err TEXT"); } catch (e) {}
       mindTables(q); genesisTables(q); libraryTables(q); voiceTables(q);
       // indexes for the lookups every view and every agent step makes (each runs once; cheap if already there)
@@ -694,7 +695,7 @@ export class Hive extends DurableObject {
     const v = this.sql().exec("SELECT * FROM vault WHERE id=?", id).toArray()[0]; if (!v || !v.live) throw new Error("that key is gone or switched off");
     this.sql().exec("UPDATE vault SET used=COALESCE(used,0)+1 WHERE id=?", id); return { v, key: await unseal(await this.vk(), v.sealed) };
   }
-  pub(v) { return { id: v.id, provider: v.provider, name: (PRESETS[v.provider] || {}).name || v.provider, kind: v.kind, label: v.label, base: (PRESETS[v.provider] || {}).editBase ? v.base : undefined, pull: !!(PRESETS[v.provider] || {}).pull, tail: v.tail, models: JSON.parse(v.models || "[]").length, list: JSON.parse(v.models || "[]"), pick: v.pick || "", live: !!v.live, err: v.err, used: v.used || 0, ts: v.ts }; }
+  pub(v) { return { id: v.id, provider: v.provider, name: (PRESETS[v.provider] || {}).name || v.provider, kind: v.kind, label: v.label, base: (PRESETS[v.provider] || {}).editBase ? v.base : undefined, pull: !!(PRESETS[v.provider] || {}).pull, tail: v.tail, models: JSON.parse(v.models || "[]").length, list: JSON.parse(v.models || "[]"), pick: v.pick || "", live: !!v.live, err: v.err, used: v.used || 0, ts: v.ts, freeTier: FREE_PROV.has(v.provider), guests: FREE_PROV.has(v.provider) && !!v.guests, guestToday: this.guestUsed(v.id), guestCap: GUEST_KEY_DAY }; }
   async keys(path, b, owner, J) {
     if (!owner) return J({ error: "the key vault is the owner's: sign in on Vigil first" }, 401);
     const q = this.sql();
@@ -707,7 +708,7 @@ export class Hive extends DurableObject {
       const v = { id: crypto.randomUUID().slice(0, 12), provider: b.provider, kind: pre.kind, label: String(b.label || "").slice(0, 40), base, tail: key ? key.slice(-4) : "none" };
       let models = [], err = null; try { models = await probe(v, key); } catch (e) { err = String(e.message || e).slice(0, 200); }
       if (err && !b.force) return J({ error: "the provider refused it: " + err, canForce: true }, 400);
-      q.exec("INSERT INTO vault(id,provider,kind,label,base,sealed,tail,models,pick,live,err,used,ts) VALUES(?,?,?,?,?,?,?,?,?,1,?,0,?)", v.id, v.provider, v.kind, v.label, base, await seal(await this.vk(), key), v.tail, JSON.stringify(models), String(b.pick || "").slice(0, 2000), err, Date.now());
+      q.exec("INSERT INTO vault(id,provider,kind,label,base,sealed,tail,models,pick,live,err,used,ts,guests) VALUES(?,?,?,?,?,?,?,?,?,1,?,0,?,0)", v.id, v.provider, v.kind, v.label, base, await seal(await this.vk(), key), v.tail, JSON.stringify(models), String(b.pick || "").slice(0, 2000), err, Date.now());
       return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) });
     }
     const v = q.exec("SELECT * FROM vault WHERE id=?", String(b.kid || "")).toArray()[0]; if (!v) return J({ error: "no such key" }, 404);
@@ -719,7 +720,8 @@ export class Hive extends DurableObject {
       return J({ ok: true, status, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) });
     }
     if (path === "/keys/del") { q.exec("DELETE FROM vault WHERE id=?", v.id); return J({ ok: true }); }
-    if (path === "/keys/set") { if (b.live !== undefined) q.exec("UPDATE vault SET live=? WHERE id=?", b.live ? 1 : 0, v.id); if (b.label !== undefined) q.exec("UPDATE vault SET label=? WHERE id=?", String(b.label).slice(0, 40), v.id); if (b.pick !== undefined) q.exec("UPDATE vault SET pick=? WHERE id=?", String(b.pick).slice(0, 2000), v.id); return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
+    if (path === "/keys/set") { if (b.guests !== undefined) { if (b.guests && !FREE_PROV.has(v.provider)) return J({ error: "only a key on a provider's free tier can answer visitors" }, 400); q.exec("UPDATE vault SET guests=? WHERE id=?", b.guests ? 1 : 0, v.id); }
+      if (b.live !== undefined) q.exec("UPDATE vault SET live=? WHERE id=?", b.live ? 1 : 0, v.id); if (b.label !== undefined) q.exec("UPDATE vault SET label=? WHERE id=?", String(b.label).slice(0, 40), v.id); if (b.pick !== undefined) q.exec("UPDATE vault SET pick=? WHERE id=?", String(b.pick).slice(0, 2000), v.id); return J({ ok: true, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
     if (path === "/keys/test") { let err = null, models = JSON.parse(v.models || "[]"); try { models = await probe(v, await unseal(await this.vk(), v.sealed)); } catch (e) { err = String(e.message || e).slice(0, 200); } q.exec("UPDATE vault SET err=?, models=? WHERE id=?", err, JSON.stringify(models), v.id); return J({ ok: !err, error: err, key: this.pub(q.exec("SELECT * FROM vault WHERE id=?", v.id).one()) }); }
     return J({ error: "not found" }, 404);
   }
@@ -785,17 +787,22 @@ export class Hive extends DurableObject {
   async resting() { if (this.quota === undefined) this.quota = (await this.ctx.storage.get("quota")) || 0; return this.quota && Date.now() < this.quota ? this.quota : 0; }
   async rest() { const d = new Date(); this.quota = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 2); await this.ctx.storage.put("quota", this.quota); }
   // When Cloudflare's free allowance is out, the owner's own keys answer instead: a sensible everyday model first.
-  async freeAll() { // every model on a free tier: the owner's free-provider keys, then the site secrets
-    const out = [];
-    for (const v of this.sql().exec("SELECT id, provider, models, pick FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
-      if (!FREE_PROV.has(v.provider)) continue; const all = JSON.parse(v.models || "[]").filter(isChat), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
+  async freeAll(guest) { // every model on a free tier: the owner's free-provider keys, then the site secrets. For a visitor, only keys
+    const out = [];         // the owner has shared with visitors, and only until today's visitor share of each is spent
+    for (const v of this.sql().exec("SELECT id, provider, models, pick, guests FROM vault WHERE live=1 AND kind NOT IN ('search','voice') ORDER BY ts").toArray()) {
+      if (!FREE_PROV.has(v.provider)) continue; if (guest && (!v.guests || this.guestUsed(v.id) >= GUEST_KEY_DAY)) continue; const all = JSON.parse(v.models || "[]").filter(isChat), pick = (v.pick || "").split(",").map((x) => x.trim()).filter(Boolean);
       for (const m of pick.length && v.pick !== "*" ? pick : all) if (freeModel(v.provider, m)) out.push("k:" + v.id + "|" + m);
     }
     for (const m of await this.envModels()) { const prov = m.id.slice(6).split("|")[0]; if (freeModel(prov, m.id.split("|").slice(1).join("|"))) out.push(m.id); }
     return [...new Set(out)];
   }
-  async pickFree(kind, not) { // the best free model for this kind of ask ("quick" wants a fast one), or null
-    const ok = (await this.freeAll()).filter((id) => id !== not && !this.sick(id)).sort((a, b) => this.rank(a) - this.rank(b));
+  guestUsed(id) { return (this.sql().exec("SELECT n FROM limits WHERE k=?", "gkey:" + id + ":" + new Date().toISOString().slice(0, 10)).toArray()[0] || { n: 0 }).n; }
+  guestSpend(src) { // a visitor's call on an owner key, counted apart from the owner's own use
+    if (!String(src || "").startsWith("k:")) return; const k = "gkey:" + String(src).slice(2).split("|")[0] + ":" + new Date().toISOString().slice(0, 10);
+    this.sql().exec("INSERT INTO limits(k,n) VALUES(?,1) ON CONFLICT(k) DO UPDATE SET n=n+1", k);
+  }
+  async pickFree(kind, not, guest) { // the best free model for this kind of ask ("quick" wants a fast one), or null
+    const ok = (await this.freeAll(guest)).filter((id) => id !== not && !this.sick(id)).sort((a, b) => this.rank(a) - this.rank(b));
     if (kind === "quick") { const f = ok.find((id) => /(?<![\d.])(?:[1-9]|1\d|20)b\b|instant|flash|scout|mini|small|lite/i.test(id.split("|").pop())); if (f) return f; }
     return ok[0] || null;
   }
@@ -839,7 +846,7 @@ export class Hive extends DurableObject {
     return 0;
   }
   async standIn(not, freeOnly) { // a model to answer when Workers AI is resting; for visitors and the apps, only a free-tier one
-    if (freeOnly) return this.pickFree("full", not);
+    if (freeOnly) return this.pickFree("full", not, true);
     const ms = [...this.models(true).filter((m) => m.id.startsWith("k:")), ...(await this.envModels())].filter((m) => m.id !== not);
     const ok = ms.filter((m) => !this.sick(m.id)).sort((a, b) => this.rank(a.id) - this.rank(b.id) || (/:free$/.test(b.id) ? 1 : 0) - (/:free$/.test(a.id) ? 1 : 0));
     return (ok[0] || ms[0] || {}).id || null;
@@ -872,7 +879,7 @@ export class Hive extends DurableObject {
     const sys = plannerPrompt(owner, new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"), user = plannerInput(msgs, gathered, round);
     const timed = (p) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("planner took too long")), 7000))]);
     let out = null;
-    const f = await this.pickFree("full").catch(() => null); // a free key first: the planner runs before every answer, so on Workers AI it would double what each message costs
+    const f = await this.pickFree("full", undefined, !owner).catch(() => null); if (f && !owner) this.guestSpend(f); // a free key first: the planner runs before every answer, so on Workers AI it would double what each message costs
     if (f) { const [src1, m1] = [f.split("|")[0], f.split("|").slice(1).join("|")]; out = await timed((async () => { const kv = await this.vaultGet(src1.slice(2)); return complete(this.env, kv.v, kv.key, m1, sys, [{ role: "user", text: user }], 300); })()).catch((e) => { this.cool(f, e); return null; }); }
     if (out == null && this.env.AI && !(await this.resting())) out = await timed(complete(this.env, null, null, PLANNER, sys, [{ role: "user", text: user }], 300)).catch(() => null);
     if (out == null && owner) { const s2 = await this.standIn().catch(() => null); if (s2) { const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2)); out = await timed(complete(this.env, kv.v, kv.key, m2, sys, [{ role: "user", text: user }], 300)).catch(() => null); } }
@@ -945,7 +952,7 @@ export class Hive extends DurableObject {
       const r = autoRoute({ text: lt, images: Array.isArray(lm.images) && lm.images.length > 0, research: !!b.research, voice: !!b.voice, quick: !b.research && !!quickAsk(lt) }, (c) => this.cooling(c) || this.sick(c));
       src = "workers-ai"; model = r.model; b.model = src + "|" + model; autoWhy = "Auto chose " + model.split("/").pop() + ": " + r.why;
       // text goes to a free-tier key when there is one: as good, often faster, and Cloudflare's allowance is kept for voice, pictures and eyes
-      const hasImg = Array.isArray(lm.images) && lm.images.length > 0, f = !hasImg && !b.voice ? await this.pickFree(r.model === "@cf/openai/gpt-oss-20b" ? "quick" : "full") : null;
+      const hasImg = Array.isArray(lm.images) && lm.images.length > 0, f = !hasImg && !b.voice ? await this.pickFree(r.model === "@cf/openai/gpt-oss-20b" ? "quick" : "full", undefined, !owner) : null;
       if (f) { src = f.split("|")[0]; model = f.split("|").slice(1).join("|"); b.model = f; autoFree = true; autoWhy = "Auto chose " + model.split("/").pop() + " on a free key: " + r.why; } }
     if (src.startsWith("k:") && !owner && !autoFree) return J({ error: "vault models are the owner's" }, 401);
     const outMsg = (t) => "Cloudflare's free AI allowance is used up until " + new Date(t).toISOString().slice(11, 16) + " UTC. " + (owner ? "Add a free key under Uplinks (Cerebras, Groq, Gemini or Mistral) and AutoFaber will switch to it automatically." : "Come back then.");
@@ -1048,6 +1055,7 @@ export class Hive extends DurableObject {
     let v = null, key = null, used = b.model; const tryIn = async () => { const s2 = await this.standIn(undefined, !owner); if (!s2) return false; [src, model] = s2.split("|"); ({ v, key } = await this.vaultGet(src.slice(2))); used = s2; tools.push("free allowance resting, answered by " + model.split("/").pop()); return true; };
     if (src === "workers-ai" && (await this.resting()) && !(await tryIn())) return J({ error: outMsg(this.quota), quota: this.quota }, 429);
     if (src.startsWith("k:")) ({ v, key } = await this.vaultGet(src.slice(2)));
+    if (!owner) this.guestSpend(src);
     if (src === "agent") v = this.agentV();
     const looks = async () => { const ds = []; for (const [i, u] of last.images.entries()) ds.push("[" + (b.frames ? "Video frame " + (b.frames[i] || i + 1) : "Image " + (i + 1)) + ": " + ((await describe(this.env, u, b.frames ? "Describe what is happening in this video frame." : null).catch(() => "")) || "(could not see it)") + "]"); return ds.join("\n"); };
     if (last.images.length && (!v || v.noVision || b.swarm)) { last.text = (await looks()) + "\n\n" + last.text; last.images = []; tools.push("looked at " + (b.frames ? "the video" : "the image" + (msgs.length > 1 ? "s" : ""))); }
@@ -1162,6 +1170,7 @@ export class Hive extends DurableObject {
     const alts = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/openai/gpt-oss-120b", "@cf/meta/llama-4-scout-17b-16e-instruct"].map((m) => "workers-ai|" + m).filter((c) => c !== used && !this.cooling(c) && !this.isRetired(c));
     if (this.env.AI && alts.length && !(await this.resting())) return { v: null, key: null, model: alts[0].split("|")[1], id: alts[0], by: alts[0].split("/").pop().replace(/-instruct.*$/, "") };
     const s2 = await this.standIn(used, !owner); if (!s2 || s2 === used || this.cooling(s2)) return null; const [src2, m2] = s2.split("|"), kv = await this.vaultGet(src2.slice(2));
+    if (!owner) this.guestSpend(s2);
     return { v: kv.v, key: kv.key, model: m2, id: s2, by: m2.split("/").pop() };
   }
   async rescue(system, msgs, used, owner) {
