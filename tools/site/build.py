@@ -171,15 +171,17 @@ def seo():
             s = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + "\n" + h1, s, count=1)
         # structured data: the site on the home page, each project as an app on its own page
         ld = None; md = re.search(r'<meta name="description" content="([^"]*)"', s); dsc = _h.unescape(md.group(1)) if md else ""
-        org = {"@type": "Organization", "name": "Mentifaber", "url": SITE + "/", "logo": SITE + "/assets/icons/v2/mentifaber-512.png"}
+        person = {"@type": "Person", "@id": SITE + "/#anders", "name": "Anders Powell", "alternateName": "Mentifaber", "url": SITE + "/", "jobTitle": "Builder of minds and the systems that hold them",
+                  "sameAs": ["https://github.com/mentifaber", "https://x.com/mentifaber", "https://instagram.com/mentifaber", "https://soundcloud.com/sonicveil"]}
+        org = {"@type": "Organization", "@id": SITE + "/#org", "name": "Mentifaber", "url": SITE + "/", "logo": SITE + "/assets/icons/v2/mentifaber-512.png", "founder": {"@id": person["@id"]}}
         if f == "index.html":
-            ld = {"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "name": "Mentifaber", "url": SITE + "/", "description": dsc, "publisher": org}, org]}
-        elif f[:-5] in A and A[f[:-5]].get("href") == f and A[f[:-5]]["status"] != "private" and "noindex" not in s:
+            ld = {"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": SITE + "/#site", "name": "Mentifaber", "url": SITE + "/", "description": dsc, "author": {"@id": person["@id"]}, "publisher": {"@id": org["@id"]}}, org, person]}
+        elif f[:-5] in A and A[f[:-5]].get("href") in (f, f[:-5]) and A[f[:-5]]["status"] != "private" and "noindex" not in s:
             a = A[f[:-5]]
             ld = {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": a["name"], "description": dsc, "url": url,
                   "applicationCategory": "GameApplication" if a["cat"] == "play" else "MultimediaApplication" if a["cat"] == "craft" else "UtilitiesApplication",
                   "operatingSystem": "Android" if a["status"] == "android" else "Web browser, Android", "image": SITE + "/assets/icons/v2/" + a["id"] + "-512.png",
-                  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": org}
+                  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": person["@id"], "name": "Anders Powell", "url": SITE + "/"}, "publisher": {"@type": "Organization", "@id": org["@id"], "name": "Mentifaber"}}
         s = re.sub(r'\s*<script type="application/ld\+json" id="ld-seo">.*?</script>', "", s, flags=re.S)
         if ld: s = s.replace("</head>", '<script type="application/ld+json" id="ld-seo">' + json.dumps(ld, ensure_ascii=False).replace("</", "<\\/") + "</script>\n</head>", 1)
         if s != o: open(path, "w", encoding="utf-8").write(s); n += 1
