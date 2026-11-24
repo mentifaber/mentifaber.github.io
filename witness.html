@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/witness">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Witness · Mentifaber</title>
+<meta name="description" content="Prove a photo existed by a given time and hasn&#x27;t changed since. The photo stays on your phone: only its fingerprint is sent.">
+<meta name="theme-color" content="#0a0d10">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* Witness: a notary's counter. Cool steel and paper white, a stamped record, the verdict in one line. */
+:root { --bg: #0a0d10; --panel: #11161b; --line: #26313b; --steel: #8fb6d6; --hi: #cfe6f7; --ink: #e9eef2; --dim: #93a3b1; --ok: #8fd18f; --bad: #ff8a6b;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 720px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--steel); }
+.top a { color: var(--dim); text-decoration: none; text-transform: none; letter-spacing: 0; font: 400 14px var(--sans); }
+h1 { font: 700 clamp(30px, 7vw, 44px)/1.05 var(--sans); margin: 16px 0 8px; letter-spacing: -.01em; }
+.lede { color: var(--dim); margin: 0 0 16px; max-width: 62ch; }
+.tabs { display: flex; gap: 6px; margin: 14px 0; } .tabs button { flex: 1; font: 600 15px var(--sans); padding: 11px; background: transparent; color: var(--dim); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--bg); background: var(--steel); border-color: var(--steel); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; }
+.pick { display: grid; place-items: center; gap: 6px; padding: 22px 12px; border: 1.5px dashed var(--steel); border-radius: 12px; text-align: center; cursor: pointer; color: var(--hi); }
+.pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pick small { color: var(--dim); }
+.pick:focus-within { outline: 2px solid var(--hi); outline-offset: 2px; }
+img.prev { max-width: 100%; max-height: 260px; border-radius: 10px; justify-self: center; }
+label.chk { display: flex; gap: 8px; align-items: center; color: var(--dim); font-size: 15px; }
+input[type=text] { font: 400 15px var(--sans); padding: 10px 12px; background: #0b0f13; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; width: 100%; }
+.btn { font: 600 15px var(--sans); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--steel); background: transparent; color: var(--hi); cursor: pointer; text-decoration: none; text-align: center; }
+.btn.pri { background: var(--steel); color: #08101a; }
+.btn:disabled { opacity: .5; cursor: default; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.stamp { border: 2px solid var(--steel); border-radius: 12px; padding: 14px; display: grid; gap: 6px; }
+.stamp b { font-size: 18px; } .stamp .t { font: 600 20px var(--mono); color: var(--hi); }
+.mono { font: 500 12px var(--mono); color: var(--dim); word-break: break-all; }
+.verdict { font-weight: 600; padding: 12px; border-radius: 10px; border: 1px solid; }
+.verdict.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); } .verdict.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+.fine { color: var(--dim); font-size: 14px; margin: 0; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); }
+:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Witness</span><a href="./">mentifaber.org</a></div>
+  <h1>Witness</h1>
+  <p class="lede">Prove a photo existed by a certain time and hasn't been changed since: for a dented car before a claim, a flat at move-out, a repair before and after. The photo never leaves your phone. Only its fingerprint (a SHA-256) is sent, and the workshop signs it with its own clock.</p>
+  <div class="tabs" role="tablist"><button role="tab" id="t-take" aria-selected="true" aria-controls="p-take">Witness a photo</button><button role="tab" id="t-check" aria-selected="false" aria-controls="p-check">Check a photo</button></div>
+
+  <div class="panel" id="p-take" role="tabpanel" aria-labelledby="t-take">
+    <label class="pick"><input type="file" id="photo" accept="image/*" capture="environment"><span>Take or choose a photo</span><small>It stays on this device</small></label>
+    <img class="prev" id="prev" alt="" hidden>
+    <label class="chk"><input type="checkbox" id="where"> Include where I am (as this phone reports it)</label>
+    <input type="text" id="note" maxlength="200" placeholder="A note (optional): what this shows">
+    <div class="row"><button class="btn pri" id="go" type="button" disabled>Witness it</button><span class="status" id="st" role="status"></span></div>
+    <div id="out" hidden></div>
+  </div>
+
+  <div class="panel" id="p-check" role="tabpanel" aria-labelledby="t-check" hidden>
+    <label class="pick"><input type="file" id="cphoto" accept="image/*"><span>Choose the photo to check</span><small>Checked on this device</small></label>
+    <input type="text" id="crec" placeholder="Paste the Witness link or record" autocomplete="off">
+    <label class="pick" style="padding:12px"><input type="file" id="cfile" accept=".json,application/json"><span>…or open a saved .witness.json</span></label>
+    <div class="row"><button class="btn pri" id="cgo" type="button">Check it</button></div>
+    <div id="cout"></div>
+  </div>
+  <p class="fine" style="margin-top:16px">What a record proves: this exact photo existed by the time shown, and hasn't changed by a single pixel since. It can't prove what's in the photo is real, or that the phone's reported position is true. Visitors get 100 records a day.</p>
+</div>
+<script src="assets/os/faber.js"></script>
+<script src="assets/seal/verify.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const when = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "long", timeStyle: "long" });
+  const tab = (t) => { for (const k of ["take", "check"]) { $("t-" + k).setAttribute("aria-selected", k === t); $("p-" + k).hidden = k !== t; } };
+  $("t-take").onclick = () => tab("take"); $("t-check").onclick = () => tab("check");
+  let file = null;
+  $("photo").addEventListener("change", () => { file = $("photo").files[0] || null; $("go").disabled = !file; $("out").hidden = true; $("st").textContent = file ? file.name : "";
+    if (file) { $("prev").src = URL.createObjectURL(file); $("prev").hidden = false; } });
+  const here = () => new Promise((res) => { if (!$("where").checked || !navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition((p) => res(p.coords), () => res(null), { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }); });
+  $("go").addEventListener("click", async () => {
+    if (!file) return; const st = $("st"); st.className = "status"; $("go").disabled = true; st.textContent = "Fingerprinting the photo on this device…";
+    const sha = await WorkshopSeal.sha256(file), c = await here(); st.textContent = "Asking the workshop to sign…";
+    let r, j = {}; try { r = await fetch("/api/seal/witness", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sha256: sha, name: file.name, bytes: file.size, note: $("note").value, ...(c ? { lat: c.latitude, lon: c.longitude, acc: c.accuracy } : {}) }) }); j = await r.json(); } catch (e) {}
+    $("go").disabled = false;
+    if (!r || !r.ok || !j.record) { st.className = "status bad"; st.textContent = j.error || "Couldn't reach the workshop. Your photo is still here; try again when you're online."; return; }
+    const v = await WorkshopSeal.check(j.record), d = v.body.data, link = location.origin + "/witness#" + j.record;
+    st.textContent = ""; $("out").hidden = false;
+    $("out").innerHTML = '<div class="stamp"><b>Witnessed</b><span class="t">' + esc(when(v.body.iat)) + "</span><span>" + esc(file.name) + (d.lat != null ? " · " + esc(d.lat + ", " + d.lon) + (d.acc ? " (±" + esc(d.acc) + " m, as reported)" : "") : "") + '</span><span class="mono">SHA-256 ' + esc(d.sha256) + "</span></div>" +
+      '<div class="row"><button class="btn" id="save" type="button">Save the record</button><button class="btn" id="copy" type="button">Copy the link</button></div><p class="fine">Keep the photo exactly as it is, and keep this record with it. To prove it later, open the link and choose the photo.</p>';
+    const blob = new Blob([JSON.stringify({ witness: 1, record: j.record, photo: file.name, at: new Date(v.body.iat).toISOString() }, null, 1)], { type: "application/json" }), name = file.name.replace(/\.[^.]+$/, "") + ".witness.json";
+    $("save").onclick = () => { if (window.Faber && Faber.inOS) { Faber.save(blob, name); $("save").textContent = "Saved to the Shelf"; return; } const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); };
+    $("copy").onclick = () => navigator.clipboard && navigator.clipboard.writeText(link).then(() => ($("copy").textContent = "Copied"), () => {});
+  });
+  // checking: the record from a link, a paste or a saved file; the photo's fingerprint worked out here and compared
+  const fromAny = (s) => { s = String(s || "").trim(); const i = s.indexOf("#"); return i >= 0 ? s.slice(i + 1) : s; };
+  $("cfile").addEventListener("change", async () => { try { const j = JSON.parse(await $("cfile").files[0].text()); if (j.record) $("crec").value = j.record; } catch (e) { $("cout").innerHTML = '<div class="verdict bad">That file isn\'t a Witness record.</div>'; } });
+  $("cgo").addEventListener("click", async () => {
+    const out = $("cout"), rec = fromAny($("crec").value), ph = $("cphoto").files[0];
+    if (!rec) { out.innerHTML = '<div class="verdict bad">Paste the Witness link or record first.</div>'; return; }
+    out.innerHTML = '<p class="status">Checking…</p>';
+    let v; try { v = await WorkshopSeal.check(decodeURIComponent(rec)); } catch (e) { out.innerHTML = '<div class="verdict bad">Couldn\'t check it: ' + esc(e.message) + "</div>"; return; }
+    if (!v.good || v.body.kind !== "witness") { out.innerHTML = '<div class="verdict bad">✗ ' + esc(v.why || "That isn't a Witness record.") + "</div>"; return; }
+    const d = v.body.data, where = d.lat != null ? " Position as the phone reported it: " + d.lat + ", " + d.lon + (d.acc ? " (±" + d.acc + " m)" : "") + "." : "";
+    if (!ph) { out.innerHTML = '<div class="verdict ok">✓ A genuine record from ' + esc(when(v.body.iat)) + ' for "' + esc(d.name || "a photo") + '".' + esc(where) + "</div><p class=\"fine\">Choose the photo to check it's the same one.</p>"; return; }
+    const sha = await WorkshopSeal.sha256(ph);
+    out.innerHTML = sha === d.sha256 ? '<div class="verdict ok">✓ This exact photo existed by ' + esc(when(v.body.iat)) + " and hasn't changed since." + esc(where) + (d.note ? " Note: " + esc(d.note) : "") + "</div>"
+      : '<div class="verdict bad">✗ This isn\'t the photo that was witnessed: it has been edited, re-saved or it\'s a different photo. (The record is genuine, from ' + esc(when(v.body.iat)) + ".)</div>";
+  });
+  const fromHash = () => { if (location.hash.length > 1) { tab("check"); $("crec").value = decodeURIComponent(location.hash.slice(1)); $("cout").innerHTML = ""; } };
+  addEventListener("hashchange", fromHash); fromHash();
+})();
+</script>
+</body>
+</html>

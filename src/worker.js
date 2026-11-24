@@ -11,6 +11,7 @@ import { vigil } from "./vigil.js";
 import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
 import { media } from "./media.js";
+import { seal } from "./seal.js"; // the workshop's seal: Device Passports and Witness records
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
 import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the Android apps (android/), so AutoFaber opens full screen and store links open the Store
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
@@ -102,6 +103,20 @@ export class Store extends DurableObject {
     return rec.savedAt;
   }
   async dropSave(app) { await this.ctx.storage.delete("save:" + app); }
+  // The workshop's seal (src/seal.js): one ECDSA P-256 key pair, made on first use and kept here. Making a key awaits
+  // crypto, which lets other requests in, so every request shares the one making it: first requests that arrive
+  // together get the same key, not one each.
+  sealKey() {
+    return (this._sealKey ||= (async () => {
+      let k = await this.ctx.storage.get("seal:key");
+      if (!k) {
+        const g = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+        k = { pub: await crypto.subtle.exportKey("jwk", g.publicKey), priv: await crypto.subtle.exportKey("jwk", g.privateKey), made: Date.now() };
+        await this.ctx.storage.put("seal:key", k);
+      }
+      return k;
+    })().catch((e) => { this._sealKey = null; throw e; }));
+  }
   // Web Push: the VAPID key pair is made on first use and kept here.
   async vapid() {
     let v = await this.ctx.storage.get("vapid");
@@ -585,6 +600,7 @@ const worker = {
         if (!/^1 \d/m.test(t)) return json({ error: "no elements from CelesTrak" + (r ? " (" + r.status + ")" : "") }, 502);
         return new Response(t, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
       }
+      if (route === "seal") return seal(req, env, json, !!(await session(req, env, "vigil"))); // signs Device Passports (owner) and Witness records (src/seal.js)
       if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
         const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
         return new Response(JSON.stringify({ city: cf.city || null, region: cf.region || null, country: cf.country || null, lat: n(cf.latitude), lon: n(cf.longitude), tz: cf.timezone || null }), { headers: { "content-type": "application/json", "cache-control": "private, max-age=600" } });
