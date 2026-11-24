@@ -8,6 +8,9 @@ const DEV = process.argv[3] || "desktop", M = DEV === "mobile";
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const ctx = await b.newContext({ viewport: M ? { width: 390, height: 844 } : { width: 1366, height: 860 }, isMobile: M, hasTouch: M, serviceWorkers: "block" });
 const asked = []; await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => { asked.push(rt.request().url()); rt.abort(); });
+// OpenStreetMap's close-in tiles answer (as they do live) with a stand-in 1x1 PNG, so the detail layer stays on the map
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+await ctx.route(/tile\.openstreetmap\.org/, (rt) => rt.fulfill({ contentType: "image/png", body: PNG }));
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 const errs = [];
 const open = async (pg) => { const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(pg + ": " + e.message)); await p.goto("http://localhost:8099/" + pg); return p; };
@@ -18,11 +21,26 @@ assert.equal(await ca.isHidden("#nomap"), true, "no 'map couldn't start' notice"
 assert.match(await ca.textContent("header .logo"), /^Unlit$/);
 assert.ok(await ca.evaluate(() => [...document.querySelectorAll(".fm-label")].some((x) => /SUDAN|UKRAINE|RUSSIA|IRAN/i.test(x.textContent))), "country names on the map");
 assert.ok(await ca.evaluate(() => document.querySelectorAll(".leaflet-interactive").length >= 20), "the conflicts are marked");
+const zr = await ca.evaluate(() => { const el = document.querySelector("#map"); const ctl = el.querySelector(".leaflet-control-zoom-out"); return ctl ? !ctl.classList.contains("leaflet-disabled") : null; });
+assert.equal(zr, true, "zoom out works: the close-in detail layer must not set the map's minimum zoom");
 ok("Unlit draws its own map (land, borders, names) with every outside host blocked, and marks the conflicts");
 
 const res = await ca.evaluate(async () => { const r = await fetch("assets/maps/world-50m.json"); const w = await r.json(); return [r.ok, w.land.length, w.labels.length]; });
 assert.ok(res[0] && res[1] > 1000 && res[2] > 200, JSON.stringify(res));
 ok("the detailed map (1:50m) is there for close in");
+
+// Coverage gap: sample coverage in, the conflicts ranked by how far their share of the news falls short of their cost
+await ctx.route(/\/api\/hive\/world\/coverage/, (rt) => rt.fulfill({ contentType: "application/json", body: JSON.stringify({ at: Date.now(), days: 7, cov: [["Ukraine", 9000, 400], ["Iran", 6000, 200], ["Israel", 5000, 300], ["Lebanon", 900, 50], ["Mexico", 800, 90], ["Sudan", 40, 30], ["Democratic Republic of the Congo", 20, 12], ["Republic of the Congo", 5, 1], ["Myanmar", 30, 20]] }) }));
+await ca.click("#gapbtn"); await ca.waitForSelector("#gap li");
+assert.equal(await ca.isHidden("#list"), true); assert.equal(await ca.getAttribute("#gapbtn", "aria-pressed"), "true");
+const rows = await ca.$$eval("#gap li", (xs) => xs.map((x) => [x.querySelector("b").textContent, x.querySelector(".ratio").textContent, x.querySelector("small").textContent]));
+const at = (t) => rows.findIndex((r) => r[0].startsWith(t));
+assert.ok(at("Sudan") < at("Russia – Ukraine") && at("DR Congo") < at("Russia – Ukraine"), JSON.stringify(rows.map((r) => r[0] + ": " + r[1])));
+assert.match(rows[at("Sudan")][1], /× under-covered/); assert.match(rows[at("Russia – Ukraine")][1], /over-covered|in proportion/);
+assert.match(rows[at("DR Congo")][2], /counted as Democratic Republic of the Congo$/, "the other Congo isn't counted"); assert.match(rows.at(-1)[1], /not in the record/); assert.match(rows.find((r) => r[0].startsWith("Haiti"))[1], /not in the record/); assert.ok(at("Haiti") > at("Russia – Ukraine"), "nothing in the record goes last");
+await ca.click("#gap li[data-i='2']"); await ca.waitForFunction(() => /Sudan/.test(document.getElementById("detail").textContent));
+await ca.click("#gapbtn"); assert.equal(await ca.isHidden("#gap"), true); assert.equal(await ca.isHidden("#list"), false);
+ok("Coverage gap: Sudan and DR Congo rank as under-covered, Ukraine doesn't; each row says which countries it's counted by; a row opens its conflict; the button puts the list back");
 
 const ow = await open("orbit-app.html"); await drawn(ow);
 assert.equal(await ow.isHidden("#nomap"), true); assert.match(await ow.textContent("header .logo"), /^Overhead$/);

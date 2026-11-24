@@ -10,6 +10,7 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 | Leaflet | 1.9.4 | BSD-2-Clause | maps (Unlit, Per Capita, Overhead), served from assets/maps/leaflet with its licence |
 | world-atlas | 2.0.2 | ISC (data: Natural Earth, public domain) | the site's own world map, assets/maps/world-*.json (built by tools/maps/build-world.mjs) |
 | topojson-client | 3.1.0 | ISC | used only to build that map; not shipped |
+| @mlc-ai/web-llm | 0.2.86 | Apache-2.0 | AutoFaber Offline (/local-ai), loaded from jsDelivr; it downloads one of Llama 3.2 1B (Llama 3.2 Community License), Qwen 2.5 1.5B or Qwen 3 0.6B (Apache-2.0) |
 | three.js | 0.169.0 | MIT | 3D scenes (Atlas, globe views) |
 | GSAP (GreenSock) | 3.12.5 | GreenSock Standard "No Charge" License | scroll animation (Atlas Classic) |
 | PDF.js | 3.11.174 | Apache-2.0 | DocCrawler |

@@ -36,4 +36,17 @@ db.prepare("INSERT INTO limits(k,n) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET n=e
 r = await plan("put the satellite tracker next to the conflict atlas"); assert.match(r.error, /today's 30 FaberOS requests/);
 r = await plan("put the satellite tracker next to the conflict atlas", true); assert.equal(r.actions.length, 4, "the owner has no count");
 ok("a visitor gets 30 FaberOS plans a day; the owner has no count");
+// Faber Verbs: an app's declared verbs reach the prompt; a verb the app declared passes with flat arguments, anything else is dropped
+const vapps = [...apps.slice(0, 2), { id: "ballast", name: "Ballast", desc: "budget", verbs: [{ name: "add-transaction", desc: "Add a transaction: log money in or out", args: { amount: "number", label: "string", "direction?": "enum:out|in" } }, { name: "../bad", desc: "x", args: {} }] }];
+H.setResponder((sys, user) => /FaberOS/.test(sys) ? (/gas/.test(user) ? '{"actions":[{"do":"verb","app":"ballast","verb":"add-transaction","args":{"amount":40,"label":"gas","direction":"out","nested":{"a":1},"Bad Key":"x"}}]}'
+  : '{"actions":[{"do":"verb","app":"ballast","verb":"delete-everything","args":{}},{"do":"verb","app":"orbit","verb":"add-transaction","args":{}},{"do":"verb","app":"ballast","verb":"add-transaction","args":"amount=40"},{"do":"verb","app":"ballast","verb":"add-transaction","args":{"label":"' + "x".repeat(900) + '"}},{"do":"open","app":"ballast"}]}') : null);
+r = await H.call("/os/plan", { text: "log $40 for gas", apps: vapps, open: [] }, true);
+assert.deepEqual(r.actions, [{ do: "verb", app: "ballast", verb: "add-transaction", args: { amount: 40, label: "gas", direction: "out" } }], JSON.stringify(r));
+const vc = H.calls.at(-1); assert.match(vc.sys, /verb add-transaction \{"amount":"number","label":"string","direction\?":"enum:out\|in"\}/); assert.ok(!/\.\.\/bad/.test(vc.sys), "a malformed verb name never reaches the prompt"); assert.match(vc.sys, /Today is \d{4}-\d\d-\d\d/);
+r = await H.call("/os/plan", { text: "do something sneaky", apps: vapps, open: [] }, true);
+assert.equal(r.actions.length, 2, JSON.stringify(r.actions)); assert.deepEqual(r.actions[1], { do: "open", app: "ballast" });
+assert.equal(r.actions[0].verb, "add-transaction"); assert.equal(r.actions[0].args.label.length, 200, "long strings are cut to 200");
+assert.ok(!JSON.stringify(r).includes("delete-everything"));
+ok("Faber Verbs: an app's verbs are in the prompt; a declared verb passes with flat arguments (nested values and odd keys dropped); a made-up verb, a verb on the wrong app or arguments that aren't an object are dropped");
+
 console.log("test51: " + n + " checks passed");

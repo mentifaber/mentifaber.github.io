@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/passport">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Device Passport · Mentifaber</title>
+<meta name="description" content="A signed record of what the Mentifaber workshop did to a device: the work, the parts and their numbers, battery health and warranty.">
+<meta name="theme-color" content="#0d0b08">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* Device Passport: a service record, laid out like a printed certificate: a ruled header, a spec table, a seal line. */
+:root { --bg: #0d0b08; --sheet: #16120c; --line: #3a3122; --gold: #d6a647; --gold-hi: #f0cf7e; --ink: #efe6d2; --dim: #a89d86; --ok: #8fd18f; --bad: #ff8a6b;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 760px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; }
+.lede { color: var(--dim); margin: 0 0 18px; max-width: 64ch; }
+.cert { background: var(--sheet); border: 1.5px solid var(--gold); padding: clamp(16px, 4vw, 28px); }
+.verdict { display: flex; gap: 10px; align-items: center; font-weight: 600; padding: 10px 12px; border: 1px solid; margin-bottom: 16px; }
+.verdict.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+.verdict.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+.cert h2 { font: 700 26px/1.2 var(--sans); margin: 0; }
+.cert .ref { font: 500 13px var(--mono); color: var(--dim); margin-top: 4px; }
+dl { display: grid; grid-template-columns: minmax(110px, 160px) 1fr; gap: 0; margin: 16px 0 0; }
+dt, dd { margin: 0; padding: 9px 0; border-top: 1px solid var(--line); }
+dt { font: 500 12px/1.9 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+dd ul { margin: 0; padding-left: 18px; } dd code { font: 500 13px var(--mono); color: var(--gold-hi); }
+.sealline { margin-top: 16px; font: 500 12px var(--mono); color: var(--dim); word-break: break-all; }
+form { display: grid; gap: 12px; }
+label { display: grid; gap: 4px; font-size: 14px; color: var(--dim); }
+input, textarea { font: 400 16px var(--sans); padding: 10px 12px; background: #0f0c08; color: var(--ink); border: 1px solid var(--line); border-radius: 0; }
+textarea { min-height: 84px; resize: vertical; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn { font: 600 15px var(--sans); padding: 11px 16px; border: 1px solid var(--gold); background: transparent; color: var(--gold-hi); cursor: pointer; }
+.btn.pri { background: var(--gold); color: #1a1206; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); }
+.out { margin-top: 14px; padding: 12px; border: 1px dashed var(--gold); word-break: break-all; font: 500 13px var(--mono); }
+section + section { margin-top: 22px; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+@media (max-width: 560px) { dl { grid-template-columns: 1fr; } dt { border-top: 1px solid var(--line); padding-bottom: 0; } dd { border-top: 0; padding-top: 2px; } .two { grid-template-columns: 1fr; } }
+@media print { body { background: #fff; color: #000; } .cert { border-color: #000; background: #fff; } .noprint, .top a { display: none; } dt { color: #000; } .verdict.ok { color: #060; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Device Passport</span><a href="services#repair">Workshop services</a></div>
+  <div id="view" hidden></div>
+  <div id="home">
+    <h1>Device Passport</h1>
+    <p class="lede">Every device the workshop repairs gets a passport: what was done, which parts went in and their part numbers, battery health and the warranty. It's signed with the workshop's key, so anyone with the link, including someone buying the device later, can check it hasn't been changed.</p>
+    <section class="cert noprint" aria-labelledby="chk-h"><h2 id="chk-h" style="font-size:20px">Check a passport</h2>
+      <form id="chk"><label>Paste the passport link<input id="chk-in" autocomplete="off" placeholder="https://mentifaber.org/passport#…"></label><div class="row"><button class="btn pri" type="submit">Check it</button></div></form></section>
+    <section class="cert noprint" aria-labelledby="iss-h"><h2 id="iss-h" style="font-size:20px">Issue a passport</h2>
+      <p class="lede" style="margin:6px 0 12px">For the workshop: sign in through Vigil first. Nothing here is stored; the passport lives in its link.</p>
+      <form id="iss">
+        <div class="two"><label>Device<input id="device" required maxlength="80" placeholder="iPhone 13"></label><label>Serial or IMEI (optional)<input id="serial" maxlength="40"></label></div>
+        <label>Work done, one per line<textarea id="work" required maxlength="1500" placeholder="Replaced the screen&#10;Replaced the battery"></textarea></label>
+        <label>Parts, one per line: name, part number<textarea id="parts" maxlength="1500" placeholder="OLED screen, 661-21991"></textarea></label>
+        <div class="two"><label>Battery health after (%)<input id="battery" type="number" min="0" max="100" inputmode="numeric"></label><label>Warranty (days)<input id="warranty" type="number" min="0" max="3650" value="90" inputmode="numeric"></label></div>
+        <div class="two"><label>Date<input id="date" type="date"></label><label>Note (optional)<input id="note" maxlength="400" placeholder="Face ID tested"></label></div>
+        <div class="row"><button class="btn pri" type="submit">Sign the passport</button><span class="status" id="iss-st" role="status"></span></div>
+      </form>
+      <div id="iss-out" hidden></div></section>
+  </div>
+</div>
+<script src="assets/seal/verify.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  $("date").value = new Date().toISOString().slice(0, 10);
+  async function show(record) {
+    $("home").hidden = true; $("view").hidden = false; $("view").innerHTML = '<p class="lede">Checking the seal…</p>';
+    let r; try { r = await WorkshopSeal.check(record); } catch (e) { $("view").innerHTML = '<div class="cert"><div class="verdict bad">Couldn\'t check it: ' + esc(e.message) + "</div></div>"; return; }
+    const d = r.body && r.body.kind === "passport" ? r.body.data : null;
+    if (!r.good || !d) { $("view").innerHTML = '<h1>Device Passport</h1><div class="cert"><div class="verdict bad">✗ ' + esc(r.why || "This isn't a Device Passport.") + "</div><p>Don't rely on what this link says about the device. Ask the workshop for the original link.</p></div>"; return; }
+    const until = d.warrantyDays != null ? new Date(new Date(d.date + "T12:00:00").getTime() + d.warrantyDays * 864e5) : null;
+    $("view").innerHTML = '<h1>Device Passport</h1><div class="cert"><div class="verdict ok">✓ Signed by the Mentifaber workshop, unchanged since ' + esc(new Date(r.body.iat).toLocaleString()) + "</div>" +
+      "<h2>" + esc(d.device) + '</h2><div class="ref">Passport ' + esc(d.ref) + "</div><dl>" +
+      (d.serial ? "<dt>Serial</dt><dd><code>" + esc(d.serial) + "</code></dd>" : "") +
+      "<dt>Serviced</dt><dd>" + esc(day(d.date)) + "</dd>" +
+      "<dt>Work done</dt><dd><ul>" + d.work.map((w) => "<li>" + esc(w) + "</li>").join("") + "</ul></dd>" +
+      (d.parts && d.parts.length ? "<dt>Parts fitted</dt><dd><ul>" + d.parts.map((p) => "<li>" + esc(p.name) + (p.pn ? " · <code>" + esc(p.pn) + "</code>" : "") + "</li>").join("") + "</ul></dd>" : "") +
+      (d.battery != null ? "<dt>Battery health</dt><dd>" + esc(d.battery) + "% after service</dd>" : "") +
+      (until ? "<dt>Warranty</dt><dd>" + (d.warrantyDays ? esc(d.warrantyDays) + " days, " + (until > new Date() ? "until " : "ended ") + esc(until.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })) : "None") + "</dd>" : "") +
+      (d.note ? "<dt>Note</dt><dd>" + esc(d.note) + "</dd>" : "") +
+      '</dl><p class="sealline">Workshop key ' + esc(r.kid) + ". Check it yourself: the record is in this page's link, and the key is at mentifaber.org/api/seal/key.</p>" +
+      '<div class="row noprint" style="margin-top:12px"><button class="btn" type="button" id="pr">Print</button><a class="btn" href="services#repair" style="text-decoration:none">Book a repair</a></div></div>';
+    $("pr").onclick = () => print();
+  }
+  const fromLink = (s) => { s = String(s || "").trim(); const i = s.indexOf("#"); return i >= 0 ? s.slice(i + 1) : s; };
+  $("chk").addEventListener("submit", (e) => { e.preventDefault(); const rec = fromLink($("chk-in").value); if (rec) location.hash = rec; });
+  addEventListener("hashchange", () => { if (location.hash.length > 1) show(decodeURIComponent(location.hash.slice(1))); else { $("view").hidden = true; $("home").hidden = false; } });
+  if (location.hash.length > 1) show(decodeURIComponent(location.hash.slice(1)));
+  $("iss").addEventListener("submit", async (e) => {
+    e.preventDefault(); const st = $("iss-st"); st.className = "status"; st.textContent = "Signing…";
+    const lines = (id) => $(id).value.split("\n").map((x) => x.trim()).filter(Boolean);
+    const body = { device: $("device").value, serial: $("serial").value, work: lines("work"), parts: lines("parts").map((l) => { const i = l.lastIndexOf(","); return i > 0 ? { name: l.slice(0, i).trim(), pn: l.slice(i + 1).trim() } : { name: l, pn: "" }; }),
+      battery: $("battery").value === "" ? undefined : +$("battery").value, warrantyDays: $("warranty").value === "" ? undefined : +$("warranty").value, date: $("date").value, note: $("note").value };
+    let r, j = {}; try { r = await fetch("/api/seal/passport", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); j = await r.json(); } catch (x) {}
+    if (!r || !r.ok || !j.record) { st.className = "status bad"; st.innerHTML = r && r.status === 403 ? 'Only the workshop can issue passports. <a href="vigil-app">Sign in through Vigil</a>, then try again.' : esc(j.error || "Couldn't reach the workshop. Try again."); return; }
+    const link = location.origin + "/passport#" + j.record; st.textContent = "Signed.";
+    $("iss-out").hidden = false; $("iss-out").innerHTML = '<div class="out" id="link">' + esc(link) + '</div><div class="row" style="margin-top:10px"><button class="btn" type="button" id="cp">Copy the link</button><a class="btn" href="' + esc(link) + '" style="text-decoration:none">Open it</a></div><p class="status">Send this link to the customer. Anyone they give it to can check it.</p>';
+    $("cp").onclick = () => navigator.clipboard && navigator.clipboard.writeText(link).then(() => ($("cp").textContent = "Copied"), () => {});
+  });
+})();
+</script>
+</body>
+</html>

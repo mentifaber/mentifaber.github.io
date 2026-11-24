@@ -103,6 +103,22 @@ function view(id) {
   const d = S.docs.find((x) => x.id === id); if (!d) return; $("view").hidden = false; $("vt").textContent = d.name;
   const drawTags = () => { $("vtags").innerHTML = d.tags.map((t) => "<span>" + esc(t) + ' <button data-rm="' + esc(t) + '" aria-label="Remove tag">✕</button></span>').join("") + '<input id="newtag" placeholder="add a tag">' + ' <button class="link danger" id="deldoc">Delete document</button>'; };
   drawTags(); $("vb").textContent = (d.ocr ? "[text read by OCR; check it against the original]\n\n" : "") + (d.text || "(no text found)");
+  // Fine Print: AutoFaber flags the lines that matter; each comes back quoted word for word (checked on the server), and
+  // clicking one finds it in the text here
+  $("fine-out").innerHTML = ""; $("fine-st").textContent = ""; $("fine").disabled = !d.text || d.text.length < 80;
+  $("fine").onclick = async () => {
+    $("fine").disabled = true; $("fine-st").textContent = "AutoFaber is reading it… (the text goes to its model; nothing is kept)";
+    let r, j = {}; try { r = await fetch("/api/hive/fineprint", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: d.text, name: d.name }) }); j = await r.json(); } catch (e) {}
+    $("fine").disabled = false;
+    if (!r || !r.ok || !Array.isArray(j.flags)) { $("fine-st").textContent = j.error || "Couldn't reach AutoFaber. Try again in a moment."; return; }
+    $("fine-st").textContent = (j.kind ? "A " + j.kind + ". " : "") + (j.flags.length ? j.flags.length + " thing" + (j.flags.length > 1 ? "s" : "") + " to know, each quoted from the document." : "Nothing stood out.") + (j.cut ? " Only the first " + j.read.toLocaleString() + " characters were read." : "") + " Not legal advice.";
+    $("fine-out").innerHTML = j.flags.map((f, i) => '<li class="' + esc(f.severity) + '" data-f="' + i + '"><small>' + esc(f.kind + " · " + f.severity) + "</small><b>" + esc(f.why) + "</b><q>" + esc(f.quote) + "</q></li>").join("");
+    $("fine-out").onclick = (e) => { const li = e.target.closest("[data-f]"); if (!li) return; const f = j.flags[+li.dataset.f], body = $("vb").textContent;
+      const flat = (s) => s.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " "), words = flat(f.quote).split(" ").slice(0, 6).join(" ");
+      const i = flat(body).indexOf(words); if (i < 0) return; let k = 0, real = 0; for (; real < body.length && k < i; real++) if (!(/\s/.test(body[real]) && /\s/.test(body[real + 1] || ""))) k++;
+      const end = Math.min(body.length, real + f.quote.length); $("vb").innerHTML = esc(body.slice(0, real)) + '<mark class="fp">' + esc(body.slice(real, end)) + "</mark>" + esc(body.slice(end));
+      const m = $("vb").querySelector("mark"); if (m) m.scrollIntoView({ block: "center", behavior: "smooth" }); };
+  };
   $("vtags").onclick = async (e) => { const rm = e.target.closest("[data-rm]"); if (rm) { d.tags = d.tags.filter((t) => t !== rm.dataset.rm); await DB.put(d); drawTags(); draw(); } if (e.target.id === "deldoc") { await DB.del(d.id); S.docs = S.docs.filter((x) => x !== d); rebuild(); draw(); $("view").hidden = true; toast("Deleted"); } };
   $("vtags").onkeydown = async (e) => { if (e.target.id === "newtag" && e.key === "Enter") { const t = e.target.value.trim().toLowerCase(); if (t && !d.tags.includes(t)) { d.tags.push(t); await DB.put(d); drawTags(); draw(); } } };
 }
@@ -157,4 +173,11 @@ $("import").addEventListener("change", async (e) => { try { const j = JSON.parse
 $("wipe").addEventListener("click", async () => { if (!confirm("Remove every document from this browser's library?")) return; await DB.clear(); S.docs = []; rebuild(); draw(); });
 (async () => { try { await DB.open(); S.docs = await DB.all(); } catch (e) { toast("This browser won't keep a library (private mode?); it works until you close the tab."); } rebuild(); draw(); })();
 window.DocCrawler = { S, search, add, sample, ask };
+// Faber Verbs: AutoFaber can search the library (read only; nothing leaves this browser but the answer FaberOS shows you)
+if (window.Faber) Faber.verbs({
+  search: ({ query }) => { const q = String(query || "").trim(); if (!q) throw new Error("Search for what?");
+    $("q").value = q; show("lib"); results(); const hits = search(q, 3);
+    if (!S.docs.length) return "The library is empty: add some files first.";
+    return hits.length ? "Found in " + [...new Set(hits.map((h) => h.p.doc.name))].join(", ") + ": “" + hits[0].p.body.replace(/\s+/g, " ").slice(0, 160) + "…”" : "Nothing in the library mentions " + q + "."; },
+});
 })();

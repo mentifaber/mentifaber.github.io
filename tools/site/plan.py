@@ -172,7 +172,7 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="makers">Make apps for FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="blackout">Blackout Kit</a><a href="witness">Witness: prove a photo</a><a href="passport">Device Passport</a><a href="letters">Sealed Letters</a><a href="skylens">Sky Lens</a><a href="local-ai">AutoFaber Offline</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Anders Powell · Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
@@ -367,7 +367,7 @@ SERVICES = [
     ("repair", "Tech repair", "Phones, laptops, desktops, consoles and the odd strange gadget.",
      ["Diagnosis first, in plain words: what's wrong, what it costs, whether it's worth it", "Screens, batteries, ports, storage and RAM upgrades, cleaning and thermal work",
       "Slow machines made fast again; malware and pop-up junk removed", "Data rescue from failing drives and dead phones, where it's still there to rescue"],
-     "Bring-in or mail-in, by arrangement. Remote fixes for anything software."),
+     "Bring-in or mail-in, by arrangement. Remote fixes for anything software. Every repair comes with a signed Device Passport."),
     ("it", "IT services", "The tech side of a home, a studio or a small business, handled.",
      ["Wi-Fi that reaches every room; networks, printers and shared drives set up properly", "Backups that run by themselves, and a test restore so you know they work",
       "Accounts, passwords and two-step sign-in sorted for the whole household or team", "Security check-ups: what's exposed, what's out of date, what to fix first"],
@@ -430,8 +430,8 @@ def services():
   <h2 class="lbl" style="margin-top:34px">How a job runs</h2>
   <ol class="svc-steps"><li><b>Tell me what's going on.</b> The form below, or an email. A photo or a link helps.</li>
     <li><b>A written quote.</b> What's wrong or what you need, what it will take and the price, before anything starts.</li>
-    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote.</li>
-    <li><b>Done and explained.</b> You get a short write-up of what was done.</li></ol>
+    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote, from your own private link in the <a href="portal">Workshop Portal</a>, where you can follow the work and write to me.</li>
+    <li><b>Done and explained.</b> You get a short write-up of what was done, and a repaired device gets a signed <a href="passport">Device Passport</a>.</li></ol>
   <h2 class="lbl" style="margin-top:34px">The proof</h2>
   <div class="elsewhere big"><a href="./">The workshop: every project</a><a href="os">FaberOS, an operating system in the browser</a><a href="autofaber">AutoFaber, the AI</a><a href="store">Foundry: the apps</a></div>
   <form id="f" class="form" novalidate style="margin-top:34px">
@@ -485,7 +485,7 @@ CREDITS = [
     ("Software", [
         ("Leaflet", "BSD-2-Clause"), ("three.js", "MIT"), ("GSAP", "GreenSock Standard License"),
         ("PDF.js", "Apache-2.0"), ("Mammoth", "BSD-2-Clause"), ("Tesseract.js", "Apache-2.0"),
-        ("Pyodide", "MPL-2.0"), ("satellite.js", "MIT"), ("Font Awesome Free", "icons CC BY 4.0, fonts OFL, code MIT"), ("llama.cpp", "MIT"),
+        ("Pyodide", "MPL-2.0"), ("WebLLM (MLC)", "Apache-2.0, for AutoFaber Offline"), ("satellite.js", "MIT"), ("Font Awesome Free", "icons CC BY 4.0, fonts OFL, code MIT"), ("llama.cpp", "MIT"),
     ]),
     ("Type", [
         ("Literata, Schibsted Grotesk, Martian Mono, Azeret Mono", "SIL Open Font License 1.1"),
@@ -522,10 +522,18 @@ PRIVACY = [
     ("FaberOS", [
         ("On your device", "Its settings, your permission answers, notifications and the files on the Shelf stay in your browser. Nothing is sent anywhere, and Settings can forget all of it."),
         ("Asking it to arrange", "Commands like \"open Ballast\" or \"put Overhead next to Unlit\" are read on your device. Only when you choose \"Let AutoFaber arrange it\" do your sentence and the names of the apps go to AutoFaber's model, which sends back which apps to open and where; nothing is kept."),
+        ("Asking apps to act", "When AutoFaber plans a verb (\"log $40 for gas\"), your sentence and the list of verbs the apps offer go to its model; your data in those apps doesn't. The app does the work in your browser, and anything that changes your data asks you first."),
+    ]),
+    ("Witness and Device Passports", [
+        ("Witness", "Your photo stays on your phone. Only its SHA-256 fingerprint, its name and size, your note and (if you tick the box) the position your phone reports go to the site, which signs them with its own clock and keeps nothing. Visitors get 100 records a day, counted by connection."),
+        ("Sealed Letters", "Your letter is encrypted in your browser and its key is split among the friends you choose; the site keeps only the sealed letter, its lock and (for a locked letter) a release secret that opens nothing on its own. It never sees the letter, its key or any friend's link. Deleting it with your writer key removes it."),
+        ("Workshop Portal", "A job the workshop opens for you is kept in the site's storage: its title, your name, the quote, its status, the invoice and the messages on it. Your email, if you gave it, and the workshop's private notes are seen only by the workshop. Your link is a long random key; deleting the job ends it."),
+        ("Device Passports", "A passport lives entirely in its link: the site signs it when the workshop issues it and stores nothing. The part after # in the link is never sent to any server; checking happens in your browser."),
     ]),
     ("The other apps", [
         ("Private messengers", "Barycenter and Pilotfish are encrypted end to end and kept on the devices of the people who use them."),
         ("The Nest Registry", "Kept in its own storage, open only to the parents and the guests they invite; each device keeps a copy of the list it last saw so it still opens when the site is resting."),
+        ("DocCrawler's Fine Print", "Your library stays in your browser. Only when you press Fine Print does that one document's text (up to 24,000 characters) go to AutoFaber's model to be read; nothing is kept. Visitors get 12 readings a day."),
         ("Contact", "The contact form opens your own email app; nothing you write is stored on the site."),
     ]),
 ]

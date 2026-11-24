@@ -85,5 +85,17 @@
   ".json",
   ".html",
   "image/*"
+ ],
+ "verbs": [
+  {
+   "name": "search",
+   "label": "Search my documents",
+   "desc": "Find passages in the library that match.",
+   "changes": false,
+   "args": {
+    "query": "string"
+   },
+   "words": "search find documents files library pdf notes look"
+  }
  ]
 }

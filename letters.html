@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/letters">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sealed Letters · Mentifaber</title>
+<meta name="description" content="Write a letter that opens later: on a date, or if you stop checking in. Its key is split among friends you choose, so no company, and no single friend.">
+<meta name="theme-color" content="#120e0b">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* Sealed Letters: writing paper and a wax seal. Warm cream ink on deep brown, one oxblood accent for the seal. */
+:root { --bg: #120e0b; --paper: #1b1510; --line: #3b2e22; --ink: #f1e6d4; --dim: #b19f88; --wax: #b8433a; --wax-hi: #e7695d; --gold: #d8b06a; --ok: #8fd18f;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--sans); }
+.wrap { max-width: 720px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.top a { color: var(--dim); text-decoration: none; text-transform: none; letter-spacing: 0; font: 400 14px var(--sans); }
+h1 { font: 600 clamp(32px, 7vw, 46px)/1.05 var(--serif); margin: 16px 0 8px; } h1 span { color: var(--wax-hi); }
+h2 { font: 600 22px/1.2 var(--serif); margin: 0 0 10px; }
+.lede { color: var(--dim); margin: 0 0 18px; max-width: 62ch; }
+.paper { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; margin-top: 14px; }
+textarea.letter { font: 400 18px/1.7 var(--serif); min-height: 220px; }
+textarea, input, select { font: 400 15px var(--sans); padding: 10px 12px; background: #140f0b; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; width: 100%; }
+label { display: grid; gap: 4px; font-size: 14px; color: var(--dim); }
+.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.btn { font: 600 15px var(--sans); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--wax); background: transparent; color: var(--wax-hi); cursor: pointer; }
+.btn.pri { background: var(--wax); color: #fff3ec; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--wax-hi); } .status.ok { color: var(--ok); }
+ol.shares { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ol.shares li { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 10px; border: 1px dashed var(--line); border-radius: 8px; }
+ol.shares code, .mono { font: 500 12px var(--mono); color: var(--dim); word-break: break-all; }
+.sealed { text-align: center; padding: 22px 12px; } .wax { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 10px; background: radial-gradient(circle at 35% 35%, var(--wax-hi), var(--wax) 60%, #6e211b); box-shadow: 0 2px 10px rgba(0,0,0,.5); display: grid; place-items: center; font: 700 22px var(--serif); color: #ffd9cf; }
+.opened { font: 400 19px/1.75 var(--serif); white-space: pre-wrap; }
+.fine { color: var(--dim); font-size: 14px; margin: 0; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 560px) { .three { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Sealed Letters</span><a href="./">mentifaber.org</a></div>
+  <main id="main"></main>
+</div>
+<script src="assets/letters/sl.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s, el = document) => el.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const SL = window.SealedLetters, main = $("#main"), day = (t) => new Date(t).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
+  const api = async (path, method = "GET", body) => { const r = await fetch("/api/letters" + path, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); let j = {}; try { j = await r.json(); } catch (e) {} if (!r.ok) throw new Error(j.error || "The site didn't answer. Try again."); return j; };
+  const copy = (btn, text) => navigator.clipboard && navigator.clipboard.writeText(text).then(() => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy"), 1400); }, () => {});
+
+  function write() {
+    main.innerHTML = '<h1>Sealed <span>Letters</span></h1><p class="lede">Write something that opens later: on a date, or if you stop checking in. Its key is split among friends you choose, and it takes enough of them together to open it. It\'s encrypted here, in your browser: the site keeps only the sealed letter and can\'t read it.</p>' +
+      '<form class="paper" id="w"><label>Your letter<textarea class="letter" id="body" required maxlength="40000" placeholder="Dear…"></textarea></label>' +
+      '<div class="three"><label>Friends who get a share<input id="n" type="number" min="1" max="12" value="3"></label><label>Needed to open it<input id="k" type="number" min="1" max="12" value="2"></label><label>Signed<input id="from" maxlength="80" placeholder="Your name"></label></div>' +
+      '<label>When can it open?<select id="lock"><option value="none">As soon as enough friends come together</option><option value="date">Not before a date</option><option value="checkin">Only if I stop checking in</option></select></label>' +
+      '<label id="l-date" hidden>Not before<input id="date" type="datetime-local"></label><label id="l-days" hidden>If I don\'t check in for (days)<input id="days" type="number" min="7" max="730" value="30"></label>' +
+      '<div class="row"><button class="btn pri" type="submit">Seal it</button><span class="status" id="st" role="status"></span></div></form>';
+    const lk = $("#lock"); lk.onchange = () => { $("#l-date").hidden = lk.value !== "date"; $("#l-days").hidden = lk.value !== "checkin"; };
+    $("#w").onsubmit = async (e) => {
+      e.preventDefault(); const st = $("#st"), n = +$("#n").value, k = +$("#k").value; st.className = "status";
+      if (!(k >= 1 && n >= k && n <= 12)) { st.className = "status bad"; st.textContent = "Needed to open it can't be more than the friends who get a share (at most 12)."; return; }
+      const lock = lk.value === "date" ? { type: "date", at: new Date($("#date").value).toISOString() } : lk.value === "checkin" ? { type: "checkin", days: +$("#days").value } : null;
+      if (lock && lock.type === "date" && !$("#date").value) { st.className = "status bad"; st.textContent = "Pick the date."; return; }
+      st.textContent = "Sealing…";
+      try {
+        const K = SL.random(32), S = lock ? SL.random(32) : null, key = S ? SL.xor(K, S) : K;
+        const box = await SL.seal({ body: $("#body").value, from: $("#from").value, written: Date.now() }, key);
+        const r = await api("", "POST", { ...box, k, n, lock, ...(S ? { S: SL.hex(S) } : {}) });
+        const shares = SL.split(K, n, k).map((s) => location.origin + "/letters#" + SL.shareText(r.id, s)), writer = location.origin + "/letters#writer." + r.id + "." + r.token;
+        main.innerHTML = '<div class="paper sealed"><div class="wax" aria-hidden="true">✦</div><h2>Sealed</h2><p class="fine">' + (k === 1 ? "Any one" : "Any " + k) + " of these " + n + " friends can open it" + (r.opens ? (lock.type === "date" ? ", from " + esc(day(r.opens)) : ", if you don't check in for " + lock.days + " days (first deadline " + esc(day(r.opens)) + ")") : "") + ".</p></div>" +
+          '<div class="paper"><h2>Give each friend their own link</h2><p class="fine">Send them separately. Each link alone opens nothing. If a link is lost, that friend can\'t help open it; there are no copies.</p><ol class="shares">' + shares.map((l, i) => "<li><b>Friend " + (i + 1) + '</b><button class="btn" type="button" data-c="' + i + '">Copy</button><code>' + esc(l) + "</code></li>").join("") + "</ol></div>" +
+          '<div class="paper"><h2>Your writer key</h2><p class="fine">Keep this one for yourself: it ' + (lock && lock.type === "checkin" ? "is how you check in, and " : "") + "lets you delete the letter.</p><code class=\"mono\" id=\"wk\">" + esc(writer) + '</code><div class="row"><button class="btn" type="button" id="cw">Copy</button><a class="btn" href="' + esc(writer.replace(location.origin, "")) + '" style="text-decoration:none">Open it</a></div></div>';
+        main.querySelectorAll("[data-c]").forEach((b) => (b.onclick = () => copy(b, shares[+b.dataset.c])));
+        $("#cw").onclick = () => copy($("#cw"), writer);
+      } catch (x) { st.className = "status bad"; st.textContent = x.message; }
+    };
+  }
+
+  async function open(first) {
+    let L; try { L = await api("/" + first.id); } catch (e) { main.innerHTML = '<h1>Sealed <span>Letters</span></h1><div class="paper"><p class="status bad">' + esc(e.message) + "</p></div>"; return; }
+    const have = new Map([[first.x, first]]);
+    const draw = (msg) => {
+      main.innerHTML = '<h1>A sealed <span>letter</span></h1><div class="paper sealed"><div class="wax" aria-hidden="true">✦</div><p>You hold share ' + first.x + ". It takes " + L.k + " of the " + L.n + " friends' links to open it" + (L.lock ? (L.open ? "" : L.lock.type === "date" ? ", and it can't open before " + esc(day(L.opens)) : ", and only if its writer stops checking in (not before " + esc(day(L.opens)) + ")") : "") + '.</p><p class="fine">' + have.size + " of " + L.k + " so far.</p></div>" +
+        (have.size < L.k ? '<div class="paper"><label>Paste the other friends\' links<textarea id="more" placeholder="One per line"></textarea></label><div class="row"><button class="btn pri" id="add" type="button">Add them</button><span class="status" id="st">' + esc(msg || "") + "</span></div></div>" : "");
+      if ($("#add")) $("#add").onclick = () => { let bad = 0; for (const line of $("#more").value.split(/\s+/)) { if (!line) continue; const s = SL.readShare(line); if (!s || s.id !== first.id) { bad++; continue; } have.set(s.x, s); } tryOpen(bad ? bad + " of those weren't links to this letter." : ""); };
+    };
+    const tryOpen = async (msg) => {
+      if (have.size < L.k) return draw(msg);
+      if (L.lock && !L.open) { L = await api("/" + first.id); if (!L.open) return draw("You have enough friends' links, but the letter isn't allowed to open yet."); }
+      try { const K = SL.combine([...have.values()].slice(0, L.k)), key = L.S ? SL.xor(K, SL.unhex(L.S)) : K, letter = await SL.unseal(L.ct, L.iv, key);
+        main.innerHTML = '<h1>A letter</h1><div class="paper"><div class="opened">' + esc(letter.body) + "</div>" + (letter.from ? '<p style="text-align:right;font-family:var(--serif);font-size:18px">— ' + esc(letter.from) + "</p>" : "") + '<p class="fine">Written ' + esc(day(letter.written)) + ". Opened here, in your browser.</p></div>";
+      } catch (e) { draw("Those links don't open it together. Check they're all for this letter, from different friends."); }
+    };
+    tryOpen();
+  }
+
+  async function writer(id, token) {
+    let L; try { L = await api("/" + id); } catch (e) { main.innerHTML = '<h1>Sealed <span>Letters</span></h1><div class="paper"><p class="status bad">' + esc(e.message) + "</p></div>"; return; }
+    main.innerHTML = '<h1>Your sealed <span>letter</span></h1><div class="paper"><p>' + L.k + " of " + L.n + " friends needed. " + (L.lock ? L.lock.type === "date" ? "Opens from " + esc(day(L.opens)) + "." : L.open ? "It has opened: you didn't check in in time." : "Opens if you don't check in by " + esc(day(L.opens)) + "." : "No lock: it opens as soon as enough friends come together.") + '</p><div class="row">' +
+      (L.lock && L.lock.type === "checkin" && !L.open ? '<button class="btn pri" id="ci" type="button">Check in</button>' : "") + '<button class="btn" id="del" type="button">Delete the letter</button><span class="status" id="st" role="status"></span></div></div>';
+    if ($("#ci")) $("#ci").onclick = async () => { try { const r = await api("/" + id + "/checkin", "POST", { token }); $("#st").className = "status ok"; $("#st").textContent = "Checked in. Next deadline: " + day(r.opens) + "."; } catch (e) { $("#st").className = "status bad"; $("#st").textContent = e.message; } };
+    $("#del").onclick = async () => { if (!confirm("Delete this letter for good? Nobody will ever be able to open it.")) return; try { await api("/" + id + "/delete", "POST", { token }); main.innerHTML = '<h1>Deleted</h1><p class="lede">The sealed letter is gone from the site. The friends\' links open nothing now.</p>'; } catch (e) { $("#st").className = "status bad"; $("#st").textContent = e.message; } };
+  }
+
+  function route() {
+    const h = decodeURIComponent(location.hash.slice(1)), w = /^writer\.([0-9a-f]{16})\.([0-9a-f]{32})$/.exec(h), s = SL.readShare(h);
+    if (w) return writer(w[1], w[2]); if (s) return open(s); write();
+  }
+  addEventListener("hashchange", route); route();
+})();
+</script>
+</body>
+</html>

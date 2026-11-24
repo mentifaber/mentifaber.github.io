@@ -65,5 +65,17 @@
   "iss",
   "kp"
  ],
- "data": "Live: satellite element sets from CelesTrak, propagated in your browser."
+ "data": "Live: satellite element sets from CelesTrak, propagated in your browser.",
+ "verbs": [
+  {
+   "name": "track",
+   "label": "Track a satellite",
+   "desc": "Follow a satellite on the map by name or NORAD number.",
+   "changes": false,
+   "args": {
+    "name": "string"
+   },
+   "words": "track satellite iss station starlink hubble follow norad orbit"
+  }
+ ]
 }

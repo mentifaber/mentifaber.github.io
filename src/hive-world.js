@@ -123,7 +123,11 @@ function readTrends(h, cur) {
     else if (hb - hs >= 0.08) trend = "easing";
     return { k, label, n: Math.round(r.n * scale24), nBase: fb ? Math.round(b.n * scaleB) : null, hostile: hs, hostileBase: hb, tone: r.n ? r.gs / r.n : null, toneBase: b.n ? b.gs / b.n : null, threats: Math.round(th * 10) / 10, threatsBase: thb == null ? null : Math.round(thb * 10) / 10, violent: Math.round(v * 10) / 10, violentBase: vb == null ? null : Math.round(vb * 10) / 10, trend, great: GREAT.has(k) };
   });
-  return { at: Date.now(), files: all, week: 672, f24, fb, days: Math.round(all / 96 * 10) / 10, global, countries: countries.slice(0, 16), movers: movers.slice(0, 6), easing: lifted.slice().reverse().filter((c) => c.lift < 0.77).slice(0, 4), dyads };
+  // coverage (Unlit's Coverage Gap): for every country, its violent events and the news mentions of them over the week,
+  // per day. Read from the same pass as everything above, so it costs no extra rows; kept to the 150 most covered
+  const perDay = 96 / all, cov = [...new Set([...c24.keys(), ...cb.keys()])].map((k) => { const a = c24.get(k) || { n: 0, m: 0 }, b = cb.get(k) || { n: 0, m: 0 };
+    return [k.slice(2), Math.round((a.m + b.m) * perDay * 10) / 10, Math.round((a.n + b.n) * perDay * 10) / 10]; }).sort((x, y) => y[1] - x[1]).slice(0, 150);
+  return { at: Date.now(), files: all, week: 672, f24, fb, days: Math.round(all / 96 * 10) / 10, global, countries: countries.slice(0, 16), movers: movers.slice(0, 6), easing: lifted.slice().reverse().filter((c) => c.lift < 0.77).slice(0, 4), dyads, cov };
 }
 // the record in words, for Genesis to reason from
 export function worldText(t) {

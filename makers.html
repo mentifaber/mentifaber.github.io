@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/makers">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Make apps for FaberOS · Mentifaber</title>
+<meta name="description" content="How to build an app that runs in FaberOS and AutoFaber can operate: the faberos/1 manifest, the Faber kit, Faber Verbs, permissions.">
+<meta name="theme-color" content="#0d0b08">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* Makers: a reference sheet. Gold rules, a monospace spec table per section, and the checker as the one live part. */
+:root { --bg: #0d0b08; --panel: #15110b; --line: #3a3122; --gold: #d6a647; --gold-hi: #f0cf7e; --ink: #efe6d2; --dim: #a89d86; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6b450;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; text-transform: none; letter-spacing: 0; font: 400 14px var(--sans); }
+h1 { font: 700 clamp(28px, 6vw, 42px)/1.1 var(--sans); margin: 18px 0 8px; } h1 span { color: var(--gold-hi); }
+h2 { font: 700 21px/1.3 var(--sans); margin: 34px 0 8px; color: var(--gold-hi); }
+p { max-width: 70ch; } .dim { color: var(--dim); }
+.spec { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-top: 10px; }
+table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 14.5px; } th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); background: rgba(214,166,71,.06); } td:first-child { font: 600 13px var(--mono); color: var(--gold-hi); white-space: nowrap; }
+pre { background: #0f0c08; border: 1px solid var(--line); border-radius: 10px; padding: 14px; overflow-x: auto; font: 13px/1.55 var(--mono); color: #e8dcc4; }
+code { font: 13px var(--mono); color: var(--gold-hi); }
+textarea { width: 100%; min-height: 220px; font: 13px/1.5 var(--mono); padding: 12px; background: #0f0c08; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
+.btn { font: 600 15px var(--sans); padding: 11px 16px; border-radius: 8px; border: 1px solid var(--gold); background: var(--gold); color: #1a1206; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--gold-hi); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+#out ul { margin: 8px 0 0; padding-left: 20px; } #out .ok { color: var(--ok); font-weight: 600; } #out .bad { color: var(--bad); } #out .warn { color: var(--warn); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 12px; }
+ol.steps { padding-left: 20px; display: grid; gap: 6px; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · FaberOS for makers</span><a href="os">Open FaberOS</a></div>
+  <h1>Make apps for <span>FaberOS</span></h1>
+  <p class="dim">FaberOS runs web apps in windows, with one place for permissions, a shared file Shelf, notifications, and AutoFaber, an AI that can operate any app that says what it can do. Foundry, its app store, is opening to other makers. This page is everything an app needs, and a checker for your manifest.</p>
+
+  <h2>1 · The manifest</h2>
+  <p>One JSON object, format <code>faberos/1</code>. It's the same shape the workshop's own apps use.</p>
+  <div class="spec"><table><thead><tr><th>Field</th><th>What it is</th></tr></thead><tbody>
+    <tr><td>id</td><td>Unique, lowercase: letters, digits, hyphens (2 to 40).</td></tr>
+    <tr><td>name, desc</td><td>What it's called, and what it does in one sentence.</td></tr>
+    <tr><td>entry</td><td>The https:// page FaberOS opens in a window.</td></tr>
+    <tr><td>cat</td><td>Its room: signals, ai, tools, world, play or craft.</td></tr>
+    <tr><td>hue, glyph</td><td>Its tile: a colour (0–359) and an SVG path drawn on a 24×24 grid.</td></tr>
+    <tr><td>permissions</td><td>The browser features the window may grant: fullscreen, autoplay, clipboard-write, and (FaberOS asks people first) camera, microphone, geolocation, clipboard-read, motion sensors, XR. Nothing else is granted.</td></tr>
+    <tr><td>accepts</td><td>File types it opens from the Shelf, like <code>".pdf"</code> or <code>"image/*"</code>.</td></tr>
+    <tr><td>verbs</td><td>What AutoFaber may ask it to do (below).</td></tr>
+    <tr><td>kit</td><td><code>true</code> if it loads the Faber kit.</td></tr>
+  </tbody></table></div>
+
+  <h2>2 · The Faber kit</h2>
+  <p>Load <code>https://mentifaber.org/assets/os/faber.js</code>. Outside FaberOS every call does nothing and <code>Faber.inOS</code> is false, so the app works the same on its own.</p>
+<pre>Faber.notify("Indexed", "3 files are ready")      // a notification in FaberOS
+Faber.open("orbit")                               // open another app
+Faber.save(blob, "report.pdf")                    // put a file on the Shelf
+Faber.onFiles((files) => openThese(files))        // take files from the Shelf ("Open in…")
+Faber.verbs({ "add-transaction": (a) => …,        // what AutoFaber may ask it to do
+              balance: () => "Balance now $412" })</pre>
+
+  <h2>3 · Faber Verbs</h2>
+  <p>A verb is something the app can do when someone asks AutoFaber in words: "log $40 for gas", "track the ISS". FaberOS checks every argument against what the manifest declares, and asks the person before any verb that changes their data. The app's own function does the work and answers in a sentence.</p>
+<pre>{ "name": "add-transaction", "label": "Add a transaction", "changes": true,
+  "desc": "Log money in or out.",
+  "args": { "amount": "number", "label": "string", "direction?": "enum:out|in", "date?": "date" },
+  "words": "log add spent paid bought expense income" }</pre>
+  <p class="dim">Argument types: number, string, date (YYYY-MM-DD), boolean, or <code>enum:a|b|c</code>. A name ending in <code>?</code> is optional. At most 8 verbs, 8 arguments each.</p>
+
+  <h2>4 · Check your manifest</h2>
+  <div class="panel"><textarea id="man" spellcheck="false" aria-label="Your manifest">{
+  "format": "faberos/1",
+  "id": "tide-clock",
+  "name": "Tide Clock",
+  "desc": "High and low tides for any harbour, with a clock face that shows where the water is now.",
+  "entry": "https://tides.example.com/app",
+  "cat": "world",
+  "hue": 200,
+  "permissions": ["fullscreen", "geolocation"],
+  "kit": true,
+  "verbs": [
+    { "name": "next-tide", "label": "Tell me the next tide", "changes": false, "args": { "harbour?": "string" } }
+  ]
+}</textarea>
+  <div class="row"><button class="btn" id="chk" type="button">Check it</button><button class="btn ghost" id="send" type="button" hidden>Send it to Foundry</button></div>
+  <div id="out" role="status" aria-live="polite"></div></div>
+
+  <h2>5 · Into Foundry</h2>
+  <ol class="steps"><li>Check the manifest here until it passes.</li><li>Send it with "Send it to Foundry": it opens an email to the workshop with the manifest attached as text.</li><li>Each app is opened and tried by hand: what it does, what it asks for, that its verbs do what they say.</li><li>Accepted apps appear in Foundry and in FaberOS's launcher, and AutoFaber can operate their verbs.</li></ol>
+  <p class="dim">Questions: <a href="contact" style="color:var(--gold-hi)">write to the workshop</a>.</p>
+</div>
+<script src="assets/os/validate.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id), esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  let good = null;
+  $("chk").onclick = () => {
+    let m; try { m = JSON.parse($("man").value); } catch (e) { $("out").innerHTML = '<p class="bad">That isn\'t valid JSON: ' + esc(e.message) + "</p>"; $("send").hidden = true; return; }
+    const r = FaberValidate(m); good = r.ok ? m : null; $("send").hidden = !r.ok;
+    $("out").innerHTML = (r.ok ? '<p class="ok">✓ This manifest is ready for FaberOS.</p>' : '<p class="bad">' + r.errors.length + " thing" + (r.errors.length > 1 ? "s" : "") + " to fix:</p><ul>" + r.errors.map((x) => '<li class="bad">' + esc(x) + "</li>").join("") + "</ul>") +
+      (r.warnings.length ? '<ul>' + r.warnings.map((x) => '<li class="warn">' + esc(x) + "</li>").join("") + "</ul>" : "");
+  };
+  $("send").onclick = () => { if (!good) return; location.href = "mailto:anders@mentifaber.org?subject=" + encodeURIComponent("[Foundry] " + good.name + " (" + good.id + ")") + "&body=" + encodeURIComponent("An app for FaberOS and Foundry.\n\nManifest:\n\n" + JSON.stringify(good, null, 2)); };
+})();
+</script>
+</body>
+</html>

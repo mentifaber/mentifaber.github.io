@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/blackout">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Blackout Kit · Mentifaber</title>
+<meta name="description" content="One page that gets ready for when the network goes down: mesh and radio messaging, a satellite tracker.">
+<meta name="theme-color" content="#0b0906">
+<meta property="og:url" content="https://mentifaber.org/blackout"><meta property="og:title" content="Blackout Kit · Mentifaber"><meta property="og:image" content="https://mentifaber.org/assets/brand/og.jpg">
+<link rel="manifest" href="assets/manifests/blackout.webmanifest">
+<link rel="icon" href="assets/favicon.png"><link rel="apple-touch-icon" href="assets/icons/v2/mentifaber-180.png">
+<link rel="stylesheet" href="assets/maps/leaflet/leaflet.css">
+<style>
+/* Blackout Kit: built to be read by a dim phone in the dark. One column, big type, amber on near-black (easy on the
+   battery and on night vision), every section usable with no network once the kit is ready. */
+:root { --bg: #0b0906; --panel: #15110b; --line: #3a2f1e; --amber: #f0b45a; --amber-hi: #ffd796; --ink: #f3e9d6; --dim: #b3a58c; --ok: #8fd18f; --warn: #ff9a6b;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.55 var(--sans); }
+.wrap { max-width: 760px; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+header a { color: var(--dim); font-size: 14px; text-decoration: none; margin-left: auto; }
+h1 { font: 700 clamp(30px, 7vw, 44px)/1.05 var(--sans); letter-spacing: -.01em; margin: 6px 0 8px; }
+h1 span { color: var(--amber); }
+.lede { color: var(--dim); margin: 0 0 18px; max-width: 62ch; }
+h2 { font: 700 21px/1.2 var(--sans); margin: 0 0 10px; color: var(--amber-hi); }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 14px; }
+.btn { font: 600 16px var(--sans); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--amber); background: transparent; color: var(--amber-hi); cursor: pointer; min-height: 46px; }
+.btn.pri { background: var(--amber); color: #1b1206; border-color: var(--amber); }
+.btn:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--amber-hi); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.status { font: 500 14px var(--mono); color: var(--dim); }
+.status.ok { color: var(--ok); } .status.warn { color: var(--warn); }
+ul.apps { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+ul.apps li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+ul.apps a { color: var(--ink); font-weight: 600; text-decoration: none; }
+ul.apps small { grid-column: 1; color: var(--dim); font-size: 14px; }
+ul.apps .st { grid-row: 1 / span 2; grid-column: 2; font: 500 13px var(--mono); color: var(--dim); }
+ul.apps .st.ok { color: var(--ok); }
+#map { height: 300px; border-radius: 10px; border: 1px solid var(--line); margin-top: 10px; background: #070d16; }
+#map .leaflet-control-attribution { background: rgba(11,9,6,.75); color: var(--dim); } #map .leaflet-control-attribution a { color: var(--amber); }
+.coords { font: 600 20px var(--mono); color: var(--amber-hi); word-break: break-all; }
+details { border-top: 1px solid var(--line); padding: 10px 0; }
+details:first-of-type { border-top: 0; }
+summary { cursor: pointer; font-weight: 600; font-size: 18px; list-style-position: outside; }
+details ul { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+details p.src { color: var(--dim); font-size: 13px; margin: 8px 0 0; }
+.num { font: 600 15px var(--mono); color: var(--amber-hi); }
+.fine { color: var(--dim); font-size: 14px; margin: 10px 0 0; }
+@media (prefers-reduced-motion: no-preference) { .btn { transition: background .2s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><a href="./" aria-label="Back to the workshop">mentifaber.org</a></header>
+  <h1>Blackout <span>Kit</span></h1>
+  <p class="lede">Get this ready while you still have a connection. Once it's ready, this page, the apps below and the world map open with no network: messaging over mesh radio and ham radio, a satellite tracker, your own documents, where you are, and plain guides for water, food, heat and power.</p>
+
+  <section aria-labelledby="ready-h">
+    <h2 id="ready-h">1 · Get ready</h2>
+    <div class="row"><button class="btn pri" id="prep" type="button">Make it all work offline</button><span class="status" id="prep-st" role="status">Checking…</span></div>
+    <ul class="apps" id="apps"></ul>
+    <p class="fine">This keeps each app in this browser, about 10 MB in all. Add this page to your home screen too (your browser's Share or menu: "Add to Home Screen") so it opens like an app. Do it on every phone in the house.</p>
+  </section>
+
+  <section aria-labelledby="where-h">
+    <h2 id="where-h">2 · Where am I</h2>
+    <p class="fine" style="margin-top:0">Phones find themselves by GPS, which keeps working when the network doesn't. The map is drawn by this site from its own data, so it works offline too.</p>
+    <div class="row" style="margin-top:10px"><button class="btn" id="locate" type="button">Find me</button><span class="coords" id="coords" aria-live="polite">—</span><button class="btn" id="copy" type="button" hidden>Copy</button></div>
+    <div id="map" role="img" aria-label="World map with your position"></div>
+  </section>
+
+  <section aria-labelledby="guide-h">
+    <h2 id="guide-h">3 · What to do</h2>
+    <details open><summary>Emergency numbers</summary><ul>
+      <li><span class="num">911</span> in the US and Canada, <span class="num">112</span> across Europe and from most mobile phones anywhere, <span class="num">999</span> in the UK.</li>
+      <li>When calls won't connect, try a text: texts often get through when the network is too busy for calls. In the US you can text <span class="num">911</span> where it's supported.</li></ul></details>
+    <details><summary>Safe water</summary><ul>
+      <li>Boil clear water at a rolling boil for <b>1 minute</b> (3 minutes above 6,500 ft / 2,000 m). Let it cool.</li>
+      <li>No way to boil: unscented household bleach. For 6% bleach, <b>8 drops per gallon</b> (about 4 L); for 8.25% bleach, <b>6 drops</b>. Stir, wait <b>30 minutes</b>. It should smell faintly of chlorine.</li>
+      <li>Cloudy water: let it settle and filter it through a clean cloth first, then treat it.</li></ul>
+      <p class="src">From the US CDC's guidance on making water safe in an emergency.</p></details>
+    <details><summary>Food in a dead fridge</summary><ul>
+      <li>Keep the doors shut. A closed fridge keeps food cold for about <b>4 hours</b>; a full freezer about <b>48 hours</b> (24 if half full).</li>
+      <li>Throw out meat, dairy, eggs and leftovers that have been above 40°F (4°C) for more than 2 hours. When in doubt, throw it out.</li></ul>
+      <p class="src">From the USDA's food safety guidance for power outages.</p></details>
+    <details><summary>Heat, generators and carbon monoxide</summary><ul>
+      <li><b>Never</b> run a generator, grill, camp stove or charcoal indoors, in a garage or a tent, even with the door open.</li>
+      <li>Keep a generator at least <b>20 feet</b> (6 m) from doors, windows and vents.</li>
+      <li>Headache, dizziness or sleepiness that several people share can be carbon monoxide: get everyone into fresh air and call for help.</li></ul>
+      <p class="src">From the US CDC's carbon monoxide guidance.</p></details>
+    <details><summary>Keep the phone alive</summary><ul>
+      <li>Turn on low power mode, turn the screen brightness down, and switch on airplane mode when you don't need a signal.</li>
+      <li>A car charges a phone; run the engine outdoors only, never in a closed garage.</li>
+      <li>Agree a check-in time with family so phones can stay off in between.</li></ul></details>
+    <details><summary>Radio</summary><ul>
+      <li>US weather and emergency alerts (NOAA Weather Radio) broadcast between <span class="num">162.400</span> and <span class="num">162.550 MHz</span>; any weather radio receives them.</li>
+      <li>FRS walkie-talkies need no licence in the US. Channel 1 is <span class="num">462.5625 MHz</span>.</li>
+      <li>Ham radio's 2-metre calling frequency is <span class="num">146.520 MHz</span> FM. Anyone may listen; transmitting needs a licence, except in a real emergency.</li>
+      <li>Hopline and Skipline below message over mesh and HF radio when the internet is gone.</li></ul></details>
+    <p class="fine">General information, not a substitute for local emergency services. Follow the instructions of your local authorities.</p>
+  </section>
+  <p class="fine" id="last"></p>
+</div>
+<script src="assets/maps/leaflet/leaflet.js"></script>
+<script src="assets/maps/basemap.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("bk:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("bk:" + k, JSON.stringify(v)); } catch (e) {} } };
+  // the apps that keep working with no network, each with its own offline worker (registered from here, in its own scope)
+  const KIT = [
+    { id: "meshnet", name: "Hopline", what: "Messages over a LoRa mesh radio, no internet", page: "meshnet-app", sw: "/meshnet-sw.js", scope: "/meshnet" },
+    { id: "novarac", name: "Skipline", what: "HF radio messaging when the internet's gone", page: "novarac-app", sw: "/novarac-sw.js", scope: "/novarac" },
+    { id: "nullspace", name: "Nullspace", what: "Encrypted comms over radio or Bluetooth", page: "nullspace-app", sw: "/nullspace-sw.js", scope: "/nullspace" },
+    { id: "orbit", name: "Overhead", what: "Satellites over you, from the last element sets kept", page: "orbit-app", sw: "/orbit-sw.js", scope: "/orbit" },
+    { id: "doccrawler", name: "DocCrawler", what: "Your own documents, searchable on the device", page: "doccrawler-app", sw: "/doccrawler-sw.js", scope: "/doccrawler" },
+    { id: "cartograph", name: "Cartograph", what: "The sky tonight, for direction and something to look at", page: "cartograph-app", sw: "/cartograph-sw.js", scope: "/cartograph" },
+  ];
+  const can = "serviceWorker" in navigator;
+  async function state(k) { if (!can) return false; try { const r = await navigator.serviceWorker.getRegistration(k.scope + "/"); return !!(r && r.active); } catch (e) { return false; } }
+  async function draw() {
+    const st = await Promise.all(KIT.map(state)); const kit = can ? !!(await navigator.serviceWorker.getRegistration("/blackout")) : false;
+    $("apps").innerHTML = KIT.map((k, i) => '<li><a href="' + esc(k.page) + '">' + esc(k.name) + "</a><small>" + esc(k.what) + '</small><span class="st' + (st[i] ? " ok" : "") + '">' + (st[i] ? "ready ✓" : "not yet") + "</span></li>").join("");
+    const n = st.filter(Boolean).length + (kit ? 1 : 0), all = KIT.length + 1;
+    $("prep-st").className = "status " + (n === all ? "ok" : "warn");
+    $("prep-st").textContent = !can ? "This browser can't keep apps offline." : n === all ? "Ready: all " + all + " parts work offline" : n + " of " + all + " ready";
+    const t = LS.get("ready", 0); $("last").textContent = t ? "Last made ready " + new Date(t).toLocaleString() + "." : "";
+    return n === all;
+  }
+  const settle = (reg) => new Promise((res) => { if (reg.active) return res(true); const w = reg.installing || reg.waiting; if (!w) return res(false);
+    const t = setTimeout(() => res(!!reg.active), 30000); w.addEventListener("statechange", () => { if (w.state === "activated") { clearTimeout(t); res(true); } if (w.state === "redundant") { clearTimeout(t); res(false); } }); });
+  $("prep").addEventListener("click", async () => {
+    if (!can) return draw(); $("prep").disabled = true; $("prep-st").className = "status"; $("prep-st").textContent = "Getting it ready…";
+    try { await settle(await navigator.serviceWorker.register("/blackout-sw.js", { scope: "/blackout" })); } catch (e) {}
+    let i = 0; for (const k of KIT) { $("prep-st").textContent = "Getting " + k.name + " ready (" + ++i + " of " + KIT.length + ")…"; try { await settle(await navigator.serviceWorker.register(k.sw, { scope: k.scope })); } catch (e) {} }
+    $("prep").disabled = false; if (await draw()) LS.set("ready", Date.now()); draw();
+  });
+  // where am I: GPS works offline; the map is the site's own
+  let map = null, me = null;
+  try { map = L.map("map", { worldCopyJump: true, zoomControl: true, zoomSnap: 0.25 }).fitBounds([[-55, -170], [72, 170]]); FaberMap.base(map, { labels: true }).catch(() => {}); } catch (e) { $("map").textContent = "The map couldn't start here."; }
+  const show = (lat, lon, acc) => { const t = lat.toFixed(5) + ", " + lon.toFixed(5); $("coords").textContent = t; $("copy").hidden = false; $("copy").dataset.t = t;
+    if (map) { if (me) me.remove(); me = L.circleMarker([lat, lon], { radius: 8, color: "#ffd796", weight: 2, fillColor: "#f0b45a", fillOpacity: .9 }).bindTooltip("You" + (acc ? " (±" + Math.round(acc) + " m)" : "")).addTo(map); map.setView([lat, lon], 6); }
+    LS.set("last", { lat, lon, at: Date.now() }); };
+  const was = LS.get("last", null); if (was && isFinite(was.lat)) { show(was.lat, was.lon); $("coords").textContent += " (last known)"; }
+  $("locate").addEventListener("click", () => { if (!navigator.geolocation) { $("coords").textContent = "This browser can't find its location."; return; }
+    $("coords").textContent = "Finding you…";
+    navigator.geolocation.getCurrentPosition((p) => show(p.coords.latitude, p.coords.longitude, p.coords.accuracy), (e) => { $("coords").textContent = e.code === 1 ? "Location is turned off for this site." : "Couldn't get a fix. Go outside or near a window and try again."; }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 60000 }); });
+  $("copy").addEventListener("click", () => { const t = $("copy").dataset.t; if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => { $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy"), 1500); }, () => {}); });
+  draw();
+  window.BlackoutKit = { KIT, draw, map: () => map };
+})();
+</script>
+</body>
+</html>

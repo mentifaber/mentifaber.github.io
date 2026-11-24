@@ -24,6 +24,7 @@ import { findProducts, findPhoto } from "./nest-find.js";
 import { Library, libraryTables } from "./hive-library.js";
 import { Voice, voiceTables, isGuestReq } from "./hive-voice.js";
 import { osPlan, OS_DAY } from "./hive-os.js";
+import { finePrint, FINE_DAY } from "./hive-fine.js";
 import { symbolsFor, quotes, quoteText } from "./markets.js";
 
 // Workers AI text models. Any that a given account can't run just go offline for that project.
@@ -281,6 +282,13 @@ export class Hive extends DurableObject {
       const r = await findPhoto({ env: this.env, web: (q, o) => this.web(q, true, o) }, String((b && b.q) || "")).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
       return J(r, r.error ? 404 : 200);
     }
+    if (path === "/fineprint") { // Fine Print (DocCrawler): the clauses that matter in a document, each quoted word for word (src/hive-fine.js)
+      if (req.method !== "POST") return J({ error: "POST only" }, 405);
+      if (!owner && !this.meter(req, "fine", FINE_DAY)) return J({ error: "that's today's " + FINE_DAY + " Fine Print readings; more tomorrow" }, 429);
+      const r = await finePrint(this, b).catch((e) => ({ error: String(e.message || e).slice(0, 200), status: e.status || 502 }));
+      this.logReply({ model: "fine", who: owner ? "owner" : "visitor", kind: "fine", ms: r.ms, chars: JSON.stringify(r.flags || "").length, err: r.error });
+      return J(r.error ? { error: r.error } : r, r.error ? r.status : 200);
+    }
     if (path === "/os/plan") { // FaberOS: a sentence becomes a few checked actions (src/hive-os.js)
       if (req.method !== "POST") return J({ error: "POST only" }, 405);
       if (!owner && !this.meter(req, "os", OS_DAY)) return J({ error: "that's today's " + OS_DAY + " FaberOS requests; the command bar's own commands still work" }, 429);
@@ -329,6 +337,10 @@ export class Hive extends DurableObject {
       this.say(id, "hive", "info", q.exec("SELECT COUNT(*) c FROM agent WHERE pid=?", id).one().c + " agents joined" + (this.env.AI ? "" : " (Workers AI is not bound on this deployment)") + ". Visiting AIs can join with the project link.");
       await this.ctx.storage.setAlarm(Date.now() + 200);
       return J({ id, ctok });
+    }
+    if (path === "/world/coverage" && req.method === "GET") { // Unlit's Coverage Gap: news mentions of violence per country, per day, over the week
+      const t = trends(this); // the hour's reading, kept in storage: one row, and the edge keeps the answer for half an hour
+      return new Response(JSON.stringify(t.empty || !t.cov ? { empty: true } : { at: t.at, days: t.days, cov: t.cov }), { headers: { "content-type": "application/json", "cache-control": "public, max-age=1800" } });
     }
     if (path.startsWith("/pub/")) { // a published result, for its public page (build.html): always the latest version
       const r = q.exec("SELECT u.slug, u.ts, u.by_, u.live, p.id, p.title, p.final, p.status FROM pub u JOIN proj p ON p.id = u.pid WHERE u.slug=?", path.slice(5)).toArray()[0];

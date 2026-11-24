@@ -206,3 +206,5 @@ a.w:hover { border-color: var(--line-2); }
   .layers div { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+.v-trust { display: flex; gap: 8px; align-items: center; margin: 4px 0 12px; color: var(--ink-2); }
+#v-list li b { color: var(--gold-hi); font-weight: 500; margin-right: 6px; }
