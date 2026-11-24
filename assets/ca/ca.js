@@ -38,6 +38,38 @@ $("tiers").addEventListener("click", (e) => { const b = e.target.closest("[data-
 $("regions").addEventListener("click", (e) => { const b = e.target.closest("[data-region]"); if (!b) return; S.region = b.dataset.region || null; document.querySelectorAll("#regions button").forEach((x) => x.classList.toggle("on", x === b)); draw(); });
 $("ceasefire").addEventListener("change", (e) => { S.cf = e.target.checked; draw(); });
 $("q").addEventListener("input", (e) => { S.q = e.target.value.trim().toLowerCase(); draw(); });
+
+// ── Coverage gap: how much of the world's news about violence each conflict gets, against how costly it is. The news
+//    side is AutoFaber's GDELT record (mentions of violent events located in each country, per day, over the last week,
+//    /api/hive/world/coverage); the cost side is Unlit's own tiers. A conflict with a far smaller share of the coverage
+//    than of the cost is under-covered. Countries a conflict is counted by are shown on each row ──
+const GDELT = { // title start → the GDELT country names it's counted by (case-insensitive patterns)
+  "U.S. / Israel – Iran": [/^iran$/], "Russia – Ukraine": [/^ukraine$/], "Sudan Civil": [/^sudan$/], "Myanmar": [/^(myanmar|burma)$/],
+  "DR Congo": [/congo.*(democratic|kinshasa)|democratic.*congo|^zaire$/], "Sahel": [/^mali$/, /^burkina faso$/, /^niger$/], "Israel – Lebanon": [/^lebanon$/],
+  "Israel – Gaza": [/^gaza( strip)?$/, /^palestin/], "Yemen": [/^yemen$/], "Somalia": [/^somalia$/], "India – Pakistan": [/^india$/], "Afghanistan – Pakistan": [/^afghanistan$/, /^pakistan$/],
+  "Nigeria": [/^nigeria$/], "Haiti": [/^haiti$/], "Syria / Iraq": [/^syria$/, /^iraq$/], "Iran — Internal": [/^iran$/], "Mexico": [/^mexico$/], "Cameroon": [/^cameroon$/],
+  "Ethiopia – Eritrea": [/^ethiopia$/, /^eritrea$/], "South Sudan": [/^south sudan$/], "Mozambique": [/^mozambique$/], "Libya": [/^libya$/], "West Bank": [/^west bank$/],
+  "South China Sea": [/spratly|paracel|south china sea/], "Bangladesh": [/^bangladesh$/], "Ecuador": [/^ecuador$/], "Brazil": [/^brazil$/], "Strait of Hormuz": [/^oman$/, /hormuz/],
+};
+const WEIGHT = { "major war": 9, significant: 3, active: 1 }; // cost, roughly: each tier is about three times the one below
+let gapOn = false, gapData = null;
+async function gap() {
+  const el = $("gap"); el.innerHTML = "<p>Reading the week's world news…</p>";
+  if (!gapData) { try { const r = await fetch("/api/hive/world/coverage"); gapData = r.ok ? await r.json() : null; } catch (e) {} }
+  if (!gapData || gapData.empty || !Array.isArray(gapData.cov)) { el.innerHTML = "<p>AutoFaber's world record isn't answering right now, or hasn't a week on file yet. Try again later.</p>"; gapData = null; return; }
+  const rows = D.map((x) => { const pats = Object.entries(GDELT).find(([k]) => x.t.startsWith(k)); const hit = pats ? gapData.cov.filter(([name]) => pats[1].some((p) => p.test(name.toLowerCase()))) : [];
+    return { x, names: hit.map((h) => h[0]), m: hit.reduce((s, h) => s + h[1], 0), w: WEIGHT[x.tier] || 1 }; });
+  const M = rows.reduce((s, r) => s + r.m, 0) || 1, W = rows.reduce((s, r) => s + r.w, 0);
+  rows.forEach((r) => { r.share = r.m / M; r.cost = r.w / W; r.ratio = r.m ? r.cost / r.share : Infinity; });
+  rows.sort((a, b) => (a.m ? 0 : 1) - (b.m ? 0 : 1) || b.ratio - a.ratio || b.w - a.w); // nothing in the record (a quiet week, or a name the record spells differently) goes last, not first const top = Math.max(...rows.map((r) => r.m)) || 1;
+  const say = (r) => (r.ratio === Infinity ? "not in the record" : r.ratio >= 1.5 ? (r.ratio >= 10 ? Math.round(r.ratio) : r.ratio.toFixed(1)) + "× under-covered" : r.ratio <= 0.67 ? (1 / r.ratio).toFixed(1) + "× over-covered" : "in proportion");
+  el.innerHTML = "<p>News mentions of violence, per day over the last " + esc(Math.round(gapData.days || 7)) + " days, against each conflict's cost tier. Most under-covered first.</p><ol>" +
+    rows.map((r) => '<li data-i="' + r.x.i + '"><b>' + esc(r.x.t) + '</b><span class="ratio ' + (r.ratio === Infinity ? "over" : r.ratio >= 1.5 ? "under" : r.ratio <= 0.67 ? "over" : "") + '">' + esc(say(r)) + '</span><span class="bar"><i style="width:' + Math.max(1, Math.round(r.m / top * 100)) + "%;background:" + TIER[r.x.tier][2] + '"></i></span><small>' +
+      esc(TIER[r.x.tier][0] + " · " + Math.round(r.m).toLocaleString() + " mentions a day · " + (r.share * 100).toFixed(1) + "% of the coverage, " + (r.cost * 100).toFixed(1) + "% of the cost" + (r.names.length ? " · counted as " + r.names.join(", ") : "")) + "</small></li>").join("") +
+    "</ol><p>How it's worked out: a conflict's share of the cost is its tier's weight (major war 9, significant 3, active 1) out of all 28; its share of the coverage is its countries' mentions out of all 28 conflicts'. Countries shared by two entries (Iran) count for both. The record is GDELT's, read every 15 minutes by AutoFaber.</p>";
+}
+$("gapbtn").addEventListener("click", () => { gapOn = !gapOn; $("gapbtn").setAttribute("aria-pressed", String(gapOn)); $("gap").hidden = !gapOn; $("list").hidden = gapOn; ["tiers", "regions"].forEach((id) => ($(id).hidden = gapOn)); document.querySelector(".cf").hidden = gapOn; if (gapOn) gap(); });
+$("gap").addEventListener("click", (e) => { const li = e.target.closest("[data-i]"); if (li) pick(+li.dataset.i); });
 // Faber Verbs: AutoFaber can open one of the conflicts (read only)
 if (window.Faber) Faber.verbs({
   show: ({ query }) => { const ws = String(query || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !/^(war|the|and|conflict|civil)$/.test(w));

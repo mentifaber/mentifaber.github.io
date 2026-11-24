@@ -68,6 +68,12 @@ assert.ok(t.days >= 6.9, "days " + t.days);
 const sudan = t.countries.find((c) => c.name === "Sudan"), ukr = t.countries.find((c) => c.name === "Ukraine");
 assert.ok(sudan.day > 700 && sudan.base > 150 && sudan.base < 220, JSON.stringify(sudan)); assert.ok(sudan.change > 2.5); assert.ok(Math.abs(ukr.change) < 0.1); assert.equal(ukr.spark.length, 7);
 assert.equal(t.movers[0].name, "Sudan"); ok("countries: Sudan ~4× its baseline and top mover, Ukraine level, each with a 7-day line");
+// Unlit's Coverage Gap: every country's news mentions of violence per day over the week, from the same pass, and the public route
+const cs = t.cov.find((c) => c[0] === "Sudan"), cu = t.cov.find((c) => c[0] === "Ukraine");
+assert.ok(cs && cu && cs[1] > 0 && cs[2] > 0 && t.cov.length <= 150, JSON.stringify(t.cov.slice(0, 3))); assert.ok(t.cov.every((c, i) => !i || t.cov[i - 1][1] >= c[1]), "most covered first");
+const cr = await hive.fetch(new Request("https://mentifaber.org/api/hive/world/coverage", { headers: { "cf-connecting-ip": "203.0.113.90" } })), cj = await cr.json();
+assert.equal(cr.status, 200); assert.deepEqual(cj.cov, t.cov); assert.match(cr.headers.get("cache-control"), /public, max-age=1800/); assert.deepEqual(Object.keys(cj).sort(), ["at", "cov", "days"]);
+ok("coverage: each country's news mentions and events of violence per day over the week (Sudan, Ukraine), most covered first; a visitor reads it at /world/coverage");
 const ur = t.dyads.find((d) => d.k === "USA-RUS"), uc = t.dyads.find((d) => d.k === "USA-CHN"), nr = t.dyads.find((d) => d.k === "NATO-RUS");
 assert.equal(ur.trend, "rising"); assert.ok(ur.hostile > 0.6 && ur.hostileBase < 0.4, JSON.stringify(ur)); assert.ok(ur.threats > 150); assert.ok(ur.tone < 0 && ur.toneBase > 0);
 assert.equal(uc.trend, "steady"); assert.equal(nr.trend, "rising"); assert.equal(t.dyads.find((d) => d.k === "CHN-TWN").trend, "quiet"); ok("pairs: US–Russia rising (" + Math.round(ur.hostile * 100) + "% hostile vs " + Math.round(ur.hostileBase * 100) + "%), US–China steady, China–Taiwan quiet");

@@ -330,6 +330,10 @@ export class Hive extends DurableObject {
       await this.ctx.storage.setAlarm(Date.now() + 200);
       return J({ id, ctok });
     }
+    if (path === "/world/coverage" && req.method === "GET") { // Unlit's Coverage Gap: news mentions of violence per country, per day, over the week
+      const t = trends(this); // the hour's reading, kept in storage: one row, and the edge keeps the answer for half an hour
+      return new Response(JSON.stringify(t.empty || !t.cov ? { empty: true } : { at: t.at, days: t.days, cov: t.cov }), { headers: { "content-type": "application/json", "cache-control": "public, max-age=1800" } });
+    }
     if (path.startsWith("/pub/")) { // a published result, for its public page (build.html): always the latest version
       const r = q.exec("SELECT u.slug, u.ts, u.by_, u.live, p.id, p.title, p.final, p.status FROM pub u JOIN proj p ON p.id = u.pid WHERE u.slug=?", path.slice(5)).toArray()[0];
       if (!r || !r.final || (!r.live && !owner)) return J({ error: "nothing is published here" }, 404); // a private preview reads as nothing to anyone else
