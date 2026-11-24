@@ -66,6 +66,16 @@ await sv.fill("#what", "example.com"); await sv.fill("#msg", "A new site for my 
 await sv.click("button[type=submit]"); await sv.waitForFunction(() => /Opening your email app/.test(document.getElementById("status").textContent));
 assert.equal(await sv.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0);
 ok("Services: five lines of work, a link or a card's button picks the service in the quote form, and a filled request opens email");
+const svt = await sv.textContent("main"); assert.match(svt, /Everything is remote or mail-in for now/); assert.doesNotMatch(svt, /Bring-in/);
+assert.match(svt, /Every plan: uptime checked around the clock/); assert.match(svt, /your quote says how long backups are kept/); assert.match(svt, /read and approve the quote, follow each step of the job/);
+assert.ok(await sv.$("main a[href='terms']"), "the services page links its terms");
+const tp = await open("terms.html"); const tt = await tp.textContent("main");
+for (const h of ["Payments", "Refunds", "Repair warranty: 30 days", "Your data and backups", "Mail-in", "Hosting"]) assert.ok(await tp.$("h2:text-is('" + h + "')"), h);
+assert.match(tt, /Data rescue is an attempt, not a promise/); assert.match(tt, /Cancel any time .* no refund for part of a month/); assert.match(tt, /No uptime percentage is promised/);
+const ct = await open("contact.html"); const cw = await ct.textContent("main"); assert.doesNotMatch(cw, /no third party/); assert.match(cw, /through your email provider and mine\. Nothing you type here is sent to or stored on this site/);
+assert.ok(await ct.$("a[href='https://github.com/mentifaber']"), "Contact links GitHub, as the footer does");
+const pv = await (await open("privacy.html")).textContent("main"); assert.match(pv, /Nothing you type is sent to or stored on this site; the message travels like any other email/); assert.match(pv, /The Nest Registry.*isn't listed on the site/s);
+ok("Services says where the work happens (remote and mail-in), what every hosting plan gets and what the portal is for, and links the terms; Terms covers payments, refunds, the 30-day warranty, data, mail-in and hosting; Contact and Privacy say the same about email");
 
 assert.deepEqual(errs, []);
 ok("no page errors");

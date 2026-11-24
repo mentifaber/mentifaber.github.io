@@ -225,4 +225,4 @@ if __name__ == "__main__":
     icons(list(A)); brand_icons()
     import plan
     for i in ids: print("built", plan.page(i))
-    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.privacy()); print("built", plan.services()); import faberos; print("built", faberos.manifest()); print("built", plan.aliases()); print("built", suite()); print("built", atlas()); print("built", seo()); print("built", sitemap())
+    if not sys.argv[1:]: print("built", plan.home()); print("built", plan.contact()); print("built", plan.notfound()); print("built", plan.lexicon()); print("built", plan.credits()); print("built", plan.privacy()); print("built", plan.services()); print("built", plan.terms()); import faberos; print("built", faberos.manifest()); print("built", plan.aliases()); print("built", suite()); print("built", atlas()); print("built", seo()); print("built", sitemap())
