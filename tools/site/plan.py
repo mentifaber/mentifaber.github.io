@@ -532,6 +532,7 @@ PRIVACY = [
     ("The other apps", [
         ("Private messengers", "Barycenter and Pilotfish are encrypted end to end and kept on the devices of the people who use them."),
         ("The Nest Registry", "Kept in its own storage, open only to the parents and the guests they invite; each device keeps a copy of the list it last saw so it still opens when the site is resting."),
+        ("DocCrawler's Fine Print", "Your library stays in your browser. Only when you press Fine Print does that one document's text (up to 24,000 characters) go to AutoFaber's model to be read; nothing is kept. Visitors get 12 readings a day."),
         ("Contact", "The contact form opens your own email app; nothing you write is stored on the site."),
     ]),
 ]
