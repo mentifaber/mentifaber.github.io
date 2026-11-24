@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/skylens">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sky Lens · Mentifaber</title>
+<meta name="description" content="Point your phone at the sky and see which satellites are there: the ISS, Hubble and the bright ones, drawn over your camera where they really are.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/icons/v2/orbit.svg" type="image/svg+xml">
+<style>
+/* Sky Lens: a heads-up display over the camera. Thin cyan reticle, labels that read on any sky, nothing else on screen. */
+:root { --hud: #7ee0ff; --hi: #e8fbff; --sun: #ffd166; --dim: rgba(232,251,255,.65); --bg: #000; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color-scheme: dark; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--hi); font: 400 15px/1.4 var(--sans); overflow: hidden; touch-action: none; }
+[hidden] { display: none !important; }
+video, canvas { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+video { filter: brightness(.9) contrast(1.05); }
+.bar { position: fixed; left: 0; right: 0; top: 0; padding: calc(10px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left)); display: flex; gap: 10px; align-items: center; background: linear-gradient(rgba(0,0,0,.7), transparent); font: 500 13px var(--mono); }
+.bar a { color: var(--dim); text-decoration: none; } .bar b { color: var(--hud); letter-spacing: .1em; } .bar .grow { flex: 1; } #where { color: var(--dim); }
+.start { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at 50% 30%, #0b2233, #000 70%); text-align: center; }
+.start div { max-width: 420px; display: grid; gap: 14px; } .start h1 { font: 700 34px var(--sans); margin: 0; } .start h1 span { color: var(--hud); } .start p { margin: 0; color: var(--dim); }
+.btn { font: 600 16px var(--sans); padding: 13px 18px; border-radius: 12px; border: 1px solid var(--hud); background: var(--hud); color: #001820; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--hud); }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px max(14px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); background: linear-gradient(transparent, rgba(0,0,0,.75)); font: 500 13px var(--mono); display: grid; gap: 4px; }
+#next { color: var(--sun); } #hint { color: var(--dim); }
+:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<video id="cam" playsinline muted autoplay hidden></video>
+<canvas id="hud" aria-label="Satellites in view, drawn over the sky"></canvas>
+<div class="bar"><a href="orbit-app">← Overhead</a><b>SKY LENS</b><span class="grow"></span><span id="where">—</span></div>
+<div class="foot" aria-live="polite"><span id="next"></span><span id="hint"></span></div>
+<div class="start" id="start"><div>
+  <h1>Sky <span>Lens</span></h1>
+  <p>Hold your phone up to the sky and it shows which satellites are there: the space stations, Hubble and the ones bright enough to see, where they really are right now.</p>
+  <button class="btn" id="go" type="button">Point it at the sky</button>
+  <button class="btn ghost" id="nocam" type="button">Look around without the camera</button>
+  <p style="font-size:13px">Uses your camera, the phone's compass and your location, all on this device. Works best away from metal and magnets, which confuse a compass.</p>
+</div></div>
+<script src="assets/orbit/satellite.min.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id), SAT = window.satellite, DEG = Math.PI / 180;
+  const S = { sats: [], obs: null, head: 180, pitch: 20, roll: 0, sensors: false, hfov: 62, t: Date.now() };
+  // ── where you are, and what's up there ──
+  async function locate() {
+    const fromApi = async () => { try { const w = await (await fetch("/api/where")).json(); if (isFinite(w.lat) && w.lat !== null) return { lat: w.lat, lon: w.lon, how: (w.city || "your connection") + " (approx.)" }; } catch (e) {} return null; };
+    const gps = await new Promise((res) => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lon: p.coords.longitude, how: "GPS" }), () => res(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 }); });
+    S.obs = gps || (await fromApi()); $("where").textContent = S.obs ? S.obs.lat.toFixed(2) + ", " + S.obs.lon.toFixed(2) + " · " + S.obs.how : "location unknown";
+  }
+  async function load() {
+    const parse = (t) => { const L = t.split(/\r?\n/).map((x) => x.trimEnd()).filter(Boolean), out = []; for (let i = 0; i + 2 < L.length + 1; i += 3) { if (!L[i + 2] || L[i + 1][0] !== "1") continue; try { const rec = SAT.twoline2satrec(L[i + 1], L[i + 2]); if (!rec.error) out.push({ name: L[i].trim(), id: +L[i + 1].slice(2, 7), rec }); } catch (e) {} } return out; };
+    for (const g of ["stations", "visual"]) { try { const r = await fetch("/api/orbit/tle?group=" + g); if (r.ok) for (const s of parse(await r.text())) if (!S.sats.some((x) => x.id === s.id)) S.sats.push(s); } catch (e) {} }
+    $("hint").textContent = S.sats.length ? S.sats.length + " satellites tracked" : "Couldn't load satellites: check the connection";
+  }
+  function look(s, t) {
+    if (!S.obs) return null; const d = new Date(t), pv = SAT.propagate(s.rec, d); if (!pv || !pv.position || !isFinite(pv.position.x)) return null;
+    const la = SAT.ecfToLookAngles({ latitude: S.obs.lat * DEG, longitude: S.obs.lon * DEG, height: 0.1 }, SAT.eciToEcf(pv.position, SAT.gstime(d)));
+    return { az: (la.azimuth / DEG + 360) % 360, el: la.elevation / DEG, km: la.rangeSat };
+  }
+  // the next time the ISS climbs above 10°, worked out a minute at a time over the next 12 hours
+  function nextIss() {
+    const iss = S.sats.find((s) => s.id === 25544); if (!iss || !S.obs) return null; const now = Date.now(), up = look(iss, now);
+    if (up && up.el > 10) return { now: true, az: up.az };
+    for (let t = now + 60e3; t < now + 12 * 3600e3; t += 60e3) { const l = look(iss, t); if (l && l.el > 10) return { at: t, az: l.az }; }
+    return null;
+  }
+  // ── pointing: the compass and tilt sensors, or a drag ──
+  function onOrient(e) {
+    let head = null;
+    if (typeof e.webkitCompassHeading === "number") head = e.webkitCompassHeading; // iPhone: already a compass bearing
+    else if (e.absolute && e.alpha != null) head = (360 - e.alpha) % 360; // Android: alpha counts the other way round
+    if (head == null || e.beta == null) return;
+    S.sensors = true; S.head = head; S.pitch = Math.max(-30, Math.min(90, e.beta - 90)); S.roll = e.gamma || 0;
+  }
+  const compass = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"], dirOf = (az) => compass[Math.round(az / 45) % 8];
+  let drag = null;
+  addEventListener("pointerdown", (e) => { if (S.sensors || e.target.closest("button,a")) return; drag = { x: e.clientX, y: e.clientY, h: S.head, p: S.pitch }; });
+  addEventListener("pointermove", (e) => { if (!drag) return; const k = S.hfov / innerWidth; S.head = (drag.h - (e.clientX - drag.x) * k + 360) % 360; S.pitch = Math.max(-10, Math.min(90, drag.p + (e.clientY - drag.y) * k)); });
+  addEventListener("pointerup", () => (drag = null));
+  // ── drawing ──
+  const cv = $("hud"), cx = cv.getContext("2d");
+  function frame() {
+    const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight; if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+    const hf = S.hfov, vf = hf * H / W, px = W / hf, t = Date.now(); S.t = t;
+    const toXY = (az, el) => { let d = ((az - S.head + 540) % 360) - 180; return { x: W / 2 + d * px, y: H / 2 - (el - S.pitch) * px, d }; };
+    // horizon and the compass along it
+    cx.strokeStyle = "rgba(126,224,255,.35)"; cx.lineWidth = 1; const hz = toXY(S.head, 0).y; cx.beginPath(); cx.moveTo(0, hz); cx.lineTo(W, hz); cx.stroke();
+    cx.font = "600 12px " + getComputedStyle(document.body).getPropertyValue("--mono"); cx.fillStyle = "rgba(126,224,255,.8)"; cx.textAlign = "center";
+    for (let a = 0; a < 360; a += 15) { const p = toXY(a, 0); if (p.x < -20 || p.x > W + 20) continue; cx.fillRect(p.x, hz - (a % 45 ? 3 : 7), 1, a % 45 ? 6 : 14); if (a % 45 === 0) cx.fillText(dirOf(a), p.x, hz + 22); }
+    // the reticle
+    cx.strokeStyle = "rgba(232,251,255,.5)"; cx.beginPath(); cx.arc(W / 2, H / 2, 18, 0, 7); cx.moveTo(W / 2 - 30, H / 2); cx.lineTo(W / 2 - 22, H / 2); cx.moveTo(W / 2 + 22, H / 2); cx.lineTo(W / 2 + 30, H / 2); cx.stroke();
+    cx.fillStyle = "rgba(232,251,255,.75)"; cx.fillText(Math.round(S.head) + "° " + dirOf(S.head) + " · " + Math.round(S.pitch) + "° up", W / 2, H / 2 + 44);
+    // the satellites above the horizon: on screen as a marker and a name; off screen as an arrow at the edge (the space stations only)
+    const shown = []; let i = 0;
+    for (const s of S.sats) { const l = look(s, t); if (!l || l.el < 0) continue; const p = toXY(l.az, l.el), on = p.x > 0 && p.x < W && p.y > 0 && p.y < H, key = s.id === 25544 || /CSS|TIANHE|HST|HUBBLE/i.test(s.name);
+      if (on) { cx.fillStyle = key ? "#ffd166" : "#7ee0ff"; cx.beginPath(); cx.arc(p.x, p.y, key ? 6 : 3.5, 0, 7); cx.fill(); cx.textAlign = "left"; cx.fillStyle = key ? "#ffe7a8" : "rgba(232,251,255,.85)"; cx.fillText(s.name.replace(/ \(.*\)$/, "").slice(0, 22) + " " + Math.round(l.el) + "°", p.x + 9, p.y + 4); shown.push({ id: s.id, name: s.name, x: p.x, y: p.y, el: l.el, az: l.az }); }
+      else if (key) { const a = Math.atan2(H / 2 - p.y, p.x - W / 2), r = Math.min(W, H) / 2 - 36, ex = W / 2 + Math.cos(a) * r, ey = H / 2 - Math.sin(a) * r; cx.save(); cx.translate(ex, ey); cx.rotate(-a); cx.fillStyle = "#ffd166"; cx.beginPath(); cx.moveTo(12, 0); cx.lineTo(-6, -7); cx.lineTo(-6, 7); cx.fill(); cx.restore(); cx.textAlign = "center"; cx.fillStyle = "#ffe7a8"; cx.fillText(s.name.replace(/ \(.*\)$/, "").slice(0, 16), ex, ey + 22); }
+      if (++i > 400) break; }
+    window.SkyLens.shown = shown;
+    requestAnimationFrame(frame);
+  }
+  function tick() { const n = nextIss(); $("next").textContent = !n ? "" : n.now ? "The ISS is up now, to the " + dirOf(n.az) + ". Follow the arrow." : "The ISS rises in the " + dirOf(n.az) + " in " + fmtIn(n.at - Date.now()) + " (" + new Date(n.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ")."; }
+  const fmtIn = (ms) => { const m = Math.round(ms / 60e3); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; };
+  async function begin(camera) {
+    $("start").hidden = true;
+    if (camera && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { try { const v = $("cam"); v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.hidden = false; } catch (e) { $("hint").textContent = "No camera: drag to look around"; } }
+    try { if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === "function") await DeviceOrientationEvent.requestPermission(); } catch (e) {} // iPhone asks once, from this tap
+    addEventListener("deviceorientationabsolute", onOrient); addEventListener("deviceorientation", onOrient);
+    setTimeout(() => { if (!S.sensors) $("hint").textContent = "No compass on this device: drag to look around"; }, 2500);
+    await locate(); await load(); tick(); setInterval(tick, 30e3); requestAnimationFrame(frame);
+  }
+  $("go").onclick = () => begin(true); $("nocam").onclick = () => begin(false);
+  window.SkyLens = { S, look, nextIss, begin, onOrient, shown: [] };
+})();
+</script>
+</body>
+</html>
