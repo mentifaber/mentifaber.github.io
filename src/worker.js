@@ -12,6 +12,7 @@ import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
 import { media } from "./media.js";
 import { seal } from "./seal.js"; // the workshop's seal: Device Passports and Witness records
+import { portal } from "./portal.js"; // the Workshop Portal: one link per client, one board for the workshop
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
 import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the Android apps (android/), so AutoFaber opens full screen and store links open the Store
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
@@ -600,6 +601,7 @@ const worker = {
         if (!/^1 \d/m.test(t)) return json({ error: "no elements from CelesTrak" + (r ? " (" + r.status + ")" : "") }, 502);
         return new Response(t, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
       }
+      if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil"))); // client links and the workshop's job board (src/portal.js)
       if (route === "seal") return seal(req, env, json, !!(await session(req, env, "vigil"))); // signs Device Passports (owner) and Witness records (src/seal.js)
       if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
         const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);

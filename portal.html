@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/portal">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Workshop Portal · Mentifaber</title>
+<meta name="description" content="Your job with the Mentifaber workshop in one place: the quote, where the work is up to, messages, the invoice, your Device Passport and your site's status.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d0b08">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* Workshop Portal: a job ticket. The client sees one ticket (status rail, quote, timeline); the workshop sees the rack
+   of tickets with the unread ones flagged. Gold on the workshop's dark, like the rest of mentifaber.org. */
+:root { --bg: #0d0b08; --panel: #15110b; --line: #3a3122; --gold: #d6a647; --gold-hi: #f0cf7e; --ink: #efe6d2; --dim: #a89d86; --ok: #8fd18f; --bad: #ff8a6b; --blue: #8fb6ff;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; text-transform: none; letter-spacing: 0; font: 400 14px var(--sans); }
+h1 { font: 700 clamp(26px, 5vw, 36px)/1.15 var(--sans); margin: 18px 0 4px; }
+h2 { font: 700 18px/1.3 var(--sans); margin: 0 0 10px; color: var(--gold-hi); }
+.sub { color: var(--dim); margin: 0 0 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+.rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 14px 0 4px; }
+.rail span { font: 500 11px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); border-top: 3px solid var(--line); padding-top: 6px; }
+.rail span.on { color: var(--gold-hi); border-color: var(--gold); } .rail span.now { color: var(--ink); }
+table { width: 100%; border-collapse: collapse; } td { padding: 7px 0; border-bottom: 1px solid var(--line); } td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.total td { font-weight: 700; border-bottom: 0; }
+ol.tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+ol.tl li { display: grid; grid-template-columns: 120px 1fr; gap: 10px; } ol.tl time { font: 500 12px/1.8 var(--mono); color: var(--dim); }
+ol.tl li.client p { color: var(--blue); } ol.tl li.private p { color: var(--dim); font-style: italic; } ol.tl p { margin: 0; white-space: pre-wrap; }
+.btn { font: 600 15px var(--sans); padding: 11px 16px; border-radius: 8px; border: 1px solid var(--gold); background: transparent; color: var(--gold-hi); cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.pri { background: var(--gold); color: #1a1206; } .btn.sm { padding: 7px 10px; font-size: 13px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+textarea, input, select { font: 400 15px var(--sans); padding: 9px 11px; background: #0f0c08; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; width: 100%; }
+textarea { min-height: 80px; resize: vertical; }
+label { display: grid; gap: 4px; font-size: 13px; color: var(--dim); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pill { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); white-space: nowrap; }
+.pill.up { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); } .pill.down { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); } .pill.new { color: #1a1206; background: var(--gold); border-color: var(--gold); }
+ul.jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ul.jobs button { width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: inherit; cursor: pointer; }
+ul.jobs small { color: var(--dim); } ul.jobs .r { grid-row: span 2; display: grid; gap: 4px; justify-items: end; align-content: center; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); }
+.link { font: 500 12px var(--mono); word-break: break-all; color: var(--dim); padding: 8px; border: 1px dashed var(--line); border-radius: 8px; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+@media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } ol.tl li { grid-template-columns: 1fr; gap: 0; } .rail span { font-size: 9px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Workshop Portal</span><a href="services">Services</a></div>
+  <main id="main"><p class="sub" style="margin-top:20px">Opening…</p></main>
+</div>
+<script>
+(() => {
+  "use strict";
+  const $ = (s, el = document) => el.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const main = $("#main"), RAIL = ["quote", "approved", "in-progress", "ready", "done"], SV = { repair: "Tech repair", it: "IT services", hosting: "Web hosting", websites: "Website", software: "Software & AI", other: "Other" };
+  const cur = (q) => (q && q.currency) || "USD", fmt = (v, c) => new Intl.NumberFormat(undefined, { style: "currency", currency: c || "USD" }).format(v || 0);
+  const when = (t) => new Date(t).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const api = async (path, method = "GET", body) => { const r = await fetch("/api/portal/" + path, { method, headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }); let j = {}; try { j = await r.json(); } catch (e) {} if (!r.ok) throw Object.assign(new Error(j.error || "The workshop didn't answer. Try again in a moment."), { status: r.status }); return j; };
+  const rail = (s) => s === "cancelled" ? '<p class="pill down" style="display:inline-block;margin:12px 0 0">Cancelled</p>' : '<div class="rail" aria-label="Where the job is up to">' + RAIL.map((k, i) => '<span class="' + (i <= RAIL.indexOf(s) ? "on" : "") + (k === s ? " now" : "") + '">' + esc(k.replace("-", " ")) + "</span>").join("") + "</div>";
+  const quote = (q) => q ? "<table>" + q.items.map((i) => "<tr><td>" + esc(i.desc) + "</td><td>" + fmt(i.amount, cur(q)) + "</td></tr>").join("") + '<tr class="total"><td>Total</td><td>' + fmt(q.total, cur(q)) + "</td></tr></table>" + (q.note ? '<p class="sub" style="margin:8px 0 0">' + esc(q.note) + "</p>" : "") : '<p class="sub">No quote yet.</p>';
+  const timeline = (tl, own) => '<ol class="tl">' + tl.slice().reverse().map((t) => '<li class="' + esc(t.by) + (t.private ? " private" : "") + '"><time>' + esc(when(t.at)) + "</time><p>" + (t.by === "client" ? "<b>" + (own ? "Client" : "You") + ":</b> " : t.private ? "<b>Private:</b> " : "") + esc(t.text) + "</p></li>").join("") + "</ol>";
+  const site = (s) => !s ? "" : '<div class="card"><h2>Your site</h2><div class="row"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.url.replace(/^https?:\/\//, "")) + "</a>" + (s.check ? '<span class="pill ' + (s.check.up ? "up" : "down") + '">' + (s.check.up ? "Up · " + s.check.ms + " ms" : "Not answering") + "</span>" : "") + "</div>" + (s.check ? '<p class="sub" style="margin:6px 0 0">Checked ' + esc(when(s.check.at)) + ".</p>" : "") + "</div>";
+
+  // ── a client's job, from the link ──
+  async function client(id, t) {
+    let j; try { j = (await api("job/" + id + "?t=" + t)).job; } catch (e) { main.innerHTML = "<h1>This link doesn't open a job</h1><p class=\"sub\">" + esc(e.message) + '</p><a class="btn" href="services">Workshop services</a>'; return; }
+    const inv = j.invoice;
+    main.innerHTML = "<h1>" + esc(j.title) + '</h1><p class="sub">' + esc(SV[j.service] || "") + (j.client.name ? " · for " + esc(j.client.name) : "") + "</p>" + rail(j.status) +
+      '<div class="card"><h2>Quote</h2>' + quote(j.quote) + (j.quote && j.status === "quote" ? '<div class="row" style="margin-top:12px"><button class="btn pri" id="approve" type="button">Approve this quote</button><span class="status">Nothing is done or charged until you do.</span></div>' : j.approvedAt ? '<p class="status" style="margin:10px 0 0">You approved this on ' + esc(when(j.approvedAt)) + ".</p>" : "") + "</div>" +
+      (inv ? '<div class="card"><h2>Invoice</h2><div class="row"><b>' + fmt(inv.amount, cur(j.quote)) + '</b><span class="pill ' + (inv.paid ? "up" : "") + '">' + (inv.paid ? "Paid" : inv.due ? "Due " + esc(new Date(inv.due + "T12:00").toLocaleDateString()) : "Due") + "</span></div>" + (inv.note ? '<p class="sub" style="margin:8px 0 0">' + esc(inv.note) + "</p>" : "") + "</div>" : "") +
+      (j.passport ? '<div class="card"><h2>Device Passport</h2><p class="sub" style="margin:0 0 10px">A signed record of the work: keep it, and show it if you sell the device.</p><a class="btn" href="' + esc(j.passport) + '">Open your passport</a></div>' : "") +
+      site(j.site) +
+      '<div class="card"><h2>Messages and updates</h2><form id="msg"><label>Write to the workshop<textarea id="text" maxlength="2000" placeholder="A question, a detail, a change"></textarea></label><div class="row" style="margin-top:8px"><button class="btn" type="submit">Send</button><span class="status" id="mst" role="status"></span></div></form><div style="margin-top:14px">' + timeline(j.timeline, false) + "</div></div>" +
+      '<p class="sub" style="margin-top:16px">Keep this link private: anyone with it can see this job. Lost it? Ask the workshop for a new one.</p>';
+    if ($("#approve")) $("#approve").onclick = async () => { try { await api("job/" + id + "/approve", "POST", { t }); client(id, t); } catch (e) { alert(e.message); } };
+    $("#msg").onsubmit = async (e) => { e.preventDefault(); const text = $("#text").value.trim(); if (!text) return; $("#mst").textContent = "Sending…"; try { await api("job/" + id + "/message", "POST", { t, text }); client(id, t); } catch (x) { $("#mst").className = "status bad"; $("#mst").textContent = x.message; } };
+  }
+
+  // ── the workshop's board ──
+  async function board(open) {
+    let jobs; try { jobs = (await api("jobs")).jobs; } catch (e) {
+      main.innerHTML = e.status === 403 ? '<h1>Workshop Portal</h1><p class="sub">Clients: open the link the workshop sent you. It goes straight to your job.</p><p class="sub">The workshop: <a href="vigil-app">sign in through Vigil</a> to see the board.</p><a class="btn" href="services">Ask for a quote</a>' : "<h1>Workshop Portal</h1><p class=\"sub\">" + esc(e.message) + "</p>"; return; }
+    const groups = ["quote", "approved", "in-progress", "ready", "done", "cancelled"];
+    main.innerHTML = '<h1>The board</h1><p class="sub">' + jobs.length + " job" + (jobs.length === 1 ? "" : "s") + ". Each client gets a private link to their own.</p>" +
+      '<div class="card"><h2>Open a job</h2><form id="new"><div class="grid2"><label>Title<input id="n-title" required maxlength="120" placeholder="Screen and battery, iPhone 13"></label><label>Client<input id="n-client" maxlength="80" placeholder="Their name"></label></div><div class="grid2" style="margin-top:10px"><label>Service<select id="n-svc">' + Object.entries(SV).map(([k, v]) => '<option value="' + k + '">' + esc(v) + "</option>").join("") + '</select></label><label>Client email (only you see it)<input id="n-email" type="email" maxlength="120"></label></div><div class="row" style="margin-top:10px"><button class="btn pri" type="submit">Open the job</button><span class="status" id="n-st"></span></div></form></div>' +
+      groups.map((g) => { const js = jobs.filter((j) => j.status === g); return js.length ? '<h2 style="margin:22px 0 8px">' + esc(g.replace("-", " ")) + '</h2><ul class="jobs">' + js.map((j) => '<li><button type="button" data-job="' + esc(j.id) + '"><b>' + esc(j.title) + "</b><span class=\"r\">" + (j.unread ? '<span class="pill new">New message</span>' : "") + (j.quote ? "<span>" + fmt(j.quote.total, cur(j.quote)) + "</span>" : "") + "</span><small>" + esc((j.client.name || "No name") + " · " + (SV[j.service] || "") + " · " + when(j.updated)) + "</small></button></li>").join("") + "</ul>" : ""; }).join("");
+    $("#new").onsubmit = async (e) => { e.preventDefault(); try { const j = (await api("jobs", "POST", { title: $("#n-title").value, clientName: $("#n-client").value, service: $("#n-svc").value, clientEmail: $("#n-email").value })).job; location.hash = "job-" + j.id; } catch (x) { $("#n-st").className = "status bad"; $("#n-st").textContent = x.message; } };
+    main.querySelectorAll("[data-job]").forEach((b) => (b.onclick = () => (location.hash = "job-" + b.dataset.job)));
+  }
+  async function edit(id) {
+    let j; try { j = (await api("jobs/" + id)).job; } catch (e) { main.innerHTML = "<h1>Job</h1><p class=\"sub\">" + esc(e.message) + '</p><a class="btn" href="#">Back to the board</a>'; return; }
+    const link = location.origin + "/portal#" + j.id + "." + j.token, inv = j.invoice || {};
+    main.innerHTML = '<p><a href="#" class="btn sm">← The board</a></p><h1>' + esc(j.title) + '</h1><p class="sub">' + esc((j.client.name || "No name") + (j.client.email ? " · " + j.client.email : "") + " · " + (SV[j.service] || "")) + "</p>" + rail(j.status) +
+      '<div class="card"><h2>The client\'s link</h2><div class="link" id="link">' + esc(link) + '</div><div class="row" style="margin-top:8px"><button class="btn sm" id="cp" type="button">Copy</button><a class="btn sm" href="' + esc(j.client.email ? "mailto:" + j.client.email + "?subject=" + encodeURIComponent("Your job: " + j.title) + "&body=" + encodeURIComponent("Here's where you can see the quote, follow the work and write to me:\n\n" + link) : "#") + '">Email it</a></div></div>' +
+      '<div class="card"><h2>Status</h2><div class="row"><select id="st" style="max-width:220px">' + ["quote", "approved", "in-progress", "ready", "done", "cancelled"].map((s) => '<option value="' + s + '"' + (s === j.status ? " selected" : "") + ">" + s.replace("-", " ") + "</option>").join("") + '</select><button class="btn sm" id="st-go" type="button">Set</button></div></div>' +
+      '<div class="card"><h2>Quote</h2>' + quote(j.quote) + '<label style="margin-top:10px">Lines: one per line, "what it is, amount"<textarea id="q">' + esc(j.quote ? j.quote.items.map((i) => i.desc + ", " + i.amount).join("\n") : "") + '</textarea></label><label style="margin-top:8px">Note for the client<input id="q-note" maxlength="600" value="' + esc(j.quote ? j.quote.note : "") + '"></label><div class="row" style="margin-top:8px"><button class="btn sm" id="q-go" type="button">Send this quote</button><span class="status">Sending a new quote asks the client to approve it again.</span></div></div>' +
+      '<div class="card"><h2>Invoice, passport and site</h2><div class="grid2"><label>Invoice amount<input id="i-amt" type="number" min="0" step="0.01" value="' + esc(inv.amount != null ? inv.amount : "") + '"></label><label>Due<input id="i-due" type="date" value="' + esc(inv.due || "") + '"></label></div><label class="row" style="margin-top:8px;display:flex"><input id="i-paid" type="checkbox" style="width:auto"' + (inv.paid ? " checked" : "") + '> Paid</label>' +
+      '<label style="margin-top:8px">Device Passport link (from <a href="passport" target="_blank">/passport</a>)<input id="pp" value="' + esc(j.passport || "") + '" placeholder="https://mentifaber.org/passport#…"></label><label style="margin-top:8px">Site the workshop hosts for them<input id="site" value="' + esc(j.site || "") + '" placeholder="https://their-site.example"></label>' + (j.siteCheck ? '<p class="status">' + (j.siteCheck.up ? "Up" : "Not answering") + " · checked " + esc(when(j.siteCheck.at)) + "</p>" : "") + '<div class="row" style="margin-top:8px"><button class="btn sm" id="x-go" type="button">Save</button></div></div>' +
+      '<div class="card"><h2>Updates</h2><textarea id="note" placeholder="An update the client will see"></textarea><div class="row" style="margin-top:8px"><button class="btn sm" id="n-go" type="button">Post</button><label class="row" style="display:flex"><input id="priv" type="checkbox" style="width:auto"> Private (only you see it)</label></div><div style="margin-top:14px">' + timeline(j.timeline, true) + "</div></div>" +
+      '<p class="status" id="e-st" role="status"></p><p><button class="btn sm" id="del" type="button">Delete this job</button></p>';
+    const save = async (b) => { $("#e-st").className = "status"; $("#e-st").textContent = "Saving…"; try { await api("jobs/" + id, "POST", b); edit(id); } catch (x) { $("#e-st").className = "status bad"; $("#e-st").textContent = x.message; } };
+    $("#cp").onclick = () => navigator.clipboard && navigator.clipboard.writeText(link).then(() => ($("#cp").textContent = "Copied"), () => {});
+    $("#st-go").onclick = () => save({ status: $("#st").value });
+    $("#q-go").onclick = () => save({ status: "quote", quote: { note: $("#q-note").value, items: $("#q").value.split("\n").map((l) => { const i = l.lastIndexOf(","); return i > 0 ? { desc: l.slice(0, i).trim(), amount: l.slice(i + 1).replace(/[^0-9.]/g, "") } : null; }).filter(Boolean) } });
+    $("#x-go").onclick = () => save({ invoice: $("#i-amt").value === "" ? null : { amount: $("#i-amt").value, due: $("#i-due").value, paid: $("#i-paid").checked }, passport: $("#pp").value.trim(), site: $("#site").value.trim() });
+    $("#n-go").onclick = () => $("#note").value.trim() && save({ note: $("#note").value, private: $("#priv").checked });
+    $("#del").onclick = async () => { if (!confirm("Delete this job? Its link stops working.")) return; await api("jobs/" + id, "DELETE"); location.hash = ""; };
+  }
+  function route() {
+    const h = decodeURIComponent(location.hash.slice(1)), c = /^([0-9a-f]{10})\.([0-9a-f]{32})$/.exec(h), e = /^job-([0-9a-f]{10})$/.exec(h);
+    if (c) return client(c[1], c[2]); if (e) return edit(e[1]); return board();
+  }
+  addEventListener("hashchange", route); route();
+})();
+</script>
+</body>
+</html>

@@ -430,8 +430,8 @@ def services():
   <h2 class="lbl" style="margin-top:34px">How a job runs</h2>
   <ol class="svc-steps"><li><b>Tell me what's going on.</b> The form below, or an email. A photo or a link helps.</li>
     <li><b>A written quote.</b> What's wrong or what you need, what it will take and the price, before anything starts.</li>
-    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote.</li>
-    <li><b>Done and explained.</b> You get a short write-up of what was done.</li></ol>
+    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote, from your own private link in the <a href="portal">Workshop Portal</a>, where you can follow the work and write to me.</li>
+    <li><b>Done and explained.</b> You get a short write-up of what was done, and a repaired device gets a signed <a href="passport">Device Passport</a>.</li></ol>
   <h2 class="lbl" style="margin-top:34px">The proof</h2>
   <div class="elsewhere big"><a href="./">The workshop: every project</a><a href="os">FaberOS, an operating system in the browser</a><a href="autofaber">AutoFaber, the AI</a><a href="store">Foundry: the apps</a></div>
   <form id="f" class="form" novalidate style="margin-top:34px">
@@ -526,6 +526,7 @@ PRIVACY = [
     ]),
     ("Witness and Device Passports", [
         ("Witness", "Your photo stays on your phone. Only its SHA-256 fingerprint, its name and size, your note and (if you tick the box) the position your phone reports go to the site, which signs them with its own clock and keeps nothing. Visitors get 100 records a day, counted by connection."),
+        ("Workshop Portal", "A job the workshop opens for you is kept in the site's storage: its title, your name, the quote, its status, the invoice and the messages on it. Your email, if you gave it, and the workshop's private notes are seen only by the workshop. Your link is a long random key; deleting the job ends it."),
         ("Device Passports", "A passport lives entirely in its link: the site signs it when the workshop issues it and stores nothing. The part after # in the link is never sent to any server; checking happens in your browser."),
     ]),
     ("The other apps", [
