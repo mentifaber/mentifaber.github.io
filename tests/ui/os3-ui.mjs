@@ -17,7 +17,7 @@ await ctx.addInitScript(() => { try { localStorage.setItem("fos:seen", "true"); 
 const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 const cmd = async (text) => { await p.click("#ask-in"); await p.fill("#ask-in", text); await p.waitForSelector("#sug:not([hidden]) li"); return p.$$eval("#sug li", (xs) => xs.map((x) => x.textContent)); };
-const frameOf = async (id) => (await (await p.$(".win[data-id='" + id + "'] iframe")).contentFrame());
+const frameOf = async (id) => { const f = await (await p.waitForSelector(".win[data-id='" + id + "'] iframe", { state: "attached" })).contentFrame(); if (!/^https?:/.test(f.url())) await f.waitForURL(/^https?:/); await f.waitForLoadState("domcontentloaded"); return f; }; // once the frame has left its blank first page
 const geo = (id) => p.$eval(".win[data-id='" + id + "']", (w) => [w.offsetLeft, w.offsetWidth]);
 await p.goto("http://localhost:8099/os.html"); await p.waitForSelector("#icons .ic");
 
@@ -52,8 +52,11 @@ assert.match(await p.textContent(".win[data-id='shelf']"), /ballast-backup-\d{4}
 await p.click(".win[data-id='shelf'] [data-with='ballast']"); await bal.waitForFunction(() => /Backup imported/.test(document.body.textContent), null, { timeout: 8000 });
 ok("inside FaberOS Ballast's backup lands on the Shelf, and \"Open in Ballast\" restores it");
 
-// CryptoVault: only encrypted output, and .cv files open to decrypt
-await p.click("#all-btn"); await p.fill("#l-q", "cryptovault"); await p.keyboard.press("Enter"); await p.waitForSelector(".win[data-id='cryptovault'] iframe");
+// CryptoVault: only encrypted output, and .cv files open to decrypt; the launcher keeps the keyboard even when the app in
+// front grabs focus while it's open
+await p.click("#all-btn"); await p.fill("#l-q", "cryptovault");
+await bal.evaluate(() => document.querySelector("input, button").focus()); // an app grabbing focus while the launcher is open (a first-run guide, say)
+await p.waitForFunction(() => document.activeElement && document.activeElement.id === "l-q", null, { timeout: 2000 }); await p.keyboard.press("Enter"); await p.waitForSelector(".win[data-id='cryptovault'] iframe");
 const cv = await frameOf("cryptovault"); await cv.waitForFunction(() => typeof sealed === "function" && FOS.on === true);
 await cv.evaluate(() => sealed(new Blob([new Uint8Array([0x43, 0x56, 1, 2, 3, 4])], { type: "application/octet-stream" }), "plans.pdf.cv"));
 assert.match(await cv.textContent("#encSt"), /Shelf, still encrypted/);

@@ -60,7 +60,7 @@ h1 { text-shadow: 0 0 46px var(--mf-glow); }
   color: #f2e6cf; margin-top: .6rem; letter-spacing: -.01em; }
 .mf-launch .lb-sub { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: #c4b09a; margin-top: .6rem; letter-spacing: .06em; opacity: .85; }
 .mf-launch-cap { display: flex; justify-content: space-between; gap: 1rem; font-family: 'IBM Plex Mono', monospace; font-size: .64rem;
-  color: #7a6e62; text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
+  color: #8d8278; text-transform: uppercase; letter-spacing: .06em; padding: .7rem .2rem 0; }
 @media (max-width: 600px) { .mf-launch { padding: 1.2rem 1.1rem; } .mf-launch-cap { flex-direction: column; gap: .3rem; text-align: center; } }
 
 /* in-text links between related systems */
@@ -71,7 +71,7 @@ a.mf-xref:hover { color: var(--mf-accent); text-shadow: 0 0 14px var(--mf-glow);
 /* related systems strip (injected before the footer by mf.js) */
 .mf-related { max-width: 980px; margin: 5rem auto 0; padding: 0 24px; position: relative; z-index: 2; text-align: left; }
 .mf-rel-head { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .32em; text-transform: uppercase;
-  color: #7a6e62; text-align: center; margin-bottom: 1.4rem; }
+  color: #8d8278; text-align: center; margin-bottom: 1.4rem; }
 .mf-rel-head::before, .mf-rel-head::after { content: ''; display: inline-block; width: 40px; height: 1px; vertical-align: middle;
   margin: 0 .9rem; background: linear-gradient(90deg, transparent, var(--mf-accent)); }
 .mf-rel-head::after { background: linear-gradient(90deg, var(--mf-accent), transparent); }

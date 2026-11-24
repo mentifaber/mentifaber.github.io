@@ -152,7 +152,7 @@ function drawSky() {
   x.clearRect(0, 0, W, W); x.strokeStyle = "rgba(230,238,248,.14)"; x.lineWidth = 1;
   [0, 30, 60].forEach((e) => { x.beginPath(); x.arc(cx, cy, (R * (90 - e)) / 90, 0, 7); x.stroke(); });
   x.beginPath(); x.moveTo(cx - R, cy); x.lineTo(cx + R, cy); x.moveTo(cx, cy - R); x.lineTo(cx, cy + R); x.stroke();
-  x.fillStyle = "#5c6f86"; x.font = "11px ui-monospace,monospace"; x.textAlign = "center"; x.fillText("N", cx, cy - R - 5); x.fillText("S", cx, cy + R + 13); x.fillText("E", cx + R + 9, cy + 4); x.fillText("W", cx - R - 9, cy + 4); x.fillText("30°", cx + 4, cy - (R * 60) / 90 + 12); x.fillText("60°", cx + 4, cy - (R * 30) / 90 + 12);
+  x.fillStyle = "#718296"; x.font = "11px ui-monospace,monospace"; x.textAlign = "center"; x.fillText("N", cx, cy - R - 5); x.fillText("S", cx, cy + R + 13); x.fillText("E", cx + R + 9, cy + 4); x.fillText("W", cx - R - 9, cy + 4); x.fillText("30°", cx + 4, cy - (R * 60) / 90 + 12); x.fillText("60°", cx + 4, cy - (R * 30) / 90 + 12);
   const P = (az, el) => { const r = (R * (90 - Math.max(0, el))) / 90; return [cx + r * Math.sin(az * DEG), cy - r * Math.cos(az * DEG)]; };
   const s = S.sel, p = S.pass || S.passes.find((q) => !q.always && q.set > S.T);
   if (s && p && !p.always) {

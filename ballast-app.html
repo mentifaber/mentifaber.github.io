@@ -36,7 +36,7 @@
   --border-soft:#16262f;
   --text:#eaf2f6;
   --text-dim:#93aab8;
-  --text-faint:#5a7383;
+  --text-faint:#748997;
   --accent:#4ecdc4;                          /* afloat */
   --accent-2:#5fe0d2;
   --accent-soft:rgba(78,205,196,0.13);
@@ -501,7 +501,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
     <section class="block two-col">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Upcoming — Next 14 Days</h2>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
           <table>
             <thead><tr><th>Date</th><th>Item</th><th>Category</th><th class="num">Amount</th></tr></thead>
             <tbody id="upcoming-body"></tbody>
@@ -541,7 +541,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
           <button class="btn" data-action="save-rule" id="rule-submit">Add Rule</button>
         </div>
         <div class="form-msg" id="rule-msg"></div>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
           <table>
             <thead><tr><th>Label</th><th>Frequency</th><th>Pay Day</th><th class="num">Gross</th><th class="num">Tax</th><th class="num">Net</th><th class="num">Monthly Net</th><th></th></tr></thead>
             <tbody id="rules-body"></tbody>
@@ -562,7 +562,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
           <button class="btn" data-action="add-job">Add</button>
         </div>
         <div class="form-msg" id="job-msg"></div>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
           <table>
             <thead><tr><th>Week Of</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net</th><th>Notes</th><th></th></tr></thead>
             <tbody id="job-body"></tbody>
@@ -584,7 +584,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
           <button class="btn" data-action="add-side">Add</button>
         </div>
         <div class="form-msg" id="side-msg"></div>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
           <table>
             <thead><tr><th>Date</th><th>Source</th><th>Category</th><th class="num">Gross</th><th class="num">Net</th><th></th></tr></thead>
             <tbody id="side-body"></tbody>
@@ -638,7 +638,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
 
     <section class="block">
       <h2 class="section-title"><span class="dot"></span>Bills Ledger — Source of Truth</h2>
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
         <table>
           <thead><tr><th>Bill</th><th>Category</th><th class="num">Amount</th><th>Due</th><th>Frequency</th><th class="num">Monthly Equiv.</th><th>Status</th><th></th></tr></thead>
           <tbody id="ledger-body"></tbody>
@@ -716,7 +716,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
           <input type="search" id="txn-search" placeholder="Search description or category…">
         </div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
         <table>
           <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Type</th><th class="num">Running Balance</th><th></th></tr></thead>
           <tbody id="txn-body"></tbody>
@@ -811,7 +811,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
     <section class="block">
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Monthly View</h2>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
           <table>
             <thead><tr><th>Flow</th><th class="num">Monthly</th><th class="num">Weekly</th><th class="num">Daily</th></tr></thead>
             <tbody>
@@ -858,7 +858,7 @@ label{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; font-weight
       <div class="panel">
         <h2 class="section-title"><span class="dot"></span>Budget vs. Actual — This Month</h2>
         <p class="hint">Compares what you actually spent per category against the monthly equivalent of the bills you've budgeted in that category.</p>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table">
           <table>
             <thead><tr><th>Category</th><th class="num">Budgeted</th><th class="num">Actual</th><th class="num">Difference</th></tr></thead>
             <tbody id="bva-body"></tbody>
@@ -1949,7 +1949,7 @@ function parseCsvRows(){
     btn.disabled = true;
     return;
   }
-  preview.innerHTML = `<p class="hint">${parsedCsv.length} row(s) ready to import.</p><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead><tbody>` +
+  preview.innerHTML = `<p class="hint">${parsedCsv.length} row(s) ready to import.</p><div class="table-wrap" tabindex="0" role="region" aria-label="Table"><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead><tbody>` +
     parsedCsv.map(r => `<tr><td>${esc(r.date)}</td><td>${esc(r.desc)}</td><td class="num amt ${r.amt<0?'neg':''}">${esc(fmt(r.amt))}</td></tr>`).join('') +
     '</tbody></table></div>';
   btn.disabled = false;

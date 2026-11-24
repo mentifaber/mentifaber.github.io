@@ -43,7 +43,7 @@ ol.steps { padding-left: 20px; display: grid; gap: 6px; }
 
   <h2>1 · The manifest</h2>
   <p>One JSON object, format <code>faberos/1</code>. It's the same shape the workshop's own apps use.</p>
-  <div class="spec"><table><thead><tr><th>Field</th><th>What it is</th></tr></thead><tbody>
+  <div class="spec" tabindex="0" role="region" aria-label="Manifest fields"><table><thead><tr><th>Field</th><th>What it is</th></tr></thead><tbody>
     <tr><td>id</td><td>Unique, lowercase: letters, digits, hyphens (2 to 40).</td></tr>
     <tr><td>name, desc</td><td>What it's called, and what it does in one sentence.</td></tr>
     <tr><td>entry</td><td>The https:// page FaberOS opens in a window.</td></tr>
@@ -57,7 +57,7 @@ ol.steps { padding-left: 20px; display: grid; gap: 6px; }
 
   <h2>2 · The Faber kit</h2>
   <p>Load <code>https://mentifaber.org/assets/os/faber.js</code>. Outside FaberOS every call does nothing and <code>Faber.inOS</code> is false, so the app works the same on its own.</p>
-<pre>Faber.notify("Indexed", "3 files are ready")      // a notification in FaberOS
+<pre tabindex="0">Faber.notify("Indexed", "3 files are ready")      // a notification in FaberOS
 Faber.open("orbit")                               // open another app
 Faber.save(blob, "report.pdf")                    // put a file on the Shelf
 Faber.onFiles((files) => openThese(files))        // take files from the Shelf ("Open in…")
@@ -66,7 +66,7 @@ Faber.verbs({ "add-transaction": (a) => …,        // what AutoFaber may ask it
 
   <h2>3 · Faber Verbs</h2>
   <p>A verb is something the app can do when someone asks AutoFaber in words: "log $40 for gas", "track the ISS". FaberOS checks every argument against what the manifest declares, and asks the person before any verb that changes their data. The app's own function does the work and answers in a sentence.</p>
-<pre>{ "name": "add-transaction", "label": "Add a transaction", "changes": true,
+<pre tabindex="0">{ "name": "add-transaction", "label": "Add a transaction", "changes": true,
   "desc": "Log money in or out.",
   "args": { "amount": "number", "label": "string", "direction?": "enum:out|in", "date?": "date" },
   "words": "log add spent paid bought expense income" }</pre>

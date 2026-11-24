@@ -1,5 +1,5 @@
 /* Hopline · live console */
-:root { --bg: #07060b; --bg2: #0e0c16; --line: rgba(255,255,255,.08); --line2: rgba(255,255,255,.16); --ink: #f1eef8; --dim: #9a93ad; --mute: #635c77;
+:root { --bg: #07060b; --bg2: #0e0c16; --line: rgba(255,255,255,.08); --line2: rgba(255,255,255,.16); --ink: #f1eef8; --dim: #9a93ad; --mute: #7e788e;
   --a: #ff4fa8; --a2: #ffa04f; --ok: #3dffa8; --warn: #ffcf4a; --bad: #ff5a5a; --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }

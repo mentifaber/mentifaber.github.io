@@ -19,7 +19,7 @@
   <div class="stats" id="stats"></div>
   <button class="btn pri" id="b-conn">Connect</button>
 </header>
-<nav class="tabs" id="tabs" role="tablist"><button data-t="mesh" class="on">Mesh</button><button data-t="chat">Chat <i id="unread"></i></button><button data-t="nodes">Nodes</button><button data-t="log">Log</button></nav>
+<nav class="tabs" id="tabs" aria-label="Sections"><button data-t="mesh" class="on">Mesh</button><button data-t="chat">Chat <i id="unread"></i></button><button data-t="nodes">Nodes</button><button data-t="log">Log</button></nav>
 <main id="main" data-t="mesh">
   <section class="pane mesh" id="p-mesh">
     <canvas id="cv"></canvas>
@@ -32,7 +32,7 @@
     <div class="msgs" id="msgs" role="log" aria-live="polite"></div>
     <form class="say" id="say"><input id="txt" maxlength="228" placeholder="Send to the mesh…" autocomplete="off"><span class="left" id="left"></span><button class="btn pri" id="send">Send</button></form>
   </section>
-  <section class="pane nodes" id="p-nodes"><table><thead><tr><th>Node</th><th>Hops</th><th>SNR</th><th>RSSI</th><th>Heard</th><th>Pos</th></tr></thead><tbody id="tb"></tbody></table></section>
+  <section class="pane nodes" id="p-nodes" tabindex="0" aria-label="Nodes"><table><thead><tr><th>Node</th><th>Hops</th><th>SNR</th><th>RSSI</th><th>Heard</th><th>Pos</th></tr></thead><tbody id="tb"></tbody></table></section>
   <section class="pane log" id="p-log"><pre id="lg"></pre></section>
 </main>
 <div class="sheet" id="sheet" hidden><div class="pane2">

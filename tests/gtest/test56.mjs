@@ -19,7 +19,7 @@ for (const bad of [{ by: "10:00", tz: "America/Chicago" }, { name: "Gran", by: "
 ok("local dates and times follow the person's time zone; no name, a bad time or an unknown time zone are refused");
 
 const { j: c } = await go("", { name: "Gran", by: "10:00", tz: "America/Chicago" }); const id = c.id;
-assert.match(c.me, /^[0-9a-f]{32}$/); assert.match(c.fam, /^[0-9a-f]{32}$/); assert.ok(!JSON.stringify(mem.get("ci:" + id)).includes(c.me), "keys are kept only as hashes");
+assert.deepEqual(mem.get("ci:" + id).days, [local("America/Chicago").date], "setting it up is today's check-in, in her history too"); assert.match(c.me, /^[0-9a-f]{32}$/); assert.match(c.fam, /^[0-9a-f]{32}$/); assert.ok(!JSON.stringify(mem.get("ci:" + id)).includes(c.me), "keys are kept only as hashes");
 assert.equal((await go("/" + id + "/ok", { t: c.fam })).status, 403, "the family's key can't check in for her");
 assert.equal((await go("/" + id + "/watch", { t: c.me, sub: { endpoint: "https://fcm.googleapis.com/x" } })).status, 403, "her key isn't for watching");
 assert.equal((await go("/" + id, null, "?t=" + "0".repeat(32))).status, 403);

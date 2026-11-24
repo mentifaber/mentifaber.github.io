@@ -39,3 +39,4 @@ main { display: grid; grid-template-columns: 220px minmax(0, 1fr) 280px; gap: 16
 .card { width: min(420px, 100%); padding: 26px; border-radius: 22px; background: #12241a; border: 1px solid var(--line); text-align: center; } .card h2 { margin: 0 0 8px; } .card p { color: var(--dim); margin: 0 0 18px; }
 @media (max-width: 1000px) { main { grid-template-columns: 1fr; } .shop { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); order: 2; } .field { order: 1; } .side { order: 3; } .log { height: 220px; } }
 @media (max-width: 560px) { .hud { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; } .stats { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; gap: 6px; font-size: 14px; } .logo { font-size: 16px; } .ctl button { padding: 0 12px; } .buy small { display: none; } .shop { grid-template-columns: repeat(2, 1fr); } }
+.t:focus-visible { outline: 3px solid #ffd36a; outline-offset: 2px; z-index: 1; }

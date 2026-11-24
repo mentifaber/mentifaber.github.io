@@ -154,7 +154,7 @@ function reset() {
 
 // ── drawing ──
 const board = $("board");
-function tileEl(r, c) { return board.children[r * N + c]; }
+const tiles = []; function tileEl(r, c) { return tiles[r * N + c]; }
 function renderTiles() {
   const path = S.running ? null : route(GATE.r, GATE.c), onPath = new Set((path || []).map(([r, c]) => r * N + c));
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
@@ -162,6 +162,7 @@ function renderTiles() {
     el.className = "t" + (isGate(r, c) ? " gate" : isHome(r, c) ? " home" : "") + (onPath.has(r * N + c) && !isGate(r, c) && !isHome(r, c) && !p ? " path" : "");
     el.innerHTML = isGate(r, c) ? "🚪" : isHome(r, c) ? "🏡" : p ? '<span class="p">' + PLANTS[p.k].i + "</span>" : "";
     el.title = p ? PLANTS[p.k].name + " · " + PLANTS[p.k].desc : isGate(r, c) ? "The gate" : isHome(r, c) ? "The house" : "";
+    el.setAttribute("aria-label", "Row " + (r + 1) + ", column " + (c + 1) + ": " + (p ? PLANTS[p.k].name : isGate(r, c) ? "the gate" : isHome(r, c) ? "the house" : onPath.has(r * N + c) ? "the path" : "grass"));
   }
 }
 function flashPlant(r, c) { const s = tileEl(r, c).querySelector(".p"); if (!s) return; s.classList.remove("hit"); void s.offsetWidth; s.classList.add("hit"); }
@@ -183,7 +184,16 @@ function hud() {
 function render() { renderTiles(); hud(); }
 
 // ── wiring ──
-for (let k = 0; k < N * N; k++) { const el = document.createElement("div"); el.setAttribute("role", "gridcell"); el.addEventListener("click", () => place(Math.floor(k / N), k % N)); board.appendChild(el); }
+// a grid of rows (display: contents, so the lawn's CSS grid is unchanged) that the keyboard can walk: arrows move, Enter
+// or Space plants (or digs), one tab stop for the whole lawn
+for (let r = 0; r < N; r++) { const row = document.createElement("div"); row.setAttribute("role", "row"); row.style.display = "contents"; board.appendChild(row);
+  for (let c = 0; c < N; c++) { const el = document.createElement("div"), k = r * N + c; el.setAttribute("role", "gridcell"); el.tabIndex = k ? -1 : 0; el.addEventListener("click", () => place(r, c)); row.appendChild(el); tiles.push(el); } }
+board.addEventListener("keydown", (e) => {
+  const k = tiles.indexOf(document.activeElement); if (k < 0) return; const r = Math.floor(k / N), c = k % N;
+  const to = { ArrowUp: [r - 1, c], ArrowDown: [r + 1, c], ArrowLeft: [r, c - 1], ArrowRight: [r, c + 1], Home: [r, 0], End: [r, N - 1] }[e.key];
+  if (to) { e.preventDefault(); const [y, x] = [Math.max(0, Math.min(N - 1, to[0])), Math.max(0, Math.min(N - 1, to[1]))], t = tiles[y * N + x]; tiles.forEach((el) => (el.tabIndex = -1)); t.tabIndex = 0; t.focus(); }
+  else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); place(r, c); }
+});
 $("shop").innerHTML = [...Object.entries(PLANTS), ["shovel", SHOVEL]].map(([k, P]) => '<button class="buy" data-k="' + k + '"><span class="i">' + P.i + "</span><b>" + P.name + "</b>" + (P.cost ? '<span class="c">' + P.cost + "</span>" : "") + "<small>" + P.desc + "</small></button>").join("");
 $("shop").addEventListener("click", (e) => { const b = e.target.closest(".buy"); if (!b || b.disabled) return; S.sel = b.dataset.k; hud(); tip(b.dataset.k === "shovel" ? "Tap a plant to dig it up for half its sun." : "<b>" + PLANTS[S.sel].name + "</b>: " + PLANTS[S.sel].desc + ". Tap a tile."); });
 $("go").addEventListener("click", sendRound);

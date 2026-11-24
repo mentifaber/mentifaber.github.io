@@ -24,9 +24,10 @@ jobs:
           node-version: "22"
       - name: Playwright and Chromium
         run: |
-          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.56.1 >/dev/null
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.56.1 axe-core@4.10.3 >/dev/null
           npx playwright install --with-deps chromium
       - name: Run the tests
         env:
           PLAYWRIGHT: /tmp/pw/node_modules/playwright
+          AXE: /tmp/pw/node_modules/axe-core/axe.min.js
         run: tests/run.sh

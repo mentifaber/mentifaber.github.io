@@ -23,12 +23,12 @@
 <style>
 @font-face{font-family:"Mentifaber Display";src:url("assets/fonts/MentifaberDisplay-Regular.woff2") format("woff2"),url("assets/fonts/MentifaberDisplay-Regular.ttf") format("truetype");font-display:block}
 /* ── tokens: the shop at night (default) and the drawing office (light) ── */
-:root{--bg:#08070a;--bg2:#0f0d10;--panel:#141116;--panel2:#1b171d;--line:#2c2620;--line2:#3d3426;--ink:#ece3d0;--dim:#a39782;--faint:#6f6556;
-  --gold:#d4ab52;--gold2:#f0cd7e;--ember:#e0603a;--cool:#6fd3c4;--live:#7fdc8e;--warn:#e0603a;--glow:rgba(212,171,82,.16);color-scheme:dark}
-:root[data-theme="light"]{--bg:#f3eee3;--bg2:#ebe4d4;--panel:#fbf8f1;--panel2:#f1ead9;--line:#ddd2bb;--line2:#cbbd9f;--ink:#211b13;--dim:#62574a;--faint:#8e8270;
-  --gold:#9a6c12;--gold2:#7c5408;--ember:#b8401c;--cool:#1e7f73;--live:#2d8a3e;--warn:#b8401c;--glow:rgba(154,108,18,.12);color-scheme:light}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3eee3;--bg2:#ebe4d4;--panel:#fbf8f1;--panel2:#f1ead9;--line:#ddd2bb;--line2:#cbbd9f;--ink:#211b13;--dim:#62574a;--faint:#8e8270;
-  --gold:#9a6c12;--gold2:#7c5408;--ember:#b8401c;--cool:#1e7f73;--live:#2d8a3e;--warn:#b8401c;--glow:rgba(154,108,18,.12);color-scheme:light}}
+:root{--bg:#08070a;--bg2:#0f0d10;--panel:#141116;--panel2:#1b171d;--line:#2c2620;--line2:#3d3426;--ink:#ece3d0;--dim:#a39782;--faint:#8a8276;
+  --gold:#d4ab52;--gold2:#f0cd7e;--on-gold:#140f05;--ember:#e0603a;--cool:#6fd3c4;--live:#7fdc8e;--warn:#e0603a;--glow:rgba(212,171,82,.16);color-scheme:dark}
+:root[data-theme="light"]{--bg:#f3eee3;--bg2:#ebe4d4;--panel:#fbf8f1;--panel2:#f1ead9;--line:#ddd2bb;--line2:#cbbd9f;--ink:#211b13;--dim:#62574a;--faint:#6c6355;
+  --gold:#845d0f;--gold2:#7c5408;--ember:#b8401c;--cool:#1a7065;--on-gold:#fffaf0;--live:#2d8a3e;--warn:#b8401c;--glow:rgba(154,108,18,.12);color-scheme:light}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3eee3;--bg2:#ebe4d4;--panel:#fbf8f1;--panel2:#f1ead9;--line:#ddd2bb;--line2:#cbbd9f;--ink:#211b13;--dim:#62574a;--faint:#6c6355;
+  --gold:#845d0f;--gold2:#7c5408;--ember:#b8401c;--cool:#1a7065;--on-gold:#fffaf0;--live:#2d8a3e;--warn:#b8401c;--glow:rgba(154,108,18,.12);color-scheme:light}}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:76px;overflow-x:clip}@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "EB Garamond",Georgia,serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -94,7 +94,7 @@ a{color:var(--gold)}a:hover{color:var(--gold2)}:focus-visible{outline:2px solid 
 .search kbd{font:11px "JetBrains Mono",monospace;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:1px 6px}
 .sel{height:44px;border:1px solid var(--line2);border-radius:12px;background:var(--panel);color:var(--ink);font:14px "JetBrains Mono",monospace;padding:0 10px}
 .btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--ink);font:14px "JetBrains Mono",monospace;cursor:pointer;text-decoration:none}
-.btn:hover{border-color:var(--gold);color:var(--gold)}.btn.pri{background:var(--gold);color:#140f05;border-color:var(--gold)}.btn.pri:hover{background:var(--gold2);color:#140f05}
+.btn:hover{border-color:var(--gold);color:var(--gold)}.btn.pri{background:var(--gold);color:var(--on-gold);border-color:var(--gold)}.btn.pri:hover{background:var(--gold2);color:#140f05}
 .threads{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}.threads::-webkit-scrollbar{display:none}
 .th{flex:none;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:none;color:var(--dim);font:13px "JetBrains Mono",monospace;cursor:pointer}
 .th small{color:var(--faint)}.th[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.th[aria-pressed="true"] small{color:var(--bg);opacity:.7}

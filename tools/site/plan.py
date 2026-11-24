@@ -172,7 +172,7 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="makers">Make apps for FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="blackout">Blackout Kit</a><a href="witness">Witness: prove a photo</a><a href="passport">Device Passport</a><a href="letters">Sealed Letters</a><a href="skylens">Sky Lens</a><a href="local-ai">AutoFaber Offline</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="makers">Make apps for FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="privacy">Privacy</a><a href="terms">Terms</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Anders Powell · Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
@@ -353,10 +353,10 @@ def contact():
     <div class="count lbl" id="count">0 / 2000</div>
     <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
     <div class="acts"><button class="key pri big" type="submit">Send message</button><span class="status" id="status" role="status"></span></div>
-    <p class="fine">Sending opens your own email app with everything filled in: nothing is stored on this site, and no third party sees it. If nothing opens, copy the address above.</p>
+    <p class="fine">Sending opens your own email app with everything filled in, and the message travels like any other email, through your email provider and mine. Nothing you type here is sent to or stored on this site. If nothing opens, copy the address above.</p>
   </form>
   <h2 class="lbl" style="margin-top:34px">Elsewhere</h2>
-  <div class="elsewhere big"><a href="https://x.com/mentifaber" target="_blank" rel="noopener">X · @mentifaber</a><a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram · @mentifaber</a><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud · Sonic Veil</a></div>"""
+  <div class="elsewhere big"><a href="https://github.com/mentifaber" target="_blank" rel="noopener">GitHub · mentifaber</a><a href="https://x.com/mentifaber" target="_blank" rel="noopener">X · @mentifaber</a><a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram · @mentifaber</a><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud · Sonic Veil</a></div>"""
     js = open(os.path.join(os.path.dirname(__file__), "contact.js.part"), encoding="utf-8").read()
     return plain("contact.html", "Contact · Mentifaber", "Write to Mentifaber: send a quick note or email anders@mentifaber.org.", "Correspondence", body, js)
 
@@ -367,15 +367,16 @@ SERVICES = [
     ("repair", "Tech repair", "Phones, laptops, desktops, consoles and the odd strange gadget.",
      ["Diagnosis first, in plain words: what's wrong, what it costs, whether it's worth it", "Screens, batteries, ports, storage and RAM upgrades, cleaning and thermal work",
       "Slow machines made fast again; malware and pop-up junk removed", "Data rescue from failing drives and dead phones, where it's still there to rescue"],
-     "Bring-in or mail-in, by arrangement. Remote fixes for anything software. Every repair comes with a signed Device Passport."),
+     "Mail-in, by arrangement: no drop-off or visits for now. Anything software is fixed remotely. Every repair comes with a signed Device Passport."),
     ("it", "IT services", "The tech side of a home, a studio or a small business, handled.",
-     ["Wi-Fi that reaches every room; networks, printers and shared drives set up properly", "Backups that run by themselves, and a test restore so you know they work",
+     ["Wi-Fi, networks, printers and shared drives set up properly, with you on the line", "Backups that run by themselves, and a test restore so you know they work",
       "Accounts, passwords and two-step sign-in sorted for the whole household or team", "Security check-ups: what's exposed, what's out of date, what to fix first"],
-     "One-off visits or ongoing care. Remote support anywhere."),
+     "Remote only, one-off or ongoing: you show me the setup on a call, or I connect with your permission. If a job truly needs hands on site, the quote says so first."),
     ("hosting", "Web hosting", "Sites kept up on the same global edge network this workshop runs on.",
-     ["HTTPS, a global CDN and DDoS protection as standard", "Your own domain, set up and renewed; email forwarding and DNS handled",
-      "Uptime watched, updates applied, nightly backups kept", "Room to grow: forms, sign-ins, storage and APIs when the site needs them"],
-     "Monthly plans, quoted to the site. Moving an existing site in is part of the job."),
+     ["Every plan: HTTPS and a global CDN, behind Cloudflare with its standard DDoS protection", "Every plan: uptime checked around the clock, with an alert to me when a site goes down",
+      "Every plan: updates applied, and nightly backups of the site's files and data", "Your own domain, set up and renewed; email forwarding and DNS handled",
+      "Room to grow: forms, sign-ins, storage and APIs when the site needs them"],
+     "Monthly plans, quoted to the site; your quote says how long backups are kept. Moving an existing site in is part of the job. See the hosting terms for what a restore covers."),
     ("websites", "Websites", "Designed and built by hand, fast on any phone, and yours to keep.",
      ["Portfolios, shops, booking pages, landing pages and full business sites", "Written to be found: search-ready pages, real descriptions, fast loads",
       "Accessible, works offline where it helps, and installable as an app", "A redesign of the site you already have, without losing what works"],
@@ -427,11 +428,14 @@ def services():
   <p class="tagline">Everything on this site was designed and built here, and is kept running here: forty-odd apps, an AI and an operating system. The same hands can fix your laptop, look after your network, host your site and build the thing you've been imagining.</p>
   <nav class="svc-jump" aria-label="Services">{jump}</nav>
   <div class="svc-grid">{cards}</div>
+  <h2 class="lbl" style="margin-top:34px">Where the work happens</h2>
+  <p>Everything is <b>remote or mail-in</b> for now: there's no drop-off counter and no on-site visits. Software problems, IT help, hosting, websites and custom software are done remotely, wherever you are. A device that needs hands-on repair comes by mail: once you've approved the quote, you get the address and packing notes, you send it tracked and insured, and it comes back the same way. Shipping both ways is set out in the quote.</p>
   <h2 class="lbl" style="margin-top:34px">How a job runs</h2>
   <ol class="svc-steps"><li><b>Tell me what's going on.</b> The form below, or an email. A photo or a link helps.</li>
     <li><b>A written quote.</b> What's wrong or what you need, what it will take and the price, before anything starts.</li>
-    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote, from your own private link in the <a href="portal">Workshop Portal</a>, where you can follow the work and write to me.</li>
+    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote, from your own private link in the <a href="portal">Workshop Portal</a>. There you can read and approve the quote, follow each step of the job, write to me, see the invoice, and open your repair's Device Passport or your hosted site's status. No account or password: the link is your key.</li>
     <li><b>Done and explained.</b> You get a short write-up of what was done, and a repaired device gets a signed <a href="passport">Device Passport</a>.</li></ol>
+  <p class="fine">Payments, refunds, the repair warranty, data and backups, and hosting cancellation: see the <a href="terms">terms</a>.</p>
   <h2 class="lbl" style="margin-top:34px">The proof</h2>
   <div class="elsewhere big"><a href="./">The workshop: every project</a><a href="os">FaberOS, an operating system in the browser</a><a href="autofaber">AutoFaber, the AI</a><a href="store">Foundry: the apps</a></div>
   <form id="f" class="form" novalidate style="margin-top:34px">
@@ -445,7 +449,7 @@ def services():
     <div class="count lbl" id="count">0 / 2000</div>
     <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
     <div class="acts"><button class="key pri big" type="submit">Send the request</button><span class="status" id="status" role="status"></span></div>
-    <p class="fine">Sending opens your own email app with everything filled in: nothing is stored on this site. Or write straight to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>
+    <p class="fine">Sending opens your own email app with everything filled in, and the message travels like any other email, through your email provider and mine. Nothing you type here is sent to or stored on this site. Or write straight to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>
   </form>"""
     return plain("services.html", "Services · repair, IT, hosting, websites · Mentifaber", "Tech repair, IT support, web hosting, websites, and custom software and AI, from the workshop that built every app on mentifaber.org. Quoted before work starts.", "Services", body, SERVICES_CSS + "\n" + SERVICES_JS)
 
@@ -533,9 +537,9 @@ PRIVACY = [
     ]),
     ("The other apps", [
         ("Private messengers", "Barycenter and Pilotfish are encrypted end to end and kept on the devices of the people who use them."),
-        ("The Nest Registry", "Kept in its own storage, open only to the parents and the guests they invite; each device keeps a copy of the list it last saw so it still opens when the site is resting."),
+        ("The Nest Registry", "A private registry for one family, by invitation only; it isn't listed on the site. Kept in its own storage, open only to the parents and the guests they invite; each device keeps a copy of the list it last saw so it still opens when the site is resting."),
         ("DocCrawler's Fine Print", "Your library stays in your browser. Only when you press Fine Print does that one document's text (up to 24,000 characters) go to AutoFaber's model to be read; nothing is kept. Visitors get 12 readings a day."),
-        ("Contact", "The contact form opens your own email app; nothing you write is stored on the site."),
+        ("Contact and quotes", "The contact and quote forms open your own email app with the message filled in. Nothing you type is sent to or stored on this site; the message travels like any other email, through your email provider and mine."),
     ]),
 ]
 def privacy():
@@ -547,6 +551,64 @@ def privacy():
   <p class="fine" style="margin-top:30px">A question about your data, or something here that doesn't match what you see? Write to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>"""
     css = "<style>.priv{margin:10px 0 0}.priv div{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 18px;padding:10px 0;border-top:1px solid var(--line)}.priv dt{font-weight:600}.priv dd{margin:0;color:var(--ink-2,#c9bc9f)}@media (max-width:620px){.priv div{grid-template-columns:1fr}}</style>"
     return plain("privacy.html", "Privacy · Mentifaber", "Where what you send goes on Mentifaber: conversations, memory, keys, location and models, said plainly in one place.", "Privacy", body, css)
+
+
+TERMS_UPDATED = "24 November 2026"
+TERMS = [
+    ("Quotes and approval", [
+        "Every job starts with a written quote: what's wrong or what you need, what it will take, and the price. It's sent to your private link in the Workshop Portal.",
+        "Nothing is done or charged until you approve the quote. If the job turns out to need more than the quote says, I stop and send a new quote before going further.",
+    ]),
+    ("Payments", [
+        "Repairs and IT work are paid on completion, by the method on the invoice. Parts ordered for your job are paid when you approve the quote, before they're ordered.",
+        "Websites and custom software are paid by the milestones in the quote. Hosting is paid monthly, in advance.",
+    ]),
+    ("Refunds", [
+        "If a repair can't be done, you pay nothing for it. A diagnosis fee is charged only if the quote said so before work started.",
+        "Parts ordered for your job are refunded if the supplier takes them back; otherwise they're yours, sent back with your device.",
+        "If a repair covered by the warranty below fails, I fix it again at no charge or, if I can't, refund what you paid for that repair.",
+        "If you stop a website or software project, you pay for the milestones already delivered and nothing more.",
+    ]),
+    ("Repair warranty: 30 days", [
+        "Covers the fault I repaired and the parts I fitted, for 30 days from when the device is sent back to you.",
+        "Doesn't cover: new damage (drops, cracks, liquid, pressure), faults unrelated to the repair, a device opened or repaired by someone else since, problems caused by software installed afterwards, normal wear, or a device that already had liquid damage when the quote says so.",
+        "To use it, write to me through your portal link or by email within the 30 days.",
+    ]),
+    ("Your data and backups", [
+        "Back up anything you can before sending a device or starting a job. Repairs can mean replacing storage or resetting software, and I'm not responsible for data lost during a repair.",
+        "Data rescue is an attempt, not a promise. A failing drive or phone can fail completely during the attempt, and some data is beyond recovery. You're charged for data rescue only as the quote sets out.",
+        "I look at your files only as far as the job needs. Copies of recovered data are deleted from my equipment once you've confirmed you have them.",
+    ]),
+    ("Mail-in", [
+        "All hands-on repairs come by mail for now; there's no drop-off and no on-site visits. After you approve the quote, you get the address and packing notes.",
+        "Pack the device well and send it tracked and insured; I'm not responsible for damage in transit on the way to me. It's sent back tracked and insured. Shipping costs both ways are set out in the quote.",
+    ]),
+    ("Hosting", [
+        "Every plan includes HTTPS and a global CDN behind Cloudflare with its standard DDoS protection, uptime checks around the clock with an alert to me when a site goes down, updates applied, and nightly backups.",
+        "No uptime percentage is promised. When a site goes down I'm alerted and work on it; outages at Cloudflare or other providers are outside my control.",
+        "Backups cover the site I host: its files and the data it stores with the hosting. They don't cover email, files kept elsewhere, or outside services the site connects to. How long backups are kept is in your quote. A restore brings the site back to the latest good backup; anything changed after it may need redoing. Backups make losing a site very unlikely, but can't promise that nothing is ever lost.",
+        "Plans are month to month. Cancel any time through your portal link or by email: hosting ends at the end of the month you've paid for, with no refund for part of a month. You get a copy of your site's files and data, and your domain is transferred to you.",
+        "I can decline or stop hosting anything unlawful, or anything that puts other sites or people at risk, and I'll tell you why.",
+    ]),
+    ("Websites and software", [
+        "The plan and the price are agreed before building starts. Once it's paid in full, the site or software built for you is yours. Libraries and services it uses stay under their own licences.",
+    ]),
+    ("If something goes wrong", [
+        "If I make a mistake, I'll put it right. Beyond that, my responsibility for a job is limited to what you paid for it, except where the law doesn't allow that limit.",
+    ]),
+    ("Changes", [
+        "These terms can change. A job is held to the terms in place when you approved its quote; hosting plans follow the current terms, with a month's notice of any change that affects you.",
+    ]),
+]
+def terms():
+    rows = "".join(f'<h2 class="lbl" style="margin-top:28px">{esc(h)}</h2><ul class="terms">' + "".join(f"<li>{esc(x)}</li>" for x in items) + "</ul>" for h, items in TERMS)
+    body = f"""<span class="pno">Terms · for the work the workshop takes</span>
+  <h1>Customer <span class="gold-text">terms</span></h1>
+  <p class="tagline">For repair, IT, hosting, websites and software from <a href="services">Mentifaber's services</a>, in plain words. Each quote can add to these for its own job. Last updated {TERMS_UPDATED}.</p>
+  {rows}
+  <p class="fine" style="margin-top:30px">What happens to your information is on the <a href="privacy">privacy page</a>. A question about these terms? Write to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>"""
+    css = "<style>.terms{margin:8px 0 0;padding-left:20px;display:grid;gap:7px}.terms li{color:var(--ink-2,#c9bc9f)}</style>"
+    return plain("terms.html", "Terms · Mentifaber", "Customer terms for Mentifaber's repair, IT, hosting, website and software work: quotes, payments, refunds, the repair warranty, data and backups, and hosting cancellation.", "Terms", body, css)
 
 
 def credits():

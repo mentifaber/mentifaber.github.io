@@ -1,4 +1,4 @@
-:root { --bg: #0b0a08; --bg2: #14120e; --bg3: #1c1913; --ink: #f1ead9; --dim: #b3a88f; --mute: #6e6551; --line: rgba(241,234,217,.1); --line2: rgba(241,234,217,.2); --acc: #f0a63a; --acc2: #ff6a3d; --ok: #8fd16a; --bad: #ff6b6b; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+:root { --bg: #0b0a08; --bg2: #14120e; --bg3: #1c1913; --ink: #f1ead9; --dim: #b3a88f; --mute: #877f6f; --line: rgba(241,234,217,.1); --line2: rgba(241,234,217,.2); --acc: #f0a63a; --acc2: #ff6a3d; --ok: #8fd16a; --bad: #ff6b6b; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button, input { font: inherit; color: inherit; }
