@@ -7,7 +7,7 @@
 <title>Device Passport · Mentifaber</title>
 <meta name="description" content="A signed record of what the Mentifaber workshop did to a device: the work, the parts and their numbers, battery health and warranty.">
 <meta name="theme-color" content="#0d0b08">
-<link rel="icon" href="assets/favicon.png">
+<link rel="icon" href="assets/icons/v2/passport.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/passport-180.png">
 <style>
 /* Device Passport: a service record, laid out like a printed certificate: a ruled header, a spec table, a seal line. */
 :root { --bg: #0d0b08; --sheet: #16120c; --line: #3a3122; --gold: #d6a647; --gold-hi: #f0cf7e; --ink: #efe6d2; --dim: #a89d86; --ok: #8fd18f; --bad: #ff8a6b;
@@ -45,6 +45,7 @@ section + section { margin-top: 22px; }
 @media (max-width: 560px) { dl { grid-template-columns: 1fr; } dt { border-top: 1px solid var(--line); padding-bottom: 0; } dd { border-top: 0; padding-top: 2px; } .two { grid-template-columns: 1fr; } }
 @media print { body { background: #fff; color: #000; } .cert { border-color: #000; background: #fff; } .noprint, .top a { display: none; } dt { color: #000; } .verdict.ok { color: #060; } }
 </style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Device Passport", "description": "A signed record of what the Mentifaber workshop did to a device: the work, the parts and their numbers, battery health and warranty.", "url": "https://mentifaber.org/passport", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/passport-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
 </head>
 <body>
 <div class="wrap">

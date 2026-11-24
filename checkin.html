@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/checkin">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quiet Check-in · Mentifaber</title>
+<meta name="description" content="For someone who lives alone: one tap a day to say they&#x27;re OK, and if it doesn&#x27;t come by their time, the family&#x27;s phones are told.">
+<meta name="theme-color" content="#f4efe6">
+<link rel="icon" href="assets/icons/v2/checkin.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/checkin-180.png">
+<style>
+/* Quiet Check-in: made for older eyes and shaky hands. Warm paper, very large type, one enormous button, high contrast;
+   a light page on purpose (it's used in the morning, in daylight), with a dark one for those who set it. */
+:root { --bg: #f4efe6; --card: #fffaf2; --ink: #1d1a16; --dim: #5e564b; --line: #d9cfbf; --ok: #1f7a3a; --ok-bg: #dff2e3; --late: #a3321e; --late-bg: #fbe3dc; --btn: #1f7a3a; --btn-ink: #ffffff;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+@media (prefers-color-scheme: dark) { :root { --bg: #14120f; --card: #1d1a16; --ink: #f2ebe0; --dim: #b4a996; --line: #3a342b; --ok: #8fd18f; --ok-bg: #18301d; --late: #ff9a80; --late-bg: #3a1f18; --btn: #2f9a4f; color-scheme: dark; } }
+* { box-sizing: border-box; } [hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 19px/1.5 var(--sans); }
+.wrap { max-width: 560px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 48px max(18px, env(safe-area-inset-left)); display: grid; gap: 16px; }
+h1 { font: 700 34px/1.15 var(--sans); margin: 8px 0 0; } .dim { color: var(--dim); margin: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: grid; gap: 12px; }
+.big { font: 800 clamp(34px, 11vw, 52px)/1.1 var(--sans); width: 100%; min-height: 42vh; border: 0; border-radius: 28px; background: var(--btn); color: var(--btn-ink); cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,.18); }
+.big:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+.big.done { background: var(--ok-bg); color: var(--ok); box-shadow: none; font-size: clamp(28px, 8vw, 40px); }
+.state { font: 700 24px/1.3 var(--sans); padding: 16px; border-radius: 14px; } .state.ok { background: var(--ok-bg); color: var(--ok); } .state.late { background: var(--late-bg); color: var(--late); } .state.wait { background: var(--card); border: 1px solid var(--line); }
+label { display: grid; gap: 6px; font-weight: 600; } input, select { font: 400 19px var(--sans); padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.btn { font: 700 18px var(--sans); padding: 14px 18px; border-radius: 12px; border: 2px solid var(--btn); background: var(--btn); color: var(--btn-ink); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--btn); }
+.link { font: 500 14px ui-monospace, Menlo, monospace; word-break: break-all; padding: 10px; border: 1px dashed var(--line); border-radius: 10px; color: var(--dim); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; } .small { font-size: 15px; color: var(--dim); }
+:focus-visible { outline: 3px solid var(--ok); outline-offset: 3px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Quiet Check-in", "description": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told.", "url": "https://mentifaber.org/checkin", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/checkin-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<main class="wrap" id="main"></main>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const main = $("#main"), api = async (path, body) => { const r = await fetch("/api/checkin" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}); let j = {}; try { j = await r.json(); } catch (e) {} if (!r.ok) throw new Error(j.error || "The site didn't answer. Try again in a moment."); return j; };
+  const at = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const copy = (b, t) => navigator.clipboard && navigator.clipboard.writeText(t).then(() => { b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1500); }, () => {});
+
+  function setup() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    main.innerHTML = '<h1>Quiet Check-in</h1><p class="dim">For someone who lives alone. Once a day they tap one big button to say they\'re OK. If it hasn\'t come by their time, the family\'s phones are told. No camera, no microphone, no tracking: just the tap.</p>' +
+      '<form class="card" id="f"><label>Their first name<input id="name" maxlength="40" required placeholder="Gran"></label><label>Check in by<input id="by" type="time" value="10:00" required></label>' +
+      '<label>Their time zone<input id="tz" value="' + esc(tz) + '"></label><button class="btn" type="submit">Set it up</button><p class="small" id="st" role="status"></p></form>';
+    $("#f").onsubmit = async (e) => { e.preventDefault(); try { const r = await api("", { name: $("#name").value, by: $("#by").value, tz: $("#tz").value.trim() });
+      const me = location.origin + "/checkin#me." + r.id + "." + r.me, fam = location.origin + "/checkin#fam." + r.id + "." + r.fam;
+      main.innerHTML = '<h1>Two links</h1><div class="card"><b>For ' + esc($("#name").value) + '</b><p class="small">Open it on their phone and add it to the home screen (Share, then "Add to Home Screen"). It\'s their button.</p><div class="link">' + esc(me) + '</div><div class="row"><button class="btn ghost" id="c1" type="button">Copy</button></div></div>' +
+        '<div class="card"><b>For the family</b><p class="small">Send it to everyone who should be told. Each opens it once and turns on alerts on their phone.</p><div class="link">' + esc(fam) + '</div><div class="row"><button class="btn ghost" id="c2" type="button">Copy</button></div></div><p class="small">Keep both private: anyone with a link can use it.</p>';
+      $("#c1").onclick = () => copy($("#c1"), me); $("#c2").onclick = () => copy($("#c2"), fam);
+    } catch (x) { $("#st").textContent = x.message; } };
+  }
+
+  async function me(id, t) {
+    let s; try { s = await api("/" + id + "?t=" + t); } catch (e) { main.innerHTML = "<h1>Quiet Check-in</h1><p class=\"dim\">" + esc(e.message) + "</p>"; return; }
+    const draw = () => { main.innerHTML = '<h1>Good ' + (new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening") + ", " + esc(s.name) + "</h1>" +
+      (s.today ? '<button class="big done" type="button" id="ok">✓ Done for today<br><span style="font-size:22px;font-weight:600">' + esc(at(s.last)) + "</span></button><p class=\"dim\">Your family won't be bothered today. See you tomorrow.</p>"
+        : '<button class="big" type="button" id="ok">I\'m OK</button><p class="dim">Tap it before ' + esc(s.by) + ". If it isn't tapped by then, your family is told.</p>") +
+      '<details class="small"><summary>Settings</summary><div class="card" style="margin-top:10px"><label>Check in by<input id="by" type="time" value="' + esc(s.by) + '"></label><button class="btn ghost" id="save" type="button">Save</button></div></details>';
+      $("#ok").onclick = async () => { try { s = await api("/" + id + "/ok", { t }); draw(); } catch (e) { alert(e.message); } };
+      $("#save").onclick = async () => { try { s = await api("/" + id + "/settings", { t, by: $("#by").value }); draw(); } catch (e) { alert(e.message); } }; };
+    draw();
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/checkin-sw.js", { scope: "/checkin" }).catch(() => {}); // so the button opens on a weak signal
+  }
+
+  async function family(id, t) {
+    let s; try { s = await api("/" + id + "?t=" + t); } catch (e) { main.innerHTML = "<h1>Quiet Check-in</h1><p class=\"dim\">" + esc(e.message) + "</p>"; return; }
+    const line = s.today ? '<div class="state ok">✓ ' + esc(s.name) + " checked in today at " + esc(at(s.last)) + "</div>" : s.late ? '<div class="state late">' + esc(s.name) + " hasn't checked in today. Their time was " + esc(s.by) + ". Give them a call.</div>" : '<div class="state wait">' + esc(s.name) + " hasn't checked in yet today. Their time is " + esc(s.by) + ".</div>";
+    const can = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    main.innerHTML = "<h1>" + esc(s.name) + "</h1>" + line + '<div class="card"><b>Alerts on this phone</b><p class="small">' + (s.watchers ? s.watchers + " phone" + (s.watchers > 1 ? "s" : "") + " will be told if a check-in is missed." : "No phone is set to be told yet.") + "</p>" +
+      (can ? '<div class="row"><button class="btn" id="watch" type="button">Tell this phone</button><span class="small" id="wst" role="status"></span></div>' : '<p class="small">This browser can\'t take alerts. On an iPhone, add this page to the home screen first, then open it from there.</p>') + "</div>" +
+      '<p class="small">Their time zone: ' + esc(s.tz) + ". Last check-in: " + (s.last ? esc(new Date(s.last).toLocaleString()) : "never") + ".</p>";
+    if ($("#watch")) $("#watch").onclick = async () => {
+      const st = $("#wst"); st.textContent = "Asking…";
+      try {
+        if ((await Notification.requestPermission()) !== "granted") throw new Error("Alerts are turned off for this site in the phone's settings.");
+        const reg = await navigator.serviceWorker.register("/checkin-sw.js", { scope: "/checkin" }); await navigator.serviceWorker.ready;
+        const key = (await (await fetch("/api/push/key")).json()).key, raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (key.length % 4)) % 4)), (c) => c.charCodeAt(0));
+        const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw }));
+        await api("/" + id + "/watch", { t, sub: sub.toJSON() });
+        const cache = await caches.open("checkin-v1"), old = await cache.match("/checkin/circles"), list = old ? await old.json() : [];
+        if (!list.some((c) => c.id === id)) list.push({ id, t }); await cache.put("/checkin/circles", new Response(JSON.stringify(list), { headers: { "content-type": "application/json" } }));
+        family(id, t);
+      } catch (x) { st.textContent = x.message; }
+    };
+  }
+  function route() { const h = location.hash.slice(1), m = /^(me|fam)\.([0-9a-f]{16})\.([0-9a-f]{32})$/.exec(h); if (!m) return setup(); return m[1] === "me" ? me(m[2], m[3]) : family(m[2], m[3]); }
+  addEventListener("hashchange", route); route();
+})();
+</script>
+</body>
+</html>

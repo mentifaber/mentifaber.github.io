@@ -105,7 +105,7 @@ body.wk > * { position: relative; z-index: 1; }
 .bench::before { content: ""; position: absolute; inset: 0; clip-path: var(--cut); z-index: -1; background: var(--line-2);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px; transition: background .3s; }
 .bench .g { width: 22px; height: 22px; grid-row: span 2; color: var(--gold); transition: color .3s, transform .4s var(--ease); }
-.bench b { font-weight: 600; font-size: 14.5px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bench b { font-weight: 600; font-size: 14.5px; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; } /* a long name takes a second line instead of being cut to "AutoFaber O…" */
 .bench small { grid-column: 2 / 4; font-size: 11.5px; line-height: 1.35; color: var(--dim); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .bench:hover, .bench:focus-visible, .bench.here { transform: translateY(-2px); background: linear-gradient(180deg, rgba(246, 206, 120, .2), rgba(214, 166, 71, .06)); }
 .bench:hover::before, .bench:focus-visible::before, .bench.here::before { background: var(--gold); }

@@ -57,6 +57,22 @@
     "android": "org.mentifaber.roku"
   },
   {
+    "href": "blackout.html",
+    "name": "Blackout Kit",
+    "desc": "Get ready while there's still a connection: mesh and radio messaging, a satellite tracker, your documents and a world map that work offline, where you are by GPS, and plain guides for water, food, heat and power.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-24"
+  },
+  {
+    "href": "letters.html",
+    "name": "Sealed Letters",
+    "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-24"
+  },
+  {
     "href": "hive",
     "name": "AutoFaber",
     "desc": "A mind with a name that remembers you, talks with you out loud and calls on every AI model you can reach: one at a time, as a council, or as a swarm that builds whole projects.",
@@ -111,6 +127,14 @@
     "status": "live",
     "cat": "AI & Minds",
     "added": "2026-10-17"
+  },
+  {
+    "href": "local-ai.html",
+    "name": "AutoFaber Offline",
+    "desc": "AutoFaber with no server at all: a small language model downloaded once and run on your own device's graphics chip. Nothing you type leaves it, and it keeps working without a network.",
+    "status": "live",
+    "cat": "AI & Minds",
+    "added": "2026-11-24"
   },
   {
     "href": "ballast.html",
@@ -185,6 +209,30 @@
     "added": "2026-08-31"
   },
   {
+    "href": "witness.html",
+    "name": "Witness",
+    "desc": "Prove a photo existed by a given time and hasn't changed since. The photo stays on your phone: only its fingerprint is signed, with the workshop's own clock, and anyone can check it.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-24"
+  },
+  {
+    "href": "passport.html",
+    "name": "Device Passport",
+    "desc": "A signed record of a repair: the work, the parts and their numbers, battery health and warranty, which travels with the device and anyone can check, including whoever buys it next.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-24"
+  },
+  {
+    "href": "checkin.html",
+    "name": "Quiet Check-in",
+    "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. No camera, no microphone, no tracking.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-24"
+  },
+  {
     "href": "vigil.html",
     "name": "Vigil",
     "desc": "A private command screen. Every aircraft in the sky, weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.",
@@ -223,6 +271,14 @@
     "status": "live",
     "cat": "Sky & World",
     "added": "2026-08-20"
+  },
+  {
+    "href": "skylens.html",
+    "name": "Sky Lens",
+    "desc": "Point your phone at the sky and see which satellites are there: the ISS, Hubble and the bright ones, drawn over the camera where they really are, with the next ISS pass.",
+    "status": "live",
+    "cat": "Sky & World",
+    "added": "2026-11-24"
   },
   {
     "href": "tether.html",

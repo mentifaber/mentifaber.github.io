@@ -13,7 +13,8 @@ import { listen } from "./listen.js";
 import { media } from "./media.js";
 import { seal } from "./seal.js"; // the workshop's seal: Device Passports and Witness records
 import { portal } from "./portal.js";
-import { letters } from "./letters.js"; // Sealed Letters: letters that open later, only with the friends chosen // the Workshop Portal: one link per client, one board for the workshop
+import { letters } from "./letters.js";
+import { checkin, sweep as checkinSweep } from "./checkin.js"; // Quiet Check-in: a daily "I'm OK", and the family told if it doesn't come // Sealed Letters: letters that open later, only with the friends chosen // the Workshop Portal: one link per client, one board for the workshop
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
 import ASSETLINKS from "../.well-known/assetlinks.json"; // vouches for the Android apps (android/), so AutoFaber opens full screen and store links open the Store
 // mentifaber.org Worker: serves the static site (the ASSETS binding) and adds
@@ -602,6 +603,7 @@ const worker = {
         if (!/^1 \d/m.test(t)) return json({ error: "no elements from CelesTrak" + (r ? " (" + r.status + ")" : "") }, 502);
         return new Response(t, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
       }
+      if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS });
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
       if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil"))); // client links and the workshop's job board (src/portal.js)
       if (route === "seal") return seal(req, env, json, !!(await session(req, env, "vigil"))); // signs Device Passports (owner) and Witness records (src/seal.js)
@@ -654,6 +656,7 @@ const worker = {
     // MENTIFABER AGENT 1.0, when it's always on: a nudge that brings it back if it stopped and nothing noticed
     if (env.AGENT) ctx.waitUntil(env.AGENT.get(env.AGENT.idFromName("agent")).fetch(new Request("http://agent/keep", { method: "POST" })).catch(() => {}));
     if (event.cron === "*/15 * * * *") { // Genesis keeps watch on Vigil's live board between the hourly ticks
+      if (env.STORE) ctx.waitUntil(checkinSweep(env, { sendPush, vapid: () => store(env).vapid() }).catch(() => {})); // Quiet Check-in: a missed check-in tells the family
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/tasks/tick", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {})); // the owner's scheduled tasks that are due (src/hive-tasks.js)
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/watch", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {}));
       return;

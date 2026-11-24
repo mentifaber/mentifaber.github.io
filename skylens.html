@@ -7,7 +7,7 @@
 <title>Sky Lens · Mentifaber</title>
 <meta name="description" content="Point your phone at the sky and see which satellites are there: the ISS, Hubble and the bright ones, drawn over your camera where they really are.">
 <meta name="theme-color" content="#000000">
-<link rel="icon" href="assets/icons/v2/orbit.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/v2/skylens.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/skylens-180.png">
 <style>
 /* Sky Lens: a heads-up display over the camera. Thin cyan reticle, labels that read on any sky, nothing else on screen. */
 :root { --hud: #7ee0ff; --hi: #e8fbff; --sun: #ffd166; --dim: rgba(232,251,255,.65); --bg: #000; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color-scheme: dark; }
@@ -25,6 +25,7 @@ video { filter: brightness(.9) contrast(1.05); }
 #next { color: var(--sun); } #hint { color: var(--dim); }
 :focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 </style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Sky Lens", "description": "Point your phone at the sky and see which satellites are there: the ISS, Hubble and the bright ones, drawn over your camera where they really are.", "url": "https://mentifaber.org/skylens", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/skylens-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
 </head>
 <body>
 <video id="cam" playsinline muted autoplay hidden></video>
