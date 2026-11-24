@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/local-ai">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AutoFaber Offline · Mentifaber</title>
+<meta name="description" content="AutoFaber with no server at all: a small language model downloaded once and run on your own device&#x27;s graphics chip, in the browser.">
+<meta name="theme-color" content="#0b0a0f">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* AutoFaber Offline: a quiet terminal-like chat. Violet-grey night, one amber accent shared with AutoFaber, a progress
+   bar that tells the truth about a gigabyte download. */
+:root { --bg: #0b0a0f; --panel: #14121b; --line: #2c2838; --ink: #ece8f4; --dim: #a39cb6; --amber: #f2b45a; --ok: #8fd18f; --bad: #ff8a6b;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; } [hidden] { display: none !important; }
+html, body { height: 100%; } body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); display: flex; flex-direction: column; }
+.top { display: flex; gap: 10px; align-items: center; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); border-bottom: 1px solid var(--line); }
+.top b { font-weight: 700; } .top b span { color: var(--amber); } .top .grow { flex: 1; } .top a { color: var(--dim); text-decoration: none; font-size: 14px; }
+.pill { font: 500 12px var(--mono); padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); } .pill.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+main { flex: 1; overflow-y: auto; padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); }
+.box { max-width: 720px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 10px 0 0; } h1 span { color: var(--amber); }
+.dim { color: var(--dim); margin: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+label.m { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+label.m small { grid-column: 2 / -1; color: var(--dim); } label.m:has(input:checked) { border-color: var(--amber); }
+.btn { font: 600 15px var(--sans); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--amber); background: var(--amber); color: #1d1206; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--amber); } .btn:disabled { opacity: .5; cursor: default; }
+.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; } .bar i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .3s; }
+#prog-t { font: 500 13px var(--mono); color: var(--dim); }
+.msgs { display: grid; gap: 12px; }
+.msg { padding: 10px 13px; border-radius: 12px; max-width: 88%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.you { justify-self: end; background: #2a2340; } .msg.ai { justify-self: start; background: var(--panel); border: 1px solid var(--line); }
+form.ask { display: flex; gap: 8px; padding: 10px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); }
+form.ask textarea { flex: 1; min-height: 46px; max-height: 160px; resize: none; font: 400 16px var(--sans); padding: 11px 12px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
+.bad { color: var(--bad); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<header class="top"><b>Auto<span>Faber</span> Offline</b><span class="pill" id="state">not started</span><span class="grow"></span><a href="hive">AutoFaber online</a></header>
+<main><div class="box">
+  <section id="intro">
+    <h1>AutoFaber, <span>on this device</span></h1>
+    <p class="dim" style="margin-top:8px">A small language model, downloaded once and run on your own device's graphics chip, in this browser tab. No server answers you, nothing you type leaves the device, and once it's downloaded it keeps working when the network doesn't. It's smaller than the online AutoFaber: good for drafting, explaining and thinking out loud, weaker on facts.</p>
+  </section>
+  <section class="card" id="nogpu" hidden><b class="bad">This browser can't run it.</b><p class="dim">It needs WebGPU: Chrome or Edge on a computer, Chrome on a recent Android phone, or Safari 26 on a recent iPhone, iPad or Mac. <a href="hive" style="color:var(--amber)">The online AutoFaber</a> works everywhere.</p></section>
+  <section class="card" id="pick">
+    <b>Pick a model</b>
+    <label class="m"><input type="radio" name="m" value="Llama-3.2-1B-Instruct-q4f16_1-MLC" checked><b>Llama 3.2 1B</b><span class="dim">≈ 0.9 GB</span><small>Meta's small chat model. The best start on most devices.</small></label>
+    <label class="m"><input type="radio" name="m" value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC"><b>Qwen 2.5 1.5B</b><span class="dim">≈ 1.1 GB</span><small>A little larger and sharper, if the device has the memory.</small></label>
+    <label class="m"><input type="radio" name="m" value="Qwen3-0.6B-q4f16_1-MLC"><b>Qwen 3 0.6B</b><span class="dim">≈ 0.5 GB</span><small>The lightest, for older phones. Simple answers only.</small></label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn" id="go" type="button">Download and start</button><span class="dim" style="font-size:14px">Downloaded once; your browser keeps it. Use Wi-Fi.</span></div>
+    <div id="prog" hidden><div class="bar"><i id="prog-b"></i></div><span id="prog-t"></span></div>
+  </section>
+  <section class="msgs" id="msgs" aria-live="polite"></section>
+</div></main>
+<form class="ask" id="ask" hidden><textarea id="q" placeholder="Ask AutoFaber Offline" aria-label="Your message" maxlength="4000"></textarea><button class="btn" type="submit" id="send">Send</button></form>
+<script type="module">
+const $ = (id) => document.getElementById(id), esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const LIB = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.86/+esm"; // pinned; the browser keeps it with the model
+const SYSTEM = "You are AutoFaber Offline: Mentifaber's assistant, running entirely on the user's own device with no internet. Be helpful, plain and brief. You can't browse, search or see files, and your knowledge may be out of date or wrong on facts: say so when it matters.";
+let engine = null, busy = false; const history = [{ role: "system", content: SYSTEM }];
+const state = (t, on) => { $("state").textContent = t; $("state").classList.toggle("on", !!on); };
+const can = !!navigator.gpu && !!(await navigator.gpu.requestAdapter().catch(() => null));
+if (!can && !window.__WebLLM) { $("nogpu").hidden = false; $("pick").hidden = true; state("no WebGPU"); }
+try { const last = localStorage.getItem("lai:model"); if (last) { const r = document.querySelector('input[name=m][value="' + CSS.escape(last) + '"]'); if (r) r.checked = true; } } catch (e) {}
+$("go").onclick = async () => {
+  const model = document.querySelector("input[name=m]:checked").value; $("go").disabled = true; $("prog").hidden = false; state("loading");
+  try {
+    const lib = window.__WebLLM || (await import(LIB)); // a test can stand in for the library
+    engine = await lib.CreateMLCEngine(model, { initProgressCallback: (p) => { $("prog-b").style.width = Math.round((p.progress || 0) * 100) + "%"; $("prog-t").textContent = p.text || ""; } });
+    try { localStorage.setItem("lai:model", model); } catch (e) {}
+    $("pick").hidden = true; $("intro").hidden = true; $("ask").hidden = false; state("running on this device", true); $("q").focus();
+    add("ai", "Ready. I'm running on this device: nothing you type leaves it. What shall we work on?");
+  } catch (e) { $("go").disabled = false; state("couldn't start"); $("prog-t").innerHTML = '<span class="bad">Couldn\'t start: ' + esc(e && e.message ? e.message : e) + ". A smaller model may fit; a connection is needed for the first download.</span>"; }
+};
+function add(who, text) { const el = document.createElement("div"); el.className = "msg " + who; el.textContent = text; $("msgs").appendChild(el); el.scrollIntoView({ block: "end" }); return el; }
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("ask").requestSubmit(); } });
+$("ask").onsubmit = async (e) => {
+  e.preventDefault(); const text = $("q").value.trim(); if (!text || busy || !engine) return; busy = true; $("send").disabled = true; $("q").value = "";
+  add("you", text); history.push({ role: "user", content: text }); const out = add("ai", "…"); let reply = "";
+  try { const chunks = await engine.chat.completions.create({ messages: history.slice(-13), stream: true, temperature: 0.6, max_tokens: 700 });
+    for await (const c of chunks) { reply += (c.choices && c.choices[0] && c.choices[0].delta && c.choices[0].delta.content) || ""; out.textContent = reply.replace(/<think>[\s\S]*?(<\/think>|$)/, "").trim() || "…"; }
+    history.push({ role: "assistant", content: reply });
+  } catch (x) { out.innerHTML = '<span class="bad">Something went wrong on the device: ' + esc(x && x.message ? x.message : x) + "</span>"; }
+  busy = false; $("send").disabled = false; $("q").focus();
+};
+window.LocalAI = { history, get engine() { return engine; } };
+</script>
+</body>
+</html>

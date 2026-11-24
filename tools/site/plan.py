@@ -172,7 +172,7 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="makers">Make apps for FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="blackout">Blackout Kit</a><a href="witness">Witness: prove a photo</a><a href="passport">Device Passport</a><a href="letters">Sealed Letters</a><a href="skylens">Sky Lens</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="makers">Make apps for FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="blackout">Blackout Kit</a><a href="witness">Witness: prove a photo</a><a href="passport">Device Passport</a><a href="letters">Sealed Letters</a><a href="skylens">Sky Lens</a><a href="local-ai">AutoFaber Offline</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Anders Powell · Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
@@ -485,7 +485,7 @@ CREDITS = [
     ("Software", [
         ("Leaflet", "BSD-2-Clause"), ("three.js", "MIT"), ("GSAP", "GreenSock Standard License"),
         ("PDF.js", "Apache-2.0"), ("Mammoth", "BSD-2-Clause"), ("Tesseract.js", "Apache-2.0"),
-        ("Pyodide", "MPL-2.0"), ("satellite.js", "MIT"), ("Font Awesome Free", "icons CC BY 4.0, fonts OFL, code MIT"), ("llama.cpp", "MIT"),
+        ("Pyodide", "MPL-2.0"), ("WebLLM (MLC)", "Apache-2.0, for AutoFaber Offline"), ("satellite.js", "MIT"), ("Font Awesome Free", "icons CC BY 4.0, fonts OFL, code MIT"), ("llama.cpp", "MIT"),
     ]),
     ("Type", [
         ("Literata, Schibsted Grotesk, Martian Mono, Azeret Mono", "SIL Open Font License 1.1"),
