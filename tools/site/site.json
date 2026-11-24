@@ -227,7 +227,7 @@
   {
     "href": "checkin.html",
     "name": "Quiet Check-in",
-    "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. No camera, no microphone, no tracking.",
+    "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. A smart-home device can check in for them, and away dates pause it. No camera, no microphone, no tracking.",
     "status": "live",
     "cat": "Tools",
     "added": "2026-11-24"

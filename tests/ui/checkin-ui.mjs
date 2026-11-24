@@ -1,6 +1,7 @@
 // Quiet Check-in in Chromium against the real server code (src/checkin.js): set up a circle, get two links; on her
 // link one big "I'm OK" button, which turns to "Done for today"; on the family's link her status (waiting, checked
-// in, or missed with a nudge to call) and the button that turns on alerts for this phone.
+// in, or missed with a nudge to call), the last two weeks, and the button that turns on alerts for this phone; her
+// settings: away until a date, and a link a device can check in with.
 import { createRequire } from "node:module"; import assert from "node:assert/strict"; import path from "node:path";
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const REPO = process.argv[2] || path.resolve(new URL("../..", import.meta.url).pathname), DEV = process.argv[3] || "desktop", M = DEV === "mobile";
@@ -31,5 +32,25 @@ const box = await (await p.$("#ok")).boundingBox(), vh = M ? 844 : 900; assert.o
 await p.click("#ok"); await p.waitForSelector("#ok.done"); assert.match(await p.textContent("#ok"), /✓ Done for today/);
 await p.goto(local(famLink)); await p.waitForSelector(".state.ok"); assert.match(await p.textContent(".state"), /✓ Gran checked in today at/);
 ok("her link: one button filling half the screen; a tap turns it to Done for today, and the family's page says she's checked in");
+assert.equal(await p.$$eval("#days i", (xs) => xs.length), 14); assert.equal(await p.$$eval("#days i.ok", (xs) => xs.length), 1); assert.ok(await p.$("#days i.ok.now"), "today is marked checked in");
+ok("the family sees the last two weeks: fourteen days, today checked in");
+
+// her settings: away until a date; the family's page says so and nobody is told
+await p.goto(local(meLink)); await p.waitForSelector("#ok"); await p.click("#set summary");
+const away = await p.evaluate(() => new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10)); await p.fill("#away", away); await p.click("#saveAway");
+await p.waitForSelector("#awayNote"); assert.match(await p.textContent("#awayNote"), /^Away until \w+day, /); assert.ok(await p.$("#set[open]"), "settings stay open after saving");
+C.last = Date.now() - 3 * 864e5; mem.set("ci:" + id, { ...mem.get("ci:" + id), last: C.last, by: "00:00" });
+await p.goto(local(famLink)); await p.waitForSelector(".state.away"); assert.match(await p.textContent(".state"), /Gran is away until .*You won't be told/);
+await p.goto(local(meLink)); await p.waitForSelector("#ok"); await p.click("#set summary"); await p.click("#back"); await p.waitForSelector("#awayNote", { state: "detached" });
+ok("away until a date: her page and the family's say so (no alerts); I'm back clears it");
+
+// a device link: shown once, checks in when opened, and the family's page says it was the device
+await p.click("#mkDev"); await p.waitForSelector("#devLink"); const dev = (await p.textContent("#devLink")).trim(); assert.match(dev, /\/api\/checkin\/[0-9a-f]{16}\/ok\?t=[0-9a-f]{32}$/);
+assert.match(await p.textContent("#devSt"), /A device link is on/);
+assert.deepEqual(await p.evaluate(async (u) => (await fetch(u.replace(/^https?:\/\/[^/]+/, ""))).json(), dev), { ok: true });
+await p.goto(local(famLink)); await p.waitForSelector(".state.ok"); assert.match(await p.textContent(".state"), /checked in today at .*\(by their device\)/);
+await p.goto(local(meLink)); await p.waitForSelector("#ok"); await p.click("#set summary"); await p.click("#offDev"); await p.waitForSelector("#offDev", { state: "detached" });
+assert.equal(await p.evaluate(async (u) => (await fetch(u.replace(/^https?:\/\/[^/]+/, ""))).status, dev), 403);
+ok("a device link: shown once, checks in when an automation opens it (the family sees it was the device); turned off, it stops");
 assert.equal(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0); assert.deepEqual(errs, []); ok("no page errors, no sideways scroll");
 await b.close();
