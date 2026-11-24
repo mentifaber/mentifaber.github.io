@@ -18,8 +18,8 @@
 
   var css = "" +
     ".mfv-pill{position:fixed;z-index:2147483000;font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;" +
-    "padding:6px 9px;border-radius:999px;background:rgba(12,10,16,.62);color:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.16);" +
-    "backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;opacity:.72;transition:opacity .2s}" +
+    "padding:6px 9px;border-radius:999px;background:rgba(12,10,16,.74);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.16);" +
+    "backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;opacity:.94;transition:opacity .2s}" +
     ".mfv-pill:hover{opacity:1}.mfv-pill i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff8fc0;margin-left:6px;vertical-align:1px}" +
     ".mfv-card{position:fixed;z-index:2147483001;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translate(-50%,-130%);" +
     "width:min(92vw,380px);background:rgba(18,15,24,.94);color:#f4efe6;border:1px solid rgba(255,255,255,.14);border-radius:18px;" +

@@ -6,15 +6,15 @@
 <meta name="description" content="Flutterbloom accounts: sign in to Flutterbloom.">
 <meta name="robots" content="noindex">
 <style>
-:root{--bg:#fbf5ef;--ink:#3b2f3f;--dim:#8a7a8c;--card:#fff;--line:#eadfe6;--acc:#c86b9a;--ok:#4f9d78;--bad:#c4515f}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1720;--ink:#f1e8f2;--dim:#a898ab;--card:#29212d;--line:#3b3140;--acc:#e58fbb;--ok:#7cc7a2;--bad:#ef8794}}
-:root[data-theme="dark"]{--bg:#1d1720;--ink:#f1e8f2;--dim:#a898ab;--card:#29212d;--line:#3b3140;--acc:#e58fbb;--ok:#7cc7a2;--bad:#ef8794}
+:root{--bg:#fbf5ef;--ink:#3b2f3f;--dim:#786a7a;--card:#fff;--line:#eadfe6;--acc:#a8507d;--ok:#4f9d78;--bad:#c4515f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1720;--ink:#f1e8f2;--dim:#a898ab;--card:#29212d;--line:#3b3140;--acc:#e58fbb;--on-acc:#2a1020;--ok:#7cc7a2;--bad:#ef8794}}
+:root[data-theme="dark"]{--bg:#1d1720;--ink:#f1e8f2;--dim:#a898ab;--card:#29212d;--line:#3b3140;--acc:#e58fbb;--on-acc:#2a1020;--ok:#7cc7a2;--bad:#ef8794}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:24px 16px 60px}
 main{max-width:520px;margin:0 auto}h1{font-size:26px;margin:0 0 4px}p{color:var(--dim);margin:6px 0 14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:16px 0}
 h2{font-size:17px;margin:0 0 8px}label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
 input{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 16px;margin-top:14px;background:var(--acc);color:#fff;cursor:pointer}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 16px;margin-top:14px;background:var(--acc);color:var(--on-acc,#fff);cursor:pointer}
 button.ghost{background:none;color:var(--bad);border:1px solid var(--line);margin:0;padding:6px 12px;font-size:14px}
 button:disabled{opacity:.6}.msg{min-height:1.4em;margin-top:10px;font-size:14px}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
 .acct{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.acct:first-child{border-top:0}

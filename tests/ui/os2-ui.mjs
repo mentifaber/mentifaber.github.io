@@ -13,7 +13,7 @@ await ctx.addInitScript(() => { try { localStorage.setItem("fos:seen", "true"); 
 const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 const cmd = async (text) => { await p.click("#ask-in"); await p.fill("#ask-in", text); await p.waitForSelector("#sug:not([hidden]) li"); return p.$$eval("#sug li", (xs) => xs.map((x) => x.textContent)); };
-const frameOf = async (id) => (await (await p.$(".win[data-id='" + id + "'] iframe")).contentFrame());
+const frameOf = async (id) => { const f = await (await p.waitForSelector(".win[data-id='" + id + "'] iframe", { state: "attached" })).contentFrame(); if (!/^https?:/.test(f.url())) await f.waitForURL(/^https?:/); await f.waitForLoadState("domcontentloaded"); return f; }; // once the frame has left its blank first page
 await p.goto("http://localhost:8099/os.html"); await p.waitForSelector("#icons .ic");
 assert.equal(await p.$$eval(".win", (x) => x.length), 0, "no About once it's been seen");
 

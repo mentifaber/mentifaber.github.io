@@ -172,7 +172,7 @@ function graphDraw() {
   G.edges.forEach(([i, j]) => { const [ax, ay] = scr(G.nodes[i]), [bx, by] = scr(G.nodes[j]); const on = lit.has(i) && lit.has(j); gx.strokeStyle = on ? "rgba(230,180,80,.55)" : "rgba(242,236,218,.08)"; gx.lineWidth = on ? 1.4 : 1; gx.beginPath(); gx.moveTo(ax, ay); gx.lineTo(bx, by); gx.stroke(); });
   G.nodes.forEach((n, i) => {
     const [x, y] = scr(n), on = lit.has(i), r = rad(n);
-    gx.fillStyle = n.k === "b" ? "#e6b450" : n.k === "w" ? "#ff9f5a" : score(n.id).s >= S.min ? "#9fd67a" : "#6f6852";
+    gx.fillStyle = n.k === "b" ? "#e6b450" : n.k === "w" ? "#ff9f5a" : score(n.id).s >= S.min ? "#9fd67a" : "#86806e";
     gx.globalAlpha = lit.size && !on ? 0.35 : 1; gx.beginPath(); gx.arc(x, y, r, 0, 7); gx.fill();
     if (i === sel) { gx.strokeStyle = "#fff"; gx.lineWidth = 2; gx.stroke(); }
     if (n.k !== "v" || on) { gx.fillStyle = n.k === "w" ? "rgba(255,159,90,.9)" : n.k === "b" ? "rgba(242,236,218,.85)" : "#f2ecda"; gx.font = (n.k === "w" ? "11px ui-monospace,monospace" : n.k === "b" ? "600 12px ui-sans-serif,sans-serif" : "12px ui-sans-serif,sans-serif"); gx.fillText(n.k === "v" ? n.label.replace(bookOf(n.label) + " ", bookOf(n.label).slice(0, 4) + " ") : n.label, x + r + 4, y + 4); }
@@ -187,7 +187,7 @@ new ResizeObserver(gfit).observe(gc);
 
 // ── wiring ──
 function pick(r) { if (!O.v[r]) return; S.ref = r; try { history.replaceState(null, "", "#v=" + encodeURIComponent(r)); } catch (e) {} drawList(); drawPar(); drawAgr(); graphDraw(); const a = document.querySelector('#list a.on'); if (a) a.scrollIntoView({ block: "nearest" }); }
-function tab(t) { S.tab = t; document.querySelectorAll(".tabs [data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === t)); $("par").hidden = t !== "par"; $("graph").hidden = t !== "graph"; if (t === "graph") requestAnimationFrame(gfit); }
+function tab(t) { S.tab = t; document.querySelectorAll(".tabs [data-tab]").forEach((b) => { b.classList.toggle("on", b.dataset.tab === t); b.setAttribute("aria-selected", String(b.dataset.tab === t)); }); $("par").hidden = t !== "par"; $("graph").hidden = t !== "graph"; if (t === "graph") requestAnimationFrame(gfit); }
 document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) tab(b.dataset.tab); });
 $("list").addEventListener("click", (e) => { const a = e.target.closest("[data-ref]"); if (a) pick(a.dataset.ref); });
 $("wordc").addEventListener("click", (e) => { const a = e.target.closest("[data-ref]"); if (a) { pick(a.dataset.ref); tab("par"); } });

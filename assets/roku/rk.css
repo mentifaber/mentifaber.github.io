@@ -1,4 +1,4 @@
-:root { --bg: #0b0804; --bg2: #140e07; --bg3: #1c140a; --bg4: #2a1d0e; --ink: #fff1d6; --dim: #c9b28c; --mute: #7f6b4f; --line: rgba(255,207,122,.13);
+:root { --bg: #0b0804; --bg2: #140e07; --bg3: #1c140a; --bg4: #2a1d0e; --ink: #fff1d6; --dim: #c9b28c; --mute: #8b785f; --line: rgba(255,207,122,.13);
   --acc: #ffb547; --acc2: #ff8a1f; --hot: #fff4dc; --ok: #7dffb0; --bad: #ff6b5b; --warn: #ffd166; --glow: 0 0 14px rgba(255,181,71,.55); color-scheme: dark; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; min-height: 100%; color: var(--ink); font: 14.5px/1.45 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }

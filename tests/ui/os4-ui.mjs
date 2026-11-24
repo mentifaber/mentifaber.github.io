@@ -20,7 +20,7 @@ await ctx.addInitScript(() => { try { localStorage.setItem("fos:seen", "true"); 
 const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 const cmd = async (text) => { await p.click("#ask-in"); await p.fill("#ask-in", text); await p.waitForSelector("#sug:not([hidden]) li"); return p.$$eval("#sug li", (xs) => xs.map((x) => x.textContent)); };
-const frameOf = async (id) => (await (await p.$(".win[data-id='" + id + "'] iframe")).contentFrame());
+const frameOf = async (id) => { const f = await (await p.waitForSelector(".win[data-id='" + id + "'] iframe", { state: "attached" })).contentFrame(); if (!/^https?:/.test(f.url())) await f.waitForURL(/^https?:/); await f.waitForLoadState("domcontentloaded"); return f; }; // once the frame has left its blank first page
 const lastNote = () => p.evaluate(() => JSON.parse(localStorage.getItem("fos:notes") || "[]")[0] || null);
 const runAI = async (text, actions) => { next = actions; const s = await cmd(text); const i = s.findIndex((x) => /Let AutoFaber/.test(x)); assert.ok(i >= 0, JSON.stringify(s)); await p.click("#sug li:nth-child(" + (i + 1) + ")"); return s[i]; };
 await p.goto("http://localhost:8099/os.html"); await p.waitForSelector("#icons .ic");

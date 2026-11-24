@@ -130,7 +130,12 @@
     if (handed[id] && Date.now() - handed[id] < 5000) return; handed[id] = Date.now(); // hand it back once, not in a tug of war
     const o = front && open.get(front), fr = o && $("iframe", o.el); try { if (fr) fr.contentWindow.focus(); else window.focus(); } catch (e) {}
   };
-  addEventListener("blur", () => setTimeout(watchFocus, 0)); setInterval(watchFocus, 300);
+  // while FaberOS itself is asking something (the launcher, a permission, an action to confirm), the keyboard stays with
+  // it: an app in a window calling focus() (a first-run guide, a form after an import) mustn't take the keys being typed
+  // into the launcher, or Enter goes to the app and nothing opens
+  const overlay = () => [["#launcher", "#l-q"], ["#consent", "#c-yes"], ["#vconfirm", "#v-yes"]].find(([o]) => $(o) && !$(o).hidden);
+  const keepOverlay = () => { const o = overlay(); if (!o) return false; if (!$(o[0]).contains(document.activeElement)) { try { window.focus(); } catch (e) {} $(o[1]).focus(); } return true; };
+  addEventListener("blur", () => setTimeout(() => { if (!keepOverlay()) watchFocus(); }, 0)); setInterval(() => { if (!keepOverlay()) watchFocus(); }, 300);
 
   // ── the dock and the desktop ──
   function drawDock() {

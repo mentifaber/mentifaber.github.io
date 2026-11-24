@@ -24,10 +24,10 @@
       <p class="sum" id="sum"></p>
       <div class="themes" id="themes"></div>
     </div>
-    <nav class="list" id="list" aria-label="Verses"></nav>
+    <nav class="list" id="list" aria-label="Verses" tabindex="0"></nav>
   </aside>
   <section class="mid">
-    <div class="tabs" role="tablist"><button role="tab" class="on" data-tab="par">Parallel</button><button role="tab" data-tab="graph">Graph</button><span class="grow"></span><label class="tog"><input type="checkbox" id="normt"> normalised tokens</label></div>
+    <div class="tabs"><div role="tablist" aria-label="View" style="display:contents"><button role="tab" class="on" data-tab="par">Parallel</button><button role="tab" data-tab="graph">Graph</button></div><span class="grow"></span><label class="tog"><input type="checkbox" id="normt"> normalised tokens</label></div>
     <div id="par" class="par"></div>
     <div id="graph" class="graph" hidden><canvas id="gc"></canvas><p class="gnote">Books, verses and the distinctive words they share. Tap a verse to read it.</p></div>
   </section>

@@ -1,5 +1,5 @@
 /* Worm Eater · gold on black */
-:root { --bg: #0a0806; --bg2: #14100b; --bg3: #1c1610; --ink: #f3ead8; --dim: #b4a58a; --mute: #7a6c55; --line: rgba(243,234,216,.1); --gold: #e7b75a; --ok: #6fdc8c; --mid: #f0c24a; --bad: #ff6b5a; --unk: #9aa3b5; color-scheme: dark; }
+:root { --bg: #0a0806; --bg2: #14100b; --bg3: #1c1610; --ink: #f3ead8; --dim: #b4a58a; --mute: #8a7e69; --line: rgba(243,234,216,.1); --gold: #e7b75a; --ok: #6fdc8c; --mid: #f0c24a; --bad: #ff6b5a; --unk: #9aa3b5; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
 a { color: var(--gold); }

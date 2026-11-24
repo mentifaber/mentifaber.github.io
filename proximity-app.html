@@ -15,7 +15,7 @@
 <header class="top"><b class="logo">Body<span>wake</span></b><span class="pill" id="state">not calibrated</span><span class="grow"></span><button class="btn" id="cal">Calibrate empty house</button><button class="btn" id="auto">Autopilot: on</button></header>
 <main>
   <section class="plan" id="plan"><canvas id="cv"></canvas><div class="hint" id="hint">Calibrate first, with nobody home. Then move through the rooms.</div></section>
-  <aside class="side">
+  <aside class="side" tabindex="0" aria-label="Controls">
     <div class="card"><small>presence</small><b id="pres">—</b><small id="zone">inferred room: —</small><small id="truth">actually in: —</small></div>
     <div class="card"><small>z-score per access point · trips at 2.5σ</small><div class="bars" id="bars"></div></div>
     <div class="card"><small>path (room transitions)</small><div class="path" id="path"></div></div>

@@ -1,7 +1,7 @@
 /* Foundry · a forge for signed software. Obsidian and molten metal: apps are cast ingots, each glowing in its own colour,
    the featured one turns inside a reactor, and every number reads like an instrument. Embers rise behind it all (forge.js). */
 :root {
-  --bg: #050508; --bg2: rgba(18,17,24,.72); --bg3: #16151d; --ink: #f4efe6; --dim: #a9a0b4; --mute: #6f6880; --line: rgba(220,210,255,.09); --line2: rgba(220,210,255,.16);
+  --bg: #050508; --bg2: rgba(18,17,24,.72); --bg3: #16151d; --ink: #f4efe6; --dim: #a9a0b4; --mute: #7c768b; --line: rgba(220,210,255,.09); --line2: rgba(220,210,255,.16);
   --molten: #ff8a3d; --acc: #ffc35a; --gold: rgba(255,170,70,.35); --plasma: #5ff3ff; --ok: #7dffc0; --bad: #ff5d5d;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace; --disp: Syne, ui-sans-serif, sans-serif;
   --cut: 14px; color-scheme: dark;

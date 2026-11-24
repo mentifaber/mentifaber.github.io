@@ -53,7 +53,7 @@ export async function checkin(req, env, json, deps) {
       const tz = String(b.tz || ""); try { local(tz); } catch (e) { throw err("that isn't a time zone this site knows"); }
       if (!(await st.hit("checkin:" + (req.headers.get("cf-connecting-ip") || "anon"), CIRCLES_DAY, DAY))) throw err("that's today's " + CIRCLES_DAY + " new check-ins from this connection", 429);
       const id = rnd(8), me = rnd(16), fam = rnd(16);
-      await st.kvPut("ci:" + id, { name, by: b.by, tz, last: Date.now(), alerted: null, mk: await sha(me), fk: await sha(fam), subs: [], created: Date.now() });
+      await st.kvPut("ci:" + id, { name, by: b.by, tz, last: Date.now(), days: [local(tz).date], alerted: null, /* setting it up counts as today's check-in */ mk: await sha(me), fk: await sha(fam), subs: [], created: Date.now() });
       return json({ id, me, fam });
     }
     const id = parts[0]; if (!/^[0-9a-f]{16}$/.test(id || "")) throw err("no such check-in", 404);
