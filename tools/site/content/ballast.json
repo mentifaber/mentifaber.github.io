@@ -48,5 +48,39 @@
  "closing": "Ballast keeps the ship upright. Not the cargo — just the weight.",
  "accepts": [
   ".json"
+ ],
+ "verbs": [
+  {
+   "name": "add-transaction",
+   "label": "Add a transaction",
+   "desc": "Log money in or out. direction is out for spending, bills and fees, in for pay and refunds.",
+   "changes": true,
+   "args": {
+    "amount": "number",
+    "label": "string",
+    "direction?": "enum:out|in",
+    "date?": "date",
+    "category?": "enum:Housing|Utilities|Insurance|Subscriptions|Debt|Transportation|Health|Food|Fun|Other"
+   },
+   "words": "log add spent spend paid bought expense purchase income transaction earned got"
+  },
+  {
+   "name": "balance",
+   "label": "Tell me my balance",
+   "desc": "The balance now and the lowest point in the next 30 days.",
+   "changes": false,
+   "args": {},
+   "words": "balance money left afford low waterline broke"
+  },
+  {
+   "name": "spent",
+   "label": "Tell me what I've spent",
+   "desc": "Money out over the last few days.",
+   "changes": false,
+   "args": {
+    "days?": "number"
+   },
+   "words": "spent spending total much week month"
+  }
  ]
 }

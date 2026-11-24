@@ -157,4 +157,11 @@ $("import").addEventListener("change", async (e) => { try { const j = JSON.parse
 $("wipe").addEventListener("click", async () => { if (!confirm("Remove every document from this browser's library?")) return; await DB.clear(); S.docs = []; rebuild(); draw(); });
 (async () => { try { await DB.open(); S.docs = await DB.all(); } catch (e) { toast("This browser won't keep a library (private mode?); it works until you close the tab."); } rebuild(); draw(); })();
 window.DocCrawler = { S, search, add, sample, ask };
+// Faber Verbs: AutoFaber can search the library (read only; nothing leaves this browser but the answer FaberOS shows you)
+if (window.Faber) Faber.verbs({
+  search: ({ query }) => { const q = String(query || "").trim(); if (!q) throw new Error("Search for what?");
+    $("q").value = q; show("lib"); results(); const hits = search(q, 3);
+    if (!S.docs.length) return "The library is empty: add some files first.";
+    return hits.length ? "Found in " + [...new Set(hits.map((h) => h.p.doc.name))].join(", ") + ": “" + hits[0].p.body.replace(/\s+/g, " ").slice(0, 160) + "…”" : "Nothing in the library mentions " + q + "."; },
+});
 })();

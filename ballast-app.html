@@ -2390,6 +2390,22 @@ document.getElementById('help-btn').addEventListener('click', startWizard);
 document.getElementById('bill-freq').addEventListener('change', billFreqFields);
 document.getElementById('import-file').addEventListener('change', importBackup);
 if (window.Faber) Faber.onFiles((files) => importBackup({ target: { files } })); // FaberOS's Shelf: "Open in Ballast" restores a backup
+// Faber Verbs: what AutoFaber may ask Ballast to do (declared in Ballast's FaberOS manifest; FaberOS asks you before a change)
+if (window.Faber) Faber.verbs({
+  'add-transaction': (a) => {
+    let amt = Number(a.amount); if (!isFinite(amt) || !amt) throw new Error('That amount doesn\'t look right.');
+    if (a.direction === 'out') amt = -Math.abs(amt); else if (a.direction === 'in') amt = Math.abs(amt);
+    const desc = String(a.label || '').slice(0, 120) || 'From AutoFaber';
+    snapshot(); state.transactions.push({ id: uid(), date: a.date || todayISO(), desc, cat: a.category || 'Other', amt, type: amt < 0 ? 'Purchase' : 'Income' });
+    renderAll(); toast('Transaction added.', true);
+    return 'Added ' + fmt(amt) + ' · ' + desc + '. Your balance is now ' + fmt(currentBalance()) + '.';
+  },
+  'balance': () => { const p = projectBalance(30);
+    return 'Balance now ' + fmt(currentBalance()) + '. Lowest in the next 30 days: ' + fmt(p.low.balance) + ' on ' + p.low.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + (p.firstNegative ? '. It goes below zero on ' + p.firstNegative.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + '.' : '.'); },
+  'spent': (a) => { const days = Math.max(1, Math.min(366, Math.round(Number(a.days) || 30))), from = toISO(addDays(today(), -days + 1));
+    const out = state.transactions.filter((t) => t.date >= from && Number(t.amt) < 0), sum = out.reduce((s, t) => s - Number(t.amt), 0);
+    return 'Spent ' + fmt(sum) + ' in the last ' + days + ' day' + (days > 1 ? 's' : '') + ' (' + out.length + ' transaction' + (out.length === 1 ? '' : 's') + ').'; },
+});
 document.getElementById('txn-search').addEventListener('input', renderTransactions);
 // Enter submits the form row you're standing in
 document.addEventListener('keydown', e => {

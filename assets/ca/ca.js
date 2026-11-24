@@ -38,6 +38,14 @@ $("tiers").addEventListener("click", (e) => { const b = e.target.closest("[data-
 $("regions").addEventListener("click", (e) => { const b = e.target.closest("[data-region]"); if (!b) return; S.region = b.dataset.region || null; document.querySelectorAll("#regions button").forEach((x) => x.classList.toggle("on", x === b)); draw(); });
 $("ceasefire").addEventListener("change", (e) => { S.cf = e.target.checked; draw(); });
 $("q").addEventListener("input", (e) => { S.q = e.target.value.trim().toLowerCase(); draw(); });
+// Faber Verbs: AutoFaber can open one of the conflicts (read only)
+if (window.Faber) Faber.verbs({
+  show: ({ query }) => { const ws = String(query || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !/^(war|the|and|conflict|civil)$/.test(w));
+    const sc = (x) => ws.reduce((k, w) => k + ((x.t + " " + x.region + " " + x.p).toLowerCase().includes(w) ? (x.t.toLowerCase().includes(w) ? 3 : 1) : 0), 0);
+    const best = D.map((x) => [x, sc(x)]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1])[0];
+    if (!best) return "None of the " + D.length + " conflicts tracked here matches " + query + ".";
+    const x = best[0]; pick(x.i); return x.t + ": " + TIER[x.tier][0].toLowerCase() + ", " + x.status + "."; },
+});
 $("list").addEventListener("click", (e) => { const li = e.target.closest("li[data-i]"); if (li) pick(+li.dataset.i); });
 draw();
 window.ConflictAtlas = { D, pick };

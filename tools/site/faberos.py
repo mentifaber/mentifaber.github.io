@@ -22,6 +22,9 @@ can come in later without a new format:
   widgets       live tiles it offers to the FaberOS desktop
   tags          words people might search for it by
   accepts       the file types it opens from the Shelf (it loads the Faber kit, assets/os/faber.js)
+  verbs         what AutoFaber may ask it to do (Faber Verbs): name, label, desc, args ({"name": "number" | "string" |
+                "date" | "boolean" | "enum:a|b"}, a name ending "?" is optional), changes (true: FaberOS asks you
+                first), words (what people say when they mean it)
   system        part of FaberOS itself
 """
 import json, os, re
@@ -54,7 +57,7 @@ def manifest():
             "platforms": {"web": bool(entry) and a["status"] not in ("soon",), "android": a.get("android"),
                           "install": os.path.exists(os.path.join(ROOT, "assets/manifests", i + ".webmanifest"))},
             "widgets": c.get("widgets", []), "data": c.get("data"),
-            "accepts": c.get("accepts", []), "kit": bool(c.get("accepts")),
+            "accepts": c.get("accepts", []), "verbs": c.get("verbs", []), "kit": bool(c.get("accepts") or c.get("verbs")),
             "tags": " · ".join([c.get("kicker") or ""] + [x for x in c.get("caps", []) if isinstance(x, str)]).strip(" ·"),
         })
     system = [
@@ -65,7 +68,7 @@ def manifest():
          "cat": "system", "status": "live", "entry": "privacy.html", "page": "privacy", "icon": None, "glyph": registry.GLYPH.get("lexicon"), "hue": 38,
          "version": None, "permissions": [], "platforms": {"web": True, "android": None, "install": False}, "widgets": [], "system": True},
     ]
-    out = {"format": "faberos/1", "os": "FaberOS", "version": "0.3",
+    out = {"format": "faberos/1", "os": "FaberOS", "version": "0.4",
            "cats": [{"id": k, "name": n, "desc": d} for k, n, d in registry.CATS] + [{"id": "system", "name": "System", "desc": "FaberOS and Foundry."}],
            "apps": apps + system}
     os.makedirs(os.path.join(ROOT, "assets/os"), exist_ok=True)

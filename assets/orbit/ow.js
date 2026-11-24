@@ -237,4 +237,18 @@ $("pin").addEventListener("click", () => { S.pinning = !S.pinning; $("pin").text
   await load(S.group); loop();
 })();
 window.OrbitWatch = { S, at, look, predict, sunAt, sunlit, select, setObs, jump };
+// Faber Verbs: AutoFaber can follow a satellite (read only): by NORAD number, or by name in the loaded group, then the
+// space stations, then the brightest; a NORAD number not in the group is fetched on its own
+if (window.Faber) Faber.verbs({
+  track: async ({ name }) => {
+    const v = String(name || "").trim(), id = /^\d{1,9}$/.test(v) ? +v : /\biss\b|space station/i.test(v) ? 25544 : 0;
+    const find = () => S.sats.find((x) => x.id === id) || (v && S.sats.find((x) => x.name.toLowerCase().includes(v.toLowerCase().replace(/^the /, ""))));
+    let s = find();
+    for (const g of ["stations", "visual"]) { if (s || !v || id) break; if (S.group !== g) { await load(g); s = find(); } }
+    if (!s && id) { try { const r = await fetch("/api/orbit/tle?catnr=" + id); const got = parse(r.ok ? await r.text() : ""); if (got.length) { S.sats.push(got[0]); drawMarkers(); s = got[0]; } } catch (e) {} }
+    if (!s) return "Couldn't find a satellite called " + v + ".";
+    select(s); const p = at(s, Date.now());
+    return "Tracking " + s.name + (p ? ": over " + Math.abs(p.lat).toFixed(1) + "°" + (p.lat >= 0 ? "N" : "S") + ", " + Math.abs(p.lon).toFixed(1) + "°" + (p.lon >= 0 ? "E" : "W") + " at " + Math.round(p.h) + " km" : "") + ".";
+  },
+});
 })();

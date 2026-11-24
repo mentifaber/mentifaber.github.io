@@ -522,6 +522,7 @@ PRIVACY = [
     ("FaberOS", [
         ("On your device", "Its settings, your permission answers, notifications and the files on the Shelf stay in your browser. Nothing is sent anywhere, and Settings can forget all of it."),
         ("Asking it to arrange", "Commands like \"open Ballast\" or \"put Overhead next to Unlit\" are read on your device. Only when you choose \"Let AutoFaber arrange it\" do your sentence and the names of the apps go to AutoFaber's model, which sends back which apps to open and where; nothing is kept."),
+        ("Asking apps to act", "When AutoFaber plans a verb (\"log $40 for gas\"), your sentence and the list of verbs the apps offer go to its model; your data in those apps doesn't. The app does the work in your browser, and anything that changes your data asks you first."),
     ]),
     ("The other apps", [
         ("Private messengers", "Barycenter and Pilotfish are encrypted end to end and kept on the devices of the people who use them."),

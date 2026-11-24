@@ -50,5 +50,17 @@
   "background_color": "#0b0908",
   "theme_color": "#0b0908"
  },
- "data": "A snapshot researched on 23 November 2026, each entry with its sources. Not a live feed."
+ "data": "A snapshot researched on 23 November 2026, each entry with its sources. Not a live feed.",
+ "verbs": [
+  {
+   "name": "show",
+   "label": "Show a conflict",
+   "desc": "Open one of the tracked conflicts on the map.",
+   "changes": false,
+   "args": {
+    "query": "string"
+   },
+   "words": "conflict war fighting show where ceasefire"
+  }
+ ]
 }

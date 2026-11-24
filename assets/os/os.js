@@ -1,4 +1,4 @@
-/* FaberOS 0.3 · the shell. Reads the app manifest (assets/os/apps.json, built from the one project registry), puts each
+/* FaberOS 0.4 · the shell. Reads the app manifest (assets/os/apps.json, built from the one project registry), puts each
    app in its own window, and lets an app use only the browser features its manifest declares: the sensitive ones
    (camera, microphone, location, motion sensors, reading the clipboard) only after you say yes here, and your browser
    still asks again before anything is used. Everything FaberOS remembers (open windows, where they sit, the dock, your
@@ -68,7 +68,7 @@
   const showDesk = () => { open.forEach((o) => o.el.classList.add("min")); front = null; $$(".win", wins).forEach((w) => w.classList.remove("focus")); $("#bar-title").textContent = "Desktop"; document.title = "FaberOS · Mentifaber"; drawDock(); };
   const topmost = () => [...open.entries()].filter(([, o]) => !o.el.classList.contains("min")).sort((a, b) => b[1].el.style.zIndex - a[1].el.style.zIndex)[0];
   const close = (id) => {
-    const o = open.get(id); if (!o) return; o.el.remove(); open.delete(id); delete ready[id]; pend[id] = [];
+    const o = open.get(id); if (!o) return; o.el.remove(); open.delete(id); delete ready[id]; delete vready[id]; pend[id] = [];
     const t = topmost(); if (t) focus(t[0]); else showDesk(); saveOpen();
   };
   const minimize = (id) => { const o = open.get(id); if (!o) return; o.el.classList.add("min"); o.el.classList.remove("focus"); const t = topmost(); if (t) focus(t[0]); else showDesk(); };
@@ -219,10 +219,11 @@
         '<li class="done">0.1 · App manifests from one registry, windows, widgets, a permission per app ✓</li>' +
         '<li class="done">0.2 · A command bar that opens and arranges apps or asks AutoFaber; snapping and tiling; notifications; the Shelf, a file shelf apps share; the Faber app kit ✓</li>' +
         '<li class="done">0.3 · AutoFaber acts: say "put Overhead next to the Conflict Atlas" and it\'s done; more apps save to the Shelf ✓</li>' +
-        "<li>AutoFaber that can hand files to apps and read what's on the Shelf when you ask</li>" +
+        '<li class="done">0.4 · Faber Verbs: apps say what they can do, and AutoFaber does it for you ("log $40 for gas", "track the ISS"); anything that changes your data asks first ✓</li>' +
+        "<li>More apps with verbs, and AutoFaber that can hand files to apps and read what's on the Shelf when you ask</li>" +
         "<li>More apps on the Faber kit, and a Shelf that follows you between devices when you sign in</li>" +
         "<li>Foundry for everyone: developer registration, signed packages, declared permissions, versions with rollback, review, ratings, security scanning, and install, update and uninstall from here</li></ul>" +
-        "<h3>For app makers</h3><p>An app talks to FaberOS by loading <code>assets/os/faber.js</code>: <code>Faber.notify(title, body)</code>, <code>Faber.open(app)</code>, <code>Faber.save(blob, name)</code> to put a file on the Shelf, and <code>Faber.onFiles(fn)</code> to take files from it. It declares the file types it opens in its manifest (<code>accepts</code>).</p>" +
+        "<h3>For app makers</h3><p>An app talks to FaberOS by loading <code>assets/os/faber.js</code>: <code>Faber.notify(title, body)</code>, <code>Faber.open(app)</code>, <code>Faber.save(blob, name)</code> to put a file on the Shelf, and <code>Faber.onFiles(fn)</code> to take files from it. <code>Faber.verbs({ name: fn })</code> lets AutoFaber ask it to do things, each verb declared in the manifest with its arguments and whether it changes data. It declares the file types it opens in its manifest (<code>accepts</code>).</p>" +
         '<p style="margin-top:14px"><button class="btn" data-go="settings">Settings and permissions</button> <button class="btn" data-go="privacy">Privacy</button></p>';
       el.onclick = (e) => { const b = e.target.closest("[data-go]"); if (b) launch(b.dataset.go); };
     },
@@ -233,6 +234,8 @@
         "<h3>Permissions</h3><p>The apps whose code uses something sensitive. A change takes effect the next time the app opens.</p>" +
         ps.map((a) => '<div class="prow">' + tile(a) + "<div><b>" + esc(a.name) + "</b><small>May ask for " + esc(label(needs(a))) + "</small></div>" +
           '<button class="btn" data-perm="' + esc(a.id) + '" aria-label="' + esc(a.name) + ": " + state(a) + '. Change">' + state(a) + "</button></div>").join("") +
+        "<h3>What AutoFaber may do</h3><p>Apps can let AutoFaber act for you (log a transaction, track a satellite). Anything that changes your data asks first, unless you said not to ask again for that app.</p>" +
+        (M.apps.filter((a) => a.verbs && a.verbs.length).map((a) => { const t = LS.get("verbtrust", {})[a.id]; return '<div class="prow">' + tile(a) + "<div><b>" + esc(a.name) + "</b><small>" + esc(a.verbs.map((v) => v.label).join(" · ")) + '</small></div><button class="btn" data-vtrust="' + esc(a.id) + '">' + (t ? "Acts without asking" : "Asks first") + "</button></div>"; }).join("") || "<p>No app offers actions yet.</p>") +
         "<h3>Dock</h3><p>The apps on the dock and the desktop.</p>" +
         M.apps.filter(runs).map((a) => '<div class="prow">' + tile(a) + "<div><b>" + esc(a.name) + '</b></div><button class="btn" data-pin="' + esc(a.id) + '" aria-pressed="' + pins.includes(a.id) + '">' + (pins.includes(a.id) ? "On the dock" : "Add") + "</button></div>").join("") +
         '<h3>Wallpaper</h3><div class="walls">' + [["forge", "Forge"], ["night", "Night"], ["plan", "The plan"]].map(([k, n]) => '<button data-wall="' + k + '" aria-pressed="' + (os.dataset.wall === k) + '">' + n + "</button>").join("") + "</div>" +
@@ -241,6 +244,7 @@
         const g = e.target.closest("[data-go]"); if (g) { e.preventDefault(); return launch(g.dataset.go); }
         const p = e.target.closest("[data-perm]");
         if (p) { const id = p.dataset.perm; grants[id] = grants[id] === "all" ? "basic" : "all"; LS.set("grants", grants); if (open.has(id)) toast("Close and reopen " + app(id).name + " for this to apply"); return RENDER.settings(el); }
+        const vt = e.target.closest("[data-vtrust]"); if (vt) { const t = LS.get("verbtrust", {}); if (t[vt.dataset.vtrust]) delete t[vt.dataset.vtrust]; else t[vt.dataset.vtrust] = true; LS.set("verbtrust", t); return RENDER.settings(el); }
         const pn = e.target.closest("[data-pin]");
         if (pn) { const id = pn.dataset.pin; pins = pins.includes(id) ? pins.filter((x) => x !== id) : [...pins, id]; LS.set("pins", pins); drawDock(); drawIcons(); return RENDER.settings(el); }
         const w = e.target.closest("[data-wall]"); if (w) { os.dataset.wall = w.dataset.wall; LS.set("wall", w.dataset.wall); return RENDER.settings(el); }
@@ -334,6 +338,54 @@
   $("#notes-list").onclick = (e) => { const b = e.target.closest("[data-n]"); if (!b) return; const n = notes.find((x) => x.id === b.dataset.n); notesOpen(false); if (n && app(n.app)) launch(n.app); };
   document.addEventListener("click", (e) => { if (!$("#notes").hidden && !$("#notes").contains(e.target) && !$("#bell").contains(e.target)) notesOpen(false); });
 
+
+  // ── Faber Verbs: what an app can do when AutoFaber asks. Each verb is declared in the manifest (name, label, what it
+  //    does, its arguments and whether it changes data). Arguments are checked against that declaration here; a verb
+  //    that changes data asks you first; the app's own code does the work and answers in a sentence ──
+  const vready = {}, vwait = {}, vres = {};
+  const VTYPE = {
+    number: (v) => { const n = typeof v === "number" ? v : Number(String(v).replace(/[$,\s]/g, "")); return isFinite(n) ? Math.round(n * 100) / 100 : undefined; },
+    string: (v) => (v == null || typeof v === "object" ? undefined : String(v).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 200) || undefined),
+    date: (v) => (/^\d{4}-\d\d-\d\d$/.test(String(v)) ? String(v) : undefined),
+    boolean: (v) => (v === true || v === "true" ? true : v === false || v === "false" ? false : undefined),
+  };
+  function verbArgs(spec, raw) {
+    const args = {}, missing = []; raw = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    for (const [k0, t] of Object.entries(spec || {})) {
+      const opt = k0.endsWith("?"), k = k0.replace(/\?$/, ""); let v;
+      if (String(t).startsWith("enum:")) { const opts = String(t).slice(5).split("|"), x = String(raw[k] == null ? "" : raw[k]).toLowerCase(); v = opts.find((o) => o.toLowerCase() === x); }
+      else v = (VTYPE[t] || VTYPE.string)(raw[k]);
+      if (v === undefined) { if (!opt) missing.push(k); } else args[k] = v;
+    }
+    return { args, missing };
+  }
+  const verbOf = (a, name) => (a && Array.isArray(a.verbs) ? a.verbs.find((v) => v.name === name) : null);
+  const confirmVerb = (a, v, args) => new Promise((done) => {
+    const c = $("#vconfirm"), back = document.activeElement;
+    $("#v-h").textContent = "AutoFaber wants " + a.name + " to: " + v.label.toLowerCase();
+    $("#v-p").textContent = v.desc || ""; $("#v-app").textContent = a.name; $("#v-trust").checked = false;
+    $("#v-list").innerHTML = Object.entries(args).map(([k, x]) => "<li><b>" + esc(k) + "</b> " + esc(x) + "</li>").join("") || "<li>No details</li>";
+    c.hidden = false; $("#v-yes").focus();
+    const end = (ok) => { c.hidden = true; $("#v-yes").onclick = $("#v-no").onclick = null; c.onkeydown = null;
+      if (ok && $("#v-trust").checked) { const t = LS.get("verbtrust", {}); t[a.id] = true; LS.set("verbtrust", t); } if (back && back.focus) back.focus(); done(ok); };
+    $("#v-yes").onclick = () => end(true); $("#v-no").onclick = () => end(false);
+    c.onkeydown = (e) => { if (e.key === "Escape") { e.preventDefault(); end(false); } if (e.key === "Tab") { const f = $$("button, input", c); const i = f.indexOf(document.activeElement); e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus(); } };
+  });
+  const verbsReady = (id, ms) => (vready[id] ? Promise.resolve(true) : new Promise((res) => { (vwait[id] = vwait[id] || []).push(() => res(true)); setTimeout(() => res(!!vready[id]), ms); }));
+  async function callVerb(id, name, raw) {
+    const a = app(id), v = verbOf(a, name);
+    if (!v || !runs(a)) { toast((a ? a.name : "That app") + " can't do that"); return null; }
+    const { args, missing } = verbArgs(v.args, raw);
+    if (missing.length) { toast(a.name + " needs " + missing.join(" and ") + " to " + v.label.toLowerCase()); return null; }
+    if (v.changes && !LS.get("verbtrust", {})[id] && !(await confirmVerb(a, v, args))) { toast("Cancelled: nothing was changed"); return null; }
+    if (!open.has(id)) await launch(id); else focus(id);
+    if (!(await verbsReady(id, 12000))) { toast(a.name + " didn't answer"); return null; }
+    const o = open.get(id), f = o && $("iframe", o.el); if (!f) return null;
+    const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const r = await new Promise((res) => { vres[rid] = { app: id, res }; f.contentWindow.postMessage({ faberos: 1, type: "verb", id: rid, name, args }, location.origin); setTimeout(() => { if (vres[rid]) { delete vres[rid]; res({ ok: false, text: a.name + " took too long to answer" }); } }, 15000); });
+    note({ app: id, title: v.label, body: r.text }); return r;
+  }
+
   // ── what apps say through the Faber kit (assets/os/faber.js): only this site's pages, only from a FaberOS window ──
   addEventListener("message", async (e) => {
     if (e.origin !== location.origin || !e.data || e.data.faberos !== 1) return;
@@ -341,6 +393,8 @@
     const [id] = hit, m = e.data;
     if (m.type === "ready") { if (m.files) { ready[id] = true; flush(id); } }
     else if (m.type === "notify") note({ app: id, title: m.title, body: m.body });
+    else if (m.type === "verbs" && Array.isArray(m.names)) { vready[id] = true; (vwait[id] || []).forEach((f) => f()); vwait[id] = []; }
+    else if (m.type === "verb-result" && vres[m.id] && vres[m.id].app === id) { const w = vres[m.id]; delete vres[m.id]; w.res({ ok: !!m.ok, text: String(m.text || "").slice(0, 600) }); }
     else if (m.type === "open" && app(m.id) && runs(app(m.id))) launch(m.id);
     else if (m.type === "save" && m.file instanceof Blob) { try { const r = await Shelf.put(m.file, id); note({ app: id, title: "Saved to the Shelf", body: r.name }); } catch (x) { toast(x.message); } }
   });
@@ -377,6 +431,14 @@
     if (m) { const a = best(m[1]); if (a) return { label: a.name + " on the " + m[2], actions: [{ do: "open", app: a.id }, { do: "snap", app: a.id, side: m[2] }] }; }
     return null;
   }
+  // a sentence that sounds like something an app can do ("log $40 for gas", "track the ISS") goes to AutoFaber too
+  const STOPW = new Set("the and for with from that this what how much many my me to of in on at a an is are was it do can you".split(" "));
+  function verbHit(q) {
+    const ws = q.split(/[^a-z0-9$]+/).filter((w) => w.length > 2 && !STOPW.has(w)); if (!ws.length) return null;
+    for (const a of M.apps) for (const v of a.verbs || []) { const vw = String(v.words || v.label + " " + (v.desc || "")).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+      if (ws.some((w) => vw.some((x) => x === w || (w.length > 3 && x.startsWith(w))))) return { app: a, verb: v }; }
+    return null;
+  }
   const ARRANGE = /\b(next to|beside|side by side|alongside|together|compare|arrange|layout|lay out|split|left|right|full ?screen|maximi[sz]e|and then|then)\b/;
   async function runPlan(actions) {
     const known = (id) => app(id) && runs(app(id));
@@ -388,15 +450,16 @@
       else if (a.do === "tile") tileAll();
       else if (a.do === "desktop") showDesk();
       else if (a.do === "ask" && a.text) await launch("hive", { src: "hive-app.html?ask=" + encodeURIComponent(String(a.text).slice(0, 2000)) });
+      else if (a.do === "verb" && known(a.app) && typeof a.verb === "string") await callVerb(a.app, a.verb, a.args);
     }
   }
   async function aiPlan(text) {
     toast("AutoFaber is working out how…");
-    const body = { text: text.slice(0, 500), open: [...open.keys()].filter((id) => byId[id]), apps: M.apps.filter(runs).map((a) => ({ id: a.id, name: a.name, desc: (a.tags || a.desc || "").slice(0, 90) })) };
+    const body = { text: text.slice(0, 500), open: [...open.keys()].filter((id) => byId[id]), apps: M.apps.filter(runs).map((a) => Object.assign({ id: a.id, name: a.name, desc: (a.tags || a.desc || "").slice(0, 90) }, a.verbs && a.verbs.length ? { verbs: a.verbs.map((v) => ({ name: v.name, desc: v.label + (v.desc ? ": " + v.desc : ""), args: v.args || {} })) } : {})) };
     let j = null; try { const r = await fetch("/api/hive/os/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); j = await r.json(); } catch (e) {}
     if (!j || j.error || !Array.isArray(j.actions)) { toast(j && j.error ? j.error : "AutoFaber couldn't plan that just now; asking it instead"); return runPlan([{ do: "ask", text }]); }
     const acts = j.actions.filter((a) => a && typeof a.do === "string"); const n = acts.filter((a) => a.do !== "ask").length;
-    if (n) toast("AutoFaber: " + acts.filter((a) => a.do !== "ask").map((a) => a.do + (a.app && app(a.app) ? " " + app(a.app).name : "") + (a.side ? " " + a.side : "")).join(", "));
+    if (n) toast("AutoFaber: " + acts.filter((a) => a.do !== "ask").map((a) => (a.do === "verb" && verbOf(app(a.app), a.verb) ? app(a.app).name + ": " + verbOf(app(a.app), a.verb).label.toLowerCase() : a.do + (a.app && app(a.app) ? " " + app(a.app).name : "") + (a.side ? " " + a.side : ""))).join(", "));
     return runPlan(acts);
   }
   function suggest(raw) {
@@ -407,7 +470,8 @@
     if (shut && !cmd) { const a = [...open.values()].map((o) => o.app).find((x) => score(x, shut[2]) > 0); if (a) out.push({ close: a }); }
     const apps = findApps(verb ? verb[2] : q), strong = apps.length && score(apps[0], verb ? verb[2] : q) >= 70;
     if (verb || strong) out.push(...apps.slice(0, 4).map((a) => ({ app: a })));
-    if (!lp && !cmd && ARRANGE.test(q) && q.split(/\s+/).length >= 3) out.push({ ai: raw.trim() }); // reads like arranging: AutoFaber can work it out
+    const vh = !lp && !cmd && q.split(/\s+/).length >= 2 ? verbHit(q) : null;
+    if (!lp && !cmd && ((ARRANGE.test(q) && q.split(/\s+/).length >= 3) || vh)) out.push({ ai: raw.trim(), verb: ARRANGE.test(q) ? null : vh }); // reads like arranging, or like something an app can do: AutoFaber can work it out
     out.push({ ask: raw.trim() });
     if (!verb && !strong) out.push(...apps.slice(0, 3).map((a) => ({ app: a })));
     return out.slice(0, 7);
@@ -420,7 +484,7 @@
         : s.close ? tile(s.close) + '<span class="t">Close <b>' + esc(s.close.name) + "</b></span><small>window</small>"
         : s.cmd ? '<span class="k" aria-hidden="true">' + s.cmd.icon + '</span><span class="t">' + esc(s.cmd.name) + "</span><small>command</small>"
         : s.plan ? '<span class="k" aria-hidden="true">◫</span><span class="t">' + esc(s.plan.label) + "</span><small>arrange</small>"
-        : s.ai ? tile(app("hive") || { hue: 42 }) + '<span class="t">Let AutoFaber arrange it: <b>' + esc(s.ai) + "</b></span><small>do it</small>"
+        : s.ai ? tile(s.verb ? s.verb.app : app("hive") || { hue: 42 }) + '<span class="t">' + (s.verb ? "Let AutoFaber do it with " + esc(s.verb.app.name) + ": " : "Let AutoFaber arrange it: ") + "<b>" + esc(s.ai) + "</b></span><small>do it</small>"
         : tile(app("hive") || { hue: 42 }) + '<span class="t">Ask AutoFaber: <b>' + esc(s.ask) + "</b></span><small>ask</small>") + "</li>").join("");
     askIn.setAttribute("aria-activedescendant", sugs.length ? "sg0" : "");
   };
@@ -447,7 +511,7 @@
   fetch("assets/os/apps.json").then((r) => r.json()).then(async (m) => {
     M = m; byId = Object.fromEntries(m.apps.map((a) => [a.id, a]));
     drawIcons(); drawDock(); drawBell();
-    if (LS.get("ver", null) !== M.version) { if (LS.get("seen", false)) note({ app: "about", title: "FaberOS " + M.version, body: "New: tell the top bar what you want arranged (\"put Overhead next to the Conflict Atlas\", \"open Ballast and DocCrawler\") and AutoFaber does it; Ballast and CryptoVault save to the Shelf." }); LS.set("ver", M.version); }
+    if (LS.get("ver", null) !== M.version) { if (LS.get("seen", false)) note({ app: "about", title: "FaberOS " + M.version, body: "New: Faber Verbs. Tell the top bar \"log $40 for gas\" or \"track the ISS\" and AutoFaber asks the app to do it. Anything that changes your data asks you first." }); LS.set("ver", M.version); }
     const want = new URLSearchParams(location.search).get("open");
     for (const id of LS.get("open", [])) if (app(id) && id !== want) await launch(id, { quiet: true }); // apps that still need an answer wait to be opened again
     if (want && app(want)) launch(want);
