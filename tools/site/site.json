@@ -225,6 +225,14 @@
     "added": "2026-11-24"
   },
   {
+    "href": "checkin.html",
+    "name": "Quiet Check-in",
+    "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. No camera, no microphone, no tracking.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-24"
+  },
+  {
     "href": "vigil.html",
     "name": "Vigil",
     "desc": "A private command screen. Every aircraft in the sky, weather, markets, space weather, quakes, volcanoes, satellites and global conflict — all live, all on one glass.",
