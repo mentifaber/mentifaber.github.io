@@ -7,7 +7,9 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 
 | Component | Version | Licence | Used in |
 |---|---|---|---|
-| Leaflet | 1.9.4 | BSD-2-Clause | maps (Vigil, Unlit, Per Capita, Overhead…) |
+| Leaflet | 1.9.4 | BSD-2-Clause | maps (Unlit, Per Capita, Overhead), served from assets/maps/leaflet with its licence |
+| world-atlas | 2.0.2 | ISC (data: Natural Earth, public domain) | the site's own world map, assets/maps/world-*.json (built by tools/maps/build-world.mjs) |
+| topojson-client | 3.1.0 | ISC | used only to build that map; not shipped |
 | three.js | 0.169.0 | MIT | 3D scenes (Atlas, globe views) |
 | GSAP (GreenSock) | 3.12.5 | GreenSock Standard "No Charge" License | scroll animation (Atlas Classic) |
 | PDF.js | 3.11.174 | Apache-2.0 | DocCrawler |
@@ -28,8 +30,8 @@ licences or terms, which still apply. The public credits are at mentifaber.org/c
 
 ## Maps
 
-- Map data © OpenStreetMap contributors (ODbL 1.0); basemap tiles © CARTO; satellite imagery © Esri (World Imagery);
-  land shapes from Natural Earth (public domain); radar from RainViewer.
+- Map data © OpenStreetMap contributors (ODbL 1.0), close-in detail only; satellite imagery © Esri (World Imagery);
+  land, borders and country names from Natural Earth (public domain), drawn by the site itself; radar from RainViewer.
 
 ## Data
 

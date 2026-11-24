@@ -32,11 +32,11 @@
  "cards": [
   {
    "n": "built on",
-   "html": "<p>Leaflet with dark map tiles; the entries are the write-up's own words. Map positions are approximate centres of the fighting, for orientation only.</p>",
+   "html": "<p>Leaflet, drawing the site's own world map: land, borders and country names from Natural Earth, served by mentifaber.org itself, so the map needs no tile service and no API key and still draws with no signal. Close in, OpenStreetMap adds street detail. The entries are the write-up's own words. Map positions are approximate centres of the fighting, for orientation only.</p>",
    "stack": [
     "Leaflet",
-    "OpenStreetMap",
-    "CARTO"
+    "Natural Earth",
+    "OpenStreetMap"
    ]
   }
  ],

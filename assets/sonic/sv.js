@@ -35,7 +35,7 @@ let W = null, dur = 0, src = "all";
 function list(items) { $("list").innerHTML = items.map((x, i) => '<li data-i="' + i + '"><small>' + String(i + 1).padStart(2, "0") + "</small><b>" + esc(x.n) + "</b><small>" + esc(x.note || "") + "</small></li>").join(""); }
 function setNow(s) { if (!s) return; $("title").textContent = s.title || "Sonic Veil"; $("sub").textContent = [s.genre, s.created_at ? new Date(s.created_at).getFullYear() : ""].filter(Boolean).join(" · ") || "Sonic Veil"; dur = s.duration || dur; $("t1").textContent = fmt(dur); }
 function wire() {
-  if (!window.SC || !SC.Widget) { $("npl").textContent = "SoundCloud didn't load · use the link above"; return; }
+  if (!window.SC || !SC.Widget) { $("npl").textContent = "SoundCloud didn't load · use the link above"; $("sc").hidden = true; return; } // no blank white player left behind
   W = SC.Widget($("sc")); const E = SC.Widget.Events;
   W.bind(E.READY, () => {
     $("npl").textContent = "ready"; W.setVolume(+$("vol").value);

@@ -11,6 +11,9 @@ await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
 const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const ok = (m) => console.log("ok", DEV, m);
 await p.goto("http://localhost:8099/index.html"); await p.waitForSelector(".bench");
+// the walls are drawn on the rooms, not 40px below them through the room names, including while they're drafted in on a first visit
+const ink = await p.evaluate(() => { const s = document.querySelector(".ink"), F = document.querySelector(".floor").getBoundingClientRect(), m = s.getScreenCTM(); return { drafting: /drafting/.test(s.getAttribute("class")), scale: m.a, dx: m.e - F.left, dy: m.f - F.top }; });
+assert.ok(Math.abs(ink.scale - 1) < 0.01 && Math.abs(ink.dx) < 1 && Math.abs(ink.dy) < 1, JSON.stringify(ink)); ok("the walls sit on the rooms" + (ink.drafting ? ", even while they're drafted in" : ""));
 
 // start here
 const picks = await p.$$eval(".picks .pick", (xs) => xs.map((x) => ({ n: x.querySelector("h3").textContent, open: x.querySelector(".key.pri").getAttribute("href"), tag: x.querySelector(".tag").textContent })));

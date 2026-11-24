@@ -12,11 +12,11 @@ $("tiers").innerHTML = Object.entries(TIER).map(([k, v]) => '<button class="on" 
 const regions = [...new Set(D.map((x) => x.region))].sort();
 $("regions").innerHTML = '<button class="on" data-region="">All regions</button>' + regions.map((r) => '<button data-region="' + esc(r) + '">' + esc(r) + "</button>").join("");
 
-// ── the map (tiles need a connection; the list doesn't) ──
+// ── the map: drawn from the site's own world data (assets/maps), so it needs no tile service or key ──
 let map = null; const marks = [];
 try {
   map = L.map("map", { worldCopyJump: true, zoomControl: true, attributionControl: true }).setView([20, 30], 2);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 8, attribution: "© OpenStreetMap, © CARTO" }).addTo(map);
+  map.setMaxZoom(10); FaberMap.base(map, { labels: true }).catch(() => { $("nomap").hidden = false; });
   D.forEach((x) => { const t = TIER[x.tier]; const m = L.circleMarker([x.lat, x.lon], { radius: t[3], color: t[2], weight: 2, fillColor: t[2], fillOpacity: /ceasefire/.test(x.status) ? 0.18 : 0.55, dashArray: /ceasefire/.test(x.status) ? "3 4" : null }).addTo(map); m.bindTooltip(x.t, { direction: "top" }); m.on("click", () => pick(x.i)); marks[x.i] = m; });
 } catch (e) { $("nomap").hidden = false; }
 
