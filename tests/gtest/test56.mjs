@@ -3,6 +3,7 @@
 //  - the sweep tells the family once, on the first sweep after a missed deadline, and not again that day; a phone
 //    whose subscription has gone (410) is dropped; nothing is sent while the person has checked in or has time left
 //  - the person's key checks in and changes settings; the family's key watches; neither can do the other's part
+//  - away dates pause alerts; a check-in after an alert sends one all-clear; a device link only checks in
 //  - bad names, times and time zones, non-push endpoints and an eleventh phone are refused
 import assert from "node:assert/strict";
 const { checkin, sweep, local, status } = await import(new URL("../../src/checkin.js", import.meta.url));
@@ -42,6 +43,35 @@ const C2 = mem.get("ci:" + id); C2.last = Date.UTC(2026, 10, 25, 14, 0); mem.set
 assert.equal(await sweep(env, deps, Date.UTC(2026, 10, 25, 16, 30)), 0);
 const r = await go("/" + id, null, "?t=" + c.fam); assert.deepEqual([r.j.name, r.j.by, r.j.watchers], ["Gran", "10:00", 2]);
 ok("a day she checks in, nobody is told; the family's view says whose it is, her time and how many phones watch");
+
+// away: no alerts through the date she's away until; the family's view says so; bad dates refused
+const A = mem.get("ci:" + id); A.last = Date.UTC(2026, 10, 20, 15, 0); A.alerted = null; A.away = "2026-11-26"; mem.set("ci:" + id, A); pushes.length = 0;
+assert.equal(await sweep(env, deps, Date.UTC(2026, 10, 26, 17, 0)), 0); assert.equal(status(mem.get("ci:" + id), Date.UTC(2026, 10, 26, 17, 0)).away, "2026-11-26");
+assert.equal(await sweep(env, deps, Date.UTC(2026, 10, 27, 17, 0)), 2, "the day after she's back, a missed check-in tells them again");
+for (const bad of ["2020-01-01", "2026-13-40", "soon", "2099-01-01"]) assert.equal((await go("/" + id + "/settings", { t: c.me, away: bad })).status, 400, bad);
+assert.equal((await go("/" + id + "/settings", { t: c.fam, away: "2099-01-01" })).status, 403, "the family can't set her away");
+const far = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10); assert.equal((await go("/" + id + "/settings", { t: c.me, away: far })).j.away, far);
+assert.equal((await go("/" + id + "/settings", { t: c.me, away: null })).j.away, null);
+ok("away through a date: no alert while away, alerts again after; only today on and three months at most; only her key sets it");
+
+// all-clear: she checks in after the family was told today, so their phones are told again (once); history kept
+const B = mem.get("ci:" + id); B.last = Date.now() - 3 * 864e5; B.by = "00:00"; B.alerted = null; B.days = []; mem.set("ci:" + id, B); pushes.length = 0;
+const cdeps = { PUSH_HOSTS, ...deps }, goD = async (path, body, q = "") => { const r = await checkin(new Request("https://mentifaber.org/api/checkin" + path + q, { method: body ? "POST" : "GET", headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined }), env, json, cdeps); return { status: r.status, j: await r.json() }; };
+assert.equal(await sweep(env, deps, Date.now()), 2); pushes.length = 0; gone = null;
+let v = (await goD("/" + id + "/ok", { t: c.me })).j; assert.equal(v.today, true); assert.equal(v.via, "button"); assert.equal(pushes.length, 2, "the family gets an all-clear");
+await goD("/" + id + "/ok", { t: c.me }); assert.equal(pushes.length, 2, "one all-clear a day"); assert.equal(v.days.length, 1); assert.match(v.days[0], /^\d{4}-\d\d-\d\d$/);
+ok("a check-in after the family was told sends them one all-clear; the day is kept in her history");
+
+// a device link: made by her key only; checks in by GET or POST; can't read or change anything; replaced or turned off
+assert.equal((await goD("/" + id + "/device", { t: c.fam })).status, 403);
+const dk = (await goD("/" + id + "/device", { t: c.me })).j.deviceKey; assert.match(dk, /^[0-9a-f]{32}$/); assert.ok(!JSON.stringify(mem.get("ci:" + id)).includes(dk));
+const D = mem.get("ci:" + id); D.last = Date.now() - 2 * 864e5; mem.set("ci:" + id, D);
+assert.deepEqual((await goD("/" + id + "/ok", null, "?t=" + dk)).j, { ok: true }); assert.equal(mem.get("ci:" + id).via, "device"); assert.ok(Date.now() - mem.get("ci:" + id).last < 5000);
+const t1 = mem.get("ci:" + id).last; await goD("/" + id + "/ok", { t: dk }); assert.equal(mem.get("ci:" + id).last, t1, "a busy sensor writes at most once an hour");
+assert.equal((await goD("/" + id, null, "?t=" + dk)).status, 403, "a device can't read her status"); assert.equal((await goD("/" + id + "/settings", { t: dk, by: "23:00" })).status, 403); assert.equal((await goD("/" + id + "/delete", { t: dk })).status, 403);
+const dk2 = (await goD("/" + id + "/device", { t: c.me })).j.deviceKey; assert.equal((await goD("/" + id + "/ok", null, "?t=" + dk)).status, 403, "a replaced device link stops working");
+assert.equal((await goD("/" + id + "/device", { t: c.me, off: true })).j.device, false); assert.equal((await goD("/" + id + "/ok", null, "?t=" + dk2)).status, 403, "turned off");
+ok("a device link checks in by GET or POST (at most a write an hour), can't read or change anything, and stops when replaced or turned off");
 
 assert.equal((await go("/" + id + "/settings", { t: c.me, by: "09:30", tz: "Europe/London" })).j.by, "09:30");
 for (let i = 0; i < 8; i++) await go("/" + id + "/watch", { t: c.fam, sub: { endpoint: "https://fcm.googleapis.com/z" + i } });

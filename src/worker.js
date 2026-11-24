@@ -603,7 +603,7 @@ const worker = {
         if (!/^1 \d/m.test(t)) return json({ error: "no elements from CelesTrak" + (r ? " (" + r.status + ")" : "") }, 502);
         return new Response(t, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
       }
-      if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS });
+      if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS, sendPush, vapid: () => store(env).vapid() }); // a check-in after the family was told sends them an all-clear
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
       if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil"))); // client links and the workshop's job board (src/portal.js)
       if (route === "seal") return seal(req, env, json, !!(await session(req, env, "vigil"))); // signs Device Passports (owner) and Witness records (src/seal.js)
