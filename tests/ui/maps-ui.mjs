@@ -8,6 +8,9 @@ const DEV = process.argv[3] || "desktop", M = DEV === "mobile";
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
 const ctx = await b.newContext({ viewport: M ? { width: 390, height: 844 } : { width: 1366, height: 860 }, isMobile: M, hasTouch: M, serviceWorkers: "block" });
 const asked = []; await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => { asked.push(rt.request().url()); rt.abort(); });
+// OpenStreetMap's close-in tiles answer (as they do live) with a stand-in 1x1 PNG, so the detail layer stays on the map
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+await ctx.route(/tile\.openstreetmap\.org/, (rt) => rt.fulfill({ contentType: "image/png", body: PNG }));
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 const errs = [];
 const open = async (pg) => { const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(pg + ": " + e.message)); await p.goto("http://localhost:8099/" + pg); return p; };
@@ -18,6 +21,8 @@ assert.equal(await ca.isHidden("#nomap"), true, "no 'map couldn't start' notice"
 assert.match(await ca.textContent("header .logo"), /^Unlit$/);
 assert.ok(await ca.evaluate(() => [...document.querySelectorAll(".fm-label")].some((x) => /SUDAN|UKRAINE|RUSSIA|IRAN/i.test(x.textContent))), "country names on the map");
 assert.ok(await ca.evaluate(() => document.querySelectorAll(".leaflet-interactive").length >= 20), "the conflicts are marked");
+const zr = await ca.evaluate(() => { const el = document.querySelector("#map"); const ctl = el.querySelector(".leaflet-control-zoom-out"); return ctl ? !ctl.classList.contains("leaflet-disabled") : null; });
+assert.equal(zr, true, "zoom out works: the close-in detail layer must not set the map's minimum zoom");
 ok("Unlit draws its own map (land, borders, names) with every outside host blocked, and marks the conflicts");
 
 const res = await ca.evaluate(async () => { const r = await fetch("assets/maps/world-50m.json"); const w = await r.json(); return [r.ok, w.land.length, w.labels.length]; });

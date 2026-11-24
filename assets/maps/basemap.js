@@ -43,6 +43,10 @@
         ".fm-detail{filter:invert(1) hue-rotate(180deg) brightness(.82) contrast(.88) saturate(.6)}";
       document.head.appendChild(s); }
     map.getContainer().style.background = t.sea;
+    // Leaflet takes a map's zoom range from its layers when the map doesn't set one; the close-in detail layer starts
+    // at zoom 5, which would lock the whole map at 5 and up. Pin the range so the world view stays reachable.
+    if (map.options.minZoom === undefined) map.setMinZoom(0);
+    if (map.options.maxZoom === undefined) map.setMaxZoom(12);
     const panes = { land: "fmLand", labels: "fmLabels", detail: "fmDetail" };
     if (!map.getPane(panes.land)) { map.createPane(panes.land).style.zIndex = 150; map.createPane(panes.detail).style.zIndex = 160; map.createPane(panes.labels).style.zIndex = 380; map.getPane(panes.labels).style.pointerEvents = "none"; }
     const st = { res: null, layer: null, labels: [], shown: new Set() };

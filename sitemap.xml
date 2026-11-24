@@ -4,9 +4,10 @@
   <url><loc>https://mentifaber.org/arsenal</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/atlas-classic</loc><lastmod>2026-11-23</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/atlas</loc><lastmod>2026-11-23</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/ballast-app</loc><lastmod>2026-11-23</lastmod><priority>0.6</priority></url>
+  <url><loc>https://mentifaber.org/ballast-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/ballast</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/barycenter</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://mentifaber.org/blackout</loc><lastmod>2026-11-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/cartograph-app</loc><lastmod>2026-11-23</lastmod><priority>0.6</priority></url>
@@ -51,7 +52,7 @@
   <url><loc>https://mentifaber.org/omnilogos</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/orbit-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/orbit</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/os</loc><lastmod>2026-11-23</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/os</loc><lastmod>2026-11-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/phone-mcp-app</loc><lastmod>2026-11-23</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/phone-mcp</loc><lastmod>2026-11-24</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/pi-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
