@@ -135,7 +135,20 @@
   // into the launcher, or Enter goes to the app and nothing opens
   const overlay = () => [["#launcher", "#l-q"], ["#consent", "#c-yes"], ["#vconfirm", "#v-yes"]].find(([o]) => $(o) && !$(o).hidden);
   const keepOverlay = () => { const o = overlay(); if (!o) return false; if (!$(o[0]).contains(document.activeElement)) { try { window.focus(); } catch (e) {} $(o[1]).focus(); } return true; };
-  addEventListener("blur", () => setTimeout(() => { if (!keepOverlay()) watchFocus(); }, 0)); setInterval(() => { if (!keepOverlay()) watchFocus(); }, 300);
+  // the same for the top bar and the launcher's box while someone is typing in them: an app that grabs focus as it loads
+  // (Ballast's first-run guide does) mustn't take the letters. Moving into an app on purpose (a press in its window, or
+  // Tab) is let through.
+  let typing = null, tabAt = 0;
+  document.addEventListener("focusin", (e) => { if (e.target.matches && e.target.matches("#ask-in, #l-q")) typing = e.target; else if (e.target.tagName !== "IFRAME") typing = null; });
+  document.addEventListener("focusout", (e) => { if (e.target === typing) setTimeout(() => { if (typing === e.target && document.activeElement && document.activeElement.tagName !== "IFRAME" && document.activeElement !== e.target) typing = null; }, 0); }); // blurred, not taken by an app's frame
+  document.addEventListener("keydown", (e) => { if (e.key === "Tab") tabAt = Date.now(); }, true);
+  const keepTyping = () => {
+    const el = typing; if (!el || document.activeElement === el || !document.contains(el) || el.offsetParent === null) return false;
+    if (Date.now() - pressed.t < 1500 || Date.now() - tabAt < 600) { typing = null; return false; } // they went into the app themselves
+    try { window.focus(); } catch (e) {} el.focus(); return true;
+  };
+  const keep = () => keepOverlay() || keepTyping();
+  addEventListener("blur", () => setTimeout(() => { if (!keep()) watchFocus(); }, 0)); setInterval(() => { if (!keep()) watchFocus(); }, 300);
 
   // ── the dock and the desktop ──
   function drawDock() {
