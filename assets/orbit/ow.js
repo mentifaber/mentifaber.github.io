@@ -99,10 +99,9 @@ let map = null; const L0 = window.L;
 const marks = new Map(); let track = [], foot = null, night = [], obsMark = null, lbl = null;
 try {
   map = L0.map("map", { worldCopyJump: true, preferCanvas: true, minZoom: 1, zoomSnap: 0.5, attributionControl: true }).setView([20, 0], 2);
-  // continents from Natural Earth sit under the tiles: when the tiles can't load (offline, no signal), the map still has land
-  if (window.OW_LAND) { map.createPane("land").style.zIndex = 150; const rd = L0.canvas({ pane: "land" });
-    for (const off of [-360, 0, 360]) window.OW_LAND.forEach((r) => { const ll = []; for (let i = 0; i < r.length; i += 2) ll.push([r[i + 1], r[i] + off]); L0.polygon(ll, { renderer: rd, pane: "land", color: "rgba(92,200,255,.28)", weight: 1, fillColor: "#122234", fillOpacity: 1, interactive: false }).addTo(map); }); }
-  L0.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 9, attribution: "© OpenStreetMap, © CARTO · land: Natural Earth" }).addTo(map);
+  // land, coasts, borders and names from the site's own Natural Earth data (assets/maps): no tile service or key, and the
+  // service worker keeps it, so the map works in a field with no signal
+  map.setMaxZoom(9); FaberMap.base(map, { labels: true, theme: { sea: "#070d16", land: "#122234", coast: "rgba(92,200,255,.32)", border: "rgba(92,200,255,.16)", label: "rgba(170,205,235,.5)" } }).catch(() => { $("nomap").hidden = false; });
   map.on("click", (e) => { if (!S.pinning) return; S.pinning = false; $("pin").textContent = "Set on map"; setObs(e.latlng.lat, ((e.latlng.lng + 540) % 360) - 180, "a point you picked"); });
 } catch (e) { map = null; $("nomap").hidden = false; }
 function drawMarkers() {

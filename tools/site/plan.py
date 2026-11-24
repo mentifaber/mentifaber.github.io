@@ -104,7 +104,7 @@ def pick(i, why):  # a "Start here" card: what it is in a sentence, its status, 
 def start():
     return (f'<section class="start" aria-labelledby="start-h"><header><span class="lbl">Detail A · first time in</span><h2 id="start-h">Start with one of these</h2>'
             f'<p>Five that run the moment you open them, no account needed. Every other bench is on the plan below.</p>'
-            f'<nav class="paths" aria-label="Three ways in"><a class="key" href="#signals">Explore the workshop</a><a class="key" href="hive#try-it">Try AutoFaber</a><a class="key" href="store">Install the apps · Foundry</a></nav></header>'
+            f'<nav class="paths" aria-label="Four ways in"><a class="key" href="#signals">Explore the workshop</a><a class="key" href="hive#try-it">Try AutoFaber</a><a class="key" href="store">Install the apps · Foundry</a><a class="key" href="services">Hire the workshop</a></nav></header>'
             f'<ol class="picks">{"".join(pick(i, w) for i, w in START if i in A)}</ol></section>')
 
 
@@ -172,7 +172,7 @@ def home():
   </ol></div>
   <div><h3>Legend</h3><div class="legend"><span><i class="lamp live"></i>running, open to anyone</span><span><i class="lamp lock"></i>private: made for someone</span><span><i class="lamp build"></i>being built, or a concept</span><span><i class="lamp music"></i>music</span><span><i class="lamp"></i>paused</span></div>
     <h3 style="margin-top:18px">Keys</h3><div class="keys"><kbd>/</kbd><span>find a bench</span><kbd>← ↑ → ↓</kbd><span>walk bench to bench</span><kbd>↵</kbd><span>open it</span></div></div>
-  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="store">Foundry: the apps</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
+  <div><h3>Elsewhere</h3><div class="elsewhere"><a href="os">FaberOS</a><a href="store">Foundry: the apps</a><a href="services">Services: repair, IT, hosting, websites</a><a href="privacy">Privacy</a><a href="lexicon.html">The lexicon</a><a href="credits.html">Credits</a><a href="atlas.html">The atlas</a><a href="atlas-classic.html">Classic atlas</a><a href="widgets/">Home-screen widgets</a><a href="wx/">Quick weather</a><a href="contact.html">Contact</a><a href="https://github.com/mentifaber">GitHub</a><a href="https://x.com/mentifaber">X</a><a href="https://instagram.com/mentifaber">Instagram</a><a href="https://soundcloud.com/sonicveil">SoundCloud</a></div>
     <p class="copy">© Anders Powell · Mentifaber · mens, faber: a mind, a maker</p></div>
 </footer>
 <div class="note" aria-hidden="true"><div class="card"><span class="lbl"></span><h4></h4><p></p><div class="go">click: walk in →</div></div></div>
@@ -223,12 +223,14 @@ FEATURES = [  # what an app's code uses → the permission its iframe needs
     (r"getUserMedia|mediaDevices", "camera; microphone"), (r"geolocation", "geolocation"), (r"wakeLock", "screen-wake-lock"),
     (r"navigator\.share\b|navigator\.canShare", "web-share"), (r"clipboard\.(read|readText)\(", "clipboard-read"),
     (r"DeviceOrientation|DeviceMotion|Gyroscope|Accelerometer|Magnetometer", "gyroscope; accelerometer; magnetometer"), (r"navigator\.xr\b", "xr-spatial-tracking")]
+VENDORED = ("assets/maps/leaflet/",)  # other people's libraries, served from this site
 def allow_for(app):
     if not app or "://" in app: return ""
     path = os.path.join(ROOT, app.split("#")[0].split("?")[0])
     if not os.path.exists(path): return ""
     code = open(path, encoding="utf-8", errors="ignore").read()
     for src in re.findall(r'<script[^>]+src="(?!https?:)/?([^"?#]+)', code):  # its own scripts too
+        if src.startswith(VENDORED): continue  # a library's unused features (Leaflet can locate you) aren't the app asking for them
         f = os.path.join(ROOT, src)
         if os.path.exists(f): code += open(f, encoding="utf-8", errors="ignore").read()
     out = ["fullscreen", "autoplay", "clipboard-write"] + [perm for pat, perm in FEATURES if re.search(pat, code)]
@@ -288,7 +290,7 @@ def page(i):
 <main class="ds">
   <aside class="spec"><div class="stick">
     <span class="pno">{pno(a)} · {esc(n)}</span>
-    <h1 style="--vt:bench-name">{esc(a["name"])}</h1>
+    <h1 style="--vt:bench-name;--len:{max(len(w) for w in a["name"].split())}">{esc(a["name"])}</h1>
     <span class="tag {st}">{esc(STATUS.get(a["status"], a["status"]))}</span>
     {f'<p class="say1">{esc(c["plain"])}</p>' if c.get("plain") else ""}<p class="tagline">{c.get("tagline", "")}</p>
     <div class="acts">{acts}</div>
@@ -346,7 +348,7 @@ def contact():
       <label>Your email<input id="from" type="email" autocomplete="email" maxlength="120" placeholder="So I can write back"></label></div>
     <div><span class="lbl">What's it about</span><div class="chips" id="chips">
       <button type="button" class="chip" aria-pressed="true">Just saying hi</button><button type="button" class="chip" aria-pressed="false">A project on the site</button>
-      <button type="button" class="chip" aria-pressed="false">Work / commission</button><button type="button" class="chip" aria-pressed="false">Music</button><button type="button" class="chip" aria-pressed="false">Bug report</button></div></div>
+      <button type="button" class="chip" aria-pressed="false">Work / commission</button><button type="button" class="chip" aria-pressed="false">Repair / IT / hosting</button><button type="button" class="chip" aria-pressed="false">Music</button><button type="button" class="chip" aria-pressed="false">Bug report</button></div></div>
     <label>Message<textarea id="msg" maxlength="2000" placeholder="A couple of lines is plenty."></textarea></label>
     <div class="count lbl" id="count">0 / 2000</div>
     <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -357,6 +359,95 @@ def contact():
   <div class="elsewhere big"><a href="https://x.com/mentifaber" target="_blank" rel="noopener">X · @mentifaber</a><a href="https://instagram.com/mentifaber" target="_blank" rel="noopener">Instagram · @mentifaber</a><a href="https://soundcloud.com/sonicveil" target="_blank" rel="noopener">SoundCloud · Sonic Veil</a></div>"""
     js = open(os.path.join(os.path.dirname(__file__), "contact.js.part"), encoding="utf-8").read()
     return plain("contact.html", "Contact · Mentifaber", "Write to Mentifaber: send a quick note or email anders@mentifaber.org.", "Correspondence", body, js)
+
+
+# The workshop takes work: the same hands that built every bench here, offered as services. Each line says what's
+# included and how a job runs; prices are quoted per job, in writing, before anything starts.
+SERVICES = [
+    ("repair", "Tech repair", "Phones, laptops, desktops, consoles and the odd strange gadget.",
+     ["Diagnosis first, in plain words: what's wrong, what it costs, whether it's worth it", "Screens, batteries, ports, storage and RAM upgrades, cleaning and thermal work",
+      "Slow machines made fast again; malware and pop-up junk removed", "Data rescue from failing drives and dead phones, where it's still there to rescue"],
+     "Bring-in or mail-in, by arrangement. Remote fixes for anything software."),
+    ("it", "IT services", "The tech side of a home, a studio or a small business, handled.",
+     ["Wi-Fi that reaches every room; networks, printers and shared drives set up properly", "Backups that run by themselves, and a test restore so you know they work",
+      "Accounts, passwords and two-step sign-in sorted for the whole household or team", "Security check-ups: what's exposed, what's out of date, what to fix first"],
+     "One-off visits or ongoing care. Remote support anywhere."),
+    ("hosting", "Web hosting", "Sites kept up on the same global edge network this workshop runs on.",
+     ["HTTPS, a global CDN and DDoS protection as standard", "Your own domain, set up and renewed; email forwarding and DNS handled",
+      "Uptime watched, updates applied, nightly backups kept", "Room to grow: forms, sign-ins, storage and APIs when the site needs them"],
+     "Monthly plans, quoted to the site. Moving an existing site in is part of the job."),
+    ("websites", "Websites", "Designed and built by hand, fast on any phone, and yours to keep.",
+     ["Portfolios, shops, booking pages, landing pages and full business sites", "Written to be found: search-ready pages, real descriptions, fast loads",
+      "Accessible, works offline where it helps, and installable as an app", "A redesign of the site you already have, without losing what works"],
+     "Fixed price per project, with the plan agreed before building starts."),
+    ("software", "Custom software & AI", "The kind of thing on every bench of this workshop, built for you.",
+     ["Web and Android apps, internal tools, dashboards and automations", "AI assistants grounded in your own documents, with your data kept private",
+      "Integrations: hook the services you already pay for together", "Prototypes in days, to find out if an idea works before it costs much"],
+     "Scoped together first; built in short steps you can see and steer."),
+]
+SERVICES_CSS = """<style>.svc-jump{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px}.svc-jump a{border:1px solid var(--line);padding:6px 12px;border-radius:99px;text-decoration:none;font-size:.9rem}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px;margin-top:22px}
+.svc{border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px;scroll-margin-top:80px}
+.svc h2{margin:0;font-size:1.25rem}.svc-lead{margin:0;color:var(--ink-2,#c9bc9f)}.svc ul{margin:4px 0 0;padding-left:18px;display:grid;gap:5px;font-size:.93rem}
+.svc-how{margin:auto 0 0;padding-top:8px;font-size:.88rem;color:var(--dim,#8d877a)}.svc .key{align-self:flex-start}
+.svc-steps{display:grid;gap:8px;padding-left:20px}.svc-steps b{font-weight:600}
+.svc .key{max-width:100%;white-space:normal;text-align:left}
+.form select{width:100%;font:400 16px/1.5 var(--font);color:var(--ink);background:var(--floor-2);border:1px solid var(--line-2);padding:11px 13px;border-radius:0;text-transform:none;letter-spacing:0}.form select:focus{border-color:var(--gold);outline:none}</style>"""
+SERVICES_JS = r"""<script>
+(() => {
+  const TO = "anders@mentifaber.org", $ = (id) => document.getElementById(id), status = (t) => { $("status").textContent = t; };
+  let topic = document.querySelector("#chips .chip").textContent;
+  const pick = (name) => document.querySelectorAll("#chips .chip").forEach((c) => { const on = c.textContent === name; c.setAttribute("aria-pressed", on); if (on) topic = name; });
+  $("chips").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (b) pick(b.textContent); });
+  document.querySelectorAll("[data-svc]").forEach((b) => b.addEventListener("click", () => { pick(b.dataset.svc); $("f").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("what").focus({ preventScroll: true }), 400); }));
+  const card = location.hash.length > 1 && document.getElementById(location.hash.slice(1)), cb = card && card.querySelector && card.querySelector("[data-svc]"); if (cb) pick(cb.dataset.svc);
+  $("msg").addEventListener("input", () => { $("count").textContent = $("msg").value.length + " / 2000"; });
+  $("f").addEventListener("submit", (e) => {
+    e.preventDefault(); if ($("hp").value) return;
+    const name = $("name").value.trim(), from = $("from").value.trim(), what = $("what").value.trim(), msg = $("msg").value.trim(), when = $("when").value;
+    if (!msg) { status("Say a little about what's going on first."); $("msg").focus(); return; }
+    if (from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from)) { status("That email looks off: check it or leave it blank."); $("from").focus(); return; }
+    const subject = "[Services] " + topic + (what ? " · " + what : "") + (name ? " · " + name : "");
+    const body = "Service: " + topic + "\n" + (what ? "Device / site / system: " + what + "\n" : "") + "How soon: " + when + "\n\n" + msg + "\n\n—\n" + (name || "Sent from mentifaber.org/services") + (from ? "\nReply to: " + from : "");
+    location.href = "mailto:" + TO + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    status("Opening your email app…");
+  });
+})();
+</script>"""
+def services():
+    def card(k, n, lead, items, how):
+        lis = "".join("<li>" + esc(x) + "</li>" for x in items)
+        return (f'<article class="svc" id="{k}"><h2>{esc(n)}</h2><p class="svc-lead">{esc(lead)}</p><ul>{lis}</ul>'
+                f'<p class="svc-how">{esc(how)}</p><button class="key" type="button" data-svc="{esc(n)}">Ask about {esc(n.lower())}</button></article>')
+    cards = "".join(card(*x) for x in SERVICES)
+    chips = "".join(f'<button type="button" class="chip" aria-pressed="{"true" if i == 0 else "false"}">{esc(x[1])}</button>' for i, x in enumerate(SERVICES))
+    jump = "".join(f'<a href="#{x[0]}">{esc(x[1])}</a>' for x in SERVICES)
+    body = f"""<span class="pno">Services · the workshop takes work</span>
+  <h1>Repair, IT, hosting, <span class="gold-text">websites</span> and software</h1>
+  <p class="tagline">Everything on this site was designed and built here, and is kept running here: forty-odd apps, an AI and an operating system. The same hands can fix your laptop, look after your network, host your site and build the thing you've been imagining.</p>
+  <nav class="svc-jump" aria-label="Services">{jump}</nav>
+  <div class="svc-grid">{cards}</div>
+  <h2 class="lbl" style="margin-top:34px">How a job runs</h2>
+  <ol class="svc-steps"><li><b>Tell me what's going on.</b> The form below, or an email. A photo or a link helps.</li>
+    <li><b>A written quote.</b> What's wrong or what you need, what it will take and the price, before anything starts.</li>
+    <li><b>You say yes, or don't.</b> Nothing is done or charged until you approve the quote.</li>
+    <li><b>Done and explained.</b> You get a short write-up of what was done.</li></ol>
+  <h2 class="lbl" style="margin-top:34px">The proof</h2>
+  <div class="elsewhere big"><a href="./">The workshop: every project</a><a href="os">FaberOS, an operating system in the browser</a><a href="autofaber">AutoFaber, the AI</a><a href="store">Foundry: the apps</a></div>
+  <form id="f" class="form" novalidate style="margin-top:34px">
+    <h2 class="lbl">Ask for a quote</h2>
+    <div class="row2"><label>Your name<input id="name" autocomplete="name" maxlength="80" placeholder="Who's asking"></label>
+      <label>Your email<input id="from" type="email" autocomplete="email" maxlength="120" placeholder="So I can send the quote"></label></div>
+    <div><span class="lbl">Which service</span><div class="chips" id="chips">{chips}</div></div>
+    <div class="row2"><label>Device, site or system<input id="what" maxlength="120" placeholder="e.g. 2019 MacBook Pro, example.com, office Wi-Fi"></label>
+      <label>How soon<select id="when"><option>Whenever suits</option><option>This week</option><option>It's urgent</option></select></label></div>
+    <label>What's going on<textarea id="msg" maxlength="2000" placeholder="What happened, what you need, anything you've tried."></textarea></label>
+    <div class="count lbl" id="count">0 / 2000</div>
+    <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="acts"><button class="key pri big" type="submit">Send the request</button><span class="status" id="status" role="status"></span></div>
+    <p class="fine">Sending opens your own email app with everything filled in: nothing is stored on this site. Or write straight to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>
+  </form>"""
+    return plain("services.html", "Services · repair, IT, hosting, websites · Mentifaber", "Tech repair, IT support, web hosting, websites, and custom software and AI, from the workshop that built every app on mentifaber.org. Quoted before work starts.", "Services", body, SERVICES_CSS + "\n" + SERVICES_JS)
 
 
 CREDITS = [
@@ -379,9 +470,8 @@ CREDITS = [
     ]),
     ("Maps", [
         ("© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors", "ODbL 1.0"),
-        ("© CARTO", "basemap tiles"),
         ("Esri World Imagery", "satellite imagery"),
-        ("Natural Earth", "public domain"),
+        ("Natural Earth, via world-atlas (© Michael Bostock, ISC)", "land, borders and names: public domain; drawn by the site itself, no tile service"),
         ("RainViewer", "weather radar"),
     ]),
     ("AI models", [

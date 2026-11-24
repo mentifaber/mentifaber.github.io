@@ -961,7 +961,10 @@ $("tk-inbox").onclick = (e) => { const b = e.target.closest("[data-tkopen]"); if
 const MTABS = ["you", "mem", "lib", "tasks", "time", "gen"], ACTK = { chat: "Chat", voice: "Voice", council: "Council", image: "Pictures", project: "Swarm briefs", history: "Imported sessions" };
 // ── the library: documents Genesis keeps (src/hive-library.js) ──
 const LIBJS = { pdf: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", pdfw: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js", docx: "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js", xlsx: "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" };
-const loadJS = (src) => new Promise((ok, no) => { if (document.querySelector("script[src='" + src + "']")) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the reader for this file")); document.head.appendChild(s); });
+// the same files on a second CDN: if the first can't be reached, the reader comes from the other
+const MIRROR = { "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js": "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js": "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js", "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js": "https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js", "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js": "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js", "https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js": "https://unpkg.com/tesseract.js@5.0.4/dist/tesseract.min.js" };
+const loadJS1 = (src) => new Promise((ok, no) => { if (document.querySelector("script[src='" + src + "']")) return ok(src); const s = document.createElement("script"); s.src = src; s.onload = () => ok(src); s.onerror = () => { s.remove(); no(new Error("couldn't load the reader for this file")); }; document.head.appendChild(s); });
+const loadJS = (src) => loadJS1(src).catch((e) => (MIRROR[src] ? loadJS1(MIRROR[src]) : Promise.reject(e))); // resolves to the address that worked
 const LibV = {
   async load() {
     const j = await api("/library").catch(() => ({ docs: [] })); if (j.error) return;
@@ -971,7 +974,7 @@ const LibV = {
   },
   async read(f) {
     const ext = (f.name.split(".").pop() || "").toLowerCase();
-    if (ext === "pdf") { await loadJS(LIBJS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = LIBJS.pdfw; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = ""; for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); out += (await pg.getTextContent()).items.map((x) => x.str).join(" ") + "\n\n"; } return out; }
+    if (ext === "pdf") { const got = await loadJS(LIBJS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = got === LIBJS.pdf ? LIBJS.pdfw : MIRROR[LIBJS.pdfw]; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = ""; for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); out += (await pg.getTextContent()).items.map((x) => x.str).join(" ") + "\n\n"; } return out; }
     if (ext === "docx") { await loadJS(LIBJS.docx); return (await mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() })).value; }
     const t = await f.text(); return /^html?$/.test(ext) ? new DOMParser().parseFromString(t, "text/html").body.innerText : t;
   },

@@ -82,7 +82,9 @@
   const floor = $(".floor");
   if (!floor) return;
   const drawing = $(".drawing"), refsX = $$(".refs.x:not(.b) span"), refsY = $$(".refs.y:not(.r) span"), at = $(".tb dd.at"), note = $(".note"), lanternEl = $(".lantern", floor);
-  const svg = el("svg", { class: "ink", "aria-hidden": "true" }); floor.appendChild(svg);
+  // pinned top-left at 1:1: while the plan is still settling (fonts, a late bench), the walls stay on the rooms instead of
+  // sliding down through their names until the redraw catches up
+  const svg = el("svg", { class: "ink", "aria-hidden": "true", preserveAspectRatio: "xMinYMin meet" }); floor.appendChild(svg);
   let R = [], H = null, B = null, door = [], lane = null, phone = false, wk = { x: 0, y: 0, room: -1 }, walkerG = null, stepsG = null, hiMask = null;
 
   const rel = (e, F) => { const r = e.getBoundingClientRect(); return { x: r.left - F.left, y: r.top - F.top, w: r.width, h: r.height, el: e }; };
@@ -149,7 +151,7 @@
     else if (wk.room >= 0 && door[wk.room]) { const t = $(".bench.here"); if (t) { const c = centre(t); wk.x = c[0]; wk.y = c[1]; } }
     else wk = phone ? { x: lane.c, y: Math.max(H.y + 30, Math.min(wk.y, H.y + H.h - 20)), room: -1 } : { x: Math.max(H.x + 20, Math.min(wk.x, H.x + H.w - 20)), y: lane.top, room: -1 };
     place(0);
-    if (first && !reduce && !sessionStorage.getItem("wk:drawn")) { svg.classList.add("drawing"); try { sessionStorage.setItem("wk:drawn", "1"); } catch (e) {} setTimeout(() => svg.classList.remove("drawing"), 1600 + n * 28 + 200); }
+    if (first && !reduce && !sessionStorage.getItem("wk:drawn")) { svg.classList.add("drafting"); try { sessionStorage.setItem("wk:drawn", "1"); } catch (e) {} setTimeout(() => svg.classList.remove("drafting"), 1600 + n * 28 + 200); }
   }
 
   // ── the walker ──

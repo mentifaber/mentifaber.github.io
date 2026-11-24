@@ -11,7 +11,10 @@ const LIBS = { pdf: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.
 const STOP = new Set("a an and are as at be but by for from has have he her his i if in into is it its me my no not of on or our she so that the their them then there these they this to was we were what when where which who why will with you your do does did can could should would about after all also any been before being both each few how just more most other over same some such than too very off out up down only own s t don now get got let may might must shall".split(" "));
 const toks = (t) => (String(t).toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").match(/[a-z0-9][a-z0-9'-]{1,}/g) || []).map((w) => w.replace(/'s$/, "")).filter((w) => !STOP.has(w));
 const toast = (t) => { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2600); };
-const load = (src) => new Promise((ok, no) => { if (document.querySelector('script[src="' + src + '"]')) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load " + src.split("/").pop())); document.head.appendChild(s); });
+// the same files on a second CDN: if the first can't be reached, the reader comes from the other
+const MIRROR = { "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js": "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js": "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js", "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js": "https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js", "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js": "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js", "https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js": "https://unpkg.com/tesseract.js@5.0.4/dist/tesseract.min.js" };
+const load1 = (src) => new Promise((ok, no) => { if (document.querySelector('script[src="' + src + '"]')) return ok(src); const s = document.createElement("script"); s.src = src; s.onload = () => ok(src); s.onerror = () => { s.remove(); no(new Error("couldn't load " + src.split("/").pop())); }; document.head.appendChild(s); });
+const load = (src) => load1(src).catch((e) => (MIRROR[src] ? load1(MIRROR[src]) : Promise.reject(e))); // resolves to the address that worked
 
 // ── storage (IndexedDB, one store of documents) ──
 const DB = { db: null,
@@ -61,7 +64,7 @@ function autoTags(text) { // top keywords that are frequent here and not everywh
 // ── reading files ──
 async function readFile(f) {
   const ext = (f.name.split(".").pop() || "").toLowerCase();
-  if (ext === "pdf") { await load(LIBS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfw; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = ""; for (let i = 1; i <= pdf.numPages; i++) { const c = await (await pdf.getPage(i)).getTextContent(); out += c.items.map((x) => x.str).join(" ") + "\n\n"; } return { text: out, kind: "pdf" }; }
+  if (ext === "pdf") { const got = await load(LIBS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = got === LIBS.pdf ? LIBS.pdfw : MIRROR[LIBS.pdfw]; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = ""; for (let i = 1; i <= pdf.numPages; i++) { const c = await (await pdf.getPage(i)).getTextContent(); out += c.items.map((x) => x.str).join(" ") + "\n\n"; } return { text: out, kind: "pdf" }; }
   if (ext === "docx") { await load(LIBS.docx); const r = await mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() }); return { text: r.value, kind: "docx" }; }
   if (/^image\//.test(f.type)) { toast("Reading " + f.name + " with OCR (first time downloads the engine)…"); await load(LIBS.ocr); const r = await Tesseract.recognize(f, "eng"); return { text: r.data.text, kind: "image" }; }
   return { text: await f.text(), kind: ext === "md" || ext === "markdown" ? "md" : "text" };

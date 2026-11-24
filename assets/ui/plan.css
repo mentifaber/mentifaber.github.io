@@ -151,7 +151,7 @@ body.wk > * { position: relative; z-index: 1; }
 .ink .walker .halo { fill: url(#halo); }
 .ink .walker .body { fill: var(--gold-hi); stroke: #1a1205; stroke-width: 1.5; }
 .ink .walker .nose { fill: none; stroke: var(--gold-hi); stroke-width: 2; stroke-linecap: round; }
-.ink.drawing .wall, .ink.drawing .door, .ink.drawing .win, .ink.drawing .entrance { stroke-dasharray: 1; stroke-dashoffset: 1; fill-opacity: 0; animation: draft 1.6s var(--ease) forwards; animation-delay: calc(var(--i, 0) * 28ms); }
+.ink.drafting .wall, .ink.drafting .door, .ink.drafting .win, .ink.drafting .entrance { stroke-dasharray: 1; stroke-dashoffset: 1; fill-opacity: 0; animation: draft 1.6s var(--ease) forwards; animation-delay: calc(var(--i, 0) * 28ms); }
 @keyframes draft { 70% { fill-opacity: 0; } to { stroke-dashoffset: 0; fill-opacity: 1; } }
 .lantern { position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0; transition: opacity .6s;
   background: radial-gradient(240px 240px at var(--lx, -999px) var(--ly, -999px), rgba(255, 214, 140, .13), rgba(214, 166, 71, .04) 45%, transparent 70%); }
@@ -254,10 +254,12 @@ kbd { font: 600 10px/1 var(--mono); color: var(--gold-hi); border: 1px solid var
 
 /* ── a datasheet ── */
 .ds { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 0; margin: 14px; border: 1.5px solid var(--gold); background: rgba(13, 11, 8, .82); }
-.spec { padding: 26px 26px 30px; border-right: 1px solid var(--line-2); position: relative; }
+.spec { padding: 26px 26px 30px; border-right: 1px solid var(--line-2); position: relative; container-type: inline-size; }
 .spec > .stick { position: sticky; top: 16px; }
 .pno { font: 500 11px var(--mono); letter-spacing: .12em; color: var(--gold); }
-.spec h1 { margin: 10px 0 10px; font: 400 clamp(36px, 4.6vw, 64px)/.95 var(--display); letter-spacing: .04em; overflow-wrap: anywhere; hyphens: auto; view-transition-name: var(--vt, none); }
+.spec h1 { margin: 10px 0 10px; font: 400 clamp(36px, 4.6vw, 64px)/.95 var(--display); letter-spacing: .04em; overflow-wrap: break-word; view-transition-name: var(--vt, none); }
+/* a name is never broken mid-word: the size comes down until its longest word fits the column (--len is that word's length) */
+@supports (font-size: 1cqi) { .spec h1 { font-size: max(22px, min(clamp(36px, 4.6vw, 64px), calc(100cqi / (var(--len, 7) * .9)))); } }
 .tag { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; font: 600 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #1a1205; background: var(--gold); clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px); }
 .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .tag.live { background: var(--live); } .tag.lock { background: var(--lock); } .tag.build { background: var(--build); } .tag.music { background: var(--music); }
