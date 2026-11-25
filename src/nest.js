@@ -36,7 +36,7 @@
 //                            sign-ins are left alone. What's there now is saved first as a copy of its own, so a restore
 //                            can be undone, and any photo that couldn't be brought back is listed.
 import { DurableObject } from "cloudflare:workers";
-import { pageProduct, quota, checkPhoto } from "./nest-find.js";
+import { pageProduct, quota, checkPhoto, fetchPublic } from "./nest-find.js";
 import { metered, newBag, touch as rowTouch, dayReport, over as rowsOver, nextDay } from "./rowmeter.js";
 const NEST_BG_ROWS = 400000; // the registry's background work (finding products, mending photos) reads at most this many rows a day
 
@@ -56,6 +56,7 @@ const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s 
 const textOf = (r) => (r && typeof r.response === "object" && r.response ? JSON.stringify(r.response) : String((r && (r.response ?? r.description ?? (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content))) || ""));
 const shopOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
 const FIND_DAY = 400, FIND_BATCH = 1, FIND_GAP = 15e3; // one item at a time, a breath apart: gentle on the free plan's limits
+const publicShop = (x) => { try { const p = new URL(x); return p.protocol === "https:" && !privateHost(p.hostname); } catch (e) { return false; } }; // a redirect's new address must pass too
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
 
@@ -253,7 +254,7 @@ export class Nest extends DurableObject {
   }
   async readPage(href) { // a shop's product page → { title, price, currency, images }
     let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
-    const r = await fetch(u.href, { headers: { accept: "text/html", "accept-language": "en-US,en;q=0.9", "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" }, redirect: "follow", signal: AbortSignal.timeout(8000) }).catch(() => null);
+    const r = await fetchPublic(u.href, { headers: { accept: "text/html", "accept-language": "en-US,en;q=0.9", "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" }, signal: AbortSignal.timeout(8000) }, publicShop).catch(() => null);
     if (!r || !r.ok || !/html/i.test(r.headers.get("content-type") || "")) return null;
     const p = pageProduct((await r.text().catch(() => "")).slice(0, 900000), r.url || u.href); p.images = [...new Set([...(p.images || []), p.og].filter(Boolean))].slice(0, 4); return p;
   }
@@ -270,7 +271,7 @@ export class Nest extends DurableObject {
     this.q().exec("DELETE FROM photo WHERE id=?", id); if (this.env.MODELS && this.env.MODELS.delete) await this.env.MODELS.delete("nest/" + id).catch(() => {}); }
   async fetchPhoto(href, check) { // a product photo from a store, checked, into the registry's storage → id, or null
     let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
-    const r = await fetch(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(10000) }).catch(() => null);
+    const r = await fetchPublic(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, signal: AbortSignal.timeout(10000) }, publicShop).catch(() => null);
     const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!r || !r.ok || !IMAGE.test(type || "")) return null;
     const buf = await r.arrayBuffer().catch(() => null); if (!buf || !buf.byteLength || buf.byteLength > (this.env.MODELS ? BLOB_MAX : PHOTO_DB_MAX)) return null;
     if (check && !checkPhoto(u.href, buf)) return null; // a logo, an icon, a banner: not the product

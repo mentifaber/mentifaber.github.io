@@ -4,7 +4,8 @@
 // the search's image results, downloaded, and checked (a real photo, big enough, roughly square: not a logo, an icon or a
 // 1200×630 share banner). A product without such a photo is left out; nothing is shown with a placeholder. Kept photos go
 // straight into the registry's storage, so the previews never depend on a store's server.
-import { complete, cheapAsk } from "./hive-kit.js";
+import { complete, cheapAsk, fetchPublic } from "./hive-kit.js";
+export { fetchPublic };
 
 const PICKER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const SKIP = /(^|\.)(youtube\.com|youtu\.be|reddit\.com|wikipedia\.org|pinterest\.[a-z.]+|facebook\.com|instagram\.com|tiktok\.com|x\.com|twitter\.com|quora\.com)$/i;
@@ -80,14 +81,14 @@ export function pageProduct(html, base) {
   return out;
 }
 async function readPage(u) {
-  const r = await fetch(u, { headers: { "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1; +https://mentifaber.org)", accept: "text/html" }, redirect: "follow", signal: AbortSignal.timeout(6000) });
+  const r = await fetchPublic(u, { headers: { "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1; +https://mentifaber.org)", accept: "text/html" }, signal: AbortSignal.timeout(6000) }, publicHttps);
   if (!r.ok || !/html/i.test(r.headers.get("content-type") || "")) throw new Error("HTTP " + r.status);
   return { ...pageProduct((await r.text()).slice(0, 900000), r.url || u), url: u };
 }
 // download a candidate photo and keep it only if it is product-shaped
 async function photo(u) {
   u = publicHttps(u); if (!u) return null; let path = ""; try { path = decodeURIComponent(new URL(u).pathname); } catch (e) { path = u; } if (BADIMG.test(path)) return null;
-  const r = await fetch(u, { headers: { accept: "image/avif,image/webp,image/png,image/jpeg,image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(8000) }).catch(() => null);
+  const r = await fetchPublic(u, { headers: { accept: "image/avif,image/webp,image/png,image/jpeg,image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, signal: AbortSignal.timeout(8000) }, publicHttps).catch(() => null);
   const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!r || !r.ok || !IMAGE.test(type || "")) return null;
   const buf = await r.arrayBuffer().catch(() => null); if (!buf || buf.byteLength < 6000 || buf.byteLength > IMG_MAX) return null;
   const size = imageSize(new Uint8Array(buf, 0, Math.min(buf.byteLength, 65536))); return productShaped(size) ? { url: u, buf, type, ...size } : null;

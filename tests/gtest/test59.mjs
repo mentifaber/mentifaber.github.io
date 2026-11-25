@@ -44,4 +44,15 @@ await readPage("https://huge.example/", 1000); assert.ok(pulled < 30, "read " + 
 for (const h of ["http://172.20.0.1/", "http://0.0.0.0/", "http://10.0.0.1/", "http://localhost/", "https://[::1]/"]) await assert.rejects(readPage(h), /not a public page/, h);
 globalThis.fetch = fetch0;
 ok("a page AutoFaber reads stops at its size cap (not all 330 MB); private addresses, 172.16–31.x and 0.x included, are refused");
+// 5 · redirects: a user-supplied address is followed hop by hop, and every new address must pass the same public test
+const { fetchPublic, publicHref } = await import(OUT + "src/hive-kit.js"); const fetch1 = globalThis.fetch, seen = [];
+const hops = { "https://shop.example/a": "https://shop.example/b", "https://shop.example/b": "https://cdn.example/c", "https://evil.example/x": "http://169.254.169.254/latest", "https://evil.example/y": "http://172.20.0.5/", "https://loop.example/0": "/1" };
+globalThis.fetch = async (u, init) => { seen.push([String(u), init.redirect]); const to = hops[String(u)] || (/loop\.example\/\d+$/.test(String(u)) ? "/" + (+String(u).split("/").pop() + 1) : null);
+  return to ? new Response(null, { status: 302, headers: { location: to } }) : new Response("ok " + u, { status: 200 }); };
+let fr = await fetchPublic("https://shop.example/a", {}, publicHref); assert.equal(await fr.text(), "ok https://cdn.example/c"); assert.ok(seen.every(([, r]) => r === "manual"), "never left to the platform to follow");
+await assert.rejects(fetchPublic("https://evil.example/x", {}, publicHref), /isn't public/); await assert.rejects(fetchPublic("https://evil.example/y", {}, publicHref), /isn't public/);
+await assert.rejects(fetchPublic("https://loop.example/0", {}, publicHref), /too many redirects/);
+await assert.rejects(readPage("https://evil.example/x"), /isn't public/, "AutoFaber's page reader goes through it");
+globalThis.fetch = fetch1;
+ok("redirects are followed by hand and each new address is checked: a public page that redirects to 169.254.x or 172.20.x is refused, and loops stop at 5");
 console.log("test59: " + n + " checks passed");
