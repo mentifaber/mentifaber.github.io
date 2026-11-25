@@ -40,11 +40,14 @@ ok("a visitor's request opens a job on the board and gives them its private link
 await W.p.goto("http://localhost:8099/portal.html"); await W.p.waitForSelector("h2:text('request')");
 await W.p.click("ul.jobs button:has-text('robin-bakes.example')"); await W.p.waitForSelector("#q");
 assert.match(await W.p.textContent("main"), /robin@example\.com[\s\S]*Asked for a quote \(Web hosting, robin-bakes\.example; whenever suits\): I'd like my bakery site hosted/);
-await W.p.fill("#q", "Hosting, first year, 120"); await W.p.click("#q-go"); await W.p.waitForSelector("#i-amt");
+// the editor redraws after each save: wait for the new one before typing, or the redraw wipes what was typed
+const fresh = () => W.p.evaluate(() => document.querySelectorAll("#e-st").forEach((x) => (x.dataset.old = "1")));
+await W.p.fill("#q", "Hosting, first year, 120"); await fresh(); await W.p.click("#q-go"); await W.p.waitForSelector("#e-st:not([data-old])", { state: "attached" }); await W.p.waitForSelector("#i-amt");
 await W.p.fill("#i-amt", "120"); await W.p.fill("#i-num", "2001"); await W.p.fill("#i-link", "https://buy.stripe.com/test_abc"); await W.p.fill("#site", "https://robin-bakes.example");
 await W.p.click("#x-go"); await W.p.waitForSelector("text=Public status page");
 const statusHref = await W.p.getAttribute("a[href^='/status#']", "href"); assert.match(statusHref, /^\/status#[0-9a-f]{16}$/);
-await W.p.waitForTimeout(300); await W.p.evaluate(() => { document.querySelector("#i-link").value = "javascript:alert(1)"; document.querySelector("#x-go").click(); }); // set and save at once: the editor redraws after each save await W.p.waitForSelector("#e-st.bad", { timeout: 5000 }).catch(async () => { throw new Error("no error: " + (await W.p.textContent("#e-st")) + " | link=" + (await W.p.inputValue("#i-link"))); }); assert.match(await W.p.textContent("#e-st"), /https:\/\/ address/);
+await W.p.evaluate(() => { document.querySelector("#i-link").value = "javascript:alert(1)"; document.querySelector("#x-go").click(); }); // set and save at once: the editor redraws after each save
+await W.p.waitForSelector("#e-st.bad", { timeout: 5000 }).catch(async () => { throw new Error("no error: " + (await W.p.textContent("#e-st")) + " | link=" + (await W.p.inputValue("#i-link"))); }); assert.match(await W.p.textContent("#e-st"), /https:\/\/ address/);
 ok("the workshop quotes it and invoices with a payment link (only https:// links); a hosted site gets a status page");
 
 // 3. the client pays and says so
