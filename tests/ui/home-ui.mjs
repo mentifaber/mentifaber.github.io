@@ -64,4 +64,11 @@ await p2.fill("#inp", "hello"); await p2.click("#sendb"); await p2.waitForFuncti
 assert.match(await p2.textContent("#toast"), /isn't answering/); assert.equal(await p2.inputValue("#inp"), "hello");
 ok("AutoFaber with its server down: the lights say so, Ask explains and keeps the message");
 
+// the 3D atlases and the old home-page preview were retired: nothing links to them, and their old addresses send people to the home page
+{ const fs = await import("node:fs"), REPO = process.argv[2] || new URL("../..", import.meta.url).pathname;
+  for (const f of ["atlas.html", "atlas-classic.html", "workshop.html"]) assert.ok(!fs.existsSync(REPO + "/" + f), f + " is gone");
+  const linked = fs.readdirSync(REPO).filter((f) => f.endsWith(".html")).filter((f) => /href="\/?atlas(-classic)?(\.html)?["#]/.test(fs.readFileSync(REPO + "/" + f, "utf8")));
+  assert.deepEqual(linked, [], "pages still linking the old atlas");
+  const rd = fs.readFileSync(REPO + "/_redirects", "utf8"); for (const u of ["/atlas", "/atlas.html", "/atlas-classic", "/atlas-classic.html", "/workshop", "/workshop.html"]) assert.match(rd, new RegExp("^" + u.replace(".", "\\.") + " / 301$", "m"), u); }
+ok("the old atlases and the old preview are gone: no page links them, and their addresses redirect to the home page");
 assert.deepEqual(errs, []); await b.close();

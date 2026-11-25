@@ -56,7 +56,7 @@ ok("inside FaberOS Ballast's backup lands on the Shelf, and \"Open in Ballast\" 
 
 // typing in the top bar while an app grabs focus (Ballast's first-run guide does, as it loads): the letters stay in the bar
 await p.click("#ask-in"); await p.keyboard.type("open dw"); await bal.evaluate(() => document.querySelector("input, button").focus());
-await p.waitForFunction(() => document.activeElement && document.activeElement.id === "ask-in", null, { timeout: 2000 }); await p.keyboard.type("ell");
+await p.keyboard.type("ell"); // straight away: the app's grab never takes the keyboard
 assert.equal(await p.inputValue("#ask-in"), "open dwell"); await p.keyboard.press("Escape"); await p.fill("#ask-in", ""); await p.evaluate(() => document.getElementById("ask-in").blur());
 ok("typing in the top bar keeps the keyboard when an app grabs focus as it loads");
 
@@ -64,7 +64,7 @@ ok("typing in the top bar keeps the keyboard when an app grabs focus as it loads
 // front grabs focus while it's open
 await p.click("#all-btn"); await p.fill("#l-q", "cryptovault");
 await bal.evaluate(() => document.querySelector("input, button").focus()); // an app grabbing focus while the launcher is open (a first-run guide, say)
-await p.waitForFunction(() => document.activeElement && document.activeElement.id === "l-q", null, { timeout: 2000 }); await p.keyboard.press("Enter"); await said(p.waitForSelector(".win[data-id='cryptovault'] iframe"), "opening CryptoVault");
+await p.keyboard.press("Enter"); await said(p.waitForSelector(".win[data-id='cryptovault'] iframe"), "opening CryptoVault");
 const cv = await frameOf("cryptovault"); await cv.waitForFunction(() => typeof sealed === "function" && FOS.on === true);
 await cv.evaluate(() => sealed(new Blob([new Uint8Array([0x43, 0x56, 1, 2, 3, 4])], { type: "application/octet-stream" }), "plans.pdf.cv"));
 assert.match(await cv.textContent("#encSt"), /Shelf, still encrypted/);

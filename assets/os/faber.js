@@ -16,6 +16,15 @@
   let inOS = false;
   try { inOS = window.parent !== window && parent.location.origin === location.origin && /^\/os(\.html)?$/.test(parent.location.pathname); } catch (e) {}
   const post = (m) => { if (inOS) parent.postMessage(Object.assign({ faberos: 1 }, m), location.origin); };
+  // Inside FaberOS, an app's own focus() can't pull the keyboard out of FaberOS: while this window doesn't have the
+  // keyboard and nobody has just pressed in it, the call is ignored (a first-run guide focusing its first field as it
+  // loads would otherwise take the letters someone is typing into FaberOS's top bar). Once the window is being used it
+  // has the keyboard, and focus() works as always.
+  // (A press in FaberOS itself counts as a user gesture for this window too, so only a press or key in this window says
+  // it's being used.)
+  if (inOS) { const own = HTMLElement.prototype.focus; let used = 0; const mark = () => { used = Date.now(); };
+    ["pointerdown", "keydown", "touchstart"].forEach((t) => addEventListener(t, mark, true));
+    HTMLElement.prototype.focus = function (o) { if (!document.hasFocus() && Date.now() - used > 1000) return; return own.call(this, o); }; }
   let onFiles = null; const waiting = []; let verbs = {};
   addEventListener("message", (e) => {
     if (!inOS || e.origin !== location.origin || e.source !== parent || !e.data || e.data.faberos !== 1) return;

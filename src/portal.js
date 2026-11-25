@@ -6,10 +6,14 @@
 // lets them approve the quote and write to the workshop. Nothing else is reachable without the owner's session.
 //
 // Jobs are kept in the Store Durable Object (key "job:<id>"). A hosted site's status is checked from here (a HEAD
-// request, at most once every 5 minutes per job) because a browser can't read another site's status.
+// request) because a browser can't read another site's status: when someone opens the job (at most every 5 minutes),
+// and around the clock by uptimeSweep() on the 15-minute cron. Two failed checks in a row tell the workshop (an urgent
+// AutoFaber alert on its phone); the first good check after that says it's back and notes the outage on the job's
+// timeline, where the client sees it too. Each job keeps its last 30 days of checks, so both sides see the uptime.
+// The ids of jobs with a site are kept in "portal:sites", so the sweep reads only those jobs.
 const STATUSES = ["quote", "approved", "in-progress", "ready", "done", "cancelled"];
 const SERVICES = ["repair", "it", "hosting", "websites", "software", "other"];
-const MAX_JOBS = 500, MAX_TIMELINE = 200, CLIENT_MSGS_DAY = 30;
+const MAX_JOBS = 500, MAX_TIMELINE = 200, CLIENT_MSGS_DAY = 30, UPTIME_DAYS = 30, FAILS_TO_ALERT = 2;
 const clean = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
 const money = (v) => { const n = Number(v); return isFinite(n) && n >= 0 && n < 1e7 ? Math.round(n * 100) / 100 : undefined; };
 const rid = (bytes) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -25,16 +29,63 @@ function quoteOf(q) {
 function siteOf(u) { u = clean(u, 200); if (!u) return null; try { const x = new URL(/^https?:\/\//.test(u) ? u : "https://" + u); return x.protocol === "https:" || x.protocol === "http:" ? x.origin + x.pathname : null; } catch (e) { return null; } }
 function passportOf(u) { u = clean(u, 2000); return /^https:\/\/mentifaber\.org\/passport#[A-Za-z0-9_.-]+$/.test(u) || /^\/passport#[A-Za-z0-9_.-]+$/.test(u) ? u : null; }
 
+// the last 30 days of checks: share of good ones, and how many
+function uptimeOf(j) {
+  const u = j.uptime; if (!u || !u.days) return null; let n = 0, ok = 0;
+  for (const [c, g] of Object.values(u.days)) { n += c; ok += g; }
+  return n ? { pct: Math.round((ok / n) * 10000) / 100, checks: n, days: Object.keys(u.days).length, down: u.down || null } : null;
+}
 // what the client sees: everything but the token and the workshop's private notes
 const forClient = (j) => ({ id: j.id, title: j.title, service: j.service, status: j.status, client: { name: j.client.name }, quote: j.quote, approvedAt: j.approvedAt || null,
-  invoice: j.invoice || null, passport: j.passport || null, site: j.site ? { url: j.site, check: j.siteCheck || null } : null, timeline: j.timeline.filter((t) => !t.private), created: j.created, updated: j.updated });
+  invoice: j.invoice || null, passport: j.passport || null, site: j.site ? { url: j.site, check: j.siteCheck || null, uptime: uptimeOf(j) } : null, timeline: j.timeline.filter((t) => !t.private), created: j.created, updated: j.updated });
 
+async function probe(url, f = fetch) {
+  const t0 = Date.now();
+  try { const r = await f(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(8000), headers: { "user-agent": "mentifaber.org Workshop Portal uptime check" } }); return { up: r.status < 500, status: r.status, ms: Date.now() - t0, at: Date.now() }; }
+  catch (e) { return { up: false, status: 0, ms: Date.now() - t0, at: Date.now() }; }
+}
 async function checkSite(st, j) {
   if (!j.site || (j.siteCheck && Date.now() - j.siteCheck.at < 5 * 60e3)) return j;
-  const t0 = Date.now(); let c;
-  try { const r = await fetch(j.site, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(6000), headers: { "user-agent": "mentifaber.org Workshop Portal uptime check" } }); c = { up: r.status < 500, status: r.status, ms: Date.now() - t0, at: Date.now() }; }
-  catch (e) { c = { up: false, status: 0, ms: Date.now() - t0, at: Date.now() }; }
-  j.siteCheck = c; await st.kvPut("job:" + j.id, j); return j;
+  j.siteCheck = await probe(j.site); await st.kvPut("job:" + j.id, j); return j;
+}
+const hhmm = (t) => new Date(t).toISOString().slice(11, 16) + " UTC";
+const mins = (ms) => { const m = Math.max(1, Math.round(ms / 60e3)); return m < 90 ? m + " minute" + (m === 1 ? "" : "s") : Math.round(m / 6) / 10 + " hours"; };
+// one check into the job's record; says "down" (the second failure in a row) or "up" (the first good check after)
+export function record(j, c, at = c.at) {
+  const u = j.uptime || (j.uptime = { days: {}, fails: 0, down: null }), d = new Date(at).toISOString().slice(0, 10);
+  const day = u.days[d] || (u.days[d] = [0, 0]); day[0]++; if (c.up) day[1]++;
+  for (const k of Object.keys(u.days).sort().slice(0, -UPTIME_DAYS)) delete u.days[k];
+  j.siteCheck = c;
+  if (!c.up) { if (!u.fails) u.first = at; u.fails++; if (u.fails === FAILS_TO_ALERT && !u.down) { u.down = u.first; return "down"; } return null; }
+  const was = u.down; u.fails = 0; u.first = null; u.down = null;
+  if (!was) return null;
+  j.timeline.push({ at, by: "workshop", text: "Your site didn't answer from " + hhmm(was) + " to " + hhmm(at) + " (about " + mins(at - was) + "). It's back up." });
+  j.timeline = j.timeline.slice(-MAX_TIMELINE); j.updated = at; return "up";
+}
+// keep "portal:sites" in step with the jobs that have a site
+async function siteIndex(st, j, gone) {
+  let ids = await st.kvGet("portal:sites"); if (!Array.isArray(ids)) return; // built on the next sweep
+  const want = !gone && !!j.site && j.status !== "cancelled", has = ids.includes(j.id);
+  if (want !== has) await st.kvPut("portal:sites", want ? ids.concat(j.id) : ids.filter((x) => x !== j.id));
+}
+// every 15 minutes (worker.js): check each hosted site, record it, and tell the workshop when one goes down or comes back
+export async function uptimeSweep(env, deps = {}, at = Date.now()) {
+  const st = env.STORE.get(env.STORE.idFromName("main"));
+  let ids = await st.kvGet("portal:sites");
+  if (!Array.isArray(ids)) { ids = (await st.kvList("job:")).filter(([, j]) => j.site && j.status !== "cancelled").map(([, j]) => j.id); await st.kvPut("portal:sites", ids); }
+  let checked = 0, told = 0;
+  for (const id of ids) {
+    const j = await st.kvGet("job:" + id); if (!j || !j.site || j.status === "cancelled") continue;
+    const c = await probe(j.site, deps.fetch); c.at = at; const ev = record(j, c, at); await st.kvPut("job:" + id, j); checked++;
+    if (ev && deps.alert) {
+      const host = j.site.replace(/^https?:\/\//, "").replace(/\/$/, ""), who = (j.client && j.client.name) || j.title;
+      await deps.alert(ev === "down"
+        ? { level: "critical", title: "⚠ " + host + " is down", body: who + "'s site hasn't answered two checks in a row" + (c.status ? " (it said " + c.status + ")" : " (no answer)") + ", since " + hhmm(j.uptime.down) + ".", url: "/portal" }
+        : { level: "notable", title: "✓ " + host + " is back", body: who + "'s site is answering again. The outage is on the job's timeline.", url: "/portal" }).catch(() => {});
+      told++;
+    }
+  }
+  return { checked, told };
 }
 
 function apply(j, b, now) {
@@ -63,13 +114,13 @@ export async function portal(req, env, json, owner) {
       if (parts.length === 1 && req.method === "POST") {
         if ((await st.kvList("job:")).length >= MAX_JOBS) throw err("the board is full: close out old jobs first", 409);
         const j = apply({ id: rid(5), token: rid(16), client: { name: "" }, status: "quote", service: "other", timeline: [], created: now, updated: now, title: "" }, { service: "other", ...b, title: b.title || "" }, now);
-        j.timeline.unshift({ at: now, by: "workshop", text: "Job opened" }); await st.kvPut("job:" + j.id, j); return json({ job: j });
+        j.timeline.unshift({ at: now, by: "workshop", text: "Job opened" }); await st.kvPut("job:" + j.id, j); await siteIndex(st, j); return json({ job: j });
       }
       const id = parts[1]; if (!/^[0-9a-f]{10}$/.test(id || "")) throw err("no such job", 404);
       const j = await st.kvGet("job:" + id); if (!j) throw err("no such job", 404);
-      if (req.method === "POST") { apply(j, b, now); await st.kvPut("job:" + id, j); return json({ job: j }); }
-      if (req.method === "DELETE") { await st.kvDel("job:" + id); return json({ ok: true }); }
-      const seen = await checkSite(st, j); if (seen.unread) { seen.unread = false; await st.kvPut("job:" + id, seen); seen.unread = true; } // opening it marks it read; this answer still says it was new
+      if (req.method === "POST") { apply(j, b, now); await st.kvPut("job:" + id, j); await siteIndex(st, j); return json({ job: j }); }
+      if (req.method === "DELETE") { await st.kvDel("job:" + id); await siteIndex(st, j, true); return json({ ok: true }); }
+      const seen = await checkSite(st, j); seen.uptimeSummary = uptimeOf(seen); if (seen.unread) { seen.unread = false; await st.kvPut("job:" + id, seen); seen.unread = true; } // opening it marks it read; this answer still says it was new
       return json({ job: seen });
     }
     // ── a client's view, by link ──

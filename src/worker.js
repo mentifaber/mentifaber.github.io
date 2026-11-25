@@ -12,7 +12,7 @@ import { b64url, sendPush, PUSH_HOSTS } from "./push.js";
 import { listen } from "./listen.js";
 import { media } from "./media.js";
 import { seal } from "./seal.js"; // the workshop's seal: Device Passports and Witness records
-import { portal } from "./portal.js";
+import { portal, uptimeSweep } from "./portal.js";
 import { letters } from "./letters.js";
 import { checkin, sweep as checkinSweep } from "./checkin.js"; // Quiet Check-in: a daily "I'm OK", and the family told if it doesn't come // Sealed Letters: letters that open later, only with the friends chosen // the Workshop Portal: one link per client, one board for the workshop
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
@@ -657,6 +657,7 @@ const worker = {
     if (env.AGENT) ctx.waitUntil(env.AGENT.get(env.AGENT.idFromName("agent")).fetch(new Request("http://agent/keep", { method: "POST" })).catch(() => {}));
     if (event.cron === "*/15 * * * *") { // Genesis keeps watch on Vigil's live board between the hourly ticks
       if (env.STORE) ctx.waitUntil(checkinSweep(env, { sendPush, vapid: () => store(env).vapid() }).catch(() => {})); // Quiet Check-in: a missed check-in tells the family
+      if (env.STORE) ctx.waitUntil(uptimeSweep(env, { alert: (x) => (env.HIVE ? env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/alert", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: JSON.stringify(x) })) : Promise.resolve()) }).catch(() => {})); // hosted sites: checked around the clock, the workshop told when one goes down
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/tasks/tick", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {})); // the owner's scheduled tasks that are due (src/hive-tasks.js)
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/watch", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {}));
       return;

@@ -3,7 +3,8 @@
 //  - a client's link opens only its own job, and never shows the token or the workshop's private notes
 //  - a client can approve the quote once, and write messages (a daily limit per job)
 //  - the quote total is worked out here; bad amounts, statuses, services, passport links and addresses are refused
-//  - a hosted site's status is checked from here, at most once every 5 minutes
+//  - a hosted site's status is checked from here, at most once every 5 minutes when opened, and every 15 by the cron,
+//    which tells the workshop when it goes down and comes back
 import assert from "node:assert/strict"; import { mkdirSync, writeFileSync, readdirSync, readFileSync } from "node:fs";
 const REPO = process.argv[2] || new URL("../..", import.meta.url).pathname; let n = 0; const ok = (m) => console.log("  ✓ " + ++n + " " + m);
 const OUT = new URL("./w53/", import.meta.url).pathname; mkdirSync(OUT + "src", { recursive: true });
@@ -63,8 +64,26 @@ await go("job/" + job.id + "?t=" + T); assert.equal(pinged.length, 1, "checked a
 await go("jobs/" + job.id, "POST", { site: "https://down.example" }, O); r = await go("job/" + job.id + "?t=" + T); assert.equal(r.j.job.site.check.up, false);
 ok("a new quote needs a new approval; a passport link and a hosted site attach, and the site's status is checked from here at most every 5 minutes (down shows down)");
 
+// 6 · around the clock: the 15-minute cron checks each hosted site; two misses in a row tell the workshop (an urgent
+// AutoFaber alert), the first good check after says it's back and puts the outage on the timeline the client sees
+let flakyUp = false; const sweepFetch = globalThis.fetch; globalThis.fetch = async (u, o) => /flaky\.example/.test(String(u.url || u)) ? new Response(null, { status: flakyUp ? 200 : 503 }) : sweepFetch(u, o);
+const told = []; env.HIVE = { idFromName: (x) => x, get: () => ({ fetch: async (q) => { if (/\/genesis\/alert$/.test(q.url)) told.push({ owner: q.headers.get("x-hive-owner"), ...(await q.json()) }); return Response.json({}); } }) };
+const sweep = async () => { const ps = []; await worker.scheduled({ cron: "*/15 * * * *" }, env, { waitUntil: (x) => ps.push(x), passThroughOnException() {} }); await Promise.all(ps); };
+await go("jobs/" + job.id, "POST", { site: "https://flaky.example" }, O);
+const other = (await go("jobs", "POST", { title: "Old site", service: "hosting", site: "https://flaky.example/old" }, O)).j.job; await go("jobs/" + other.id, "POST", { status: "cancelled" }, O);
+await sweep(); assert.equal(told.length, 0, "one miss is not an outage");
+await sweep(); assert.equal(told.length, 1); assert.equal(told[0].level, "critical"); assert.equal(told[0].owner, "1"); assert.match(told[0].title, /flaky\.example is down/); assert.match(told[0].body, /Sam's site hasn't answered two checks in a row \(it said 503\)/);
+await sweep(); assert.equal(told.length, 1, "told once, not every 15 minutes");
+r = await go("job/" + job.id + "?t=" + T); assert.equal(r.j.job.site.uptime.pct, 0); assert.equal(r.j.job.site.uptime.checks, 3); assert.ok(r.j.job.site.uptime.down, "the client sees it's down");
+flakyUp = true; await sweep(); assert.equal(told.length, 2); assert.equal(told[1].level, "notable"); assert.match(told[1].title, /is back/);
+r = await go("job/" + job.id + "?t=" + T); assert.deepEqual([r.j.job.site.uptime.pct, r.j.job.site.uptime.checks, r.j.job.site.uptime.down], [25, 4, null]);
+assert.match(r.j.job.timeline.at(-1).text, /^Your site didn't answer from \d\d:\d\d UTC to \d\d:\d\d UTC \(about \d+ minutes?\)\. It's back up\.$/);
+assert.equal(mem.get("job:" + other.id).uptime, undefined, "a cancelled job's site isn't watched");
+r = await go("jobs/" + job.id, "GET", undefined, O); assert.equal(r.j.job.uptimeSummary.pct, 25, "the workshop sees the same");
+ok("around the clock: two misses in a row send one urgent alert to the owner's AutoFaber, the first good check one all-clear and an outage note the client sees; both sides see 30-day uptime; cancelled jobs aren't watched");
+
 // 6 · list and delete
-r = await go("jobs", "GET", undefined, O); assert.equal(r.j.jobs.length, 1);
-assert.equal((await go("jobs/" + job.id, "DELETE", undefined, O)).status, 200); assert.equal((await go("job/" + job.id + "?t=" + T)).status, 404);
+r = await go("jobs", "GET", undefined, O); assert.equal(r.j.jobs.length, 2);
+assert.equal((await go("jobs/" + job.id, "DELETE", undefined, O)).status, 200); assert.equal((await go("job/" + job.id + "?t=" + T)).status, 404); assert.ok(!mem.get("portal:sites").includes(job.id), "a deleted job leaves the watch list");
 ok("the board lists the jobs; a deleted job's link stops working");
 console.log("test53: " + n + " checks passed");
