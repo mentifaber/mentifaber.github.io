@@ -1,0 +1,16 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "compare",
+   "label": "See what changed on a bill since last month",
+   "changes": false,
+   "desc": "Lines up this month's bill against last month's (phone, internet, power, insurance): what went up, new fees, discounts that ended, quoted from the bill, and the questions to ask the provider.",
+   "args": {
+    "lastMonth": "string",
+    "thisMonth": "string"
+   },
+   "words": "bill bills invoice utility utilities electricity insurance premium overcharged overcharge promo promotional fee fees surcharge"
+  }
+ ]
+}

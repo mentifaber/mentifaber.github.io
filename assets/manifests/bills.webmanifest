@@ -1,0 +1,31 @@
+{
+  "id": "/bills",
+  "name": "Bill Watch",
+  "short_name": "Bill Watch",
+  "description": "This month's bill against last month's: what went up, new fees and discounts that ended, quoted from the bill.",
+  "start_url": "/bills.html",
+  "scope": "/bills.html",
+  "display": "standalone",
+  "background_color": "#0b0c09",
+  "theme_color": "#0b0c09",
+  "icons": [
+    {
+      "src": "../icons/v2/bills-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/bills-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/bills-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/bills">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bill Watch · Mentifaber</title>
+<meta name="description" content="Drop in this month&#x27;s phone, internet, power or insurance bill: it&#x27;s lined up against last month&#x27;s, and every charge that went up.">
+<meta name="theme-color" content="#0b0c09">
+<link rel="icon" href="assets/icons/v2/bills.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/bills-180.png">
+<link rel="manifest" href="assets/manifests/bills.webmanifest">
+<style>
+/* Bill Watch: two months of the same bill on a ledger. What went up is marked in the margin in red, what ended in
+   amber, and each line is quoted as the bill printed it, so it can be read back to the provider word for word. */
+:root { --bg: #0b0c09; --sheet: #121410; --card: #181b15; --line: #2d3227; --lime: #b5d15a; --lime-hi: #d8ec9a; --ink: #eef1e8; --dim: #9aa38f; --up: #ff8a6b; --down: #8fd18f; --amber: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--lime); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--lime-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--lime); margin: 24px 0 10px; }
+h3 { font: 600 16px var(--sans); margin: 18px 0 6px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0d0f0b; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+textarea.in { font: 14px/1.45 var(--mono); min-height: 170px; resize: vertical; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--lime); background: var(--lime); color: #1a2204; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--lime-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--up); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.row button.open { all: unset; cursor: pointer; flex: 1; min-width: 0; } .row b { display: block; overflow-wrap: anywhere; } .row small { color: var(--dim); }
+.row[aria-current="true"] { border-color: var(--lime); }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.up { color: var(--up); border-color: var(--up); } .tag.down { color: var(--down); border-color: var(--down); }
+.lnk { background: none; border: 0; color: var(--dim); font: 13px var(--sans); text-decoration: underline; cursor: pointer; padding: 2px 0; }
+.verdict { border-radius: 10px; padding: 12px 14px; margin-top: 14px; font-size: 17px; } .verdict.up { border: 1.5px solid var(--up); } .verdict.down, .verdict.same { border: 1.5px solid var(--down); }
+.verdict b { font-size: 20px; } .verdict.up b { color: var(--up); } .verdict.down b { color: var(--down); } .verdict small { display: block; color: var(--dim); font-size: 14px; margin-top: 4px; }
+.lines { list-style: none; margin: 0; padding: 0; } .lines li { border-left: 3px solid var(--line); background: var(--card); border-radius: 0 8px 8px 0; padding: 8px 12px; margin-top: 6px; overflow-wrap: anywhere; }
+.lines li.up { border-left-color: var(--up); } .lines li.ended { border-left-color: var(--amber); } .lines li.down { border-left-color: var(--down); }
+.lines .amt { font: 14px var(--mono); color: var(--dim); } .lines .chg { font: 600 14px var(--mono); margin-left: 6px; } .lines li.up .chg { color: var(--up); } .lines li.ended .chg { color: var(--amber); } .lines li.down .chg { color: var(--down); }
+.lines .q { display: block; font: 13px var(--mono); color: var(--dim); margin-top: 3px; }
+.qs { margin: 6px 0 0; padding-left: 22px; } .qs li { margin-top: 6px; }
+details summary { cursor: pointer; color: var(--dim); margin-top: 14px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--lime-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Bill Watch", "description": "Drop in this month's phone, internet, power or insurance bill: it's lined up against last month's, and every charge that went up.", "url": "https://mentifaber.org/bills", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/bills-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Bill Watch</span><a href="./">The workshop</a></div>
+  <h1>What changed on <span>this month's bill</span></h1>
+  <p class="lede">Drop in this month's phone, internet, power or insurance bill. It's lined up against last month's, and every charge that went up, every new fee and every discount that ended is quoted from the bill, with the questions to ask when you call. It's all worked out on this device: no bill is sent anywhere.</p>
+
+  <div id="list">
+    <h2>Your bills</h2>
+    <div id="accts" style="display:grid;gap:8px"></div>
+    <form class="panel" id="f-new"><div class="grid"><label>Which bill<input class="in" id="a-name" maxlength="60" placeholder="Northwind Mobile" required></label>
+      <label>What it's for<select class="in" id="a-kind"><option value="phone">Phone</option><option value="internet">Internet or TV</option><option value="power">Power, gas or water</option><option value="insurance">Insurance</option><option value="other">Something else</option></select></label></div>
+      <div class="bar"><button class="btn" type="submit">Start watching it</button><span class="status">Kept on this device only.</span></div></form>
+  </div>
+
+  <div id="acct" hidden>
+    <div class="bar" style="margin-top:16px"><button class="btn ghost sm" id="back" type="button">← All bills</button></div>
+    <h2 id="a-title"></h2>
+    <form class="panel" id="f-add">
+      <div class="grid"><label>The bill for<input class="in" id="m-month" type="month" required></label></div>
+      <label style="margin-top:10px">The bill's text<textarea class="in" id="m-text" placeholder="Paste it here: copy everything from the bill, from the PDF or the provider's site. Each charge should be on its own line with its amount."></textarea></label>
+      <div class="bar"><button class="btn" type="submit" id="go">Line it up with last month's</button><label class="btn ghost" style="cursor:pointer">Or choose the bill (PDF or text)<input id="m-file" type="file" accept=".pdf,.txt,.text,.csv,application/pdf,text/plain" hidden></label><span class="status" id="st" role="status"></span></div>
+    </form>
+    <div id="result" aria-live="polite"></div>
+    <h3>Each month</h3>
+    <div id="months" style="display:grid;gap:8px"></div>
+    <div class="bar" style="margin-top:20px"><button class="btn ghost sm" id="del" type="button">Stop watching this bill</button></div>
+  </div>
+</div>
+<script src="assets/bills/compare.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const { parse, compare, money, signed } = window.BillWatch;
+  const KIND = { phone: "Phone", internet: "Internet or TV", power: "Power, gas or water", insurance: "Insurance", other: "A bill" };
+  const LS = "bills:v1", MAXTEXT = 60000;
+  const load = () => { try { const d = JSON.parse(localStorage.getItem(LS) || "{}"); return Array.isArray(d.accounts) ? d.accounts : []; } catch (e) { return []; } };
+  let accts = load(), cur = null, sel = null;
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify({ accounts: accts })); return true; } catch (e) { $("#st").className = "status bad"; $("#st").textContent = "This device's storage is full, so this month wasn't kept."; return false; } };
+  const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const thisMonth = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+  const monthName = (m) => new Date(m + "-15T12:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const sorted = (a) => a.months.slice().sort((x, y) => x.month.localeCompare(y.month));
+  const prevOf = (a, m) => sorted(a).filter((x) => x.month < m.month).pop() || null;
+  const totalOf = (p) => p.total ? p.total.amount : p.lines.filter((l) => l.kind !== "account").reduce((s, l) => s + l.amount, 0);
+
+  // ── the bills being watched ──
+  function drawList() {
+    $("#accts").innerHTML = accts.length ? accts.map((a) => { const ms = sorted(a), last = ms[ms.length - 1], prev = last && prevOf(a, last);
+      let tag = ""; if (last && prev) { const ch = totalOf(parse(last.text)) - totalOf(parse(prev.text)); tag = ch ? '<span class="tag ' + (ch > 0 ? "up" : "down") + '">' + esc(signed(ch)) + "</span>" : '<span class="tag">same</span>'; }
+      return '<div class="row"><button class="open" type="button" data-id="' + esc(a.id) + '"><b>' + esc(a.name) + "</b><small>" + esc(KIND[a.kind] || "A bill") + " · " + (last ? esc(monthName(last.month)) + ": " + esc(money(totalOf(parse(last.text)))) : "no bills yet") + "</small></button>" + tag + "</div>"; }).join("") : '<p class="status">Nothing watched yet. Start with the bill that annoys you most.</p>';
+  }
+  $("#accts").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) show(accts.find((a) => a.id === b.dataset.id)); };
+  $("#f-new").onsubmit = (e) => { e.preventDefault(); const name = $("#a-name").value.trim(); if (!name) return; const a = { id: rid(), name: name.slice(0, 60), kind: $("#a-kind").value, months: [], created: Date.now() }; accts.unshift(a); save(); $("#a-name").value = ""; show(a); };
+  $("#back").onclick = () => { cur = sel = null; $("#acct").hidden = true; $("#list").hidden = false; drawList(); };
+  $("#del").onclick = () => { if (!cur || !confirm("Stop watching " + cur.name + "? Its bills are removed from this device.")) return; accts = accts.filter((a) => a !== cur); save(); $("#back").click(); };
+  function show(a) { if (!a) return; cur = a; const ms = sorted(a); sel = ms.length ? ms[ms.length - 1] : null; $("#list").hidden = true; $("#acct").hidden = false; $("#a-title").textContent = a.name + " · " + (KIND[a.kind] || "A bill");
+    const used = new Set(a.months.map((m) => m.month)); let m = thisMonth(); if (used.has(m) && ms.length) { const d = new Date(ms[ms.length - 1].month + "-15T12:00"); d.setMonth(d.getMonth() + 1); m = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+    $("#m-month").value = m; $("#m-text").value = ""; $("#st").textContent = ""; draw(); }
+
+  // ── adding a month ──
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFW = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const loadScript = (src) => new Promise((ok, no) => { if (window.pdfjsLib) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the PDF reader")); document.head.appendChild(s); });
+  async function readFile(f) {
+    if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") { await loadScript(PDFJS); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFW; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = "";
+      for (let i = 1; i <= pdf.numPages; i++) { const c = await (await pdf.getPage(i)).getTextContent(); let y = null; for (const x of c.items) { const yy = x.transform ? Math.round(x.transform[5]) : null; out += (y !== null && yy !== y ? "\n" : out && !/\s$/.test(out) ? " " : "") + x.str; y = yy; } out += "\n\n"; }
+      return out; }
+    return await f.text();
+  }
+  $("#m-file").addEventListener("change", async (e) => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const st = $("#st"); st.className = "status"; st.textContent = "Reading " + f.name + "…";
+    try { $("#m-text").value = (await readFile(f)).slice(0, MAXTEXT); st.textContent = "Read " + f.name + ". Check the month, then line it up."; } catch (x) { st.className = "status bad"; st.textContent = "Couldn't read that file: " + x.message + ". Paste the bill's text instead."; } });
+  $("#f-add").onsubmit = (e) => {
+    e.preventDefault(); const st = $("#st"), text = $("#m-text").value.slice(0, MAXTEXT), month = $("#m-month").value; st.className = "status";
+    if (!/^\d{4}-\d\d$/.test(month)) { st.className = "status bad"; st.textContent = "Say which month the bill is for."; return $("#m-month").focus(); }
+    const p = parse(text); if (!p.lines.length && !p.total) { st.className = "status bad"; st.textContent = "I couldn't find any charges with amounts in that. Paste the bill's text, with each charge on its own line and its amount at the end."; return $("#m-text").focus(); }
+    const old = cur.months.find((m) => m.month === month); if (old && !confirm("There's already a bill for " + monthName(month) + ". Replace it?")) return;
+    cur.months = cur.months.filter((m) => m.month !== month); const m = { month, text, added: Date.now() }; cur.months.push(m);
+    if (!save()) { cur.months = cur.months.filter((x) => x !== m); if (old) cur.months.push(old); return; }
+    const nx = new Date(month + "-15T12:00"); nx.setMonth(nx.getMonth() + 1); $("#m-month").value = nx.getFullYear() + "-" + String(nx.getMonth() + 1).padStart(2, "0");
+    sel = m; $("#m-text").value = ""; st.textContent = "Kept " + monthName(month) + "'s bill: " + p.lines.length + " line" + (p.lines.length === 1 ? "" : "s") + " read."; draw(); $("#result").scrollIntoView({ block: "start", behavior: "smooth" });
+  };
+
+  // ── the comparison ──
+  const q = (from, raw) => '<span class="q">' + from + ": “" + esc(raw) + "”</span>";
+  const li = (r, cls) => '<li class="' + cls + '"><b>' + esc(r.label) + '</b> <span class="amt">' + (r.before ? esc(money(r.before.amount)) : "—") + " → " + (r.after ? esc(money(r.after.amount)) : "—") + '</span><span class="chg">' + esc(signed(r.change)) + (r.pct != null && r.status === "up" ? " (+" + r.pct + "%)" : "") + "</span>" +
+    (r.after ? q("on the bill", r.after.raw) : "") + (r.before && (!r.after || r.status !== "same") ? q("last bill", r.before.raw) : "") + "</li>";
+  const section = (title, rows, cls) => rows.length ? "<h3>" + title + '</h3><ul class="lines">' + rows.map((r) => li(r, cls)).join("") + "</ul>" : "";
+  function draw() {
+    const ms = sorted(cur);
+    $("#months").innerHTML = ms.length ? ms.slice().reverse().map((m) => { const prev = prevOf(cur, m), t = totalOf(parse(m.text)), ch = prev ? t - totalOf(parse(prev.text)) : null;
+      return '<div class="row"' + (m === sel ? ' aria-current="true"' : "") + '><button class="open" type="button" data-m="' + esc(m.month) + '"><b>' + esc(monthName(m.month)) + "</b><small>" + esc(money(t)) + (ch == null ? " · the first one here" : "") + "</small></button>" +
+        (ch != null ? '<span class="tag ' + (ch > 0 ? "up" : ch < 0 ? "down" : "") + '">' + (ch ? esc(signed(ch)) : "same") + "</span>" : "") + '<button class="lnk" type="button" data-rm="' + esc(m.month) + '" aria-label="Remove ' + esc(monthName(m.month)) + "'s bill\">Remove</button></div>"; }).join("") : '<p class="status">No bills yet: add this month\'s above. Next month\'s will be lined up against it.</p>';
+    const out = $("#result"); if (!sel) { out.innerHTML = ""; return; }
+    const prev = prevOf(cur, sel), P = parse(sel.text);
+    if (!prev) { out.innerHTML = '<div class="verdict same" id="headline">' + esc(monthName(sel.month)) + "'s bill: <b>" + esc(money(totalOf(P))) + "</b><small>The first " + esc(cur.name) + " bill here. Add next month's and it's lined up against this one. " + P.lines.length + " lines read:</small></div>" +
+      '<ul class="lines">' + P.lines.map((l) => '<li><b>' + esc(l.label) + '</b> <span class="amt">' + esc(money(l.amount)) + "</span>" + q("on the bill", l.raw) + "</li>").join("") + "</ul>"; return; }
+    const r = compare(prev.text, sel.text), by = (...s) => r.rows.filter((x) => s.includes(x.status));
+    const ch = r.total ? r.total.change : r.explained, dir = ch > 0 ? "up" : ch < 0 ? "down" : "same";
+    let head = (dir === "same" ? "<b>The same</b> as " : "<b>" + (dir === "up" ? "Up " : "Down ") + esc(money(Math.abs(ch))) + "</b> since ") + esc(monthName(prev.month)) +
+      (r.total ? ": " + esc(money(r.total.before.amount)) + " → " + esc(money(r.total.after.amount)) + (r.total.before.amount > 0 && ch ? " (" + (ch > 0 ? "+" : "−") + Math.abs(Math.round((ch / r.total.before.amount) * 100)) + "%)" : "") + "." : ", by the charges listed (I couldn't find a total on both bills).");
+    if (r.total && Math.abs(r.unexplained) >= 100) head += "<small>The charges listed account for " + esc(signed(r.explained)) + " of it; " + esc(money(Math.abs(r.unexplained))) + " isn't on any line I could read. It's in the questions below.</small>";
+    const same = by("same");
+    out.innerHTML = '<div class="verdict ' + dir + '" id="headline">' + head + "</div>" +
+      section("Went up", by("up"), "up") + section("New charges", by("new"), "up") + section("Discounts that ended or got smaller", by("discount-ended", "discount-smaller"), "ended") +
+      (r.notes.length ? '<h3>Worth knowing</h3><ul class="lines">' + r.notes.map((x) => '<li class="ended">' + q("on the bill", x) + "</li>").join("") + "</ul>" : "") +
+      section("Went down or went away", by("down", "gone", "discount-new", "discount-bigger"), "down") +
+      (same.length ? "<details><summary>" + same.length + " charge" + (same.length === 1 ? "" : "s") + " stayed the same</summary>" + '<ul class="lines">' + same.map((x) => li(x, "")).join("") + "</ul></details>" : "") +
+      (r.questions.length ? '<h3>What to ask them</h3><ol class="qs" id="qs">' + r.questions.map((q) => "<li>" + esc(q) + "</li>").join("") + '</ol><div class="bar"><button class="btn ghost sm" type="button" id="copy">Copy the questions</button><span class="status" id="c-st" role="status"></span></div>' : '<p class="status" style="margin-top:14px">Nothing to ask about: nothing went up, and no discount ended.</p>');
+    if ($("#copy")) $("#copy").onclick = async () => { const t = cur.name + ", " + monthName(sel.month) + " bill:\n" + r.questions.map((q, i) => i + 1 + ". " + q).join("\n"); try { await navigator.clipboard.writeText(t); $("#c-st").textContent = "Copied."; } catch (e) { $("#c-st").textContent = "Couldn't copy: select the list and copy it."; } };
+  }
+  $("#months").onclick = (e) => { const rm = e.target.closest("[data-rm]"); if (rm) { if (!confirm("Remove " + monthName(rm.dataset.rm) + "'s bill?")) return; cur.months = cur.months.filter((m) => m.month !== rm.dataset.rm); save(); const ms = sorted(cur); sel = ms.length ? ms[ms.length - 1] : null; return draw(); }
+    const b = e.target.closest("[data-m]"); if (b) { sel = cur.months.find((m) => m.month === b.dataset.m); draw(); } };
+  drawList();
+
+  // Faber Verbs (declared in tools/site/content/bills.json): AutoFaber asks "what changed on my phone bill?" with both bills' text
+  if (window.Faber) Faber.verbs({
+    compare: (a) => {
+      const before = String(a.lastMonth || ""), after = String(a.thisMonth || ""); if (!parse(before).lines.length || !parse(after).lines.length) throw new Error("I need the text of both bills, last month's and this month's, with each charge and its amount on its own line.");
+      const r = compare(before, after), ch = r.total ? r.total.change : r.explained, worse = r.rows.filter((x) => ["up", "new", "discount-ended", "discount-smaller"].includes(x.status));
+      return (ch ? (ch > 0 ? "Up " : "Down ") + money(Math.abs(ch)) : "The same") + (r.total ? " (" + money(r.total.before.amount) + " → " + money(r.total.after.amount) + ")" : "") + ". " +
+        (worse.length ? worse.map((x) => x.label + " " + signed(x.change)).join("; ") + ". To ask: " + r.questions.join(" ") : "Nothing went up and no discount ended.");
+    },
+  });
+})();
+</script>
+</body>
+</html>
