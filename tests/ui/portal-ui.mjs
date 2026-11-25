@@ -47,6 +47,14 @@ assert.match(await W.p.textContent("ul.jobs"), /New message[\s\S]*\$268\.50/);
 await W.p.click("[data-job]"); await W.p.waitForFunction(() => /Client: Can you check the camera too\?/.test(document.body.textContent));
 ok("back on the board the job is under approved, flagged with a new message, and the message is there");
 
+// a hosted site: the client and the workshop both see its status and its uptime from the round-the-clock checks
+const [jk, jj] = [...mem].find(([k]) => k.startsWith("job:")); const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+mem.set(jk, { ...jj, site: "https://shop.example/", siteCheck: { up: true, status: 200, ms: 120, at: Date.now() }, uptime: { days: { [day(1)]: [96, 96], [day(0)]: [96, 95] }, fails: 0, down: null } });
+await C.p.reload(); await C.p.waitForSelector(".uptime"); assert.match(await C.p.textContent(".uptime"), /^Up 99\.48% of 192 checks over the last 2 days\. Checked every 15 minutes, around the clock\.$/);
+assert.match(await C.p.textContent("main"), /Your site\s*shop\.example\/\s*Up · 120 ms/);
+await W.p.reload(); await W.p.waitForFunction(() => /Their site/.test(document.body.textContent)); assert.match(await W.p.textContent(".uptime"), /Up 99\.48% of 192 checks/);
+ok("a hosted site: the client's page and the workshop's both show it's up and its uptime from the round-the-clock checks");
+
 for (const x of [W, C]) { assert.equal(await x.p.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0); assert.deepEqual(x.p.errs, []); }
 ok("no page errors, no sideways scroll");
 await b.close();

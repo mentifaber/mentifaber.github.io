@@ -83,6 +83,14 @@ pushes.length = 0; r = await call("/genesis/tick", {});
 const w = db.prepare("SELECT * FROM alert WHERE cat='work' ORDER BY id DESC LIMIT 1").get();
 assert.match(w.title, /The Swarm didn't finish “Voice memos”/); assert.equal(w.state, "sent"); assert.equal(w.url, "/hive-app#mind/genesis"); ok("a failed mission alerts him on the next tick");
 
+// an alert from elsewhere on the site (the Workshop Portal's uptime watch): queued, sent now, critical even in quiet hours
+pushes.length = 0; r = await call("/genesis/alert", { level: "critical", title: "⚠ client.example is down", body: "Sam's site hasn't answered two checks in a row.", url: "/portal" });
+assert.equal(pushes.length, 1, JSON.stringify(r)); let wa = db.prepare("SELECT * FROM alert ORDER BY id DESC LIMIT 1").get();
+assert.deepEqual([wa.cat, wa.level, wa.state, wa.url], ["work", "critical", "sent", "/portal"]);
+r = await call("/genesis/alert", { title: "", body: "x" }); assert.ok(r.error, "an alert needs a title");
+await call("/genesis/alert", { title: "back", url: "javascript:alert(1)" }); wa = db.prepare("SELECT * FROM alert ORDER BY id DESC LIMIT 1").get(); assert.notEqual(wa.url, "javascript:alert(1)");
+ok("an alert from the portal's uptime watch reaches the phone at once; it needs a title, and only a site path is kept as its link");
+
 // AutoFaber knows
 await call("/chat", { model: "workers-ai|@cf/openai/gpt-oss-120b", cid: "p", messages: [{ role: "user", text: "hey" }] });
 const sys = calls.at(-1).sys; assert.match(sys, /PHONE ALERTS: when Anders has them on/); assert.match(sys, /You sent him \d+ phone alerts? in the last day/); ok("AutoFaber knows about its phone alerts");

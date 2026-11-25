@@ -504,6 +504,10 @@ export const Genesis = {
     if (path === "/genesis/alerts") { const since = Number.isFinite(+b.since) && +b.since > 0 ? +b.since : Date.now() - 12 * 3600e3;
       return J({ name: s.name, alerts: q.exec("SELECT id,ts,cat,level,title,body,url,sent_ts FROM alert WHERE state='sent' AND sent_ts > ? ORDER BY id DESC LIMIT 8", since).toArray() }); }
     if (path === "/genesis/watch") { if (b.home && isFinite(+b.home.lat) && isFinite(+b.home.lon)) { s.home = { lat: +b.home.lat, lon: +b.home.lon, name: clip(b.home.name, 80) || null }; await h.ctx.storage.put("genesis", s); } return J(b.run === false ? { ok: true } : await this.watch(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) }))); }
+    if (path === "/genesis/alert") { // an alert from elsewhere on the site for the owner's phone (the portal's uptime watch), sent now if it can be
+      const title = clip(String(b.title || ""), 120); if (!title) return J({ error: "an alert needs a title" }, 400);
+      this.queueAlert(h, { cat: "work", level: b.level === "critical" ? "critical" : "notable", title, body: clip(String(b.body || ""), 600), url: typeof b.url === "string" && /^\/[\w\-./#?=&]*$/.test(b.url) ? b.url : undefined });
+      return J(await this.flush(h).catch((e) => ({ error: String(e.message || e).slice(0, 200) }))); }
     if (path === "/genesis/rate") return this.rate(h, b.turn, +b.rating, b.note) ? J({ ok: true }) : J({ error: "no such turn" }, 404);
     if (path === "/genesis/teach") { const t = this.teach(h, b.text, "anders"); return t ? J({ ok: true, lesson: t }) : J({ error: "that isn't a lesson AutoFaber can take on (too short, already known, or it would loosen the rules)" }, 400); }
     if (path === "/genesis/retire") { this.retire(h, b.id, "retired by " + s.creator); return J({ ok: true }); }
