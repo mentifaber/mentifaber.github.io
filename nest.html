@@ -155,7 +155,7 @@ textarea.input { resize: vertical; min-height: 76px; }
 .card.covered { opacity: .72; }
 .card.mine { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .thumb { aspect-ratio: 4 / 3; background: var(--surface-2); position: relative; display: grid; place-items: center; overflow: hidden; max-width: 100%; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb img { width: 100%; height: 100%; object-fit: contain; background: #fff; } /* the whole product, not a crop of it */
 .thumb .glyph { font: 800 64px/1 var(--f-display); color: color-mix(in srgb, var(--tile-ink), #fff var(--glyph-lift)); opacity: .9; }
 .thumb .glyph-sub { position: absolute; bottom: 10px; left: 12px; font: 500 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--tile-ink), #fff var(--glyph-lift)); opacity: .8; }
 .badges { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
@@ -293,6 +293,7 @@ details.more > summary { cursor: pointer; font-weight: 600; color: var(--accent)
 .opt:hover { border-color: var(--gold); }
 .opt img, .find img, .pickrow img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; border-radius: 7px; display: block; }
 .opt .ph, .find .ph { aspect-ratio: 1; border-radius: 7px; background: var(--surface-2); display: grid; place-items: center; color: var(--ink-soft); font: italic 600 22px var(--f-display); }
+.opt .ph.word, .find .ph.word { font: 600 15px/1.2 var(--f-display); letter-spacing: .02em; text-align: center; padding: 10px; overflow-wrap: anywhere; color: var(--ink); }
 .opt b { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .opt small, .find small, .pickrow small { font: 500 11px var(--f-mono); color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .opts-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
@@ -603,14 +604,18 @@ const cat = (k) => CATS[k] || CATS.other;
 const blobSrc = (id) => id ? "/api/nest/blob/" + encodeURIComponent(id) : null;
 const optImgs = (o) => o ? [blobSrc(o.i), o.r && safeUrl(o.r)].filter(Boolean) : [];
 const optImg = (o) => optImgs(o)[0] || null;
-const imgSrcs = (item) => [...new Set([blobSrc(item.imageId), ...(item.options || []).flatMap(optImgs), blobSrc(item.imageAuto)].filter(Boolean))]; // imageAuto: a photo of the thing, for a card with no picks yet
+const imgSrcs = (item) => [...new Set([blobSrc(item.imageId), ...(signUp(item) ? [] : item.options || []).flatMap(optImgs), blobSrc(item.imageAuto)].filter(Boolean))]; // imageAuto: a photo of the thing, for a card with no picks yet
 function chainImg(srcs, alt, fallback) {
   const list = [...new Set([].concat(srcs || []).filter(Boolean))]; if (!list.length) return fallback();
   let k = 0; const im = h("img", { src: list[0], alt: alt || "", loading: "lazy", referrerpolicy: "no-referrer" });
   im.addEventListener("error", () => { if (++k < list.length) im.src = list[k]; else im.replaceWith(fallback()); });
   return im;
 }
-const cost = (n, cur) => n == null || n === "" || isNaN(n) ? "" : (!cur || cur === "USD" ? money(n) : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + cur);
+const cost = (n, cur) => n == null || n === "" || isNaN(n) || (cur && cur !== "USD") ? "" : money(n); // a price in another currency isn't this registry's: left off
+// "Hatch Hatch Night Light" → "Hatch Night Light" (the brand, then a model name that starts with it)
+const once = (t) => String(t || "").replace(/^(.{2,40}?)\s+\1(?=\s|$)/i, "$1").replace(/\s+/g, " ").trim();
+// a sign-up, not a thing to buy (freezer meals, help, visits): no products shown for it
+const signUp = (it) => /\bsign[ -]?up\b/i.test(String(it?.notes || "")) || /\b(meals?|babysitting|help with|visits?|chores?)\b/i.test(String(it?.name || ""));
 
 function toast(msg, action) {
   const t = h("div", { class: "toast" }, h("span", null, msg), action ? h("button", { onclick: () => { action.fn(); t.remove(); } }, action.label) : null);
@@ -929,7 +934,7 @@ function card(item, c) {
   if (item.notes) body.append(h("div", { class: "notes" }, item.notes));
   const links = (item.links || []).map(l => ({ ...l, url: safeUrl(l.url) })).filter(l => l.url);
   if (links.length) body.append(h("div", { class: "links" }, links.map(l => h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, (l.label || hostOf(l.url)) + " ↗"))));
-  if (item.kind !== "fund" && (item.options || []).length) body.append(optsStrip(item));
+  if (item.kind !== "fund" && (item.options || []).length && !signUp(item)) body.append(optsStrip(item));
 
   if (showCov) {
     if (item.kind === "fund") {
@@ -939,7 +944,7 @@ function card(item, c) {
     } else {
       const w = c.want;
       body.append(h("div", { class: "qty" },
-        h("div", { class: "qty-row" }, h("span", null, w > 1 ? h("b", null, `${Math.min(c.got, w)} of ${w}`) : null, w > 1 ? " covered" : (c.covered ? "Covered" : "Still needed")), h("span", null, c.left ? `${c.left} still needed` : (c.got > w ? `${c.got - w} extra` : ""))),
+        h("div", { class: "qty-row" }, h("span", null, w > 1 ? h("b", null, `${Math.min(c.got, w)} of ${w}`) : null, w > 1 ? " covered" : (c.covered ? "Covered" : "Still needed")), h("span", null, c.left && w > 1 ? `${c.left} still needed` : (c.got > w ? `${c.got - w} extra` : ""))),
         h("div", { class: "bar" }, h("i", { style: `width:${clamp(c.bought / w, 0, 1) * 100}%` }), h("i", { class: "reserved", style: `width:${clamp(c.reserved / w, 0, 1 - clamp(c.bought / w, 0, 1)) * 100}%` }))));
     }
     if (spoil === "all" && isParent() && c.cs.length) {
@@ -957,7 +962,7 @@ function card(item, c) {
     else if (c.covered) foot.append(h("button", { class: "btn", disabled: true }, item.kind === "fund" ? "Goal reached" : "Already covered"));
     else foot.append(h("button", { class: "btn primary", disabled: S.readOnly || !S.db, onclick: () => openClaim(item.id) }, item.kind === "fund" ? "Chip in" : "I'll get this"));
   } else {
-    if (item.kind !== "fund") { const F = window.nestSite ? nestSite.finds()[item.id] : null, n = (F?.products || []).length, q = window.nestSite && nestSite.queued().includes(item.id);
+    if (item.kind !== "fund" && !signUp(item)) { const F = window.nestSite ? nestSite.finds()[item.id] : null, // a sign-up isn't shopped for n = (F?.products || []).length, q = window.nestSite && nestSite.queued().includes(item.id);
       foot.append((item.options || []).length ? h("button", { class: "btn small", onclick: () => openFinder(item.id) }, "✦ " + plural(item.options.length, "pick"))
         : n ? h("button", { class: "btn small primary", onclick: () => openFinder(item.id) }, "✦ Pick from " + n)
         : q ? h("button", { class: "btn small", disabled: true }, "Finding…") : h("button", { class: "btn small", onclick: () => openFinder(item.id) }, "✦ Find products")); }
@@ -995,7 +1000,7 @@ function openClaim(itemId) {
     const cur = mine?.pick || "";
     body.append(h("div", { class: "field" }, h("span", null, "Which one?"), h("div", { class: "choice" },
       opts.map((o) => h("label", null, h("input", { type: "radio", name: "c-pick", value: o.t, checked: cur === o.t }), h("div", { class: "pickrow" }, pic(optImgs(o)),
-        h("div", { style: "min-width:0" }, h("b", null, o.t), h("small", null, [o.p ? cost(o.p, o.c) : "", o.s].filter(Boolean).join(" · ")), o.u ? h("div", null, h("a", { href: safeUrl(o.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (o.s || hostOf(o.u)) + " ↗")) : null)))),
+        h("div", { style: "min-width:0" }, h("b", null, once(o.t)), h("small", null, [o.p ? cost(o.p, o.c) : "", o.s].filter(Boolean).join(" · ")), o.u ? h("div", null, h("a", { href: safeUrl(o.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (o.s || hostOf(o.u)) + " ↗")) : null)))),
       h("label", null, h("input", { type: "radio", name: "c-pick", value: "", checked: !cur }), h("div", null, h("b", null, "Something similar"), h("small", null, "Another brand or model that fits the bill."))))));
   }
   if (isFund) {
@@ -1512,12 +1517,14 @@ async function shrink(file) {
 }
 
 /* ---------------- products: find them, keep the closest, let guests choose ---------------- */
-const pic = (srcs) => chainImg(srcs, "", () => h("div", { class: "ph" }, "✦"));
+// a pick without a photo shows its brand's name, set like a label, not an empty box
+const pic = (srcs, brand) => chainImg(srcs, "", () => brand ? h("div", { class: "ph word" }, brand) : h("div", { class: "ph" }, "✦"));
+const brandOf = (x) => once(x.b || String(x.t || "").split(/\s+/).slice(0, 2).join(" ")).slice(0, 24);
 function optsStrip(item) {
-  const o = item.options || [], wrap = h("div", { class: "qty" });
+  const o = [...(item.options || [])].sort((a, b) => (optImgs(b).length ? 1 : 0) - (optImgs(a).length ? 1 : 0)), wrap = h("div", { class: "qty" }); // the ones with a photo first
   wrap.append(h("div", { class: "opts-head" }, h("span", null, h("b", null, "✦ " + plural(o.length, "pick")), isParent() ? "" : " · any of these is perfect"), o.length > 4 ? h("span", null, "+" + (o.length - 4) + " more when you choose") : null));
   wrap.append(h("div", { class: "opts" }, o.slice(0, 4).map((x) => h("a", { class: "opt", href: safeUrl(x.u) || "#", target: "_blank", rel: "noopener noreferrer", title: x.t },
-    pic(optImgs(x)), h("b", null, x.t), h("small", null, [x.p ? cost(x.p, x.c) : "", x.s].filter(Boolean).join(" · "))))));
+    pic(optImgs(x), brandOf(x)), h("b", null, once(x.t)), h("small", null, [x.p ? cost(x.p, x.c) : "", x.s].filter(Boolean).join(" · "))))));
   return wrap;
 }
 const finderSkipped = new Set();
@@ -1531,8 +1538,8 @@ function openFinder(itemId, queue) {
   const sync = () => { count.textContent = kept.size ? plural(kept.size, "pick") + " kept" : "Tap the ones closest to what you'd like"; };
   const tile = (p) => {
     const box = h("input", { type: "checkbox", checked: kept.has(keyOf(p)), "aria-label": "Keep " + p.t, onchange: (e) => { e.target.checked ? kept.set(keyOf(p), p) : kept.delete(keyOf(p)); sync(); } });
-    return h("label", { class: "find" }, box, pic(optImgs(p)),
-      p.tier ? h("span", { class: "tier " + p.tier }, p.tier === "mid" ? "mid-range" : p.tier) : null, h("b", null, p.t), p.w ? h("div", { class: "why" }, p.w) : null,
+    return h("label", { class: "find" }, box, pic(optImgs(p), brandOf(p)),
+      p.tier ? h("span", { class: "tier " + p.tier }, p.tier === "mid" ? "mid-range" : p.tier) : null, h("b", null, once(p.t)), p.w ? h("div", { class: "why" }, p.w) : null,
       h("small", null, [p.p ? cost(p.p, p.c) : p.a ? "about " + money(p.a) : "", p.s].filter(Boolean).join(" · ")),
       p.u ? h("a", { href: safeUrl(p.u), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "See it on " + (p.s || hostOf(p.u)) + " ↗") : null);
   };

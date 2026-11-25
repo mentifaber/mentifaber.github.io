@@ -71,7 +71,7 @@ ok("with R2 bound again, photos already in the database still show and new ones 
 // mending photos lost when R2 was switched off (a fresh registry object; the R2 copies are gone), and the parents' one-time
 // changes: it's a boy, and Millie Moon newborn diapers among the newborn diapers' picks
 const db2 = new DatabaseSync(":memory:"), sql2 = { exec(q, ...a) { const st = db2.prepare(q); if (/^\s*select/i.test(q)) return new Cursor(st.all(...a).map((x) => ({ ...x }))); st.run(...a); return new Cursor([]); } };
-Object.assign(shop, { "https://img.example/real.png": [product, "image/png"], "https://img.example/wide.png": [wideBanner, "image/png"], "https://img.example/brand-logo.png": [product, "image/png"], "https://img.example/mm.png": [product, "image/png"],
+Object.assign(shop, { "https://img.example/real.png": [product, "image/png"], "https://img.example/millie-moon-newborn.png": [product, "image/png"], "https://img.example/wide.png": [wideBanner, "image/png"], "https://img.example/brand-logo.png": [product, "image/png"], "https://img.example/mm.png": [product, "image/png"],
   "https://shop.example/p/tub": ['<html><head><meta property="og:title" content="Angelcare tub"><meta property="og:image" content="/img/tub.png"></head></html>', "text/html"], "https://shop.example/img/tub.png": [product, "image/png"] });
 let agreed = false; const asked = [], searched = [];
 const HIVE2 = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const u = new URL(rq.url), b = await rq.json(); if (u.pathname.endsWith("/nest/photo")) { searched.push(b.q); return /Millie Moon/.test(b.q) ? Response.json({ image: "https://img.example/mm.png" }) : Response.json({ error: "no product photo found" }, { status: 404 }); } searched.push("find:" + b.name + (b.for ? " for a " + b.for : "")); return Response.json({ products: [] }); } }) };
@@ -127,7 +127,7 @@ ok("a screenshot is read for its name, brand, price, shop and category; a shop's
 const F = await import(REPO + "/src/nest-find.js");
 assert.equal(F.checkPhoto("https://x.example/p.png", product.buffer.slice(product.byteOffset, product.byteOffset + product.length)), true); assert.equal(F.checkPhoto("https://x.example/site-logo.png", product.buffer.slice(product.byteOffset, product.byteOffset + product.length)), false, "named like a logo");
 assert.equal(F.checkPhoto("", wideBanner.buffer.slice(wideBanner.byteOffset, wideBanner.byteOffset + wideBanner.length)), false, "banner-shaped");
-const fp = await F.findPhoto({ web: async () => Object.assign([], { images: ["https://img.example/brand-logo.png", "https://img.example/wide.png", "https://img.example/real.png"] }) }, "Millie Moon Luxury Diapers, Newborn");
-assert.deepEqual(fp, { image: "https://img.example/real.png" }, "a pick's photo by image search: logos and banners skipped");
+const fp = await F.findPhoto({ web: async () => Object.assign([], { images: ["https://img.example/brand-logo.png", "https://img.example/wide.png", "https://img.example/real.png", "https://img.example/millie-moon-newborn.png"] }) }, "Millie Moon Luxury Diapers, Newborn");
+assert.deepEqual(fp, { image: "https://img.example/millie-moon-newborn.png", url: null, store: "", price: null, currency: "" }, "a pick's photo by image search: logos and banners skipped, and a photo from an unknown server that doesn't name the brand");
 ok("photos are checked: a logo by name or a banner by shape is never kept as a product's photo");
 console.log("nest without R2: all checks passed");

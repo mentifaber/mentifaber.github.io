@@ -279,8 +279,8 @@ export class Hive extends DurableObject {
     }
     if (path === "/nest/photo") { // a product photo for one of the registry's picks whose photo was lost (src/nest.js repair)
       if (!owner) return J({ error: "owner only" }, 401); if (!(await this.searchKey(true).catch(() => null))) return J({ error: "no search key" }, 409);
-      const r = await findPhoto({ env: this.env, web: (q, o) => this.web(q, true, o) }, String((b && b.q) || "")).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
-      return J(r, r.error ? 404 : 200);
+      const r = await findPhoto({ env: this.env, web: (q, o) => this.web(q, true, o) }, String((b && b.q) || ""), String((b && b.brand) || "")).catch((e) => ({ error: String(e.message || e).slice(0, 200) }));
+      return J(r, r.error ? 404 : 200); // { made: true }: no page on the web names that brand
     }
     if (path === "/fineprint") { // Fine Print (DocCrawler): the clauses that matter in a document, each quoted word for word (src/hive-fine.js)
       if (req.method !== "POST") return J({ error: "POST only" }, 405);

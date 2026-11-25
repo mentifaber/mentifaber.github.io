@@ -8,10 +8,25 @@ import { complete, cheapAsk, fetchPublic } from "./hive-kit.js";
 export { fetchPublic };
 
 const PICKER = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-const SKIP = /(^|\.)(youtube\.com|youtu\.be|reddit\.com|wikipedia\.org|pinterest\.[a-z.]+|facebook\.com|instagram\.com|tiktok\.com|x\.com|twitter\.com|quora\.com)$/i;
 const NOFETCH = /(^|\.)(amazon\.[a-z.]+|walmart\.com)$/i; // they turn away page readers: linked, but not read
 const BADIMG = /(logo|icon|sprite|favicon|banner|placeholder|no[-_]?image|default|social|share|og[-_]?image|opengraph|avatar|badge|flag|payment|seal|hero|header|swatch|thumb_?s\b|1x1|pixel|spacer)/i;
 const IMAGE = /^image\/(jpeg|png|webp|gif)$/, IMG_MAX = 3e6;
+// not shops: search engines, review sites, magazines, blogs and video sites. Never linked as where to buy, never a photo's source
+export const NOT_SHOP = /(^|\.)(tavily\.com|babygearlab\.com|businessinsider\.com|insider\.com|thebump\.com|whattoexpect\.com|babycenter\.com|nytimes\.com|wirecutter\.com|parents\.com|goodhousekeeping\.com|verywellfamily\.com|today\.com|forbes\.com|cnn\.com|people\.com|buzzfeed\.com|healthline\.com|motherly\.com|romper\.com|scarymommy\.com|nosleeplessnights\.com|heysleepybaby\.com|adayinmotherhood\.com|foter\.com|mybloomingbaby\.com|medium\.com|substack\.com|wordpress\.com|wp\.com|blogspot\.com|ytimg\.com|pinimg\.com|fbcdn\.net|redd\.it|imgur\.com|youtube\.com|youtu\.be|reddit\.com|wikipedia\.org|wikimedia\.org|pinterest\.[a-z.]+|facebook\.com|instagram\.com|tiktok\.com|x\.com|twitter\.com|quora\.com)$|(^|[.-])(blog|blogs|reviews?|magazine|news)([.-]|$)/i;
+export const shopHost = (u) => { const h = host(u); return !!h && !NOT_SHOP.test(h); };
+// image servers of the big shops: a photo there is a shop's product photo (whose, is checked by the search that found it)
+const SHOP_IMG = /(^|\.)(media-amazon\.com|ssl-images-amazon\.com|images-amazon\.com|scene7\.com|walmartimages\.com|thdstatic\.com|lowes\.com|ikea\.com|ikea\.net|shopify\.com|kohls\.com|babylist\.com|bbystatic\.com|costco\.com|wayfair\.com|wfcdn\.com|albeebaby\.com|pbimgs\.com|potterybarnkids\.com|crateandbarrel\.com|nordstrommedia\.com|macysassets\.com)$/i;
+// "Hatch Hatch Night Light" → "Hatch Night Light": a brand said twice (the brand, then a model name that starts with it)
+export const once = (t) => String(t || "").replace(/^(.{2,40}?)\s+\1(?=\s|$)/i, "$1").replace(/\s+/g, " ").trim();
+// the brand's own word, to look for in a page's title or a photo's address: its longest word, lower case, letters only
+const GENERIC = new Set(["the", "baby", "babys", "kids", "kid", "co", "company", "inc", "llc", "brand", "brands", "and", "home", "products", "usa"]);
+export const brandWord = (b) => String(b || "").toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !GENERIC.has(w)).sort((a, c) => c.length - a.length)[0] || "";
+const flat = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+// does a search result (title + address) name this brand? a product nobody's page names is one the model made up
+export const names = (x, brand) => { const w = brandWord(brand); return !w || flat((x && x.title) + " " + (x && x.url)).includes(w); };
+// is this candidate photo trustworthy for this brand? from a product page that names the brand, a big shop's image server, or an address naming the brand
+const trusted = (u, brand) => { const h = host(u); if (!h || NOT_SHOP.test(h)) return false; const w = brandWord(brand); return SHOP_IMG.test(h) || !w || flat(u).includes(w); };
+export const usd = (c) => !c || /^usd$/i.test(String(c));
 const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 const timed = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("took too long")), ms))]);
 const unent = (s) => String(s || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#x2F;/gi, "/");
@@ -25,7 +40,7 @@ export function parseProposals(out, max = 8) {
   const m = /\{[\s\S]*\}/.exec(String(out || "")); let j = null; try { j = m && JSON.parse(m[0]); } catch (e) {}
   const list = j && Array.isArray(j.products) ? j.products : [];
   const seen = new Set();
-  return list.map((p) => ({ brand: clip(p && p.brand, 40), model: clip(p && p.model, 80), why: clip(p && p.why, 140), tier: /^(budget|mid|premium)$/.test(p && p.tier) ? p.tier : "mid", price: Number(p && p.price) > 0 ? Math.round(Number(p.price)) : null }))
+  return list.map((p) => ({ brand: clip(p && p.brand, 40), model: clip(once(String((p && p.brand) || "") + " " + String((p && p.model) || "")).slice(String((p && p.brand) || "").trim().length).trim() || (p && p.model), 80), why: clip(p && p.why, 140), tier: /^(budget|mid|premium)$/.test(p && p.tier) ? p.tier : "mid", price: Number(p && p.price) > 0 ? Math.round(Number(p.price)) : null }))
     .filter((p) => p.brand && p.model && !seen.has((p.brand + p.model).toLowerCase()) && seen.add((p.brand + p.model).toLowerCase())).slice(0, max);
 }
 
@@ -98,36 +113,49 @@ async function photo(u) {
 export async function findProducts(h, item) {
   const name = clip(item.name, 120); if (!name) return { error: "name the item first" };
   const wants = [item.for && "the baby is a " + clip(item.for, 10) + ": where it matters (clothes, bedding, swaddles, decor, toys) pick " + clip(item.for, 10) + "-friendly or neutral colours and designs, nothing pink or girly", item.look && "what they're looking for: " + clip(item.look, 200), item.notes && "their notes: " + clip(item.notes, 300), item.brand && "brand or model they mentioned: " + clip(item.brand, 80), item.color && "colour/style: " + clip(item.color, 60), item.size && "size: " + clip(item.size, 20), item.price && "around $" + Math.round(item.price) + " each"].filter(Boolean).join("; ");
-  const sys = "You help new parents choose baby products. For the registry item, name 8 specific products that are on sale now: different brands, and a mix of price levels (budget, mid-range, premium) unless the parents' preferences say otherwise. Prefer well-reviewed, safety-certified products sold by major baby retailers. Use each product's exact model name. Reply with ONLY JSON: {\"products\": [{\"brand\": \"...\", \"model\": \"...\", \"tier\": \"budget|mid|premium\", \"price\": 199, \"why\": \"one short reason a parent might pick it\"}]}";
+  const sys = "You help new parents choose baby products. For the registry item, name 8 specific products that are on sale now: different brands, and a mix of price levels (budget, mid-range, premium) unless the parents' preferences say otherwise. Prefer well-reviewed, safety-certified products sold by major US retailers. Name only real products you are sure exist, under the brand that actually makes them (never attach a model to the wrong brand), with each product's exact model name, not repeating the brand. Every product must be the item itself, not an accessory, a related product or a different kind of product. Think about who uses it: items for the parents themselves (postpartum care, a nursing water bottle, snacks, a robe) need adult products, not baby or toddler versions. Reply with ONLY JSON: {\"products\": [{\"brand\": \"...\", \"model\": \"...\", \"tier\": \"budget|mid|premium\", \"price\": 199, \"why\": \"one short reason a parent might pick it\"}]}";
   let why = "";
-  const ideas = parseProposals(await timed(cheapAsk(h, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch((e) => { why = String((e && e.message) || e); return ""; }));
+  const ideas = parseProposals(await timed(cheapAsk(h, PICKER, sys, [{ role: "user", text: "ITEM: " + name + (item.cat ? " (" + clip(item.cat, 40) + ")" : "") + (/^(mom|mum|parents?|dad)$/i.test(item.cat || "") ? "\nWHO IT'S FOR: the parents themselves, not the baby" : "") + (wants ? "\nPARENTS' PREFERENCES: " + wants : "") }], 1100), 25000).catch((e) => { why = String((e && e.message) || e); return ""; }));
   if (!ideas.length) return quota(why) ? { error: "the free daily AI allowance is used up; product finding carries on by itself tomorrow", later: true } : { error: "couldn't come up with products for that; try again, or describe what you're after" };
   const products = await Promise.all(ideas.map(async (p) => {
     const q = p.brand + " " + p.model + (new RegExp(name.split(/\s+/)[0], "i").test(p.model) ? "" : " " + name);
-    const res = await timed(h.web(q, { images: true }), 15000).catch(() => []);
-    const hits = res.map((x) => ({ ...x, url: publicHttps(x.url) })).filter((x) => x.url && !SKIP.test(host(x.url)));
-    const pages = (await Promise.all(hits.filter((x) => !NOFETCH.test(host(x.url))).slice(0, 3).map((x) => readPage(x.url).catch(() => null)))).filter(Boolean);
-    const shop = pages.find((x) => x.product) || null;
-    // the product's own photos first, then the search's image results, then a product page's share image
-    const cands = [...new Set([...pages.filter((x) => x.product).flatMap((x) => x.images), ...(res.images || []), ...pages.filter((x) => x.product && x.og).map((x) => x.og)])].slice(0, 8);
-    let pic = null;
-    for (let i = 0; i < cands.length && !pic; i += 3) pic = (await Promise.all(cands.slice(i, i + 3).map((u) => photo(u).catch(() => null)))).find(Boolean) || null;
-    if (!pic) return null; // no real product photo: left out rather than shown with a placeholder
-    const link = (shop && shop.url) || (hits[0] && hits[0].url) || null;
+    const got = await look(h, q, p.brand); if (!got) return null; // the web doesn't know it (made up), or no real product photo: left out
+    const { pic, shop, link } = got;
     const id = h.store ? await h.store(pic.buf, pic.type).catch(() => null) : null;
-    return { brand: p.brand, model: p.model, tier: p.tier, why: p.why, title: clip((shop && shop.title) || q, 120), url: link, store: link ? host(link) : "", image: pic.url, i: id, w: pic.w, h: pic.h, price: shop && shop.price ? shop.price : null, currency: (shop && shop.currency) || "", approx: p.price };
+    return { brand: p.brand, model: p.model, tier: p.tier, why: p.why, title: clip((shop && shop.title) || q, 120), url: link, store: link ? host(link) : "", image: pic.url, i: id, w: pic.w, h: pic.h, price: shop && shop.price && usd(shop.currency) ? shop.price : null, currency: shop && shop.price && usd(shop.currency) ? "USD" : "", approx: p.price };
   }));
   const found = products.filter(Boolean).slice(0, 6);
   return found.length ? { products: found, searched: ideas.length } : { error: "no products with a clear photo turned up; try describing what you're after", searched: ideas.length };
 }
 
-// a real product photo for a named product (a pick whose photo was lost): image search, then the product's own pages
-export async function findPhoto(h, q) {
-  q = clip(q, 160); if (!q) return { error: "nothing to look for" };
+// one product on the web: { pic, shop, link } or null. Left out when no result names its brand (a product the model made up;
+// "Hooda NoseFrida" is Fridababy's) or no trustworthy photo turns up. Links only to shops, photos only from the product's own
+// page, a big shop's image server, or an address that names the brand: never a search engine's logo, a blog's or a review's
+async function look(h, q, brand) {
   const res = await timed(h.web(q, { images: true }), 15000).catch(() => []);
-  const hits = res.map((x) => ({ ...x, url: publicHttps(x.url) })).filter((x) => x.url && !SKIP.test(host(x.url)));
-  const pages = (await Promise.all(hits.filter((x) => !NOFETCH.test(host(x.url))).slice(0, 2).map((x) => readPage(x.url).catch(() => null)))).filter(Boolean);
-  const cands = [...new Set([...pages.filter((x) => x.product).flatMap((x) => x.images), ...(res.images || [])])].slice(0, 8);
-  for (let i = 0; i < cands.length; i += 3) { const pic = (await Promise.all(cands.slice(i, i + 3).map((u) => photo(u).catch(() => null)))).find(Boolean); if (pic) return { image: pic.url }; }
-  return { error: "no product photo found" };
+  const all = res.map((x) => ({ ...x, url: publicHttps(x.url) })).filter((x) => x.url);
+  if (all.length && !all.some((x) => names(x, brand))) return null;
+  const hits = all.filter((x) => shopHost(x.url) && names(x, brand));
+  const pages = (await Promise.all(hits.filter((x) => !NOFETCH.test(host(x.url))).slice(0, 3).map((x) => readPage(x.url).catch(() => null)))).filter((x) => x && x.product && names(x, brand));
+  const shop = pages[0] || null;
+  // the product's own photos first, then the search's image results the brand's own or a shop's, then a product page's share image
+  const cands = [...new Set([...pages.flatMap((x) => x.images), ...(res.images || []).filter((u) => trusted(u, brand)), ...pages.filter((x) => x.og).map((x) => x.og)])].filter((u) => shopHost(u)).slice(0, 8);
+  let pic = null;
+  for (let i = 0; i < cands.length && !pic; i += 3) pic = (await Promise.all(cands.slice(i, i + 3).map((u) => photo(u).catch(() => null)))).find(Boolean) || null;
+  if (!pic) return null;
+  return { pic, shop, link: (shop && shop.url) || (hits[0] && hits[0].url) || null };
+}
+
+// a pick checked again (the registry's mending): its photo, and where to buy it → { image, url, store, price, currency },
+// { made: true } when the web has nothing naming its brand (a made-up product), or { error }
+export async function findPhoto(h, q, brand) {
+  q = clip(q, 160); if (!q) return { error: "nothing to look for" };
+  brand = clip(brand, 40); // no brand (a card's own photo): nothing to check the results against
+  const res = await timed(h.web(q, { images: true }), 15000).catch(() => null);
+  if (!res) return { error: "the search didn't answer" };
+  if (res.length && !res.some((x) => names({ ...x, url: publicHttps(x.url) || "" }, brand))) return { made: true };
+  const got = await look({ web: async () => res }, q, brand).catch(() => null);
+  if (!got) return { error: "no product photo found" };
+  const p = got.shop;
+  return { image: got.pic.url, url: got.link, store: got.link ? host(got.link) : "", price: p && p.price && usd(p.currency) ? p.price : null, currency: p && p.price && usd(p.currency) ? "USD" : "" };
 }

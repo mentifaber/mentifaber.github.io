@@ -37,7 +37,7 @@
 //                            sign-ins are left alone. What's there now is saved first as a copy of its own, so a restore
 //                            can be undone, and any photo that couldn't be brought back is listed.
 import { DurableObject } from "cloudflare:workers";
-import { pageProduct, quota, checkPhoto, fetchPublic } from "./nest-find.js";
+import { pageProduct, quota, checkPhoto, fetchPublic, shopHost, once, usd } from "./nest-find.js";
 import { metered, newBag, touch as rowTouch, dayReport, over as rowsOver, nextDay } from "./rowmeter.js";
 const NEST_BG_ROWS = 400000; // the registry's background work (finding products, mending photos) reads at most this many rows a day
 
@@ -49,13 +49,15 @@ const rnd = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 const same = (a, b) => { a = String(a || ""); b = String(b || ""); if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
 const MIGRATE_V = "boy-millie-1";
-const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "2", REPAIR_TICK = 5, PHOTO_SEARCH_DAY = 300, READ_WAIT = 20e3;
+const PHOTO_DB_MAX = 1.9e6, REPAIR_V = "3", REPAIR_TICK = 5, PHOTO_SEARCH_DAY = 300, READ_WAIT = 20e3;
 const CAT_KEYS = ["nursery", "sleep", "feeding", "diaper", "bath", "clothes", "gear", "play", "health", "mom", "books", "other"];
 const READ_ASK = 'This is a photo or a screenshot of something a family wants on their baby registry, often a shop\'s product page. Reply with JSON only, no other words: {"name": "what it is, as a guest would search for it: brand and model if you can see them, under 80 characters", "brand": "brand or empty", "price": a number or null, "currency": "3-letter code or empty", "store": "the shop if you can see it, or empty", "category": one of "' + CAT_KEYS.join('", "') + '"}';
 const READ_MODELS = ["@cf/meta/llama-3.2-11b-vision-instruct", "@cf/mistralai/mistral-small-3.1-24b-instruct", "@cf/llava-hf/llava-1.5-7b-hf"];
 const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
 const textOf = (r) => (r && typeof r.response === "object" && r.response ? JSON.stringify(r.response) : String((r && (r.response ?? r.description ?? (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content))) || ""));
 const shopOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
+// a sign-up, not a thing to buy: "Freezer meals: sign up to cook one", help, visits. No products are looked for
+export const signUp = (it) => /\bsign[ -]?up\b/i.test(String((it && it.notes) || "")) || /\b(meals?|babysitting|help with|visits?|chores?)\b/i.test(String((it && it.name) || ""));
 const FIND_DAY = 400, FIND_BATCH = 1, FIND_GAP = 15e3; // one item at a time, a breath apart: gentle on the free plan's limits
 const publicShop = (x) => { try { const p = new URL(x); return p.protocol === "https:" && !privateHost(p.hostname); } catch (e) { return false; } }; // a redirect's new address must pass too
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
@@ -88,7 +90,7 @@ export class Nest extends DurableObject {
     this.q().exec("INSERT INTO doc(path,data,at) VALUES('meta/settings',?,?) ON CONFLICT(path) DO UPDATE SET data=excluded.data, at=excluded.at", JSON.stringify({ ...s, parents: [...ps, id], updatedAt: Date.now() }), Date.now()); }
 
   // ── the product finder, in the background ──
-  findable(it) { return it && it.kind !== "fund" && String(it.name || "").trim(); }
+  findable(it) { return it && it.kind !== "fund" && String(it.name || "").trim() && !signUp(it); }
   async enqueue(ids) {
     const q = this.q(); let n = 0;
     for (const id of ids) { if (!this.findable(this.doc("items/" + id))) continue; q.exec("INSERT INTO findq(item,at) VALUES(?,?) ON CONFLICT(item) DO NOTHING", id, Date.now()); n++; }
@@ -107,7 +109,7 @@ export class Nest extends DurableObject {
     const prev = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
     if (r.products) {
       await Promise.all(r.products.map(async (p) => { if (!p.i && p.image) p.i = await this.fetchPhoto(p.image); })); // the Hive had no R2 to keep them in: the registry keeps them
-      const keep = r.products.map((p) => ({ t: [p.brand, p.model].filter(Boolean).join(" ") || p.title, b: p.brand, u: p.url, i: p.i || null, r: p.image || null, p: p.price, c: p.currency, s: p.store, w: p.why, tier: p.tier, a: p.approx }));
+      const keep = r.products.map((p) => ({ t: once([p.brand, p.model].filter(Boolean).join(" ")) || p.title, b: p.brand, u: p.url, i: p.i || null, r: p.image || null, p: usd(p.currency) ? p.price : null, c: usd(p.currency) ? "USD" : "", s: p.store, w: p.why, tier: p.tier, a: p.approx }));
       this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ products: keep, at: Date.now() }), Date.now());
       if (prev) { const used = this.used(), now = new Set(keep.map((k) => k.i)); for (const o of JSON.parse(prev.data).products || []) if (o.i && !used.has(o.i) && !now.has(o.i)) await this.dropPhoto(o.i); } // last search's photos nobody kept
     } else if (!r.later) this.q().exec("INSERT INTO find(item,data,at) VALUES(?,?,?) ON CONFLICT(item) DO UPDATE SET data=excluded.data, at=excluded.at", id, JSON.stringify({ ...(prev ? JSON.parse(prev.data) : {}), error: String(r.error || "nothing found").slice(0, 200), at: Date.now() }), Date.now());
@@ -118,10 +120,11 @@ export class Nest extends DurableObject {
   // itself (imageAuto); the finder's suggestions get theirs from their product pages. Several at once, each tick.
   // "Refresh all photos" starts a new round (the round is part of the mark each photo is checked against).
   mark() { return REPAIR_V + "." + (this.kv("photoRound") || "0"); }
-  async pickPhoto(o) {
-    let id = o.r ? await this.fetchPhoto(o.r, true) : null; if (id) return { id, r: o.r };
-    if (o.u) { const ph = await this.pagePhoto(await this.readPage(o.u)); if (ph) return ph; }
-    return this.searchPhoto([o.b && !String(o.t || "").toLowerCase().includes(String(o.b).toLowerCase()) ? o.b : "", o.t].filter(Boolean).join(" "));
+  async pickPhoto(o) { // → { id, r, u?, s?, p?, c? } or { made: true } (the web doesn't know it) or null
+    const linkOk = !o.u || shopHost(o.u);
+    if (linkOk) { const id = o.r && shopHost(o.r) ? await this.fetchPhoto(o.r, true) : null; if (id) return { id, r: o.r }; }
+    if (o.u && linkOk) { const ph = await this.pagePhoto(await this.readPage(o.u)); if (ph) return ph; }
+    return this.searchPhoto([o.b && !String(o.t || "").toLowerCase().includes(String(o.b).toLowerCase()) ? o.b : "", once(o.t)].filter(Boolean).join(" "), o.b);
   }
   async itemPhoto(it, id) { // a suggestion's photo the finder already has, else an image search for the thing
     const f = this.q().exec("SELECT data FROM find WHERE item=?", id).toArray()[0];
@@ -143,16 +146,18 @@ export class Nest extends DurableObject {
       if (it.imageId && !(await this.hasPhoto(it.imageId))) { plan.set.imageOld = it.imageId; plan.set.imageId = null; }
       for (const o of it.options || []) {
         if (o.x === mark) continue; const key = o.u || o.t;
-        if (o.i && (await this.hasPhoto(o.i)) && (await this.storedShaped(o.i))) { plan.opts.set(key, { x: mark }); continue; } // it's the product: checked
+        const tidy = { ...(once(o.t) !== o.t ? { t: once(o.t) } : {}), ...(o.c && !usd(o.c) ? { p: null, c: "" } : {}) }; // "Hatch Hatch…" said once; euros aren't this registry's money
+        const fromShop = (!o.r || shopHost(o.r)) && (!o.u || shopHost(o.u)); // a search engine's logo, a blog's or a review's photo, a link to a blog: looked up again
+        if (fromShop && o.i && (await this.hasPhoto(o.i)) && (await this.storedShaped(o.i))) { plan.opts.set(key, { ...tidy, x: mark }); continue; } // it's the product: checked
         if (o.i) { await this.dropPhoto(o.i); plan.opts.set(key, { i: null }); } // gone, or a shop's logo or banner
         if (jobs.length >= REPAIR_TICK) { more = true; continue; }
-        jobs.push(this.pickPhoto(o).catch(() => null).then((ph) => plan.opts.set(key, ph ? { i: ph.id, r: ph.r || o.r || null, x: mark } : { i: null, x: mark })));
+        jobs.push(this.pickPhoto(o).catch(() => null).then((ph) => plan.opts.set(key, ph && ph.made ? { drop: true } : ph ? { ...tidy, i: ph.id, r: ph.r || o.r || null, ...(ph.u && shopHost(ph.u) && !(o.u && shopHost(o.u)) ? { u: ph.u, s: ph.s || "" } : o.u && !shopHost(o.u) ? { u: null, s: "" } : {}), ...(ph.p && !(o.p > 0 && usd(o.c)) ? { p: ph.p, c: "USD" } : {}), x: mark } : { ...tidy, i: null, ...(o.u && !shopHost(o.u) ? { u: null, s: "" } : {}), x: mark })));
       }
       const bare = it.kind !== "fund" && !(it.imageId && !plan.set.imageOld) && !(it.options || []).length;
       if (it.imageAuto && (!bare || !(await this.hasPhoto(it.imageAuto)))) plan.set.imageAuto = null; // picks or their own photo now show instead
       else if (bare && !it.imageAuto && it.autoX !== mark) {
         if (jobs.length >= REPAIR_TICK) more = true;
-        else jobs.push(this.itemPhoto(it, id).catch(() => null).then((ph) => { plan.set.imageAuto = ph ? ph.id : null; plan.set.autoX = mark; }));
+        else jobs.push(this.itemPhoto(it, id).catch(() => null).then((ph) => { plan.set.imageAuto = ph && ph.id ? ph.id : null; plan.set.autoX = mark; }));
       }
       plans.push(plan);
     }
@@ -160,7 +165,7 @@ export class Nest extends DurableObject {
     for (const plan of plans) {
       if (!Object.keys(plan.set).length && !plan.opts.size) continue;
       const cur = this.doc(plan.path); if (!cur) continue; // written against the latest copy, so a parent's edit meanwhile isn't lost
-      const next = { ...cur, ...plan.set, options: (cur.options || []).map((o) => { const f = plan.opts.get(o.u || o.t); return f ? { ...o, ...f } : o; }) };
+      const next = { ...cur, ...plan.set, options: (cur.options || []).map((o) => { const f = plan.opts.get(o.u || o.t); return f ? { ...o, ...f } : o; }).filter((o) => !o.drop) }; // a made-up product leaves
       if ("imageOld" in plan.set && cur.imageId !== plan.set.imageOld) { next.imageId = cur.imageId; delete next.imageOld; } // changed meanwhile: theirs stands
       if (!(cur.options || []).length) delete next.options;
       if (JSON.stringify(next) !== JSON.stringify(cur)) { this.q().exec("UPDATE doc SET data=?, at=? WHERE path=?", JSON.stringify(next), Date.now(), plan.path); this.bump(); }
@@ -260,11 +265,11 @@ export class Nest extends DurableObject {
     const p = pageProduct((await r.text().catch(() => "")).slice(0, 900000), r.url || u.href); p.images = [...new Set([...(p.images || []), p.og].filter(Boolean))].slice(0, 4); return p;
   }
   async pagePhoto(page) { for (const im of ((page && page.images) || []).slice(0, 2)) { const id = await this.fetchPhoto(im, true); if (id) return { id, r: im }; } return null; }
-  async searchPhoto(q) { // image search through the Hive (the owner's search key), a few a day
+  async searchPhoto(q, brand) { // image search through the Hive (the owner's search key), a few a day → { id, r, u, s, p, c } or { made: true } or null
     if (!this.env.HIVE) return null; const day = new Date().toISOString().slice(0, 10), n = this.kv("psearch:" + day) | 0; if (n >= PHOTO_SEARCH_DAY) return null; this.kv("psearch:" + day, n + 1);
-    const res = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/photo", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ q }) })).catch(() => null);
-    const j = res && res.ok ? await res.json().catch(() => null) : null; if (!j || !j.image) return null;
-    const id = await this.fetchPhoto(j.image, true); return id ? { id, r: j.image } : null;
+    const res = await this.env.HIVE.get(this.env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/nest/photo", { method: "POST", headers: { "content-type": "application/json", "x-hive-owner": "1" }, body: JSON.stringify({ q, brand: brand || "" }) })).catch(() => null);
+    const j = res ? await res.json().catch(() => null) : null; if (j && j.made) return { made: true }; if (!j || !j.image) return null;
+    const id = await this.fetchPhoto(j.image, true); return id ? { id, r: j.image, u: j.url || null, s: j.store || "", p: j.price || null, c: j.currency || "" } : null;
   }
   async storedShaped(id) { const ph = await this.getPhoto(id); return !!ph && checkPhoto("", ph.body); }
   async dropPhoto(id, now) { // a photo a kept copy still needs waits (in "gone") until no copy needs it; backup() lets it go then
