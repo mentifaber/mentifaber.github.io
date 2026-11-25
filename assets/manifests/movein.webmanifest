@@ -1,0 +1,31 @@
+{
+  "id": "/movein",
+  "name": "Move-in, Move-out",
+  "short_name": "Move-in",
+  "description": "A rental's condition, proved twice: each room walked with photos at move-in and move-out, sealed with the date, and what changed.",
+  "start_url": "/movein.html",
+  "scope": "/movein.html",
+  "display": "standalone",
+  "background_color": "#0a0d0c",
+  "theme_color": "#0a0d0c",
+  "icons": [
+    {
+      "src": "../icons/v2/movein-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/movein-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/movein-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

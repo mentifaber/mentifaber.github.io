@@ -5,7 +5,7 @@
   <url><loc>https://mentifaber.org/ballast-app</loc><lastmod>2026-11-25</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/ballast</loc><lastmod>2026-11-25</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/barycenter</loc><lastmod>2026-11-25</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/blackout</loc><lastmod>2026-11-24</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/blackout</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor</loc><lastmod>2026-11-25</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/cartograph-app</loc><lastmod>2026-11-23</lastmod><priority>0.6</priority></url>
@@ -45,6 +45,7 @@
   <url><loc>https://mentifaber.org/monstrosity</loc><lastmod>2026-11-25</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/moon-compatibility-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/moon-compatibility</loc><lastmod>2026-11-25</lastmod><priority>0.8</priority></url>
+  <url><loc>https://mentifaber.org/movein</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/muse</loc><lastmod>2026-11-25</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/neural-sim-v1</loc><lastmod>2026-11-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/neural-sim-v2</loc><lastmod>2026-11-24</lastmod><priority>0.5</priority></url>

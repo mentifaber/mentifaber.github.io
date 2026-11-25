@@ -11,6 +11,9 @@
 //   claim     a Claim Kit: a case (an insurance claim, a deposit dispute, a warranty fight) and the fingerprint of
 //             every photo, receipt, document and dated note in it, in order. The files stay on the device and travel
 //             in the kit beside the record; the record proves that exactly these files were together by then.
+//   inventory a Move-in, Move-out inspection: a property, which walk it was (move-in or move-out), and room by room each
+//             item's condition and note and every photo's fingerprint. The photos stay on the device and travel in
+//             the kit; the record proves the rooms looked like this, in these photos, by then.
 //
 // A record is "<payload>.<signature>", both base64url: payload is JSON { v, kind, iat (ms), kid, data }, the signature
 // is ECDSA P-256 / SHA-256 over the payload's bytes (raw r||s, as WebCrypto makes it).
@@ -82,19 +85,39 @@ function claimData(b) {
   return out;
 }
 
+export const INV_ROOMS = 30, INV_ITEMS = 20, INV_PHOTOS = 150, INV_CONDS = ["good", "fair", "worn", "damaged", "missing"];
+function inventoryData(b) {
+  const bad = (m) => Object.assign(new Error(m), { status: 400 });
+  const property = clean(b.property, 120); if (!property) throw bad("say which property it is");
+  if (!["in", "out"].includes(b.phase)) throw bad("say whether it's the move-in or the move-out walk");
+  const raw = Array.isArray(b.rooms) ? b.rooms : []; if (!raw.length) throw bad("add a room first"); if (raw.length > INV_ROOMS) throw bad("at most " + INV_ROOMS + " rooms");
+  let photos = 0;
+  const rooms = raw.map((r, i) => {
+    r = r && typeof r === "object" ? r : {}; const name = clean(r.name, 60); if (!name) throw bad("room " + (i + 1) + " needs a name");
+    const items = (Array.isArray(r.items) ? r.items : []).slice(0, INV_ITEMS + 1); if (items.length > INV_ITEMS) throw bad(name + ": at most " + INV_ITEMS + " items");
+    const ph = Array.isArray(r.photos) ? r.photos : []; photos += ph.length; if (photos > INV_PHOTOS) throw bad("at most " + INV_PHOTOS + " photos in all");
+    return { name,
+      items: items.map((x) => { x = x && typeof x === "object" ? x : {}; const it = { what: clean(x.what, 60) || "Item" }; if (INV_CONDS.includes(x.cond)) it.cond = x.cond; const note = clean(x.note, 200); if (note) it.note = note; return it; }),
+      photos: ph.map((x, k) => { const sha = String((x && x.sha256) || "").toLowerCase(); if (!/^[0-9a-f]{64}$/.test(sha)) throw bad(name + ", photo " + (k + 1) + ": send its SHA-256, not the photo"); const o = { name: clean(x.name, 120), sha256: sha }; const by = num(x.bytes, 0, 2e9); if (by !== undefined) o.bytes = Math.round(by); return o; }) };
+  });
+  const out = { property, phase: b.phase, rooms }; if (/^\d{4}-\d\d-\d\d$/.test(b.date || "")) out.date = b.date;
+  for (const k of ["landlord", "tenant"]) { const v = clean(b[k], 80); if (v) out[k] = v; }
+  return out;
+}
+
 export const WITNESS_DAY = 100, CLAIM_DAY = 20; // records a visitor's address may ask for a day
 
 export async function seal(req, env, json, owner) {
   const url = new URL(req.url), sub = url.pathname.replace(/^\/api\/seal\/?/, "");
   if (sub === "key" && req.method === "GET") { const k = await key(env); return json({ kid: k.kid, alg: "ES256", jwk: k.pub }, 200, { "cache-control": "public, max-age=3600" }); }
-  if ((sub === "passport" || sub === "witness" || sub === "claim") && req.method === "POST") {
+  if ((sub === "passport" || sub === "witness" || sub === "claim" || sub === "inventory") && req.method === "POST") {
     let b = {}; try { b = await req.json(); } catch (e) { return json({ error: "send JSON" }, 400); }
     try {
       if (sub === "passport") { if (!owner) return json({ error: "only the workshop can issue a Device Passport" }, 403); return json({ record: await sign(env, "passport", passportData(b)) }); }
       const ip = req.headers.get("cf-connecting-ip") || "anon";
-      if (sub === "claim") { const d = claimData(b); // checked before it counts against the day's limit
+      if (sub === "claim" || sub === "inventory") { const d = sub === "claim" ? claimData(b) : inventoryData(b); // checked before it counts against the day's limit
         if (!owner && !(await env.STORE.get(env.STORE.idFromName("main")).hit("claim:" + ip, CLAIM_DAY, 864e5))) return json({ error: "that's today's " + CLAIM_DAY + " sealed kits from this connection; try again tomorrow" }, 429);
-        return json({ record: await sign(env, "claim", d) }); }
+        return json({ record: await sign(env, sub, d) }); }
       if (!owner && !(await env.STORE.get(env.STORE.idFromName("main")).hit("witness:" + ip, WITNESS_DAY, 864e5))) return json({ error: "that's today's " + WITNESS_DAY + " Witness records from this connection; try again tomorrow" }, 429);
       return json({ record: await sign(env, "witness", witnessData(b)) });
     } catch (e) { return json({ error: String(e.message || e).slice(0, 200) }, e.status || 500); }

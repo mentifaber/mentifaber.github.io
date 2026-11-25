@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/movein">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Move-in, Move-out · Mentifaber</title>
+<meta name="description" content="A rental&#x27;s condition, proved twice: walk each room at move-in and at move-out, with photos, sealed with the date; then see room by room what changed.">
+<meta name="theme-color" content="#0a0d0c">
+<link rel="icon" href="assets/icons/v2/movein.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/movein-180.png">
+<link rel="manifest" href="assets/manifests/movein.webmanifest">
+<style>
+/* Move-in, Move-out: an inventory clipboard. Each room is a sheet of items with a condition and a note, and its photos
+   along the bottom; the two walks sit side by side when they're compared, and anything worse is marked in the margin. */
+:root { --bg: #0a0d0c; --sheet: #111614; --card: #171e1b; --line: #2a3632; --mint: #4fc9a0; --mint-hi: #9ae9cd; --ink: #e8f1ed; --dim: #93a69e; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 880px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mint); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--mint-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--mint); margin: 24px 0 10px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0c110f; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--mint); background: var(--mint); color: #04201a; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--mint-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--line); margin: 16px 0 0; } .tabs button { font: 600 15px var(--sans); color: var(--dim); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--mint); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.row button.open { all: unset; cursor: pointer; flex: 1; min-width: 0; } .row b { display: block; overflow-wrap: anywhere; } .row small { color: var(--dim); }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.ok { color: var(--ok); border-color: var(--ok); } .tag.warn { color: var(--warn); border-color: var(--warn); }
+.room { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+.room .rh { display: flex; gap: 8px; align-items: center; } .room .rh .in { font-weight: 600; margin: 0; }
+.items { width: 100%; border-collapse: collapse; margin-top: 8px; } .items td { padding: 4px 4px 4px 0; vertical-align: middle; } .items .in { margin: 0; padding: 6px 8px; font-size: 14px; }
+.items td:first-child { width: 34%; } .items td:nth-child(2) { width: 26%; }
+@media (max-width: 560px) { .items tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; border-bottom: 1px solid var(--line); padding: 6px 0; } .items td { width: auto !important; padding: 0; } .items td:nth-child(3) { grid-column: 1 / -1; } }
+.photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .photos figure { margin: 0; position: relative; } .photos img { width: 76px; height: 76px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.photos button { position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.7); color: #fff; cursor: pointer; font-size: 14px; line-height: 1; }
+.lnk { background: none; border: 0; color: var(--dim); font: 13px var(--sans); text-decoration: underline; cursor: pointer; padding: 2px 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chip { font: 14px var(--sans); padding: 6px 11px; border-radius: 99px; border: 1px dashed var(--mint); background: none; color: var(--mint-hi); cursor: pointer; }
+.cmp { width: 100%; border-collapse: collapse; font-size: 14.5px; } .cmp th, .cmp td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; } .cmp th { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mint); }
+.cmp tr.worse td { background: rgba(255,138,107,.08); } .cmp tr.worse td:last-child { color: var(--bad); font-weight: 600; } .cmp small { color: var(--dim); display: block; }
+.sealed { border: 2px solid var(--mint); border-radius: 12px; padding: 12px 14px; margin-top: 12px; } .stamp { display: inline-block; font: 800 18px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--mint); border: 3px solid var(--mint); border-radius: 6px; padding: 4px 9px; transform: rotate(-2deg); }
+.verdict { border-radius: 10px; padding: 12px 14px; margin-top: 12px; } .verdict.ok { border: 1.5px solid var(--ok); color: var(--ok); } .verdict.bad { border: 1.5px solid var(--bad); color: var(--bad); }
+.checks { list-style: none; margin: 10px 0 0; padding: 0; } .checks li { border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 14px; overflow-wrap: anywhere; } .y { color: var(--ok); } .n { color: var(--bad); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--mint-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Move-in, Move-out", "description": "A rental's condition, proved twice: walk each room at move-in and at move-out, with photos, sealed with the date; then see room by room what changed.", "url": "https://mentifaber.org/movein", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/movein-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Move-in, Move-out</span><a href="./">The workshop</a></div>
+  <h1>A rental's condition, <span>proved twice</span></h1>
+  <p class="lede">Walk each room the day you move in: what's there, what state it's in, and photos. The workshop seals the walk with the date, and you keep a copy. Walk it again the day you move out, and see room by room what changed. If the deposit is argued over, the difference becomes a Claim Kit in one tap. It works for landlords too. Your photos stay on this device: only their fingerprints are sent to be sealed.</p>
+
+  <div id="list">
+    <h2>Your properties</h2>
+    <div id="props" style="display:grid;gap:8px"></div>
+    <div class="bar"><button class="btn" id="new" type="button">Start a property</button><span class="status">Kept on this device only.</span></div>
+    <h2>Check a sealed walk</h2>
+    <div class="panel"><p class="status" style="margin-top:0">Choose a walk's zip (or its inventory.json with the photos). Each photo's fingerprint is worked out here and compared with what the workshop sealed. Nothing is uploaded.</p>
+      <label class="btn ghost" style="cursor:pointer">Choose the walk<input id="k-files" type="file" multiple hidden></label><div id="k-out" aria-live="polite"></div></div>
+  </div>
+
+  <div id="prop" hidden>
+    <div class="bar" style="margin-top:16px"><button class="btn ghost sm" id="back" type="button">← All properties</button></div>
+    <div class="panel"><div class="grid"><label>The property<input class="in" id="p-name" maxlength="120" placeholder="Flat 4B, 12 Elm Street"></label>
+      <label>Landlord or agent <span class="status">(optional)</span><input class="in" id="p-landlord" maxlength="80"></label><label>Tenant <span class="status">(optional)</span><input class="in" id="p-tenant" maxlength="80"></label></div></div>
+    <div class="tabs" role="tablist"><button role="tab" id="t-in" aria-selected="true">Move-in walk</button><button role="tab" id="t-out" aria-selected="false">Move-out walk</button><button role="tab" id="t-cmp" aria-selected="false">What changed</button></div>
+    <section id="walk" role="tabpanel">
+      <div class="grid" style="margin-top:12px"><label>The day of the walk<input class="in" id="w-date" type="date"></label></div>
+      <p class="status" id="w-from" hidden></p>
+      <div id="rooms"></div>
+      <div class="panel"><b>Add a room</b><div class="chips" id="room-chips" style="margin-top:8px"></div>
+        <div class="bar"><label style="flex:1 1 200px">Or name it<input class="in" id="r-name" maxlength="60" placeholder="Bedroom 2"></label><button class="btn ghost" id="r-add" type="button">Add</button></div></div>
+      <div class="panel"><p style="margin:0">When every room is done, seal the walk: the workshop signs each room's items, conditions and notes, and every photo's fingerprint, with today's date. You get a zip to keep and send: the photos, the sealed record, and a summary anyone can read.</p>
+        <div class="bar"><button class="btn" id="seal" type="button">Seal this walk and download it</button><span class="status" id="s-st" role="status"></span></div></div>
+      <div id="sealed" class="sealed" hidden></div>
+    </section>
+    <section id="cmp" role="tabpanel" hidden></section>
+    <div class="bar" style="margin-top:20px"><button class="btn ghost sm" id="del" type="button">Delete this property</button></div>
+  </div>
+</div>
+<script src="assets/seal/verify.js"></script>
+<script src="assets/seal/zip.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const COND = [["", "—"], ["good", "Good"], ["fair", "Fair"], ["worn", "Worn"], ["damaged", "Damaged"], ["missing", "Missing"]], SCORE = { good: 0, fair: 1, worn: 2, damaged: 3, missing: 4 };
+  const BASE = ["Walls", "Floor", "Ceiling", "Windows", "Doors", "Lights and switches"];
+  const ROOMS = { Kitchen: ["Oven and hob", "Fridge", "Sink and taps", "Cupboards", "Worktop"], Bathroom: ["Bath or shower", "Toilet", "Sink and taps", "Tiles", "Extractor fan"], "Living room": ["Curtains or blinds", "Heating"], Bedroom: ["Wardrobe", "Curtains or blinds", "Heating"], Hall: ["Front door and locks", "Stairs"], Garden: ["Fences", "Lawn and beds", "Shed"] };
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const nice = (d) => (d ? new Date(d + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "no date");
+  const when = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
+  const hex = async (data) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const slug = (t) => String(t || "x").normalize("NFKD").replace(/[^\w.-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 40).toLowerCase() || "x";
+  const PH = { in: "move-in", out: "move-out" }, PHN = { in: "Move-in", out: "Move-out" };
+
+  // ── properties, in IndexedDB on this device, photos and all ──
+  const open = (name, store) => new Promise((ok, no) => { const r = indexedDB.open(name, 1); r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains(store)) r.result.createObjectStore(store, { keyPath: "id" }); }; r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+  const db = open("movein", "props");
+  const tx = async (mode, fn, d = db, store = "props") => { const x = await d; return new Promise((ok, no) => { const t = x.transaction(store, mode), r = fn(t.objectStore(store)); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); }); };
+  const all = () => tx("readonly", (s) => s.getAll()).then((x) => (x || []).sort((a, b) => b.updated - a.updated)).catch(() => []);
+  const put = (p) => { p.updated = Date.now(); return tx("readwrite", (s) => s.put(p)); };
+  const walkOf = (p, ph) => p[ph] || (p[ph] = { date: "", rooms: [] });
+  let props = [], cur = null, phase = "in"; const urls = new Map();
+  // what the seal covers; a change after sealing means sealing again
+  const stamp = (p, ph) => JSON.stringify([p.name, p.landlord, p.tenant, walkOf(p, ph).date, walkOf(p, ph).rooms.map((r) => [r.name, r.items.map((i) => [i.what, i.cond, i.note]), r.photos.map((x) => x.sha256)])]);
+  const fresh = (p, ph) => !!(p[ph] && p[ph].sealed && p[ph].sealed.stamp === stamp(p, ph));
+
+  async function drawList() {
+    props = await all();
+    $("#props").innerHTML = props.length ? props.map((p) => '<div class="row"><button class="open" type="button" data-id="' + esc(p.id) + '"><b>' + esc(p.name || "An unnamed property") + "</b><small>" +
+      ["in", "out"].map((ph) => PHN[ph] + ": " + (p[ph] && p[ph].rooms.length ? p[ph].rooms.length + " room" + (p[ph].rooms.length === 1 ? "" : "s") + (fresh(p, ph) ? ", sealed" : "") : "not walked")).join(" · ") + "</small></button></div>").join("") : '<p class="status">No properties yet.</p>';
+  }
+  $("#props").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) show(props.find((p) => p.id === b.dataset.id)); };
+  $("#new").onclick = async () => { const p = { id: rid(), name: "", landlord: "", tenant: "", in: { date: today(), rooms: [] }, out: { date: "", rooms: [] }, created: Date.now() }; await put(p); show(p); $("#p-name").focus(); };
+  $("#back").addEventListener("pointerdown", () => document.activeElement && document.activeElement.blur && document.activeElement.blur()); // fields save as they lose focus
+  $("#back").onclick = () => { cur = null; $("#prop").hidden = true; $("#list").hidden = false; drawList(); };
+  $("#del").onclick = async () => { if (!cur || !confirm("Delete " + (cur.name || "this property") + " and both walks from this device?")) return; const id = cur.id; await tx("readwrite", (s) => s.delete(id)); $("#back").click(); };
+  for (const [sel, k] of [["#p-name", "name"], ["#p-landlord", "landlord"], ["#p-tenant", "tenant"]]) $(sel).addEventListener("change", () => { if (!cur) return; cur[k] = $(sel).value.trim(); put(cur); drawSealed(); });
+  function show(p) { if (!p) return; cur = p; $("#list").hidden = true; $("#prop").hidden = false; $("#p-name").value = p.name || ""; $("#p-landlord").value = p.landlord || ""; $("#p-tenant").value = p.tenant || ""; tab("in"); }
+  function tab(t) { for (const k of ["in", "out", "cmp"]) $("#t-" + k).setAttribute("aria-selected", String(k === t)); $("#walk").hidden = t === "cmp"; $("#cmp").hidden = t !== "cmp"; if (t === "cmp") return drawCmp(); phase = t; drawWalk(); }
+  $("#t-in").onclick = () => tab("in"); $("#t-out").onclick = () => tab("out"); $("#t-cmp").onclick = () => tab("cmp");
+
+  // ── a walk: rooms, each with items (a condition and a note) and photos ──
+  const sel = (v, label) => '<select class="in" data-f="cond" aria-label="' + esc(label) + '">' + COND.map(([k, n]) => '<option value="' + k + '"' + (k === (v || "") ? " selected" : "") + ">" + n + "</option>").join("") + "</select>";
+  function drawWalk() {
+    const w = walkOf(cur, phase); $("#w-date").value = w.date || "";
+    $("#w-from").hidden = !(phase === "out" && !w.rooms.length && cur.in.rooms.length); $("#w-from").innerHTML = '<button class="btn ghost sm" id="from-in" type="button">Start from the move-in walk</button> <span>the same rooms and items, to fill in again</span>';
+    $("#rooms").innerHTML = w.rooms.map((r) => '<div class="room" data-r="' + r.id + '"><div class="rh"><input class="in" data-f="rname" value="' + esc(r.name) + '" aria-label="Room name" maxlength="60"><button class="lnk" type="button" data-act="rm-room">Remove room</button></div>' +
+      '<table class="items"><tbody>' + r.items.map((i) => '<tr data-i="' + i.id + '"><td><input class="in" data-f="what" value="' + esc(i.what) + '" aria-label="Item in ' + esc(r.name) + '" maxlength="60"></td><td>' + sel(i.cond, "Condition of " + i.what + " in " + r.name) +
+        '</td><td><input class="in" data-f="note" value="' + esc(i.note || "") + '" aria-label="Note on ' + esc(i.what) + " in " + esc(r.name) + '" maxlength="200" placeholder="Note"></td></tr>').join("") + "</tbody></table>" +
+      '<div class="bar"><button class="lnk" type="button" data-act="add-item">+ an item</button><label class="lnk" style="cursor:pointer">+ photos<input type="file" accept="image/*" capture="environment" multiple data-f="photos" hidden></label></div>' +
+      '<div class="photos">' + r.photos.map((x) => { if (!urls.has(x.id)) urls.set(x.id, URL.createObjectURL(x.blob)); return '<figure data-p="' + x.id + '"><img src="' + urls.get(x.id) + '" alt="' + esc(r.name + ": " + x.name) + '"><button type="button" data-act="rm-photo" aria-label="Remove ' + esc(x.name) + '">×</button></figure>'; }).join("") + "</div></div>").join("");
+    $("#room-chips").innerHTML = Object.keys(ROOMS).map((n) => '<button class="chip" type="button" data-n="' + esc(n) + '">+ ' + esc(n) + "</button>").join("");
+    drawSealed();
+  }
+  const addRoom = (name) => { const w = walkOf(cur, phase), base = Object.keys(ROOMS).find((k) => name.toLowerCase().startsWith(k.toLowerCase())); let nm = name, n = 2;
+    while (w.rooms.some((r) => r.name.toLowerCase() === nm.toLowerCase())) nm = name + " " + n++;
+    w.rooms.push({ id: rid(), name: nm, items: [...BASE, ...(ROOMS[base] || [])].map((what) => ({ id: rid(), what, cond: "", note: "" })), photos: [] }); put(cur); drawWalk(); };
+  $("#room-chips").onclick = (e) => { const b = e.target.closest(".chip"); if (b) addRoom(b.dataset.n); };
+  $("#r-add").onclick = () => { const n = $("#r-name").value.trim(); if (!n) return $("#r-name").focus(); $("#r-name").value = ""; addRoom(n); };
+  $("#w-date").onchange = () => { walkOf(cur, phase).date = $("#w-date").value; put(cur); drawSealed(); };
+  $("#w-from").onclick = (e) => { if (!e.target.closest("#from-in")) return; cur.out.rooms = cur.in.rooms.map((r) => ({ id: rid(), name: r.name, items: r.items.map((i) => ({ id: rid(), what: i.what, cond: "", note: "" })), photos: [] })); cur.out.date = cur.out.date || today(); put(cur); drawWalk(); };
+  const roomOf = (el) => walkOf(cur, phase).rooms.find((r) => r.id === el.closest(".room").dataset.r);
+  $("#rooms").addEventListener("change", async (e) => {
+    const r = roomOf(e.target); if (!r) return; const f = e.target.dataset.f, c = cur;
+    if (f === "photos") { const st = $("#s-st"); for (const file of e.target.files) { if (file.size > 25 * 1048576) { st.textContent = file.name + " is over 25 MB."; continue; } if (walkOf(c, phase).rooms.reduce((n, x) => n + x.photos.length, 0) >= 150) { st.textContent = "150 photos at most in a walk."; break; }
+        r.photos.push({ id: rid(), name: String(file.name || "photo.jpg").slice(0, 120), type: file.type || "image/jpeg", bytes: file.size, sha256: await hex(await file.arrayBuffer()), blob: file }); }
+      e.target.value = ""; await put(c); if (cur === c) drawWalk(); return; }
+    if (f === "rname") { r.name = e.target.value.trim().slice(0, 60) || r.name; }
+    else { const it = r.items.find((i) => i.id === e.target.closest("tr").dataset.i); if (!it) return; it[f] = e.target.value.trim(); }
+    await put(c); if (cur === c) drawSealed();
+  });
+  $("#rooms").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-act]"); if (!b) return; const r = roomOf(b), w = walkOf(cur, phase);
+    if (b.dataset.act === "rm-room" && confirm("Remove " + r.name + " from this walk?")) w.rooms = w.rooms.filter((x) => x !== r);
+    else if (b.dataset.act === "add-item") r.items.push({ id: rid(), what: "Item", cond: "", note: "" });
+    else if (b.dataset.act === "rm-photo") r.photos = r.photos.filter((x) => x.id !== b.closest("figure").dataset.p);
+    else return;
+    await put(cur); drawWalk();
+  });
+
+  // ── sealing a walk: only fingerprints go to the workshop; the zip is built here ──
+  const fileOf = (ri, k, r, x) => String(ri + 1).padStart(2, "0") + "-" + slug(r.name) + "-" + String(k + 1).padStart(2, "0") + "-" + slug(x.name);
+  function drawSealed() {
+    const w = walkOf(cur, phase), box = $("#sealed"); $("#seal").textContent = (w.sealed ? "Seal it again" : "Seal this walk") + " and download it";
+    if (!w.sealed) { box.hidden = true; return; } const ok = fresh(cur, phase); box.hidden = false;
+    box.innerHTML = '<span class="stamp">Sealed</span><p style="margin:8px 0 0">' + PHN[phase] + " walk, " + esc(when(w.sealed.at)) + " · " + w.sealed.rooms + " rooms, " + w.sealed.photos + " photos</p>" +
+      (ok ? '<div class="bar"><button class="btn ghost sm" id="again" type="button">Download it again</button></div>' : '<p class="status bad">This walk has changed since it was sealed: seal it again so the record matches.</p>');
+    if ($("#again")) $("#again").onclick = () => download(cur, phase);
+  }
+  $("#seal").onclick = async () => {
+    const p = cur, ph = phase, w = walkOf(p, ph), st = $("#s-st"); st.className = "status";
+    if (!p.name) { st.className = "status bad"; st.textContent = "Say which property it is first."; return $("#p-name").focus(); }
+    if (!w.rooms.length) { st.className = "status bad"; st.textContent = "Add a room first."; return; }
+    $("#seal").disabled = true; st.textContent = "Asking the workshop to seal it…";
+    let r, j = {}; try { r = await fetch("/api/seal/inventory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ property: p.name, landlord: p.landlord, tenant: p.tenant, phase: ph, date: w.date,
+      rooms: w.rooms.map((rm) => ({ name: rm.name, items: rm.items.map((i) => ({ what: i.what, cond: i.cond, note: i.note })), photos: rm.photos.map((x) => ({ name: x.name, sha256: x.sha256, bytes: x.bytes })) })) }) }); j = await r.json(); } catch (e) {}
+    $("#seal").disabled = false;
+    if (!r || !r.ok || !j.record) { st.className = "status bad"; st.textContent = j.error ? j.error.charAt(0).toUpperCase() + j.error.slice(1) + "." : "Couldn't reach the workshop. Everything is still here; try again when you're online."; return; }
+    const v = await WorkshopSeal.check(j.record); w.sealed = { record: j.record, at: v.body.iat, rooms: w.rooms.length, photos: w.rooms.reduce((n, x) => n + x.photos.length, 0), stamp: stamp(p, ph) }; await put(p);
+    st.textContent = ""; if (cur === p && phase === ph) drawSealed(); download(p, ph);
+  };
+  async function download(p, ph) {
+    const w = walkOf(p, ph), v = await WorkshopSeal.check(w.sealed.record), d = v.body.data, files = [], idx = [], enc = new TextEncoder();
+    for (const [ri, r] of w.rooms.entries()) for (const [k, x] of r.photos.entries()) { const name = fileOf(ri, k, r, x); idx.push({ room: ri, photo: k, file: name }); files.push({ name, data: new Uint8Array(await x.blob.arrayBuffer()), date: w.date ? new Date(w.date + "T12:00") : new Date() }); }
+    files.push({ name: "inventory.json", data: enc.encode(JSON.stringify({ movein: 1, record: w.sealed.record, files: idx }, null, 1)) });
+    files.push({ name: "summary.html", data: enc.encode(summary(d, v.body.iat, idx)) });
+    files.push({ name: "HOW-TO-CHECK.txt", data: enc.encode("This is a " + PH[ph] + " walk of " + d.property + ", sealed by the Mentifaber workshop on " + new Date(v.body.iat).toUTCString() + ".\r\n\r\nTo check that none of these photos or notes has changed since, open https://mentifaber.org/movein, choose \"Check a sealed walk\" and choose this zip file. Each photo's fingerprint is worked out on your own device and compared with the record the workshop signed. Nothing is uploaded.\r\n") });
+    const blob = KitZip.zip(files), name = "movein-" + slug(p.name) + "-" + PH[ph] + "-" + (w.date || today()) + ".zip";
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function summary(d, iat, idx) {
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(d.property) + " · " + PH[d.phase] + "</title><style>body{font:15px/1.5 system-ui,sans-serif;margin:24px auto;max-width:900px;padding:0 16px;color:#222}table{border-collapse:collapse;width:100%;margin-bottom:10px}td,th{border-bottom:1px solid #ccc;padding:6px;text-align:left}img{width:140px;height:105px;object-fit:cover;margin:0 6px 6px 0;border-radius:4px}.s{display:inline-block;border:3px solid #1f8f6a;color:#1f8f6a;font-weight:800;letter-spacing:.08em;padding:4px 10px;transform:rotate(-2deg)}</style></head><body>" +
+      '<p class="s">SEALED</p><h1>' + esc(d.property) + "</h1><p>The " + PH[d.phase] + " walk" + (d.date ? ", " + esc(nice(d.date)) : "") + (d.tenant ? " · tenant " + esc(d.tenant) : "") + (d.landlord ? " · landlord or agent " + esc(d.landlord) : "") + ". Sealed by the Mentifaber workshop on <b>" + esc(new Date(iat).toUTCString()) + "</b>. To check it, open <b>mentifaber.org/movein</b>, choose “Check a sealed walk” and choose the zip this came in.</p>" +
+      d.rooms.map((r, ri) => "<h2>" + esc(r.name) + "</h2><table><tr><th>Item</th><th>Condition</th><th>Note</th></tr>" + r.items.map((i) => "<tr><td>" + esc(i.what) + "</td><td>" + esc(i.cond || "—") + "</td><td>" + esc(i.note || "") + "</td></tr>").join("") + "</table>" +
+        idx.filter((x) => x.room === ri).map((x) => '<a href="' + esc(x.file) + '"><img src="' + esc(x.file) + '" alt=""></a>').join("")).join("") + "</body></html>";
+  }
+
+  // ── what changed: the two walks room by room, item by item ──
+  const key = (s) => String(s || "").trim().toLowerCase();
+  function changes(p) {
+    const out = []; for (const rin of p.in.rooms) { const rout = p.out.rooms.find((r) => key(r.name) === key(rin.name));
+      for (const i of rin.items) { const o = rout && rout.items.find((x) => key(x.what) === key(i.what)); const a = SCORE[i.cond], b = o ? SCORE[o.cond] : undefined;
+        out.push({ room: rin.name, what: i.what, before: i, after: o, worse: a !== undefined && b !== undefined && b > a, better: a !== undefined && b !== undefined && b < a }); } }
+    return out;
+  }
+  function drawCmp() {
+    const p = cur, el = $("#cmp");
+    if (!p.in.rooms.length || !p.out.rooms.length) { el.innerHTML = '<p class="status" style="margin-top:14px">Walk the property at move-in and at move-out first; then the two are laid side by side here.</p>'; return; }
+    const ch = changes(p), worse = ch.filter((c) => c.worse);
+    el.innerHTML = '<div class="verdict ' + (worse.length ? "bad" : "ok") + '" id="cmp-verdict">' + (worse.length ? worse.length + " thing" + (worse.length === 1 ? " is" : "s are") + " in a worse state at move-out than at move-in." : "Nothing is in a worse state at move-out than at move-in.") +
+      " Move-in " + esc(nice(p.in.date)) + (fresh(p, "in") ? " (sealed)" : "") + ", move-out " + esc(nice(p.out.date)) + (fresh(p, "out") ? " (sealed)" : "") + ".</div>" +
+      (worse.length ? '<div class="bar"><button class="btn" id="to-claim" type="button">Start a Claim Kit with these</button><span class="status" id="c-st" role="status"></span></div>' : "") +
+      '<table class="cmp" style="margin-top:12px"><thead><tr><th>Room · item</th><th>Move-in</th><th>Move-out</th><th>Change</th></tr></thead><tbody>' +
+      ch.map((c) => '<tr class="' + (c.worse ? "worse" : "") + '"><td>' + esc(c.room) + " · " + esc(c.what) + "</td><td>" + esc(c.before.cond || "—") + (c.before.note ? "<small>" + esc(c.before.note) + "</small>" : "") + "</td><td>" + (c.after ? esc(c.after.cond || "—") + (c.after.note ? "<small>" + esc(c.after.note) + "</small>" : "") : "not checked") + "</td><td>" + (c.worse ? "Worse" : c.better ? "Better" : c.after && c.after.cond && c.before.cond ? "Same" : "") + "</td></tr>").join("") + "</tbody></table>";
+    if ($("#to-claim")) $("#to-claim").onclick = () => toClaim(p, worse);
+  }
+  // a dispute: a Claim Kit case (same device) with what got worse, and both walks' photos of those rooms
+  async function toClaim(p, worse) {
+    const cdb = open("claimkit", "cases"), now = Date.now(), items = []; let n = 0;
+    const note = async (text, date) => { const body = new TextEncoder().encode(text); items.push({ id: rid(), what: "note", name: "note.txt", type: "text/plain", text, bytes: body.length, sha256: await hex(body), date, note: text.slice(0, 300), added: now + n++ }); };
+    await note("Move-in walk " + nice(p.in.date) + (fresh(p, "in") ? ", sealed by the workshop on " + when(p.in.sealed.at) : "") + "; move-out walk " + nice(p.out.date) + (fresh(p, "out") ? ", sealed on " + when(p.out.sealed.at) : "") + ". Both are in Move-in, Move-out (mentifaber.org/movein).", p.in.date || p.out.date || "");
+    for (const c of worse) await note(c.room + " · " + c.what + ": " + c.before.cond + " at move-in" + (c.before.note ? " (" + c.before.note + ")" : "") + ", " + c.after.cond + " at move-out" + (c.after.note ? " (" + c.after.note + ")" : "") + ".", p.out.date || "");
+    for (const room of [...new Set(worse.map((c) => key(c.room)))]) for (const ph of ["in", "out"]) { const r = p[ph].rooms.find((x) => key(x.name) === room); if (!r) continue;
+      for (const x of r.photos) items.push({ id: rid(), what: "photo", name: x.name, type: x.type, bytes: x.bytes, sha256: x.sha256, date: p[ph].date || "", note: r.name + ", " + PH[ph] + " walk", blob: x.blob, added: now + n++ }); }
+    const c = { id: rid(), title: (p.name + " deposit").slice(0, 100), kind: "deposit", party: p.landlord || "", amount: "", items: items.slice(0, 60), created: now, updated: now };
+    await tx("readwrite", (s) => s.put(c), cdb, "cases");
+    $("#c-st").innerHTML = 'The case is in <a href="claim" style="color:var(--mint-hi)">Claim Kit</a>, on this device: ' + c.items.length + " items. Add anything else there, then seal it.";
+  }
+
+  // ── checking a sealed walk ──
+  $("#k-files").addEventListener("change", async (e) => {
+    const fs = [...e.target.files], out = $("#k-out"); e.target.value = ""; if (!fs.length) return; out.innerHTML = '<p class="status">Checking…</p>';
+    try {
+      let files = new Map(); const z = fs.find((f) => /\.zip$/i.test(f.name) || f.type === "application/zip");
+      if (z) files = await KitZip.unzip(z); for (const f of fs) if (f !== z) files.set(f.name, new Uint8Array(await f.arrayBuffer()));
+      const mj = files.get("inventory.json"); if (!mj) throw new Error("There's no inventory.json here: choose the walk's zip, or inventory.json with its photos.");
+      let m; try { m = JSON.parse(new TextDecoder().decode(mj)); } catch (x) { throw new Error("inventory.json is damaged."); }
+      const v = await WorkshopSeal.check(m.record); if (!v.good || v.body.kind !== "inventory") { out.innerHTML = '<div class="verdict bad">✗ ' + esc(v.why || "That isn't a sealed walk.") + "</div>"; return; }
+      const d = v.body.data, rows = []; let bad = 0, total = 0;
+      for (const [ri, r] of d.rooms.entries()) for (const [k, x] of r.photos.entries()) { total++; const ent = (m.files || []).find((f) => f.room === ri && f.photo === k), data = ent && files.get(ent.file), ok = data && (await hex(data)) === x.sha256; if (!ok) bad++;
+        rows.push("<li>" + (ok ? '<span class="y">✓ unchanged</span> ' : '<span class="n">✗ ' + (data ? "changed since sealing" : "missing") + "</span> ") + esc(r.name) + " · " + esc(ent ? ent.file : x.name) + "</li>"); }
+      out.innerHTML = '<div class="verdict ' + (bad ? "bad" : "ok") + '">' + (bad ? "✗ " + bad + " of " + total + " photos don't match what the workshop sealed on " + esc(when(v.body.iat)) + "." : "✓ A genuine " + PH[d.phase] + " walk of " + esc(d.property) + ", sealed by the workshop on " + esc(when(v.body.iat)) + ". All " + total + " photos and every room's notes are exactly as sealed.") + "</div>" +
+        '<p class="status">' + d.rooms.map((r) => esc(r.name) + ": " + r.items.filter((i) => i.cond).map((i) => esc(i.what) + " " + esc(i.cond)).join(", ")).join(" · ") + '</p><ul class="checks">' + rows.join("") + "</ul>";
+    } catch (x) { out.innerHTML = '<div class="verdict bad">' + esc(x.message) + "</div>"; }
+  });
+  drawList();
+})();
+</script>
+</body>
+</html>
