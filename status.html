@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/status">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Site status · Mentifaber</title>
+<meta name="description" content="Whether a site the Mentifaber workshop hosts is up right now, and how it has done over the last 30 days.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d0b08">
+<link rel="icon" href="assets/favicon.png">
+<style>
+/* A hosted site's status page: one big answer (up or not), then the last 30 days as a row of bars. Checked from the
+   workshop every 15 minutes (src/portal.js uptimeSweep); nothing about the client is shown. */
+:root { --bg: #0d0b08; --panel: #15110b; --line: #3a3122; --gold: #d6a647; --gold-hi: #f0cf7e; --ink: #efe6d2; --dim: #a89d86; --ok: #8fd18f; --warn: #e6b450; --bad: #ff8a6b;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 760px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; text-transform: none; letter-spacing: 0; font: 400 14px var(--sans); }
+h1 { font: 700 clamp(24px, 5vw, 34px)/1.2 var(--sans); margin: 22px 0 4px; overflow-wrap: anywhere; }
+.big { display: flex; align-items: center; gap: 12px; font: 700 22px var(--sans); margin: 18px 0 4px; }
+.dot { width: 16px; height: 16px; border-radius: 50%; background: var(--dim); flex: none; } .up .dot { background: var(--ok); box-shadow: 0 0 0 6px rgba(143,209,143,.15); } .down .dot { background: var(--bad); box-shadow: 0 0 0 6px rgba(255,138,107,.15); }
+.sub { color: var(--dim); margin: 4px 0 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 18px; }
+.bars { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; height: 54px; align-items: end; margin-top: 12px; }
+.bars i { display: block; border-radius: 2px; background: var(--ok); min-height: 6px; } .bars i.mid { background: var(--warn); } .bars i.low { background: var(--bad); } .bars i.none { background: var(--line); height: 6px; }
+.axis { display: flex; justify-content: space-between; font: 12px var(--mono); color: var(--dim); margin-top: 6px; }
+.pct { font: 700 28px var(--sans); color: var(--gold-hi); }
+a { color: var(--gold-hi); }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · site status</span><a href="services#hosting">Hosting by the workshop</a></div>
+  <main id="main" aria-live="polite"><p class="sub">Loading…</p></main>
+</div>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const ago = (t) => { const m = Math.round((Date.now() - t) / 60e3); return m < 1 ? "just now" : m < 90 ? m + " minute" + (m === 1 ? "" : "s") + " ago" : Math.round(m / 60) + " hours ago"; };
+  async function load() {
+    const id = location.hash.slice(1);
+    if (!/^[0-9a-f]{16}$/.test(id)) { $("#main").innerHTML = '<h1>Site status</h1><p class="sub">Open the status link the workshop gave you: it goes straight to one site.</p>'; return; }
+    try {
+      const r = await fetch("/api/portal/status/" + id), j = await r.json(); if (!r.ok) throw new Error(j.error || "no answer");
+      document.title = j.site + " status · Mentifaber";
+      const up = j.check ? j.check.up : null, days = j.days || [];
+      const pad = Array.from({ length: Math.max(0, 30 - days.length) }, () => [null, null]);
+      $("#main").innerHTML = "<h1>" + esc(j.site) + "</h1>" +
+        '<div class="big ' + (up === null ? "" : up ? "up" : "down") + '" id="now"><span class="dot" aria-hidden="true"></span>' + (up === null ? "Not checked yet" : up ? "Up and answering" : "Not answering") + "</div>" +
+        '<p class="sub">' + (j.check ? "Checked " + esc(ago(j.check.at)) + (up ? " · answered in " + j.check.ms + " ms" : "") : "The first check runs within 15 minutes.") + (j.down ? ". Down since " + esc(new Date(j.down).toLocaleString()) : "") + ".</p>" +
+        '<div class="card"><div class="pct" id="pct">' + (j.uptime ? j.uptime.pct + "%" : "–") + '</div><p class="sub">up over the last ' + (j.uptime ? j.uptime.days + " day" + (j.uptime.days === 1 ? "" : "s") + " (" + j.uptime.checks + " checks)" : "30 days") + "</p>" +
+        '<div class="bars" role="img" aria-label="Each day\'s share of good checks, oldest first">' + pad.concat(days).map(([d, p]) => '<i class="' + (p === null ? "none" : p >= 99 ? "" : p >= 90 ? "mid" : "low") + '"' + (p === null ? "" : ' style="height:' + Math.max(12, p) + '%" title="' + esc(d) + ": " + p + '%"') + "></i>").join("") + "</div>" +
+        '<div class="axis"><span>30 days ago</span><span>today</span></div></div>' +
+        '<p class="sub" style="margin-top:16px">Checked from the workshop every 15 minutes, around the clock. <a href="' + esc(j.url) + '" target="_blank" rel="noopener">Open the site</a></p>';
+    } catch (e) { $("#main").innerHTML = '<h1>Site status</h1><p class="sub">This status link doesn\'t open a site. Ask the workshop for a new one.</p>'; }
+  }
+  addEventListener("hashchange", load); load(); setInterval(load, 5 * 60e3);
+})();
+</script>
+</body>
+</html>

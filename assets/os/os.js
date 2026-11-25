@@ -25,6 +25,7 @@
   const SYS = {
     about: { id: "about", name: "About FaberOS", hue: 38, builtin: true, glyph: '<path d="M12 2.6l8.1 4.7v9.4L12 21.4l-8.1-4.7V7.3z"/><path d="M12 11v5M12 8v.01"/>' },
     shelf: { id: "shelf", name: "Shelf", hue: 38, builtin: true, glyph: '<path d="M4 6h16M4 12h16M4 18h16"/><path d="M7 3.5v2.5M12 9.5V12M16 15.5V18"/>' },
+    routines: { id: "routines", name: "Routines", hue: 38, builtin: true, glyph: '<path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3L19.5 9"/><path d="M19.5 4.5V9H15"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3L4.5 15"/><path d="M4.5 19.5V15H9"/>' },
     settings: { id: "settings", name: "Settings", hue: 38, builtin: true, glyph: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>' },
   };
 
@@ -187,8 +188,8 @@
     let html = "";
     if (open.size && !q) html += "<h3>Open now</h3>" + rows([...open.values()].map((o) => o.app));
     for (const c of M.cats) { const list = M.apps.filter((a) => a.cat === c.id && hit(a)); if (list.length) html += "<h3>" + esc(c.name) + "</h3>" + rows(list); }
-    const SD = { about: "The four layers, what FaberOS is, and what comes next.", settings: "Permissions, the dock, the wallpaper, and what FaberOS keeps.", shelf: "Files you keep between apps, in this browser." };
-    const sys = [SYS.shelf, SYS.about, SYS.settings].map((a) => ({ ...a, desc: SD[a.id] })).filter(hit);
+    const SD = { about: "The four layers, what FaberOS is, and what comes next.", settings: "Permissions, the dock, the wallpaper, and what FaberOS keeps.", shelf: "Files you keep between apps, in this browser.", routines: "Several apps, one sentence: a few app actions in a row under one name, run when you say it or on a day." };
+    const sys = [SYS.shelf, SYS.routines, SYS.about, SYS.settings].map((a) => ({ ...a, desc: SD[a.id] })).filter(hit);
     if (sys.length) html += "<h3>FaberOS</h3>" + rows(sys);
     $("#l-body").innerHTML = html || '<p class="l-empty">Nothing by that name. Try a word from what it does: "satellites", "budget", "radio".</p>';
     lSel = 0; mark();
@@ -241,6 +242,7 @@
         '<li class="done">0.2 · A command bar that opens and arranges apps or asks AutoFaber; snapping and tiling; notifications; the Shelf, a file shelf apps share; the Faber app kit ✓</li>' +
         '<li class="done">0.3 · AutoFaber acts: say "put Overhead next to the Conflict Atlas" and it\'s done; more apps save to the Shelf ✓</li>' +
         '<li class="done">0.4 · Faber Verbs: apps say what they can do, and AutoFaber does it for you ("log $40 for gas", "track the ISS"); anything that changes your data asks first ✓</li>' +
+        '<li class="done">Routines: several apps, one sentence. Name a few app actions in a row ("Friday money check"), say the name in the top bar or let it run on a day, and get one answer ✓</li>' +
         "<li>More apps with verbs, and AutoFaber that can hand files to apps and read what's on the Shelf when you ask</li>" +
         "<li>More apps on the Faber kit, and a Shelf that follows you between devices when you sign in</li>" +
         "<li>Foundry for everyone: developer registration, signed packages, declared permissions, versions with rollback, review, ratings, security scanning, and install, update and uninstall from here</li></ul>" +
@@ -345,7 +347,7 @@
   function note(n) {
     const now = Date.now(), r = (rate[n.app] = (rate[n.app] || []).filter((t) => now - t < 60e3)); if (r.length >= 6) return; r.push(now);
     const unread = !(front === n.app && document.hasFocus());
-    notes.unshift({ id: now.toString(36) + Math.random().toString(36).slice(2, 5), app: n.app, title: String(n.title || "").slice(0, 120), body: String(n.body || "").slice(0, 400), at: now, read: !unread });
+    notes.unshift({ id: now.toString(36) + Math.random().toString(36).slice(2, 5), app: n.app, title: String(n.title || "").slice(0, 120), body: String(n.body || "").slice(0, n.app === "routines" ? 1400 : 400), at: now, read: !unread });
     notes = notes.slice(0, 50); LS.set("notes", notes); drawBell(); if (!$("#notes").hidden) drawNotes();
     const a = app(n.app); toast((a ? a.name + ": " : "") + (n.title || n.body));
   }
@@ -393,18 +395,18 @@
     c.onkeydown = (e) => { if (e.key === "Escape") { e.preventDefault(); end(false); } if (e.key === "Tab") { const f = $$("button, input", c); const i = f.indexOf(document.activeElement); e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus(); } };
   });
   const verbsReady = (id, ms) => (vready[id] ? Promise.resolve(true) : new Promise((res) => { (vwait[id] = vwait[id] || []).push(() => res(true)); setTimeout(() => res(!!vready[id]), ms); }));
-  async function callVerb(id, name, raw) {
-    const a = app(id), v = verbOf(a, name);
-    if (!v || !runs(a)) { toast((a ? a.name : "That app") + " can't do that"); return null; }
+  async function callVerb(id, name, raw, opts = {}) {
+    const a = app(id), v = verbOf(a, name), fail = (t) => { if (!opts.quiet) toast(t); return { ok: false, text: t }; }; // a routine collects the reason instead
+    if (!v || !runs(a)) return fail((a ? a.name : "That app") + " can't do that");
     const { args, missing } = verbArgs(v.args, raw);
-    if (missing.length) { toast(a.name + " needs " + missing.join(" and ") + " to " + v.label.toLowerCase()); return null; }
-    if (v.changes && !LS.get("verbtrust", {})[id] && !(await confirmVerb(a, v, args))) { toast("Cancelled: nothing was changed"); return null; }
+    if (missing.length) return fail(a.name + " needs " + missing.join(" and ") + " to " + v.label.toLowerCase());
+    if (v.changes && !LS.get("verbtrust", {})[id] && !(await confirmVerb(a, v, args))) return fail("Cancelled: nothing was changed");
     if (!open.has(id)) await launch(id); else focus(id);
-    if (!(await verbsReady(id, 12000))) { toast(a.name + " didn't answer"); return null; }
-    const o = open.get(id), f = o && $("iframe", o.el); if (!f) return null;
+    if (!(await verbsReady(id, 12000))) return fail(a.name + " didn't answer");
+    const o = open.get(id), f = o && $("iframe", o.el); if (!f) return fail(a.name + " didn't open");
     const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     const r = await new Promise((res) => { vres[rid] = { app: id, res }; f.contentWindow.postMessage({ faberos: 1, type: "verb", id: rid, name, args }, home(a)); setTimeout(() => { if (vres[rid]) { delete vres[rid]; res({ ok: false, text: a.name + " took too long to answer" }); } }, 15000); });
-    note({ app: id, title: v.label, body: r.text }); return r;
+    if (!opts.quiet) note({ app: id, title: v.label, body: r.text }); return r;
   }
 
   // ── what apps say through the Faber kit (assets/os/faber.js): only this site's pages, only from a FaberOS window ──
@@ -420,6 +422,99 @@
     else if (m.type === "save" && m.file instanceof Blob) { try { const r = await Shelf.put(m.file, id); note({ app: id, title: "Saved to the Shelf", body: r.name }); } catch (x) { toast(x.message); } }
   });
 
+  // ── Routines: several apps, one sentence. A routine is a few Faber Verbs in a row under one name ("Friday money
+  //    check": what's owed in Duely, then the balance and the week's spending in Ballast). Say its name in the top bar, or
+  //    give it a day and a time: it runs then if FaberOS is open, or the next time it opens (once, however long it's
+  //    been). Each step goes through callVerb, so a step that changes data still asks first, and the answers come back
+  //    as one notification. Kept in this browser, like everything else here ──
+  const RT_MAX = 12, RT_STEPS = 6, DAYS = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+  const RT_START = [
+    { name: "Friday money check", desc: "Who still owes you (Duely), your balance and the week's spending (Ballast), on Fridays at 5.", steps: [{ app: "duely", verb: "owed", args: {} }, { app: "ballast", verb: "balance", args: {} }, { app: "ballast", verb: "spent", args: { days: 7 } }], on: { day: 5, at: "17:00" } },
+    { name: "Month in money", desc: "The last 30 days' spending, the balance, and anything still owed, when you ask.", steps: [{ app: "ballast", verb: "spent", args: { days: 30 } }, { app: "ballast", verb: "balance", args: {} }, { app: "duely", verb: "owed", args: {} }], on: null },
+  ];
+  let routines = LS.get("routines", []).filter((r) => r && r.id && Array.isArray(r.steps)), rtBusy = false, rtEdit = null;
+  const saveRt = () => { LS.set("routines", routines); const o = open.get("routines"); if (o) RENDER.routines($(".inner", o.el)); };
+  const rtNorm = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  function routineFor(q) {
+    const n = rtNorm(q).replace(/^(run|do|start)\s+(the\s+|my\s+)?/, "").replace(/\s+routine$/, ""); if (n.length < 3) return null;
+    return routines.find((r) => rtNorm(r.name) === n) || (n.length >= 4 ? routines.find((r) => rtNorm(r.name).startsWith(n)) : null) || null;
+  }
+  const lc = (t) => t.charAt(0).toLowerCase() + t.slice(1); // "Tell me what I've spent" → "tell me what I've spent"
+  const stepLabel = (st) => { const a = app(st.app), v = verbOf(a, st.verb), ks = Object.entries(st.args || {});
+    return (a ? a.name : st.app) + ": " + (v ? lc(v.label) : st.verb) + (ks.length ? " (" + ks.map(([k, x]) => k + " " + x).join(", ") + ")" : ""); };
+  const whenLabel = (on) => (!on || on.day == null ? "When you say its name" : (on.day === "daily" ? "Every day" : DAYS[on.day]) + " at " + on.at);
+  async function runRoutine(id, scheduled) {
+    const r = routines.find((x) => x.id === id); if (!r) return null; if (rtBusy) { toast("A routine is already running"); return null; }
+    rtBusy = true; const had = new Set(open.keys()), lines = []; toast("Running " + r.name + "…");
+    try { for (const st of r.steps) { const a = app(st.app), x = await callVerb(st.app, st.verb, st.args, { quiet: true }); lines.push((a ? a.name : st.app) + ": " + (x && x.text ? x.text : "no answer")); } }
+    finally { rtBusy = false; }
+    for (const w of [...open.keys()]) if (!had.has(w) && w !== "routines") close(w); // the windows it opened only to ask
+    r.last = { at: Date.now(), text: lines.join("\n") }; saveRt();
+    note({ app: "routines", title: r.name + (scheduled ? " (on schedule)" : ""), body: r.last.text });
+    return r.last.text;
+  }
+  // when a routine was last due (its day, at its time, within the past week); it runs if it hasn't since
+  function dueAt(r, now) {
+    if (!r.on || r.on.day == null || !/^\d\d:\d\d$/.test(r.on.at || "")) return 0; const [h, m] = r.on.at.split(":").map(Number);
+    for (let d = 0; d < 7; d++) { const t = new Date(now); t.setDate(t.getDate() - d); t.setHours(h, m, 0, 0); if (t.getTime() <= now && (r.on.day === "daily" || t.getDay() === r.on.day)) return t.getTime(); }
+    return 0;
+  }
+  async function dueRoutines() { if (rtBusy) return; const now = Date.now();
+    for (const r of routines) { const t = dueAt(r, now); if (t && t > Math.max(r.since || 0, (r.last && r.last.at) || 0)) await runRoutine(r.id, true); } }
+
+  RENDER.routines = (el) => {
+    const verbs = M.apps.filter((a) => runs(a) && a.verbs && a.verbs.length).flatMap((a) => a.verbs.map((v) => ({ a, v })));
+    if (rtEdit) return rtEditor(el, verbs);
+    const starts = RT_START.filter((t) => !routines.some((r) => rtNorm(r.name) === rtNorm(t.name)) && t.steps.every((st) => verbOf(app(st.app), st.verb)));
+    el.innerHTML = "<h2>Routines</h2><p>Several apps, one sentence. A routine runs a few app actions in a row and gives you one answer. Say its name in the top bar, or give it a day: it runs then if FaberOS is open, or the next time you open it. Anything that changes your data still asks first.</p>" +
+      (routines.length ? routines.map((r) => '<div class="rt" data-rt="' + esc(r.id) + '"><b>' + esc(r.name) + "</b><small>" + esc(whenLabel(r.on)) + "</small><ol>" + r.steps.map((st) => "<li>" + esc(stepLabel(st)) + "</li>").join("") + "</ol>" +
+        (r.last ? '<div class="rt-last"><small>Last run ' + esc(new Date(r.last.at).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })) + "</small>" + esc(r.last.text) + "</div>" : "") +
+        '<p class="rt-acts"><button class="btn" data-rt-run>Run now</button> <button class="btn" data-rt-edit>Edit</button> <button class="btn" data-rt-del>Delete</button></p></div>').join("") : "<p><i>No routines yet.</i></p>") +
+      (starts.length ? "<h3>Start from one of these</h3>" + starts.map((t, i) => '<div class="prow"><span class="k" aria-hidden="true">↻</span><div><b>' + esc(t.name) + "</b><small>" + esc(t.desc) + '</small></div><button class="btn" data-rt-start="' + i + '">Add it</button></div>').join("") : "") +
+      (routines.length < RT_MAX ? '<p style="margin-top:16px"><button class="btn" data-rt-new>Make a new routine</button></p>' : "");
+    el.onchange = null;
+    el.onclick = async (e) => {
+      const card = e.target.closest("[data-rt]"), r = card && routines.find((x) => x.id === card.dataset.rt);
+      if (e.target.closest("[data-rt-run]") && r) return runRoutine(r.id);
+      if (e.target.closest("[data-rt-edit]") && r) { rtEdit = JSON.parse(JSON.stringify(r)); return RENDER.routines(el); }
+      if (e.target.closest("[data-rt-del]") && r && confirm("Delete the routine “" + r.name + "”?")) { routines = routines.filter((x) => x !== r); return saveRt(); }
+      const st = e.target.closest("[data-rt-start]"); if (st) { const t = starts[+st.dataset.rtStart]; routines.push({ id: "r" + Date.now().toString(36), name: t.name, steps: JSON.parse(JSON.stringify(t.steps)), on: t.on, since: Date.now() }); toast("Added: say “" + t.name + "” in the top bar"); return saveRt(); }
+      if (e.target.closest("[data-rt-new]")) { rtEdit = { id: null, name: "", steps: verbs.length ? [{ app: verbs[0].a.id, verb: verbs[0].v.name, args: {} }] : [], on: null }; return RENDER.routines(el); }
+    };
+  };
+  function rtEditor(el, verbs) {
+    const r = rtEdit, field = (i, k0, t, val) => { const k = k0.replace(/\?$/, ""), opt = k0.endsWith("?"), lab = esc(k) + (opt ? " (optional)" : ""), v = val == null ? "" : String(val), id = "rt-a" + i + "-" + esc(k);
+      if (String(t).startsWith("enum:") || t === "boolean") { const os2 = t === "boolean" ? ["true", "false"] : String(t).slice(5).split("|");
+        return '<label for="' + id + '">' + lab + '<select id="' + id + '" data-arg="' + esc(k) + '"><option value="">' + (opt ? "—" : "Choose") + "</option>" + os2.map((o) => '<option value="' + esc(o) + '"' + (o === v ? " selected" : "") + ">" + esc(t === "boolean" ? (o === "true" ? "yes" : "no") : o) + "</option>").join("") + "</select></label>"; }
+      return '<label for="' + id + '">' + lab + '<input id="' + id + '" data-arg="' + esc(k) + '" type="' + (t === "number" ? "number" : t === "date" ? "date" : "text") + '" value="' + esc(v) + '"' + (t === "number" ? ' step="any"' : ' maxlength="200"') + "></label>"; };
+    el.innerHTML = "<h2>" + (r.id ? "Edit the routine" : "A new routine") + '</h2><label class="rt-f" for="rt-name">Its name, as you\'ll say it<input id="rt-name" maxlength="40" value="' + esc(r.name) + '" placeholder="Friday money check"></label>' +
+      "<h3>The steps, in order</h3>" + (verbs.length ? r.steps.map((st, i) => { const cur = verbs.find((x) => x.a.id === st.app && x.v.name === st.verb) || verbs[0];
+        return '<div class="rt-step" data-i="' + i + '"><label for="rt-v' + i + '">Step ' + (i + 1) + '<select id="rt-v' + i + '" data-verb>' + verbs.map((x) => '<option value="' + esc(x.a.id + "/" + x.v.name) + '"' + (x === cur ? " selected" : "") + ">" + esc(x.a.name + ": " + lc(x.v.label)) + "</option>").join("") + "</select></label>" +
+          Object.entries(cur.v.args || {}).map(([k, t]) => field(i, k, t, (st.args || {})[k.replace(/\?$/, "")])).join("") + (r.steps.length > 1 ? '<button class="btn" type="button" data-rt-rm="' + i + '" aria-label="Remove step ' + (i + 1) + '">Remove</button>' : "") + "</div>"; }).join("") : "<p>No app offers actions yet.</p>") +
+      (r.steps.length < RT_STEPS && verbs.length ? '<p><button class="btn" type="button" data-rt-add>Add a step</button></p>' : "") +
+      '<h3>When it runs</h3><div class="rt-when"><label for="rt-day">On its own<select id="rt-day"><option value="">Only when I say its name</option><option value="daily"' + (r.on && r.on.day === "daily" ? " selected" : "") + ">Every day</option>" + DAYS.map((d, i) => '<option value="' + i + '"' + (r.on && r.on.day === i ? " selected" : "") + ">" + d + "</option>").join("") + "</select></label>" +
+      '<label for="rt-at">At<input id="rt-at" type="time" value="' + esc((r.on && r.on.at) || "09:00") + '"' + (r.on ? "" : " disabled") + '></label></div><p class="note">It runs then if FaberOS is open in a tab, or the next time you open it.</p>' +
+      '<p class="rt-err" id="rt-err" role="status"></p><p><button class="btn" type="button" data-rt-save>Save</button> <button class="btn" type="button" data-rt-cancel>Cancel</button></p>';
+    const collect = () => { r.name = $("#rt-name", el).value; const d = $("#rt-day", el).value; r.on = d === "" ? null : { day: d === "daily" ? "daily" : +d, at: $("#rt-at", el).value || "09:00" };
+      r.steps = $$(".rt-step", el).map((s) => { const [a, v] = $("[data-verb]", s).value.split("/"), args = {}; $$("[data-arg]", s).forEach((x) => { if (x.value !== "") args[x.dataset.arg] = x.value; }); return { app: a, verb: v, args }; }); };
+    el.onchange = (e) => { if (e.target.id === "rt-day") $("#rt-at", el).disabled = !e.target.value; if (!e.target.matches("[data-verb]")) return; const id = e.target.id; collect(); r.steps[+e.target.closest(".rt-step").dataset.i].args = {}; rtEditor(el, verbs); const again = $("#" + id, el); if (again) again.focus(); };
+    el.onclick = (e) => {
+      if (e.target.closest("[data-rt-cancel]")) { rtEdit = null; return RENDER.routines(el); }
+      if (e.target.closest("[data-rt-add]")) { collect(); const last = r.steps[r.steps.length - 1] || { app: verbs[0].a.id, verb: verbs[0].v.name }; r.steps.push({ app: last.app, verb: last.verb, args: {} }); rtEditor(el, verbs); const s = $$("[data-verb]", el).pop(); if (s) s.focus(); return; }
+      const rm = e.target.closest("[data-rt-rm]"); if (rm) { collect(); r.steps.splice(+rm.dataset.rtRm, 1); return rtEditor(el, verbs); }
+      if (!e.target.closest("[data-rt-save]")) return;
+      collect(); const err = (t) => { $("#rt-err", el).textContent = t; }, name = r.name.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 40);
+      if (!name) return err("Give it a name: it's what you'll say in the top bar.");
+      if (routines.some((x) => x.id !== r.id && rtNorm(x.name) === rtNorm(name))) return err("There's already a routine called that.");
+      if (!r.steps.length) return err("Add a step.");
+      const steps = []; for (const [i, st] of r.steps.entries()) { const a = app(st.app), v = verbOf(a, st.verb); if (!v) return err("Step " + (i + 1) + ": that app can't do that.");
+        const { args, missing } = verbArgs(v.args, st.args); if (missing.length) return err("Step " + (i + 1) + ": " + a.name + " needs " + missing.join(" and ") + "."); steps.push({ app: a.id, verb: v.name, args }); }
+      const rec = { id: r.id || "r" + Date.now().toString(36), name, steps, on: r.on, since: Date.now(), last: r.id ? (routines.find((x) => x.id === r.id) || {}).last : undefined };
+      const i = routines.findIndex((x) => x.id === rec.id); if (i >= 0) routines[i] = rec; else routines.push(rec);
+      rtEdit = null; toast("Saved: say “" + name + "” in the top bar"); saveRt();
+    };
+  }
+
   // ── the command bar: open, arrange, or ask AutoFaber ──
   const CMDS = [
     { k: "tile", words: /^(tile|arrange|grid)\b|^(tile|arrange) (all|the )?windows?/, name: "Tile the open windows", icon: "▦", run: () => { const n = tileAll(); toast(n ? "Tiled " + n + " window" + (n > 1 ? "s" : "") : "Nothing open to tile"); } },
@@ -434,7 +529,7 @@
     if (n === q) return 100; if (n.startsWith(q)) return 80; if (n.split(/\s+/).some((x) => x.startsWith(q))) return 70; if (!ws.length || !ws.every((w) => t.includes(w.replace(/s$/, "")))) return 0;
     const at = (txt, w) => new RegExp("\\b" + w.replace(/s$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(txt.toLowerCase()); // a word that starts with what was typed counts most in the name and tags
     return Math.min(60, 20 + ws.reduce((k, w) => k + (at(n + " " + String(a.id).replace(/-/g, " "), w) ? 12 : 0) + (at(a.tags || "", w) ? 8 : 0) + (at(a.desc || "", w) ? 4 : 0), 0)); }; // under 70: a loose match never outranks asking AutoFaber
-  const findApps = (q) => [...M.apps, SYS.shelf, SYS.about, SYS.settings].map((a) => [a, score(a, q)]).filter(([a, s]) => s > 0 && runs(a)).sort((x, y) => y[1] - x[1]).map(([a]) => a);
+  const findApps = (q) => [...M.apps, SYS.shelf, SYS.routines, SYS.about, SYS.settings].map((a) => [a, score(a, q)]).filter(([a, s]) => s > 0 && runs(a)).sort((x, y) => y[1] - x[1]).map(([a]) => a);
 
   // ── AutoFaber acts: a sentence becomes a few FaberOS actions. Common phrasings are read right here, on the device;
   //    anything else can go to AutoFaber (/api/hive/os/plan), whose actions are checked against this manifest before
@@ -486,6 +581,7 @@
   function suggest(raw) {
     const q = raw.trim().toLowerCase(); if (!q) return [];
     const out = [], verb = /^(open|launch|start|run|show|go to)\s+(?:the\s+|my\s+)?(.+?)(?:\s+app)?$/.exec(q), shut = /^(close|quit)\s+(?:the\s+)?(.+?)(?:\s+app)?$/.exec(q);
+    const rt = routineFor(q); if (rt) out.push({ routine: rt });
     const lp = localPlan(q); if (lp) out.push({ plan: lp });
     const cmd = !lp && CMDS.find((c) => c.words.test(q)); if (cmd) out.push({ cmd });
     if (shut && !cmd) { const a = [...open.values()].map((o) => o.app).find((x) => score(x, shut[2]) > 0); if (a) out.push({ close: a }); }
@@ -504,6 +600,7 @@
       (s.app ? tile(s.app) + '<span class="t">Open <b>' + esc(s.app.name) + "</b></span><small>" + (open.has(s.app.id) ? "open" : "app") + "</small>"
         : s.close ? tile(s.close) + '<span class="t">Close <b>' + esc(s.close.name) + "</b></span><small>window</small>"
         : s.cmd ? '<span class="k" aria-hidden="true">' + s.cmd.icon + '</span><span class="t">' + esc(s.cmd.name) + "</span><small>command</small>"
+        : s.routine ? '<span class="k" aria-hidden="true">↻</span><span class="t">Run the routine <b>' + esc(s.routine.name) + "</b></span><small>routine</small>"
         : s.plan ? '<span class="k" aria-hidden="true">◫</span><span class="t">' + esc(s.plan.label) + "</span><small>arrange</small>"
         : s.ai ? tile(s.verb ? s.verb.app : app("hive") || { hue: 42 }) + '<span class="t">' + (s.verb ? "Let AutoFaber do it with " + esc(s.verb.app.name) + ": " : "Let AutoFaber arrange it: ") + "<b>" + esc(s.ai) + "</b></span><small>do it</small>"
         : tile(app("hive") || { hue: 42 }) + '<span class="t">Ask AutoFaber: <b>' + esc(s.ask) + "</b></span><small>ask</small>") + "</li>").join("");
@@ -513,7 +610,7 @@
   const hideSug = () => { sugEl.hidden = true; askIn.setAttribute("aria-expanded", "false"); };
   function runSug(s) {
     hideSug(); askIn.value = ""; askIn.blur();
-    if (s.app) launch(s.app.id); else if (s.close) close(s.close.id); else if (s.cmd) s.cmd.run(); else if (s.plan) runPlan(s.plan.actions); else if (s.ai) aiPlan(s.ai);
+    if (s.app) launch(s.app.id); else if (s.close) close(s.close.id); else if (s.cmd) s.cmd.run(); else if (s.plan) runPlan(s.plan.actions); else if (s.routine) runRoutine(s.routine.id); else if (s.ai) aiPlan(s.ai);
     else launch("hive", { src: "hive-app.html?ask=" + encodeURIComponent(s.ask.slice(0, 2000)) });
   }
   askIn.addEventListener("input", drawSug);
@@ -536,6 +633,7 @@
       for (const a of more) { a.desc = a.desc + (a.by ? " · by " + a.by : " · by another maker"); M.apps.push(a); byId[a.id] = a; }
     }).catch(() => {});
     drawIcons(); drawDock(); drawBell();
+    setTimeout(dueRoutines, 1500); setInterval(dueRoutines, 60e3); // a routine set for a day runs then, or the next time FaberOS opens
     if (LS.get("ver", null) !== M.version) { if (LS.get("seen", false)) note({ app: "about", title: "FaberOS " + M.version, body: "New: Faber Verbs. Tell the top bar \"log $40 for gas\" or \"track the ISS\" and AutoFaber asks the app to do it. Anything that changes your data asks you first." }); LS.set("ver", M.version); }
     const want = new URLSearchParams(location.search).get("open");
     for (const id of LS.get("open", [])) if (app(id) && id !== want) await launch(id, { quiet: true }); // apps that still need an answer wait to be opened again

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/house">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>House Manual · Mentifaber</title>
+<meta name="description" content="Your home&#x27;s own handbook: where the shutoffs are, the Wi-Fi, bin days, each appliance with its model and warranty, and who to call.">
+<meta name="theme-color" content="#0d0b08">
+<link rel="icon" href="assets/icons/v2/house.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/house-180.png">
+<link rel="manifest" href="assets/manifests/house.webmanifest">
+<style>
+/* House Manual: a binder of index cards. One gold-ruled sheet per section (shutoffs, Wi-Fi, appliances, schedules, people,
+   notes); each entry a card with where it is in large type, because that's what you need at 2 a.m. with the water running. */
+:root { --bg: #0d0b08; --sheet: #15120c; --card: #1b170f; --line: #3a3122; --gold: #d6a647; --gold-hi: #f0cf7e; --ink: #efe6d2; --dim: #a89d86; --ok: #8fd18f; --warn: #e6b450; --bad: #ff8a6b; --teal: #7fd6c4;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--gold-hi); }
+.lede { color: var(--dim); margin: 0 0 16px; max-width: 64ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+.in, select.in { font: 16px var(--sans); color: var(--ink); background: #0f0c08; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
+.search { flex: 1 1 220px; width: auto; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--gold); background: var(--gold); color: #1a1206; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--gold-hi); } .btn.sm { font-size: 14px; padding: 7px 11px; }
+.sec { margin-top: 26px; } .sec h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin: 0 0 10px; display: flex; justify-content: space-between; gap: 8px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 10px; }
+.card { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--teal); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.card b { display: block; font-size: 15px; } .card .where { font: 600 18px/1.35 var(--sans); color: var(--gold-hi); margin: 4px 0; overflow-wrap: anywhere; }
+.card .det { color: var(--dim); font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; } .tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); }
+.tag.warn { color: var(--warn); border-color: var(--warn); } .tag.bad { color: var(--bad); border-color: var(--bad); } .tag.lock { color: var(--teal); border-color: var(--teal); }
+.card .acts { display: flex; gap: 12px; margin-top: 8px; } .card .acts button { background: none; border: 0; color: var(--dim); font: 13px var(--sans); cursor: pointer; padding: 2px 0; text-decoration: underline; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chip { font: 14px var(--sans); padding: 7px 11px; border-radius: 99px; border: 1px dashed var(--gold); background: none; color: var(--gold-hi); cursor: pointer; }
+.panel { background: var(--sheet); border: 1.5px solid var(--gold); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; } label { font-size: 14px; color: var(--dim); display: block; }
+label .in { margin-top: 4px; } textarea.in { min-height: 70px; resize: vertical; }
+.note { color: var(--dim); font-size: 14px; } .banner { border: 1px dashed var(--teal); color: var(--teal); padding: 10px 12px; border-radius: 10px; margin: 12px 0; }
+.empty { color: var(--dim); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+@media print { body { background: #fff; color: #000; } .bar, .acts, .top a, #edit, #shareBox, #start { display: none !important; } .card { border-color: #999; background: #fff; } .card .where { color: #000; } }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "House Manual", "description": "Your home's own handbook: where the shutoffs are, the Wi-Fi, bin days, each appliance with its model and warranty, and who to call.", "url": "https://mentifaber.org/house", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/house-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · House Manual</span><a href="./">The workshop</a></div>
+  <h1>The <span>house manual</span></h1>
+  <p class="lede" id="lede">Where the water shutoff is, the breaker for the kitchen, the Wi-Fi, bin days, each appliance with its model and warranty, and who to call. It's kept on this device, works offline, and a sitter gets a copy by link.</p>
+  <div id="shared" class="banner" role="status" hidden></div>
+  <div class="bar"><input class="in search" id="q" type="search" placeholder="Find: water, breaker, wifi, boiler…" aria-label="Find in the manual">
+    <button class="btn" id="add" type="button">Add an entry</button><button class="btn ghost" id="share" type="button">Share a copy</button></div>
+  <div id="start" class="panel" hidden><b>Start with the ones that matter in a hurry</b><p class="note" style="margin:4px 0 10px">Tap one, then write where it is.</p><div class="chips" id="chips"></div></div>
+  <form id="edit" class="panel" hidden>
+    <div class="grid2"><label>What<input class="in" id="e-title" required maxlength="80" placeholder="Water shutoff"></label>
+      <label>Section<select class="in" id="e-kind"></select></label></div>
+    <label style="margin-top:10px">Where it is, or the answer<input class="in" id="e-where" maxlength="160" placeholder="Under the kitchen sink, blue handle"></label>
+    <label style="margin-top:10px">More<textarea class="in" id="e-det" maxlength="1000" placeholder="Turn clockwise. The outside one is by the front step, under the round lid."></textarea></label>
+    <div class="grid2" style="margin-top:10px"><label>Model or account <span class="note">(optional)</span><input class="in" id="e-model" maxlength="80"></label>
+      <label>Warranty until <span class="note">(optional)</span><input class="in" id="e-warr" type="date"></label></div>
+    <label style="margin-top:10px">A link: manual, receipt, Device Passport <span class="note">(optional)</span><input class="in" id="e-link" maxlength="400" placeholder="https://…"></label>
+    <label style="margin-top:10px;display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="e-priv" type="checkbox" style="width:auto"> Private: left out of copies you share (alarm codes, passwords)</label>
+    <div class="bar"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" id="e-cancel">Cancel</button><span class="note" id="e-st" role="status"></span></div>
+  </form>
+  <div id="shareBox" class="panel" hidden>
+    <b>Share a copy</b><p class="note">A link with the manual inside it: whoever opens it sees it and can keep a copy on their phone. Nothing goes through a server, and later changes here don't reach their copy.</p>
+    <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="s-priv" type="checkbox" style="width:auto"> Include private entries</label>
+    <div class="bar"><button class="btn" id="s-make" type="button">Make the link</button><button class="btn ghost" id="s-file" type="button">Save as a file</button><label class="btn ghost" style="cursor:pointer">Open a file<input id="s-open" type="file" accept="application/json,.json" hidden></label></div>
+    <p class="note" id="s-out" role="status" style="overflow-wrap:anywhere"></p>
+  </div>
+  <main id="list" aria-live="polite"></main>
+</div>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const KINDS = [["shutoff", "Shutoffs & utilities"], ["wifi", "Wi-Fi & tech"], ["appliance", "Appliances"], ["schedule", "Schedules"], ["people", "People to call"], ["note", "Notes"]];
+  const STARTERS = [["Water shutoff", "shutoff"], ["Gas shutoff", "shutoff"], ["Breaker panel", "shutoff"], ["Wi-Fi", "wifi"], ["Bin day", "schedule"], ["Boiler / furnace", "appliance"], ["Plumber", "people"], ["Spare key", "note"]];
+  const KEY = "house:v1", load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(E)); } catch (e) {} };
+  let E = load(), shared = null, editing = null;
+  const id = () => "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const clean = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
+  const tidy = (e) => ({ id: clean(e.id, 30) || id(), kind: KINDS.some(([k]) => k === e.kind) ? e.kind : "note", title: clean(e.title, 80), where: clean(e.where, 160), det: String(e.det || "").slice(0, 1000),
+    model: clean(e.model, 80), warr: /^\d{4}-\d\d-\d\d$/.test(e.warr || "") ? e.warr : "", link: /^https:\/\/\S+$/.test(e.link || "") ? clean(e.link, 400) : "", priv: !!e.priv });
+  const days = (d) => Math.round((Date.parse(d + "T12:00:00") - Date.now()) / 864e5);
+  const words = (s) => String(s).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 1);
+  const FILLER = ["where", "is", "the", "my", "whats", "what", "how", "do", "turn", "find", "our", "for", "a", "an", "of"];
+  // the entries that best match a question ("where's the water shutoff?"), best first
+  const match = (q, list) => { const all = words(q), qs = all.filter((w) => !FILLER.includes(w)); if (!qs.length) return [];
+    return list.map((e) => { const hay = words(e.title + " " + e.where + " " + e.det + " " + e.model), t = words(e.title); let sc = 0;
+      for (const w of qs) { if (t.includes(w)) sc += 3; else if (hay.some((h) => h === w || (h.length > 3 && w.length > 3 && (h.startsWith(w) || w.startsWith(h))))) sc += 1; } return [sc, e]; }).filter(([s]) => s > 0).sort((a, b) => b[0] - a[0]).map(([, e]) => e); };
+
+  function card(e, ro) {
+    const d = e.warr ? days(e.warr) : null;
+    return '<article class="card" data-id="' + esc(e.id) + '"><b>' + esc(e.title) + "</b>" + (e.where ? '<div class="where">' + esc(e.where) + "</div>" : "") + (e.det ? '<div class="det">' + esc(e.det) + "</div>" : "") +
+      '<div class="tags">' + (e.model ? '<span class="tag">' + esc(e.model) + "</span>" : "") + (e.warr ? '<span class="tag ' + (d < 0 ? "bad" : d <= 60 ? "warn" : "") + '">' + (d < 0 ? "warranty ended " : "warranty until ") + esc(new Date(e.warr + "T12:00").toLocaleDateString()) + "</span>" : "") + (e.priv ? '<span class="tag lock">private</span>' : "") + "</div>" +
+      (e.link ? '<p style="margin:6px 0 0"><a href="' + esc(e.link) + '" target="_blank" rel="noopener noreferrer" style="color:var(--gold-hi)">Open the link</a></p>' : "") +
+      (ro ? "" : '<div class="acts"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>') + "</article>";
+  }
+  function draw() {
+    const list = shared || E, q = $("#q").value.trim(), ro = !!shared;
+    $("#start").hidden = ro || E.length > 0; $("#add").hidden = ro; $("#share").hidden = ro;
+    if (!list.length) { $("#list").innerHTML = ro ? '<p class="empty">This copy is empty.</p>' : ""; return; }
+    const shown = q ? match(q, list) : list;
+    if (q && !shown.length) { $("#list").innerHTML = '<p class="empty">Nothing here mentions “' + esc(q) + "”.</p>"; return; }
+    $("#list").innerHTML = q ? '<section class="sec"><h2>Best match first</h2><div class="cards">' + shown.map((e) => card(e, ro)).join("") + "</div></section>"
+      : KINDS.map(([k, name]) => { const es = shown.filter((e) => e.kind === k); return es.length ? '<section class="sec"><h2><span>' + esc(name) + "</span><span>" + es.length + '</span></h2><div class="cards">' + es.map((e) => card(e, ro)).join("") + "</div></section>" : ""; }).join("");
+  }
+  $("#e-kind").innerHTML = KINDS.map(([k, n]) => '<option value="' + k + '">' + esc(n) + "</option>").join("");
+  $("#chips").innerHTML = STARTERS.map(([t, k]) => '<button class="chip" type="button" data-t="' + esc(t) + '" data-k="' + k + '">+ ' + esc(t) + "</button>").join("");
+  const openEdit = (e, isNew) => { editing = e && !isNew ? e.id : null; $("#edit").hidden = false; $("#e-title").value = e ? e.title : ""; $("#e-kind").value = e ? e.kind : "shutoff"; $("#e-where").value = e ? e.where : ""; $("#e-det").value = e ? e.det : "";
+    $("#e-model").value = e ? e.model : ""; $("#e-warr").value = e ? e.warr : ""; $("#e-link").value = e ? e.link : ""; $("#e-priv").checked = !!(e && e.priv); $("#e-st").textContent = ""; $("#edit").scrollIntoView({ block: "nearest" }); $(e && e.title ? "#e-where" : "#e-title").focus(); };
+  $("#add").onclick = () => openEdit(null, true);
+  $("#chips").onclick = (ev) => { const b = ev.target.closest(".chip"); if (b) openEdit({ title: b.dataset.t, kind: b.dataset.k, where: "", det: "", model: "", warr: "", link: "", priv: b.dataset.t === "Spare key" }, true); };
+  $("#e-cancel").onclick = () => { $("#edit").hidden = true; };
+  $("#edit").onsubmit = (ev) => { ev.preventDefault(); const link = $("#e-link").value.trim(); if (link && !/^https:\/\/\S+$/.test(link)) { $("#e-st").textContent = "A link starts with https://"; return; }
+    const e = tidy({ id: editing || id(), kind: $("#e-kind").value, title: $("#e-title").value, where: $("#e-where").value, det: $("#e-det").value, model: $("#e-model").value, warr: $("#e-warr").value, link, priv: $("#e-priv").checked });
+    if (!e.title) { $("#e-st").textContent = "Give it a name."; return; }
+    const i = E.findIndex((x) => x.id === e.id); if (i >= 0) E[i] = e; else E.push(e); save(); $("#edit").hidden = true; draw(); };
+  $("#list").onclick = (ev) => { const b = ev.target.closest("button[data-act]"); if (!b) return; const e = E.find((x) => x.id === b.closest(".card").dataset.id); if (!e) return;
+    if (b.dataset.act === "edit") openEdit(e); else if (confirm("Delete “" + e.title + "”?")) { E = E.filter((x) => x !== e); save(); draw(); } };
+  $("#q").oninput = draw;
+
+  // sharing: the manual travels inside the link (#v=…), compressed; nothing is sent anywhere
+  const b64 = (u8) => { let s = ""; for (const x of u8) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+  const unb64 = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const pack = async (obj) => { const raw = new TextEncoder().encode(JSON.stringify(obj)); if (!window.CompressionStream) return "j" + b64(raw);
+    return "z" + b64(new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer())); };
+  const unpack = async (s) => { const u = unb64(s.slice(1)); const raw = s[0] === "z" ? new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer()) : u; return JSON.parse(new TextDecoder().decode(raw)); };
+  const copyOf = (priv) => ({ kind: "house-manual", v: 1, at: new Date().toISOString().slice(0, 10), entries: E.filter((e) => priv || !e.priv) });
+  $("#share").onclick = () => { $("#shareBox").hidden = !$("#shareBox").hidden; };
+  $("#s-make").onclick = async () => { const c = copyOf($("#s-priv").checked); if (!c.entries.length) { $("#s-out").textContent = "Nothing to share yet."; return; }
+    const link = location.origin + location.pathname + "#v=" + (await pack(c)); $("#s-out").innerHTML = '<a id="s-link" href="' + esc(link) + '" style="color:var(--gold-hi)">The link</a> (' + c.entries.length + " entr" + (c.entries.length === 1 ? "y" : "ies") + (c.entries.length < E.length ? ", private ones left out" : "") + ")";
+    try { await navigator.clipboard.writeText(link); $("#s-out").insertAdjacentHTML("beforeend", " · copied"); } catch (e) {} };
+  $("#s-file").onclick = () => { const blob = new Blob([JSON.stringify(copyOf(true), null, 1)], { type: "application/json" }), name = "house-manual-" + new Date().toISOString().slice(0, 10) + ".json";
+    if (window.Faber && Faber.inOS && Faber.save(blob, name)) return; const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+  const take = async (obj, how) => { if (!obj || obj.kind !== "house-manual" || !Array.isArray(obj.entries)) throw new Error("That isn't a house manual.");
+    const add = obj.entries.slice(0, 400).map(tidy).filter((e) => e.title && !E.some((x) => x.id === e.id)); E = E.concat(add); save(); shared = null; draw(); return add.length + " entr" + (add.length === 1 ? "y" : "ies") + " " + how; };
+  $("#s-open").onchange = async (ev) => { const f = ev.target.files[0]; if (!f) return; try { $("#s-out").textContent = await take(JSON.parse(await f.text()), "added from the file"); } catch (e) { $("#s-out").textContent = e.message; } };
+  if (window.Faber) Faber.onFiles(async (files) => { for (const f of files) { try { alert(await take(JSON.parse(await f.text()), "added from the Shelf")); } catch (e) { alert(e.message); } } });
+
+  async function fromLink() {
+    const m = /^#v=([jz][A-Za-z0-9_-]+)$/.exec(location.hash); if (!m) { shared = null; $("#shared").hidden = true; return draw(); }
+    try { const c = await unpack(m[1]); if (c.kind !== "house-manual") throw 0; shared = c.entries.slice(0, 400).map(tidy);
+      $("#shared").hidden = false; $("#shared").innerHTML = "A copy someone shared with you" + (c.at ? ", made " + esc(new Date(c.at + "T12:00").toLocaleDateString()) : "") + '. <button class="btn sm" id="keep" type="button">Keep it on this device</button>';
+      $("#keep").onclick = async () => { const n = await take({ kind: "house-manual", entries: shared }, "kept on this device"); history.replaceState(null, "", location.pathname); $("#shared").hidden = false; $("#shared").textContent = n + ". It's yours to change now."; };
+    } catch (e) { shared = null; $("#shared").hidden = false; $("#shared").textContent = "This link doesn't hold a house manual (it may have been cut short)."; }
+    draw();
+  }
+  addEventListener("hashchange", fromLink); fromLink();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/house-sw.js", { scope: "/house" }).catch(() => {}); // so the manual opens with no signal
+
+  // Faber Verbs (declared in tools/site/content/house.json): AutoFaber can look something up here, or note something down
+  if (window.Faber) Faber.verbs({
+    find: (a) => { const list = shared || E, hits = match(String(a.what || ""), list); if (!hits.length) return list.length ? "The house manual doesn't mention that yet." : "The house manual is empty: add the shutoffs first.";
+      $("#q").value = String(a.what || ""); draw(); const e = hits[0]; return e.title + ": " + (e.where || "no place written down") + (e.det ? ". " + e.det.split("\n")[0] : "") + (hits.length > 1 ? " (" + (hits.length - 1) + " more on the page)" : "") + "."; },
+    add: (a) => { const e = tidy({ id: id(), kind: a.section || "note", title: a.title, where: a.where, det: a.more }); if (!e.title) throw new Error("Say what it is.");
+      E.push(e); save(); shared = null; draw(); return "Added to the house manual: " + e.title + (e.where ? ", " + e.where : "") + "."; },
+  });
+})();
+</script>
+</body>
+</html>

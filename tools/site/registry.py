@@ -20,6 +20,8 @@ GLYPH.update({  # glyphs for apps that never had one
   # the apps from the game plan (24 November 2026)
   "blackout": '<path d="M13.2 2.8L6 13.2h5.2L10.4 21.2l7.6-10.6h-5.2z"/><path d="M3.5 20.5l17-17"/>',
   "passport": '<rect x="5" y="2.8" width="14" height="18.4" rx="1.6"/><circle cx="12" cy="10" r="3.2"/><path d="M8.6 16.4h6.8M9.6 18.6h4.8"/>',
+  "fix": '<path d="M14.6 3.6a4.6 4.6 0 0 0-4.9 6.2L3.4 16.1a2 2 0 0 0 2.8 2.8l6.3-6.3a4.6 4.6 0 0 0 6.2-4.9l-2.6 2.6-2.6-.7-.7-2.6z"/><path d="M15.6 15.2l4.6 4.6M20.2 15.2l-4.6 4.6"/>',
+  "house": '<path d="M3.5 11.2L12 4.2l8.5 7"/><path d="M5.6 9.6V20h12.8V9.6"/><path d="M10 20v-5.2h4V20"/><path d="M15.8 7.4V5h2v4"/>',
   "witness": '<path d="M3.5 8.2h3.4l1.6-2.4h7l1.6 2.4h3.4v11H3.5z"/><circle cx="12" cy="13.2" r="3.4"/><path d="M10.6 13.2l1 1 1.9-2"/>',
   "letters": '<rect x="3" y="5.5" width="18" height="13" rx="1.4"/><path d="M3.4 6l8.6 6.6L20.6 6"/><circle cx="12" cy="15.6" r="2" fill="currentColor"/>',
   "skylens": '<path d="M2.6 13.4c2.6-4.4 5.8-6.6 9.4-6.6s6.8 2.2 9.4 6.6c-2.6 4.4-5.8 6.6-9.4 6.6s-6.8-2.2-9.4-6.6z"/><circle cx="12" cy="13.4" r="2.8"/><path d="M17.5 2.8l1.4 1.4-1.4 1.4-1.4-1.4z"/>',
@@ -31,7 +33,7 @@ def _hues():
     s = open(os.path.join(ROOT, "assets/mf.js"), encoding="utf-8").read()
     d = json.loads(re.search(r"const MF_SYS = (\{.*?\});", s, re.S).group(1))
     return {k: v[1] for k, v in d.items()}
-HUE = _hues(); HUE.update({"checkin": 138, "blackout": 34, "passport": 44, "witness": 205, "letters": 6, "skylens": 192, "local-ai": 262, "mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
+HUE = _hues(); HUE.update({"house": 168, "fix": 24, "checkin": 138, "blackout": 34, "passport": 44, "witness": 205, "letters": 6, "skylens": 192, "local-ai": 262, "mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
 
 CATS = [  # display order on the home page
   ("signals", "Signals & Comms", "Messengers, radios and things that talk without the usual pipes."),
@@ -53,7 +55,7 @@ APP_URL = {
   "crime-dashboard": "crime-dashboard-app.html", "muse": "muse-live.html", "weaver": "weaver-live.html",
   "barycenter": "barycenter-app.html", "nullspace": "nullspace-app.html", "pilotfish": "pilotfish-app.html", "meshnet": "meshnet-app.html", "novarac": "novarac-app.html",
   "tether": "tether-app.html", "thoughtform": "thoughtform-app.html", "graveyard": "graveyard-app.html", "rootcause": "rootcause-app.html", "sideways": "sideways-app.html", "watchyourgrass": "watchyourgrass-app.html",
-  "checkin": "checkin.html", "blackout": "blackout.html", "passport": "passport.html", "witness": "witness.html", "letters": "letters.html", "skylens": "skylens.html", "local-ai": "local-ai.html",
+  "checkin": "checkin.html", "blackout": "blackout.html", "passport": "passport.html", "house": "house.html", "fix": "fix.html", "witness": "witness.html", "letters": "letters.html", "skylens": "skylens.html", "local-ai": "local-ai.html",
   "mentiplayer": "mentiplayer-app.html", "hive": "hive-app.html", "neural-sim": "neural-sim-v3.html", "worm-eater": "worm-eater-app.html", "pi": "pi-app.html", "sonicveil": "sonicveil-app.html", "doccrawler": "doccrawler-app.html", "shop": "shop-app.html", "conflict-atlas": "conflict-atlas-app.html", "proximity": "proximity-app.html", "monstrosity": "monstrosity-app.html", "duely": "duely-app.html", "phone-mcp": "phone-mcp-app.html", "roku": "roku-app.html", "omnilogos": "omnilogos-app.html", "orbit": "orbit-app.html", "cartograph": "cartograph-app.html",
 }
 def _id(href):

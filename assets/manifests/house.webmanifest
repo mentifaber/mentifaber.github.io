@@ -1,0 +1,31 @@
+{
+  "id": "/house",
+  "name": "House Manual",
+  "short_name": "House Manual",
+  "description": "Your home's own handbook: where the shutoffs are, the Wi-Fi, bin days, each appliance with its model and warranty, and who to call. It stays on your device, works offline, and a sitter gets a copy by link.",
+  "start_url": "/house.html",
+  "scope": "/house.html",
+  "display": "standalone",
+  "background_color": "#080705",
+  "theme_color": "#080705",
+  "icons": [
+    {
+      "src": "../icons/v2/house-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/house-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/house-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

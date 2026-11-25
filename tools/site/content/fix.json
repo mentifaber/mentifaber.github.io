@@ -1,0 +1,19 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "check",
+   "label": "Weigh up fixing or replacing something",
+   "changes": false,
+   "desc": "What a repair should cost, what the thing is worth, and whether to fix it or replace it: phones, laptops, tablets, desktops, consoles, TVs, printers, washers, dryers, fridges, dishwashers, microwaves.",
+   "args": {
+    "device": "string",
+    "problem": "string",
+    "age": "number",
+    "price?": "number",
+    "warranty?": "boolean"
+   },
+   "words": "fix replace repair worth it broken cracked screen battery should i cost estimate quote old laptop phone washer fridge dishwasher dryer tv"
+  }
+ ]
+}

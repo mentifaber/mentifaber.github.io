@@ -38,7 +38,7 @@ await C.p.goto(link.replace(/^https?:\/\/[^/]+/, "http://localhost:8099").replac
 const cv = await C.p.textContent("main"); assert.match(cv, /Screen and battery, iPhone 13[\s\S]*Tech repair · for Sam[\s\S]*OLED screen\s*\$189\.50[\s\S]*Battery\s*\$79\.00[\s\S]*Total\s*\$268\.50[\s\S]*Parts arrive Thursday/);
 assert.doesNotMatch(cv, /prefers texts|sam@example/); assert.doesNotMatch(await C.p.content(), /prefers texts|sam@example\.com/);
 await C.p.click("#approve"); await C.p.waitForFunction(() => /You approved this/.test(document.body.textContent));
-await C.p.waitForFunction(() => document.querySelectorAll(".rail span.on").length === 2 && /approved/.test(document.querySelector(".rail span.now").textContent));
+await C.p.waitForFunction(() => document.querySelectorAll(".rail span.on").length === 3 && /approved/.test(document.querySelector(".rail span.now").textContent));
 await C.p.fill("#text", "Can you check the camera too?"); await C.p.click("#msg button[type=submit]"); await C.p.waitForFunction(() => /You: Can you check the camera too\?/.test(document.body.textContent));
 ok("the client's link: the quote, approve it (the rail moves to approved), and write; the private note and their email never reach their page");
 

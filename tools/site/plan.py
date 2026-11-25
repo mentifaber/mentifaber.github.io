@@ -390,7 +390,8 @@ SERVICES_CSS = """<style>.svc-jump{display:flex;flex-wrap:wrap;gap:8px;margin:18
 .svc{border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px;scroll-margin-top:80px}
 .svc h2{margin:0;font-size:1.25rem}.svc-lead{margin:0;color:var(--ink-2,#c9bc9f)}.svc ul{margin:4px 0 0;padding-left:18px;display:grid;gap:5px;font-size:.93rem}
 .svc-how{margin:auto 0 0;padding-top:8px;font-size:.88rem;color:var(--dim,#8d877a)}.svc .key{align-self:flex-start}
-.svc-steps{display:grid;gap:8px;padding-left:20px}.svc-steps b{font-weight:600}
+.svc-steps{display:grid;gap:8px;padding-left:20px}
+.sent{margin-top:34px;border:1px solid var(--gold);padding:22px;display:grid;gap:12px;justify-items:start}.sent p{margin:0;max-width:62ch}.svc-steps b{font-weight:600}
 .svc .key{max-width:100%;white-space:normal;text-align:left}
 .form select{width:100%;font:400 16px/1.5 var(--font);color:var(--ink);background:var(--floor-2);border:1px solid var(--line-2);padding:11px 13px;border-radius:0;text-transform:none;letter-spacing:0}.form select:focus{border-color:var(--gold);outline:none}</style>"""
 SERVICES_JS = r"""<script>
@@ -402,15 +403,31 @@ SERVICES_JS = r"""<script>
   document.querySelectorAll("[data-svc]").forEach((b) => b.addEventListener("click", () => { pick(b.dataset.svc); $("f").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("what").focus({ preventScroll: true }), 400); }));
   const card = location.hash.length > 1 && document.getElementById(location.hash.slice(1)), cb = card && card.querySelector && card.querySelector("[data-svc]"); if (cb) pick(cb.dataset.svc);
   $("msg").addEventListener("input", () => { $("count").textContent = $("msg").value.length + " / 2000"; });
-  $("f").addEventListener("submit", (e) => {
+  const SVC = { "Tech repair": "repair", "IT services": "it", "Web hosting": "hosting", "Websites": "websites", "Website": "websites", "Software & AI": "software" };
+  $("f").addEventListener("submit", async (e) => {
     e.preventDefault(); if ($("hp").value) return;
     const name = $("name").value.trim(), from = $("from").value.trim(), what = $("what").value.trim(), msg = $("msg").value.trim(), when = $("when").value;
     if (!msg) { status("Say a little about what's going on first."); $("msg").focus(); return; }
     if (from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from)) { status("That email looks off: check it or leave it blank."); $("from").focus(); return; }
     const subject = "[Services] " + topic + (what ? " · " + what : "") + (name ? " · " + name : "");
     const body = "Service: " + topic + "\n" + (what ? "Device / site / system: " + what + "\n" : "") + "How soon: " + when + "\n\n" + msg + "\n\n—\n" + (name || "Sent from mentifaber.org/services") + (from ? "\nReply to: " + from : "");
-    location.href = "mailto:" + TO + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-    status("Opening your email app…");
+    // the request opens a job in the Workshop Portal, and its private link is theirs at once; if that can't be reached,
+    // their own email app opens with everything filled in instead
+    status("Sending…");
+    try {
+      const r = await fetch("/api/portal/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email: from, service: SVC[topic] || "other", what, when, msg }) });
+      const j = await r.json().catch(() => ({})); if (!r.ok || !j.link) throw new Error(j.error || "no answer");
+      const done = document.createElement("div"); done.className = "sent"; done.id = "sent"; done.setAttribute("role", "status");
+      const h = document.createElement("h2"); h.className = "lbl"; h.textContent = "Request sent";
+      const p1 = document.createElement("p"); p1.textContent = "The workshop has it. Your written quote will appear on your private link, where you can also follow the work and write back. Keep it:";
+      const a = document.createElement("a"); a.href = j.link; a.className = "key pri big"; a.textContent = "Open your link"; a.id = "sent-link";
+      const p2 = document.createElement("p"); p2.className = "fine"; p2.textContent = from ? "The workshop will also reply to " + from + "." : "You didn't leave an email, so the link is the way to follow it: bookmark it.";
+      done.append(h, p1, a, p2); $("f").replaceWith(done); done.scrollIntoView({ block: "center" });
+    } catch (x) {
+      if (/requests from here|lot of requests/.test(x.message)) status(x.message.charAt(0).toUpperCase() + x.message.slice(1) + ".");
+      location.href = "mailto:" + TO + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      status("Opening your email app instead…");
+    }
   });
 })();
 </script>"""
@@ -448,7 +465,7 @@ def services():
     <div class="count lbl" id="count">0 / 2000</div>
     <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
     <div class="acts"><button class="key pri big" type="submit">Send the request</button><span class="status" id="status" role="status"></span></div>
-    <p class="fine">Sending opens your own email app with everything filled in, and the message travels like any other email, through your email provider and mine. Nothing you type here is sent to or stored on this site. Or write straight to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>
+    <p class="fine">Sending opens a job in the Workshop Portal and gives you its private link, where your quote appears; what you write is kept there for the workshop and you only. If the site can't be reached, your own email app opens instead, with everything filled in. Or write straight to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>
   </form>"""
     return plain("services.html", "Services · repair, IT, hosting, websites · Mentifaber", "Tech repair, IT support, web hosting, websites, and custom software and AI, from the workshop that built every app on mentifaber.org. Quoted before work starts.", "Services", body, SERVICES_CSS + "\n" + SERVICES_JS)
 

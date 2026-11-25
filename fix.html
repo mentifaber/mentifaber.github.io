@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/fix">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fix or Replace · Mentifaber</title>
+<meta name="description" content="A straight answer before you spend: what a repair should cost, what the device is worth, and whether to fix it or replace it.">
+<meta name="theme-color" content="#0c0a09">
+<link rel="icon" href="assets/icons/v2/fix.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/fix-180.png">
+<link rel="manifest" href="assets/manifests/fix.webmanifest">
+<style>
+/* Fix or Replace: a repair ticket on the bench. The verdict is stamped big; the sums behind it sit underneath, itemised like a
+   receipt, so nobody has to take the answer on trust. */
+:root { --bg: #0c0a09; --sheet: #15110e; --card: #1c1712; --line: #3b3027; --amber: #e8893a; --amber-hi: #ffb877; --ink: #f1e8de; --dim: #a8998a;
+  --fix: #8fd18f; --rep: #ff8a6b; --mid: #e6c25a; --war: #7fc8f0;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 820px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--amber-hi); }
+.lede { color: var(--dim); margin: 0 0 16px; max-width: 64ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+.lbl { font: 600 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--amber); margin: 0 0 8px; }
+.kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr)); gap: 6px; }
+.kinds button, .faults button, .chip { font: 15px var(--sans); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; cursor: pointer; text-align: left; }
+.kinds button[aria-pressed="true"], .faults button[aria-pressed="true"] { border-color: var(--amber); background: #2a1c10; color: var(--amber-hi); }
+.faults { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chip { border-style: dashed; border-color: var(--amber); color: var(--amber-hi); border-radius: 99px; padding: 6px 11px; font-size: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0e0b09; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; margin-top: 4px; }
+textarea.in { min-height: 64px; resize: vertical; }
+.check { display: flex; gap: 8px; align-items: center; color: var(--ink); margin-top: 10px; } .check input { width: auto; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--amber); background: var(--amber); color: #1d1006; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--amber-hi); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.note { color: var(--dim); font-size: 14px; }
+.verdict { border: 2px solid var(--v, var(--amber)); border-radius: 14px; padding: 18px; margin-top: 18px; background: var(--sheet); }
+.stamp { display: inline-block; font: 800 clamp(26px, 7vw, 40px)/1 var(--sans); letter-spacing: .04em; text-transform: uppercase; color: var(--v); border: 3px solid var(--v); border-radius: 8px; padding: 6px 12px; transform: rotate(-2deg); }
+.why { font-size: 18px; margin: 14px 0 0; } .why b { color: var(--amber-hi); }
+.figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 8px; margin-top: 14px; }
+.fig { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .fig span { display: block; font: 12px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; } .fig b { font-size: 22px; }
+.receipt { font: 14px/1.7 var(--mono); color: var(--dim); margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px; } .receipt div { display: flex; justify-content: space-between; gap: 10px; } .receipt div b { color: var(--ink); font-weight: 500; white-space: nowrap; }
+.tips { margin: 12px 0 0; padding-left: 20px; } .tips li { margin: 4px 0; }
+.v-fix { --v: var(--fix); } .v-rep { --v: var(--rep); } .v-mid { --v: var(--mid); } .v-war { --v: var(--war); }
+.hist { list-style: none; padding: 0; margin: 0; } .hist li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 14px; } .hist button { background: none; border: 0; color: var(--amber-hi); font: 14px var(--sans); text-decoration: underline; cursor: pointer; padding: 0; text-align: left; }
+.sent { border: 1px dashed var(--fix); color: var(--fix); padding: 10px 12px; border-radius: 10px; margin-top: 10px; } .sent a { color: var(--amber-hi); }
+.err { color: var(--rep); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--amber-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Fix or Replace", "description": "A straight answer before you spend: what a repair should cost, what the device is worth, and whether to fix it or replace it.", "url": "https://mentifaber.org/fix", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/fix-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Fix or Replace</span><a href="./">The workshop</a></div>
+  <h1>Fix it, or <span>replace it?</span></h1>
+  <p class="lede">Tell it what you've got and what's wrong. You get what a repair should cost, parts and labour, what the thing is worth, and a plain answer, with the sums shown. It all works out on this page; nothing is sent anywhere unless you ask the workshop for a quote.</p>
+
+  <form id="f" class="panel" novalidate>
+    <div id="fromHouse" hidden><p class="lbl">From your house manual</p><div class="chips" id="houseChips"></div><p class="note" style="margin:6px 0 14px">Tap one to fill in its model and warranty.</p></div>
+    <p class="lbl" id="k-lbl">What is it</p>
+    <div class="kinds" id="kinds" role="group" aria-labelledby="k-lbl"></div>
+    <p class="lbl" id="f-lbl" style="margin-top:16px">What's wrong</p>
+    <div class="faults" id="faults" role="group" aria-labelledby="f-lbl"><p class="note">Pick what it is first.</p></div>
+    <div class="grid3" style="margin-top:16px">
+      <label>How old, in years<input class="in" id="age" type="number" inputmode="decimal" min="0" max="40" step="0.5" placeholder="3"></label>
+      <label>What it cost new, $<input class="in" id="price" type="number" inputmode="numeric" min="20" max="20000" step="1"></label>
+      <label>Model <span class="note">(optional)</span><input class="in" id="model" maxlength="80" placeholder="Pixel 7, Bosch SHX78…"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="warr"> It's still under warranty or a protection plan</label>
+    <details style="margin-top:10px"><summary class="note" style="cursor:pointer">The shop rate</summary>
+      <label style="margin-top:8px;max-width:220px">Labour, $ an hour<input class="in" id="rate" type="number" min="20" max="400" step="5" value="90"></label>
+      <p class="note">$90 an hour is typical for an independent repair shop in the US. Change it to what shops near you charge.</p></details>
+    <div class="bar"><button class="btn" type="submit">Give me a straight answer</button><span class="note err" id="f-st" role="status"></span></div>
+  </form>
+
+  <section id="out" aria-live="polite"></section>
+
+  <section id="ask" class="panel" hidden>
+    <p class="lbl">Ask the workshop for a quote</p>
+    <p class="note" style="margin-top:0">This goes to the workshop with the details above. You get a private link at once, where the written quote will appear. Repairs are by mail: you send it only once you've approved the quote.</p>
+    <div class="grid3"><label>Your name<input class="in" id="a-name" maxlength="80" autocomplete="name"></label><label>Email <span class="note">(optional)</span><input class="in" id="a-mail" type="email" maxlength="120" autocomplete="email"></label></div>
+    <label style="margin-top:10px">Anything else <span class="note">(optional)</span><textarea class="in" id="a-note" maxlength="1200" placeholder="When it started, what you've tried…"></textarea></label>
+    <div class="bar"><button class="btn" id="a-go" type="button">Send it to the workshop</button><span class="note err" id="a-st" role="status"></span></div>
+    <div id="a-done"></div>
+  </section>
+
+  <section id="past" class="panel" hidden><p class="lbl">Your recent checks</p><ul class="hist" id="hist"></ul><p class="note">Kept on this device only.</p></section>
+  <p class="note" style="margin-top:22px">The prices are typical US ranges for 2026 at independent shops (parts, plus labour at the rate above, plus a call-out fee where a technician has to come to you). They're a guide to know whether a quote is fair, not a quote. The used values follow how fast each kind of thing usually loses value.</p>
+</div>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // Each kind: usual life in years, a typical price new, how much of that it keeps by age (years 0, 1, 2…), whether a
+  // technician comes to you (a call-out fee) and whether it can go to the workshop by mail. Each fault: parts low/high ($),
+  // labour low/high (hours), and flags: dx = needs a diagnosis (the range is wide), data = back it up first, hv = not a DIY job.
+  const K = {
+    phone: { n: "Phone", life: 5, newp: 800, ret: [1, .6, .45, .33, .23, .15, .1, .07], mail: true, words: /phone|iphone|pixel|galaxy|android|moto/, faults: [
+      ["screen", "Cracked or dead screen", 50, 250, .5, 1], ["battery", "Battery dies fast or swells", 25, 90, .5, .75], ["charge", "Won't charge", 15, 60, .75, 1.5, "dx"],
+      ["camera", "Camera broken or blurry", 30, 150, .5, 1], ["audio", "Can't hear calls, mic or speaker", 15, 60, .75, 1], ["water", "Got wet", 0, 200, 1, 3, "dx data"],
+      ["dead", "Won't turn on", 20, 250, 1, 3, "dx data"], ["slow", "Slow, full or acting up", 0, 0, .5, 1.5, "data"]] },
+    laptop: { n: "Laptop", life: 6, newp: 1000, ret: [1, .65, .5, .38, .28, .2, .14, .1], mail: true, words: /laptop|macbook|notebook|chromebook|thinkpad|surface/, faults: [
+      ["screen", "Cracked or dead screen", 80, 320, 1, 2], ["battery", "Battery won't hold a charge", 50, 150, .5, 1], ["keyboard", "Keys or trackpad not working", 40, 180, 1, 2.5],
+      ["charge", "Won't charge", 20, 120, 1, 3, "dx"], ["slow", "Slow (an SSD or memory helps)", 0, 120, 1, 2, "data"], ["disk", "Drive failing or clicking", 50, 150, 1, 2, "data"],
+      ["hinge", "Broken hinge", 20, 110, 1, 2], ["hot", "Overheats or fan roars", 0, 50, 1, 1.5], ["water", "Got a drink spilled on it", 0, 400, 2, 4, "dx data"], ["dead", "Won't turn on", 0, 400, 1.5, 4, "dx data"]] },
+    tablet: { n: "Tablet", life: 5, newp: 500, ret: [1, .65, .5, .38, .28, .2, .13, .09], mail: true, words: /tablet|ipad|kindle|fire hd/, faults: [
+      ["screen", "Cracked or dead screen", 60, 250, 1, 2], ["battery", "Battery dies fast", 30, 90, 1, 1.5], ["charge", "Won't charge", 15, 60, 1, 1.5, "dx"],
+      ["dead", "Won't turn on", 20, 200, 1, 3, "dx data"], ["slow", "Slow or acting up", 0, 0, .5, 1.5, "data"]] },
+    desktop: { n: "Desktop PC", life: 7, newp: 1000, ret: [1, .6, .45, .33, .25, .18, .13, .1], mail: true, words: /desktop|imac|tower|gaming pc|\bpc\b/, faults: [
+      ["dead", "Won't turn on (often the power supply)", 50, 150, .5, 1.5, "dx"], ["slow", "Slow (an SSD or memory helps)", 50, 150, 1, 2, "data"], ["disk", "Drive failing", 50, 150, 1, 2, "data"],
+      ["hot", "Overheats, shuts off, fans roar", 0, 60, 1, 1.5], ["virus", "Virus, pop-ups, acting up", 0, 0, 1, 2.5, "data"]] },
+    console: { n: "Game console", life: 7, newp: 450, ret: [1, .75, .62, .52, .44, .36, .3, .25], mail: true, words: /console|xbox|playstation|ps5|ps4|switch|nintendo/, faults: [
+      ["hdmi", "No picture (HDMI port)", 10, 30, 1, 2], ["drift", "Controller drifts", 10, 40, .5, 1], ["hot", "Overheats or loud", 0, 30, 1, 1.5],
+      ["disc", "Won't read discs", 30, 100, 1, 1.5], ["dead", "Won't turn on", 40, 100, 1, 2, "dx"]] },
+    tv: { n: "TV", life: 8, newp: 600, ret: [1, .55, .42, .33, .26, .2, .16, .12, .1], call: [75, 150], words: /\btv\b|television|oled|qled/, faults: [
+      ["backlight", "Sound but no picture (backlight)", 20, 80, 1.5, 3], ["power", "Won't turn on (power board)", 30, 120, 1, 1.5, "dx"], ["panel", "Cracked screen", 300, 900, 1, 2],
+      ["lines", "Lines or bands on the picture", 40, 250, 1, 2, "dx"], ["sound", "No sound", 20, 80, 1, 1.5]] },
+    printer: { n: "Printer", life: 5, newp: 200, ret: [1, .5, .35, .25, .18, .12, .08], words: /printer|laserjet|inkjet/, faults: [
+      ["jam", "Jams or won't take paper", 0, 40, .5, 1], ["streaks", "Streaks or faded prints", 10, 60, .5, 1], ["connect", "Won't connect", 0, 0, .5, 1]] },
+    washer: { n: "Washer", life: 11, newp: 900, big: true, call: [75, 150], words: /washer|washing machine/, faults: [
+      ["drain", "Won't drain (pump)", 30, 90, 1, 1.5], ["spin", "Won't spin (belt, lid switch)", 20, 120, 1, 2], ["leak", "Leaking", 15, 100, 1, 2],
+      ["bearing", "Loud rumbling (drum bearing)", 60, 250, 3, 5], ["board", "Dead or error codes (control board)", 100, 300, 1, 1.5, "dx"]] },
+    dryer: { n: "Dryer", life: 13, newp: 800, big: true, call: [75, 150], words: /dryer/, faults: [
+      ["heat", "Runs but no heat", 15, 100, 1, 1.5], ["tumble", "Won't tumble (belt)", 15, 40, 1, 1.5], ["noise", "Squeals or thumps", 20, 60, 1, 1.5], ["dead", "Won't start", 10, 150, 1, 1.5, "dx"]] },
+    fridge: { n: "Fridge", life: 13, newp: 1600, big: true, call: [75, 150], words: /fridge|refrigerator|freezer/, faults: [
+      ["warm", "Not cold enough (fan, relay, defrost)", 30, 180, 1, 2, "dx"], ["compressor", "Compressor or sealed system", 300, 700, 4, 6, "hv"], ["ice", "Ice maker or water dispenser", 60, 180, 1, 1.5],
+      ["leak", "Leaking water", 10, 60, 1, 1.5], ["noise", "Loud humming or clicking", 30, 150, 1, 1.5, "dx"]] },
+    dishwasher: { n: "Dishwasher", life: 10, newp: 700, big: true, call: [75, 150], words: /dishwasher/, faults: [
+      ["drain", "Won't drain", 30, 120, 1, 1.5], ["clean", "Dishes come out dirty", 0, 80, 1, 1.5], ["leak", "Leaking", 15, 80, 1, 1.5], ["board", "Dead or error codes (control board)", 100, 250, 1, 1.5, "dx"]] },
+    microwave: { n: "Microwave", life: 9, newp: 200, big: true, call: [75, 150], words: /microwave/, faults: [
+      ["heat", "Runs but doesn't heat", 60, 130, 1, 1.5, "hv"], ["turn", "Turntable doesn't turn", 10, 30, .5, 1], ["dead", "Won't start", 10, 60, 1, 1.5, "dx hv"]] },
+  };
+  const ORDER = ["phone", "laptop", "tablet", "desktop", "console", "tv", "printer", "washer", "dryer", "fridge", "dishwasher", "microwave"];
+  const S = { kind: null, fault: null };
+  const r5 = (x) => Math.max(0, Math.round(x / 5) * 5), usd = (x) => "$" + r5(x).toLocaleString("en-US");
+  const keeps = (k, age) => { if (k.big) return Math.max(.08, 1 - .85 * age / k.life); const r = k.ret, i = Math.floor(age); if (i >= r.length - 1) return r[r.length - 1]; return r[i] + (r[i + 1] - r[i]) * (age - i); };
+  const kindOf = (text) => { const t = String(text || "").toLowerCase(); if (/dishwasher/.test(t)) return "dishwasher"; return ORDER.find((k) => K[k].words.test(t)) || null; };
+  const faultOf = (k, text) => { const t = String(text || "").toLowerCase(), fs = K[k].faults; if (!t) return null;
+    const syn = [["screen", /screen|crack|display|glass|shatter/], ["battery", /battery|dies fast|swell/], ["charge", /charg|port|plug/], ["water", /water|wet|spill|drink|drop.*(toilet|pool)/],
+      ["dead", /won.?t (turn|start|power)|dead|no power|nothing happens/], ["slow", /slow|lag|full|storage/], ["keyboard", /key|trackpad/], ["disk", /drive|disk|click/], ["hot", /hot|heat|fan|loud/],
+      ["hdmi", /hdmi|no picture/], ["drift", /drift|stick|controller/], ["drain", /drain|standing water/], ["spin", /spin/], ["leak", /leak/], ["warm", /not cold|warm|cool/], ["ice", /ice|dispenser/],
+      ["heat", /no heat|doesn.?t heat|not heating|cold/], ["clean", /dirty|clean/], ["jam", /jam|paper/], ["camera", /camera|photo/], ["audio", /hear|speaker|mic/], ["hinge", /hinge/], ["backlight", /backlight|black screen|no picture/], ["noise", /nois|squeal|thump|rumbl|hum/], ["bearing", /rumbl|bearing/]];
+    for (const [id, re] of syn) if (re.test(t) && fs.some((f) => f[0] === id)) return id;
+    return fs.find((f) => f[1].toLowerCase().split(/\W+/).some((w) => w.length > 3 && t.includes(w)))?.[0] || null; };
+
+  // the sums: what a repair costs, what it's worth, and the call
+  function judge(o) {
+    const k = K[o.kind], f = k.faults.find((x) => x[0] === o.fault), flags = (f[6] || "").split(" "), rate = o.rate || 90, call = k.call || [0, 0];
+    const lo = f[2] + f[4] * rate + call[0], hi = f[3] + f[5] * rate + call[1], mid = (lo + hi) / 2, age = o.age, newp = o.price || k.newp;
+    const used = newp * keeps(k, age), asIs = used * .25, left = Math.max(0, k.life - age), dx = flags.includes("dx");
+    let v, why;
+    if (o.warr) { v = "war"; why = "It's still covered, so the repair should cost you nothing. Ask the maker or the plan first; if they turn it down, this is what a fair repair costs."; }
+    else if (k.big) {
+      // a big appliance: compare what the repair costs per year it has left with what a new one costs per year of its life
+      const perYear = mid / Math.max(left, 1.5), newYear = newp / k.life;
+      if (perYear <= newYear * .5 || mid <= newp * .15) { v = "fix"; why = "About <b>" + usd(lo) + "–" + usd(hi) + "</b> keeps a " + esc(k.n.toLowerCase()) + " going that " + (left >= 1 ? "should have about " + Math.round(left) + " more year" + (Math.round(left) === 1 ? "" : "s") + " in it" : "is past its usual years but this is a cheap fix") + ". A new one is about " + usd(newp) + "."; }
+      else if (perYear >= newYear) { v = "rep"; why = (left < 1 ? "At " + age + " years it's past a " + esc(k.n.toLowerCase()) + "'s usual " + k.life + ", and" : "For the years it has left,") + " the repair (about <b>" + usd(mid) + "</b>) costs more than a new one would over the same time. Put the money toward a new one (about " + usd(newp) + ")."; }
+      else { v = "mid"; why = "The repair (about <b>" + usd(lo) + "–" + usd(hi) + "</b>) is a fair part of a new one (about " + usd(newp) + "). " + (age < k.life / 2 ? "It's young for a " + esc(k.n.toLowerCase()) + ", so lean toward fixing it." : "It's past halfway through a " + esc(k.n.toLowerCase()) + "'s usual life, so lean toward replacing it if anything else is wearing out."); }
+    } else {
+      // a gadget: replacing it means buying a working one like it, used, less what this one fetches for parts; fixing it is
+      // the better deal while it costs no more than that
+      if (mid <= used - asIs && age < k.life) { v = "fix"; why = "About <b>" + usd(lo) + "–" + usd(hi) + "</b> brings back a " + esc(k.n.toLowerCase()) + " worth about " + usd(used) + " working" + (left >= 1 ? ", with about " + Math.round(left) + " good year" + (Math.round(left) === 1 ? "" : "s") + " left" : "") + "."; }
+      else if (mid >= used || (age >= k.life && mid > used * .3)) { v = "rep"; why = "The repair (about <b>" + usd(lo) + "–" + usd(hi) + "</b>) is " + (mid >= used ? "more than a working one like it costs used (about " + usd(used) + ")" : "a lot to spend on a " + esc(k.n.toLowerCase()) + " past its usual " + k.life + " years") + ". Replace it, and sell this one for parts."; }
+      else { v = "mid"; why = "The repair (about <b>" + usd(lo) + "–" + usd(hi) + "</b>) is a fair part of what it's worth working (about " + usd(used) + "). " + (age < k.life / 2 ? "It's young, so lean toward fixing it." : "It's getting on, so lean toward replacing it if it's slow or anything else is going."); }
+    }
+    const tips = [];
+    if (dx) tips.push("This one needs a diagnosis first: it can be a cheap part or something terminal, which is why the range is wide. Most shops credit the diagnostic fee to the repair.");
+    if (flags.includes("data")) tips.push("Back up what's on it before anyone opens it up" + (o.fault === "water" ? ", and don't try to switch it on again until it's been dried out and checked" : "") + ".");
+    if (flags.includes("hv")) tips.push("Not a do-it-yourself job: it holds dangerous voltage or refrigerant even when it's unplugged.");
+    if (v !== "war" && f[3] <= 60 && f[5] <= 1.5 && !flags.includes("hv") && !k.big) tips.push("A careful person can often do this one with a kit and a video, for the parts cost alone.");
+    if (v === "rep") tips.push("Sold as-is for parts it might fetch about " + usd(asIs) + ". If you recycle it, take it to an e-waste drop-off; don't put it in the bin.");
+    return { v, why, lo, hi, used, newp, asIs, left, age, rate, call, f, k, tips };
+  }
+  const STAMP = { fix: "Fix it", rep: "Replace it", mid: "Toss-up", war: "Use the warranty" };
+  const verdictText = (j) => STAMP[j.v] + ": " + j.why.replace(/<[^>]+>/g, "");
+
+  function show(j, o) {
+    const call = j.call[0] ? '<div><span>Call-out fee</span><b>' + usd(j.call[0]) + "–" + usd(j.call[1]) + "</b></div>" : "";
+    $("#out").innerHTML = '<div class="verdict v-' + j.v + '" id="verdict"><span class="stamp" id="stamp">' + STAMP[j.v] + '</span><p class="why" id="why">' + j.why + "</p>" +
+      '<div class="figs"><div class="fig"><span>Repair should cost</span><b id="cost">' + usd(j.lo) + "–" + usd(j.hi) + '</b></div><div class="fig"><span>Worth working, used</span><b id="worth">' + usd(j.used) + '</b></div>' +
+      '<div class="fig"><span>' + (j.k.big ? "A new one" : "New, like it") + "</span><b>" + usd(j.newp) + "</b></div></div>" +
+      '<div class="receipt"><div><span>' + esc(j.f[1]) + "</span><b></b></div><div><span>Parts</span><b>" + usd(j.f[2]) + "–" + usd(j.f[3]) + "</b></div><div><span>Labour, " + j.f[4] + "–" + j.f[5] + " h at $" + j.rate + "/h</span><b>" + usd(j.f[4] * j.rate) + "–" + usd(j.f[5] * j.rate) + "</b></div>" + call +
+      "<div><span>Age</span><b>" + j.age + " of a usual " + j.k.life + " years</b></div></div>" +
+      (j.tips.length ? '<ul class="tips">' + j.tips.map((t) => "<li>" + esc(t) + "</li>").join("") + "</ul>" : "") + "</div>";
+    $("#ask").hidden = !j.k.mail || j.v === "war";
+    $("#a-done").innerHTML = ""; $("#a-st").textContent = ""; $("#a-go").disabled = false;
+    if (!j.k.mail) $("#out").insertAdjacentHTML("beforeend", '<p class="note" style="margin-top:10px">The workshop repairs by mail, so it can\'t take a ' + esc(j.k.n.toLowerCase()) + ". Use these figures to check a local technician's quote.</p>");
+  }
+
+  // the form
+  $("#kinds").innerHTML = ORDER.map((k) => '<button type="button" data-k="' + k + '" aria-pressed="false">' + esc(K[k].n) + "</button>").join("");
+  function pickKind(k, keepFault) {
+    S.kind = k; if (!keepFault) S.fault = null;
+    for (const b of document.querySelectorAll("#kinds button")) b.setAttribute("aria-pressed", String(b.dataset.k === k));
+    $("#faults").innerHTML = K[k].faults.map((f) => '<button type="button" data-f="' + f[0] + '" aria-pressed="' + (f[0] === S.fault) + '">' + esc(f[1]) + "</button>").join("");
+    $("#price").placeholder = String(K[k].newp);
+  }
+  const pickFault = (id) => { S.fault = id; for (const b of document.querySelectorAll("#faults button")) b.setAttribute("aria-pressed", String(b.dataset.f === id)); };
+  $("#kinds").onclick = (ev) => { const b = ev.target.closest("button[data-k]"); if (b) pickKind(b.dataset.k); };
+  $("#faults").onclick = (ev) => { const b = ev.target.closest("button[data-f]"); if (b) pickFault(b.dataset.f); };
+  const read = () => ({ kind: S.kind, fault: S.fault, age: Number($("#age").value), price: Number($("#price").value) || 0, model: $("#model").value.trim().slice(0, 80), warr: $("#warr").checked, rate: Number($("#rate").value) || 90 });
+  const problem = (o) => !o.kind ? "Pick what it is." : !o.fault ? "Pick what's wrong." : !($("#age").value !== "" && o.age >= 0 && o.age <= 40) ? "Say how old it is, in years (0.5 is fine)." : "";
+  let last = null;
+  function run(o, record) {
+    const j = judge(o); last = { o, j }; show(j, o);
+    if (record) { H = [{ at: Date.now(), o, v: j.v }].concat(H.filter((h) => JSON.stringify(h.o) !== JSON.stringify(o))).slice(0, 12); saveH(); drawH(); }
+    return j;
+  }
+  $("#f").onsubmit = (ev) => { ev.preventDefault(); const o = read(), p = problem(o); $("#f-st").textContent = p; if (p) return; run(o, true); $("#verdict").scrollIntoView({ block: "nearest" }); };
+
+  // recent checks, on this device
+  const HK = "fix:v1"; let H = []; try { H = JSON.parse(localStorage.getItem(HK) || "[]").filter((h) => h && h.o && K[h.o.kind]); } catch (e) {}
+  const saveH = () => { try { localStorage.setItem(HK, JSON.stringify(H)); } catch (e) {} };
+  function drawH() { $("#past").hidden = !H.length;
+    $("#hist").innerHTML = H.map((h, i) => { const k = K[h.o.kind], f = k.faults.find((x) => x[0] === h.o.fault); return '<li><button type="button" data-i="' + i + '">' + esc((h.o.model || k.n) + " · " + (f ? f[1] : "")) + '</button><span class="v-' + h.v + '" style="color:var(--v)">' + STAMP[h.v] + "</span></li>"; }).join(""); }
+  $("#hist").onclick = (ev) => { const b = ev.target.closest("button[data-i]"); if (!b) return; const h = H[+b.dataset.i]; if (!h) return; fill(h.o); run(h.o, false); };
+  function fill(o) { pickKind(o.kind); pickFault(o.fault); $("#age").value = o.age; $("#price").value = o.price || ""; $("#model").value = o.model || ""; $("#warr").checked = !!o.warr; if (o.rate) $("#rate").value = o.rate; }
+  drawH();
+
+  // the house manual (same device): its appliances, with their model and warranty
+  try { const house = JSON.parse(localStorage.getItem("house:v1") || "[]").filter((e) => e && e.title && kindOf(e.title + " " + (e.model || ""))).slice(0, 12);
+    if (house.length) { $("#fromHouse").hidden = false;
+      $("#houseChips").innerHTML = house.map((e, i) => '<button class="chip" type="button" data-i="' + i + '">' + esc(e.title + (e.model ? " · " + e.model : "")) + "</button>").join("");
+      $("#houseChips").onclick = (ev) => { const b = ev.target.closest("button[data-i]"); if (!b) return; const e = house[+b.dataset.i];
+        pickKind(kindOf(e.title + " " + (e.model || ""))); $("#model").value = e.model || e.title; $("#warr").checked = !!(e.warr && Date.parse(e.warr + "T23:59:59") > Date.now()); $("#faults button")?.focus(); }; } } catch (e) {}
+
+  // ask the workshop: a request on the Workshop Portal, with the sums attached
+  $("#a-go").onclick = async () => {
+    if (!last) return; const { o, j } = last, note = $("#a-note").value.trim(), email = $("#a-mail").value.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("#a-st").textContent = "That email looks off: check it or leave it blank."; return; }
+    const msg = "From Fix or Replace: " + j.f[1].toLowerCase() + ". " + j.k.n + ", " + o.age + " years old" + (o.price ? ", $" + o.price + " new" : "") + (o.warr ? ", says it's under warranty" : "") + ". Estimate " + usd(j.lo) + "–" + usd(j.hi) + "; the page said: " + STAMP[j.v].toLowerCase() + "." + (note ? "\n\n" + note : "");
+    $("#a-go").disabled = true; $("#a-st").textContent = "Sending…";
+    try {
+      const r = await fetch("/api/portal/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: $("#a-name").value.trim(), email, service: "repair", what: (o.model || j.k.n) + ": " + j.f[1].toLowerCase(), when: "Whenever suits", msg }) });
+      const x = await r.json().catch(() => ({})); if (!r.ok || !x.link) throw new Error(x.error || "the workshop didn't answer");
+      $("#a-st").textContent = ""; $("#a-done").innerHTML = '<div class="sent" role="status" id="a-ok">The workshop has it. Your quote will appear on <a id="a-link" href="' + esc(x.link) + '">your private link</a>: keep it.</div>';
+    } catch (e) { $("#a-go").disabled = false; $("#a-st").innerHTML = esc(String(e.message || e).replace(/^./, (c) => c.toUpperCase())) + '. You can also <a href="/services#repair" style="color:var(--amber-hi)">write to the workshop</a>.'; }
+  };
+
+  // a link can carry a check: /fix#phone/screen/3
+  const fromHash = () => { const m = /^#([a-z]+)\/([a-z]+)\/(\d+(?:\.\d+)?)$/.exec(location.hash); if (!m || !K[m[1]] || !K[m[1]].faults.some((f) => f[0] === m[2])) return;
+    const o = { kind: m[1], fault: m[2], age: Math.min(40, +m[3]), price: 0, model: "", warr: false, rate: 90 }; fill(o); run(o, false); };
+  fromHash(); addEventListener("hashchange", fromHash);
+
+  // Faber Verbs (declared in tools/site/content/fix.json): AutoFaber asks "should I fix my 4-year-old laptop's battery?"
+  if (window.Faber) Faber.verbs({
+    check: (a) => {
+      const kind = kindOf(a.device) || kindOf(a.problem); if (!kind) throw new Error("I can weigh up phones, laptops, tablets, desktops, consoles, TVs, printers and the big kitchen and laundry appliances.");
+      const fault = faultOf(kind, a.problem || a.device); if (!fault) throw new Error("Say what's wrong with the " + K[kind].n.toLowerCase() + ": " + K[kind].faults.map((f) => f[1].toLowerCase()).join(", ") + ".");
+      const age = Number(a.age); if (!(age >= 0 && age <= 40)) throw new Error("How old is it, in years?");
+      const o = { kind, fault, age, price: Math.max(0, Math.min(20000, Number(a.price) || 0)), model: String(a.device || "").slice(0, 80), warr: !!a.warranty, rate: Number($("#rate").value) || 90 };
+      fill(o); const j = run(o, true); return verdictText(j) + " (Repair about " + usd(j.lo) + "–" + usd(j.hi) + "; worth about " + usd(j.used) + " working.)";
+    },
+  });
+})();
+</script>
+</body>
+</html>

@@ -201,6 +201,8 @@ export class Store extends DurableObject {
 }
 
 const store = (env) => env.STORE.get(env.STORE.idFromName("main"));
+// a note to the workshop's phone through AutoFaber's alerts (new requests, a client says they paid, an app sent to Foundry, a hosted site down)
+const ownerAlert = (env) => (x) => (env.HIVE ? env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/alert", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: JSON.stringify(x) })) : Promise.resolve());
 const json = (body, status = 200, headers = {}) =>
   new Response(body === null ? null : JSON.stringify(body), {
     status, headers: { "content-type": "application/json", "cache-control": "no-store", ...headers },
@@ -607,8 +609,8 @@ const worker = {
       }
       if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS, sendPush, vapid: () => store(env).vapid() }); // a check-in after the family was told sends them an all-clear
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
-      if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil"))); // client links and the workshop's job board (src/portal.js)
-      if (route === "makers") return makers(req, env, json, !!(await session(req, env, "vigil")), { alert: (x) => (env.HIVE ? env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/alert", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: JSON.stringify(x) })) : Promise.resolve()) }); // other makers' apps for Foundry and FaberOS (src/makers.js)
+      if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil")), { alert: ownerAlert(env) }); // client links and the workshop's job board (src/portal.js)
+      if (route === "makers") return makers(req, env, json, !!(await session(req, env, "vigil")), { alert: ownerAlert(env) }); // other makers' apps for Foundry and FaberOS (src/makers.js)
       if (route === "seal") return seal(req, env, json, !!(await session(req, env, "vigil"))); // signs Device Passports (owner) and Witness records (src/seal.js)
       if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
         const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
@@ -660,7 +662,7 @@ const worker = {
     if (env.AGENT) ctx.waitUntil(env.AGENT.get(env.AGENT.idFromName("agent")).fetch(new Request("http://agent/keep", { method: "POST" })).catch(() => {}));
     if (event.cron === "*/15 * * * *") { // Genesis keeps watch on Vigil's live board between the hourly ticks
       if (env.STORE) ctx.waitUntil(checkinSweep(env, { sendPush, vapid: () => store(env).vapid() }).catch(() => {})); // Quiet Check-in: a missed check-in tells the family
-      if (env.STORE) ctx.waitUntil(uptimeSweep(env, { alert: (x) => (env.HIVE ? env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/alert", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: JSON.stringify(x) })) : Promise.resolve()) }).catch(() => {})); // hosted sites: checked around the clock, the workshop told when one goes down
+      if (env.STORE) ctx.waitUntil(uptimeSweep(env, { alert: ownerAlert(env) }).catch(() => {})); // hosted sites: checked around the clock, the workshop told when one goes down
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/tasks/tick", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {})); // the owner's scheduled tasks that are due (src/hive-tasks.js)
       if (env.HIVE) ctx.waitUntil(env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/watch", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: "{}" })).catch(() => {}));
       return;

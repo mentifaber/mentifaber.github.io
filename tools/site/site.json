@@ -225,6 +225,22 @@
     "added": "2026-11-24"
   },
   {
+    "href": "house.html",
+    "name": "House Manual",
+    "desc": "Your home's own handbook: where the shutoffs are, the Wi-Fi, bin days, each appliance with its model and warranty, and who to call. It stays on your device, works offline, and a sitter gets a copy by link.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
+    "href": "fix.html",
+    "name": "Fix or Replace",
+    "desc": "A straight answer before you spend: what a repair should cost in parts and labour, what the device is worth, and whether to fix it or replace it, with the sums shown and one tap to ask the workshop for a quote.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
     "href": "checkin.html",
     "name": "Quiet Check-in",
     "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. A smart-home device can check in for them, and away dates pause it. No camera, no microphone, no tracking.",

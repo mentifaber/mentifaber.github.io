@@ -14,6 +14,9 @@ self.addEventListener("push", (e) => e.waitUntil((async () => {
   for (const c of await circles()) {
     try { const s = await (await fetch("/api/checkin/" + c.id + "?t=" + c.t)).json();
       if (s && s.late) { shown++; await self.registration.showNotification(s.name + " hasn't checked in today", { body: "Their time was " + s.by + ". Give them a call.", tag: "checkin-" + c.id, renotify: true, requireInteraction: true, data: { url: "/checkin#fam." + c.id + "." + c.t }, icon: "/assets/icons/v2/checkin-192.png" }); }
+      else if (s && s.sensor && s.sensor.quietClear) { shown++; await self.registration.showNotification("✓ Movement again at " + s.name + "'s", { body: "The " + s.sensor.rooms[0].room + " sensor saw someone just now.", tag: "checkin-quiet-" + c.id, renotify: true, data: { url: "/checkin#fam." + c.id + "." + c.t }, icon: "/assets/icons/v2/checkin-192.png" }); }
+      else if (s && s.sensor && s.sensor.quietNow && s.sensor.quietTold) { shown++; const h = Math.floor((Date.now() - s.sensor.lastMove) / 3600e3);
+        await self.registration.showNotification("No movement at " + s.name + "'s for " + h + " hours", { body: "Last seen in the " + s.sensor.rooms[0].room + ". Give them a call.", tag: "checkin-quiet-" + c.id, renotify: true, requireInteraction: true, data: { url: "/checkin#fam." + c.id + "." + c.t }, icon: "/assets/icons/v2/checkin-192.png" }); }
       else if (s && s.today && s.alerted) { shown++; await self.registration.showNotification("✓ " + s.name + " has checked in", { body: "All clear: they checked in after their time today.", tag: "checkin-" + c.id, renotify: true, data: { url: "/checkin#fam." + c.id + "." + c.t }, icon: "/assets/icons/v2/checkin-192.png" }); } } catch (x) {}
   }
   if (!shown) await self.registration.showNotification("Quiet Check-in", { body: "Open it to see how everyone is.", tag: "checkin", data: { url: "/checkin" } });
