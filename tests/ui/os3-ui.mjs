@@ -16,8 +16,10 @@ await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
 await ctx.addInitScript(() => { try { localStorage.setItem("fos:seen", "true"); localStorage.setItem("fos:ver", '"0.3"'); localStorage.setItem("fos:grants", '{"hive":"basic","orbit":"basic","nullspace":"basic","cryptovault":"basic"}'); } catch (e) {} });
 const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
-const cmd = async (text) => { await p.click("#ask-in"); await p.fill("#ask-in", text); await p.waitForSelector("#sug:not([hidden]) li"); return p.$$eval("#sug li", (xs) => xs.map((x) => x.textContent)); };
+const cmd = async (text) => { await p.click("#ask-in"); await p.fill("#ask-in", text); await said(p.waitForSelector("#sug:not([hidden]) li"), "the top bar: " + text); return p.$$eval("#sug li", (xs) => xs.map((x) => x.textContent)); };
 const frameOf = async (id) => { const f = await (await p.waitForSelector(".win[data-id='" + id + "'] iframe", { state: "attached" })).contentFrame(); if (!/^https?:/.test(f.url())) await f.waitForURL(/^https?:/); await f.waitForLoadState("domcontentloaded"); return f; }; // once the frame has left its blank first page
+// on a failed wait, say what FaberOS looked like (windows, launcher, prompts, focus), then fail as before
+const said = (pr, where) => pr.catch(async (e) => { const st = await p.evaluate(() => ({ wins: [...document.querySelectorAll(".win")].map((w) => w.dataset.id + " " + w.className), launcher: document.getElementById("launcher").hidden ? "closed" : "open: " + document.getElementById("l-q").value, consent: !document.getElementById("consent").hidden, confirm: !document.getElementById("vconfirm").hidden, toast: document.getElementById("toast").textContent, focus: document.activeElement && (document.activeElement.id || document.activeElement.tagName) })).catch(() => "page gone"); console.log("state at " + where + ": " + JSON.stringify(st)); throw e; });
 const geo = (id) => p.$eval(".win[data-id='" + id + "']", (w) => [w.offsetLeft, w.offsetWidth]);
 await p.goto("http://localhost:8099/os.html"); await p.waitForSelector("#icons .ic");
 
@@ -52,11 +54,17 @@ assert.match(await p.textContent(".win[data-id='shelf']"), /ballast-backup-\d{4}
 await p.click(".win[data-id='shelf'] [data-with='ballast']"); await bal.waitForFunction(() => /Backup imported/.test(document.body.textContent), null, { timeout: 8000 });
 ok("inside FaberOS Ballast's backup lands on the Shelf, and \"Open in Ballast\" restores it");
 
+// typing in the top bar while an app grabs focus (Ballast's first-run guide does, as it loads): the letters stay in the bar
+await p.click("#ask-in"); await p.keyboard.type("open dw"); await bal.evaluate(() => document.querySelector("input, button").focus());
+await p.waitForFunction(() => document.activeElement && document.activeElement.id === "ask-in", null, { timeout: 2000 }); await p.keyboard.type("ell");
+assert.equal(await p.inputValue("#ask-in"), "open dwell"); await p.keyboard.press("Escape"); await p.fill("#ask-in", ""); await p.evaluate(() => document.getElementById("ask-in").blur());
+ok("typing in the top bar keeps the keyboard when an app grabs focus as it loads");
+
 // CryptoVault: only encrypted output, and .cv files open to decrypt; the launcher keeps the keyboard even when the app in
 // front grabs focus while it's open
 await p.click("#all-btn"); await p.fill("#l-q", "cryptovault");
 await bal.evaluate(() => document.querySelector("input, button").focus()); // an app grabbing focus while the launcher is open (a first-run guide, say)
-await p.waitForFunction(() => document.activeElement && document.activeElement.id === "l-q", null, { timeout: 2000 }); await p.keyboard.press("Enter"); await p.waitForSelector(".win[data-id='cryptovault'] iframe");
+await p.waitForFunction(() => document.activeElement && document.activeElement.id === "l-q", null, { timeout: 2000 }); await p.keyboard.press("Enter"); await said(p.waitForSelector(".win[data-id='cryptovault'] iframe"), "opening CryptoVault");
 const cv = await frameOf("cryptovault"); await cv.waitForFunction(() => typeof sealed === "function" && FOS.on === true);
 await cv.evaluate(() => sealed(new Blob([new Uint8Array([0x43, 0x56, 1, 2, 3, 4])], { type: "application/octet-stream" }), "plans.pdf.cv"));
 assert.match(await cv.textContent("#encSt"), /Shelf, still encrypted/);
