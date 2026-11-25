@@ -208,3 +208,19 @@ a.w:hover { border-color: var(--line-2); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 .v-trust { display: flex; gap: 8px; align-items: center; margin: 4px 0 12px; color: var(--ink-2); }
 #v-list li b { color: var(--gold-hi); font-weight: 500; margin-right: 6px; }
+
+/* Routines (os.js): each routine a card; the last answer kept under it, one line per app */
+.rt { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 0 0 10px; }
+.rt > b { display: block; font-size: 15px; } .rt > small { color: var(--dim); font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.rt ol { margin: 8px 0; padding-left: 20px; color: var(--ink-2); font-size: 13.5px; }
+.rt-last { white-space: pre-line; font-size: 13px; color: var(--ink-2); border-left: 2px solid var(--gold); padding: 4px 0 4px 10px; margin: 8px 0; overflow-wrap: anywhere; }
+.rt-last small { display: block; color: var(--mute); font: 500 9.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.rt-acts { margin: 6px 0 0 !important; display: flex; flex-wrap: wrap; gap: 6px; }
+.rt-f, .rt-step label, .rt-when label { display: grid; gap: 4px; font-size: 12.5px; color: var(--dim); }
+.rt-f input, .rt-step input, .rt-step select, .rt-when input, .rt-when select { font-size: 14px; color: var(--ink); background: rgba(0,0,0,.3); border: 1px solid var(--line-2); border-radius: 8px; padding: 7px 9px; min-width: 0; width: 100%; box-sizing: border-box; }
+.rt-step { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 8px; align-items: end; border-top: 1px solid var(--line); padding: 10px 0; }
+.rt-step label:first-child { grid-column: 1 / -1; }
+.rt-step .btn { justify-self: start; }
+.rt-when { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 8px; max-width: 420px; }
+.rt-err { color: #ff8a6b; min-height: 1em; }
+.notes li span { white-space: pre-line; }
