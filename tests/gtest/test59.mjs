@@ -36,4 +36,12 @@ console.log = log0;
 assert.ok(r.status >= 500, "the request failed: " + r.status); assert.equal(lines.length, 1, JSON.stringify(lines)); assert.deepEqual([lines[0].sub, lines[0].route], ["portal", "/api/portal/job/:id"]);
 assert.ok(!JSON.stringify(lines).includes("aaaa"), "no token in the log");
 ok("a real failed request writes one line through the Worker, by route, with no token in it");
+// 4 · reading a page for AutoFaber: stops at its size cap instead of loading all of an enormous page; private addresses
+// (172.16–31.x and 0.x included now, as elsewhere on the site) are refused
+const { readPage } = await import(OUT + "src/hive-kit.js"); const fetch0 = globalThis.fetch; let pulled = 0;
+globalThis.fetch = async () => new Response(new ReadableStream({ pull(c) { pulled++; c.enqueue(new TextEncoder().encode("<p>" + "x".repeat(65536) + "</p>")); if (pulled > 5000) c.close(); } }), { headers: { "content-type": "text/html" } });
+await readPage("https://huge.example/", 1000); assert.ok(pulled < 30, "read " + pulled + " chunks of a 330 MB page");
+for (const h of ["http://172.20.0.1/", "http://0.0.0.0/", "http://10.0.0.1/", "http://localhost/", "https://[::1]/"]) await assert.rejects(readPage(h), /not a public page/, h);
+globalThis.fetch = fetch0;
+ok("a page AutoFaber reads stops at its size cap (not all 330 MB); private addresses, 172.16–31.x and 0.x included, are refused");
 console.log("test59: " + n + " checks passed");
