@@ -142,7 +142,7 @@ def home():
     title = "Mentifaber · Anders Powell, builder of minds and the systems that hold them"
     desc = f"{len(L)} projects by Anders Powell: AI agents and swarms, private messengers, live atlases of the sky and the world, local-first tools and games."
     say = f'<p class="tb-say"><span><b>Anders Powell, builder of minds and the systems that hold them.</b> {len(L)} things on the benches of one workshop, {live} of them running right now. Walk in and point at a bench: someone will take you there.</span></p>'
-    acts = f'<button class="key" data-suite aria-label="Install the suite">{SUITE}<span>Suite</span></button><button class="key" data-install hidden>{DOWN}<span>Install</span></button>'
+    acts = f'<button class="key" data-suite aria-label="Install the suite">{SUITE}<span>Suite</span></button><button class="key" data-install hidden aria-label="Install as an app">{DOWN}<span>Install</span></button>'
     X, Y = "ABCDEFGH", "12345"
     page_ = f"""{head(title, desc, og="https://mentifaber.org/assets/brand/og.jpg")}
 <body class="wk home">
