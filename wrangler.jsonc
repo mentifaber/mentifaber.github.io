@@ -4,6 +4,10 @@
   "name": "mentifaber-1",
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
+  // Workers Logs: keeps the Worker's own diagnostic lines (one per failed or slow API request, src/worker.js diagLine;
+  // no ids, tokens, headers or bodies) for a few days, searchable in the dashboard. invocation_logs off: Cloudflare's
+  // own per-request records aren't kept, so only those lines count against the free daily allowance.
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false, "head_sampling_rate": 1 } },
   "assets": {
     "directory": ".",
     "binding": "ASSETS",

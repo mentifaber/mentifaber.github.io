@@ -286,7 +286,6 @@ export class Nest extends DurableObject {
   }
   // the photos a copy of the registry needs: each item's photo and the parents' picks (suggestions not kept are left out)
   photoIds(snap) { const ids = new Set(); for (const [p, d] of Object.entries(snap.docs)) if (p.startsWith("items/")) { if (d.imageId) ids.add(d.imageId); for (const o of d.options || []) if (o.i) ids.add(o.i); } return [...ids].filter((id) => BLOB_ID.test(id)); }
-  async hasPhoto(id) { if (this.q().exec("SELECT 1 AS y FROM photo WHERE id=?", id).toArray().length) return true; if (!this.env.MODELS) return false; const h = this.env.MODELS.head ? await this.env.MODELS.head("nest/" + id).catch(() => null) : await this.env.MODELS.get("nest/" + id).catch(() => null); return !!h; }
   // a copy of everything: the records, and which photos it needs (kept until no copy needs them), or which are already gone
   async keepCopy(day, snap) {
     const ids = this.photoIds(snap), have = [], missing = [];
