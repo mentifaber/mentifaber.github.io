@@ -21,6 +21,10 @@ if (DEV === "desktop") {
   ok("the lantern moves by itself: its position is on the lantern, not on the floor");
 }
 
+// the toolbar's Install button is only an icon on a phone: it still says what it does (it shows when the browser offers installing)
+assert.deepEqual(await p.$$eval(".tb-act [data-install]", (xs) => xs.map((x) => x.getAttribute("aria-label"))), ["Install as an app"]);
+ok("the Install button has a name even when it's only an icon");
+
 // the walls are drawn on the rooms, not 40px below them through the room names, including while they're drafted in on a first visit
 const ink = await p.evaluate(() => { const s = document.querySelector(".ink"), F = document.querySelector(".floor").getBoundingClientRect(), m = s.getScreenCTM(); return { drafting: /drafting/.test(s.getAttribute("class")), scale: m.a, dx: m.e - F.left, dy: m.f - F.top }; });
 assert.ok(Math.abs(ink.scale - 1) < 0.01 && Math.abs(ink.dx) < 1 && Math.abs(ink.dy) < 1, JSON.stringify(ink)); ok("the walls sit on the rooms" + (ink.drafting ? ", even while they're drafted in" : ""));
