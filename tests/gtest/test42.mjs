@@ -32,13 +32,13 @@ ok("a product page's own data: its photos, name and price from schema.org Produc
 const files = {
   "https://www.nunababy.com/mixx": [ld.replace(/nunababy\.com\/img/g, "www.nunababy.com/img"), "text/html"], "https://www.nunababy.com/img/mixx.png": [png(800, 800), "image/png"],
   "https://www.bugaboo.com/fox-5": ['<meta property="og:image" content="https://cdn.bugaboo.com/social-share.png"><title>Bugaboo Fox 5</title>', "text/html"], "https://cdn.bugaboo.com/social-share.png": [png(1200, 630), "image/png"],
-  "https://images.example.com/fox5-black.png": [png(900, 1000), "image/png"], "https://images.example.com/brand-logo.png": [png(400, 400), "image/png"],
+  "https://images.example.com/bugaboo-fox5-black.png": [png(900, 1000), "image/png"], "https://images.example.com/brand-logo.png": [png(400, 400), "image/png"],
   "https://www.graco.com/modes": ['<meta property="og:image" content="https://www.graco.com/og-default.png"><title>Graco</title>', "text/html"], "https://www.graco.com/og-default.png": [png(1200, 630), "image/png"],
 };
 globalThis.fetch = async (u) => { const f = files[String(u)]; return f ? new Response(f[0], { headers: { "content-type": f[1] } }) : new Response("nope", { status: 404 }); };
 const q2 = []; H.hive.searchKey = async () => ({ v: { provider: "tavily" }, key: "k" });
 H.hive.web = async (q, own, o) => { q2.push([q, o]); const r = /Nuna/.test(q) ? [{ title: "Reddit", url: "https://www.reddit.com/r/x" }, { title: "Nuna", url: "https://www.nunababy.com/mixx" }] : /Bugaboo/.test(q) ? [{ title: "Bugaboo", url: "https://www.bugaboo.com/fox-5" }] : /Graco/.test(q) ? [{ title: "Graco", url: "https://www.graco.com/modes" }] : [];
-  r.images = /Bugaboo/.test(q) ? ["https://images.example.com/brand-logo.png", "https://images.example.com/fox5-black.png"] : /Graco/.test(q) ? ["https://cdn.example.com/tiny.png"] : []; return r; };
+  r.images = /Bugaboo/.test(q) ? ["https://images.example.com/brand-logo.png", "https://images.example.com/bugaboo-fox5-black.png"] : /Graco/.test(q) ? ["https://cdn.example.com/tiny.png"] : []; return r; };
 const stored = new Map(); H.env.MODELS = { async put(k, v, o) { stored.set(k, { buf: Buffer.from(v), type: o.httpMetadata.contentType }); }, async get(k) { return stored.get(k); } };
 let asked = null;
 H.setResponder((sys, user) => /You help new parents choose baby products/.test(sys) ? (asked = user, '{"products": [{"brand": "Nuna", "model": "MIXX next", "tier": "premium", "price": 750, "why": "Smooth ride"}, {"brand": "Bugaboo", "model": "Fox 5", "tier": "premium", "price": 1199, "why": "All-terrain"}, {"brand": "Graco", "model": "Modes Pramette", "tier": "budget", "price": 300, "why": "Value"}]}') : "ok");
@@ -46,7 +46,7 @@ assert.equal((await H.call("/nest/find", { name: "Stroller" }, false)).error, "o
 const r = await H.call("/nest/find", { name: "Stroller", cat: "Gear & travel", notes: "Cobbled streets", color: "Sage", price: 600, look: "good suspension" });
 assert.match(asked, /ITEM: Stroller \(Gear & travel\)\nPARENTS' PREFERENCES: what they're looking for: good suspension; their notes: Cobbled streets; colour\/style: Sage; around \$600 each/);
 assert.deepEqual(q2.map((x) => [x[0], x[1].images]), [["Nuna MIXX next Stroller", true], ["Bugaboo Fox 5 Stroller", true], ["Graco Modes Pramette Stroller", true]]);
-assert.deepEqual(r.products.map((p) => [p.model, p.image, p.store]), [["MIXX next", "https://www.nunababy.com/img/mixx.png", "nunababy.com"], ["Fox 5", "https://images.example.com/fox5-black.png", "bugaboo.com"]],
+assert.deepEqual(r.products.map((p) => [p.model, p.image, p.store]), [["MIXX next", "https://www.nunababy.com/img/mixx.png", "nunababy.com"], ["Fox 5", "https://images.example.com/bugaboo-fox5-black.png", "bugaboo.com"]],
   "Nuna: its own product photo; Bugaboo: the share banner and the logo refused, the search's product image kept; Graco: only a banner and a missing image, so it's left out");
 assert.equal(r.products[0].price, 749.95); assert.deepEqual(stored.get("nest/" + r.products[0].i).buf, files["https://www.nunababy.com/img/mixx.png"][0], "the photo is stored as found");
 H.hive.searchKey = async () => null; assert.match((await H.call("/nest/find", { name: "Stroller" })).error, /add a search key in AutoFaber's Uplinks/);

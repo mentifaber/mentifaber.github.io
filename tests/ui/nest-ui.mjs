@@ -86,6 +86,20 @@ await op.waitForSelector(".card:has(h3:text-is('Old photo')) .opt .ph"); assert.
 await nest.fetch(new Request("https://mentifaber.org/api/nest/doc", { method: "POST", headers: { "content-type": "application/json", "x-nest-owner": "1" }, body: JSON.stringify({ path: "items/gone1", data: null }) }));
 await op.waitForSelector(".card h3:text-is('Old photo')", { state: "detached", timeout: 9000 });
 ok("a missing photo falls back to the shop's copy, then to a tidy tile; never a broken image");
+// picks as found on the live registry: a brand said twice, a price in euros, no photo yet; a sign-up's picks
+const putDoc = (path, data) => nest.fetch(new Request("https://mentifaber.org/api/nest/doc", { method: "POST", headers: { "content-type": "application/json", "x-nest-owner": "1" }, body: JSON.stringify({ path, data }) }));
+await putDoc("items/nl1", { name: "Dimmable night light", kind: "item", cat: "nursery", price: 25, options: [{ t: "Hatch Hatch Rest Night Light", b: "Hatch", u: "https://shop.example/hatch", s: "target.com", p: 8.29, c: "EUR", i: null }] });
+await putDoc("items/fm1", { name: "Freezer meals", kind: "item", cat: "mom", notes: "Sign up to cook one. Note what you're making.", options: [{ t: "OXO Tot Baby Food Storage", b: "OXO", u: "https://shop.example/oxo", s: "oxo.com", i: null }] });
+const nl = op.locator(".card:has(h3:text-is('Dimmable night light'))"); await nl.locator(".opt").waitFor({ timeout: 9000 });
+await nl.scrollIntoViewIfNeeded(); await shot(op, "picks");
+assert.equal((await nl.locator(".opt b").textContent()).trim(), "Hatch Rest Night Light", "the brand said once");
+assert.equal((await nl.locator(".opt small").textContent()).trim(), "target.com", "a price in euros is left off");
+assert.equal((await nl.locator(".opt .ph.word").textContent()).trim(), "Hatch", "no photo yet: the brand's name, not an empty box");
+assert.equal((await nl.locator(".qty-row").textContent()).replace(/\s+/g, " ").trim(), "Still needed", "said once, not \"Still needed · 1 still needed\"");
+await op.waitForSelector(".card h3:text-is('Freezer meals')"); assert.equal(await op.locator(".card:has(h3:text-is('Freezer meals')) .opts").count(), 0, "a sign-up shows no products"); assert.equal(await op.locator(".card:has(h3:text-is('Freezer meals')) .card-foot button:has-text('✦')").count(), 0, "nor a button to find them");
+assert.equal(await op.evaluate(() => getComputedStyle(document.querySelector(".thumb img") || document.body).objectFit), "contain", "a card's photo shows the whole product");
+await putDoc("items/nl1", null); await putDoc("items/fm1", null); await op.waitForSelector(".card h3:text-is('Dimmable night light')", { state: "detached", timeout: 9000 });
+ok("picks: a brand said once, dollars only, a brand's name where a photo is missing, no products on a sign-up, and the whole product in a card's photo");
 
 // products: the notice walks the parents through items without picks; they keep the closest; photos are copied in
 await op.waitForSelector("#registry-notices .notice:has-text('Products found for 3 items')", { timeout: 15000 }); // found in the background as the items were added; funds aren't searched
