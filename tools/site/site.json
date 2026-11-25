@@ -65,6 +65,14 @@
     "added": "2026-11-24"
   },
   {
+    "href": "street.html",
+    "name": "Street Board",
+    "desc": "A noticeboard for your street that keeps working in an outage: needs, offers, road news and who's safe. Posts pass phone to phone by a link or over a mesh radio while the network is down, and sync up when it's back.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-25"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",
