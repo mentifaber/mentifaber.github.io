@@ -200,16 +200,24 @@
 
   // ── the lantern, the grid references, the note ──
   let lx = -999, ly = -999, lastMove = 0, patrol = 0;
-  function lantern(x, y) { lx = x; ly = y; floor.style.setProperty("--lx", x + "px"); floor.style.setProperty("--ly", y + "px"); floor.classList.add("lantern-on"); if (hiMask) { hiMask.setAttribute("cx", x); hiMask.setAttribute("cy", y); } refs(x, y); }
-  function refs(x, y) { if (!drawing) return; const D = drawing.getBoundingClientRect(), F = floor.getBoundingClientRect(), px = (x + F.left - D.left) / D.width, py = (y + F.top - D.top) / D.height;
+  // The lantern's position goes on the lantern itself (the only thing that reads --lx/--ly), not on the whole floor: set on
+  // the floor, every element inside it (thousands) had its style worked out again, every frame. A move under a pixel isn't
+  // drawn, and the grid references change only when the lantern crosses into another cell.
+  let lanternOn = false, refC = "", refBox = null;
+  function lantern(x, y) { if (Math.abs(x - lx) < 1 && Math.abs(y - ly) < 1) return; lx = x; ly = y; const t = lanternEl || floor; t.style.setProperty("--lx", x + "px"); t.style.setProperty("--ly", y + "px"); if (!lanternOn) { floor.classList.add("lantern-on"); lanternOn = true; } if (hiMask) { hiMask.setAttribute("cx", x); hiMask.setAttribute("cy", y); } refs(x, y); }
+  addEventListener("resize", () => { refBox = null; }, { passive: true });
+  function refs(x, y) { if (!drawing) return; if (!refBox) { const D = drawing.getBoundingClientRect(), F = floor.getBoundingClientRect(); refBox = { dx: F.left - D.left, dy: F.top - D.top, w: D.width, h: D.height }; } // the drawing's place on the floor, measured once until a resize
+    const px = (x + refBox.dx) / refBox.w, py = (y + refBox.dy) / refBox.h;
     const cx = Math.max(0, Math.min(refsX.length - 1, Math.floor(px * refsX.length))), cy = Math.max(0, Math.min(refsY.length - 1, Math.floor(py * refsY.length)));
+    if (refC === cx + "," + cy) return; refC = cx + "," + cy;
     refsX.forEach((s, i) => s.classList.toggle("on", i === cx)); refsY.forEach((s, i) => s.classList.toggle("on", i === cy));
     $$(".refs.x.b span").forEach((s, i) => s.classList.toggle("on", i === cx)); $$(".refs.y.r span").forEach((s, i) => s.classList.toggle("on", i === cy));
     if (at && refsX[cx] && refsY[cy]) at.textContent = refsX[cx].textContent + refsY[cy].textContent; }
   floor.addEventListener("pointermove", (e) => { const F = floor.getBoundingClientRect(); lastMove = performance.now(); lantern(e.clientX - F.left, e.clientY - F.top); if (fine) light(roomAt(e.clientX - F.left, e.clientY - F.top) >= 0 ? roomAt(e.clientX - F.left, e.clientY - F.top) : wk.room); }, { passive: true });
   floor.addEventListener("pointerleave", () => { lastMove = 0; light(wk.room); });
+  let floorSeen = true; if ("IntersectionObserver" in window) new IntersectionObserver((es) => { floorSeen = es[0].isIntersecting; }).observe(floor); // off-screen: the night light rests
   function patrolTick(t) { // nobody holding the lantern: a night light walks the corridor
-    patrol = requestAnimationFrame(patrolTick); if (document.hidden || !H) return; if (performance.now() - lastMove < 3500 && lastMove) return;
+    patrol = requestAnimationFrame(patrolTick); if (document.hidden || !H || !floorSeen) return; if (performance.now() - lastMove < 3500 && lastMove) return;
     const s = (Math.sin(t / 5200) + 1) / 2; if (phone) lantern(H.x + H.w / 2, H.y + 40 + s * Math.max(0, H.h - 80)); else lantern(H.x + 60 + s * Math.max(0, H.w - 120), H.y + H.h / 2);
   }
   if (!reduce) patrol = requestAnimationFrame(patrolTick);
