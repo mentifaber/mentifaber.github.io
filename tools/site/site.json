@@ -241,6 +241,30 @@
     "added": "2026-11-25"
   },
   {
+    "href": "claim.html",
+    "name": "Claim Kit",
+    "desc": "A dispute, documented: photos, receipts and dated notes in one kit the workshop seals with its clock, and anyone can check nothing in it has changed. For an insurance claim, a deposit dispute or a warranty fight. The files stay on your device.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
+    "href": "second.html",
+    "name": "Second Opinion",
+    "desc": "Check any quote before you pay: a car repair, a plumber, a roofer. Each line is set against what that part or work typically costs, the sums are checked, and you get the questions worth asking, every line quoted from your document word for word.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
+    "href": "estate.html",
+    "name": "Digital Estate",
+    "desc": "Your accounts and devices, and who should get each, sealed as a letter whose key is split among people you choose. It opens only when enough of them come together, and only once your Quiet Check-in has gone quiet. The site can't read it.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
     "href": "checkin.html",
     "name": "Quiet Check-in",
     "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. A smart-home device can check in for them, and away dates pause it. No camera, no microphone, no tracking.",

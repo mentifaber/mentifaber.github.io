@@ -1,0 +1,31 @@
+{
+  "id": "/estate",
+  "name": "Digital Estate",
+  "short_name": "Estate",
+  "description": "Your accounts and devices, and who should get each, sealed so only the people you chose can open it together, and only when it matters.",
+  "start_url": "/estate.html",
+  "scope": "/estate.html",
+  "display": "standalone",
+  "background_color": "#080705",
+  "theme_color": "#080705",
+  "icons": [
+    {
+      "src": "../icons/v2/estate-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/estate-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/estate-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

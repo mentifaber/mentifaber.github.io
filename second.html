@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/second">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Second Opinion · Mentifaber</title>
+<meta name="description" content="Check any quote before you pay: each line against what that part or work typically costs, the arithmetic checked, and the questions to ask.">
+<meta name="theme-color" content="#0a0c0d">
+<link rel="icon" href="assets/icons/v2/second.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/second-180.png">
+<link rel="manifest" href="assets/manifests/second.webmanifest">
+<style>
+/* Second Opinion: a marked-up quote. Each line of the shop's quote sits as they wrote it, in type, with a margin note
+   beside it the way an estimator would pencil one in: the typical range drawn as a band, this line's price a tick on it. */
+:root { --bg: #0a0c0d; --sheet: #111416; --card: #171b1e; --line: #2b3237; --cyan: #5cc8d6; --cyan-hi: #9fe6ef; --ink: #e8eef0; --dim: #93a1a8; --hi: #ff8a6b; --fair: #8fd18f; --low: #e6c25a; --unc: #93a1a8;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--cyan-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); margin: 24px 0 10px; }
+.lede { color: var(--dim); margin: 0 0 16px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+label { font-size: 14px; color: var(--dim); display: block; }
+textarea.in { font: 14px/1.5 var(--mono); color: var(--ink); background: #0b0e0f; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; min-height: 180px; resize: vertical; margin-top: 4px; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--cyan); background: var(--cyan); color: #04181b; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--cyan-hi); } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--hi); }
+.sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 8px; margin-top: 14px; }
+.sum div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .sum span { display: block; font: 11px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; } .sum b { font-size: 22px; }
+.sum .h b { color: var(--hi); } .sum .f b { color: var(--fair); }
+.lines { display: grid; gap: 10px; }
+.ln { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--v, var(--unc)); border-radius: 10px; padding: 12px 14px; }
+.ln.high { --v: var(--hi); } .ln.fair { --v: var(--fair); } .ln.low { --v: var(--low); } .ln.unclear { --v: var(--unc); }
+.ln q { display: block; quotes: none; font: 13px/1.5 var(--mono); color: var(--ink); background: #0b0e0f; border-radius: 6px; padding: 6px 8px; overflow-wrap: anywhere; }
+.ln .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 8px; } .ln .hd b { font-size: 15px; } .ln .amt { font: 600 18px var(--sans); white-space: nowrap; }
+.pill { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--v); border: 1px solid var(--v); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.range { position: relative; height: 22px; margin: 10px 0 2px; } .range .track { position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--line); }
+.range .band { position: absolute; top: 6px; height: 10px; background: color-mix(in srgb, var(--fair) 30%, transparent); border: 1px solid var(--fair); border-radius: 4px; }
+.range .tick { position: absolute; top: 0; width: 3px; height: 22px; background: var(--v); border-radius: 2px; transform: translateX(-1px); }
+.range-l { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--dim); }
+.why { color: var(--dim); font-size: 14px; margin: 6px 0 0; }
+.warn { color: var(--hi); font-size: 14px; margin: 6px 0 0; }
+.ask { margin: 0; padding-left: 20px; } .ask li { margin: 6px 0; }
+.fine { color: var(--dim); font-size: 13.5px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--cyan-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Second Opinion", "description": "Check any quote before you pay: each line against what that part or work typically costs, the arithmetic checked, and the questions to ask.", "url": "https://mentifaber.org/second", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/second-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Second Opinion</span><a href="./">The workshop</a></div>
+  <h1>Check the quote <span>before you pay</span></h1>
+  <p class="lede">Paste a quote or an invoice from any shop or contractor: a car repair, a plumber, a roofer, a phone repair. Each line is set against what that part or that work typically costs, the sums are checked, and you get the questions worth asking. Every line it talks about is quoted from your document word for word.</p>
+  <form id="f" class="panel">
+    <label for="text">The quote, as text</label>
+    <textarea class="in" id="text" maxlength="16000" placeholder="Front brake pads (ceramic), pair ... $189.00&#10;Labour: 2.5 hrs @ $140/hr ... $380.00&#10;Shop supplies fee ... $35.00&#10;TOTAL ... $604.00"></textarea>
+    <div class="bar"><button class="btn" type="submit" id="go">Get a second opinion</button><label class="btn ghost" style="cursor:pointer">Or choose a file (PDF or text)<input id="file" type="file" accept=".pdf,.txt,.text,.md,.csv,application/pdf,text/plain" hidden></label><span class="status" id="st" role="status"></span></div>
+    <p class="fine" style="margin:10px 0 0">The text goes to AutoFaber to be read and isn't kept. For a photo of a paper quote, <a href="doccrawler" style="color:var(--cyan-hi)">DocCrawler</a> can read the text off it first.</p>
+  </form>
+  <section id="out" aria-live="polite"></section>
+</div>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const usd = (x) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  const VERDICT = { high: "High", fair: "Fair", low: "Low", unclear: "Can't tell" };
+  let name = "";
+
+  // a PDF's text, read here with pdf.js (loaded only when a PDF is chosen)
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFW = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const load = (src) => new Promise((ok, no) => { if (window.pdfjsLib) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the PDF reader")); document.head.appendChild(s); });
+  async function textOf(f) {
+    if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") { await load(PDFJS); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFW; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = "";
+      for (let i = 1; i <= pdf.numPages; i++) { const c = await (await pdf.getPage(i)).getTextContent(); let y = null; for (const x of c.items) { const yy = x.transform ? Math.round(x.transform[5]) : null; out += (y !== null && yy !== y ? "\n" : out && !/\s$/.test(out) ? " " : "") + x.str; y = yy; } out += "\n\n"; }
+      return out.trim(); }
+    return (await f.text()).trim();
+  }
+  async function take(f) { const st = $("#st"); st.className = "status"; st.textContent = "Reading " + f.name + "…";
+    try { const t = await textOf(f); if (!t) throw new Error("there's no text in it (a scan? DocCrawler can read the text off an image)"); $("#text").value = t.slice(0, 16000); name = f.name; st.textContent = ""; run(); }
+    catch (e) { st.className = "status bad"; st.textContent = "Couldn't read " + f.name + ": " + e.message + "."; } }
+  $("#file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) take(f); });
+  if (window.Faber) Faber.onFiles((fs) => { if (fs[0]) take(fs[0]); });
+
+  $("#f").onsubmit = (e) => { e.preventDefault(); name = name || ""; run(); };
+  $("#text").addEventListener("input", () => { name = ""; });
+  async function run() {
+    const st = $("#st"), text = $("#text").value.trim(); st.className = "status";
+    if (text.length < 40) { st.className = "status bad"; st.textContent = "Paste the whole quote: its lines and their prices."; return; }
+    $("#go").disabled = true; st.textContent = "AutoFaber is reading each line…"; $("#out").innerHTML = "";
+    let r, j = {}; try { r = await fetch("/api/hive/quote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, name }) }); j = await r.json(); } catch (x) {}
+    $("#go").disabled = false;
+    if (!r || !r.ok || !j.lines) { st.className = "status bad"; st.textContent = j.error ? j.error.charAt(0).toUpperCase() + j.error.slice(1) + "." : "Couldn't reach AutoFaber; try again in a moment."; return; }
+    st.textContent = ""; show(j); $("#out").scrollIntoView({ block: "start" });
+  }
+
+  function range(l) {
+    if (!l.typical) return "";
+    const lo = l.typical.lo, hi = l.typical.hi, a = l.amount, max = Math.max(hi * 1.3, a || 0) * 1.05 || 1, pc = (x) => Math.max(0, Math.min(100, (x / max) * 100));
+    return '<div class="range" aria-hidden="true"><div class="track"></div><div class="band" style="left:' + pc(lo) + "%;width:" + Math.max(1, pc(hi) - pc(lo)) + '%"></div>' + (a != null ? '<div class="tick" style="left:' + pc(a) + '%"></div>' : "") + "</div>" +
+      '<div class="range-l"><span>Typical ' + usd(lo) + "–" + usd(hi) + "</span>" + (a != null ? "<span>This line " + usd(a) + "</span>" : "") + "</div>";
+  }
+  function show(j) {
+    const L = j.lines, high = L.filter((l) => l.verdict === "high"), fair = L.filter((l) => l.verdict === "fair"), math = L.filter((l) => l.math === "off"), twice = L.filter((l) => l.twice);
+    const asks = [];
+    for (const l of high) asks.push("“" + l.desc + "” is " + usd(l.amount) + "; that's usually " + usd(l.typical.lo) + "–" + usd(l.typical.hi) + ". What makes it more here?");
+    for (const l of math) asks.push("“" + l.desc + "”: " + l.hours + " hours at " + usd(l.rate) + " is " + usd(Math.round(l.hours * l.rate * 100) / 100) + ", but the line says " + usd(l.amount) + ".");
+    if (twice.length) asks.push("“" + twice[0].desc + "” appears " + twice.filter((l) => l.desc === twice[0].desc).length + " times. Is it meant to?");
+    if (j.total.ok === false) asks.push("The lines add up to " + usd(j.total.sum) + ", but the total says " + usd(j.total.stated) + ". Can you show how the total is worked out?");
+    for (const n of j.notes) asks.push(n);
+    $("#out").innerHTML = "<h2>" + esc(j.trade || "The quote") + "</h2>" +
+      '<div class="sum"><div><span>Lines checked</span><b>' + L.length + '</b></div><div class="h"><span>Look high</span><b id="n-high">' + high.length + '</b></div><div class="f"><span>Look fair</span><b>' + fair.length + "</b></div>" +
+      "<div><span>Adds up</span><b id=\"adds\">" + (j.total.ok === true ? "Yes" : j.total.ok === false ? "No" : "No total") + "</b></div></div>" +
+      (asks.length ? '<h2>What to ask them</h2><div class="panel"><ol class="ask" id="ask">' + asks.map((a) => "<li>" + esc(a) + "</li>").join("") + '</ol><div class="bar"><button class="btn ghost" id="copy" type="button">Copy the questions</button></div></div>' : '<p class="why" style="margin-top:14px">Nothing stands out: each line it could price looks fair, and the sums add up.</p>') +
+      '<h2>Line by line</h2><div class="lines">' + L.map((l) => '<article class="ln ' + l.verdict + '"><q>' + esc(l.quote) + "</q>" +
+        '<div class="hd"><b>' + esc(l.desc) + ' <span class="pill">' + (l.kind === "tax" ? "Tax" : l.kind === "discount" ? "Discount" : VERDICT[l.verdict]) + '</span></b><span class="amt">' + (l.amount != null ? (l.kind === "discount" ? "−" : "") + usd(l.amount) : "") + "</span></div>" + range(l) +
+        (l.why ? '<p class="why">' + esc(l.why) + "</p>" : "") + (l.math === "off" ? '<p class="warn">' + l.hours + " h × " + usd(l.rate) + " = " + usd(Math.round(l.hours * l.rate * 100) / 100) + ", not " + usd(l.amount) + ".</p>" : "") + (l.twice ? '<p class="warn">This appears more than once on the quote.</p>' : "") + "</article>").join("") + "</div>" +
+      '<p class="fine" style="margin-top:16px">Typical ranges are AutoFaber\'s estimate of US prices in 2026 for the whole line, not a quote: prices vary by area, by the make and model, and by the quality of the part. A line marked high is worth asking about, not proof of anything. ' + (j.cut ? "Only the first 16,000 characters were read. " : "") + 'For repairs to phones, computers and other devices, <a href="fix" style="color:var(--cyan-hi)">Fix or Replace</a> weighs up whether it\'s worth it, and <a href="services#repair" style="color:var(--cyan-hi)">the workshop</a> can quote too.</p>';
+    const c = $("#copy"); if (c) c.onclick = () => navigator.clipboard && navigator.clipboard.writeText("A few questions about the quote:\n" + asks.map((a, i) => i + 1 + ". " + a).join("\n")).then(() => (c.textContent = "Copied"), () => {});
+  }
+})();
+</script>
+</body>
+</html>

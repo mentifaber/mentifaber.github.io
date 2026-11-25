@@ -1,0 +1,31 @@
+{
+  "id": "/claim",
+  "name": "Claim Kit",
+  "short_name": "Claim Kit",
+  "description": "A dispute, documented: photos, receipts and dated notes in one kit the workshop seals, which anyone can check hasn't changed.",
+  "start_url": "/claim.html",
+  "scope": "/claim.html",
+  "display": "standalone",
+  "background_color": "#080705",
+  "theme_color": "#080705",
+  "icons": [
+    {
+      "src": "../icons/v2/claim-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/claim-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/claim-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
