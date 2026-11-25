@@ -1,0 +1,28 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "find",
+   "label": "Look something up in the house manual",
+   "changes": false,
+   "desc": "Where something is in the house, or the answer written down for it (the Wi-Fi, the bin day).",
+   "args": {
+    "what": "string"
+   },
+   "words": "where shutoff water gas breaker fuse wifi password bin day boiler furnace key plumber house manual stopcock"
+  },
+  {
+   "name": "add",
+   "label": "Add to the house manual",
+   "changes": true,
+   "desc": "Adds an entry to the house manual on this device.",
+   "args": {
+    "title": "string",
+    "where": "string",
+    "more?": "string",
+    "section?": "enum:shutoff|wifi|appliance|schedule|people|note"
+   },
+   "words": "note write down remember add house manual"
+  }
+ ]
+}

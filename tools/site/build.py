@@ -71,7 +71,9 @@ def icons(ids):
 # ── the home page ─────────────────────────────────────────────────────────────────────────────────────────────────────
 NOW = [("weather", "Weather"), ("moon", "Moon"), ("pass", "Next ISS pass"), ("iss", "ISS"), ("quakes", "Quakes"), ("kp", "Space weather"), ("btc", "Bitcoin"), ("hive", "AutoFaber"), ("agent", "Mentifaber Agent"), ("suite", "Your suite")]
 WIDGET_EXTRA = [("hf", "HF conditions")]  # kinds used on app pages only
-def has_page(i): return os.path.exists(os.path.join(CONTENT, i + ".json"))
+def has_page(i):  # a generated datasheet page; content with "own_page": true is only data (verbs) for an app whose page is hand-made
+    p = os.path.join(CONTENT, i + ".json")
+    return os.path.exists(p) and not json.load(open(p, encoding="utf-8")).get("own_page")
 
 def links(a):  # (open, about): what the card's buttons point at
     if not a.get("href"): return None, None
@@ -206,7 +208,7 @@ def sitemap():  # sitemap.xml: every public page, skipping noindex pages and wha
     return f"sitemap.xml ({len(rows)} pages)"
 
 if __name__ == "__main__":
-    ids = sys.argv[1:] or [f[:-5] for f in sorted(os.listdir(CONTENT)) if f.endswith(".json")]
+    ids = sys.argv[1:] or [f[:-5] for f in sorted(os.listdir(CONTENT)) if f.endswith(".json") and has_page(f[:-5])]
     icons(list(A)); brand_icons()
     import plan
     for i in ids: print("built", plan.page(i))
