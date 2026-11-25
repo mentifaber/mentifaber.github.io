@@ -27,6 +27,9 @@ label { display: grid; gap: 6px; font-weight: 600; } input, select { font: 400 1
 .btn { font: 700 18px var(--sans); padding: 14px 18px; border-radius: 12px; border: 2px solid var(--btn); background: var(--btn); color: var(--btn-ink); cursor: pointer; }
 .btn.ghost { background: transparent; color: var(--btn); }
 .link { font: 500 14px ui-monospace, Menlo, monospace; word-break: break-all; padding: 10px; border: 1px dashed var(--line); border-radius: 10px; color: var(--dim); }
+pre.link { white-space: pre-wrap; font-size: 12.5px; max-height: 320px; overflow: auto; margin: 0; }
+.kit { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.kit label, .kit select, .kit input { min-width: 0; max-width: 100%; width: 100%; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; } .small { font-size: 15px; color: var(--dim); }
 :focus-visible { outline: 3px solid var(--ok); outline-offset: 3px; }
 .state.away { background: var(--card); border: 1px dashed var(--line); color: var(--dim); }
@@ -80,7 +83,13 @@ details > summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
       (devKey ? '<div class="link" id="devLink">' + esc(devUrl()) + '</div><p class="small">Shown once. Copy it into the automation now; making a new one stops this one.</p><div class="row"><button class="btn ghost" id="cDev" type="button">Copy</button></div>' : "") +
       '<div class="row"><button class="btn ghost" id="mkDev" type="button">' + (s.device ? "Make a new device link" : "Make a device link") + "</button>" + (s.device ? '<button class="btn ghost" id="offDev" type="button">Turn it off</button>' : "") + '</div><p class="small" id="devSt">' + (s.device ? "A device link is on." : "") + "</p></div>" +
       '<div class="card" style="margin-top:10px"><b>A motion sensor</b><p class="small">A Wi-Fi motion sensor (like Bodywake), or any sensor an automation can make call a link, reports movement by room with the device link: the first movement of the day checks you in, and the family can see when a room last saw someone. Only the room and the time are kept: no camera, no microphone, nothing the sensor measured.</p>' +
-      (devKey ? '<p class="small">The sensor\'s link (change <code>room=kitchen</code> for each room it covers):</p><div class="link" id="senseLink">' + esc(senseUrl()) + '</div><div class="row"><button class="btn ghost" id="cSense" type="button">Copy the sensor link</button></div>' : '<p class="small">Make a device link above; the sensor uses the same key.</p>') +
+      (devKey ? '<p class="small">The sensor\'s link (change <code>room=kitchen</code> for each room it covers):</p><div class="link" id="senseLink">' + esc(senseUrl()) + '</div><div class="row"><button class="btn ghost" id="cSense" type="button">Copy the sensor link</button></div>' +
+        '<div class="kit" id="kit"><b>A sensor, ready to plug in</b><p class="small">A setup file with your sensor link already in it: put it on the sensor once, plug the sensor in in that room, and it checks you in. Nothing else to set up here.</p>' +
+        '<label>The room it goes in<input id="kRoom" maxlength="24" value="kitchen"></label>' +
+        '<label>The sensor<select id="kKind"><option value="pir">ESP32 + motion sensor (PIR), ESPHome</option><option value="ld2410">ESP32 + presence radar (LD2410), ESPHome</option><option value="ha">A motion sensor in Home Assistant</option></select></label>' +
+        '<label id="kEntL" hidden>Its name in Home Assistant<input id="kEnt" maxlength="80" value="binary_sensor.kitchen_motion"></label>' +
+        '<pre class="link" id="kOut" tabindex="0" aria-label="The setup file"></pre><div class="row"><button class="btn ghost" id="kCopy" type="button">Copy</button><button class="btn ghost" id="kSave" type="button">Download it</button></div>' +
+        '<p class="small" id="kHow"></p><p class="small">The file holds your sensor link: keep it like a key. Making a new device link above stops the old one, and then the sensor needs a new file.</p></div>' : '<p class="small">Make a device link above; the sensor uses the same key.</p>') +
       '<label>Tell the family if it\'s quiet for<select id="quiet">' + [[0, "never (off)"], [2, "2 hours"], [3, "3 hours"], [4, "4 hours"], [6, "6 hours"], [8, "8 hours"], [12, "12 hours"]].map(([v, l]) => '<option value="' + v + '"' + (((s.sensor && s.sensor.quiet) || 0) === v ? " selected" : "") + ">" + l + "</option>").join("") + '</select></label><p class="small">Only between 7 a.m. and 10 p.m., at most once a day, and not while you\'re away.</p>' +
       '<div class="row"><button class="btn ghost" id="saveQuiet" type="button">Save</button>' + (s.sensor && s.sensor.rooms.length ? '<button class="btn ghost" id="forget" type="button">Forget the rooms</button>' : "") + "</div></div></details>";
       const set = (body, keep) => async () => { try { s = await api("/" + id + "/settings", { t, ...body() }); open = true; if (!keep) devKey = ""; draw(); } catch (e) { alert(e.message); } };
@@ -91,7 +100,33 @@ details > summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
       if ($("#cDev")) $("#cDev").onclick = () => copy($("#cDev"), devUrl());
       $("#saveQuiet").onclick = set(() => ({ quiet: Number($("#quiet").value) }), true);
       if ($("#forget")) $("#forget").onclick = set(() => ({ rooms: null }), true);
-      if ($("#cSense")) $("#cSense").onclick = () => copy($("#cSense"), senseUrl()); };
+      if ($("#cSense")) $("#cSense").onclick = () => copy($("#cSense"), senseUrl());
+      if ($("#kit")) { const kit = () => { const k = $("#kKind").value, f = sensorKit(k, $("#kRoom").value, $("#kEnt").value, location.origin + "/api/checkin/" + id + "/sense?t=" + devKey); $("#kEntL").hidden = k !== "ha"; $("#kOut").textContent = f.text; $("#kHow").textContent = f.how; return f; };
+        for (const x of ["#kRoom", "#kKind", "#kEnt"]) $(x).addEventListener("input", kit); kit();
+        $("#kCopy").onclick = () => copy($("#kCopy"), kit().text);
+        $("#kSave").onclick = () => { const f = kit(), a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([f.text], { type: "text/yaml" })); a.download = f.file; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }; } };
+    // the sensor kit (game plan GP-6.2): a setup file that already holds this person's sensor link, for an ESP32 with a PIR
+    // or an LD2410 radar (ESPHome), or for a motion sensor already in Home Assistant. Movement calls the link with the room;
+    // every 6 hours it sends a heartbeat (motion=0) so the family can see the sensor is alive.
+    const sensorKit = (kind, room0, ent0, base) => {
+      const room = String(room0 || "").toLowerCase().replace(/[^a-z0-9 -]/g, "").trim().slice(0, 24) || "kitchen", slug = room.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "room";
+      const ent = /^binary_sensor\.[a-z0-9_]{1,60}$/.test(String(ent0 || "").trim()) ? String(ent0).trim() : "binary_sensor." + slug.replace(/-/g, "_") + "_motion";
+      const url = (m) => base + "&room=" + encodeURIComponent(room) + "&motion=" + m, q = (x) => '"' + x.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+      if (kind === "ha") return { file: "quiet-checkin-" + slug + ".yaml", how: "Add this to Home Assistant's configuration.yaml (or a package), then restart Home Assistant. Change the sensor's name if yours is called something else.", text: [
+        "# Quiet Check-in: movement in the " + room + " checks you in (mentifaber.org/checkin)", "rest_command:", "  quiet_checkin_" + slug.replace(/-/g, "_") + ":", "    url: " + q(url(1)), "    method: GET", "  quiet_checkin_" + slug.replace(/-/g, "_") + "_alive:", "    url: " + q(url(0)), "    method: GET", "",
+        "automation:", "  - alias: " + q("Quiet Check-in: " + room + " movement"), "    mode: single", "    triggers:", "      - trigger: state", "        entity_id: " + ent, "        to: \"on\"", "    actions:", "      - action: rest_command.quiet_checkin_" + slug.replace(/-/g, "_"), "      - delay: \"00:01:00\"",
+        "  - alias: " + q("Quiet Check-in: " + room + " sensor alive"), "    triggers:", "      - trigger: time_pattern", "        hours: \"/6\"", "    actions:", "      - action: rest_command.quiet_checkin_" + slug.replace(/-/g, "_") + "_alive", ""].join("\n") };
+      const radar = kind === "ld2410", head = [
+        "# Quiet Check-in sensor for the " + room + " (mentifaber.org/checkin). Flash it with ESPHome; Wi-Fi comes from your secrets.yaml.", "esphome:", "  name: quiet-checkin-" + slug, "  friendly_name: " + q("Quiet Check-in " + room), "",
+        "esp32:", "  board: esp32dev", "  framework:", "    type: esp-idf", "", "logger:", "ota:", "  - platform: esphome", "",
+        "wifi:", "  ssid: !secret wifi_ssid", "  password: !secret wifi_password", "  ap:", "    ssid: \"Quiet Check-in setup\"", "captive_portal:", "",
+        "http_request:", "  verify_ssl: true", ""];
+      const call = (m, pad) => [pad + "- http_request.get:", pad + "    url: " + q(url(m))];
+      const body = radar ? ["uart:", "  tx_pin: GPIO17", "  rx_pin: GPIO16", "  baud_rate: 256000", "  parity: NONE", "  stop_bits: 1", "", "ld2410:", "", "binary_sensor:", "  - platform: ld2410", "    has_target:", "      name: Presence", "      on_press:", ...call(1, "        "), ""]
+        : ["binary_sensor:", "  - platform: gpio", "    pin: GPIO13", "    name: Motion", "    device_class: motion", "    filters:", "      - delayed_off: 30s", "    on_press:", ...call(1, "      "), ""];
+      const alive = ["interval:", "  - interval: 6h", "    then:", ...call(0, "      "), ""];
+      return { file: "quiet-checkin-" + slug + ".yaml", how: radar ? "Wire the LD2410 to the ESP32 (its TX to GPIO16, RX to GPIO17, 5V and ground), add this file in ESPHome, and install it. Then plug it in facing the room." : "Wire the PIR sensor's output to GPIO13 on the ESP32 (and 3.3V and ground), add this file in ESPHome, and install it. Then plug it in where it can see the room.", text: [...head, ...body, ...alive].join("\n") };
+    };
     let open = false, devKey = ""; const devUrl = () => location.origin + "/api/checkin/" + id + "/ok?t=" + devKey, senseUrl = () => location.origin + "/api/checkin/" + id + "/sense?t=" + devKey + "&room=kitchen";
     draw();
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/checkin-sw.js", { scope: "/checkin" }).catch(() => {}); // so the button opens on a weak signal
