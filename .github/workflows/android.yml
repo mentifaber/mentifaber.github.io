@@ -75,6 +75,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 60
+          # Build code comes from the checked-out branch; it does not need persisted Git credentials.
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -84,7 +86,8 @@ jobs:
           gradle-version: "8.9"
       - name: Unlock the release key
         env:
-          PASS: ${{ secrets.AUTOFABER_KEY_PASSPHRASE }}
+          # Only main gets the release key; other refs keep the existing throwaway test-signing path.
+          PASS: ${{ github.ref == 'refs/heads/main' && secrets.AUTOFABER_KEY_PASSPHRASE || '' }}
         run: |
           if [ -n "$PASS" ]; then
             openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in android/release.jks.enc -out "$RUNNER_TEMP/release.jks" -pass env:PASS
