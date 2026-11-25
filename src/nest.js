@@ -31,6 +31,7 @@
 //                            (30 days kept), or without R2 into this object (14 days kept). Photos aren't copied again
 //                            (they never change once stored); the copy lists the ones it needs, and a photo a kept copy
 //                            needs isn't deleted until no kept copy needs it. Photos already missing are listed as such.
+//   GET  /api/nest/backups   (owner) the copies there are to restore, newest first
 //   POST /api/nest/restore   (owner) { day } a daily copy, or { file } an export (its photos come back from the file):
 //                            the list, picks, gifts, notes and suggestions are put back as they were; guests and their
 //                            sign-ins are left alone. What's there now is saved first as a copy of its own, so a restore
@@ -421,6 +422,13 @@ export class Nest extends DurableObject {
       return new Response(JSON.stringify(snap), { headers: { "content-type": "application/json", "cache-control": "no-store", "content-disposition": 'attachment; filename="nest-registry-backup-' + snap.saved.slice(0, 10) + '.json"' } });
     }
     if (path === "/backup" && post) { if (!me.owner) return J({ error: "owner only" }, 403); const r = await this.backup(); this.bump(); return J(r, r.error ? 503 : 200); }
+    if (path === "/backups" && !post) { // the copies a restore can go back to, newest first
+      if (!me.owner) return J({ error: "owner only" }, 403);
+      let days = [];
+      if (this.env.MODELS && this.env.MODELS.list) { const l = await this.env.MODELS.list({ prefix: "nest/backups/" }).catch(() => ({ objects: [] })); days = (l.objects || []).map((o) => o.key.slice(13).replace(/\.json$/, "")); }
+      else days = this.q().exec("SELECT day FROM backup").toArray().map((r) => r.day);
+      return J({ copies: days.filter((d) => /^\d{4}-\d\d-\d\d(~[\w-]+)?$/.test(d)).sort().reverse() });
+    }
     if (path === "/restore" && post) { if (!me.owner) return J({ error: "only the owner restores the registry" }, 403); const r = await this.restore(body); return J(r, r.status || 200); }
     if (path === "/invite" && post) { if (!me.owner) return J({ error: "only the owner makes a new invite link" }, 403); const which = body.which === "parent" ? "pinvite" : "invite", k = rnd(12); this.kv(which, k); this.bump(); return J({ ok: true, [which]: k }); }
     if (path === "/upgrade" && post) { // already in on this device, and now opening the co-parent link

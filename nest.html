@@ -1297,10 +1297,24 @@ function renderBackup() {
   el.append(h("div", { class: "panel" }, h("h2", null, "Backups"),
     h("p", { class: "sub" }, (last ? "A copy of everything is saved automatically every night. The last one: " + fmtDate(parseDate(last), { month: "long", day: "numeric", year: "numeric" }) + "." : "A copy of everything is saved automatically every night.") + " You can also keep your own copy."),
     S.isOwner ? h("div", null, h("a", { class: "btn small primary", href: nestSite.exportUrl() }, "Download a backup")) : h("p", { class: "sub" }, "The owner can download a full backup."),
-    S.isOwner ? h("small", { class: "row-sub" }, "One file with the whole list, your picks, every guest's gifts and notes, names, details, thank-yous and the photos.") : null),
+    S.isOwner ? h("small", { class: "row-sub" }, "One file with the whole list, your picks, every guest's gifts and notes, names, details, thank-yous and the photos.") : null,
+    S.isOwner ? restorePanel() : null),
     h("div", { class: "panel" }, h("h2", null, "Photos"),
       h("p", { class: "sub" }, nestSite.photosLeft() ? `Finding photos: ${plural(nestSite.photosLeft(), "photo")} to go. It carries on by itself, even with this page closed.` : "Every item and pick is checked for a real product photo. A missing one, or a shop's logo, is found again by itself."),
       h("div", null, h("button", { class: "btn small", type: "button", onclick: async (ev) => { ev.target.disabled = true; try { const r = await nestSite.refreshPhotos(); toast(`Checking every photo again: ${plural(r.left || 0, "photo")} to look at.`); } catch (e) { writeError(e); } ev.target.disabled = false; } }, "Refresh all photos"))));
+}
+// the owner puts the registry back as a copy had it: a nightly copy, or a backup file they downloaded. What's there now is
+// saved first (it shows in the list as "just before a restore"), so a restore can itself be undone.
+function restorePanel() {
+  const box = h("div", { id: "restore", style: "display:grid;gap:8px;margin-top:14px" }), sel = h("select", { class: "input", id: "restore-day", "aria-label": "Which copy" }), file = h("input", { type: "file", accept: "application/json,.json", id: "restore-file", "aria-label": "A backup file", style: "max-width:100%" });
+  const label = (d) => { const [day, extra] = d.split("~"), when = fmtDate(parseDate(day), { month: "long", day: "numeric", year: "numeric" }); return extra ? "Just before a restore on " + when + " (" + extra.slice(-6, -4) + ":" + extra.slice(-4, -2) + " UTC)" : when; };
+  const done = (r) => toast("Restored" + (r.docs ? ": " + plural(r.docs, "entry", "entries") : "") + (r.missing ? ". " + plural(r.missing.length, "photo") + " couldn't come back." : ".") + " You can undo this from the same list.");
+  const go = async (body, what) => { if (!confirm("Put the registry back as it was " + what + "?\n\nWhat's there now is saved first, so you can undo this. Guests stay signed in.")) return; try { done(await nestSite.restore(body)); renderBackup(); } catch (e) { writeError(e); } };
+  nestSite.backups().then((r) => { const cs = (r && r.copies) || []; sel.replaceChildren(...(cs.length ? cs.map((d) => h("option", { value: d }, label(d))) : [h("option", { value: "" }, "No copies yet")])); sel.disabled = !cs.length; }).catch(() => sel.replaceChildren(h("option", { value: "" }, "Couldn't load the copies")));
+  box.append(h("h3", { style: "margin:0;font-size:1rem" }, "Restore"), h("small", { class: "row-sub" }, "Put the registry back as a copy had it. What's there now is saved first, so a restore can be undone."),
+    h("div", { class: "row", style: "display:flex;flex-wrap:wrap;gap:8px;align-items:center" }, sel, h("button", { class: "btn small", type: "button", id: "restore-go", onclick: () => sel.value && go({ day: sel.value }, sel.selectedOptions[0].textContent.toLowerCase().startsWith("just") ? "just before that restore" : "on " + sel.selectedOptions[0].textContent) }, "Restore this copy")),
+    h("div", { class: "row", style: "display:flex;flex-wrap:wrap;gap:8px;align-items:center" }, file, h("button", { class: "btn small", type: "button", id: "restore-file-go", onclick: async () => { const f = file.files && file.files[0]; if (!f) return toast("Choose a backup file first."); let j; try { j = JSON.parse(await f.text()); } catch (e) { return toast("That file isn't a backup."); } go({ file: j }, "in that file"); } }, "Restore from a file")));
+  return box;
 }
 function renderSettingsForm() {
   const el = $("#room-settings"); el.replaceChildren();

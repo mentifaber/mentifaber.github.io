@@ -61,6 +61,8 @@ ok("restoring the daily copy brings back the list, the picks, the claim and both
 r = await call("/restore", { day: r.j.undo }, O); assert.equal(r.j.ok, true); st = (await call("/state", null, G)).j;
 assert.equal(st.docs["items/i1"].name, "Crib (white)"); assert.equal(st.docs["items/i1"].imageId, c2); assert.ok(await bytesOf(c2));
 ok("a restore can be undone: the registry as it was just before comes back, photo included");
+r = await call("/backups", null, O); assert.equal(r.j.copies[0].slice(0, 10), day); assert.ok(r.j.copies.some((c) => /~before-restore-/.test(c)) && r.j.copies.includes(day)); assert.equal((await call("/backups", null, G)).status, 403);
+ok("the owner sees the copies there are to go back to, newest first, the before-restore ones included; a guest can't");
 
 // 5 · when no kept copy needs a let-go photo any more, it goes (copies older than 14 days, as before)
 db.prepare("UPDATE OR REPLACE kept SET day='2001-01-01'").run(); db.prepare("UPDATE backup SET day='2001-01-01' WHERE day NOT LIKE '%~%'").run(); db.prepare("UPDATE backup SET day='2001-01-02' WHERE day LIKE '%~%'").run();
