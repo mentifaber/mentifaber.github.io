@@ -249,6 +249,14 @@
     "added": "2026-11-25"
   },
   {
+    "href": "second.html",
+    "name": "Second Opinion",
+    "desc": "Check any quote before you pay: a car repair, a plumber, a roofer. Each line is set against what that part or work typically costs, the sums are checked, and you get the questions worth asking, every line quoted from your document word for word.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
     "href": "checkin.html",
     "name": "Quiet Check-in",
     "desc": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. A smart-home device can check in for them, and away dates pause it. No camera, no microphone, no tracking.",

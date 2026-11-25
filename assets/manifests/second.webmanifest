@@ -1,0 +1,31 @@
+{
+  "id": "/second",
+  "name": "Second Opinion",
+  "short_name": "2nd Opinion",
+  "description": "Check any quote before you pay: each line against what that part or work typically costs, the arithmetic checked, and the questions to ask.",
+  "start_url": "/second.html",
+  "scope": "/second.html",
+  "display": "standalone",
+  "background_color": "#080705",
+  "theme_color": "#080705",
+  "icons": [
+    {
+      "src": "../icons/v2/second-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/second-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/second-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
