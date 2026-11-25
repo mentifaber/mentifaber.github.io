@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/estate">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Digital Estate · Mentifaber</title>
+<meta name="description" content="Your accounts and devices, and who should get each, sealed so that only the people you chose can open it together, and only when it matters.">
+<meta name="theme-color" content="#0b0a0d">
+<link rel="icon" href="assets/icons/v2/estate.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/estate-180.png">
+<link rel="manifest" href="assets/manifests/estate.webmanifest">
+<style>
+/* Digital Estate: a ledger. Each account or device is a row with what should become of it and who it goes to; sealing
+   turns the ledger into a Sealed Letter whose key is split among the people you chose. */
+:root { --bg: #0b0a0d; --sheet: #131118; --card: #1a1720; --line: #33293d; --vio: #b48be0; --vio-hi: #d9bff7; --ink: #eee8f4; --dim: #a397b0; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--vio); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--vio-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--vio); margin: 26px 0 10px; }
+.lede { color: var(--dim); margin: 0 0 16px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 10px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0e0c12; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; }
+textarea.in { min-height: 80px; resize: vertical; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--vio); background: var(--vio); color: #170b24; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--vio-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chip { font: 14px var(--sans); padding: 6px 11px; border-radius: 99px; border: 1px dashed var(--vio); background: none; color: var(--vio-hi); cursor: pointer; }
+.warn { border: 1px dashed var(--warn); color: var(--warn); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-top: 12px; }
+.ledger { width: 100%; border-collapse: collapse; font-size: 14.5px; } .ledger th, .ledger td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+.ledger th { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--vio); }
+.ledger td small { display: block; color: var(--dim); } .ledger .acts button { background: none; border: 0; color: var(--dim); text-decoration: underline; font: 13px var(--sans); cursor: pointer; padding: 0 6px 0 0; }
+@media (max-width: 620px) { .ledger thead { display: none; } .ledger tr { display: block; border-bottom: 1px solid var(--line); padding: 8px 0; } .ledger td { display: block; border: 0; padding: 2px 0; } }
+.friends { display: grid; gap: 8px; } .friends label { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 8px; } .friends .in { margin-top: 0; }
+.choice { display: grid; gap: 8px; } .choice label { display: flex; gap: 10px; align-items: flex-start; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; } .choice input[type=radio] { margin-top: 4px; }
+.choice small { display: block; color: var(--dim); }
+.sealed { border: 2px solid var(--vio); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.shares { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; } .shares li { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .shares code, .mono { font: 12px var(--mono); color: var(--dim); overflow-wrap: anywhere; display: block; margin-top: 4px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--vio-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Digital Estate", "description": "Your accounts and devices, and who should get each, sealed so that only the people you chose can open it together, and only when it matters.", "url": "https://mentifaber.org/estate", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/estate-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Digital Estate</span><a href="./">The workshop</a></div>
+  <h1>Who gets what, <span>when it matters</span></h1>
+  <p class="lede">The email, the phone, the photos, the bank logins, the subscriptions: what should happen to each, and who should get it. Written here, it's sealed as a <a href="letters" style="color:var(--vio-hi)">Sealed Letter</a>: encrypted in this browser, its key split among people you choose, and it opens only when enough of them come together, and only once you've gone quiet. The site keeps the sealed copy and can't read it.</p>
+
+  <div id="build">
+    <h2>Your accounts and devices</h2>
+    <div class="chips" id="starters" aria-label="Common ones to start with"></div>
+    <table class="ledger" id="ledger"><thead><tr><th>What</th><th>Where to find it</th><th>What should happen</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+    <p class="status" id="empty">Nothing yet: tap a common one above, or add your own.</p>
+    <form class="panel" id="add">
+      <div class="grid"><label>It's a<select class="in" id="a-kind"><option value="account">Account</option><option value="device">Device</option><option value="money">Bank or money</option><option value="subscription">Subscription</option><option value="document">Document</option><option value="other">Something else</option></select></label>
+        <label>Name<input class="in" id="a-name" maxlength="80" required placeholder="Gmail, iPhone, Chase checking…"></label>
+        <label>What should happen<select class="in" id="a-wish"><option value="pass">Give it to someone</option><option value="download">Save what's in it, then close it</option><option value="memorial">Keep it up as a memorial</option><option value="close">Close it</option><option value="keep">Keep it running</option><option value="other">Something else (say in the note)</option></select></label>
+        <label id="l-to">To whom<input class="in" id="a-to" maxlength="80" placeholder="Sam"></label></div>
+      <label style="margin-top:10px">Where to find it, or how to get in <span class="status">(never the password itself)</span><input class="in" id="a-where" maxlength="200" placeholder="In the password manager, under “Google”; recovery codes in the desk drawer"></label>
+      <label style="margin-top:10px">A note <span class="status">(optional)</span><input class="in" id="a-note" maxlength="300" placeholder="The family photos are in the album “Us”"></label>
+      <div class="bar"><button class="btn" type="submit" id="a-go">Add it</button><button class="btn ghost" type="button" id="a-cancel" hidden>Cancel</button><span class="status" id="a-st" role="status"></span></div>
+    </form>
+    <h2>A message with it <span class="status" style="letter-spacing:0;text-transform:none">(optional)</span></h2>
+    <div class="panel"><label for="msg">For the people who open it</label><textarea class="in" id="msg" maxlength="4000" placeholder="Thank you for doing this. The will is with…"></textarea>
+      <label style="margin-top:10px">Signed<input class="in" id="from" maxlength="80" placeholder="Your name"></label></div>
+    <p class="status" style="margin-top:8px">Until you seal it, the draft is kept on this device only.</p>
+
+    <h2>Who opens it, and when</h2>
+    <div class="panel">
+      <div class="grid"><label>People who each get a share<input class="in" id="n" type="number" min="1" max="12" value="3"></label><label>Needed together to open it<input class="in" id="k" type="number" min="1" max="12" value="2"></label></div>
+      <div class="friends" id="friends" style="margin-top:12px"></div>
+      <div class="choice" style="margin-top:14px" role="radiogroup" aria-label="When it can open">
+        <label><input type="radio" name="when" value="quiet" checked><span><b>When my Quiet Check-in goes quiet</b><small>It opens only once you haven't checked in on <a href="checkin" style="color:var(--vio-hi)">Quiet Check-in</a> for the days below. Days you've said you're away count as checked in.</small></span></label>
+        <label><input type="radio" name="when" value="checkin"><span><b>If I stop checking in here</b><small>You check in on this letter with your writer link, before each deadline.</small></span></label>
+        <label><input type="radio" name="when" value="none"><span><b>As soon as enough of them come together</b><small>No wait: trust them to choose the moment.</small></span></label>
+      </div>
+      <div class="grid" style="margin-top:12px"><label id="l-ci">Your Quiet Check-in link (the one for you, not the family's)<input class="in" id="ci" placeholder="https://mentifaber.org/checkin#me.…"></label><label id="l-days">After this many days<input class="in" id="days" type="number" min="7" max="730" value="30"></label></div>
+      <div class="bar"><button class="btn" type="button" id="seal">Seal it</button><span class="status" id="s-st" role="status"></span></div>
+    </div>
+  </div>
+  <div id="done" hidden></div>
+</div>
+<script src="assets/letters/sl.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const SL = window.SealedLetters, day = (t) => new Date(t).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
+  const KIND = { account: "Account", device: "Device", money: "Bank or money", subscription: "Subscription", document: "Document", other: "Something else" };
+  const WISH = { pass: "Give it to", download: "Save what's in it, then close it", memorial: "Keep it up as a memorial", close: "Close it", keep: "Keep it running", other: "See the note" };
+  const STARTERS = [["Email", "account", "download"], ["Phone", "device", "pass"], ["Laptop", "device", "pass"], ["Photos in the cloud", "account", "download"], ["Bank", "money", "close"], ["Social media", "account", "memorial"], ["Password manager", "account", "pass"], ["Subscriptions", "subscription", "close"]];
+  const KEY = "estate:v1"; let D = { entries: [], msg: "", from: "", friends: [] }; try { D = Object.assign(D, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(D)); } catch (e) {} };
+  const id = () => "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  let editing = null;
+
+  const wishText = (e) => (e.wish === "pass" ? "Give it to " + (e.to || "someone (say who)") : WISH[e.wish] + (e.to && e.wish !== "close" ? " (" + e.to + ")" : ""));
+  function draw() {
+    $("#rows").innerHTML = D.entries.map((e) => '<tr data-id="' + esc(e.id) + '"><td><b>' + esc(e.name) + "</b><small>" + esc(KIND[e.kind]) + "</small></td><td>" + esc(e.where || "—") + "</td><td>" + esc(wishText(e)) + (e.note ? "<small>" + esc(e.note) + "</small>" : "") +
+      '</td><td class="acts"><button type="button" data-act="edit" aria-label="Edit ' + esc(e.name) + '">Edit</button><button type="button" data-act="del" aria-label="Remove ' + esc(e.name) + '">Remove</button></td></tr>').join("");
+    $("#empty").hidden = D.entries.length > 0; $("#ledger").hidden = !D.entries.length;
+    $("#starters").innerHTML = STARTERS.filter(([n]) => !D.entries.some((e) => e.name === n)).map(([n, k, w]) => '<button class="chip" type="button" data-n="' + esc(n) + '" data-k="' + k + '" data-w="' + w + '">+ ' + esc(n) + "</button>").join("");
+  }
+  const toShown = () => { $("#l-to").hidden = ["close", "memorial"].includes($("#a-wish").value); };
+  $("#a-wish").onchange = toShown;
+  const fill = (e) => { $("#a-kind").value = e.kind; $("#a-name").value = e.name; $("#a-wish").value = e.wish; $("#a-to").value = e.to || ""; $("#a-where").value = e.where || ""; $("#a-note").value = e.note || ""; toShown(); };
+  $("#starters").onclick = (ev) => { const b = ev.target.closest(".chip"); if (!b) return; editing = null; fill({ kind: b.dataset.k, name: b.dataset.n, wish: b.dataset.w }); $("#a-cancel").hidden = true; $("#a-go").textContent = "Add it"; $("#add").scrollIntoView({ block: "nearest" }); $("#a-where").focus(); };
+  $("#rows").onclick = (ev) => { const b = ev.target.closest("button[data-act]"); if (!b) return; const e = D.entries.find((x) => x.id === b.closest("tr").dataset.id); if (!e) return;
+    if (b.dataset.act === "del") { if (confirm("Remove " + e.name + "?")) { D.entries = D.entries.filter((x) => x !== e); save(); draw(); } return; }
+    editing = e.id; fill(e); $("#a-go").textContent = "Save"; $("#a-cancel").hidden = false; $("#add").scrollIntoView({ block: "nearest" }); $("#a-name").focus(); };
+  $("#a-cancel").onclick = () => { editing = null; $("#add").reset(); toShown(); $("#a-go").textContent = "Add it"; $("#a-cancel").hidden = true; };
+  $("#add").onsubmit = (ev) => { ev.preventDefault(); const st = $("#a-st"); st.className = "status";
+    const e = { id: editing || id(), kind: $("#a-kind").value, name: $("#a-name").value.trim().slice(0, 80), wish: $("#a-wish").value, to: $("#l-to").hidden ? "" : $("#a-to").value.trim().slice(0, 80), where: $("#a-where").value.trim().slice(0, 200), note: $("#a-note").value.trim().slice(0, 300) };
+    if (!e.name) { st.className = "status bad"; st.textContent = "Give it a name."; return; }
+    if (/\bpass(word|code)?\s*[:=]\s*\S+/i.test(e.where + " " + e.note)) { st.className = "status bad"; st.textContent = "That looks like a password. Say where it is instead: a password manager, a sealed envelope."; return; }
+    if (D.entries.length >= 80 && !editing) { st.className = "status bad"; st.textContent = "80 entries at most."; return; }
+    const i = D.entries.findIndex((x) => x.id === e.id); if (i >= 0) D.entries[i] = e; else D.entries.push(e);
+    save(); draw(); $("#a-cancel").click(); st.textContent = "Added: " + e.name + "."; };
+  $("#msg").value = D.msg; $("#from").value = D.from; $("#msg").oninput = () => { D.msg = $("#msg").value; save(); }; $("#from").oninput = () => { D.from = $("#from").value; save(); };
+
+  // the people, and when it can open
+  function friends() { const n = Math.max(1, Math.min(12, +$("#n").value || 1)); $("#friends").innerHTML = Array.from({ length: n }, (_, i) => '<label for="f' + i + '">Person ' + (i + 1) + '<input class="in" id="f' + i + '" maxlength="60" value="' + esc(D.friends[i] || "") + '" placeholder="Their name"></label>').join(""); }
+  $("#n").oninput = friends; $("#friends").oninput = (e) => { const i = +e.target.id.slice(1); D.friends[i] = e.target.value; save(); };
+  const when = () => document.querySelector("input[name=when]:checked").value;
+  const showWhen = () => { $("#l-ci").hidden = when() !== "quiet"; $("#l-days").hidden = when() === "none"; };
+  document.querySelectorAll("input[name=when]").forEach((r) => (r.onchange = showWhen));
+
+  const text = () => "Digital estate" + (D.from ? " of " + D.from : "") + "\n\n" + D.entries.map((e, i) => i + 1 + ". " + e.name + " (" + KIND[e.kind] + ")\n   What should happen: " + wishText(e) + (e.where ? "\n   Where to find it: " + e.where : "") + (e.note ? "\n   Note: " + e.note : "")).join("\n\n") + (D.msg ? "\n\n" + D.msg : "");
+  $("#seal").onclick = async () => {
+    const st = $("#s-st"), n = +$("#n").value, k = +$("#k").value, w = when(), days = +$("#days").value; st.className = "status";
+    const bad = (m) => { st.className = "status bad"; st.textContent = m; };
+    if (!D.entries.length) return bad("Add at least one account or device first.");
+    if (!(k >= 1 && n >= k && n <= 12)) return bad("Needed together can't be more than the people who get a share (at most 12).");
+    if (w !== "none" && !(days >= 7 && days <= 730)) return bad("Between 7 and 730 days.");
+    let lock = null;
+    if (w === "quiet") { const m = /#me\.([0-9a-f]{16})\.([0-9a-f]{32})\s*$/.exec($("#ci").value.trim()); if (!m) return bad("Paste your own Quiet Check-in link: it ends in #me. followed by letters and numbers. (The family's link won't do.)"); lock = { type: "quiet", ci: m[1], t: m[2], days }; }
+    else if (w === "checkin") lock = { type: "checkin", days };
+    const names = Array.from({ length: n }, (_, i) => ($("#f" + i) && $("#f" + i).value.trim()) || "Person " + (i + 1));
+    $("#seal").disabled = true; st.textContent = "Sealing it in this browser…";
+    try {
+      const K = SL.random(32), S = lock ? SL.random(32) : null, key = S ? SL.xor(K, S) : K;
+      const box = await SL.seal({ body: text(), from: D.from, written: Date.now(), estate: { entries: D.entries.map(({ id, ...e }) => e), msg: D.msg } }, key);
+      const r = await fetch("/api/letters", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...box, k, n, lock, ...(S ? { S: SL.hex(S) } : {}) }) });
+      const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error ? j.error.charAt(0).toUpperCase() + j.error.slice(1) + "." : "The site didn't answer. Try again.");
+      const shares = SL.split(K, n, k).map((s) => location.origin + "/letters#" + SL.shareText(j.id, s)), writer = location.origin + "/letters#writer." + j.id + "." + j.token;
+      $("#build").hidden = true; $("#done").hidden = false;
+      $("#done").innerHTML = '<div class="sealed"><h2 style="margin-top:0">Sealed</h2><p>' + D.entries.length + " account" + (D.entries.length === 1 ? "" : "s") + " and devices. " + (k === 1 ? "Any one" : "Any " + k) + " of these " + n + " people can open it" +
+        (w === "quiet" ? ", once your Quiet Check-in has gone " + days + " days without a check-in (not before " + esc(day(j.opens)) + ")" : w === "checkin" ? ", if you don't check in for " + days + " days (first deadline " + esc(day(j.opens)) + ")" : "") + ".</p></div>" +
+        '<h2>Give each person their own link</h2><p class="status">Send them separately, and tell them what it\'s for. One link alone opens nothing. A lost link can\'t be replaced, so a spare person or two helps.</p><ol class="shares" id="shares">' +
+        shares.map((l, i) => "<li><b>" + esc(names[i]) + '</b> <button class="btn sm ghost" type="button" data-c="' + i + '">Copy</button><code>' + esc(l) + "</code></li>").join("") + "</ol>" +
+        '<h2>Your writer link</h2><p class="status">Keep it for yourself: it lets you delete the sealed copy' + (w === "checkin" ? ", and it's how you check in" : "") + ". To change what's in it, seal a new one and delete this one.</p><code class=\"mono\" id=\"wk\">" + esc(writer) + "</code>" +
+        '<div class="bar"><button class="btn ghost" type="button" id="cw">Copy</button><button class="btn ghost" type="button" id="clear">Clear the draft from this device</button><span class="status" id="c-st" role="status"></span></div>';
+      const cp = (b, t) => navigator.clipboard && navigator.clipboard.writeText(t).then(() => (b.textContent = "Copied"), () => {});
+      document.querySelectorAll("[data-c]").forEach((b) => (b.onclick = () => cp(b, shares[+b.dataset.c]))); $("#cw").onclick = () => cp($("#cw"), writer);
+      $("#clear").onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} $("#c-st").className = "status ok"; $("#c-st").textContent = "The draft is gone from this device; the sealed copy is unchanged."; };
+    } catch (e) { bad(e.message); } finally { $("#seal").disabled = false; }
+  };
+  draw(); toShown(); friends(); showWhen();
+})();
+</script>
+</body>
+</html>

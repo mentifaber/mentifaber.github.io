@@ -20,6 +20,7 @@ GLYPH.update({  # glyphs for apps that never had one
   # the apps from the game plan (24 November 2026)
   "blackout": '<path d="M13.2 2.8L6 13.2h5.2L10.4 21.2l7.6-10.6h-5.2z"/><path d="M3.5 20.5l17-17"/>',
   "passport": '<rect x="5" y="2.8" width="14" height="18.4" rx="1.6"/><circle cx="12" cy="10" r="3.2"/><path d="M8.6 16.4h6.8M9.6 18.6h4.8"/>',
+  "estate": '<path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4"/><path d="M8.5 10.5h7M8.5 13.5h4"/><circle cx="10" cy="17.4" r="1.6"/><path d="M11.6 17.4h4.4M14.6 17.4v1.6"/>',
   "second": '<path d="M6 3.5h8.5l3.5 3.5v13.5H6z"/><path d="M14.5 3.5V7H18"/><path d="M8.6 10.5h4.4M8.6 13.5h3"/><circle cx="15.2" cy="16.4" r="2.4"/><path d="M17 18.2l2.2 2.2"/>',
   "claim": '<path d="M3.5 7.5V18.6c0 .8.6 1.4 1.4 1.4h14.2c.8 0 1.4-.6 1.4-1.4V9.4c0-.8-.6-1.4-1.4-1.4h-7.3L9.9 5.5H4.9c-.8 0-1.4.6-1.4 1.4z"/><circle cx="12" cy="14" r="3.3"/><path d="M10.6 14l1 1 1.9-2"/>',
   "fix": '<path d="M14.6 3.6a4.6 4.6 0 0 0-4.9 6.2L3.4 16.1a2 2 0 0 0 2.8 2.8l6.3-6.3a4.6 4.6 0 0 0 6.2-4.9l-2.6 2.6-2.6-.7-.7-2.6z"/><path d="M15.6 15.2l4.6 4.6M20.2 15.2l-4.6 4.6"/>',
@@ -35,7 +36,7 @@ def _hues():
     s = open(os.path.join(ROOT, "assets/mf.js"), encoding="utf-8").read()
     d = json.loads(re.search(r"const MF_SYS = (\{.*?\});", s, re.S).group(1))
     return {k: v[1] for k, v in d.items()}
-HUE = _hues(); HUE.update({"house": 168, "fix": 24, "claim": 4, "second": 188, "checkin": 138, "blackout": 34, "passport": 44, "witness": 205, "letters": 6, "skylens": 192, "local-ai": 262, "mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
+HUE = _hues(); HUE.update({"house": 168, "fix": 24, "claim": 4, "second": 188, "estate": 272, "checkin": 138, "blackout": 34, "passport": 44, "witness": 205, "letters": 6, "skylens": 192, "local-ai": 262, "mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
 
 CATS = [  # display order on the home page
   ("signals", "Signals & Comms", "Messengers, radios and things that talk without the usual pipes."),
@@ -57,7 +58,7 @@ APP_URL = {
   "crime-dashboard": "crime-dashboard-app.html", "muse": "muse-live.html", "weaver": "weaver-live.html",
   "barycenter": "barycenter-app.html", "nullspace": "nullspace-app.html", "pilotfish": "pilotfish-app.html", "meshnet": "meshnet-app.html", "novarac": "novarac-app.html",
   "tether": "tether-app.html", "thoughtform": "thoughtform-app.html", "graveyard": "graveyard-app.html", "rootcause": "rootcause-app.html", "sideways": "sideways-app.html", "watchyourgrass": "watchyourgrass-app.html",
-  "checkin": "checkin.html", "blackout": "blackout.html", "passport": "passport.html", "house": "house.html", "fix": "fix.html", "claim": "claim.html", "second": "second.html", "witness": "witness.html", "letters": "letters.html", "skylens": "skylens.html", "local-ai": "local-ai.html",
+  "checkin": "checkin.html", "blackout": "blackout.html", "passport": "passport.html", "house": "house.html", "fix": "fix.html", "claim": "claim.html", "second": "second.html", "estate": "estate.html", "witness": "witness.html", "letters": "letters.html", "skylens": "skylens.html", "local-ai": "local-ai.html",
   "mentiplayer": "mentiplayer-app.html", "hive": "hive-app.html", "neural-sim": "neural-sim-v3.html", "worm-eater": "worm-eater-app.html", "pi": "pi-app.html", "sonicveil": "sonicveil-app.html", "doccrawler": "doccrawler-app.html", "shop": "shop-app.html", "conflict-atlas": "conflict-atlas-app.html", "proximity": "proximity-app.html", "monstrosity": "monstrosity-app.html", "duely": "duely-app.html", "phone-mcp": "phone-mcp-app.html", "roku": "roku-app.html", "omnilogos": "omnilogos-app.html", "orbit": "orbit-app.html", "cartograph": "cartograph-app.html",
 }
 def _id(href):

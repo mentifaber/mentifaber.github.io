@@ -8,6 +8,12 @@
 //
 // Kept per letter, in the Store Durable Object ("letter:<id>"): the ciphertext, its IV, the lock, S (if locked), and a
 // hash of the writer's token, which lets the writer check in or delete the letter.
+//
+// A third lock, "quiet" (Digital Estate), follows a Quiet Check-in (src/checkin.js) instead of check-ins here: the letter
+// opens once that person hasn't checked in there for its days (days they've said they're away count as checked in). Only
+// the person can tie a letter to their check-in: the request carries their own link's key, checked against the hash the
+// check-in keeps, and isn't stored. If the check-in is deleted, the last check-in seen is what counts. Once the release
+// secret has been handed out, a later check-in doesn't lock it again.
 const MAX_CT = 90000, LETTERS_DAY = 6, DAY = 864e5;
 const err = (m, s = 400) => Object.assign(new Error(m), { status: s });
 const hexOf = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -17,6 +23,9 @@ const same = (a, b) => { a = String(a); b = String(b); if (a.length !== b.length
 
 // when does the lock open? null: never locked; a time: then (for "if I stop checking in", the last check-in plus the days)
 export const opensAt = (L) => !L.lock ? null : L.lock.type === "date" ? L.lock.at : L.lock.last + L.lock.days * DAY;
+
+// the last time a Quiet Check-in heard from its person: their last check-in, or the end of a day they said they'd be away
+const lastSeen = (c, now) => Math.min(now, Math.max(c.last || 0, c.away ? Date.parse(c.away + "T23:59:59Z") : 0));
 
 export async function letters(req, env, json) {
   const url = new URL(req.url), parts = url.pathname.replace(/^\/api\/letters\/?/, "").split("/").filter(Boolean);
@@ -31,6 +40,10 @@ export async function letters(req, env, json) {
       const k = +b.k, n = +b.n; if (!(Number.isInteger(k) && Number.isInteger(n) && k >= 1 && n >= k && n <= 12)) throw err("k of n: between 1 and 12 friends, k no more than n");
       let lock = null;
       if (b.lock && b.lock.type === "date") { const at = Date.parse(b.lock.at); if (!isFinite(at) || at <= now + 60e3 || at > now + 50 * 365 * DAY) throw err("pick a date in the future (within 50 years)"); lock = { type: "date", at }; }
+      else if (b.lock && b.lock.type === "quiet") { const days = Math.round(+b.lock.days), ci = String(b.lock.ci || ""); if (!(days >= 7 && days <= 730)) throw err("quiet for: between 7 and 730 days");
+        const c = /^[0-9a-f]{16}$/.test(ci) ? await st.kvGet("ci:" + ci) : null; if (!c) throw err("that Quiet Check-in doesn't exist", 404);
+        if (!/^[0-9a-f]{32}$/.test(String(b.lock.t || "")) || !same(await sha(b.lock.t), c.mk)) throw err("only the person can tie a letter to their Quiet Check-in: use their own link", 403);
+        lock = { type: "quiet", ci, days, last: now }; } // the person sealing it is here now
       else if (b.lock && b.lock.type === "checkin") { const days = Math.round(+b.lock.days); if (!(days >= 7 && days <= 730)) throw err("check-in: between 7 and 730 days"); lock = { type: "checkin", days, last: now }; }
       if (!(await st.hit("letters:" + (req.headers.get("cf-connecting-ip") || "anon"), LETTERS_DAY, DAY))) throw err("that's today's " + LETTERS_DAY + " letters from this connection", 429);
       const S = lock ? String(b.S || "").toLowerCase() : null; if (lock && !/^[0-9a-f]{64}$/.test(S)) throw err("a locked letter needs its release secret");
@@ -40,13 +53,17 @@ export async function letters(req, env, json) {
     }
     const id = parts[0]; if (!/^[0-9a-f]{16}$/.test(id || "")) throw err("no such letter", 404);
     const L = await st.kvGet("letter:" + id); if (!L) throw err("this letter doesn't exist, or its writer deleted it", 404);
+    if (L.lock && L.lock.type === "quiet" && !L.released) { // follow the person's Quiet Check-in, until the letter has been released
+      const c = await st.kvGet("ci:" + L.lock.ci), seen = c ? lastSeen(c, now) : 0; if (seen > L.lock.last) { L.lock.last = seen; await st.kvPut("letter:" + id, L); } }
     const at = opensAt(L), open = !L.lock || now >= at;
+    if (open && L.S && !L.released && parts.length === 1 && req.method === "GET") { L.released = now; await st.kvPut("letter:" + id, L); }
     // read it: the ciphertext always (useless without the shares); S only once the lock has opened
-    if (parts.length === 1 && req.method === "GET") return json({ ct: L.ct, iv: L.iv, k: L.k, n: L.n, lock: L.lock ? { type: L.lock.type, ...(L.lock.type === "checkin" ? { days: L.lock.days } : {}) } : null, opens: at, open, ...(open && L.S ? { S: L.S } : {}), created: L.created });
+    if (parts.length === 1 && req.method === "GET") return json({ ct: L.ct, iv: L.iv, k: L.k, n: L.n, lock: L.lock ? { type: L.lock.type, ...(L.lock.type !== "date" ? { days: L.lock.days } : {}) } : null, opens: at, open, ...(open && L.S ? { S: L.S } : {}), created: L.created });
     // the writer: check in (puts the "if I stop checking in" lock back by its days), or delete
     if (req.method === "POST" && (parts[1] === "checkin" || parts[1] === "delete")) {
       if (!/^[0-9a-f]{32}$/.test(String(b.token || "")) || !same(await sha(b.token), L.wt)) throw err("that isn't this letter's writer key", 403);
       if (parts[1] === "delete") { await st.kvDel("letter:" + id); return json({ ok: true }); }
+      if (L.lock && L.lock.type === "quiet") throw err("this letter follows a Quiet Check-in: checking in there keeps it sealed");
       if (!L.lock || L.lock.type !== "checkin") throw err("this letter doesn't wait for check-ins");
       if (open) throw err("this letter has already opened: you didn't check in in time", 409);
       L.lock.last = now; await st.kvPut("letter:" + id, L); return json({ ok: true, opens: opensAt(L) });

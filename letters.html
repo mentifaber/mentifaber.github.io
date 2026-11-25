@@ -37,6 +37,7 @@ ol.shares code, .mono { font: 500 12px var(--mono); color: var(--dim); word-brea
 .fine { color: var(--dim); font-size: 14px; margin: 0; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 @media (max-width: 560px) { .three { grid-template-columns: 1fr; } }
+.estate { margin: 10px 0 0; padding-left: 22px; } .estate li { margin: 0 0 12px; overflow-wrap: anywhere; }
 </style>
 <script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Sealed Letters", "description": "Write a letter that opens later: on a date, or if you stop checking in. Its key is split among friends you choose, so no company, and no single friend.", "url": "https://mentifaber.org/letters", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/letters-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
 </head>
@@ -82,19 +83,29 @@ ol.shares code, .mono { font: 500 12px var(--mono); color: var(--dim); word-brea
     };
   }
 
+  // a Digital Estate (/estate) is a letter that carries a ledger: each account or device, and what should become of it
+  const KIND = { account: "Account", device: "Device", money: "Bank or money", subscription: "Subscription", document: "Document", other: "Something else" };
+  const WISH = { pass: "Give it to", download: "Save what's in it, then close it", memorial: "Keep it up as a memorial", close: "Close it", keep: "Keep it running", other: "See the note" };
+  function estate(letter) {
+    const es = Array.isArray(letter.estate.entries) ? letter.estate.entries : [];
+    return '<h1>A digital <span>estate</span></h1><div class="paper"><p class="fine">' + (letter.from ? "From " + esc(letter.from) + ". " : "") + "Written " + esc(day(letter.written)) + ". Opened here, in your browser.</p>" +
+      (letter.estate.msg ? '<div class="opened">' + esc(letter.estate.msg) + "</div>" : "") + '<ol class="estate">' + es.map((e) => "<li><b>" + esc(e.name) + "</b> <span class=\"fine\">" + esc(KIND[e.kind] || "") + "</span><div>" +
+        esc(e.wish === "pass" ? "Give it to " + (e.to || "(no one named)") : (WISH[e.wish] || "") + (e.to && e.wish !== "close" ? " (" + e.to + ")" : "")) + "</div>" + (e.where ? '<div class="fine">Where to find it: ' + esc(e.where) + "</div>" : "") + (e.note ? '<div class="fine">' + esc(e.note) + "</div>" : "") + "</li>").join("") + "</ol></div>";
+  }
+
   async function open(first) {
     let L; try { L = await api("/" + first.id); } catch (e) { main.innerHTML = '<h1>Sealed <span>Letters</span></h1><div class="paper"><p class="status bad">' + esc(e.message) + "</p></div>"; return; }
     const have = new Map([[first.x, first]]);
     const draw = (msg) => {
       main.innerHTML = '<h1>A sealed <span>letter</span></h1><div class="paper sealed"><div class="wax" aria-hidden="true">✦</div><p>You hold share ' + first.x + ". It takes " + L.k + " of the " + L.n + " friends' links to open it" + (L.lock ? (L.open ? "" : L.lock.type === "date" ? ", and it can't open before " + esc(day(L.opens)) : ", and only if its writer stops checking in (not before " + esc(day(L.opens)) + ")") : "") + '.</p><p class="fine">' + have.size + " of " + L.k + " so far.</p></div>" +
-        (have.size < L.k ? '<div class="paper"><label>Paste the other friends\' links<textarea id="more" placeholder="One per line"></textarea></label><div class="row"><button class="btn pri" id="add" type="button">Add them</button><span class="status" id="st">' + esc(msg || "") + "</span></div></div>" : "");
+        (have.size < L.k ? '<div class="paper"><label>Paste the other friends\' links<textarea id="more" placeholder="One per line"></textarea></label><div class="row"><button class="btn pri" id="add" type="button">Add them</button><span class="status" id="st">' + esc(msg || "") + "</span></div></div>" : msg ? '<div class="paper"><p class="status" id="st" role="status">' + esc(msg) + "</p></div>" : ""); // enough links, but the lock hasn't opened: say so
       if ($("#add")) $("#add").onclick = () => { let bad = 0; for (const line of $("#more").value.split(/\s+/)) { if (!line) continue; const s = SL.readShare(line); if (!s || s.id !== first.id) { bad++; continue; } have.set(s.x, s); } tryOpen(bad ? bad + " of those weren't links to this letter." : ""); };
     };
     const tryOpen = async (msg) => {
       if (have.size < L.k) return draw(msg);
       if (L.lock && !L.open) { L = await api("/" + first.id); if (!L.open) return draw("You have enough friends' links, but the letter isn't allowed to open yet."); }
       try { const K = SL.combine([...have.values()].slice(0, L.k)), key = L.S ? SL.xor(K, SL.unhex(L.S)) : K, letter = await SL.unseal(L.ct, L.iv, key);
-        main.innerHTML = '<h1>A letter</h1><div class="paper"><div class="opened">' + esc(letter.body) + "</div>" + (letter.from ? '<p style="text-align:right;font-family:var(--serif);font-size:18px">— ' + esc(letter.from) + "</p>" : "") + '<p class="fine">Written ' + esc(day(letter.written)) + ". Opened here, in your browser.</p></div>";
+        main.innerHTML = letter.estate ? estate(letter) : '<h1>A letter</h1><div class="paper"><div class="opened">' + esc(letter.body) + "</div>" + (letter.from ? '<p style="text-align:right;font-family:var(--serif);font-size:18px">— ' + esc(letter.from) + "</p>" : "") + '<p class="fine">Written ' + esc(day(letter.written)) + ". Opened here, in your browser.</p></div>";
       } catch (e) { draw("Those links don't open it together. Check they're all for this letter, from different friends."); }
     };
     tryOpen();
