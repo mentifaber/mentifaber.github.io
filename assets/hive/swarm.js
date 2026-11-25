@@ -18,8 +18,8 @@
   // ── home: launch, and the missions so far (finished ones can be run straight from the list) ──
   async function home() {
     cur = null; clearInterval(timer); $("home").classList.remove("hidden"); $("proj").classList.add("hidden"); history.replaceState(null, "", "/hive-app#swarm");
-    const j = await api("/list").catch(() => ({ projects: [] })); owner = !!j.owner;
-    $("swho").innerHTML = owner ? "Signed in as the owner: no daily limit, set the budget, and every key in your vault joins in." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm builds it, and you can run it right here.";
+    const m0 = mine(), j = await api("/list", Object.keys(m0).length ? { mine: m0 } : undefined).catch(() => ({ projects: [] })); owner = !!j.owner; // a visitor sees the published projects and the ones this browser started
+    $("swho").innerHTML = owner ? "Signed in as the owner: no daily limit, set the budget, and every key in your vault joins in." : "Anyone can start a project: two a day each, up to 150 model calls a project. Describe what you want built; the swarm builds it, and you can run it right here. Your projects stay with this browser; only results the owner publishes are shown to everyone.";
     $("go").disabled = false; $("caprow").classList.toggle("hidden", !owner);
     const mineNow = mine(), canDel = (p) => owner || mineNow[p.id];
     $("purge").classList.toggle("hidden", !owner || !(j.projects || []).some((p) => /done|stopped|failed/.test(p.status)));

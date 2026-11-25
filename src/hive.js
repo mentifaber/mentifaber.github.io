@@ -307,7 +307,18 @@ export class Hive extends DurableObject {
       return Tasks.route(this, path, b, J, url.origin, async (a) => { Genesis.queueAlert(this, a); await Genesis.flush(this); }); }
     if (path.startsWith("/genesis")) { if (!owner) return J({ error: "AutoFaber is the owner's: sign in on Vigil first" }, 401); return Genesis.route(this, path, b, J); }
     if (path === "/list") { let by = {}; try { by = Object.fromEntries(q.exec("SELECT pid, by_ FROM idea WHERE pid IS NOT NULL").toArray().map((r) => [r.pid, r.by_])); } catch (e) {} // idea: Genesis's table (missions from its ideas)
-      return J({ owner, projects: q.exec("SELECT id,title,status,verdict,calls,ts,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj ORDER BY ts DESC LIMIT 60").toArray().map((p) => ({ ...p, has: !!p.has, by: by[p.id] || undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
+      // who sees which: the owner, every project; anyone else, only the projects the owner has published (live), plus the
+      // ones this browser started (it proves that with each project's control key, sent as {mine: {id: ctok}})
+      const sel = "SELECT id,title,status,verdict,calls,ts,ctok,(final IS NOT NULL) has,(SELECT slug FROM pub WHERE pid=proj.id) slug,(SELECT live FROM pub WHERE pid=proj.id) live FROM proj";
+      let rows;
+      if (owner) rows = q.exec(sel + " ORDER BY ts DESC LIMIT 60").toArray();
+      else {
+        const mine = b.mine && typeof b.mine === "object" && !Array.isArray(b.mine) ? Object.entries(b.mine).filter(([id, t]) => /^[0-9a-f]{8}$/.test(id) && /^[0-9a-f]{32}$/.test(String(t))).slice(0, 50) : [];
+        const own = mine.length ? q.exec(sel + " WHERE id IN (" + mine.map(() => "?").join(",") + ")", ...mine.map(([id]) => id)).toArray().filter((r) => r.ctok && r.ctok === b.mine[r.id]) : [];
+        const pub = q.exec(sel + " WHERE id IN (SELECT pid FROM pub WHERE live=1) ORDER BY ts DESC LIMIT 60").toArray();
+        rows = [...new Map([...own, ...pub].map((r) => [r.id, r])).values()].sort((a, c) => c.ts - a.ts).slice(0, 60);
+      }
+      return J({ owner, projects: rows.map(({ ctok, ...p }) => ({ ...p, has: !!p.has, by: owner ? by[p.id] || undefined : undefined, slug: p.slug || undefined, live: p.slug ? !!p.live : undefined })) }); }
     if (path === "/voice" || path.startsWith("/voice/")) return Voice.route(this, path, b, owner, req, J, url.origin).catch((e) => J({ error: String(e && e.message || e).slice(0, 200) }, 500)); // guest voice links (src/hive-voice.js)
     if (path.startsWith("/keys")) return this.keys(path, b, owner, J);
     if (path === "/voices") return J({ voices: await this.voices(owner) });
@@ -354,6 +365,15 @@ export class Hive extends DurableObject {
     const p = b.id || b.project ? q.exec("SELECT * FROM proj WHERE id=?", String(b.id || b.project)).toArray()[0] : null;
     if (!p) return J({ error: "no such project" }, 404);
     const ctl = owner || (b.ctok && p.ctok && b.ctok === p.ctok), cap = p.cap || MAX_CALLS;
+    // A project is private to the owner and to whoever started it (the control key). The one exception is a result the
+    // owner has published: anyone may see its title, status and that result (the same as its public page, /p/<slug>),
+    // never its brief, tasks, agents, log, versions or join key. A private project reads as "no such project" to anyone
+    // else, so ids can't be probed. Visiting AIs use their own join key (/join, /submit) and aren't affected.
+    const shown = q.exec("SELECT slug, live FROM pub WHERE pid=?", p.id).toArray()[0], open = !!(shown && shown.live && p.final);
+    if (!ctl && !open && path !== "/join" && path !== "/submit") return J({ error: "no such project" }, 404);
+    if (path === "/state" && !ctl) return J({ project: { id: p.id, title: p.title, status: p.status, verdict: p.verdict || undefined, calls: p.calls, max: cap, final: p.final, mine: false, owner: false, public: true,
+      versions: [], pub: { url: url.origin + "/p/" + shown.slug, live: true } }, tasks: [], agents: [], feed: [] });
+    if (!ctl && path !== "/join" && path !== "/submit") return J({ error: "only whoever started this project can see that" }, 403);
     if (path === "/state") {
       const since = +b.since || 0;
       return J({ project: { id: p.id, title: p.title, brief: p.brief, status: p.status, verdict: p.verdict || undefined, quota_until: this.quota && Date.now() < this.quota ? this.quota : undefined, calls: p.calls, max: cap, final: p.final, mine: !!ctl, owner,
