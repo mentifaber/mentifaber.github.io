@@ -86,5 +86,18 @@
   "background_color": "#08080a",
   "theme_color": "#08080a"
  },
- "data": "Live: every shelf comes from its open source when you open it."
+ "data": "Live: every shelf comes from its open source when you open it.",
+ "verbs": [
+  {
+   "name": "find",
+   "label": "Find something to watch or hear",
+   "changes": false,
+   "desc": "Searches MentiPlayer's open sources and shows what it finds.",
+   "args": {
+    "what": "string",
+    "kind?": "enum:all|music|movie|tv|video|podcast|radio|audiobook"
+   },
+   "words": "play find watch listen music movie film show podcast radio song audiobook put on"
+  }
+ ]
 }

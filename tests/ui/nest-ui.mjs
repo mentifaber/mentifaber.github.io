@@ -146,7 +146,8 @@ ok("the owner downloads a backup: one file with the list, picks, gifts and choic
 // the owner restores from that file after losing an item and its photo: both come back, through the Restore panel
 const lostItem = Object.keys(bk.docs).find((k) => k.startsWith("items/") && bk.docs[k].imageId), lostPhoto = bk.docs[lostItem].imageId;
 db.prepare("DELETE FROM doc WHERE path=?").run(lostItem); db.prepare("DELETE FROM photo WHERE id=?").run(lostPhoto); await op.reload(); await op.click("#tab-room");
-await op.waitForSelector("#restore select option", { state: "attached" }); await op.setInputFiles("#restore-file", await dl.path()); await op.click("#restore-file-go");
+await op.waitForSelector("#restore select option", { state: "attached" }); await op.setInputFiles("#restore-file", await dl.path()); await op.evaluate(() => renderBackup()); // the room redraws (new data arrived) between choosing the file and pressing Restore: the file stays chosen
+await op.click("#restore-file-go");
 await op.waitForSelector(".toast:has-text('Restored')"); assert.ok(db.prepare("SELECT 1 FROM doc WHERE path=?").get(lostItem), "the item is back"); assert.ok(db.prepare("SELECT 1 FROM photo WHERE id=?").get(lostPhoto), "and its photo, from the file");
 await op.waitForFunction(() => [...document.querySelectorAll("#restore-day option")].some((o) => /Just before a restore/.test(o.textContent)), null, { timeout: 8000 });
 ok("the owner restores from the downloaded file: the lost item and its photo come back, and the state just before is listed to undo it");

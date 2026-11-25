@@ -221,3 +221,10 @@ main { max-width: 1100px; margin: 0 auto; padding: 18px 16px 40px; min-height: 1
 .sheet .ico { border-radius: 18px; box-shadow: 0 0 30px rgba(255,138,61,.3); } .sheet h2 { margin: 2px 0 0; font-size: 24px; }
 .sheet ol { text-align: left; margin: 4px 0; padding-left: 22px; color: #ddd5e6; font-size: 16px; line-height: 1.6; } .sheet li { margin: 4px 0; } .sheet li::marker { color: var(--molten); font-family: var(--mono); }
 .sheet .btn { width: 100%; }
+/* ---- other makers' apps (src/makers.js) ---- */
+.list.makers .maker { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 4px 14px; align-items: start; padding: 14px 0; border-bottom: 1px solid rgba(255,195,90,.14); }
+.mk-tile { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: hsl(var(--h) 60% 22%); color: hsl(var(--h) 90% 78%); grid-row: span 2; }
+.mk-tile svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.mk-t b { display: block; font-size: 16px; } .mk-t small { color: var(--dim); font: 12px var(--mono); } .mk-t p { margin: 4px 0 0; color: var(--dim); font-size: 14px; }
+.mk-go { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.mk-invite { color: var(--dim); font-size: 14px; margin-top: 14px; } .mk-invite a { color: var(--molten, #ff8a3d); }

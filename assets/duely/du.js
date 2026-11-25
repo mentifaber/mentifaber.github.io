@@ -122,4 +122,15 @@ async function polish(inv, s, b) {
 if (!sel && INV[0]) sel = INV[0].id;
 draw();
 window.Duely = { INV: () => INV, check, draft };
+// Faber Verbs (declared in tools/site/content/duely.json): what AutoFaber may ask Duely; FaberOS asks you before mark-paid
+if (window.Faber) Faber.verbs({
+  owed: () => { const open = INV.filter((i) => !i.paid); if (!open.length) return INV.length ? "Nothing is owed: every invoice in Duely is paid." : "There are no invoices in Duely yet.";
+    const sums = Object.entries(open.reduce((a, i) => ((a[i.cur] = (a[i.cur] || 0) + i.amount), a), {})).map(([c, v]) => money(v, c)).join(" + ");
+    return open.length + " open (" + sums + "): " + open.slice(0, 6).map((i) => i.client + " " + money(i.amount, i.cur) + (late(i) ? ", " + late(i) + " day" + (late(i) === 1 ? "" : "s") + " late" : ", not due yet")).join("; ") + (open.length > 6 ? "; and " + (open.length - 6) + " more" : "") + "."; },
+  "mark-paid": (a) => { const q = String(a.who || "").trim().toLowerCase().replace(/^#/, ""); if (!q) throw new Error("Say whose invoice, or its number.");
+    const hit = INV.filter((i) => !i.paid && (String(i.num).toLowerCase() === q || i.client.toLowerCase().includes(q)));
+    if (!hit.length) throw new Error("No open invoice matches \u201c" + a.who + "\u201d.");
+    if (hit.length > 1) throw new Error("More than one open invoice matches: " + hit.map((i) => i.client + " #" + i.num).join(", ") + ". Say the invoice number.");
+    hit[0].paid = Date.now(); sel = hit[0].id; save(); draw(); return "Marked paid: " + hit[0].client + ", invoice #" + hit[0].num + " (" + money(hit[0].amount, hit[0].cur) + "). Its reminders stop."; },
+});
 })();

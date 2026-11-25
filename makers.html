@@ -25,6 +25,9 @@ table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 14.
 th { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); background: rgba(214,166,71,.06); } td:first-child { font: 600 13px var(--mono); color: var(--gold-hi); white-space: nowrap; }
 pre { background: #0f0c08; border: 1px solid var(--line); border-radius: 10px; padding: 14px; overflow-x: auto; font: 13px/1.55 var(--mono); color: #e8dcc4; }
 code { font: 13px var(--mono); color: var(--gold-hi); }
+.in { width: 100%; font: 15px var(--sans); padding: 10px 12px; background: #0f0c08; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; margin-top: 4px; }
+label { font-size: 14px; color: var(--ink); }
+[hidden] { display: none !important; }
 textarea { width: 100%; min-height: 220px; font: 13px/1.5 var(--mono); padding: 12px; background: #0f0c08; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
 .btn { font: 600 15px var(--sans); padding: 11px 16px; border-radius: 8px; border: 1px solid var(--gold); background: var(--gold); color: #1a1206; cursor: pointer; }
 .btn.ghost { background: transparent; color: var(--gold-hi); }
@@ -39,7 +42,7 @@ ol.steps { padding-left: 20px; display: grid; gap: 6px; }
 <div class="wrap">
   <div class="top"><span>Mentifaber · FaberOS for makers</span><a href="os">Open FaberOS</a></div>
   <h1>Make apps for <span>FaberOS</span></h1>
-  <p class="dim">FaberOS runs web apps in windows, with one place for permissions, a shared file Shelf, notifications, and AutoFaber, an AI that can operate any app that says what it can do. Foundry, its app store, is opening to other makers. This page is everything an app needs, and a checker for your manifest.</p>
+  <p class="dim">FaberOS runs web apps in windows, with one place for permissions, a shared file Shelf, notifications, and AutoFaber, an AI that can operate any app that says what it can do. Foundry, its app store, is open to other makers: send your app from this page, and once it's reviewed it appears in Foundry and FaberOS. This page is everything an app needs, and a checker for your manifest.</p>
 
   <h2>1 · The manifest</h2>
   <p>One JSON object, format <code>faberos/1</code>. It's the same shape the workshop's own apps use.</p>
@@ -87,26 +90,65 @@ Faber.verbs({ "add-transaction": (a) => …,        // what AutoFaber may ask it
     { "name": "next-tide", "label": "Tell me the next tide", "changes": false, "args": { "harbour?": "string" } }
   ]
 }</textarea>
-  <div class="row"><button class="btn" id="chk" type="button">Check it</button><button class="btn ghost" id="send" type="button" hidden>Send it to Foundry</button></div>
-  <div id="out" role="status" aria-live="polite"></div></div>
+  <div class="row"><button class="btn" id="chk" type="button">Check it</button></div>
+  <div id="out" role="status" aria-live="polite"></div>
+  <form id="sendf" hidden class="row" style="align-items:flex-end">
+    <label style="flex:1 1 220px">Your email <span class="dim">(only the workshop sees it)</span><br><input class="in" id="mail" type="email" required maxlength="120" autocomplete="email"></label>
+    <label style="flex:1 1 180px">Shown as made by<br><input class="in" id="by" maxlength="60" placeholder="you or your studio" autocomplete="organization"></label>
+    <label style="flex:1 1 100%">Anything the reviewer should know <span class="dim">(optional)</span><br><input class="in" id="note" maxlength="1000"></label>
+    <button class="btn" id="send" type="submit">Send it to Foundry</button>
+  </form></div>
 
   <h2>5 · Into Foundry</h2>
-  <ol class="steps"><li>Check the manifest here until it passes.</li><li>Send it with "Send it to Foundry": it opens an email to the workshop with the manifest attached as text.</li><li>Each app is opened and tried by hand: what it does, what it asks for, that its verbs do what they say.</li><li>Accepted apps appear in Foundry and in FaberOS's launcher, and AutoFaber can operate their verbs.</li></ol>
+  <ol class="steps"><li>Check the manifest here until it passes, then send it. You get a private link to follow it; keep it, it's also how you send updates.</li><li>Each app is opened and tried by hand: what it does, what it asks for, that its verbs do what they say. You hear back on your link, with a note if something needs changing.</li><li>Approved apps appear in Foundry and in FaberOS's launcher, marked with who made them, and AutoFaber can operate their verbs. An update waits for review while the approved version stays listed.</li><li>In FaberOS your app runs in its own sandboxed window: it talks to FaberOS only from your app's own address and gets only the permissions it declares.</li></ol>
+  <div id="status" class="panel" hidden></div>
+  <div id="review" hidden><h2>The workshop's review</h2><div id="queue"></div></div>
   <p class="dim">Questions: <a href="contact" style="color:var(--gold-hi)">write to the workshop</a>.</p>
 </div>
 <script src="assets/os/validate.js"></script>
 <script>
 (() => {
-  const $ = (id) => document.getElementById(id), esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const $ = (id) => document.getElementById(id), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const api = async (path, body) => { const r = await fetch("/api/makers/" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Foundry didn't answer (" + r.status + ")"); return j; };
+  const WORD = { pending: "Waiting for review", approved: "Approved: in Foundry and FaberOS", changes: "Sent back: see the note", pulled: "Pulled from Foundry" };
+  const saved = (() => { try { return JSON.parse(localStorage.getItem("makers:links") || "{}"); } catch (e) { return {}; } })();
   let good = null;
   $("chk").onclick = () => {
-    let m; try { m = JSON.parse($("man").value); } catch (e) { $("out").innerHTML = '<p class="bad">That isn\'t valid JSON: ' + esc(e.message) + "</p>"; $("send").hidden = true; return; }
-    const r = FaberValidate(m); good = r.ok ? m : null; $("send").hidden = !r.ok;
+    let m; try { m = JSON.parse($("man").value); } catch (e) { $("out").innerHTML = '<p class="bad">That isn\'t valid JSON: ' + esc(e.message) + "</p>"; $("sendf").hidden = true; return; }
+    const r = FaberValidate(m); good = r.ok ? m : null; $("sendf").hidden = !r.ok;
     $("out").innerHTML = (r.ok ? '<p class="ok">✓ This manifest is ready for FaberOS.</p>' : '<p class="bad">' + r.errors.length + " thing" + (r.errors.length > 1 ? "s" : "") + " to fix:</p><ul>" + r.errors.map((x) => '<li class="bad">' + esc(x) + "</li>").join("") + "</ul>") +
       (r.warnings.length ? '<ul>' + r.warnings.map((x) => '<li class="warn">' + esc(x) + "</li>").join("") + "</ul>" : "");
   };
-  $("send").onclick = () => { if (!good) return; location.href = "mailto:anders@mentifaber.org?subject=" + encodeURIComponent("[Foundry] " + good.name + " (" + good.id + ")") + "&body=" + encodeURIComponent("An app for FaberOS and Foundry.\n\nManifest:\n\n" + JSON.stringify(good, null, 2)); };
+  $("sendf").onsubmit = async (e) => {
+    e.preventDefault(); if (!good) return; $("send").disabled = true;
+    try { const r = await api("submit", { manifest: good, contact: $("mail").value.trim(), by: $("by").value.trim(), note: $("note").value.trim(), token: saved[good.id] || undefined });
+      saved[r.id] = r.token; try { localStorage.setItem("makers:links", JSON.stringify(saved)); } catch (x) {}
+      location.hash = "status=" + r.id + "." + r.token; await showStatus(); $("status").scrollIntoView({ block: "center" });
+    } catch (x) { $("out").insertAdjacentHTML("beforeend", '<p class="bad">' + esc(x.message) + "</p>"); }
+    $("send").disabled = false;
+  };
+  async function showStatus() {
+    const m = /^#status=([a-z0-9-]{2,40})\.([0-9a-f]{32})$/.exec(location.hash); if (!m) return;
+    const el = $("status"); el.hidden = false;
+    try { const a = (await api("status?id=" + m[1] + "&t=" + m[2])).app;
+      el.innerHTML = "<h3 style=\"margin:0\">" + esc(a.name) + ' <span class="dim">(' + esc(a.id) + ")</span></h3><p class=\"" + (a.status === "approved" ? "ok" : a.status === "pending" ? "warn" : "bad") + '" id="st-word">' + esc(WORD[a.status] || a.status) + (a.update ? " · an update is waiting for review" : "") + "</p>" +
+        (a.note ? "<p><b>From the workshop:</b> " + esc(a.note) + "</p>" : "") + '<p class="dim">Keep this page\'s address: it\'s your link to this app. To send an update, check the new manifest above and send it from here.</p>';
+      saved[m[1]] = m[2]; try { localStorage.setItem("makers:links", JSON.stringify(saved)); } catch (x) {}
+    } catch (x) { el.innerHTML = '<p class="bad">' + esc(x.message) + "</p>"; }
+  }
+  async function showQueue() {
+    let q; try { q = await api("queue"); } catch (x) { return; } // only the workshop gets an answer
+    $("review").hidden = false; const box = $("queue");
+    if (!q.apps.length) { box.innerHTML = '<p class="dim">Nothing sent yet.</p>'; return; }
+    box.innerHTML = q.apps.map((a) => '<div class="panel" data-id="' + esc(a.id) + '"><b>' + esc(a.manifest.name) + '</b> <span class="dim">' + esc(a.id) + " · " + esc(WORD[a.status] || a.status) + (a.update ? " · update waiting" : "") + "</span>" +
+      "<p>" + esc(a.manifest.desc) + '</p><p class="dim">From ' + esc(a.by || "(no name)") + " · " + esc(a.contact) + (a.notes ? " · “" + esc(a.notes) + "”" : "") + '</p><p class="dim">Opens <a href="' + esc(a.manifest.entry) + '" target="_blank" rel="noopener noreferrer" style="color:var(--gold-hi)">' + esc(a.manifest.entry) + "</a> · asks for " + esc((a.manifest.permissions || []).join(", ") || "nothing") + " · verbs: " + esc((a.manifest.verbs || []).map((v) => v.name + (v.changes ? " (changes data)" : "")).join(", ") || "none") + (a.check.ok ? "" : ' · <span class="bad">' + esc(a.check.errors[0]) + "</span>") + "</p>" +
+      '<div class="row"><input class="in" placeholder="A note for the maker" maxlength="1000" style="flex:1 1 220px"><button class="btn" data-d="approve" type="button">Approve</button><button class="btn ghost" data-d="reject" type="button">Send back</button>' + (a.listed ? '<button class="btn ghost" data-d="pull" type="button">Pull</button>' : "") + "</div></div>").join("");
+  }
+  $("queue").onclick = async (e) => { const b = e.target.closest("button[data-d]"); if (!b) return; const card = b.closest("[data-id]"); b.disabled = true;
+    try { await api("review", { id: card.dataset.id, decision: b.dataset.d, note: card.querySelector("input").value.trim() }); await showQueue(); } catch (x) { alert(x.message); b.disabled = false; } };
+  addEventListener("hashchange", showStatus); showStatus(); showQueue();
 })();
 </script>
+
 </body>
 </html>
