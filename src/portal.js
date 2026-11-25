@@ -11,8 +11,10 @@
 // AutoFaber alert on its phone); the first good check after that says it's back and notes the outage on the job's
 // timeline, where the client sees it too. Each job keeps its last 30 days of checks, so both sides see the uptime.
 // The ids of jobs with a site are kept in "portal:sites", so the sweep reads only those jobs.
-const STATUSES = ["quote", "approved", "in-progress", "ready", "done", "cancelled"];
+// "request": someone asked for a quote on the services page and is waiting for one (src/portal.js request route)
+const STATUSES = ["request", "quote", "approved", "in-progress", "ready", "done", "cancelled"];
 const SERVICES = ["repair", "it", "hosting", "websites", "software", "other"];
+const REQUESTS_DAY = 5, OPEN_REQUESTS = 100, SERVICE_NAMES = { repair: "Tech repair", it: "IT services", hosting: "Web hosting", websites: "Website", software: "Software & AI", other: "Something else" };
 const MAX_JOBS = 500, MAX_TIMELINE = 200, CLIENT_MSGS_DAY = 30, UPTIME_DAYS = 30, FAILS_TO_ALERT = 2;
 const clean = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
 const money = (v) => { const n = Number(v); return isFinite(n) && n >= 0 && n < 1e7 ? Math.round(n * 100) / 100 : undefined; };
@@ -37,7 +39,7 @@ function uptimeOf(j) {
 }
 // what the client sees: everything but the token and the workshop's private notes
 const forClient = (j) => ({ id: j.id, title: j.title, service: j.service, status: j.status, client: { name: j.client.name }, quote: j.quote, approvedAt: j.approvedAt || null,
-  invoice: j.invoice || null, passport: j.passport || null, site: j.site ? { url: j.site, check: j.siteCheck || null, uptime: uptimeOf(j) } : null, timeline: j.timeline.filter((t) => !t.private), created: j.created, updated: j.updated });
+  invoice: j.invoice || null, passport: j.passport || null, site: j.site ? { url: j.site, check: j.siteCheck || null, uptime: uptimeOf(j), status: j.statusId ? "/status#" + j.statusId : null } : null, timeline: j.timeline.filter((t) => !t.private), created: j.created, updated: j.updated });
 
 async function probe(url, f = fetch) {
   const t0 = Date.now();
@@ -95,14 +97,21 @@ function apply(j, b, now) {
   if (b.clientEmail !== undefined) j.client.email = clean(b.clientEmail, 120);
   if (b.quote !== undefined) { const q = b.quote === null ? null : quoteOf(b.quote); if (b.quote !== null && !q) throw err("a quote needs at least one line with an amount"); j.quote = q; j.approvedAt = null; if (q) j.timeline.push({ at: now, by: "workshop", text: "Quote: " + q.currency + " " + q.total.toFixed(2) }); }
   if (b.status !== undefined) { if (!STATUSES.includes(b.status)) throw err("unknown status"); if (b.status !== j.status) j.timeline.push({ at: now, by: "workshop", text: "Status: " + b.status.replace("-", " ") }); j.status = b.status; }
-  if (b.invoice !== undefined) { if (b.invoice === null) j.invoice = null; else { const a = money(b.invoice.amount); if (a === undefined) throw err("an invoice needs an amount"); j.invoice = { amount: a, due: /^\d{4}-\d\d-\d\d$/.test(b.invoice.due) ? b.invoice.due : null, paid: !!b.invoice.paid, note: clean(b.invoice.note, 300) }; } }
+  if (b.invoice !== undefined) { if (b.invoice === null) j.invoice = null; else { const a = money(b.invoice.amount); if (a === undefined) throw err("an invoice needs an amount"); const pay = clean(b.invoice.link, 500); if (pay && !/^https:\/\/[^\s"<>]+$/.test(pay)) throw err("the payment link has to be an https:// address");
+    const was = j.invoice || {}; j.invoice = { amount: a, number: clean(b.invoice.number, 30), due: /^\d{4}-\d\d-\d\d$/.test(b.invoice.due) ? b.invoice.due : null, paid: !!b.invoice.paid, note: clean(b.invoice.note, 300), link: pay || null, claimed: b.invoice.paid ? null : was.claimed || null };
+    if (j.invoice.paid && !was.paid) j.timeline.push({ at: now, by: "workshop", text: "Payment received, thank you" }); } }
   if (b.passport !== undefined) { if (b.passport === null || b.passport === "") j.passport = null; else { const p = passportOf(b.passport); if (!p) throw err("that isn't a Device Passport link"); j.passport = p; j.timeline.push({ at: now, by: "workshop", text: "Device Passport issued" }); } }
-  if (b.site !== undefined) { if (b.site === null || b.site === "") { j.site = null; j.siteCheck = null; } else { const s = siteOf(b.site); if (!s) throw err("that isn't a web address"); j.site = s; j.siteCheck = null; } }
+  if (b.site !== undefined) { if (b.site === null || b.site === "") { j.site = null; j.siteCheck = null; } else { const s = siteOf(b.site); if (!s) throw err("that isn't a web address"); j.site = s; j.siteCheck = null; if (!j.statusId) j.statusId = rid(8); } }
   if (b.note !== undefined) { const t = clean(b.note, 2000); if (t) j.timeline.push({ at: now, by: "workshop", text: t, private: !!b.private }); }
   j.timeline = j.timeline.slice(-MAX_TIMELINE); j.updated = now; return j;
 }
 
-export async function portal(req, env, json, owner) {
+// a hosted site's public status page (/status#<id>): up or not, and the last 30 days, with nothing about the client
+function statusOf(j) {
+  const u = j.uptime || { days: {} }, days = Object.entries(u.days || {}).sort(([a], [c]) => (a < c ? -1 : 1)).slice(-30).map(([d, [n, ok]]) => [d, n ? Math.round((ok / n) * 1000) / 10 : null]);
+  return { site: j.site.replace(/^https?:\/\//, "").replace(/\/$/, ""), url: j.site, check: j.siteCheck ? { up: j.siteCheck.up, at: j.siteCheck.at, ms: j.siteCheck.ms } : null, uptime: uptimeOf(j), down: u.down || null, days };
+}
+export async function portal(req, env, json, owner, deps = {}) {
   const url = new URL(req.url), parts = url.pathname.replace(/^\/api\/portal\/?/, "").split("/").filter(Boolean);
   const st = env.STORE.get(env.STORE.idFromName("main")), now = Date.now();
   let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return json({ error: "send JSON" }, 400); } if (!b || typeof b !== "object") b = {}; }
@@ -123,6 +132,28 @@ export async function portal(req, env, json, owner) {
       const seen = await checkSite(st, j); seen.uptimeSummary = uptimeOf(seen); if (seen.unread) { seen.unread = false; await st.kvPut("job:" + id, seen); seen.unread = true; } // opening it marks it read; this answer still says it was new
       return json({ job: seen });
     }
+    // ── someone asks for a quote on the services page: a job waits on the board, and they get its link at once ──
+    if (parts[0] === "request" && req.method === "POST") {
+      if (b.hp) return json({ ok: true }); // the form's honeypot: a bot filled the hidden field
+      const msg = clean(b.msg, 2000), email = clean(b.email, 120), service = SERVICES.includes(b.service) ? b.service : "other", what = clean(b.what, 120);
+      if (!msg) throw err("say a little about what's going on");
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw err("that email looks off: check it or leave it blank");
+      const ip = req.headers.get("cf-connecting-ip") || "?"; if (!(await st.hit("portal-req:" + ip, REQUESTS_DAY, 864e5))) throw err("that's today's " + REQUESTS_DAY + " requests from here; write to the workshop instead", 429);
+      const all = await st.kvList("job:"); if (all.length >= MAX_JOBS || all.filter(([, j]) => j.status === "request").length >= OPEN_REQUESTS) throw err("the workshop has a lot of requests waiting: please write instead", 503);
+      const when = ["Whenever suits", "This week", "It's urgent"].includes(b.when) ? b.when : "Whenever suits";
+      const j = { id: rid(5), token: rid(16), client: { name: clean(b.name, 80), email }, status: "request", service, title: (what || SERVICE_NAMES[service]).slice(0, 120), timeline: [], created: now, updated: now, unread: true };
+      j.timeline.push({ at: now, by: "client", text: "Asked for a quote (" + SERVICE_NAMES[service] + (what ? ", " + what : "") + "; " + when.toLowerCase() + "): " + msg });
+      await st.kvPut("job:" + j.id, j);
+      if (deps.alert) await deps.alert({ title: "New request: " + SERVICE_NAMES[service] + (j.client.name ? " from " + j.client.name : ""), body: (what ? what + " · " : "") + msg.slice(0, 140), urgent: when === "It's urgent", url: "/portal" }).catch(() => {});
+      return json({ id: j.id, link: "/portal#" + j.id + "." + j.token });
+    }
+    // ── a hosted site's public status page ──
+    if (parts[0] === "status" && /^[0-9a-f]{16}$/.test(parts[1] || "") && req.method === "GET") {
+      let ids = await st.kvGet("portal:sites"); // built by the sweep; built here if a link is opened first
+      if (!Array.isArray(ids)) { ids = (await st.kvList("job:")).filter(([, j]) => j.site && j.status !== "cancelled").map(([, j]) => j.id); await st.kvPut("portal:sites", ids); }
+      for (const id of ids) { const j = await st.kvGet("job:" + id); if (j && j.site && j.statusId && same(j.statusId, parts[1])) return json(statusOf(await checkSite(st, j))); }
+      throw err("no status page here", 404);
+    }
     // ── a client's view, by link ──
     if (parts[0] === "job" && /^[0-9a-f]{10}$/.test(parts[1] || "")) {
       const t = req.method === "POST" ? String(b.t || "") : url.searchParams.get("t") || "";
@@ -132,6 +163,12 @@ export async function portal(req, env, json, owner) {
         if (!j.quote) throw err("there's no quote to approve yet"); if (j.status !== "quote") throw err("this quote has already been answered", 409);
         j.status = "approved"; j.approvedAt = now; j.timeline.push({ at: now, by: "client", text: "Approved the quote (" + j.quote.currency + " " + j.quote.total.toFixed(2) + ")" }); j.updated = now;
         await st.kvPut("job:" + j.id, j); return json({ job: forClient(j) });
+      }
+      if (req.method === "POST" && parts[2] === "paid") { // the client says they've paid; the workshop confirms when it arrives
+        if (!j.invoice) throw err("there's no invoice on this job"); if (j.invoice.paid) throw err("this invoice is already marked paid", 409);
+        if (!j.invoice.claimed) { j.invoice.claimed = now; j.timeline.push({ at: now, by: "client", text: "Says they've paid the invoice" + (j.invoice.number ? " #" + j.invoice.number : "") }); j.unread = true; j.updated = now; await st.kvPut("job:" + j.id, j);
+          if (deps.alert) await deps.alert({ title: "Paid? " + (j.client.name || j.title), body: "They say they've paid " + j.invoice.amount.toFixed(2) + ": check and mark it paid.", urgent: false, url: "/portal" }).catch(() => {}); }
+        return json({ job: forClient(j) });
       }
       if (req.method === "POST" && parts[2] === "message") {
         const text = clean(b.text, 2000); if (!text) throw err("write something first");
