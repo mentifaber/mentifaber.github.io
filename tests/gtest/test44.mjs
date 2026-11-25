@@ -127,7 +127,7 @@ ok("a screenshot is read for its name, brand, price, shop and category; a shop's
 const F = await import(REPO + "/src/nest-find.js");
 assert.equal(F.checkPhoto("https://x.example/p.png", product.buffer.slice(product.byteOffset, product.byteOffset + product.length)), true); assert.equal(F.checkPhoto("https://x.example/site-logo.png", product.buffer.slice(product.byteOffset, product.byteOffset + product.length)), false, "named like a logo");
 assert.equal(F.checkPhoto("", wideBanner.buffer.slice(wideBanner.byteOffset, wideBanner.byteOffset + wideBanner.length)), false, "banner-shaped");
-const fp = await F.findPhoto({ web: async () => Object.assign([], { images: ["https://img.example/brand-logo.png", "https://img.example/wide.png", "https://img.example/real.png", "https://img.example/millie-moon-newborn.png"] }) }, "Millie Moon Luxury Diapers, Newborn");
+const fp = await F.findPhoto({ web: async () => Object.assign([], { images: ["https://img.example/brand-logo.png", "https://img.example/wide.png", "https://img.example/real.png", "https://img.example/millie-moon-newborn.png"] }) }, "Millie Moon Luxury Diapers, Newborn", "Millie Moon");
 assert.deepEqual(fp, { image: "https://img.example/millie-moon-newborn.png", url: null, store: "", price: null, currency: "" }, "a pick's photo by image search: logos and banners skipped, and a photo from an unknown server that doesn't name the brand");
 ok("photos are checked: a logo by name or a banner by shape is never kept as a product's photo");
 console.log("nest without R2: all checks passed");

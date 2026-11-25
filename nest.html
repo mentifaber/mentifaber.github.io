@@ -962,7 +962,7 @@ function card(item, c) {
     else if (c.covered) foot.append(h("button", { class: "btn", disabled: true }, item.kind === "fund" ? "Goal reached" : "Already covered"));
     else foot.append(h("button", { class: "btn primary", disabled: S.readOnly || !S.db, onclick: () => openClaim(item.id) }, item.kind === "fund" ? "Chip in" : "I'll get this"));
   } else {
-    if (item.kind !== "fund" && !signUp(item)) { const F = window.nestSite ? nestSite.finds()[item.id] : null, // a sign-up isn't shopped for n = (F?.products || []).length, q = window.nestSite && nestSite.queued().includes(item.id);
+    if (item.kind !== "fund" && !signUp(item)) { const F = window.nestSite ? nestSite.finds()[item.id] : null, n = (F?.products || []).length, q = window.nestSite && nestSite.queued().includes(item.id);
       foot.append((item.options || []).length ? h("button", { class: "btn small", onclick: () => openFinder(item.id) }, "✦ " + plural(item.options.length, "pick"))
         : n ? h("button", { class: "btn small primary", onclick: () => openFinder(item.id) }, "✦ Pick from " + n)
         : q ? h("button", { class: "btn small", disabled: true }, "Finding…") : h("button", { class: "btn small", onclick: () => openFinder(item.id) }, "✦ Find products")); }
