@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/claim">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Claim Kit · Mentifaber</title>
+<meta name="description" content="A dispute, documented: photos, receipts and dated notes in one kit the workshop seals, which anyone can check hasn&#x27;t changed.">
+<meta name="theme-color" content="#0d0a0a">
+<link rel="icon" href="assets/icons/v2/claim.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/claim-180.png">
+<link rel="manifest" href="assets/manifests/claim.webmanifest">
+<style>
+/* Claim Kit: an evidence folder. Each case is a folder; its items run down a timeline in date order; sealing stamps the
+   folder shut with the workshop's seal and the date, in red, the way a clerk would. */
+:root { --bg: #0d0a0a; --sheet: #151010; --card: #1c1515; --line: #3d2c2a; --red: #e0574a; --red-hi: #ff8f7f; --ink: #f2e6e2; --dim: #ab9894; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a; --teal: #7fd6c4;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--red-hi); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--red-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--red-hi); margin: 22px 0 10px; }
+.lede { color: var(--dim); margin: 0 0 16px; max-width: 66ch; }
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin: 18px 0 0; }
+.tabs button { font: 600 15px var(--sans); color: var(--dim); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--red); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0f0b0b; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; }
+textarea.in { min-height: 64px; resize: vertical; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--red); background: var(--red); color: #1a0806; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--red-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.note { color: var(--dim); font-size: 14px; } .status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); }
+.cases { display: grid; gap: 8px; } .case-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.case-row button.open { all: unset; cursor: pointer; flex: 1; min-width: 0; } .case-row b { display: block; overflow-wrap: anywhere; } .case-row small { color: var(--dim); }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.ok { color: var(--ok); border-color: var(--ok); } .tag.warn { color: var(--warn); border-color: var(--warn); } .tag.w { color: var(--teal); border-color: var(--teal); }
+.items { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+.item { position: relative; margin: 0 0 10px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 12px; }
+.item::before { content: ""; position: absolute; left: -21px; top: 18px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+.thumb { width: 56px; height: 56px; border-radius: 8px; background: #0f0b0b; border: 1px solid var(--line); object-fit: cover; display: grid; place-items: center; font: 600 11px var(--mono); color: var(--dim); text-transform: uppercase; grid-row: span 3; }
+.item .nm { font-weight: 600; overflow-wrap: anywhere; } .item .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.item .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 6px; } .item .fields .in { margin-top: 2px; padding: 6px 8px; font-size: 14px; }
+.item .acts { display: flex; flex-wrap: wrap; gap: 12px; } .item .acts button, .item .acts label.lnk { background: none; border: 0; color: var(--dim); font: 13px var(--sans); text-decoration: underline; cursor: pointer; padding: 2px 0; }
+.notetext { white-space: pre-wrap; color: var(--ink); font-size: 14px; }
+.sealed { border: 2px solid var(--red); border-radius: 12px; padding: 14px 16px; margin-top: 14px; }
+.stamp { display: inline-block; font: 800 22px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--red); border: 3px solid var(--red); border-radius: 6px; padding: 5px 10px; transform: rotate(-2deg); }
+.verdict { border-radius: 10px; padding: 12px 14px; margin-top: 12px; } .verdict.ok { border: 1.5px solid var(--ok); color: var(--ok); } .verdict.bad { border: 1.5px solid var(--bad); color: var(--bad); }
+.checks { list-style: none; margin: 10px 0 0; padding: 0; } .checks li { border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 14px; overflow-wrap: anywhere; } .checks .y { color: var(--ok); } .checks .n { color: var(--bad); }
+.mono { font: 12px var(--mono); color: var(--dim); overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--red-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Claim Kit", "description": "A dispute, documented: photos, receipts and dated notes in one kit the workshop seals, which anyone can check hasn't changed.", "url": "https://mentifaber.org/claim", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/claim-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Claim Kit</span><a href="./">The workshop</a></div>
+  <h1>A dispute, <span>documented</span></h1>
+  <p class="lede">For an insurance claim, a deposit dispute or a warranty fight: put the photos, receipts, documents and dated notes in one case, in date order. The workshop seals the kit with its clock and its key, and you get one file to send. Anyone can check it, and if a single file has been changed, the check says which. Your files stay on this device: only their fingerprints are sent to be sealed.</p>
+  <div class="tabs" role="tablist"><button role="tab" id="t-build" aria-controls="p-build" aria-selected="true">Build a kit</button><button role="tab" id="t-check" aria-controls="p-check" aria-selected="false">Check a kit</button></div>
+
+  <section id="p-build" role="tabpanel" aria-labelledby="t-build">
+    <div id="list">
+      <h2>Your cases</h2>
+      <div class="cases" id="cases"></div>
+      <div class="bar"><button class="btn" id="new" type="button">Start a case</button><span class="note">Kept on this device only.</span></div>
+    </div>
+    <div id="case" hidden>
+      <div class="bar" style="margin-top:16px"><button class="btn ghost sm" id="back" type="button">← All cases</button></div>
+      <div class="panel">
+        <div class="grid2"><label>The case<input class="in" id="c-title" maxlength="100" placeholder="Flat 4B deposit"></label>
+          <label>What it's for<select class="in" id="c-kind"><option value="insurance">An insurance claim</option><option value="deposit">A deposit dispute</option><option value="warranty">A warranty claim</option><option value="other">Something else</option></select></label>
+          <label>Against <span class="note">(optional)</span><input class="in" id="c-party" maxlength="100" placeholder="Elm Street Lettings"></label>
+          <label>Amount in dispute, $ <span class="note">(optional)</span><input class="in" id="c-amount" type="number" min="0" step="0.01" inputmode="decimal"></label></div>
+      </div>
+      <h2>What's in it, by date</h2>
+      <ul class="items" id="items"></ul>
+      <p class="note" id="empty">Nothing yet. Add photos, receipts and documents, or write a dated note of what happened.</p>
+      <div class="panel">
+        <div class="bar" style="margin-top:0"><label class="btn" style="cursor:pointer">Add photos, receipts or documents<input id="files" type="file" multiple hidden></label><span class="status" id="f-st" role="status"></span></div>
+        <div class="grid2" style="margin-top:14px"><label>A dated note: what happened, who said what<textarea class="in" id="n-text" maxlength="1500" placeholder="Called the agent; she agreed the scuff was there at move-in."></textarea></label>
+          <label>On<input class="in" id="n-date" type="date"></label></div>
+        <div class="bar"><button class="btn ghost" id="n-add" type="button">Add the note</button></div>
+      </div>
+      <div id="sealbox" class="panel">
+        <p style="margin:0">When it's all in, seal it. The workshop signs the case and every file's fingerprint, in this order, with today's date. You get one zip to send: the files, the sealed record, and a summary anyone can read.</p>
+        <div class="bar"><button class="btn" id="seal" type="button">Seal and download the kit</button><span class="status" id="s-st" role="status"></span></div>
+      </div>
+      <div id="sealed" class="sealed" hidden></div>
+      <div class="bar"><button class="btn ghost sm" id="del" type="button">Delete this case</button></div>
+    </div>
+  </section>
+
+  <section id="p-check" role="tabpanel" aria-labelledby="t-check" hidden>
+    <div class="panel">
+      <p style="margin-top:0">Choose a Claim Kit zip, or the <code>claim.json</code> from one together with its files. Each file's fingerprint is worked out here, on this device, and compared with the record the workshop signed. Nothing is uploaded.</p>
+      <label class="btn" style="cursor:pointer">Choose the kit<input id="k-files" type="file" multiple accept=".zip,application/zip,application/json,.json,image/*,application/pdf,text/plain,*/*" hidden></label>
+      <div id="k-out" aria-live="polite"></div>
+    </div>
+  </section>
+</div>
+<script src="assets/seal/verify.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const KINDS = { insurance: "An insurance claim", deposit: "A deposit dispute", warranty: "A warranty claim", other: "Something else" };
+  const WHAT = { photo: "Photo", receipt: "Receipt", document: "Document", note: "Note" };
+  const MAX_ITEMS = 60, MAX_FILE = 25 * 1048576, MAX_KIT = 150 * 1048576;
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const dayOf = (ms) => { const d = new Date(ms); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const nice = (d) => (d ? new Date(d + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "no date");
+  const when = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
+  const size = (n) => (n < 1024 ? n + " B" : n < 1048576 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB");
+  const hex = async (data) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const tab = (t) => { for (const k of ["build", "check"]) { $("#t-" + k).setAttribute("aria-selected", String(k === t)); $("#p-" + k).hidden = k !== t; } };
+  $("#t-build").onclick = () => tab("build"); $("#t-check").onclick = () => tab("check");
+
+  // ── the cases, in IndexedDB on this device (files and all) ──
+  const db = new Promise((ok, no) => { const r = indexedDB.open("claimkit", 1); r.onupgradeneeded = () => r.result.createObjectStore("cases", { keyPath: "id" }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+  const tx = async (mode, fn) => { const d = await db; return new Promise((ok, no) => { const t = d.transaction("cases", mode), r = fn(t.objectStore("cases")); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); }); };
+  const all = () => tx("readonly", (s) => s.getAll()).then((x) => (x || []).sort((a, b) => b.updated - a.updated)).catch(() => []);
+  const put = (c) => { c.updated = Date.now(); return tx("readwrite", (s) => s.put(c)); };
+  let cases = [], cur = null; const urls = new Map();
+  const ordered = (c) => c.items.slice().sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999") || a.added - b.added);
+  // what the seal covers; if any of it changes after sealing, the kit needs sealing again
+  const stamp = (c) => JSON.stringify([c.title, c.kind, c.party, c.amount, ordered(c).map((i) => [i.what, i.name, i.sha256, i.date, i.note])]);
+  const fresh = (c) => !!(c.sealed && c.sealed.stamp === stamp(c));
+
+  async function drawCases() {
+    cases = await all();
+    $("#cases").innerHTML = cases.length ? cases.map((c) => '<div class="case-row"><button class="open" type="button" data-id="' + esc(c.id) + '"><b>' + esc(c.title || "An unnamed case") + "</b><small>" + esc(KINDS[c.kind] || "") + " · " + c.items.length + " item" + (c.items.length === 1 ? "" : "s") + "</small></button>" +
+      (c.sealed ? '<span class="tag ' + (fresh(c) ? "ok" : "warn") + '">' + (fresh(c) ? "sealed " + esc(new Date(c.sealed.at).toLocaleDateString()) : "changed since sealing") + "</span>" : '<span class="tag">not sealed</span>') + "</div>").join("")
+      : '<p class="note">No cases yet.</p>';
+  }
+  $("#cases").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) openCase(cases.find((c) => c.id === b.dataset.id)); };
+  $("#new").onclick = async () => { const c = { id: rid(), title: "", kind: "insurance", party: "", amount: "", items: [], created: Date.now() }; await put(c); openCase(c); $("#c-title").focus(); };
+  $("#back").onclick = () => { cur = null; $("#case").hidden = true; $("#list").hidden = false; drawCases(); };
+  function openCase(c) { if (!c) return; cur = c; $("#list").hidden = true; $("#case").hidden = false; $("#c-title").value = c.title; $("#c-kind").value = c.kind; $("#c-party").value = c.party || ""; $("#c-amount").value = c.amount || ""; $("#n-date").value = today(); drawCase(); }
+  for (const [id, k] of [["#c-title", "title"], ["#c-kind", "kind"], ["#c-party", "party"], ["#c-amount", "amount"]]) $(id).addEventListener("change", () => { if (!cur) return; cur[k] = $(id).value.trim(); put(cur); drawSealed(); });
+  // a field saves as it loses focus, so going back to the list saves what's being typed first
+  $("#back").addEventListener("pointerdown", () => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
+  $("#del").onclick = async () => { if (!cur || !confirm("Delete “" + (cur.title || "this case") + "” and everything in it from this device?")) return; const id = cur.id; await tx("readwrite", (s) => s.delete(id)); $("#back").click(); };
+
+  function thumb(i) {
+    if (i.what !== "note" && i.blob && /^image\//.test(i.type)) { if (!urls.has(i.id)) urls.set(i.id, URL.createObjectURL(i.blob)); return '<img class="thumb" alt="" src="' + urls.get(i.id) + '">'; }
+    return '<span class="thumb" aria-hidden="true">' + esc(i.what === "note" ? "note" : (i.name.split(".").pop() || "file").slice(0, 4)) + "</span>";
+  }
+  function drawCase() {
+    const list = ordered(cur); $("#empty").hidden = list.length > 0;
+    $("#items").innerHTML = list.map((i, k) => '<li class="item" data-id="' + esc(i.id) + '">' + thumb(i) +
+      '<div class="nm">' + (k + 1) + ". " + esc(i.what === "note" ? "Note" : i.name) + "</div>" +
+      '<div class="meta"><span class="tag">' + esc(WHAT[i.what]) + "</span>" + (i.bytes != null && i.what !== "note" ? '<span class="tag">' + size(i.bytes) + "</span>" : "") + (i.witness ? '<span class="tag w">witnessed ' + esc(new Date(i.wAt).toLocaleString()) + "</span>" : "") + "</div>" +
+      (i.what === "note" ? '<div class="notetext">' + esc(i.text) + "</div>" : "") +
+      '<div class="fields" style="grid-column:2">' + (i.what === "note" ? "" : '<label>Is a<select class="in" data-f="what" aria-label="What item ' + (k + 1) + ' is">' + ["photo", "receipt", "document"].map((w) => '<option value="' + w + '"' + (w === i.what ? " selected" : "") + ">" + WHAT[w] + "</option>").join("") + "</select></label>") +
+        '<label>Dated<input class="in" type="date" data-f="date" value="' + esc(i.date || "") + '" aria-label="Date of item ' + (k + 1) + '"></label>' +
+        (i.what === "note" ? "" : '<label>What it shows<input class="in" data-f="note" maxlength="300" value="' + esc(i.note || "") + '" aria-label="What item ' + (k + 1) + ' shows" placeholder="Optional"></label>') + "</div>" +
+      '<div class="acts" style="grid-column:2">' + (i.what === "photo" && !i.witness ? '<label class="lnk">Add its Witness record<input type="file" accept=".json,application/json" data-w hidden></label>' : "") + '<button type="button" data-rm>Remove</button></div></li>').join("");
+    drawSealed();
+  }
+  const itemOf = (el) => cur.items.find((x) => x.id === el.closest(".item").dataset.id);
+  $("#items").addEventListener("change", async (e) => {
+    const it = itemOf(e.target); if (!it) return;
+    if (e.target.matches("[data-w]")) { // a Witness record (from /witness) for this photo: it must be genuine and for this exact file
+      const f = e.target.files[0]; if (!f) return; let rec = ""; try { rec = JSON.parse(await f.text()).record; } catch (x) {}
+      let v = null; try { v = rec ? await WorkshopSeal.check(rec) : null; } catch (x) { return alert("Couldn't check it: " + x.message); }
+      if (!v || !v.good || v.body.kind !== "witness") return alert("That isn't a genuine Witness record.");
+      if (v.body.data.sha256 !== it.sha256) return alert("That Witness record is for a different photo (or this copy of the photo has been re-saved).");
+      it.witness = rec; it.wAt = v.body.iat; const c = cur; await put(c); if (cur === c) drawCase(); return;
+    }
+    const f = e.target.dataset.f; if (!f) return; it[f] = f === "date" ? (/^\d{4}-\d\d-\d\d$/.test(e.target.value) ? e.target.value : "") : e.target.value.trim().slice(0, 300);
+    const c = cur; await put(c); if (cur !== c) return; // the case was closed meanwhile (a field saves as it loses focus)
+    if (f === "date") drawCase(); else drawSealed();
+  });
+  $("#items").addEventListener("click", async (e) => { if (!e.target.closest("[data-rm]")) return; const it = itemOf(e.target); if (!it || !confirm("Remove " + (it.what === "note" ? "this note" : "“" + it.name + "”") + " from the case?")) return;
+    const c = cur; c.items = c.items.filter((x) => x !== it); urls.delete(it.id); await put(c); if (cur === c) drawCase(); });
+
+  async function addFiles(files) {
+    if (!cur) { const c = { id: rid(), title: "", kind: "insurance", party: "", amount: "", items: [], created: Date.now() }; await put(c); openCase(c); tab("build"); }
+    const st = $("#f-st"); st.className = "status"; let n = 0, used = cur.items.reduce((t, i) => t + (i.bytes || 0), 0);
+    for (const f of files) {
+      if (cur.items.length >= MAX_ITEMS) { st.className = "status bad"; st.textContent = "A kit holds at most " + MAX_ITEMS + " items."; break; }
+      if (f.size > MAX_FILE) { st.className = "status bad"; st.textContent = f.name + " is over 25 MB: send a smaller copy, or a link to it in a note."; continue; }
+      if (used + f.size > MAX_KIT) { st.className = "status bad"; st.textContent = "The kit would be over 150 MB."; break; }
+      st.textContent = "Fingerprinting " + f.name + "…";
+      const what = /^image\//.test(f.type) ? "photo" : /receipt|invoice|bill|order/i.test(f.name) ? "receipt" : "document";
+      cur.items.push({ id: rid(), what, name: String(f.name || "file").slice(0, 120), type: f.type || "", bytes: f.size, sha256: await hex(await f.arrayBuffer()), date: f.lastModified ? dayOf(f.lastModified) : today(), note: "", blob: f, added: Date.now() + n });
+      used += f.size; n++;
+    }
+    if (n) { await put(cur); if (!st.classList.contains("bad")) st.textContent = n + " added."; } drawCase();
+  }
+  $("#files").addEventListener("change", (e) => { addFiles([...e.target.files]); e.target.value = ""; });
+  $("#n-add").onclick = async () => { const text = $("#n-text").value.trim(); if (!text) return $("#n-text").focus(); if (cur.items.length >= MAX_ITEMS) return alert("A kit holds at most " + MAX_ITEMS + " items.");
+    const date = /^\d{4}-\d\d-\d\d$/.test($("#n-date").value) ? $("#n-date").value : today(), body = new TextEncoder().encode(text);
+    cur.items.push({ id: rid(), what: "note", name: "note.txt", type: "text/plain", text, bytes: body.length, sha256: await hex(body), date, note: text.slice(0, 300), added: Date.now() });
+    $("#n-text").value = ""; await put(cur); drawCase(); };
+  if (window.Faber) Faber.onFiles((files) => addFiles(files));
+
+  // ── sealing: only the fingerprints go to the workshop; the zip is built here ──
+  const slug = (t) => String(t || "file").normalize("NFKD").replace(/[^\w.-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "file";
+  const fileName = (i, n) => String(n).padStart(2, "0") + "-" + (i.date || "undated") + "-" + (i.what === "note" ? "note.txt" : slug(i.name));
+  function drawSealed() {
+    const box = $("#sealed"), c = cur; if (!c.sealed) { box.hidden = true; $("#seal").textContent = "Seal and download the kit"; return; }
+    const ok = fresh(c); box.hidden = false; $("#seal").textContent = ok ? "Seal it again" : "Seal the changes and download";
+    box.innerHTML = '<span class="stamp">Sealed</span><p style="margin:10px 0 0">' + esc(when(c.sealed.at)) + " · " + c.sealed.n + " item" + (c.sealed.n === 1 ? "" : "s") + "</p>" +
+      (ok ? '<div class="bar"><button class="btn" id="again" type="button">Download the kit again</button></div>' : '<p class="status bad">The case has changed since it was sealed: seal it again so the kit matches.</p>');
+    const a = $("#again"); if (a) a.onclick = () => download(c);
+  }
+  $("#seal").onclick = async () => {
+    const c = cur, st = $("#s-st"); st.className = "status";
+    if (!c.title) { st.className = "status bad"; st.textContent = "Give the case a name first."; return $("#c-title").focus(); }
+    if (!c.items.length) { st.className = "status bad"; st.textContent = "Add something to the kit first."; return; }
+    const list = ordered(c); $("#seal").disabled = true; st.textContent = "Asking the workshop to seal it…";
+    let r, j = {}; try { r = await fetch("/api/seal/claim", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: c.title, kind: c.kind, party: c.party, amount: c.amount, items: list.map((i) => ({ what: i.what, name: i.what === "note" ? "note.txt" : i.name, sha256: i.sha256, bytes: i.bytes, date: i.date, note: i.note })) }) }); j = await r.json(); } catch (e) {}
+    $("#seal").disabled = false;
+    if (!r || !r.ok || !j.record) { st.className = "status bad"; st.textContent = j.error ? j.error.charAt(0).toUpperCase() + j.error.slice(1) + "." : "Couldn't reach the workshop. Everything is still here; try again when you're online."; return; }
+    const v = await WorkshopSeal.check(j.record); c.sealed = { record: j.record, at: v.body.iat, n: list.length, stamp: stamp(c) }; await put(c);
+    st.textContent = ""; if (cur === c) drawSealed(); download(c);
+  };
+  async function download(c) {
+    const list = ordered(c), v = await WorkshopSeal.check(c.sealed.record), d = v.body.data, files = [], idx = [], wit = {};
+    for (const [k, i] of list.entries()) { const name = fileName(i, k + 1); idx.push({ n: k + 1, file: name }); if (i.witness) wit[k + 1] = i.witness;
+      files.push({ name, data: i.what === "note" ? new TextEncoder().encode(i.text) : new Uint8Array(await i.blob.arrayBuffer()), date: i.date ? new Date(i.date + "T12:00") : new Date() }); }
+    const manifest = { claimkit: 1, record: c.sealed.record, files: idx, witness: wit };
+    files.push({ name: "claim.json", data: new TextEncoder().encode(JSON.stringify(manifest, null, 1)) });
+    files.push({ name: "summary.html", data: new TextEncoder().encode(summary(d, v.body.iat, idx, list)) });
+    files.push({ name: "HOW-TO-CHECK.txt", data: new TextEncoder().encode("This is a Claim Kit, sealed by the Mentifaber workshop on " + new Date(v.body.iat).toUTCString() + ".\r\n\r\nTo check that none of these files has changed since then, open https://mentifaber.org/claim, choose \"Check a kit\" and choose this zip file (or claim.json together with the files). Each file's fingerprint (SHA-256) is worked out on your own device and compared with the record the workshop signed. Nothing is uploaded.\r\n\r\nsummary.html lists every item in date order.\r\n") });
+    const blob = zip(files), name = "claim-kit-" + slug(c.title).toLowerCase() + "-" + dayOf(v.body.iat) + ".zip";
+    if (window.Faber && Faber.inOS && Faber.save(new File([blob], name, { type: "application/zip" }), name)) return;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function summary(d, iat, idx, list) {
+    const row = (it, k) => { const l = list[k]; return "<tr><td>" + it.n + "</td><td>" + esc(it.date ? nice(it.date) : "no date") + "</td><td>" + esc(WHAT[it.what]) + "</td><td>" + (it.what === "photo" ? '<img src="' + esc(idx[k].file) + '" alt="" style="max-width:120px;max-height:90px;display:block;margin-bottom:4px">' : "") +
+      '<a href="' + esc(idx[k].file) + '">' + esc(idx[k].file) + "</a>" + (it.what === "note" ? '<div style="white-space:pre-wrap">' + esc(l.text) + "</div>" : it.note ? "<div>" + esc(it.note) + "</div>" : "") + (l.witness ? "<div><i>Witnessed " + esc(new Date(l.wAt).toUTCString()) + "</i></div>" : "") + '</td><td style="font:11px monospace;word-break:break-all">' + esc(it.sha256) + "</td></tr>"; };
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(d.title) + " · Claim Kit</title>" +
+      "<style>body{font:15px/1.5 system-ui,sans-serif;margin:24px auto;max-width:920px;padding:0 16px;color:#222}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ccc;padding:8px;text-align:left;vertical-align:top}th{font-size:12px;text-transform:uppercase;color:#666}.s{display:inline-block;border:3px solid #c0392b;color:#c0392b;font-weight:800;letter-spacing:.08em;padding:4px 10px;transform:rotate(-2deg)}</style></head><body>" +
+      '<p class="s">SEALED</p><h1>' + esc(d.title) + "</h1><p>" + esc(KINDS[d.kind]) + (d.party ? " · against " + esc(d.party) : "") + (d.amount ? " · $" + esc(d.amount.toFixed(2)) + " in dispute" : "") + "</p>" +
+      "<p>Sealed by the Mentifaber workshop on <b>" + esc(new Date(iat).toUTCString()) + "</b>: the workshop signed this case and the SHA-256 fingerprint of each file below, in this order. To check that none has changed, open <b>mentifaber.org/claim</b>, choose “Check a kit” and choose the zip file this came in.</p>" +
+      "<table><thead><tr><th>#</th><th>Date</th><th>What</th><th>Item</th><th>Fingerprint (SHA-256)</th></tr></thead><tbody>" + d.items.map(row).join("") + "</tbody></table></body></html>";
+  }
+
+  // ── a store-only zip (no compression: photos and PDFs are compressed already), and a reader for one ──
+  const CRC = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; }
+    return (u) => { let c = 0xffffffff; for (let i = 0; i < u.length; i++) c = t[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }; })();
+  function zip(files) {
+    const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+    for (const f of files) {
+      const nm = enc.encode(f.name), crc = CRC(f.data), d = f.date || new Date(), tm = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xffff, dt = (((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xffff;
+      const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(10, tm, true); h.setUint16(12, dt, true); h.setUint32(14, crc, true); h.setUint32(18, f.data.length, true); h.setUint32(22, f.data.length, true); h.setUint16(26, nm.length, true);
+      parts.push(new Uint8Array(h.buffer), nm, f.data);
+      const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(12, tm, true); c.setUint16(14, dt, true); c.setUint32(16, crc, true); c.setUint32(20, f.data.length, true); c.setUint32(24, f.data.length, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+      cen.push(new Uint8Array(c.buffer), nm); off += 30 + nm.length + f.data.length;
+    }
+    const size = cen.reduce((n, x) => n + x.length, 0), e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, size, true); e.setUint32(16, off, true);
+    return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: "application/zip" });
+  }
+  async function unzip(blob) { // also reads a kit someone unzipped and zipped again (deflated, inside a folder)
+    const u = new Uint8Array(await blob.arrayBuffer()), v = new DataView(u.buffer); let e = -1;
+    for (let i = u.length - 22; i >= Math.max(0, u.length - 22 - 65535); i--) if (v.getUint32(i, true) === 0x06054b50) { e = i; break; }
+    if (e < 0) throw new Error("That isn't a zip file.");
+    const out = new Map(), dec = new TextDecoder(); let p = v.getUint32(e + 16, true);
+    for (let i = 0, n = v.getUint16(e + 10, true); i < n; i++) {
+      if (v.getUint32(p, true) !== 0x02014b50) throw new Error("That zip is damaged.");
+      const method = v.getUint16(p + 10, true), csize = v.getUint32(p + 20, true), nl = v.getUint16(p + 28, true), xl = v.getUint16(p + 30, true), cl = v.getUint16(p + 32, true), lo = v.getUint32(p + 42, true), name = dec.decode(u.subarray(p + 46, p + 46 + nl));
+      p += 46 + nl + xl + cl; if (name.endsWith("/") || /(^|\/)__MACOSX\//.test(name)) continue;
+      const start = lo + 30 + v.getUint16(lo + 26, true) + v.getUint16(lo + 28, true); let data = u.subarray(start, start + csize);
+      if (method === 8) data = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+      else if (method !== 0) throw new Error("That zip uses a packing this page can't read: unzip it and choose claim.json with the files instead.");
+      out.set(name.replace(/^.*\//, ""), data);
+    }
+    return out;
+  }
+
+  // ── checking a kit ──
+  $("#k-files").addEventListener("change", async (e) => {
+    const fs = [...e.target.files], out = $("#k-out"); e.target.value = ""; if (!fs.length) return;
+    out.innerHTML = '<p class="status">Checking…</p>';
+    try {
+      let files = new Map(); const z = fs.find((f) => /\.zip$/i.test(f.name) || f.type === "application/zip");
+      if (z) files = await unzip(z); for (const f of fs) if (f !== z) files.set(f.name, new Uint8Array(await f.arrayBuffer()));
+      const mj = files.get("claim.json"); if (!mj) throw new Error("There's no claim.json here: choose the kit's zip, or claim.json with its files.");
+      let m; try { m = JSON.parse(new TextDecoder().decode(mj)); } catch (x) { throw new Error("claim.json is damaged."); }
+      const v = await WorkshopSeal.check(m.record);
+      if (!v.good || v.body.kind !== "claim") { out.innerHTML = '<div class="verdict bad">✗ ' + esc(v.why || "That isn't a sealed Claim Kit.") + "</div>"; return; }
+      const d = v.body.data, rows = []; let bad = 0;
+      for (const it of d.items) {
+        const ent = (m.files || []).find((x) => x.n === it.n), data = ent && files.get(ent.file), sha = data ? await hex(data) : null;
+        let line = '<b>' + it.n + ". " + esc(WHAT[it.what] || "Item") + "</b> · " + esc(it.date ? nice(it.date) : "no date") + " · " + esc(ent ? ent.file : it.name) + (it.note ? '<br><span class="note">' + esc(it.note) + "</span>" : "");
+        if (!data) { bad++; line = '<span class="n">✗ missing</span> ' + line; }
+        else if (sha !== it.sha256) { bad++; line = '<span class="n">✗ changed since sealing</span> ' + line; }
+        else line = '<span class="y">✓ unchanged</span> ' + line;
+        const w = m.witness && m.witness[it.n];
+        if (w && data) { let wv = null; try { wv = await WorkshopSeal.check(w); } catch (x) {}
+          line += wv && wv.good && wv.body.kind === "witness" && wv.body.data.sha256 === it.sha256 ? '<br><span class="y">✓ witnessed ' + esc(when(wv.body.iat)) + "</span>: this exact photo existed by then" : '<br><span class="n">✗ its Witness record doesn\'t match</span>'; }
+        rows.push("<li>" + line + "</li>");
+      }
+      out.innerHTML = (bad ? '<div class="verdict bad">✗ ' + bad + " of " + d.items.length + " item" + (d.items.length === 1 ? "" : "s") + " don't match what the workshop sealed on " + esc(when(v.body.iat)) + ".</div>"
+        : '<div class="verdict ok">✓ A genuine Claim Kit, sealed by the workshop on ' + esc(when(v.body.iat)) + ". All " + d.items.length + " item" + (d.items.length === 1 ? " is" : "s are") + " exactly as sealed.</div>") +
+        '<h2 id="k-title">' + esc(d.title) + "</h2><p class=\"note\">" + esc(KINDS[d.kind] || "") + (d.party ? " · against " + esc(d.party) : "") + (d.amount ? " · $" + esc(d.amount.toFixed(2)) + " in dispute" : "") + '</p><ul class="checks">' + rows.join("") + "</ul>";
+    } catch (x) { out.innerHTML = '<div class="verdict bad">' + esc(x.message) + "</div>"; }
+  });
+  if (location.hash === "#check") tab("check");
+  drawCases();
+})();
+</script>
+</body>
+</html>
