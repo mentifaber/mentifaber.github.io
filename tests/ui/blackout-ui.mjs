@@ -18,14 +18,14 @@ const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.m
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 
 await p.goto(O + "/blackout"); await p.waitForSelector("#apps li");
-assert.match(await p.textContent("#prep-st"), /0 of 7 ready/);
-assert.equal(await p.$$eval("#apps li", (x) => x.length), 6);
+assert.match(await p.textContent("#prep-st"), /0 of 8 ready/);
+assert.equal(await p.$$eval("#apps li", (x) => x.length), 7);
 assert.match(await p.textContent("body"), /8 drops per gallon[\s\S]*30 minutes[\s\S]*20 feet/);
-ok("the kit lists its six apps (none ready yet) and the guides: water, food, carbon monoxide, phone, radio");
+ok("the kit lists its seven apps (none ready yet) and the guides: water, food, carbon monoxide, phone, radio");
 
-await p.click("#prep"); await p.waitForFunction(() => /Ready: all 7 parts work offline/.test(document.getElementById("prep-st").textContent), null, { timeout: 60000 });
-assert.equal(await p.$$eval("#apps .st.ok", (x) => x.length), 6);
-ok("\"Make it all work offline\" gets the kit and all six apps ready");
+await p.click("#prep"); await p.waitForFunction(() => /Ready: all 8 parts work offline/.test(document.getElementById("prep-st").textContent), null, { timeout: 60000 });
+assert.equal(await p.$$eval("#apps .st.ok", (x) => x.length), 7);
+ok("\"Make it all work offline\" gets the kit and all seven apps ready");
 
 await p.click("#locate"); await p.waitForFunction(() => /41\.58680, -93\.62500/.test(document.getElementById("coords").textContent));
 ok("Find me shows the GPS fix and puts it on the map");
@@ -34,7 +34,7 @@ await ctx.setOffline(true);
 await p.reload(); await p.waitForSelector("#apps li");
 await p.waitForFunction(() => document.querySelectorAll(".leaflet-fmLand-pane canvas").length > 0 && document.querySelector(".leaflet-interactive, .leaflet-marker-pane *, .leaflet-overlay-pane svg, .leaflet-overlay-pane canvas"), null, { timeout: 10000 });
 assert.match(await p.textContent("#coords"), /41\.58680, -93\.62500 \(last known\)/);
-assert.match(await p.textContent("#prep-st"), /Ready: all 7/);
+assert.match(await p.textContent("#prep-st"), /Ready: all 8/);
 ok("with the network cut, the kit opens, draws the site's own world map and remembers where you were");
 
 const hp = await ctx.newPage(); await hp.goto(O + "/meshnet-app"); assert.match(await hp.title(), /Hopline/);
