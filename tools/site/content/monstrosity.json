@@ -13,7 +13,7 @@
   "label": "why this exists",
   "title": "Not a rented cloud tier, <em>not a black box</em>"
  },
- "lede": "<p>A stack you can open and understand. Storage is one organ among many, routed through a proxy that wires up new services by itself and fronted by a door with no holes punched in the firewall. It's also where the rest of the atlas is meant to live: Weaver and muse are among the first tenants. <b>The Monstrosity</b> console lays the whole thing out, layer by layer.</p>",
+ "lede": "<p>A stack you can open and understand. Storage is one organ among many, routed through a proxy that wires up new services by itself and fronted by a door with no holes punched in the firewall. It's also where the rest of the workshop is meant to live: Weaver and muse are among the first tenants. <b>The Monstrosity</b> console lays the whole thing out, layer by layer.</p>",
  "featuresLabel": "the plan, in five layers",
  "features": [
   {"t": "The private line", "d": "a cheap gigabit switch puts all three machines on one segment. Machine-to-machine traffic never touches the open internet, and static leases keep anything from drifting on reboot."},

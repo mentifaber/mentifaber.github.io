@@ -1,0 +1,6 @@
+# Static-asset redirects (Workers Static Assets reads this file).
+# The two 3D atlases (/atlas and /atlas-classic) were retired; the home page's plan shows every project.
+/atlas / 301
+/atlas.html / 301
+/atlas-classic / 301
+/atlas-classic.html / 301
