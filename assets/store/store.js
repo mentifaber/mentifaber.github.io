@@ -127,6 +127,16 @@
     return `<li class="row" style="--ac:${esc(a.accent || "#ffc35a")};--i:${i | 0}"><a class="rlink" href="#app/${esc(a.id)}">${icon(a, 56)}<span class="rt"><b>${esc(a.name)}</b><small>${esc(a.tagline || "")}</small><small class="m">${meta(a)}</small></span></a><span class="ract" data-act="${esc(a.id)}">${actions(a)}</span></li>`;
   }
 
+  // apps by other makers, reviewed by the workshop (src/makers.js): web apps that open in FaberOS or on their own
+  function others(q) {
+    if (S.cat) return "";
+    const list = (S.makers || []).filter((a) => !q || (a.name + " " + a.desc + " " + (a.by || "")).toLowerCase().includes(q));
+    const one = (a) => `<li class="maker"><span class="mk-tile" style="--h:${Number(a.hue) || 38}" aria-hidden="true"><svg viewBox="0 0 24 24">${a.glyph}</svg></span><div class="mk-t"><b>${esc(a.name)}</b><small>by ${esc(a.by || "another maker")}${a.verbs && a.verbs.length ? " · AutoFaber can operate it" : ""}</small><p>${esc(a.desc.replace(/ · by .*$/, ""))}</p></div>` +
+      `<div class="mk-go"><a class="btn pri" href="/os?open=${encodeURIComponent(a.id)}">Open in FaberOS</a><a class="btn" href="${esc(a.entry)}" target="_blank" rel="noopener noreferrer">Open</a></div></li>`;
+    return `<section class="shelf"><h2><span class="idx">02</span> From other makers <small>${list.length} app${list.length === 1 ? "" : "s"}</small></h2>` +
+      (list.length ? `<ul class="list makers">${list.map(one).join("")}</ul>` : q ? `<p class="empty">No other makers' apps match that.</p>` : "") +
+      `<p class="mk-invite">Made something for FaberOS? <a href="/makers">Send it to Foundry</a>: once it's reviewed it appears here, and AutoFaber can use what it declares it can do.</p></section>`;
+  }
   function home() {
     const q = S.q.trim().toLowerCase();
     const shown = S.apps.filter((a) => !(ios && a.id === SELF) && (!S.cat || a.category === S.cat) && (!q || (a.name + " " + a.tagline + " " + a.category + " " + (a.description || "")).toLowerCase().includes(q))).sort((x, y) => (x.status === "soon") - (y.status === "soon"));
@@ -143,7 +153,7 @@
     if (cats.length > 1) h += `<nav class="chips" aria-label="Categories"><button data-cat="" class="${S.cat ? "" : "on"}">All <small>${inCat("")}</small></button>${cats.map((c) => `<button data-cat="${esc(c)}" class="${S.cat === c ? "on" : ""}">${esc(c)} <small>${inCat(c)}</small></button>`).join("")}</nav>`;
     h += `<section class="shelf"><h2><span class="idx">01</span> ${q ? "Results for “" + esc(S.q.trim()) + "”" : S.cat ? esc(S.cat) : "All apps"} <small>${shown.length} app${shown.length === 1 ? "" : "s"}</small></h2>`;
     h += shown.length ? `<ul class="list">${shown.map(row).join("")}</ul>` : `<p class="empty">Nothing on the shelf matches that.</p>`;
-    return h + `</section>`;
+    return h + `</section>` + others(q);
   }
 
   function getStore() {
@@ -318,6 +328,7 @@
       if (!r.ok) throw new Error(r.status);
       const j = await r.json();
       S.apps = (j.apps || []).filter((a) => a && a.id && a.name);
+      S.makers = await fetch("/api/makers/apps").then((x) => (x.ok ? x.json() : null)).then((x) => ((x && x.apps) || []).filter((a) => a && /^x-[a-z0-9-]+$/.test(a.id) && /^https:\/\//.test(a.entry))).catch(() => []);
       S.err = ""; S.loaded = Date.now();
     } catch {
       S.err = "Foundry couldn't reach its catalog. Check the connection and try again.";

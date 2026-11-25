@@ -13,6 +13,7 @@ import { listen } from "./listen.js";
 import { media } from "./media.js";
 import { seal } from "./seal.js"; // the workshop's seal: Device Passports and Witness records
 import { portal, uptimeSweep } from "./portal.js";
+import { makers } from "./makers.js";
 import { letters } from "./letters.js";
 import { checkin, sweep as checkinSweep } from "./checkin.js"; // Quiet Check-in: a daily "I'm OK", and the family told if it doesn't come // Sealed Letters: letters that open later, only with the friends chosen // the Workshop Portal: one link per client, one board for the workshop
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
@@ -607,6 +608,7 @@ const worker = {
       if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS, sendPush, vapid: () => store(env).vapid() }); // a check-in after the family was told sends them an all-clear
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
       if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil"))); // client links and the workshop's job board (src/portal.js)
+      if (route === "makers") return makers(req, env, json, !!(await session(req, env, "vigil")), { alert: (x) => (env.HIVE ? env.HIVE.get(env.HIVE.idFromName("hive")).fetch(new Request("https://mentifaber.org/api/hive/genesis/alert", { method: "POST", headers: { "x-hive-owner": "1", "content-type": "application/json" }, body: JSON.stringify(x) })) : Promise.resolve()) }); // other makers' apps for Foundry and FaberOS (src/makers.js)
       if (route === "seal") return seal(req, env, json, !!(await session(req, env, "vigil"))); // signs Device Passports (owner) and Witness records (src/seal.js)
       if (route === "where") { // Cloudflare's city-level guess at the visitor, for the home page's weather tile (no permission prompt, nothing stored)
         const cf = req.cf || {}, n = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);

@@ -307,4 +307,9 @@ async function fromHash() {
 api("/sources").then((j) => { for (const s of j.sources) S.names[s.id] = s.name; S.yt = !!(j.sources.find((s) => s.id === "youtube") || {}).ready; }).catch(() => {});
 addEventListener("popstate", () => { if (!/(^#|&)i=/.test(location.hash) && dlg.open) { dlg.close(); return; } fromHash(); }); // the browser's back button
 fromHash();
+// Faber Verbs (declared in tools/site/content/mentiplayer.json): AutoFaber can look something up here ("put on some jazz")
+if (window.Faber) Faber.verbs({
+  find: (a) => { const q = String(a.what || "").trim().slice(0, 100); if (!q) throw new Error("Say what to look for.");
+    S.q = q; S.type = a.kind && a.kind !== "all" ? a.kind : ""; $("q").value = q; [...$("tabs").children].forEach((x) => x.classList.toggle("on", x.dataset.t === S.type)); go(); return "Looking in MentiPlayer for \u201c" + q + "\u201d" + (S.type ? " (" + S.type + ")" : "") + ": pick one to play."; },
+});
 })();

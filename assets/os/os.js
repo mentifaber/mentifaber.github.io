@@ -33,6 +33,7 @@
   const runs = (a) => !!(a && (a.builtin || a.entry || a.page) && a.status !== "soon");
   const target = (a) => a.entry || (a.page ? (/\.html$|\/$|^https?:/.test(a.page) ? a.page : a.page + ".html") : null);
   const needs = (a) => (a.permissions || []).filter((p) => SENSITIVE[p]);
+  const home = (a) => { if (!a || !a.maker) return location.origin; try { return new URL(a.entry).origin; } catch (e) { return null; } }; // another maker's app talks to FaberOS only from its own address
   const allowed = (a) => { const p = a.permissions || BASICS; return grants[a.id] === "all" ? p : p.filter((x) => !SENSITIVE[x]); };
   const label = (ps) => [...new Set(ps.map((p) => SENSITIVE[p]))].join(", ");
   const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 3200); };
@@ -90,7 +91,9 @@
       '<button class="wb close" data-w="close" aria-label="Close ' + esc(a.name) + '" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
       (a.builtin ? '<div class="inner"></div>' : '<iframe title="' + esc(a.name) + '" loading="eager"></iframe><div class="shield"></div>') + '<div class="grip" aria-hidden="true"></div>';
     if (a.builtin) RENDER[a.id]($(".inner", el));
-    else { const f = $("iframe", el); f.allow = allowed(a).join("; "); f.addEventListener("load", () => hook(f, a.id)); f.src = url; }
+    else { const f = $("iframe", el); f.allow = allowed(a).join("; ");
+      if (a.maker) f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals"); // another maker's app: it can't take over FaberOS's tab
+      f.addEventListener("load", () => hook(f, a.id)); f.src = url; }
     wins.appendChild(el); open.set(a.id, { el, app: a });
     wire(el, a.id); focus(a.id);
   }
@@ -328,7 +331,7 @@
     if (ready[id]) flush(id); else toast("Opening " + app(id).name + "…");
   }
   function flush(id) { const o = open.get(id), f = o && $("iframe", o.el); if (!f || !pend[id] || !pend[id].length) return;
-    f.contentWindow.postMessage({ faberos: 1, type: "files", files: pend[id] }, location.origin); toast(pend[id].length + " file" + (pend[id].length > 1 ? "s" : "") + " sent to " + app(id).name); pend[id] = []; }
+    f.contentWindow.postMessage({ faberos: 1, type: "files", files: pend[id] }, home(app(id))); toast(pend[id].length + " file" + (pend[id].length > 1 ? "s" : "") + " sent to " + app(id).name); pend[id] = []; }
   // drop files anywhere on FaberOS (not on an app, which takes its own drops) to keep them on the Shelf
   let dragN = 0;
   addEventListener("dragenter", (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) { dragN++; os.classList.add("dropping"); } });
@@ -400,14 +403,14 @@
     if (!(await verbsReady(id, 12000))) { toast(a.name + " didn't answer"); return null; }
     const o = open.get(id), f = o && $("iframe", o.el); if (!f) return null;
     const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    const r = await new Promise((res) => { vres[rid] = { app: id, res }; f.contentWindow.postMessage({ faberos: 1, type: "verb", id: rid, name, args }, location.origin); setTimeout(() => { if (vres[rid]) { delete vres[rid]; res({ ok: false, text: a.name + " took too long to answer" }); } }, 15000); });
+    const r = await new Promise((res) => { vres[rid] = { app: id, res }; f.contentWindow.postMessage({ faberos: 1, type: "verb", id: rid, name, args }, home(a)); setTimeout(() => { if (vres[rid]) { delete vres[rid]; res({ ok: false, text: a.name + " took too long to answer" }); } }, 15000); });
     note({ app: id, title: v.label, body: r.text }); return r;
   }
 
   // ── what apps say through the Faber kit (assets/os/faber.js): only this site's pages, only from a FaberOS window ──
   addEventListener("message", async (e) => {
-    if (e.origin !== location.origin || !e.data || e.data.faberos !== 1) return;
-    const hit = [...open.entries()].find(([, o]) => { const f = $("iframe", o.el); return f && f.contentWindow === e.source; }); if (!hit) return;
+    if (!e.data || e.data.faberos !== 1) return;
+    const hit = [...open.entries()].find(([, o]) => { const f = $("iframe", o.el); return f && f.contentWindow === e.source; }); if (!hit || e.origin !== home(hit[1].app)) return; // only from that window, and only from its app's own address
     const [id] = hit, m = e.data;
     if (m.type === "ready") { if (m.files) { ready[id] = true; flush(id); } }
     else if (m.type === "notify") note({ app: id, title: m.title, body: m.body });
@@ -528,6 +531,10 @@
   os.dataset.wall = LS.get("wall", "forge");
   fetch("assets/os/apps.json").then((r) => r.json()).then(async (m) => {
     M = m; byId = Object.fromEntries(m.apps.map((a) => [a.id, a]));
+    await fetch("/api/makers/apps").then((r) => (r.ok ? r.json() : null)).then((x) => { // apps by other makers, reviewed by the workshop (src/makers.js)
+      const more = ((x && x.apps) || []).filter((a) => a && /^x-[a-z0-9-]+$/.test(a.id) && !byId[a.id] && /^https:\/\//.test(a.entry));
+      for (const a of more) { a.desc = a.desc + (a.by ? " · by " + a.by : " · by another maker"); M.apps.push(a); byId[a.id] = a; }
+    }).catch(() => {});
     drawIcons(); drawDock(); drawBell();
     if (LS.get("ver", null) !== M.version) { if (LS.get("seen", false)) note({ app: "about", title: "FaberOS " + M.version, body: "New: Faber Verbs. Tell the top bar \"log $40 for gas\" or \"track the ISS\" and AutoFaber asks the app to do it. Anything that changes your data asks you first." }); LS.set("ver", M.version); }
     const want = new URLSearchParams(location.search).get("open");

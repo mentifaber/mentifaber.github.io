@@ -11,11 +11,16 @@
                                   FaberOS checks the arguments against that and asks you first when a verb changes
                                   anything. fn(args) returns (or resolves to) a short answer: a string or { text }.
 
-   Messages go only to and from FaberOS itself: same origin, and only the page that holds this app's window. */
+   Messages go only to and from FaberOS itself: the page that holds this app's window. An app on mentifaber.org talks to it
+   on the same origin; another maker's app (listed in Foundry after review) loads this file from mentifaber.org and talks
+   to FaberOS at mentifaber.org only, which in turn listens to that window only from the app's own address. */
 (() => {
-  let inOS = false;
-  try { inOS = window.parent !== window && parent.location.origin === location.origin && /^\/os(\.html)?$/.test(parent.location.pathname); } catch (e) {}
-  const post = (m) => { if (inOS) parent.postMessage(Object.assign({ faberos: 1 }, m), location.origin); };
+  let inOS = false, osOrigin = location.origin;
+  try { inOS = window.parent !== window && parent.location.origin === location.origin && /^\/os(\.html)?$/.test(parent.location.pathname); } catch (e) {
+    // another maker's app, framed by FaberOS on the kit's own site: FaberOS is wherever this kit came from
+    try { const kit = new URL(document.currentScript.src).origin, ref = document.referrer ? new URL(document.referrer).origin : "";
+      if (window.parent !== window && kit !== location.origin && ref === kit) { inOS = true; osOrigin = kit; } } catch (x) {} }
+  const post = (m) => { if (inOS) parent.postMessage(Object.assign({ faberos: 1 }, m), osOrigin); };
   // Inside FaberOS, an app's own focus() can't pull the keyboard out of FaberOS: while this window doesn't have the
   // keyboard and nobody has just pressed in it, the call is ignored (a first-run guide focusing its first field as it
   // loads would otherwise take the letters someone is typing into FaberOS's top bar). Once the window is being used it
@@ -27,7 +32,7 @@
     HTMLElement.prototype.focus = function (o) { if (!document.hasFocus() && Date.now() - used > 1000) return; return own.call(this, o); }; }
   let onFiles = null; const waiting = []; let verbs = {};
   addEventListener("message", (e) => {
-    if (!inOS || e.origin !== location.origin || e.source !== parent || !e.data || e.data.faberos !== 1) return;
+    if (!inOS || e.origin !== osOrigin || e.source !== parent || !e.data || e.data.faberos !== 1) return;
     if (e.data.type === "files" && Array.isArray(e.data.files)) { if (onFiles) onFiles(e.data.files); else waiting.push(e.data.files); }
     if (e.data.type === "verb" && typeof e.data.name === "string") {
       const fn = Object.prototype.hasOwnProperty.call(verbs, e.data.name) && verbs[e.data.name], id = e.data.id;
