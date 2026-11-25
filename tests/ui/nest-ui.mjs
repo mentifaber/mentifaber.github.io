@@ -33,7 +33,7 @@ const HIVE = { idFromName: () => "h", get: () => ({ fetch: async (rq) => { const
     { brand: "IKEA", model: "SNIGLAR", tier: "budget", why: "Simple and sturdy", url: "https://www.ikea.com/sniglar", store: "ikea.com", image: put(), price: 119, currency: "USD" },
     { brand: "Nursery Works", model: "Novella", tier: "premium", why: "Statement piece", url: "https://nurseryworks.net/novella", store: "nurseryworks.net", image: put(), price: null, approx: 1200 }] }); } }) };
 let alarmAt = null, alarmT = 0;
-const storage = { sql, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; clearTimeout(alarmT); alarmT = setTimeout(async () => { alarmAt = null; await nest.alarm(); }, Math.max(0, Math.min(t - Date.now(), 400))); } };
+const storage = { sql, transactionSync: (fn) => { db.exec("BEGIN"); try { const r = fn(); db.exec("COMMIT"); return r; } catch (e) { db.exec("ROLLBACK"); throw e; } }, getAlarm: async () => alarmAt, setAlarm: async (t) => { alarmAt = t; clearTimeout(alarmT); alarmT = setTimeout(async () => { alarmAt = null; await nest.alarm(); }, Math.max(0, Math.min(t - Date.now(), 400))); } };
 const nest = new Nest({ storage }, { HIVE, AI });
 
 const b = await chromium.launch({ args: ["--no-proxy-server"] });
@@ -129,6 +129,13 @@ assert.equal(Object.keys(bk.docs).filter((k) => k.startsWith("items/")).length, 
 assert.ok(Object.values(bk.docs).some((d) => d.items && Object.values(d.items).some((c) => c.pick === "IKEA SNIGLAR")), "the guest's gift and choice are in it");
 assert.ok(Object.values(bk.people).some((x) => x.name === "Aunt Maria")); assert.ok(Object.keys(bk.photos).length >= 3 && Object.values(bk.photos).every((u) => /^data:image\/png;base64,/.test(u)), "the photos are inside it");
 ok("the owner downloads a backup: one file with the list, picks, gifts and choices, names, details and photos");
+// the owner restores from that file after losing an item and its photo: both come back, through the Restore panel
+const lostItem = Object.keys(bk.docs).find((k) => k.startsWith("items/") && bk.docs[k].imageId), lostPhoto = bk.docs[lostItem].imageId;
+db.prepare("DELETE FROM doc WHERE path=?").run(lostItem); db.prepare("DELETE FROM photo WHERE id=?").run(lostPhoto); await op.reload(); await op.click("#tab-room");
+await op.waitForSelector("#restore select option", { state: "attached" }); await op.setInputFiles("#restore-file", await dl.path()); await op.click("#restore-file-go");
+await op.waitForSelector(".toast:has-text('Restored')"); assert.ok(db.prepare("SELECT 1 FROM doc WHERE path=?").get(lostItem), "the item is back"); assert.ok(db.prepare("SELECT 1 FROM photo WHERE id=?").get(lostPhoto), "and its photo, from the file");
+await op.waitForFunction(() => [...document.querySelectorAll("#restore-day option")].some((o) => /Just before a restore/.test(o.textContent)), null, { timeout: 8000 });
+ok("the owner restores from the downloaded file: the lost item and its photo come back, and the state just before is listed to undo it");
 await gp.reload(); await gp.waitForFunction(() => document.querySelectorAll(".card").length === 4); assert.equal(await gp.locator("#nest-gate").count(), 0, "still in after a reload");
 ok("the owner sees the guest's gift and note in the Parents' room within seconds; the guest stays signed in");
 

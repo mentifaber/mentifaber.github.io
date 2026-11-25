@@ -126,10 +126,34 @@ export async function pullModel(v, key, model) {
   const j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || "HTTP " + r.status); return j.status || "success";
 }
 // Read a public web page as plain text (links the user pastes).
+// the same private-address test the Nest uses (src/nest.js), including 172.16–31.x and 0.x, which this one missed
+const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i;
+// fetch a user-supplied address, following redirects by hand (at most 5) and checking each new address with isPublic
+// first, so a public page can't redirect the Worker to a private one. isPublic(href) is the caller's own test.
+export async function fetchPublic(url, init, isPublic, hops = 5) {
+  let u = String(url);
+  for (let i = 0; i <= hops; i++) {
+    const r = await fetch(u, { ...init, redirect: "manual" }), loc = r.status >= 300 && r.status < 400 && r.headers.get("location");
+    if (!loc) return r;
+    let next; try { next = new URL(loc, u).href; } catch (e) { throw new Error("a redirect to an address that doesn't parse"); }
+    try { if (r.body && r.body.cancel) await r.body.cancel(); } catch (e) {}
+    if (!isPublic(next)) throw new Error("redirected to an address that isn't public");
+    u = next;
+  }
+  throw new Error("too many redirects");
+}
+export const publicHref = (x) => { try { const p = new URL(x); return /^https?:$/.test(p.protocol) && !PRIVATE_HOST.test(p.hostname); } catch (e) { return false; } };
+// read a response's text only up to n characters' worth, so one enormous page can't fill the Worker's memory
+async function textUpTo(r, n) {
+  if (!r.body || !r.body.getReader) return (await r.text()).slice(0, n);
+  const rd = r.body.getReader(), dec = new TextDecoder(); let t = "";
+  while (t.length < n) { const { value, done } = await rd.read(); if (done) break; t += dec.decode(value, { stream: true }); }
+  try { await rd.cancel(); } catch (e) {} return t.slice(0, n);
+}
 export async function readPage(u, max) { // max: characters of text kept (12,000 for a chat; a library document keeps more)
-  const url = new URL(u); if (!/^https?:$/.test(url.protocol) || /^(localhost|127\.|10\.|192\.168\.|169\.254\.|\[)/.test(url.hostname)) throw new Error("not a public page");
-  const r = await fetch(url, { headers: { "user-agent": "MentifaberHive/2 (+https://mentifaber.org/hive)", accept: "text/html,text/plain,application/json" }, signal: T(15000), redirect: "follow" });
-  if (!r.ok) throw new Error("HTTP " + r.status); const t = (await r.text()).slice(0, Math.max(600000, (max || 0) * 3));
+  const url = new URL(u); if (!/^https?:$/.test(url.protocol) || PRIVATE_HOST.test(url.hostname)) throw new Error("not a public page");
+  const r = await fetchPublic(url.href, { headers: { "user-agent": "MentifaberHive/2 (+https://mentifaber.org/hive)", accept: "text/html,text/plain,application/json" }, signal: T(15000) }, publicHref);
+  if (!r.ok) throw new Error("HTTP " + r.status); const t = await textUpTo(r, Math.max(600000, (max || 0) * 3));
   const title = (/<title[^>]*>([\s\S]*?)<\/title>/i.exec(t) || [])[1] || url.hostname;
   const body = t.replace(/<(script|style|noscript|svg|nav|footer|header)[\s\S]*?<\/\1>/gi, " ").replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr)>/gi, "\n").replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n\n").trim();

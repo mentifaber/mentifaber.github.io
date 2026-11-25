@@ -11,6 +11,16 @@ await ctx.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
 const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const ok = (m) => console.log("ok", DEV, m);
 await p.goto("http://localhost:8099/index.html"); await p.waitForSelector(".bench");
+// the lantern follows the pointer by moving only itself: its --lx/--ly sit on .lantern, not on the whole floor (which made every
+// bench restyle on each mouse move and cost the page its responsiveness)
+if (DEV === "desktop") {
+  const box = await p.$eval(".floor", (f) => { const r = f.getBoundingClientRect(); return { x: r.left + r.width / 2, y: Math.max(r.top, 0) + 120 }; });
+  await p.mouse.move(box.x, box.y); await p.mouse.move(box.x + 40, box.y + 20, { steps: 4 }); await p.waitForTimeout(150);
+  const lt = await p.evaluate(() => { const f = document.querySelector(".floor"), l = f.querySelector(".lantern"); return { on: f.classList.contains("lantern-on"), lx: l && l.style.getPropertyValue("--lx"), floorLx: f.style.getPropertyValue("--lx") }; });
+  assert.ok(lt.on && /px$/.test(lt.lx) && !lt.floorLx, JSON.stringify(lt));
+  ok("the lantern moves by itself: its position is on the lantern, not on the floor");
+}
+
 // the walls are drawn on the rooms, not 40px below them through the room names, including while they're drafted in on a first visit
 const ink = await p.evaluate(() => { const s = document.querySelector(".ink"), F = document.querySelector(".floor").getBoundingClientRect(), m = s.getScreenCTM(); return { drafting: /drafting/.test(s.getAttribute("class")), scale: m.a, dx: m.e - F.left, dy: m.f - F.top }; });
 assert.ok(Math.abs(ink.scale - 1) < 0.01 && Math.abs(ink.dx) < 1 && Math.abs(ink.dy) < 1, JSON.stringify(ink)); ok("the walls sit on the rooms" + (ink.drafting ? ", even while they're drafted in" : ""));

@@ -27,10 +27,17 @@
 //                            again from its shop
 //   GET  /api/nest/export    (owner) everything in one file: the list, picks, gifts, notes, guests' names, details,
 //                            thank-yous and suggestions, with the photos of the items and picks inside it
-//   POST /api/nest/backup    (owner; the hourly cron) a copy of everything (photos stay where they are) once a day: to R2 as
-//                            nest/backups/<date>.json (30 days kept), or without R2 into this object (14 days kept)
+//   POST /api/nest/backup    (owner; the hourly cron) a copy of everything once a day: to R2 as nest/backups/<date>.json
+//                            (30 days kept), or without R2 into this object (14 days kept). Photos aren't copied again
+//                            (they never change once stored); the copy lists the ones it needs, and a photo a kept copy
+//                            needs isn't deleted until no kept copy needs it. Photos already missing are listed as such.
+//   GET  /api/nest/backups   (owner) the copies there are to restore, newest first
+//   POST /api/nest/restore   (owner) { day } a daily copy, or { file } an export (its photos come back from the file):
+//                            the list, picks, gifts, notes and suggestions are put back as they were; guests and their
+//                            sign-ins are left alone. What's there now is saved first as a copy of its own, so a restore
+//                            can be undone, and any photo that couldn't be brought back is listed.
 import { DurableObject } from "cloudflare:workers";
-import { pageProduct, quota, checkPhoto } from "./nest-find.js";
+import { pageProduct, quota, checkPhoto, fetchPublic } from "./nest-find.js";
 import { metered, newBag, touch as rowTouch, dayReport, over as rowsOver, nextDay } from "./rowmeter.js";
 const NEST_BG_ROWS = 400000; // the registry's background work (finding products, mending photos) reads at most this many rows a day
 
@@ -50,6 +57,7 @@ const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s 
 const textOf = (r) => (r && typeof r.response === "object" && r.response ? JSON.stringify(r.response) : String((r && (r.response ?? r.description ?? (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content))) || ""));
 const shopOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
 const FIND_DAY = 400, FIND_BATCH = 1, FIND_GAP = 15e3; // one item at a time, a breath apart: gentle on the free plan's limits
+const publicShop = (x) => { try { const p = new URL(x); return p.protocol === "https:" && !privateHost(p.hostname); } catch (e) { return false; } }; // a redirect's new address must pass too
 const privateHost = (h) => /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[)/i.test(h) || !/\./.test(h);
 const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
 
@@ -65,6 +73,8 @@ export class Nest extends DurableObject {
       q.exec("CREATE TABLE IF NOT EXISTS findq(item TEXT PRIMARY KEY, at INTEGER)");
       q.exec("CREATE TABLE IF NOT EXISTS photo(id TEXT PRIMARY KEY, type TEXT, data BLOB, at INTEGER)"); // photos, when there's no R2
       q.exec("CREATE TABLE IF NOT EXISTS backup(day TEXT PRIMARY KEY, data TEXT)"); // daily copies, when there's no R2
+      q.exec("CREATE TABLE IF NOT EXISTS kept(id TEXT, day TEXT, PRIMARY KEY(id, day))"); // the photos each kept copy needs
+      q.exec("CREATE TABLE IF NOT EXISTS gone(id TEXT PRIMARY KEY, at INTEGER)"); // photos let go of but still needed by a kept copy
       this.ready = true;
     }
     return q;
@@ -245,7 +255,7 @@ export class Nest extends DurableObject {
   }
   async readPage(href) { // a shop's product page → { title, price, currency, images }
     let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
-    const r = await fetch(u.href, { headers: { accept: "text/html", "accept-language": "en-US,en;q=0.9", "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" }, redirect: "follow", signal: AbortSignal.timeout(8000) }).catch(() => null);
+    const r = await fetchPublic(u.href, { headers: { accept: "text/html", "accept-language": "en-US,en;q=0.9", "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" }, signal: AbortSignal.timeout(8000) }, publicShop).catch(() => null);
     if (!r || !r.ok || !/html/i.test(r.headers.get("content-type") || "")) return null;
     const p = pageProduct((await r.text().catch(() => "")).slice(0, 900000), r.url || u.href); p.images = [...new Set([...(p.images || []), p.og].filter(Boolean))].slice(0, 4); return p;
   }
@@ -257,10 +267,12 @@ export class Nest extends DurableObject {
     const id = await this.fetchPhoto(j.image, true); return id ? { id, r: j.image } : null;
   }
   async storedShaped(id) { const ph = await this.getPhoto(id); return !!ph && checkPhoto("", ph.body); }
-  async dropPhoto(id) { this.q().exec("DELETE FROM photo WHERE id=?", id); if (this.env.MODELS && this.env.MODELS.delete) await this.env.MODELS.delete("nest/" + id).catch(() => {}); }
+  async dropPhoto(id, now) { // a photo a kept copy still needs waits (in "gone") until no copy needs it; backup() lets it go then
+    if (!now && this.q().exec("SELECT 1 AS y FROM kept WHERE id=? LIMIT 1", id).toArray().length) { this.q().exec("INSERT OR IGNORE INTO gone(id,at) VALUES(?,?)", id, Date.now()); return; }
+    this.q().exec("DELETE FROM photo WHERE id=?", id); if (this.env.MODELS && this.env.MODELS.delete) await this.env.MODELS.delete("nest/" + id).catch(() => {}); }
   async fetchPhoto(href, check) { // a product photo from a store, checked, into the registry's storage → id, or null
     let u; try { u = new URL(String(href || "")); } catch (e) { return null; } if (u.protocol !== "https:" || privateHost(u.hostname)) return null;
-    const r = await fetch(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, redirect: "follow", signal: AbortSignal.timeout(10000) }).catch(() => null);
+    const r = await fetchPublic(u.href, { headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MentifaberNest/1)" }, signal: AbortSignal.timeout(10000) }, publicShop).catch(() => null);
     const type = r && (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(); if (!r || !r.ok || !IMAGE.test(type || "")) return null;
     const buf = await r.arrayBuffer().catch(() => null); if (!buf || !buf.byteLength || buf.byteLength > (this.env.MODELS ? BLOB_MAX : PHOTO_DB_MAX)) return null;
     if (check && !checkPhoto(u.href, buf)) return null; // a logo, an icon, a banner: not the product
@@ -273,22 +285,67 @@ export class Nest extends DurableObject {
     const people = {}; for (const r of this.q().exec("SELECT id, name, at FROM person").toArray()) people[r.id] = { name: r.name, joined: r.at };
     return { kind: "the-nest-registry-backup", version: 1, saved: new Date().toISOString(), docs, people, finds: this.findsFor() };
   }
+  // the photos a copy of the registry needs: each item's photo and the parents' picks (suggestions not kept are left out)
+  photoIds(snap) { const ids = new Set(); for (const [p, d] of Object.entries(snap.docs)) if (p.startsWith("items/")) { if (d.imageId) ids.add(d.imageId); for (const o of d.options || []) if (o.i) ids.add(o.i); } return [...ids].filter((id) => BLOB_ID.test(id)); }
+  // a copy of everything: the records, and which photos it needs (kept until no copy needs them), or which are already gone
+  async keepCopy(day, snap) {
+    const ids = this.photoIds(snap), have = [], missing = [];
+    for (const id of ids) ((await this.hasPhoto(id)) ? have : missing).push(id);
+    snap.photoIds = have; snap.photosMissing = missing;
+    const q = this.q(); q.exec("DELETE FROM kept WHERE day=?", day); for (const id of have) q.exec("INSERT OR IGNORE INTO kept(id,day) VALUES(?,?)", id, day);
+    if (this.env.MODELS) await this.env.MODELS.put("nest/backups/" + day + ".json", JSON.stringify(snap), { httpMetadata: { contentType: "application/json" } });
+    else q.exec("INSERT INTO backup(day,data) VALUES(?,?) ON CONFLICT(day) DO UPDATE SET data=excluded.data", day, JSON.stringify(snap));
+    return { photos: have.length, missing };
+  }
   async backup() {
     const day = new Date().toISOString().slice(0, 10), key = this.env.MODELS ? "nest/backups/" + day + ".json" : "db:" + day;
     if (this.kv("backup") === day) return { ok: true, key, already: true };
-    if (!this.env.MODELS) { // no R2: the copy stays in this object, the last 14 days
-      this.q().exec("INSERT INTO backup(day,data) VALUES(?,?) ON CONFLICT(day) DO UPDATE SET data=excluded.data", day, JSON.stringify(this.snapshot())); this.kv("backup", day);
-      this.q().exec("DELETE FROM backup WHERE day < ?", new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10)); return { ok: true, key };
-    }
-    await this.env.MODELS.put(key, JSON.stringify(this.snapshot()), { httpMetadata: { contentType: "application/json" } }); this.kv("backup", day);
-    if (this.env.MODELS.list && this.env.MODELS.delete) { const old = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), l = await this.env.MODELS.list({ prefix: "nest/backups/" }).catch(() => ({ objects: [] }));
+    const r = await this.keepCopy(day, this.snapshot()); this.kv("backup", day);
+    const keepDays = this.env.MODELS ? 30 : 14, old = new Date(Date.now() - keepDays * 864e5).toISOString().slice(0, 10), q = this.q();
+    if (!this.env.MODELS) q.exec("DELETE FROM backup WHERE day < ?", old);
+    else if (this.env.MODELS.list && this.env.MODELS.delete) { const l = await this.env.MODELS.list({ prefix: "nest/backups/" }).catch(() => ({ objects: [] }));
       for (const o of l.objects || []) if (o.key.slice(13, 23) < old) await this.env.MODELS.delete(o.key).catch(() => {}); }
-    return { ok: true, key };
+    q.exec("DELETE FROM kept WHERE day < ?", old);
+    // photos that were let go of while a copy still needed them: now no kept copy does (and nothing on the list uses them)
+    const used = this.used(); for (const g of q.exec("SELECT id FROM gone WHERE id NOT IN (SELECT id FROM kept)").toArray()) { if (!used.has(g.id)) await this.dropPhoto(g.id, true); q.exec("DELETE FROM gone WHERE id=?", g.id); }
+    return { ok: true, key, photos: r.photos, missing: r.missing.length ? r.missing : undefined };
+  }
+  // put the registry back as a copy had it: a daily copy by its day, or an export file (whose photos come back from it)
+  async restore(body) {
+    let snap = null, from;
+    if (body.file && typeof body.file === "object") { snap = body.file; from = "file"; }
+    else if (/^\d{4}-\d\d-\d\d(~[\w-]+)?$/.test(String(body.day || ""))) {
+      from = String(body.day);
+      if (this.env.MODELS) { const o = await this.env.MODELS.get("nest/backups/" + from + ".json").catch(() => null); snap = o ? JSON.parse(await o.text()) : null; }
+      else { const r = this.q().exec("SELECT data FROM backup WHERE day=?", from).toArray()[0]; snap = r ? JSON.parse(r.data) : null; }
+    } else return { error: "say which copy: { day: \"YYYY-MM-DD\" } or { file: <an export> }", status: 400 };
+    if (!snap) return { error: "there's no copy for " + from, status: 404 };
+    if (snap.kind !== "the-nest-registry-backup" || !snap.docs || typeof snap.docs !== "object") return { error: "that isn't a copy of this registry", status: 400 };
+    const docs = Object.entries(snap.docs).filter(([p, d]) => PATH.test(p) && !p.startsWith("locks/") && d && typeof d === "object");
+    // first, what's here now becomes a copy of its own (so this can be undone), with the photos it needs kept
+    const t = new Date().toISOString(), undo = t.slice(0, 10) + "~before-restore-" + t.slice(11, 19).replace(/:/g, "");
+    await this.keepCopy(undo, this.snapshot());
+    // the photos inside an export file come back too (only real images, only ones not already here)
+    let back = 0;
+    if (snap.photos && typeof snap.photos === "object") for (const [id, uri] of Object.entries(snap.photos)) {
+      if (!BLOB_ID.test(id) || (await this.hasPhoto(id))) continue; const m = /^data:(image\/(?:jpeg|png|webp|gif|avif));base64,([A-Za-z0-9+/=]+)$/.exec(String(uri)); if (!m) continue;
+      const bin = atob(m[2]), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      if (this.env.MODELS) await this.env.MODELS.put("nest/" + id, buf, { httpMetadata: { contentType: m[1] } });
+      else { if (buf.byteLength > PHOTO_DB_MAX) continue; this.q().exec("INSERT INTO photo(id,type,data,at) VALUES(?,?,?,?)", id, m[1], buf, Date.now()); }
+      this.q().exec("DELETE FROM gone WHERE id=?", id); back++;
+    }
+    const q = this.q(), now = Date.now();
+    this.ctx.storage.transactionSync(() => {
+      q.exec("DELETE FROM doc WHERE path NOT LIKE 'locks/%'"); for (const [p, d] of docs) q.exec("INSERT INTO doc(path,data,at) VALUES(?,?,?)", p, JSON.stringify(d), now);
+      if (snap.finds && typeof snap.finds === "object") { q.exec("DELETE FROM find"); for (const [k, d] of Object.entries(snap.finds)) if (/^[A-Za-z0-9_-]{1,64}$/.test(k) && d && typeof d === "object") q.exec("INSERT INTO find(item,data,at) VALUES(?,?,?)", k, JSON.stringify(d), now); }
+    });
+    const need = this.photoIds({ docs: Object.fromEntries(docs) }), missing = []; for (const id of need) { if (await this.hasPhoto(id)) q.exec("DELETE FROM gone WHERE id=?", id); else missing.push(id); }
+    this.bump();
+    return { ok: true, from, docs: docs.length, photos: need.length - missing.length, photosBack: back, missing: missing.length ? missing : undefined, undo };
   }
   async photos(snap) { // the photos of the items and the parents' picks, inside the file (suggestions not kept are left out)
-    const ids = new Set(); for (const [p, d] of Object.entries(snap.docs)) if (p.startsWith("items/")) { if (d.imageId) ids.add(d.imageId); for (const o of d.options || []) if (o.i) ids.add(o.i); }
-    const out = {};
-    for (const id of ids) { if (!BLOB_ID.test(id)) continue; const o = await this.getPhoto(id); if (!o) continue;
+    const out = {}; snap.photosMissing = [];
+    for (const id of this.photoIds(snap)) { const o = await this.getPhoto(id); if (!o) { snap.photosMissing.push(id); continue; }
       const b = new Uint8Array(o.body); let bin = ""; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
       out[id] = "data:" + o.type + ";base64," + btoa(bin); }
     return out;
@@ -365,6 +422,14 @@ export class Nest extends DurableObject {
       return new Response(JSON.stringify(snap), { headers: { "content-type": "application/json", "cache-control": "no-store", "content-disposition": 'attachment; filename="nest-registry-backup-' + snap.saved.slice(0, 10) + '.json"' } });
     }
     if (path === "/backup" && post) { if (!me.owner) return J({ error: "owner only" }, 403); const r = await this.backup(); this.bump(); return J(r, r.error ? 503 : 200); }
+    if (path === "/backups" && !post) { // the copies a restore can go back to, newest first
+      if (!me.owner) return J({ error: "owner only" }, 403);
+      let days = [];
+      if (this.env.MODELS && this.env.MODELS.list) { const l = await this.env.MODELS.list({ prefix: "nest/backups/" }).catch(() => ({ objects: [] })); days = (l.objects || []).map((o) => o.key.slice(13).replace(/\.json$/, "")); }
+      else days = this.q().exec("SELECT day FROM backup").toArray().map((r) => r.day);
+      return J({ copies: days.filter((d) => /^\d{4}-\d\d-\d\d(~[\w-]+)?$/.test(d)).sort().reverse() });
+    }
+    if (path === "/restore" && post) { if (!me.owner) return J({ error: "only the owner restores the registry" }, 403); const r = await this.restore(body); return J(r, r.status || 200); }
     if (path === "/invite" && post) { if (!me.owner) return J({ error: "only the owner makes a new invite link" }, 403); const which = body.which === "parent" ? "pinvite" : "invite", k = rnd(12); this.kv(which, k); this.bump(); return J({ ok: true, [which]: k }); }
     if (path === "/upgrade" && post) { // already in on this device, and now opening the co-parent link
       const pkey = this.kv("pinvite"); if (!pkey || !same(body.key, pkey)) return J({ ok: true, parent: this.parent(me) });

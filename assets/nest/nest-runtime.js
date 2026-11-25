@@ -92,6 +92,8 @@
     photosLeft: () => (state && state.photosLeft) || 0,
     refreshPhotos: async () => { const r = await call("/photos", { method: "POST", body: "{}" }); await pull(); return r; },
     exportUrl: () => API + "/export",
+    backups: () => call("/backups"), // the daily copies there are to go back to (owner)
+    restore: async (b) => { const r = await call("/restore", { method: "POST", body: JSON.stringify(b) }); await pull(); return r; }, // { day } or { file } (owner)
     grab: (url) => call("/grab", { method: "POST", body: JSON.stringify({ url }) }),
     read: (id) => call("/read", { method: "POST", body: JSON.stringify({ id }) }), // a photo or screenshot → name, brand, price, shop, category
     fromLink: (url) => call("/fromlink", { method: "POST", body: JSON.stringify({ url }) }), // a shop's link → name, price, photo

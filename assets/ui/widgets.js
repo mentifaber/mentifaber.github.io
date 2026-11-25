@@ -115,10 +115,12 @@
     try {
       const v = await fn();
       el.classList.remove("skel");
-      if (v.href && el.tagName === "A" && !el.getAttribute("href")) el.href = v.href;
+      if (v.href && el.tagName === "A" && (!el.getAttribute("href") || el.hasAttribute("data-fb"))) el.href = v.href;
+      if (el.hasAttribute("data-fb")) el.removeAttribute("aria-label"); // data-fb: a plain fallback link, kept crawlable until the live one replaces it
       el.innerHTML = '<span class="wl"><span>' + esc(v.label) + "</span></span>" + (v.art || "") + '<div class="wv"' + (v.tone === "up" ? ' style="color:#3dffa8"' : v.tone === "down" ? ' style="color:#ff6b6b"' : "") + ">" + v.value + '</div><div class="ws">' + esc(v.sub) + "</div>";
     } catch (e) {
       el.classList.remove("skel");
+      el.removeAttribute("aria-label"); // the "Offline" card names itself
       el.innerHTML = '<span class="wl"><span>' + esc(el.dataset.label || kind) + '</span></span><div class="wv" style="font-size:18px;color:var(--dim)">Offline</div><div class="ws">the feed didn\'t answer; it retries on your next visit</div>';
     }
   }
