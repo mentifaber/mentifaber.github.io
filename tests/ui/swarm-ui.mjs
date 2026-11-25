@@ -45,4 +45,18 @@ await p.click('#ptabs [data-pt="swarm"]'); assert.equal(await p.isVisible("#boar
 await p.click('#ptabs [data-pt="run"]'); await p.waitForTimeout(400); await p.screenshot({ path: OUT + "swarm-" + DEV + "-fixed.png" });
 const sw = await p.evaluate(() => document.documentElement.scrollWidth), vw = await p.evaluate(() => innerWidth); assert.ok(sw <= vw + 1, "sideways scroll " + sw);
 assert.deepEqual(errs, []); ok("no page errors (the sandbox ones are gone), no sideways scroll");
+// a visitor (no owner sign-in): the list shows the project this browser started, not another visitor's, not the
+// owner's unpublished mission; and it opens in full for the browser that holds its key
+const K = "7".repeat(32); for (const [vid, t, c] of [["bbbbbbb1", "My own sketch", K], ["bbbbbbb2", "Someone else's notes", "8".repeat(32)]])
+  H.db.prepare("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,NULL,1,'t',?,150,?,0)").run(vid, t, t + " brief", "working", Date.now(), c);
+const vc = await b.newContext({ viewport: DEV === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: DEV === "mobile", hasTouch: DEV === "mobile", serviceWorkers: "block" });
+await vc.route(/\/api\/hive\//, async (route) => { const req = route.request(), u = new URL(req.url()); const res = await H.hive.fetch(new Request("https://mentifaber.org" + u.pathname + u.search, { method: req.method(), headers: { "content-type": "application/json" }, body: req.method() === "POST" ? req.postData() : undefined }));
+  const h = {}; res.headers.forEach((v, k) => (h[k] = v)); return route.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) }); });
+await vc.route(/\/api\/(?!hive)/, (rt) => rt.fulfill({ contentType: "application/json", body: "{}" })); await vc.route(/^(?!http:\/\/localhost:8099)/, (rt) => rt.abort());
+await vc.addInitScript((k) => { try { localStorage.setItem("hive-mine", JSON.stringify({ bbbbbbb1: k })); } catch (e) {} }, K);
+const vp = await vc.newPage(); await vp.goto("http://localhost:8099/hive-app.html#swarm");
+await vp.waitForFunction(() => /My own sketch/.test(document.getElementById("plist").textContent), null, { timeout: 8000 });
+const vl = await vp.textContent("#plist"); assert.doesNotMatch(vl, /Someone else's notes/); assert.doesNotMatch(vl, /Counter/); assert.match(await vp.textContent("#swho"), /only results the owner publishes are shown to everyone/);
+await vp.click("#plist [data-id='bbbbbbb1']"); await vp.waitForFunction(() => /My own sketch/.test(document.getElementById("ptitle").textContent), null, { timeout: 8000 }); assert.ok(await vp.$("#join"), "its starter gets the join link");
+ok("a visitor's list shows the project this browser started (and it opens), not another visitor's or the owner's unpublished mission");
 await b.close(); console.log("all passed", DEV);

@@ -5,7 +5,7 @@ const H = await import("./harness.mjs"); const { call, calls, db, setResponder, 
 let n = 0; const ok = (m) => console.log("  ✓ " + (++n) + " " + m);
 const mk = (id, title, by) => { db.prepare("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,'t',?,100,'c',1)").run(id, title, title, "done", "```html run\n<!doctype html><p>" + title + "</p>\n```", Date.now()); db.prepare("INSERT INTO idea(ts,title,detail,status,pid,by_,done_ts) VALUES(?,?,?,?,?,?,?)").run(Date.now(), title, "x", "built", id, by, Date.now()); };
 await call("/genesis"); mk("g1", "Tide Clock", "genesis"); mk("g2", "Orbit Garden", "genesis"); mk("g3", "Crater Atlas", "genesis");
-assert.equal((await call("/ran", { id: "g1", ok: true }, false)).error, "only whoever started this project can report a run");
+assert.equal((await call("/ran", { id: "g1", ok: true }, false)).error, "no such project"); // AutoFaber's missions are private: to a stranger they aren't there
 await call("/ran", { id: "g1", ok: true, why: "ran clean" }); await call("/ran", { id: "g2", ok: false, why: "Uncaught ReferenceError: THREE is not defined" });
 assert.equal(JSON.parse(db.prepare("SELECT ran FROM proj WHERE id='g2'").get().ran).ok, false); assert.equal((await call("/ran", { id: "g1", ok: true, ctok: "c" }, false)).ok, true); ok("a run is recorded by the owner or whoever holds the mission's key, nobody else");
 await H.hive.ctx.storage.put("genesis", { ...(await H.hive.ctx.storage.get("genesis")), reflected: Date.now() - 2 * 3600e3 });

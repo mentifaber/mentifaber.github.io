@@ -46,7 +46,7 @@ assert.match(inv.sys, /Hugging Face datasets \(rows from datasets-server\.huggin
 const html = "# Tide clock\n\n```html run\n<!doctype html><html><body><h1>Tides</h1></body></html>\n```\n";
 db.prepare("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,'t',?,100,'c',1)").run("p1", "Tide Clock!", "tides", "done", html, Date.now());
 db.prepare("INSERT INTO proj(id,title,brief,status,final,calls,tok,ts,cap,ctok,own) VALUES(?,?,?,?,?,0,'t',?,100,'c',1)").run("p2", "An essay", "essay", "done", "Just words, no code.", Date.now());
-assert.match((await call("/publish", { id: "p1" }, false)).error, /only the owner/);
+assert.match((await call("/publish", { id: "p1" }, false)).error, /no such project/); // to anyone else an unpublished project isn't there
 let pb = await call("/publish", { id: "p1" }); assert.match(pb.slug, /^tide-clock-[0-9a-f]{4}$/); assert.equal(pb.url, "https://mentifaber.org/p/" + pb.slug); assert.equal(pb.live, true);
 let got = await call("/pub/" + pb.slug, null, false); assert.equal(got.title, "Tide Clock!"); assert.match(got.final, /```html run/); assert.equal(got.id, undefined); assert.equal(got.live, true);
 assert.match((await call("/publish", { id: "p2" })).error, /nothing that runs/); ok("the owner publishes a runnable result at /p/<slug>; anyone can open it; writing with nothing to run isn't published");
