@@ -49,6 +49,13 @@ await p.click("#mkDev"); await p.waitForSelector("#devLink"); const dev = (await
 assert.match(await p.textContent("#devSt"), /A device link is on/);
 assert.deepEqual(await p.evaluate(async (u) => (await fetch(u.replace(/^https?:\/\/[^/]+/, ""))).json(), dev), { ok: true });
 await p.goto(local(famLink)); await p.waitForSelector(".state.ok"); assert.match(await p.textContent(".state"), /checked in today at .*\(by their device\)/);
+// a motion sensor uses the same key: its link (per room) reports movement; the family sees the room; quiet hours save
+await p.goto(local(meLink)); await p.waitForSelector("#ok"); await p.click("#set summary"); await p.click("#mkDev"); await p.waitForSelector("#senseLink");
+const sense = (await p.textContent("#senseLink")).trim(); assert.match(sense, /\/api\/checkin\/[0-9a-f]{16}\/sense\?t=[0-9a-f]{32}&room=kitchen$/);
+assert.deepEqual(await p.evaluate(async (u) => (await fetch(u.replace(/^https?:\/\/[^/]+/, ""))).json(), sense.replace("room=kitchen", "room=hall")), { ok: true });
+await p.selectOption("#quiet", "4"); await p.click("#saveQuiet"); await p.waitForFunction(() => document.querySelector("#quiet") && document.querySelector("#quiet").value === "4");
+await p.goto(local(famLink)); await p.waitForSelector("#rooms"); assert.match(await p.textContent("#rooms"), /Movement\s*Hall: [\s\S]*told if no room sees anyone for 4 hours/);
+ok("a motion sensor: its link per room reports movement; the family sees which room and when; quiet hours save");
 await p.goto(local(meLink)); await p.waitForSelector("#ok"); await p.click("#set summary"); await p.click("#offDev"); await p.waitForSelector("#offDev", { state: "detached" });
 assert.equal(await p.evaluate(async (u) => (await fetch(u.replace(/^https?:\/\/[^/]+/, ""))).status, dev), 403);
 ok("a device link: shown once, checks in when an automation opens it (the family sees it was the device); turned off, it stops");
