@@ -543,8 +543,9 @@ const worker = {
     // home page or an open Swarm tab doesn't wake a Durable Object each time (the free plan counts every request)
     const ttl = SHARED_READS[url.pathname], key = ttl && req.method === "GET" && !url.search && !/(?:^|;\s*)mf_vigil=/.test(req.headers.get("cookie") || "") && typeof caches !== "undefined" && caches.default ? new Request(url.origin + "/__shared" + url.pathname) : null;
     if (key) { const hit = await caches.default.match(key).catch(() => null); if (hit) return hit; }
-    let res; try { res = await worker.serve(req, env, ctx); }
-    catch (e) { return backup(spare || req, env, e); }
+    const t0 = Date.now(); let res; try { res = await worker.serve(req, env, ctx); }
+    catch (e) { diag(req, url, 0, Date.now() - t0, e); return backup(spare || req, env, e); }
+    diag(req, url, res.status, Date.now() - t0);
     if (key && res.status === 200) { const copy = new Response(res.clone().body, res); copy.headers.set("cache-control", "public, max-age=" + ttl); ctx.waitUntil(caches.default.put(key, copy).catch(() => {})); }
     return res;
   },
@@ -560,7 +561,7 @@ const worker = {
     if (path === "/autofaber.apk" || path === "/android") { // the AutoFaber Android app: the release-signed build when there is one, else the test build
       if (env.MODELS && (await env.MODELS.head("apk/autofaber-android/AutoFaber.apk").catch(() => null))) return new Response(null, { status: 302, headers: { location: "/store/apk/org.mentifaber.autofaber", "cache-control": "public, max-age=300" } }); // mirrored in R2 (src/store.js)
       const base = "https://github.com/mentifaber/mentifaber.github.io/releases/download/", signed = base + "autofaber-android/AutoFaber.apk";
-      const has = await fetch(signed, { method: "HEAD", redirect: "manual", cf: { cacheTtl: 600 } }).then((r) => r.status === 302 || r.status === 200).catch(() => false);
+      const has = await fetch(signed, { method: "HEAD", redirect: "manual", cf: { cacheTtl: 600 }, signal: AbortSignal.timeout(8000) }).then((r) => r.status === 302 || r.status === 200).catch(() => false);
       return new Response(null, { status: 302, headers: { location: has ? signed : base + "autofaber-android-test/AutoFaber-test.apk", "cache-control": "public, max-age=300" } });
     }
     if (path === "/.well-known/assetlinks.json") return new Response(JSON.stringify(ASSETLINKS), { headers: { "content-type": "application/json", "cache-control": "public, max-age=3600", "access-control-allow-origin": "*" } });
@@ -598,7 +599,7 @@ const worker = {
         const GROUPS = new Set(["stations", "visual", "weather", "noaa", "goes", "gps-ops", "galileo", "amateur", "science", "geo", "starlink", "resource", "cubesat", "last-30-days"]);
         const q = g && GROUPS.has(g) ? "GROUP=" + g : n && /^\d{1,9}$/.test(n) ? "CATNR=" + n : null;
         if (!q) return json({ error: "ask for a known group or a numeric catnr" }, 400);
-        const r = await fetch("https://celestrak.org/NORAD/elements/gp.php?" + q + "&FORMAT=tle", { cf: { cacheTtl: 7200, cacheEverything: true }, headers: { "user-agent": "mentifaber.org Overhead" } }).catch(() => null);
+        const r = await fetch("https://celestrak.org/NORAD/elements/gp.php?" + q + "&FORMAT=tle", { cf: { cacheTtl: 7200, cacheEverything: true }, headers: { "user-agent": "mentifaber.org Overhead" }, signal: AbortSignal.timeout(15000) }).catch(() => null);
         const t = r && r.ok ? await r.text() : "";
         if (!/^1 \d/m.test(t)) return json({ error: "no elements from CelesTrak" + (r ? " (" + r.status + ")" : "") }, 502);
         return new Response(t, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
@@ -669,6 +670,19 @@ const worker = {
   },
 };
 export default worker;
+
+// One structured log line per API request that failed (5xx or a thrown error) or took longer than 8 s, so a timeout or
+// failure can be traced to its route and subsystem: {evt, sub, route, method, status, ms, err}. Nothing private: the route
+// has ids and keys replaced by ":id" and no query string (where tokens go); no headers, bodies or cookies; an error keeps
+// only its type and a short message with long hex strings, emails and numbers taken out. Visible in Workers Logs or
+// `wrangler tail`.
+export function diagLine(url, method, status, ms, e) {
+  if (!url.pathname.startsWith("/api/") || (status && status < 500 && ms < 8000 && !e)) return null;
+  const route = url.pathname.split("/").map((x, i) => (i > 2 && (/^[0-9a-f-]{8,}$/i.test(x) || /\d/.test(x) && x.length > 6 || x.length > 40) ? ":id" : x)).join("/").slice(0, 120);
+  const err = e ? (String(e.name || "Error") + ": " + String(e.message || e).replace(/[0-9a-f]{12,}/gi, "…").replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "…").replace(/\d{3,}/g, "…")).slice(0, 160) : undefined;
+  return { evt: "api", sub: url.pathname.split("/")[2] || "", route, method, status: status || 0, ms, slow: ms >= 8000 || undefined, err };
+}
+function diag(req, url, status, ms, e) { try { const l = diagLine(url, req.method, status, ms, e); if (l) console.log(JSON.stringify(l)); } catch (x) {} }
 
 const SHARED_READS = { "/api/hive/models": 60, "/api/hive/list": 15, "/api/agent/status": 60, "/api/tether/board": 30 }; // seconds; visitors only (no owner cookie)
 

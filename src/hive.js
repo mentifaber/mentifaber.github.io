@@ -208,7 +208,7 @@ export class Hive extends DurableObject {
       const key = this.env[k.env]; if (!key) continue;
       let ids = k.models || [];
       if (k.list) try {
-        const j = await (await fetch(k.list, { headers: { authorization: "Bearer " + key } })).json();
+        const j = await (await fetch(k.list, { headers: { authorization: "Bearer " + key }, signal: AbortSignal.timeout(15000) })).json();
         ids = (j.data || []).filter((m) => !k.free || (m.pricing && +m.pricing.prompt === 0 && +m.pricing.completion === 0) || /:free$/.test(m.id)).map((m) => m.id)
           .filter((id) => !/whisper|tts|guard|embed|vision-only|image/i.test(id)).slice(0, 40);
       } catch (e) {}
@@ -226,7 +226,7 @@ export class Hive extends DurableObject {
     }
     const k = KEYED.find((x) => x.id === agent.src); if (!k) throw new Error("no provider");
     const res = await fetch(k.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + this.env[k.env], "http-referer": "https://mentifaber.org/hive", "x-title": "Mentifaber AutoFaber" },
-      body: JSON.stringify({ model: agent.model, max_tokens: max || 2048, messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
+      body: JSON.stringify({ model: agent.model, max_tokens: max || 2048, messages: [{ role: "system", content: system }, { role: "user", content: user }] }), signal: AbortSignal.timeout(90000) }); // the same 90 s as complete() in src/hive-kit.js
     if (!res.ok) throw new Error(k.id + " " + res.status);
     const j = await res.json(); return String((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "").trim();
   }
@@ -769,7 +769,7 @@ export class Hive extends DurableObject {
     if (this._envM && Date.now() - this._envM.at < 3600e3) return this._envM.list;
     const list = [];
     for (const k of KEYED) { const key = this.env[k.env]; if (!key) continue; let ids = k.models || [];
-      if (k.list) try { const j = await (await fetch(k.list, { headers: { authorization: "Bearer " + key } })).json(); ids = (j.data || []).map((m) => m.id).filter((id) => !/whisper|tts|guard|embed|image|audio|moderation/i.test(id)); if (k.free) ids = [...ids.filter((i) => /:free$/.test(i)), ...ids.filter((i) => !/:free$/.test(i))]; } catch (e) {}
+      if (k.list) try { const j = await (await fetch(k.list, { headers: { authorization: "Bearer " + key }, signal: AbortSignal.timeout(15000) })).json(); ids = (j.data || []).map((m) => m.id).filter((id) => !/whisper|tts|guard|embed|image|audio|moderation/i.test(id)); if (k.free) ids = [...ids.filter((i) => /:free$/.test(i)), ...ids.filter((i) => !/:free$/.test(i))]; } catch (e) {}
       for (const m of ids.filter(isChat).slice(0, 3000)) list.push({ id: "k:env-" + k.id + "|" + m, name: m, group: k.id[0].toUpperCase() + k.id.slice(1) + " (site secret)", vision: /vision|gpt-4o|gpt-4\.1|gpt-5|claude|gemini|llama-4|pixtral|-vl/i.test(m) }); }
     this._envM = { at: Date.now(), list }; return list;
   }
