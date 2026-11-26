@@ -1,0 +1,15 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "find",
+   "label": "Find a neighbour who can help",
+   "changes": false,
+   "desc": "Finds who on the street open in Street Skills has offered to help with something (fixing a bike, translating, a form, pet sitting), with how and when, and how often they've been thanked.",
+   "args": {
+    "what": "string"
+   },
+   "words": "neighbour neighbours neighbor neighbors skills skill volunteer babysit petsit translate"
+  }
+ ]
+}

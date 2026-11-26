@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/skills">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Street Skills · Mentifaber</title>
+<meta name="description" content="Who on your street can fix a bike, translate a letter, help with a form or sit with the dog, and an ask goes straight to them. Thanks are counted, never money.">
+<meta name="theme-color" content="#0c0b0e">
+<link rel="icon" href="assets/icons/v2/skills.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/skills-180.png">
+<link rel="manifest" href="assets/manifests/skills.webmanifest">
+<style>
+/* Street Skills: the cards in the corner-shop window. Each one a neighbour's handwriting: what they can do, how to find
+   them, and a tally of thank-yous along the bottom. */
+:root { --bg: #0c0b0e; --sheet: #141218; --card: #1b1820; --line: #332e3b; --acc: #c9a3ff; --acc-hi: #e8d9ff; --ink: #efecf3; --dim: #a59fae; --ok: #8fd18f; --bad: #ff8a6b;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--acc-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin: 24px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 66ch; } .lede a { color: var(--acc-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #100e13; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #1d0a33; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--acc-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .chips button { font: 14px var(--sans); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px; cursor: pointer; } .chips button[aria-pressed="true"] { border-color: var(--acc); color: var(--acc-hi); }
+.offers { display: grid; gap: 8px; margin-top: 8px; }
+.offer { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; } .offer.mine { border-color: var(--acc); }
+.offer .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; } .offer b { overflow-wrap: anywhere; } .offer small { color: var(--dim); }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; }
+.note { color: var(--dim); font-size: 14px; margin-top: 4px; overflow-wrap: anywhere; }
+.asks { list-style: none; margin: 8px 0 0; padding: 0; } .asks li { font-size: 14px; border-top: 1px solid var(--line); padding: 6px 0; overflow-wrap: anywhere; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+form.sub { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.lnk { background: none; border: 0; color: var(--acc-hi); font: inherit; font-size: 14px; cursor: pointer; padding: 2px 0; text-decoration: underline; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--acc-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Street Skills", "description": "Who on your street can fix a bike, translate a letter, help with a form or sit with the dog, and an ask goes straight to them. Thanks are counted, never money.", "url": "https://mentifaber.org/skills", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/skills-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Street Skills</span><a href="./">The workshop</a></div>
+  <h1>What your street <span>can do</span></h1>
+  <p class="lede">Who nearby can fix a bike, translate a letter, help with a form, carry a sofa or sit with the dog. Put down what you can do, and anyone on the street can ask you. Thanks are counted, never money. It's the same street as your <a href="street">Street Board</a> and <a href="library">Street Library</a>.</p>
+
+  <div id="pick" class="panel"><b>Which street?</b>
+    <div class="bar"><button class="btn" id="here" type="button">Use where I am</button><span class="status">or</span></div>
+    <form class="bar" id="f-name"><label style="flex:1 1 220px">A name your street agrees on<input class="in" id="bname" maxlength="40" placeholder="Elm Street"></label><button class="btn ghost" type="submit" style="align-self:flex-end">Open it</button></form>
+    <p class="status" id="p-st" role="status"></p></div>
+
+  <div id="main" hidden>
+    <div class="bar"><b id="n-board"></b><button class="btn ghost sm" id="change" type="button">Another street</button><span class="status" id="sync" role="status"></span></div>
+    <div class="grid" style="margin-top:8px"><label>Your name, as the street knows you<input class="in" id="me" maxlength="24" placeholder="Ann at no. 12"></label><label>Find someone who can…<input class="in" id="q" maxlength="40" placeholder="bike, French, tax form"></label></div>
+    <div class="chips" id="kinds" role="group" aria-label="What kind of help"></div>
+    <h2>On this street</h2>
+    <div class="offers" id="offers"></div>
+    <h2>Offer something</h2>
+    <form class="panel" id="f-add"><div class="grid"><label>What you can do<input class="in" id="a-what" maxlength="60" required placeholder="Fix bikes: punctures, brakes, gears"></label>
+      <label>What kind<select class="in" id="a-kind"></select></label></div>
+      <label style="margin-top:10px">How and when <span class="status">(optional)</span><input class="in" id="a-note" maxlength="200" placeholder="Weekend mornings; knock at no. 12"></label>
+      <div class="bar"><button class="btn" type="submit">Put it up</button><span class="status" id="a-st" role="status"></span></div>
+      <p class="status" style="margin:6px 0 0">Only this phone can take it down. What you put up, and asks to you, can be seen by anyone with the street's name.</p></form>
+  </div>
+</div>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("skills:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("skills:" + k, JSON.stringify(v)); } catch (e) {} } };
+  const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const KINDS = [["fix", "Fixing"], ["help", "Forms & tech"], ["care", "Pets, plants & kids"], ["teach", "Teaching"], ["lift", "Lifting & lifts"], ["make", "Making & cooking"]], KN = Object.fromEntries(KINDS);
+  const ago = (ms) => { const d = Math.round((Date.now() - ms) / 864e5); return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago"; };
+  const GH = "0123456789bcdefghjkmnpqrstuvwxyz";
+  function geohash(lat, lon, n = 5) { let a = [-90, 90], o = [-180, 180], out = "", bit = 0, ch = 0, even = true;
+    while (out.length < n) { const r = even ? o : a, v = even ? lon : lat, mid = (r[0] + r[1]) / 2; if (v >= mid) { ch = (ch << 1) | 1; r[0] = mid; } else { ch <<= 1; r[1] = mid; } even = !even; if (++bit === 5) { out += GH[ch]; bit = 0; ch = 0; } } return out; }
+  const boardOk = (b) => /^[0-9bcdefghjkmnpqrstuvwxyz]{5}$/.test(b) || /^[a-z0-9][a-z0-9-]{2,23}$/.test(b);
+  const slug = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24);
+  const up = (m) => m.charAt(0).toUpperCase() + m.slice(1) + ".";
+  let B = null, offers = [], mine = LS.get("mine", {}), kind = "";
+  const keyOf = (id) => (mine[B] || {})[id];
+  async function api(body) { const r = await fetch("/api/skills/" + B, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "couldn't reach the workshop"); return j; }
+
+  $("#a-kind").innerHTML = KINDS.map(([k, l]) => '<option value="' + k + '">' + l + "</option>").join("");
+  $("#kinds").innerHTML = '<button type="button" data-k="" aria-pressed="true">Everything</button>' + KINDS.map(([k, l]) => '<button type="button" data-k="' + k + '" aria-pressed="false">' + l + "</button>").join("");
+  $("#kinds").onclick = (e) => { const b = e.target.closest("[data-k]"); if (!b) return; kind = b.dataset.k; for (const x of document.querySelectorAll("#kinds button")) x.setAttribute("aria-pressed", String(x === b)); draw(); };
+
+  // ── which street ──
+  function open(b) { B = b; LS.set("board", B); history.replaceState(null, "", "#b=" + B); $("#pick").hidden = true; $("#main").hidden = false; $("#n-board").textContent = "Street " + B; $("#me").value = LS.get("me", ""); load(); }
+  $("#here").onclick = () => { const st = $("#p-st"); if (!navigator.geolocation) { st.textContent = "This browser can't tell where it is: use a name."; return; } st.className = "status"; st.textContent = "Finding where you are…";
+    navigator.geolocation.getCurrentPosition((p) => open(geohash(p.coords.latitude, p.coords.longitude)), () => { st.className = "status bad"; st.textContent = "Couldn't get your location: use a name your street agrees on."; }, { timeout: 15000, maximumAge: 600000 }); };
+  $("#f-name").onsubmit = (e) => { e.preventDefault(); const b = slug($("#bname").value); if (!boardOk(b)) { $("#p-st").className = "status bad"; $("#p-st").textContent = "A name of 3 to 24 letters and digits."; return; } open(b); };
+  $("#change").onclick = () => { B = null; history.replaceState(null, "", location.pathname); $("#main").hidden = true; $("#pick").hidden = false; };
+  $("#me").addEventListener("change", () => LS.set("me", $("#me").value.trim().slice(0, 24)));
+  $("#q").addEventListener("input", () => draw());
+  async function load() { $("#sync").className = "status"; $("#sync").textContent = "Fetching the street…"; try { offers = (await api()).offers; $("#sync").textContent = ""; } catch (x) { $("#sync").className = "status bad"; $("#sync").textContent = up(x.message); } draw(); }
+
+  // ── the list ──
+  function draw() {
+    const q = $("#q").value.trim().toLowerCase(), list = offers.filter((x) => (!kind || x.kind === kind) && (!q || (x.what + " " + x.note + " " + x.by).toLowerCase().includes(q)));
+    list.sort((a, b) => (!!keyOf(b.id) - !!keyOf(a.id)) || (b.thanks || 0) - (a.thanks || 0) || b.at - a.at);
+    $("#offers").innerHTML = list.length ? list.map((x) => { const m = !!keyOf(x.id);
+      return '<div class="offer' + (m ? " mine" : "") + '" data-id="' + esc(x.id) + '"><div class="h"><b>' + esc(x.what) + "</b><span class=\"tag\">" + esc(KN[x.kind] || "Help") + "</span></div>" +
+        "<small>" + (m ? "yours" : esc(x.by)) + " · " + (x.thanks ? x.thanks + " thank" + (x.thanks === 1 ? "" : "s") : "no thanks yet") + "</small>" + (x.note ? '<div class="note">' + esc(x.note) + "</div>" : "") +
+        (m ? (x.asks.length ? '<ul class="asks">' + x.asks.map((a) => "<li><span><b>" + esc(a.by) + "</b> asked " + esc(ago(a.at)) + ": " + esc(a.text) + '</span><button class="lnk" type="button" data-answered="' + esc(a.aid) + '">Done</button></li>').join("") + "</ul>" : '<div class="note">No asks yet.</div>') +
+            '<div class="bar"><button class="btn ghost sm" type="button" data-act="rm">Take it down</button></div>'
+          : '<form class="sub" data-f="ask"><label>Ask ' + esc(x.by) + '<input class="in" name="text" maxlength="200" placeholder="Could you look at my back brake this Saturday?"></label><div class="bar"><button class="btn sm" type="submit">Ask</button><button class="btn ghost sm" type="button" data-act="thank">Say thanks</button><span class="status say" role="status"></span></div></form>') + "</div>"; }).join("")
+      : '<p class="status">' + (offers.length ? "Nobody on this street has offered that yet." : "Nothing offered on this street yet. Be the first: what can you do?") + "</p>";
+  }
+  const say = (card, t, cls) => { const s = card.querySelector(".say"); if (s) { s.textContent = t; s.className = "status say" + (cls ? " " + cls : ""); } };
+  const swap = (o) => { const i = offers.findIndex((x) => x.id === o.id); if (i >= 0) offers[i] = o; else offers.unshift(o); };
+  $("#offers").addEventListener("submit", async (e) => { const f = e.target.closest("form[data-f=ask]"); if (!f) return; e.preventDefault(); const card = f.closest("[data-id]"), by = $("#me").value.trim();
+    if (!by) { say(card, "Say your name first, above.", "bad"); $("#me").focus(); return; }
+    try { swap((await api({ op: "ask", id: card.dataset.id, by, text: f.text.value.trim() })).offer); draw(); say(document.querySelector('[data-id="' + card.dataset.id + '"]'), "Asked. They'll see it when they open the street's skills.", "ok"); }
+    catch (x) { say(card, up(x.message), "bad"); } });
+  $("#offers").addEventListener("click", async (e) => { const b = e.target.closest("button"); if (!b) return; const card = b.closest("[data-id]"); if (!card) return; const id = card.dataset.id;
+    try {
+      if (b.dataset.act === "thank") { swap((await api({ op: "thank", id })).offer); draw(); say(document.querySelector('[data-id="' + id + '"]'), "Thanked.", "ok"); }
+      else if (b.dataset.answered) { swap((await api({ op: "answered", id, key: keyOf(id), aid: b.dataset.answered })).offer); draw(); }
+      else if (b.dataset.act === "rm") { if (!confirm("Take this down?")) return; await api({ op: "remove", id, key: keyOf(id) }); offers = offers.filter((x) => x.id !== id); delete (mine[B] || {})[id]; LS.set("mine", mine); draw(); }
+    } catch (x) { say(card, up(x.message), "bad"); if (!card.querySelector(".say")) alert(up(x.message)); } });
+  $("#f-add").onsubmit = async (e) => { e.preventDefault(); const st = $("#a-st"), by = $("#me").value.trim(); if (!by) { st.className = "status bad"; st.textContent = "Say your name first, above."; $("#me").focus(); return; }
+    const id = hex(6), k = hex(16);
+    try { const j = await api({ op: "add", offer: { id, what: $("#a-what").value.trim(), kind: $("#a-kind").value, note: $("#a-note").value.trim(), by }, ok: await sha(k) });
+      (mine[B] = mine[B] || {})[id] = k; LS.set("mine", mine); swap(j.offer); $("#a-what").value = $("#a-note").value = ""; st.className = "status ok"; st.textContent = "It's up."; draw(); }
+    catch (x) { st.className = "status bad"; st.textContent = up(x.message); } };
+
+  const m = /^#b=([a-z0-9-]{3,24})$/.exec(location.hash), fromStreet = (() => { try { return JSON.parse(localStorage.getItem("street:board") || "null"); } catch (e) { return null; } })();
+  const start = m && boardOk(m[1]) ? m[1] : LS.get("board", null) || fromStreet; if (start && boardOk(start)) open(start);
+
+  // Faber Verbs (tools/site/content/skills.json): AutoFaber asks "who on my street can fix a bike?"
+  if (window.Faber) Faber.verbs({
+    find: async (a) => { if (!B) throw new Error("Open Street Skills on your street first."); offers = (await api()).offers; const q = String(a.what || "").toLowerCase().split(/\W+/).filter((w) => w.length > 2);
+      const hits = offers.filter((x) => !q.length || q.some((w) => (x.what + " " + x.note).toLowerCase().includes(w))); if (!hits.length) return "Nobody on street " + B + " has offered that yet.";
+      return hits.slice(0, 6).map((x) => x.by + ": " + x.what + (x.note ? " (" + x.note + ")" : "") + (x.thanks ? ", thanked " + x.thanks + " times" : "")).join("; ") + "."; },
+  });
+})();
+</script>
+</body>
+</html>

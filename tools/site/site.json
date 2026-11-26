@@ -81,6 +81,14 @@
     "added": "2026-11-26"
   },
   {
+    "href": "skills.html",
+    "name": "Street Skills",
+    "desc": "Street Library for what people can do: who on your street can fix a bike, translate a letter, help with a form or sit with the dog, and an ask goes straight to them. Thanks are counted, never money.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "repair.html",
     "name": "Repair Café",
     "desc": "A pop-up repair day for your street: neighbours book a slot from a Street Board notice, the door keeps the queue with Fix or Replace's verdict on each thing, and every fix from the workshop's table leaves with a Device Passport.",
