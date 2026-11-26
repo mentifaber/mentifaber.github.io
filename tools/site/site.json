@@ -249,6 +249,14 @@
     "added": "2026-11-25"
   },
   {
+    "href": "bills.html",
+    "name": "Bill Watch",
+    "desc": "This month's phone, internet, power or insurance bill against last month's: every charge that went up, every new fee and every discount that ended, quoted from the bill, with the questions to ask. Worked out on your device; no bill is sent anywhere.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-25"
+  },
+  {
     "href": "movein.html",
     "name": "Move-in, Move-out",
     "desc": "A rental's condition, proved twice: walk each room with photos at move-in and at move-out, each walk sealed with the date by the workshop. See room by room what changed, and turn a deposit dispute into a Claim Kit. The photos stay on your device.",
