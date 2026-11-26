@@ -1,0 +1,13 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "balance",
+   "label": "Who owes whom in the open kitty",
+   "changes": false,
+   "desc": "In the House Kitty open on this device: each person's balance (owed or owing) and the fewest payments that settle everyone up.",
+   "args": {},
+   "words": "kitty housemates housemate flatmates roommates split splitting settle settled"
+  }
+ ]
+}

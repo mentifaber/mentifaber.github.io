@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/kitty">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>House Kitty · Mentifaber</title>
+<meta name="description" content="Shared costs for housemates, couples and trips: who paid for what, split evenly or by share, and the fewest payments that settle everyone up.">
+<meta name="theme-color" content="#0b0d0b">
+<link rel="icon" href="assets/icons/v2/kitty.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/kitty-180.png">
+<link rel="manifest" href="assets/manifests/kitty.webmanifest">
+<style>
+/* House Kitty: the jar on the kitchen shelf. Receipts go in, and the slip taped to the lid says who owes whom. */
+:root { --bg: #0b0d0b; --sheet: #131612; --card: #1a1e18; --line: #2f372c; --acc: #b9d97a; --acc-hi: #e1f2b8; --ink: #eef2e8; --dim: #a2aa97; --ok: #8fd18f; --bad: #ff9a7b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; overflow-wrap: anywhere; } h1 span { color: var(--acc-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin: 26px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 68ch; } .lede a, .status a { color: var(--acc-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0f110e; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #182405; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--acc-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; } .btn.warn { border-color: var(--bad); color: var(--bad); background: transparent; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.chk { display: inline-flex; gap: 6px; align-items: center; color: var(--ink); font-size: 15px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+.chk input[type=number] { width: 4.2em; margin: 0; padding: 4px 6px; }
+.list { list-style: none; margin: 8px 0 0; padding: 0; } .list li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; border-top: 1px solid var(--line); padding: 8px 0; flex-wrap: wrap; } .list li > span { min-width: 0; overflow-wrap: anywhere; }
+.list small { display: block; color: var(--dim); font-size: 13px; }
+.bal { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 8px; margin-top: 8px; }
+.bal div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; } .bal div.me { border-color: var(--acc); }
+.bal b { display: block; font: 700 22px var(--sans); } .bal .pos { color: var(--ok); } .bal .neg { color: var(--bad); } .bal small { color: var(--dim); font-size: 13px; }
+.pay { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 8px; } .pay.mine { border-color: var(--acc); }
+.link { font: 13px var(--mono); word-break: break-all; background: #0f110e; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+.lnk { background: none; border: 0; color: var(--acc-hi); font: inherit; font-size: 14px; cursor: pointer; padding: 2px 0; text-decoration: underline; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--acc-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "House Kitty", "description": "Shared costs for housemates, couples and trips: who paid for what, split evenly or by share, and the fewest payments that settle everyone up.", "url": "https://mentifaber.org/kitty", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/kitty-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · House Kitty</span><a href="./">The workshop</a></div>
+
+  <div id="start">
+    <h1>Shared costs, <span>settled fairly</span></h1>
+    <p class="lede">For housemates, couples and trips. Put in who paid for what, split evenly or by share (a bigger room counts double), and the kitty works out who owes whom, and the fewest payments that settle everyone up. It's encrypted in your browser with a key that's only in the kitty's link, so the site can't read it. Bills from <a href="bills">Bill Watch</a> drop straight in.</p>
+    <div id="mine"></div>
+    <h2>Start a kitty</h2>
+    <form class="panel" id="f-new">
+      <div class="grid"><label>What it's for<input class="in" id="n-name" maxlength="60" required placeholder="12 Elm St, or the Lisbon trip"></label><label>Your name<input class="in" id="n-me" maxlength="30" required placeholder="Ann"></label></div>
+      <div class="grid" style="margin-top:10px"><label>Everyone else, with commas<input class="in" id="n-others" maxlength="300" placeholder="Bob, Cat"></label><label>Money in<select class="in" id="n-cur"><option value="$">$ dollars</option><option value="£">£ pounds</option><option value="€">€ euros</option><option value="">no symbol</option></select></label></div>
+      <div class="bar"><button class="btn" type="submit">Start it</button><span class="status" id="n-st" role="status"></span></div>
+    </form>
+  </div>
+
+  <div id="who" hidden>
+    <h1 id="w-title"></h1>
+    <div class="panel"><b>Which one is you, on this phone?</b><div class="bar" id="who-list"></div>
+      <form class="bar" id="who-f"><label style="flex:1 1 200px">Or add yourself<input class="in" id="who-in" maxlength="30"></label><button class="btn ghost" type="submit" style="align-self:flex-end">That's me</button></form></div>
+  </div>
+
+  <div id="main" hidden>
+    <h1 id="k-title"></h1>
+    <div class="bar" style="margin-top:0"><span class="status" id="me-line"></span><button class="lnk" type="button" id="not-me">Not you?</button><span class="status" id="sync" role="status"></span></div>
+
+    <h2>Who's up and who's down</h2>
+    <div class="bal" id="bal"></div>
+    <h2>To settle up</h2>
+    <div id="plan"></div>
+
+    <h2>Add a cost</h2>
+    <form class="panel" id="f-cost">
+      <div class="grid"><label>What for<input class="in" id="c-what" maxlength="80" required placeholder="Electricity, November"></label><label>How much<input class="in" id="c-amt" inputmode="decimal" maxlength="12" required placeholder="120.00"></label><label>Paid by<select class="in" id="c-by"></select></label><label>On<input class="in" id="c-date" type="date"></label></div>
+      <div style="margin-top:10px"><span class="status">Split between</span> <label class="chk" style="border:0;padding:0 0 0 8px"><input type="checkbox" id="c-uneven"> by shares</label><div class="bar" id="c-among" style="margin-top:6px"></div></div>
+      <div class="bar"><button class="btn" type="submit">Add it</button><span class="status" id="c-st" role="status"></span></div>
+      <div id="from-bills" hidden><p class="status" style="margin:10px 0 0">From Bill Watch on this phone:</p><div class="bar" id="bills" style="margin-top:4px"></div></div>
+    </form>
+
+    <h2>Costs</h2>
+    <ul class="list" id="costs"></ul>
+    <div id="paid-box" hidden><h2>Paid back</h2><ul class="list" id="paid"></ul></div>
+
+    <h2>The kitty</h2>
+    <div class="panel">
+      <b>Its link</b> <span class="status">Anyone with it is in the kitty. Send it the way you'd send a house key.</span>
+      <div class="link" id="k-link"></div>
+      <div class="bar"><button class="btn ghost sm" type="button" id="copy">Copy the link</button></div>
+      <form class="bar" id="f-person"><label style="flex:1 1 200px">Add someone<input class="in" id="p-name" maxlength="30"></label><button class="btn ghost sm" type="submit" style="align-self:flex-end">Add</button></form>
+      <div class="bar" style="margin-top:16px"><button class="btn sm warn" type="button" id="del">Delete the kitty for everyone</button></div>
+    </div>
+  </div>
+</div>
+<script src="assets/kitty/settle.js"></script>
+<script src="assets/bills/compare.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const clean = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+  const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  const hexOf = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join(""), rid = () => hexOf(crypto.getRandomValues(new Uint8Array(5)));
+  const say = (el, t, cls) => { el.textContent = t || ""; el.className = "status" + (cls ? " " + cls : ""); };
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const nice = (d) => new Date(d + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  const S = window.KittySums;
+
+  // ── the kitty's key: only in the link's #fragment; the server checks a one-way hash of it (as Care Circle does) ──
+  let id = null, key = null, K = null, T = null, ver = 0, D = null, me = "";
+  const tokenOf = async (k) => hexOf(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("kitty-token:" + k))).slice(0, 32);
+  async function useKey(kid, k) { id = kid; key = k; K = await crypto.subtle.importKey("raw", unb64u(k), "AES-GCM", false, ["encrypt", "decrypt"]); T = await tokenOf(k); }
+  const seal = async (obj) => { const iv = crypto.getRandomValues(new Uint8Array(12)), ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, K, new TextEncoder().encode(JSON.stringify(obj))); return { ct: b64u(ct), iv: b64u(iv) }; };
+  const open = async (r) => JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(r.iv) }, K, unb64u(r.ct))));
+  const api = async (path, body) => { const r = await fetch("/api/kitty/" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: T, ...body }) } : { headers: { "x-kitty-token": T }, cache: "no-store" }); return { s: r.status, j: await r.json().catch(() => ({})) }; };
+  const linkOf = () => location.origin + "/kitty#k=" + id + "." + key;
+  const tidy = (d) => ({ kitty: 1, name: clean(d.name, 60) || "A kitty", cur: ["$", "£", "€", ""].includes(d.cur) ? d.cur : "$", people: (d.people || []).filter((p) => p && p.id && p.name).slice(0, 40), costs: (d.costs || []).slice(-2000), paid: (d.paid || []).slice(-1000) });
+  const money = (c) => (c < 0 ? "−" : "") + (D ? D.cur : "$") + (Math.abs(c) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const nameOf = (pid) => (D.people.find((p) => p.id === pid) || { name: "someone who left" }).name;
+  const meId = () => (D.people.find((p) => p.name === me) || {}).id;
+
+  // the kitties this phone has the links of (only the links: what's in them stays encrypted on the server)
+  const mine = () => { try { return JSON.parse(localStorage.getItem("kitty:list") || "[]"); } catch (e) { return []; } };
+  const remember = () => { try { const xs = mine().filter((x) => x.id !== id); xs.unshift({ id, key, name: D.name }); localStorage.setItem("kitty:list", JSON.stringify(xs.slice(0, 12))); localStorage.setItem("kitty:me:" + id, me); } catch (e) {} };
+
+  // every change: made to the latest kitty; if someone else changed it first, made again on top of theirs
+  let busy = Promise.resolve();
+  const setSync = (t, bad) => say($("#sync"), t, bad ? "bad" : "");
+  const change = (fn) => (busy = busy.then(async () => {
+    for (let tries = 0; tries < 4; tries++) {
+      const next = tidy(structuredClone(D)); fn(next); const { s, j } = await api(id, { v: ver, ...(await seal(next)) });
+      if (s === 200) { D = next; ver = j.v; setSync("Saved."); draw(); return true; }
+      if (s === 409) { D = tidy(await open(j)); ver = j.v; continue; }
+      setSync(s === 404 ? "This kitty doesn't exist any more." : "Couldn't save that: " + (j.error || "no network") + ". Try again.", true); return false;
+    }
+    setSync("Couldn't save that: the kitty kept changing. Try again.", true); return false;
+  }).catch(() => { setSync("Couldn't reach the workshop. Try again when you're online.", true); return false; }));
+  async function pull() { if (!id || document.hidden) return; try { const { s, j } = await api(id); if (s === 200 && j.v !== ver) { D = tidy(await open(j)); ver = j.v; draw(); } else if (s === 404) setSync("This kitty doesn't exist any more.", true); } catch (e) {} }
+  setInterval(pull, 15000); addEventListener("focus", pull);
+
+  // ── starting, opening ──
+  function drawStart() { const xs = mine(); $("#mine").innerHTML = xs.length ? '<h2>Your kitties</h2><ul class="list">' + xs.map((x) => "<li><b>" + esc(x.name) + '</b><a class="btn ghost sm" href="#k=' + esc(x.id) + "." + esc(x.key) + '">Open</a></li>').join("") + "</ul>" : ""; }
+  $("#f-new").onsubmit = async (e) => {
+    e.preventDefault(); const st = $("#n-st"), by = clean($("#n-me").value, 30), others = $("#n-others").value.split(",").map((x) => clean(x, 30)).filter(Boolean);
+    const names = [by, ...others].filter((x, i, a) => a.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i);
+    const kid = hexOf(crypto.getRandomValues(new Uint8Array(8))), k = b64u(crypto.getRandomValues(new Uint8Array(32))); await useKey(kid, k);
+    const d = tidy({ name: $("#n-name").value, cur: $("#n-cur").value, people: names.map((name) => ({ id: rid(), name })) }); say(st, "Starting it…");
+    try { const { s, j } = await api(id, { v: 0, ...(await seal(d)) }); if (s !== 200) throw new Error(j.error || "couldn't start it"); D = d; ver = j.v; me = by; remember(); history.replaceState(null, "", "#k=" + id + "." + key); show(); }
+    catch (x) { say(st, x.message.charAt(0).toUpperCase() + x.message.slice(1) + ".", "bad"); id = null; }
+  };
+  async function fromHash() {
+    const m = /^#k=([0-9a-f]{16})\.([A-Za-z0-9_-]{43})$/.exec(location.hash);
+    if (!m) { id = null; $("#main").hidden = $("#who").hidden = true; $("#start").hidden = false; drawStart(); return; }
+    await useKey(m[1], m[2]); say($("#n-st"), "Opening the kitty…");
+    try { const { s, j } = await api(id); if (s !== 200) throw new Error(j.error || "couldn't open it"); D = tidy(await open(j)); ver = j.v; say($("#n-st"), ""); }
+    catch (x) { $("#start").hidden = false; $("#main").hidden = true; drawStart(); say($("#n-st"), x.name === "OperationError" ? "That link's key doesn't open this kitty." : x.message.charAt(0).toUpperCase() + x.message.slice(1) + ".", "bad"); id = null; return; }
+    try { me = localStorage.getItem("kitty:me:" + id) || ""; } catch (e) { me = ""; }
+    if (!me || !meId()) return askWho(); remember(); show();
+  }
+  function askWho() { $("#start").hidden = $("#main").hidden = true; $("#who").hidden = false; $("#w-title").textContent = D.name;
+    $("#who-list").innerHTML = D.people.map((p) => '<button class="btn ghost" type="button" data-n="' + esc(p.name) + '">' + esc(p.name) + "</button>").join(""); }
+  $("#who-list").onclick = (e) => { const b = e.target.closest("[data-n]"); if (b) { me = b.dataset.n; remember(); show(); } };
+  $("#who-f").onsubmit = async (e) => { e.preventDefault(); const n = clean($("#who-in").value, 30); if (!n) return; me = n;
+    if (!D.people.some((p) => p.name === n)) await change((d) => { if (!d.people.some((p) => p.name === n)) d.people.push({ id: rid(), name: n }); }); remember(); show(); };
+  $("#not-me").onclick = () => { try { localStorage.removeItem("kitty:me:" + id); } catch (e) {} me = ""; askWho(); };
+  addEventListener("hashchange", fromHash);
+  function show() { $("#start").hidden = $("#who").hidden = true; $("#main").hidden = false; $("#k-link").textContent = linkOf(); $("#c-date").value = today(); drawBills(); draw(); }
+
+  // ── drawing it ──
+  function draw() {
+    if (!D || $("#main").hidden) return; document.title = D.name + " · House Kitty";
+    $("#k-title").textContent = D.name; $("#me-line").textContent = "You're " + me + " on this phone.";
+    const bal = S.balances(D), plan = S.settle(bal), my = meId();
+    $("#bal").innerHTML = D.people.map((p) => { const n = bal[p.id] || 0; return '<div class="' + (p.id === my ? "me" : "") + '"><small>' + esc(p.name) + (p.id === my ? " (you)" : "") + '</small><b class="' + (n > 0 ? "pos" : n < 0 ? "neg" : "") + '">' + (n > 0 ? "+" : "") + money(n) + "</b><small>" + (n > 0 ? "is owed" : n < 0 ? "owes" : "square") + "</small></div>"; }).join("");
+    $("#plan").innerHTML = plan.length ? plan.map((x, i) => '<div class="pay' + (x.from === my || x.to === my ? " mine" : "") + '"><span><b>' + esc(nameOf(x.from)) + "</b> pays <b>" + esc(nameOf(x.to)) + "</b> " + money(x.amount) + '</span><button class="btn sm" type="button" data-paid="' + i + '">Mark it paid</button></div>').join("") +
+      '<p class="status" style="margin:6px 0 0">' + plan.length + " payment" + (plan.length === 1 ? "" : "s") + " settle" + (plan.length === 1 ? "s" : "") + " everyone up: the fewest it can be done in.</p>" : '<p class="status">Everyone is square.</p>';
+    const by = $("#c-by").value; $("#c-by").innerHTML = D.people.map((p) => '<option value="' + esc(p.id) + '"' + ((by ? p.id === by : p.id === my) ? " selected" : "") + ">" + esc(p.name) + "</option>").join("");
+    const was = Object.fromEntries([...document.querySelectorAll("#c-among [data-p]")].map((x) => [x.dataset.p, [x.querySelector("[type=checkbox]").checked, x.querySelector("[type=number]").value]]));
+    $("#c-among").innerHTML = D.people.map((p) => { const w = was[p.id]; return '<label class="chk" data-p="' + esc(p.id) + '"><input type="checkbox"' + (!w || w[0] ? " checked" : "") + "> " + esc(p.name) + ' <input class="in" type="number" min="0" max="20" step="0.5" value="' + (w ? esc(w[1]) : "1") + '" aria-label="' + esc(p.name) + '\'s share"' + ($("#c-uneven").checked ? "" : " hidden") + "></label>"; }).join("");
+    $("#costs").innerHTML = D.costs.length ? [...D.costs].reverse().map((c) => { const s = S.shares(c), split = c.weights ? Object.entries(s).filter(([, n]) => n).map(([p, n]) => nameOf(p) + " " + money(n)).join(", ") : (c.among.length === D.people.length ? "split evenly" : "split between " + c.among.map(nameOf).join(", "));
+      return '<li data-c="' + esc(c.id) + '"><span><b>' + esc(c.what) + "</b> " + money(c.amount) + "<small>" + esc(nameOf(c.paidBy)) + " paid · " + esc(nice(c.date)) + " · " + esc(split) + '</small></span><button class="lnk" type="button" data-rm-c>Remove</button></li>'; }).join("") : '<li class="status">Nothing yet.</li>';
+    $("#paid-box").hidden = !D.paid.length; $("#paid").innerHTML = [...D.paid].reverse().map((p) => '<li data-p="' + esc(p.id) + '"><span>' + esc(nameOf(p.from)) + " paid " + esc(nameOf(p.to)) + " " + money(p.amount) + "<small>" + esc(nice(p.date)) + '</small></span><button class="lnk" type="button" data-rm-p>Undo</button></li>').join("");
+  }
+  $("#c-uneven").onchange = () => { for (const x of document.querySelectorAll("#c-among [type=number]")) x.hidden = !$("#c-uneven").checked; };
+
+  // ── changing it ──
+  const cents = (s) => { const t = String(s || "").replace(/[^\d.,]/g, ""); const v = /,\d{1,2}$/.test(t) && !/\.\d/.test(t) ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, ""); const n = Math.round(Number(v) * 100); return isFinite(n) && n > 0 && n < 1e10 ? n : 0; };
+  $("#f-cost").onsubmit = async (e) => {
+    e.preventDefault(); const st = $("#c-st"), amount = cents($("#c-amt").value), what = clean($("#c-what").value, 80), uneven = $("#c-uneven").checked;
+    const rows = [...document.querySelectorAll("#c-among [data-p]")].filter((x) => x.querySelector("[type=checkbox]").checked), among = rows.map((x) => x.dataset.p);
+    if (!amount) { say(st, "Say how much, like 120.00.", "bad"); return; } if (!among.length) { say(st, "Tick who it's split between.", "bad"); return; }
+    const cost = { id: rid(), what, amount, paidBy: $("#c-by").value, among, date: $("#c-date").value || today(), by: me, at: Date.now() };
+    if (uneven) { cost.weights = Object.fromEntries(rows.map((x) => [x.dataset.p, Math.max(0, Number(x.querySelector("[type=number]").value) || 0)])); if (!Object.values(cost.weights).some((w) => w > 0)) { say(st, "Give at least one person a share.", "bad"); return; } }
+    say(st, "Adding it…"); if (await change((d) => d.costs.push(cost))) { say(st, what + ", " + money(amount) + ", added.", "ok"); $("#c-what").value = $("#c-amt").value = ""; }
+  };
+  $("#plan").onclick = async (e) => { const b = e.target.closest("[data-paid]"); if (!b) return; const x = S.settle(S.balances(D))[+b.dataset.paid]; if (!x) return; b.disabled = true;
+    await change((d) => d.paid.push({ id: rid(), from: x.from, to: x.to, amount: x.amount, date: today(), by: me, at: Date.now() })); };
+  $("#costs").onclick = async (e) => { if (!e.target.matches("[data-rm-c]")) return; const cid = e.target.closest("[data-c]").dataset.c, c = D.costs.find((x) => x.id === cid); if (!c || !confirm("Remove " + c.what + " (" + money(c.amount) + ") for everyone?")) return; await change((d) => { d.costs = d.costs.filter((x) => x.id !== cid); }); };
+  $("#paid").onclick = async (e) => { if (!e.target.matches("[data-rm-p]")) return; const pid = e.target.closest("[data-p]").dataset.p; await change((d) => { d.paid = d.paid.filter((x) => x.id !== pid); }); };
+  $("#f-person").onsubmit = async (e) => { e.preventDefault(); const n = clean($("#p-name").value, 30); if (!n) return; if (D.people.some((p) => p.name.toLowerCase() === n.toLowerCase())) { $("#p-name").value = ""; return; }
+    if (await change((d) => { if (!d.people.some((p) => p.name.toLowerCase() === n.toLowerCase())) d.people.push({ id: rid(), name: n }); })) $("#p-name").value = ""; };
+  $("#copy").onclick = async () => { try { await navigator.clipboard.writeText(linkOf()); $("#copy").textContent = "Copied"; } catch (x) { $("#copy").textContent = "Select it above and copy"; } };
+  $("#del").onclick = async () => { if (!confirm("Delete " + D.name + " for everyone? Its costs and payments go with it.")) return; const { s, j } = await api(id + "/delete", {}); if (s !== 200 && s !== 404) { setSync(j.error || "Couldn't delete it.", true); return; }
+    try { localStorage.setItem("kitty:list", JSON.stringify(mine().filter((x) => x.id !== id))); localStorage.removeItem("kitty:me:" + id); } catch (x) {} id = null; location.hash = ""; };
+
+  // Bill Watch's bills on this phone: the latest month of each, its total read the way Bill Watch reads it
+  function drawBills() {
+    let accts = []; try { const d = JSON.parse(localStorage.getItem("bills:v1") || "{}"); accts = Array.isArray(d.accounts) ? d.accounts : []; } catch (e) {}
+    const got = accts.map((a) => { const m = [...(a.months || [])].sort((x, y) => (x.month < y.month ? 1 : -1))[0]; if (!m || !window.BillWatch) return null; const t = BillWatch.parse(m.text).total; return t && t.amount > 0 ? { name: a.name, month: m.month, amount: t.amount } : null; }).filter(Boolean);
+    $("#from-bills").hidden = !got.length;
+    $("#bills").innerHTML = got.map((g, i) => '<button class="btn ghost sm" type="button" data-b="' + i + '">' + esc(g.name) + ", " + esc(new Date(g.month + "-15T12:00").toLocaleDateString(undefined, { month: "long" })) + ": " + money(g.amount) + "</button>").join("");
+    $("#bills").onclick = (e) => { const b = e.target.closest("[data-b]"); if (!b) return; const g = got[+b.dataset.b]; $("#c-what").value = g.name + ", " + new Date(g.month + "-15T12:00").toLocaleDateString(undefined, { month: "long", year: "numeric" }); $("#c-amt").value = (g.amount / 100).toFixed(2); $("#c-amt").focus(); };
+  }
+
+  fromHash();
+
+  // Faber Verbs (tools/site/content/kitty.json): AutoFaber asks "who owes who in the house kitty?"
+  if (window.Faber) Faber.verbs({
+    balance: () => { if (!D || !id) throw new Error("Open a kitty first: House Kitty keeps each one behind its own link.");
+      const bal = S.balances(D), plan = S.settle(bal); return D.name + ": " + D.people.map((p) => p.name + " " + (bal[p.id] > 0 ? "is owed " + money(bal[p.id]) : bal[p.id] < 0 ? "owes " + money(-bal[p.id]) : "is square")).join("; ") + "." + (plan.length ? " To settle: " + plan.map((x) => nameOf(x.from) + " pays " + nameOf(x.to) + " " + money(x.amount)).join("; ") + "." : ""); },
+  });
+})();
+</script>
+</body>
+</html>

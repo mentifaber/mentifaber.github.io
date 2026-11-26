@@ -6,10 +6,10 @@
   <url><loc>https://mentifaber.org/ballast</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/barycenter</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/bills</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/blackout</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/blackout</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/bubble-editor</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/care</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/care</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/cartograph-app</loc><lastmod>2026-11-23</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/cartograph</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/checkin</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
@@ -28,17 +28,18 @@
   <url><loc>https://mentifaber.org/duely-app</loc><lastmod>2026-11-25</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/duely</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/estate</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/fix</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/fix</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/frames</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/graveyard</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/hive-app</loc><lastmod>2026-11-23</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/hive</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/house</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/</loc><lastmod>2026-11-26</lastmod><priority>1.0</priority></url>
+  <url><loc>https://mentifaber.org/kitty</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/letters</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/lexicon</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/library</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/local-ai</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/library</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/local-ai</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/makers</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/mentiplayer-app</loc><lastmod>2026-11-25</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/mentiplayer</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
@@ -72,8 +73,8 @@
   <url><loc>https://mentifaber.org/privacy</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/proximity-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/proximity</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
-  <url><loc>https://mentifaber.org/record</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/repair</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/record</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/repair</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/roku-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/roku</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/rootcause</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
@@ -89,7 +90,7 @@
   <url><loc>https://mentifaber.org/sonicveil-app</loc><lastmod>2026-10-28</lastmod><priority>0.6</priority></url>
   <url><loc>https://mentifaber.org/sonicveil</loc><lastmod>2026-11-26</lastmod><priority>0.8</priority></url>
   <url><loc>https://mentifaber.org/store</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
-  <url><loc>https://mentifaber.org/street</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
+  <url><loc>https://mentifaber.org/street</loc><lastmod>2026-11-25</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/subs</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/terms</loc><lastmod>2026-11-26</lastmod><priority>0.5</priority></url>
   <url><loc>https://mentifaber.org/tether-app</loc><lastmod>2026-11-24</lastmod><priority>0.6</priority></url>

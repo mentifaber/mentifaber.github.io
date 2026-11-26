@@ -105,6 +105,14 @@
     "added": "2026-11-26"
   },
   {
+    "href": "kitty.html",
+    "name": "House Kitty",
+    "desc": "Shared costs for housemates, couples and trips: who paid for what, split evenly or by share, and the fewest payments that settle everyone up. Encrypted in your browser with a key only in the kitty's link, so the site can't read it.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",
