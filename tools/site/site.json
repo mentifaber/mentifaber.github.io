@@ -81,6 +81,14 @@
     "added": "2026-11-26"
   },
   {
+    "href": "repair.html",
+    "name": "Repair Café",
+    "desc": "A pop-up repair day for your street: neighbours book a slot from a Street Board notice, the door keeps the queue with Fix or Replace's verdict on each thing, and every fix from the workshop's table leaves with a Device Passport.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",

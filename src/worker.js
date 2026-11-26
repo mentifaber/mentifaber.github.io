@@ -15,6 +15,7 @@ import { seal } from "./seal.js"; // the workshop's seal: Device Passports and W
 import { portal, uptimeSweep } from "./portal.js";
 import { makers } from "./makers.js";
 import { letters } from "./letters.js";
+import { repair } from "./repair.js"; // Repair Café: a pop-up repair day's slots, door queue and tables
 import { library } from "./library.js"; // Street Library: neighbours lend each other tools, with the condition photo's fingerprint
 import { care } from "./care.js"; // Care Circle: a family's shared page for looking after someone, encrypted in the browser
 import { board } from "./board.js"; // Street Board: a neighbourhood noticeboard that keeps working in an outage
@@ -615,6 +616,7 @@ const worker = {
       }
       if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS, sendPush, vapid: () => store(env).vapid() }); // a check-in after the family was told sends them an all-clear
       if (route === "board") return board(req, env, json); // Street Board: posts phones carried while the network was down meet here (src/board.js)
+      if (route === "repair") return repair(req, env, json); // Repair Café: slots, the door's queue, each fix written up at the table (src/repair.js)
       if (route === "library") return library(req, env, json); // Street Library: who has what, who has it now, when it's due back (src/library.js)
       if (route === "care") return care(req, env, json); // Care Circle: ciphertext and a version; the site can't read a circle (src/care.js)
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
