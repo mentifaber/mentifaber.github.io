@@ -97,6 +97,14 @@
     "added": "2026-11-26"
   },
   {
+    "href": "due.html",
+    "name": "Due Dates",
+    "desc": "The dates buried in letters, renewals and notices: every one that asks something of you (pay by, renew on, reply before, an appointment), with the sentence it's in, added to your calendar as one file. Worked out on your phone.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",

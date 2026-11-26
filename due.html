@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/due">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Due Dates · Mentifaber</title>
+<meta name="description" content="The dates buried in letters, renewals and notices: every one that asks something of you, with the sentence it&#x27;s in, ready for your calendar.">
+<meta name="theme-color" content="#0b0c0e">
+<link rel="icon" href="assets/icons/v2/due.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/due-180.png">
+<link rel="manifest" href="assets/manifests/due.webmanifest">
+<style>
+/* Due Dates: a desk calendar with the letters pinned to it. Each date is ringed, and the line from the letter that set it
+   is written underneath in the letter's own words. */
+:root { --bg: #0b0c0e; --sheet: #13151a; --card: #191c22; --line: #2d323c; --acc: #8fb8ff; --acc-hi: #cfe0ff; --ink: #edf0f5; --dim: #9ea6b4; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 880px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--acc-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin: 26px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 68ch; } .lede a, .status a { color: var(--acc-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px var(--sans); color: var(--ink); background: #0f1115; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; margin-top: 4px; min-width: 0; }
+textarea.in { min-height: 130px; resize: vertical; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #071530; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--acc-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.chk { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 14px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.items { display: grid; gap: 8px; margin-top: 8px; }
+.item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.item.off, .item.off .cal { border-style: dashed; } .item.off .cal b { text-decoration: line-through; }
+.cal { text-align: center; min-width: 58px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; align-self: start; } .cal b { display: block; font: 700 24px/1.1 var(--sans); } .cal small { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--acc); display: block; }
+.cal .soon { color: var(--warn); }
+.item .body { min-width: 0; } .item .ttl { width: 100%; font-weight: 600; } .item q { display: block; color: var(--dim); font-size: 14px; margin-top: 6px; overflow-wrap: anywhere; quotes: "“" "”"; } .item mark { background: none; color: var(--acc-hi); font-weight: 700; }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.pay, .tag.reply, .tag.deadline { color: var(--warn); border-color: var(--warn); } .tag.appointment { color: var(--acc-hi); border-color: var(--acc); }
+.row2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--dim); } .row2 .in { width: auto; margin: 0; padding: 4px 8px; font-size: 14px; }
+.lnk { background: none; border: 0; color: var(--acc-hi); font: inherit; font-size: 13px; cursor: pointer; padding: 2px 0; text-decoration: underline; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--acc-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Due Dates", "description": "The dates buried in letters, renewals and notices: every one that asks something of you, with the sentence it's in, ready for your calendar.", "url": "https://mentifaber.org/due", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/due-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Due Dates</span><a href="./">The workshop</a></div>
+  <h1>The dates <span>buried in letters</span></h1>
+  <p class="lede">Drop in the letters, renewals and notices. Every date that asks something of you comes out (pay by, renew on, reply before, an appointment, an expiry) with the sentence it's in, ready to add to your calendar as one file. Warranties from <a href="record">The Home Record</a> join the list. It's all worked out on this device: nothing is sent anywhere.</p>
+
+  <form class="panel" id="f">
+    <div class="bar" style="margin-top:0"><label class="btn" style="cursor:pointer;color:#071530">Choose letters (PDF or text)<input id="files" type="file" multiple accept=".pdf,.txt,.text,.eml,.html,application/pdf,text/plain" hidden></label></div>
+    <label style="margin-top:10px">Or paste a letter or an email<textarea class="in" id="text" placeholder="Copy the text from the letter, the email or the PDF. On a phone, a photo's text can be copied from the photo itself (Live Text or Google Lens)."></textarea></label>
+    <div class="grid" style="margin-top:10px"><label>Who it's from <span class="status">(optional)</span><input class="in" id="from" maxlength="80" placeholder="Northwind Insurance"></label>
+      <label class="chk" style="align-self:center"><input type="checkbox" id="dayfirst"> Dates are written day first (25/12/2026)</label></div>
+    <div class="bar"><button class="btn" type="submit">Find the dates</button><span class="status" id="st" role="status"></span></div>
+  </form>
+
+  <h2>Coming up</h2>
+  <div class="items" id="items"></div>
+  <div class="bar" id="acts" hidden><button class="btn" type="button" id="dl">Add to my calendar (.ics)</button><span class="status" id="dl-st" role="status"></span></div>
+  <p class="status" id="acts-note" hidden>The file opens in any calendar: Apple, Google, Outlook. Each date gets a reminder: three days before, or a day before an appointment. Untick any you don't want in it.</p>
+
+  <div id="rec-box" hidden><h2>From The Home Record</h2><label class="chk"><input type="checkbox" id="rec-on" checked> Include warranties that run out</label><div class="items" id="rec"></div></div>
+  <div class="bar" style="margin-top:22px"><button class="btn ghost sm" type="button" id="clear">Clear the list</button><span class="status">The list is kept on this device only.</span></div>
+</div>
+<script src="assets/due/dates.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("due:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("due:" + k, JSON.stringify(v)); } catch (e) {} } };
+  const D = window.DueDates, DAY = 864e5, rid = () => Math.random().toString(36).slice(2, 10);
+  const say = (el, t, cls) => { el.textContent = t || ""; el.className = "status" + (cls ? " " + cls : ""); };
+  const today = () => { const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); };
+  const daysTo = (iso) => Math.round((Date.parse(iso + "T00:00:00Z") - today()) / DAY);
+  const short = (iso) => new Date(iso + "T12:00:00Z"), mon = (iso) => short(iso).toLocaleDateString(undefined, { month: "short", timeZone: "UTC" }), dnum = (iso) => short(iso).getUTCDate();
+  const wday = (iso) => short(iso).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  let items = LS.get("items", []); // { id, date, time, kind, label, title, sentence, at, len, source, on }
+  const dfStored = LS.get("dayfirst", null); $("#dayfirst").checked = dfStored === null ? !/^en-US$/i.test(navigator.language || "en-US") : dfStored;
+  $("#dayfirst").onchange = () => LS.set("dayfirst", $("#dayfirst").checked);
+
+  // ── reading letters ──
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFW = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const loadScript = (src) => new Promise((ok, no) => { if (window.pdfjsLib) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the PDF reader")); document.head.appendChild(s); });
+  async function readFile(f) {
+    if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") { await loadScript(PDFJS); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFW; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = "";
+      for (let i = 1; i <= pdf.numPages; i++) { const c = await (await pdf.getPage(i)).getTextContent(); let y = null; for (const x of c.items) { const yy = x.transform ? Math.round(x.transform[5]) : null; out += (y !== null && yy !== y ? "\n" : out && !/\s$/.test(out) ? " " : "") + x.str; y = yy; } out += "\n\n"; }
+      return out; }
+    const t = await f.text(); return /\.html?$/i.test(f.name) ? new DOMParser().parseFromString(t, "text/html").body.innerText : t;
+  }
+  const firstLine = (t) => (String(t).split("\n").map((l) => l.trim()).find((l) => /[a-z]{3}/i.test(l) && l.length <= 60) || "").slice(0, 60);
+  function add(text, source) {
+    const found = D.find(text, { dayFirst: $("#dayfirst").checked, source });
+    let added = 0;
+    for (const f of found) { if (items.some((x) => x.date === f.date && x.sentence === f.sentence)) continue;
+      items.push({ id: rid(), ...f, title: f.label + (source ? " · " + source : ""), on: true }); added++; }
+    return { found: found.length, added };
+  }
+  $("#files").addEventListener("change", async (e) => { const fs = [...e.target.files]; e.target.value = ""; if (!fs.length) return; const st = $("#st"); say(st, "Reading…"); let n = 0;
+    try { for (const f of fs) { const t = await readFile(f); n += add(t, $("#from").value.trim() || firstLine(t) || f.name.replace(/\.[a-z0-9]+$/i, "")).added; } save(); draw(); say(st, n ? n + " date" + (n === 1 ? "" : "s") + " found." : "No dates that ask something of you in " + (fs.length === 1 ? "that" : "those") + ".", n ? "ok" : ""); }
+    catch (x) { say(st, "Couldn't read that: " + x.message + ". Paste the text instead.", "bad"); } });
+  $("#f").onsubmit = (e) => { e.preventDefault(); const t = $("#text").value, st = $("#st"); if (!t.trim()) { say(st, "Choose a letter or paste one first.", "bad"); return; }
+    const r = add(t, $("#from").value.trim() || firstLine(t)); save(); draw();
+    if (r.added) { say(st, r.added + " date" + (r.added === 1 ? "" : "s") + " found.", "ok"); $("#text").value = ""; $("#from").value = ""; } else say(st, r.found ? "Those dates are already on the list." : "No dates that ask something of you in that. Past dates, the letter's own date and dates in passing are left out.");
+  };
+
+  // ── the list ──
+  const save = () => { items.sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""))); LS.set("items", items); };
+  const quote = (x) => { const s = x.sentence; if (x.at == null || x.at < 0 || x.at + x.len > s.length) return esc(s); return esc(s.slice(0, x.at)) + "<mark>" + esc(s.slice(x.at, x.at + x.len)) + "</mark>" + esc(s.slice(x.at + x.len)); };
+  const row = (x, own) => { const d = daysTo(x.date);
+    return '<div class="item' + (x.on ? "" : " off") + '" data-id="' + esc(x.id) + '"><div class="cal" aria-hidden="true"><small>' + esc(mon(x.date)) + "</small><b" + (d <= 7 ? ' class="soon"' : "") + ">" + dnum(x.date) + "</b></div>" +
+      '<div class="body">' + (own ? '<label class="chk" style="justify-content:space-between"><input class="in ttl" data-f="title" value="' + esc(x.title) + '" maxlength="100" aria-label="What it is"></label>' : '<b>' + esc(x.title) + "</b>") +
+      '<div class="row2"><span class="tag ' + esc(x.kind) + '">' + esc(x.label) + "</span><span>" + esc(wday(x.date)) + (x.time ? " at " + esc(x.time) : "") + " · " + (d === 0 ? "today" : d === 1 ? "tomorrow" : "in " + d + " days") + "</span></div>" +
+      (x.sentence ? "<q>" + quote(x) + "</q>" : "") +
+      '<div class="row2"><label class="chk"><input type="checkbox" data-f="on"' + (x.on ? " checked" : "") + "> In the calendar file</label>" + (own ? '<label>Date <input class="in" type="date" data-f="date" value="' + esc(x.date) + '"></label><button class="lnk" type="button" data-rm>Remove</button>' : "") + (x.source ? "<span>From " + esc(x.source) + "</span>" : "") + "</div></div></div>"; };
+  let REC = [];
+  function draw() {
+    const live = items.filter((x) => daysTo(x.date) >= 0);
+    $("#items").innerHTML = live.length ? live.map((x) => row(x, true)).join("") : '<p class="status">Nothing yet. Drop in a letter above.</p>';
+    $("#rec-box").hidden = !REC.length; $("#rec").innerHTML = $("#rec-on").checked ? REC.map((x) => row(x, false)).join("") : "";
+    const n = picked().length; $("#acts").hidden = $("#acts-note").hidden = !n && !live.length; $("#dl").disabled = !n; $("#dl").textContent = "Add " + n + " to my calendar (.ics)";
+  }
+  const picked = () => [...items.filter((x) => x.on && daysTo(x.date) >= 0), ...($("#rec-on").checked ? REC.filter((x) => x.on) : [])].sort((a, b) => a.date.localeCompare(b.date));
+  $("#items").addEventListener("change", (e) => { const el = e.target, id = el.closest("[data-id]")?.dataset.id, x = items.find((i) => i.id === id); if (!x) return;
+    if (el.dataset.f === "on") x.on = el.checked; else if (el.dataset.f === "title") x.title = el.value.trim().slice(0, 100) || x.label; else if (el.dataset.f === "date" && /^\d{4}-\d\d-\d\d$/.test(el.value)) { x.date = el.value; x.at = -1; } save(); draw(); });
+  $("#items").addEventListener("click", (e) => { if (!e.target.matches("[data-rm]")) return; const id = e.target.closest("[data-id]").dataset.id; items = items.filter((i) => i.id !== id); save(); draw(); });
+  $("#rec").addEventListener("change", (e) => { const id = e.target.closest("[data-id]")?.dataset.id, x = REC.find((i) => i.id === id); if (x && e.target.dataset.f === "on") { x.on = e.target.checked; LS.set("rec-off", REC.filter((r) => !r.on).map((r) => r.id)); draw(); } });
+  $("#rec-on").onchange = () => { LS.set("rec-hide", !$("#rec-on").checked); draw(); };
+  $("#rec-on").checked = !LS.get("rec-hide", false);
+  $("#dl").onclick = () => { const list = picked(); if (!list.length) return; const blob = new Blob([D.ics(list)], { type: "text/calendar" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "due-dates.ics"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    say($("#dl-st"), list.length + " date" + (list.length === 1 ? "" : "s") + " in due-dates.ics: open it to add them.", "ok"); };
+  $("#clear").onclick = () => { if (!items.length || !confirm("Clear every date on the list?")) return; items = []; save(); draw(); };
+
+  // The Home Record's warranties (its IndexedDB on this device), read without changing it; nothing is made if there's no record
+  async function homeRecord() {
+    try {
+      if (indexedDB.databases) { const dbs = await indexedDB.databases(); if (!dbs.some((d) => d.name === "homerecord")) return []; }
+      const db = await new Promise((ok, no) => { const r = indexedDB.open("homerecord"); r.onupgradeneeded = () => { r.transaction.abort(); }; r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+      if (!db.objectStoreNames.contains("things")) { db.close(); return []; }
+      const things = await new Promise((ok, no) => { const q = db.transaction("things").objectStore("things").getAll(); q.onsuccess = () => ok(q.result || []); q.onerror = () => no(q.error); }); db.close();
+      const off = new Set(LS.get("rec-off", [])), out = [];
+      for (const t of things) {
+        const name = String(t.name || "A thing").slice(0, 80);
+        if (/^\d{4}-\d\d-\d\d$/.test(t.warranty || "")) out.push({ id: "rec:" + t.id, date: t.warranty, kind: "expires", label: "Expires", title: "Warranty ends: " + name + (t.model ? " (" + String(t.model).slice(0, 40) + ")" : ""), sentence: "", source: "The Home Record" });
+        for (const p of t.passports || []) if (p.warrantyDays && /^\d{4}-\d\d-\d\d$/.test(p.date || "")) { const until = new Date(Date.parse(p.date + "T12:00:00Z") + p.warrantyDays * DAY).toISOString().slice(0, 10);
+          out.push({ id: "rec:" + t.id + ":" + (p.ref || p.date), date: until, kind: "expires", label: "Expires", title: "Repair warranty ends: " + name + (p.ref ? " (" + String(p.ref).slice(0, 30) + ")" : ""), sentence: "", source: "The Home Record" }); }
+      }
+      return out.filter((x) => daysTo(x.date) >= 0).map((x) => ({ ...x, on: !off.has(x.id) })).sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e) { return []; }
+  }
+  draw(); homeRecord().then((r) => { REC = r; draw(); });
+
+  // Faber Verbs (tools/site/content/due.json): AutoFaber asks "any deadlines coming up?"
+  if (window.Faber) Faber.verbs({
+    soon: (a) => { const days = Math.max(1, Math.min(365, Number(a && a.days) || 30)), list = [...items, ...REC].filter((x) => daysTo(x.date) >= 0 && daysTo(x.date) <= days).sort((x, y) => x.date.localeCompare(y.date));
+      if (!list.length) return "Nothing due in the next " + days + " days" + (items.length ? "." : ": no letters have been added to Due Dates on this device yet.");
+      return list.length + " in the next " + days + " days: " + list.map((x) => x.date + (x.time ? " " + x.time : "") + " " + x.title).join("; ") + "."; },
+  });
+})();
+</script>
+</body>
+</html>

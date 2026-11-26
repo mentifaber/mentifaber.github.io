@@ -1,0 +1,31 @@
+{
+  "id": "/due",
+  "name": "Due Dates",
+  "short_name": "Due Dates",
+  "description": "The dates in letters and notices that ask something of you, ready for your calendar.",
+  "start_url": "/due.html",
+  "scope": "/due.html",
+  "display": "standalone",
+  "background_color": "#0b0c0e",
+  "theme_color": "#0b0c0e",
+  "icons": [
+    {
+      "src": "../icons/v2/due-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/due-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/due-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
