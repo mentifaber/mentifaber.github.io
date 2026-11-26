@@ -1,0 +1,31 @@
+{
+  "id": "/recall",
+  "name": "Recall Watch",
+  "short_name": "Recall Watch",
+  "description": "Is anything in the house recalled? Your appliances checked against the CPSC's recalls.",
+  "start_url": "/recall.html",
+  "scope": "/recall.html",
+  "display": "standalone",
+  "background_color": "#0e0b0a",
+  "theme_color": "#0e0b0a",
+  "icons": [
+    {
+      "src": "../icons/v2/recall-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/recall-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/recall-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

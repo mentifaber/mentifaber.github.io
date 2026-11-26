@@ -1,0 +1,17 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "check",
+   "label": "Check a product for safety recalls",
+   "changes": false,
+   "desc": "Checks the US Consumer Product Safety Commission's recalls for a product by its make, model number and what kind of thing it is, and gives each recall's title, date and hazard.",
+   "args": {
+    "make": "string",
+    "model": "string",
+    "what": "string"
+   },
+   "words": "recall recalled recalls cpsc hazard unsafe defective"
+  }
+ ]
+}
