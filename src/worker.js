@@ -19,7 +19,7 @@ import { recalls } from "./recalls.js"; // Recall Watch: the CPSC's recalls for 
 import { repair } from "./repair.js"; // Repair Café: a pop-up repair day's slots, door queue and tables
 import { skills } from "./skills.js"; // Street Skills: what neighbours can do for each other
 import { library } from "./library.js"; // Street Library: neighbours lend each other tools, with the condition photo's fingerprint
-import { care, kitty } from "./care.js"; // Care Circle: a family's shared page for looking after someone, encrypted in the browser
+import { care, kitty, incase } from "./care.js"; // Care Circle: a family's shared page for looking after someone, encrypted in the browser
 import { board } from "./board.js"; // Street Board: a neighbourhood noticeboard that keeps working in an outage
 import { checkin, sweep as checkinSweep } from "./checkin.js"; // Quiet Check-in: a daily "I'm OK", and the family told if it doesn't come // Sealed Letters: letters that open later, only with the friends chosen // the Workshop Portal: one link per client, one board for the workshop
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
@@ -624,6 +624,7 @@ const worker = {
       if (route === "library") return library(req, env, json); // Street Library: who has what, who has it now, when it's due back (src/library.js)
       if (route === "care") return care(req, env, json); // Care Circle: ciphertext and a version; the site can't read a circle (src/care.js)
       if (route === "kitty") return kitty(req, env, json); // House Kitty: shared costs, sealed in the browser the same way (src/care.js)
+      if (route === "incase") return incase(req, env, json); // In Case: an emergency card, sealed in the browser; its link's key is all a reader needs (src/care.js)
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
       if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil")), { alert: ownerAlert(env) }); // client links and the workshop's job board (src/portal.js)
       if (route === "makers") return makers(req, env, json, !!(await session(req, env, "vigil")), { alert: ownerAlert(env) }); // other makers' apps for Foundry and FaberOS (src/makers.js)

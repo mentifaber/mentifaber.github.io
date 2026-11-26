@@ -21,7 +21,9 @@ const same = (a, b) => { a = String(a); b = String(b); if (a.length !== b.length
 
 // A box sealed in the browser: the same rules for every app that keeps a shared, encrypted record this way (Care Circle,
 // House Kitty). Each has its own route, its own name for the thing in messages, and its own limits.
-export function sealedBox({ route, noun, nouns, newDay = 10, writesDay = 800 }) {
+// openRead: anyone with the id may read the ciphertext without the token (In Case's card for paramedics: the key in the link
+// is all a reader needs, and writing still takes the token, which only the family's phone holds).
+export function sealedBox({ route, noun, nouns, newDay = 10, writesDay = 800, openRead = false }) {
   const a = /^[aeiou]/.test(noun) ? "an " : "a ", re = new RegExp("^/api/" + route + "/?");
   return async function (req, env, json) {
   const url = new URL(req.url), parts = url.pathname.replace(re, "").split("/").filter(Boolean);
@@ -29,9 +31,10 @@ export function sealedBox({ route, noun, nouns, newDay = 10, writesDay = 800 }) 
   let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch (e) { return json({ error: "send JSON" }, 400); } if (!b || typeof b !== "object") b = {}; }
   try {
     const id = parts[0]; if (!/^[0-9a-f]{16}$/.test(id || "")) throw err("no such " + noun, 404);
-    const t = String(b.t || req.headers.get("x-" + route + "-token") || ""); if (!/^[0-9a-f]{32}$/.test(t)) throw err("this link doesn't open " + a + noun, 403);
-    const k = route + ":" + id, c = await st.kvGet(k), th = await sha(t);
-    if (c && !same(th, c.th)) throw err("this link doesn't open that " + noun, 403);
+    const reading = openRead && req.method === "GET" && parts.length === 1;
+    const t = String(b.t || req.headers.get("x-" + route + "-token") || ""); if (!reading && !/^[0-9a-f]{32}$/.test(t)) throw err("this link doesn't open " + a + noun, 403);
+    const k = route + ":" + id, c = await st.kvGet(k), th = reading ? "" : await sha(t);
+    if (c && !reading && !same(th, c.th)) throw err("this link doesn't open that " + noun, 403);
     // someone else changed it first: the current circle, for the browser to apply its change on top (or 404 if it's gone)
     const conflict = (cur) => { if (!cur) throw err("this " + noun + " doesn't exist any more", 404); if (!same(th, cur.th)) throw err("this link doesn't open that " + noun, 403); return json({ error: "someone else changed the " + noun + " first", v: cur.v, ct: cur.ct, iv: cur.iv, at: cur.at }, 409); };
 
@@ -60,3 +63,4 @@ export function sealedBox({ route, noun, nouns, newDay = 10, writesDay = 800 }) 
 }
 export const care = sealedBox({ route: "care", noun: "circle", nouns: "circles" });
 export const kitty = sealedBox({ route: "kitty", noun: "kitty", nouns: "kitties" }); // House Kitty: shared costs (kitty.html)
+export const incase = sealedBox({ route: "incase", noun: "card", nouns: "cards", writesDay: 200, openRead: true }); // In Case: a card a paramedic can read from its link (incase.html)

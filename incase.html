@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/incase">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>In Case · Mentifaber</title>
+<meta name="description" content="One card per person for when it matters: medicines, allergies, conditions and who to call.">
+<meta name="theme-color" content="#0d0b0b">
+<link rel="icon" href="assets/icons/v2/incase.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/incase-180.png">
+<link rel="manifest" href="assets/manifests/incase.webmanifest">
+<style>
+/* In Case: the card in the wallet behind the driving licence. Red stripe, big type, the things a stranger needs to know in
+   the first minute, and nothing they don't. */
+:root { --bg: #0d0b0b; --sheet: #161212; --card: #1d1818; --line: #3a2c2c; --acc: #ff6b6b; --acc-hi: #ffc4c4; --ink: #f4eeee; --dim: #ae9f9f; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; overflow-wrap: anywhere; } h1 span { color: var(--acc-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin: 24px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 68ch; } .lede a, .status a { color: var(--acc-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #110e0e; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+textarea.in { min-height: 70px; resize: vertical; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #2c0303; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--acc-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.people { display: grid; gap: 8px; margin-top: 8px; }
+.person { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--acc); border-radius: 12px; padding: 12px 14px; }
+.person .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.sec { margin-top: 10px; } .sec b.k { display: block; font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.allergy { color: var(--acc-hi); font-weight: 700; }
+ul.plain { list-style: none; margin: 4px 0 0; padding: 0; } ul.plain li { padding: 3px 0; overflow-wrap: anywhere; }
+.qr { width: 180px; max-width: 60vw; background: #fff; border-radius: 8px; padding: 6px; } .qr svg { display: block; width: 100%; height: auto; }
+.link { font: 13px var(--mono); word-break: break-all; background: #110e0e; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+/* the view a paramedic opens: big, plain, and nothing to edit */
+#view .person { font-size: 19px; } #view h1 { font-size: clamp(32px, 8vw, 48px); } #view a[href^="tel:"] { color: var(--acc-hi); font-weight: 700; }
+.lnk { background: none; border: 0; color: var(--acc-hi); font: inherit; font-size: 14px; cursor: pointer; padding: 2px 0; text-decoration: underline; }
+#print { display: none; }
+@media print {
+  body { background: #fff; color: #000; } .wrap { display: none; } #print { display: block; }
+  .wallet { width: 85.6mm; height: 54mm; border: .3mm solid #000; border-radius: 3mm; padding: 3mm; margin: 0 0 6mm; font: 7.5pt/1.25 system-ui, sans-serif; overflow: hidden; page-break-inside: avoid; position: relative; }
+  .wallet .stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 2.5mm; background: #d10000; } .wallet h3 { margin: 0 0 1mm 2mm; font-size: 10pt; } .wallet p { margin: 0 0 .8mm 2mm; }
+  .wallet .qr { position: absolute; right: 2mm; bottom: 2mm; width: 22mm; padding: 0; } .wallet .back { margin-right: 24mm; }
+}
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--acc-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "In Case", "description": "One card per person for when it matters: medicines, allergies, conditions and who to call.", "url": "https://mentifaber.org/incase", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/incase-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · In Case</span><a href="./">The workshop</a></div>
+
+  <div id="home">
+    <h1>The card <span>for when it matters</span></h1>
+    <p class="lede">One card per person: medicines, allergies, conditions, and who to call. It's kept on this phone and works with no network. It prints as a wallet card, and a paramedic can open it from its QR code, a link only the family holds: the card is encrypted in your browser, and the key is only in the link. Medicines come straight from <a href="care">Care Circle</a>, so nothing is typed twice.</p>
+    <div class="people" id="people"></div>
+    <div class="bar"><button class="btn" type="button" id="new">Add a person</button></div>
+    <div id="home-at" hidden><h2>At home</h2><div class="panel" id="shutoffs"></div></div>
+  </div>
+
+  <form id="edit" hidden>
+    <h1 id="e-title">A card</h1>
+    <div class="panel">
+      <div class="grid"><label>Name<input class="in" name="name" maxlength="60" required></label><label>Born<input class="in" name="born" type="date"></label><label>Blood type<select class="in" name="blood"><option value="">Not known</option><option>O+</option><option>O−</option><option>A+</option><option>A−</option><option>B+</option><option>B−</option><option>AB+</option><option>AB−</option></select></label></div>
+      <label style="margin-top:10px">Allergies, one a line <span class="status">(what happens, if you know)</span><textarea class="in" name="allergies" maxlength="600" placeholder="Penicillin: rash and swelling"></textarea></label>
+      <label style="margin-top:10px">Conditions, one a line<textarea class="in" name="conditions" maxlength="600" placeholder="Type 1 diabetes"></textarea></label>
+      <label style="margin-top:10px">Medicines, one a line <span class="status">(name, dose, when)</span><textarea class="in" name="meds" maxlength="1200" placeholder="Insulin glargine, 20 units, bedtime"></textarea></label>
+      <div class="bar" id="from-care" hidden><span class="status">From Care Circle:</span></div>
+      <label style="margin-top:10px">Who to call, one a line <span class="status">(name, who they are, phone)</span><textarea class="in" name="contacts" maxlength="600" placeholder="Bob Lee, husband, 555 0100 222"></textarea></label>
+      <div class="grid" style="margin-top:10px"><label>Doctor <span class="status">(optional)</span><input class="in" name="doctor" maxlength="120" placeholder="Dr Patel, Elm St Surgery, 555 0123"></label><label>Languages <span class="status">(optional)</span><input class="in" name="langs" maxlength="80" placeholder="English, Polish"></label></div>
+      <label style="margin-top:10px">Anything else a stranger should know <span class="status">(optional)</span><textarea class="in" name="notes" maxlength="600" placeholder="Hard of hearing in the left ear. Pacemaker fitted 2021."></textarea></label>
+      <div class="bar"><button class="btn" type="submit">Save it</button><button class="btn ghost" type="button" id="cancel">Back</button><span class="status" id="e-st" role="status"></span></div>
+    </div>
+  </form>
+
+  <div id="view" hidden>
+    <h1 id="v-name"></h1>
+    <p class="status" id="v-st" role="status"></p>
+    <div class="person" id="v-card"></div>
+    <p class="status">Shared by their family through In Case. The card is encrypted; only this link opens it.</p>
+  </div>
+</div>
+<div id="print"></div>
+<script src="assets/js/qr.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  const hexOf = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join(""), rid = () => hexOf(crypto.getRandomValues(new Uint8Array(6)));
+  const lines = (t) => String(t || "").split(/\n+/).map((x) => x.trim()).filter(Boolean).slice(0, 20);
+  const say = (el, t, cls) => { el.textContent = t || ""; el.className = "status" + (cls ? " " + cls : ""); };
+  const KEY = "incase:v1", load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } }, save = () => { try { localStorage.setItem(KEY, JSON.stringify(P)); return true; } catch (e) { return false; } };
+  let P = load(), cur = null;
+  const age = (born) => { if (!born) return ""; const b = new Date(born + "T12:00"), n = new Date(); let a = n.getFullYear() - b.getFullYear(); if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--; return a >= 0 ? a : ""; };
+  const nice = (d) => (d ? new Date(d + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "");
+  const tel = (s) => { const m = /(\+?[\d][\d ().-]{5,}\d)/.exec(s); return m ? esc(s.slice(0, m.index)) + '<a href="tel:' + m[1].replace(/[^\d+]/g, "") + '">' + esc(m[1]) + "</a>" + esc(s.slice(m.index + m[1].length)) : esc(s); };
+
+  // the card itself, as a paramedic or the family sees it (never the house's shutoffs: those are for the family)
+  const cardHtml = (p) => {
+    const sec = (k, html) => (html ? '<div class="sec"><b class="k">' + k + "</b>" + html + "</div>" : "");
+    const list = (xs, f = esc) => (xs && xs.length ? '<ul class="plain">' + xs.map((x) => "<li>" + f(x) + "</li>").join("") + "</ul>" : "");
+    return sec("Born", p.born ? esc(nice(p.born)) + (age(p.born) !== "" ? " (" + age(p.born) + ")" : "") : "") + sec("Blood type", p.blood ? esc(p.blood) : "") +
+      sec("Allergies", p.allergies.length ? list(p.allergies, (x) => '<span class="allergy">' + esc(x) + "</span>") : "None known") + sec("Conditions", list(p.conditions)) + sec("Medicines", list(p.meds)) +
+      sec("Who to call", list(p.contacts, tel)) + sec("Doctor", p.doctor ? tel(p.doctor) : "") + sec("Languages", p.langs ? esc(p.langs) : "") + sec("Also", p.notes ? esc(p.notes) : "");
+  };
+
+  // ── sharing with paramedics: the card encrypted with a key that's only in its link ──
+  const tokenOf = async (k) => hexOf(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("incase-token:" + k))).slice(0, 32);
+  const keyOf = (k) => crypto.subtle.importKey("raw", unb64u(k), "AES-GCM", false, ["encrypt", "decrypt"]);
+  const publicCard = (p) => ({ name: p.name, born: p.born, blood: p.blood, allergies: p.allergies, conditions: p.conditions, meds: p.meds, contacts: p.contacts, doctor: p.doctor, langs: p.langs, notes: p.notes, updated: p.updated });
+  const linkOf = (p) => location.origin + "/incase#v=" + p.pub.id + "." + p.pub.key;
+  async function publish(p) {
+    if (!p.pub) p.pub = { id: hexOf(crypto.getRandomValues(new Uint8Array(8))), key: b64u(crypto.getRandomValues(new Uint8Array(32))), v: 0 };
+    const K = await keyOf(p.pub.key), iv = crypto.getRandomValues(new Uint8Array(12)), ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, K, new TextEncoder().encode(JSON.stringify(publicCard(p))));
+    const send = async (v) => { const r = await fetch("/api/incase/" + p.pub.id, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: await tokenOf(p.pub.key), v, ct: b64u(ct), iv: b64u(iv) }) }); return { s: r.status, j: await r.json().catch(() => ({})) }; };
+    let r = await send(p.pub.v); if (r.s === 409) r = await send(r.j.v); // this phone is the card's only writer: just catch up with what it last sent
+    if (r.s !== 200) throw new Error(r.j.error || "couldn't share it");
+    p.pub.v = r.j.v; p.pub.sent = p.updated; save();
+  }
+  async function unshare(p) { const r = await fetch("/api/incase/" + p.pub.id + "/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: await tokenOf(p.pub.key) }) }); if (!r.ok && r.status !== 404) throw new Error((await r.json().catch(() => ({}))).error || "couldn't stop sharing it"); delete p.pub; save(); }
+
+  // ── the family's cards ──
+  function home() {
+    $("#home").hidden = false; $("#edit").hidden = $("#view").hidden = true; document.title = "In Case · Mentifaber";
+    $("#people").innerHTML = P.length ? P.map((p) => { const shared = !!p.pub, stale = shared && p.pub.sent !== p.updated;
+      return '<div class="person" data-id="' + esc(p.id) + '"><div class="h"><h2 style="margin:0;font:700 20px var(--sans);color:var(--ink)">' + esc(p.name) + '</h2><span class="status">' + (p.updated ? "updated " + esc(nice(p.updated)) : "") + "</span></div>" + cardHtml(p) +
+        '<div class="bar"><button class="btn ghost sm" type="button" data-act="edit">Edit</button><button class="btn ghost sm" type="button" data-act="print">Print the wallet card</button>' + (shared ? '<button class="btn ghost sm" type="button" data-act="unshare">Stop sharing</button>' : '<button class="btn sm" type="button" data-act="share">Share for paramedics</button>') + '<button class="lnk" type="button" data-act="rm">Remove</button></div>' +
+        (shared ? '<div class="sec"><b class="k">For paramedics</b><div class="bar" style="align-items:flex-start"><div class="qr">' + QR.svg(linkOf(p), { label: "QR code for " + p.name + "'s card" }) + '</div><div style="flex:1 1 220px"><div class="link">' + esc(linkOf(p)) + '</div><p class="status">' + (stale ? "You've changed the card since it was shared. " : "") + 'Anyone with this link or QR code can read the card, and nobody else: the site can\'t. Print it on the wallet card, or keep it on the lock screen.</p>' + (stale ? '<button class="btn sm" type="button" data-act="share">Update the shared card</button>' : "") + "</div></div></div>" : "") +
+        '<p class="status" data-st role="status"></p></div>'; }).join("") : '<p class="status">No cards yet. Start with yours.</p>';
+    houseAt();
+  }
+  function houseAt() { let E = []; try { E = JSON.parse(localStorage.getItem("house:v1") || "[]"); } catch (e) {}
+    const s = E.filter((e) => e && e.kind === "shutoff" && !e.priv && e.title); $("#home-at").hidden = !s.length;
+    $("#shutoffs").innerHTML = s.map((e) => "<p style=\"margin:0 0 6px\"><b>" + esc(e.title) + "</b>" + (e.where ? ": " + esc(e.where) : "") + (e.det ? '<br><span class="status">' + esc(e.det) + "</span>" : "") + "</p>").join("") + '<p class="status" style="margin:0">From your <a href="house">House Manual</a>, for whoever is at home. Not on the shared card.</p>'; }
+  $("#people").addEventListener("click", async (e) => { const b = e.target.closest("[data-act]"); if (!b) return; const card = b.closest("[data-id]"), p = P.find((x) => x.id === card.dataset.id), st = card.querySelector("[data-st]"); if (!p) return;
+    if (b.dataset.act === "edit") return edit(p);
+    if (b.dataset.act === "print") return printCard(p);
+    if (b.dataset.act === "rm") { if (!confirm("Remove " + p.name + "'s card from this phone?" + (p.pub ? " Its shared link stops working too." : ""))) return; try { if (p.pub) await unshare(p); } catch (x) {} P = P.filter((x) => x !== p); save(); return home(); }
+    b.disabled = true;
+    try { if (b.dataset.act === "share") { say(st, "Sharing…"); await publish(p); } else if (b.dataset.act === "unshare") { if (!confirm("Stop sharing? The link and QR code stop working.")) { b.disabled = false; return; } await unshare(p); } home(); }
+    catch (x) { b.disabled = false; say(st, String(x.message || x).replace(/^./, (c) => c.toUpperCase()) + ". Sharing needs a network; the card on this phone works without one.", "bad"); } });
+
+  // ── editing ──
+  const F = () => $("#edit").elements;
+  function edit(p) {
+    cur = p || null; $("#home").hidden = $("#view").hidden = true; $("#edit").hidden = false; $("#e-title").textContent = p ? p.name : "A new card"; say($("#e-st"), "");
+    const f = F(), x = p || {}; f.name.value = x.name || ""; f.born.value = x.born || ""; f.blood.value = x.blood || ""; for (const k of ["allergies", "conditions", "meds", "contacts"]) f[k].value = (x[k] || []).join("\n");
+    f.doctor.value = x.doctor || ""; f.langs.value = x.langs || ""; f.notes.value = x.notes || ""; f.name.focus(); fromCare();
+  }
+  $("#new").onclick = () => edit(null);
+  $("#cancel").onclick = () => home();
+  $("#edit").onsubmit = (e) => { e.preventDefault(); const f = F(), today = new Date().toISOString().slice(0, 10);
+    const p = cur || { id: rid() }; Object.assign(p, { name: f.name.value.trim().slice(0, 60), born: f.born.value, blood: f.blood.value, allergies: lines(f.allergies.value), conditions: lines(f.conditions.value), meds: lines(f.meds.value), contacts: lines(f.contacts.value), doctor: f.doctor.value.trim().slice(0, 120), langs: f.langs.value.trim().slice(0, 80), notes: f.notes.value.trim().slice(0, 600), updated: today });
+    if (!cur) P.push(p); if (!save()) { say($("#e-st"), "This phone's storage is full, so it wasn't saved.", "bad"); return; }
+    if (p.pub) publish(p).catch(() => {}).finally(home); else home(); };
+
+  // Care Circle's medicines: each circle this phone holds is opened here, on the phone, with its own key
+  async function fromCare() {
+    const box = $("#from-care"); box.hidden = true; box.innerHTML = '<span class="status">From Care Circle:</span>';
+    let circles = []; try { circles = JSON.parse(localStorage.getItem("care:circles") || "[]"); } catch (e) {}
+    for (const c of circles.slice(0, 6)) { try {
+      const T = hexOf(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("care-token:" + c.key))).slice(0, 32);
+      const r = await fetch("/api/care/" + c.id, { headers: { "x-care-token": T } }); if (!r.ok) continue; const j = await r.json();
+      const K = await crypto.subtle.importKey("raw", unb64u(c.key), "AES-GCM", false, ["decrypt"]), D = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(j.iv) }, K, unb64u(j.ct))));
+      const meds = (D.meds || []).map((m) => [m.name, m.dose, (m.times || []).join(", "), m.with].filter(Boolean).join(", ")).filter(Boolean); if (!meds.length) continue;
+      const b = document.createElement("button"); b.type = "button"; b.className = "btn ghost sm"; b.textContent = (D.person || c.person || "A circle") + "'s " + meds.length + " medicine" + (meds.length === 1 ? "" : "s");
+      b.onclick = () => { const f = F(), have = lines(f.meds.value); f.meds.value = [...have, ...meds.filter((m) => !have.includes(m))].join("\n"); if (!f.name.value.trim() && (D.person || c.person)) f.name.value = D.person || c.person; };
+      box.appendChild(b); box.hidden = false; } catch (e) {} }
+  }
+
+  // ── the wallet card, to print: front and back, with the QR code if it's shared ──
+  function printCard(p) {
+    const front = '<div class="wallet"><span class="stripe"></span><h3>IN CASE · ' + esc(p.name) + "</h3>" + (p.born ? "<p>Born " + esc(nice(p.born)) + (p.blood ? " · Blood " + esc(p.blood) : "") + "</p>" : p.blood ? "<p>Blood " + esc(p.blood) + "</p>" : "") +
+      "<p><b>Allergies:</b> " + esc(p.allergies.join("; ") || "none known") + "</p>" + (p.conditions.length ? "<p><b>Conditions:</b> " + esc(p.conditions.join("; ")) + "</p>" : "") + (p.notes ? "<p>" + esc(p.notes.slice(0, 160)) + "</p>" : "") + "</div>";
+    const back = '<div class="wallet"><span class="stripe"></span><div class="back">' + (p.meds.length ? "<p><b>Medicines:</b> " + esc(p.meds.join("; ").slice(0, 260)) + "</p>" : "") + (p.contacts.length ? "<p><b>Call:</b> " + esc(p.contacts.join("; ").slice(0, 200)) + "</p>" : "") + (p.doctor ? "<p><b>Doctor:</b> " + esc(p.doctor) + "</p>" : "") + (p.pub ? "<p>Scan for the full card.</p>" : "") + "</div>" +
+      (p.pub ? '<div class="qr">' + QR.svg(linkOf(p), { pad: 1, label: "QR code for the full card" }) + "</div>" : "") + "</div>";
+    $("#print").innerHTML = front + back; window.print();
+  }
+
+  // ── a paramedic opens the link: the card, read-only ──
+  async function view(id, key) {
+    $("#home").hidden = $("#edit").hidden = true; $("#view").hidden = false; say($("#v-st"), "Opening the card…"); $("#v-card").innerHTML = "";
+    try { const r = await fetch("/api/incase/" + id, { cache: "no-store" }), j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(r.status === 404 ? "This card isn't shared any more." : j.error || "Couldn't open the card.");
+      const K = await keyOf(key), c = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(j.iv) }, K, unb64u(j.ct))));
+      const p = { allergies: [], conditions: [], meds: [], contacts: [], ...c }; $("#v-name").textContent = p.name; document.title = p.name + " · In Case";
+      $("#v-card").innerHTML = cardHtml(p); say($("#v-st"), p.updated ? "Last updated " + nice(p.updated) + "." : ""); }
+    catch (x) { $("#v-name").textContent = "In Case"; say($("#v-st"), x.name === "OperationError" ? "This link's key doesn't open the card." : x.message, "bad"); }
+  }
+  function route() { const m = /^#v=([0-9a-f]{16})\.([A-Za-z0-9_-]{43})$/.exec(location.hash); if (m) view(m[1], m[2]); else home(); }
+  addEventListener("hashchange", route); route();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/incase-sw.js", { scope: "/incase" }).catch(() => {}); // the cards open with no network
+
+  // Faber Verbs (tools/site/content/incase.json): AutoFaber asks "what is Gran allergic to?"
+  if (window.Faber) Faber.verbs({
+    card: (a) => { const who = String(a.who || "").toLowerCase(), p = P.find((x) => !who || x.name.toLowerCase().includes(who)) || P[0]; if (!p) throw new Error("No In Case cards on this device yet.");
+      return p.name + ": allergies " + (p.allergies.join("; ") || "none known") + ". " + (p.conditions.length ? "Conditions: " + p.conditions.join("; ") + ". " : "") + (p.meds.length ? "Medicines: " + p.meds.join("; ") + ". " : "") + (p.contacts.length ? "Call: " + p.contacts.join("; ") + "." : ""); },
+  });
+})();
+</script>
+</body>
+</html>
