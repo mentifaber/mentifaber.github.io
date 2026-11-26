@@ -1,0 +1,31 @@
+{
+  "id": "/repair",
+  "name": "Repair Café",
+  "short_name": "Repair Café",
+  "description": "A pop-up repair day for your street: slots, the queue at the door with Fix or Replace's verdict, and a Device Passport for every fix.",
+  "start_url": "/repair.html",
+  "scope": "/repair.html",
+  "display": "standalone",
+  "background_color": "#0a0d0c",
+  "theme_color": "#0a0d0c",
+  "icons": [
+    {
+      "src": "../icons/v2/repair-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/repair-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/repair-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -105,7 +105,9 @@ code.link { display: block; font: 12px var(--mono); color: var(--dim); overflow-
   "use strict";
   const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const KIND = { need: "Need", offer: "Offer", safe: "Safe", info: "News", alert: "Alert" }, LETTER = { n: "need", o: "offer", s: "safe", i: "info", a: "alert" }, H = 36e5;
-  const LS = { get(k, d) { try { const v = localStorage.getItem("street:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("street:" + k, JSON.stringify(v)); } catch (e) {} } };
+    // a link to one of this site's own pages (a Repair Café's booking, a street's library) can be followed; nothing else is a link
+  const linked = (s) => esc(s).replace(/\bmentifaber\.org\/([a-z][a-z0-9-]{1,30}(?:#[A-Za-z0-9_.~\/=-]{1,80})?)/g, (m, path) => '<a href="/' + path + '" style="color:var(--sun-hi)">' + m + "</a>");
+const LS = { get(k, d) { try { const v = localStorage.getItem("street:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("street:" + k, JSON.stringify(v)); } catch (e) {} } };
   const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
   const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
   const ago = (t) => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
@@ -135,7 +137,7 @@ code.link { display: block; font: 12px var(--mono); color: var(--dim); overflow-
   }
   function draw() {
     const live = P.filter((p) => !p.gone && (!filter || p.kind === filter)).sort((a, b) => b.at - a.at);
-    $("#posts").innerHTML = live.length ? live.map((p) => '<article class="post ' + p.kind + '" data-id="' + p.id + '"><div class="hd"><span class="pill">' + KIND[p.kind] + "</span><span>" + esc(p.by || "Someone nearby") + "</span><span>" + ago(p.at) + "</span><span>" + left(p.exp) + "</span><span>" + VIA[p.via] + (p.up ? "" : " · not on the board yet") + "</span></div><p>" + esc(p.text) + '</p><div class="acts">' +
+    $("#posts").innerHTML = live.length ? live.map((p) => '<article class="post ' + p.kind + '" data-id="' + p.id + '"><div class="hd"><span class="pill">' + KIND[p.kind] + "</span><span>" + esc(p.by || "Someone nearby") + "</span><span>" + ago(p.at) + "</span><span>" + left(p.exp) + "</span><span>" + VIA[p.via] + (p.up ? "" : " · not on the board yet") + "</span></div><p>" + linked(p.text) + '</p><div class="acts">' +
       (mine[p.id] ? '<button type="button" data-act="rm">Take it down</button>' : '<button type="button" data-act="flag">Report it</button>') + "</div></article>").join("")
       : '<p class="status">' + (filter ? "Nothing like that on the board." : "Nothing on the board yet. Pin the first notice up.") + "</p>";
     const pend = P.filter((p) => !p.up && !p.gone).length;

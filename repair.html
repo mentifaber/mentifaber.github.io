@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/repair">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Repair Café · Mentifaber</title>
+<meta name="description" content="A pop-up repair day for your street: slots booked from a Street Board notice, the queue at the door with Fix or Replace&#x27;s verdict.">
+<meta name="theme-color" content="#0a0d0c">
+<link rel="icon" href="assets/icons/v2/repair.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/repair-180.png">
+<link rel="manifest" href="assets/manifests/repair.webmanifest">
+<style>
+/* Repair Café: a trestle table in a village hall. Numbered tickets at the door, a chalkboard of slots, and at each table
+   a job card that's filled in by hand: what was wrong, what was done, the parts. */
+:root { --bg: #0a0d0c; --sheet: #121715; --card: #18201d; --line: #2c3833; --acc: #7fcfa6; --acc-hi: #c4f0d8; --ink: #edf2ee; --dim: #9fada6; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a; --mid: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 900px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; overflow-wrap: anywhere; } h1 span { color: var(--acc-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin: 26px 0 8px; }
+h3 { font: 600 16px var(--sans); margin: 0; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 68ch; } .lede a, .note a, .status a { color: var(--acc-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0d110f; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+textarea.in { min-height: 64px; resize: vertical; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #062015; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--acc-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; } .btn.warn { border-color: var(--bad); color: var(--bad); background: transparent; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.slots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; border: 0; padding: 0; } .slots legend { font-size: 14px; color: var(--dim); padding: 0; margin-bottom: 4px; }
+.slots label { display: inline-flex; align-items: center; gap: 6px; font: 600 14px var(--mono); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+.slots label:has(input:checked) { border-color: var(--acc); background: #12261d; } .slots label.full { color: var(--dim); text-decoration: line-through; cursor: default; } .slots small { font: 12px var(--sans); color: var(--dim); }
+.cards { display: grid; gap: 8px; margin-top: 8px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; } .card.me { border-color: var(--acc); }
+.card .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; } .card b { overflow-wrap: anywhere; }
+.card .p { color: var(--dim); font-size: 14px; margin-top: 2px; overflow-wrap: anywhere; }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; }
+.tag.fix, .tag.fixed { color: var(--ok); border-color: var(--ok); } .tag.rep, .tag.no { color: var(--bad); border-color: var(--bad); } .tag.mid, .tag.war, .tag.parts, .tag.advice, .tag.workshop { color: var(--warn); border-color: var(--warn); }
+.why { font-size: 13px; color: var(--dim); margin-top: 4px; }
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px; margin-top: 8px; }
+.tbl { background: var(--sheet); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px; } .tbl > .n { font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+.tbl.busy { border-style: solid; border-color: var(--acc); }
+form.up { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: grid; gap: 8px; }
+.counts { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--dim); } .counts b { color: var(--ink); font: 700 20px var(--sans); display: block; }
+.link { font: 13px var(--mono); word-break: break-all; background: #0d110f; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+.chk { font-size: 14px; margin-top: 6px; }
+ul.plain { list-style: none; margin: 6px 0 0; padding: 0; } ul.plain li { font-size: 14px; border-top: 1px solid var(--line); padding: 6px 0; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--acc-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Repair Café", "description": "A pop-up repair day for your street: slots booked from a Street Board notice, the queue at the door with Fix or Replace's verdict.", "url": "https://mentifaber.org/repair", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/repair-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Repair Café</span><a href="./">The workshop</a></div>
+
+  <div id="home">
+    <h1>Bring it broken, <span>take it home mended</span></h1>
+    <p class="lede">A pop-up repair day for your street. Neighbours book a slot from the day's link (post it on <a href="street">Street Board</a> in one tap). At the door, the queue, with <a href="fix">Fix or Replace</a>'s verdict on each thing. At each table, the fix is written up, and from the workshop's own table it gets a <a href="passport">Device Passport</a>: what was done and the parts, signed by the workshop. Anything that has to go back to the workshop gets a link to follow it.</p>
+    <div id="mydays" hidden><h2>Your repair days</h2><div class="cards" id="days"></div></div>
+    <h2>Run a repair day</h2>
+    <form class="panel" id="f-new">
+      <div class="grid"><label>What it's called<input class="in" id="n-title" maxlength="80" placeholder="Elm Street Repair Café"></label><label>Where<input class="in" id="n-place" maxlength="120" required placeholder="The library hall, 2 Elm St"></label></div>
+      <div class="grid" style="margin-top:10px"><label>Day<input class="in" id="n-date" type="date" required></label><label>From<input class="in" id="n-from" type="time" value="10:00" required></label><label>Until<input class="in" id="n-to" type="time" value="14:00" required></label>
+        <label>Each slot, minutes<input class="in" id="n-slot" type="number" min="5" max="120" value="30" required></label><label>Tables<input class="in" id="n-tables" type="number" min="1" max="12" value="3" required></label></div>
+      <div class="grid" style="margin-top:10px"><label>A note for everyone <span class="status">(optional)</span><input class="in" id="n-note" maxlength="300" placeholder="Bring the charger. No gas appliances."></label><label>Your street on Street Board <span class="status">(optional)</span><input class="in" id="n-board" maxlength="24" placeholder="elm-street"></label></div>
+      <div class="bar"><button class="btn" type="submit">Make the day</button><span class="status" id="n-st" role="status"></span></div>
+      <p class="status" style="margin:6px 0 0">This phone keeps the day's key: it runs the door. Anyone with the day's link can see which slots are free and book one; nobody but the door sees who booked.</p>
+    </form>
+  </div>
+
+  <div id="day" hidden>
+    <h1 id="d-title"></h1>
+    <p class="lede" id="d-when"></p>
+    <p class="note" id="d-note" hidden></p>
+    <p class="status" id="d-st" role="status"></p>
+
+    <div id="yours" hidden><h2>Your booking</h2><div class="cards" id="mine"></div></div>
+
+    <div id="booking">
+      <h2>Book a slot</h2>
+      <form class="panel" id="f-book">
+        <fieldset class="slots" id="b-slots"><legend>When</legend></fieldset>
+        <div class="grid" style="margin-top:10px"><label>Your name<input class="in" id="b-name" maxlength="40" required placeholder="Ann"></label><label>What you're bringing<input class="in" id="b-dev" maxlength="80" required placeholder="ThinkPad laptop, a kettle, a lamp…"></label></div>
+        <div class="grid" style="margin-top:10px"><label>What's wrong<input class="in" id="b-prob" maxlength="240" placeholder="The battery dies in an hour"></label><label>How old is it, in years? <span class="status">(optional)</span><input class="in" id="b-age" type="number" min="0" max="40" step="0.5" placeholder="4"></label></div>
+        <div class="chk" id="b-chk" role="status"></div>
+        <div class="bar"><button class="btn" type="submit">Book it</button><span class="status" id="b-st" role="status"></span></div>
+        <p class="status" style="margin:6px 0 0">This phone keeps your booking: open the day's link on it on the day to see your place in the queue and, after, what was done.</p>
+      </form>
+    </div>
+
+    <div id="door" hidden>
+      <h2>The door</h2>
+      <div class="panel">
+        <div class="counts" id="counts"></div>
+        <div class="bar"><button class="btn ghost sm" type="button" id="share">Copy the day's link</button><button class="btn ghost sm" type="button" id="helpers">Copy the helpers' link</button><button class="btn ghost sm" type="button" id="refresh">Refresh</button><button class="btn ghost sm" type="button" id="close">Close bookings</button><button class="btn sm warn" type="button" id="rm">Take the day down</button></div>
+        <form class="bar" id="f-post"><label style="flex:1 1 200px">Post it on Street Board, for the street<input class="in" id="p-board" maxlength="24" placeholder="elm-street"></label><button class="btn sm" type="submit" style="align-self:flex-end">Post it</button></form>
+        <p class="status" id="door-st" role="status"></p>
+        <div class="link" id="copied" hidden></div>
+      </div>
+
+      <h2>Walk-ins</h2>
+      <form class="panel" id="f-walk">
+        <div class="grid"><label>Name<input class="in" id="w-name" maxlength="40" required></label><label>What they've brought<input class="in" id="w-dev" maxlength="80" required></label><label>What's wrong<input class="in" id="w-prob" maxlength="240"></label><label>Age, years <span class="status">(optional)</span><input class="in" id="w-age" type="number" min="0" max="40" step="0.5"></label></div>
+        <div class="bar"><button class="btn" type="submit">Into the queue</button><span class="status" id="w-st" role="status"></span></div>
+        <div id="w-link" hidden><p class="status" style="margin:8px 0 0">For their phone: their place in the queue and, after, what was done.</p><div class="link" id="w-url"></div></div>
+      </form>
+
+      <h2>The queue</h2><div class="cards" id="queue"></div>
+      <h2>The tables</h2><div class="tables" id="tables"></div>
+      <h2>Booked, not here yet</h2><div class="cards" id="booked"></div>
+      <h2>Done today</h2><div class="cards" id="done"></div>
+    </div>
+  </div>
+</div>
+<script src="assets/fix/judge.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("repair:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("repair:" + k, JSON.stringify(v)); } catch (e) {} } };
+  const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const api = async (path, body) => { const r = await fetch("/api/repair" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" }); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || "the workshop didn't answer"), { status: r.status }); return j; };
+  const say = (el, t, cls) => { el.textContent = t || ""; el.className = "status" + (cls ? " " + cls : ""); };
+  const J = window.FixJudge;
+  const OUT = { fixed: "Fixed", advice: "Advice given", parts: "Needs a part", workshop: "Goes to the workshop", no: "Couldn't be fixed" };
+  const OUT_YOU = { fixed: "Fixed", advice: "They gave you advice", parts: "It needs a part", workshop: "It's gone to the workshop", no: "It couldn't be fixed" };
+  const dayName = (d) => new Date(d.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+  const clock = (ms) => new Date(ms).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const lines = (t) => String(t || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+
+  // Fix or Replace: its inputs from what someone wrote, and its verdict
+  const chkFrom = (device, problem, age) => { if (!J || age === "" || !(+age >= 0 && +age <= 40)) return null; const kind = J.kindOf(device) || J.kindOf(problem); if (!kind) return null;
+    const fault = J.faultOf(kind, problem || device); return fault ? { kind, fault, age: +age } : { kind, fault: null, age: +age }; };
+  const verdict = (c) => { if (!J || !c || !J.K[c.kind] || !J.K[c.kind].faults.some((f) => f[0] === c.fault)) return null; try { return J.judge({ kind: c.kind, fault: c.fault, age: c.age, price: c.price || 0, warr: !!c.warr, rate: 90 }); } catch (e) { return null; } };
+  const vTag = (c) => { const j = verdict(c); return j ? '<span class="tag ' + j.v + '" title="' + esc(J.verdictText(j)) + '">Fix or Replace: ' + esc(J.STAMP[j.v]) + "</span>" : ""; };
+  const vWhy = (c) => { const j = verdict(c); return j ? '<div class="why">' + esc(J.K[c.kind].faults.find((f) => f[0] === c.fault)[1]) + ", " + c.age + " years old: " + esc(J.verdictText(j)) + "</div>" : ""; };
+
+  // what this phone keeps: days it runs (their keys), its bookings (their secrets), and the days it has opened
+  const keys = () => LS.get("keys", {}), mineAll = () => LS.get("mine", {}), seen = () => LS.get("days", {});
+  const remember = (D) => { const s = seen(); s[D.id] = { title: D.day.title, date: D.day.date, place: D.day.place }; LS.set("days", s); };
+
+  // ── home ──
+  function home() {
+    $("#home").hidden = false; $("#day").hidden = true; document.title = "Repair Café · Mentifaber";
+    const s = seen(), k = keys(), m = mineAll(), ids = Object.keys(s).sort((a, b) => (s[a].date < s[b].date ? 1 : -1));
+    $("#mydays").hidden = !ids.length;
+    $("#days").innerHTML = ids.map((id) => '<div class="card' + (k[id] ? " me" : "") + '"><div class="h"><b><a href="#' + id + '" style="color:inherit">' + esc(s[id].title) + "</a></b><span class=\"tag\">" + (k[id] ? "you run it" : m[id] && m[id].length ? "booked" : "seen") + '</span></div><div class="p">' + esc(dayName(s[id]) + " · " + s[id].place) + "</div></div>").join("");
+    if (!$("#n-date").value) { const d = new Date(Date.now() + 7 * 864e5); $("#n-date").value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+    if (!$("#n-board").value) { try { const b = JSON.parse(localStorage.getItem("street:board") || "null"); if (b) $("#n-board").value = b; } catch (e) {} }
+  }
+  $("#f-new").onsubmit = async (ev) => { ev.preventDefault(); const st = $("#n-st"); say(st, "Making it…");
+    const key = hex(16), day = { title: $("#n-title").value.trim(), place: $("#n-place").value.trim(), date: $("#n-date").value, from: $("#n-from").value, to: $("#n-to").value, slot: +$("#n-slot").value, tables: +$("#n-tables").value, note: $("#n-note").value.trim(), board: $("#n-board").value.trim().toLowerCase().replace(/\s+/g, "-") };
+    try { const j = await api("", { op: "new", day, ok: await sha(key) }); const k = keys(); k[j.id] = key; LS.set("keys", k); remember(j); say(st, ""); location.hash = j.id; }
+    catch (e) { say(st, e.message.replace(/^./, (c) => c.toUpperCase()) + ".", "bad"); } };
+
+  // ── a day ──
+  let ID = null, D = null, timer = null, dirty = false;
+  async function openDay(id) {
+    ID = id; $("#home").hidden = true; $("#day").hidden = false; say($("#d-st"), "Opening the day…");
+    try { D = await api("/" + id); } catch (e) { $("#d-title").textContent = "No repair day here"; $("#d-when").textContent = ""; say($("#d-st"), e.message.replace(/^./, (c) => c.toUpperCase()) + ".", "bad"); $("#booking").hidden = true; $("#door").hidden = true; $("#yours").hidden = true; return; }
+    say($("#d-st"), ""); remember(D); drawDay(); await drawMine(); if (keys()[id]) await drawDoor(); else $("#door").hidden = true;
+    clearInterval(timer); timer = setInterval(() => { if (document.hidden || !ID) return; refresh(); }, 15000);
+  }
+  async function refresh(force) { try { D = await api("/" + ID); drawDay(); await drawMine(); if (keys()[ID] && (force || !dirty)) await drawDoor(); } catch (e) {} } // a write-up being typed isn't redrawn under the typist
+  function drawDay() {
+    const d = D.day; document.title = d.title + " · Repair Café"; $("#d-title").textContent = d.title;
+    $("#d-when").textContent = dayName(d) + ", " + d.from + "–" + d.to + " · " + d.place;
+    $("#d-note").hidden = !d.note; $("#d-note").textContent = d.note || "";
+    const free = D.slots.filter((s) => s.free > 0);
+    $("#booking").hidden = false;
+    if (!D.open || !free.length) { $("#f-book").hidden = true; say($("#d-st"), !D.open ? "Bookings are closed. You can still come and join the queue at the door." : "Every slot is booked. You can still come and join the queue at the door."); }
+    else { $("#f-book").hidden = false; const was = (document.querySelector("#b-slots input:checked") || {}).value;
+      $("#b-slots").innerHTML = "<legend>When</legend>" + D.slots.map((s) => s.free > 0 ? '<label><input type="radio" name="t" value="' + s.t + '"' + (s.t === was ? " checked" : "") + "> " + s.t + " <small>" + s.free + " left</small></label>" : '<label class="full" aria-disabled="true">' + s.t + " <small>booked</small></label>").join(""); }
+  }
+  const bChk = () => { const c = chkFrom($("#b-dev").value, $("#b-prob").value, $("#b-age").value), j = verdict(c), el = $("#b-chk");
+    if (j) el.innerHTML = '<span class="tag ' + j.v + '">Fix or Replace: ' + esc(J.STAMP[j.v]) + "</span> " + esc(J.verdictText(j).replace(/^[^:]+: /, "")) + ' <span class="status">The door sees this too.</span>';
+    else if (c && c.kind && !c.fault) el.innerHTML = '<span class="status">Say what\'s wrong, and Fix or Replace will weigh it up for the door.</span>';
+    else el.textContent = ""; };
+  for (const s of ["#b-dev", "#b-prob", "#b-age"]) $(s).addEventListener("input", bChk);
+  $("#f-book").onsubmit = async (ev) => { ev.preventDefault(); const st = $("#b-st"), t = (document.querySelector("#b-slots input:checked") || {}).value;
+    if (!t) { say(st, "Pick a time first.", "bad"); return; }
+    const c = chkFrom($("#b-dev").value, $("#b-prob").value, $("#b-age").value), secret = hex(16); say(st, "Booking…");
+    try { const j = await api("/" + ID, { op: "book", t, name: $("#b-name").value.trim(), device: $("#b-dev").value.trim(), problem: $("#b-prob").value.trim(), chk: c && c.fault ? c : null, tk: await sha(secret) });
+      const m = mineAll(); (m[ID] = m[ID] || []).push({ bid: j.bid, secret }); LS.set("mine", m);
+      say(st, "Booked for " + j.t + ".", "ok"); for (const s of ["#b-dev", "#b-prob", "#b-age"]) $(s).value = ""; bChk(); D = await api("/" + ID); drawDay(); await drawMine(); if (keys()[ID]) await drawDoor(); }
+    catch (e) { say(st, e.message.replace(/^./, (c) => c.toUpperCase()) + ".", "bad"); if (e.status === 409) { try { D = await api("/" + ID); drawDay(); } catch (x) {} } } };
+
+  // this phone's own bookings for the day
+  async function drawMine() {
+    const m = mineAll(), mine = m[ID] || []; if (!mine.length) { $("#yours").hidden = true; return; }
+    const got = [];
+    for (const b of mine) { try { got.push({ b, x: (await api("/" + ID, { op: "mine", bid: b.bid, secret: b.secret })).mine }); } catch (e) { if (e.status === 404 || e.status === 403) got.push({ b, gone: true }); } }
+    const keep = got.filter((g) => !g.gone); if (keep.length !== mine.length) { m[ID] = keep.map((g) => g.b); LS.set("mine", m); }
+    $("#yours").hidden = !keep.length;
+    $("#mine").innerHTML = keep.map(({ b, x }) => {
+      let st;
+      if (x.done) st = '<span class="tag ' + x.done.out + '">' + esc(OUT_YOU[x.done.out]) + "</span>";
+      else if (x.table) st = '<span class="tag fix">At table ' + x.table + " now</span>";
+      else if (x.arr) st = '<span class="tag">' + (x.ahead === 0 ? "You're next" : x.ahead + " ahead of you") + "</span>";
+      else st = '<span class="tag">' + (x.t ? "Booked for " + x.t : "In the queue") + "</span>";
+      let more = "";
+      if (x.done) { const d = x.done;
+        if (d.work.length) more += '<ul class="plain">' + d.work.map((w) => "<li>" + esc(w) + "</li>").join("") + (d.parts.length ? "<li>Parts: " + esc(d.parts.join(", ")) + "</li>" : "") + "</ul>";
+        if (d.note) more += '<p class="p">' + esc(d.note) + "</p>";
+        if (d.passport) more += '<div class="bar"><a class="btn sm" href="passport#' + esc(d.passport) + '" data-pp>Its Device Passport</a><span class="status">Keep the link: it proves what was done, signed by the workshop.</span></div>';
+        if (d.portal) more += '<div class="bar"><a class="btn sm" href="' + esc(d.portal) + '" data-portal>Follow it at the workshop</a><span class="status">Your private link: keep it.</span></div>';
+        if (d.out === "parts" || d.out === "no") more += '<p class="status">Holding a quote for it elsewhere? <a href="second">Second Opinion</a> checks it. Thinking of a new one? <a href="fix">Fix or Replace</a> weighs it up.</p>'; }
+      else if (!x.arr) more = '<div class="bar"><button class="btn ghost sm" type="button" data-cancel="' + b.bid + '">Cancel it</button><span class="status">Holding a quote for it already? <a href="second">Second Opinion</a> checks it.</span></div>';
+      return '<div class="card me" data-bid="' + b.bid + '"><div class="h"><b>' + esc(x.device) + "</b>" + st + '</div><div class="p">' + esc(x.name + (x.problem ? " · " + x.problem : "")) + "</div>" + vWhy(x.chk) + more + "</div>"; }).join("");
+  }
+  $("#mine").onclick = async (ev) => { const b = ev.target.closest("[data-cancel]"); if (!b || !confirm("Cancel this booking?")) return;
+    const m = mineAll(), it = (m[ID] || []).find((x) => x.bid === b.dataset.cancel); if (!it) return;
+    try { await api("/" + ID, { op: "cancel", bid: it.bid, secret: it.secret }); m[ID] = m[ID].filter((x) => x !== it); LS.set("mine", m); D = await api("/" + ID); drawDay(); await drawMine(); } catch (e) { alert(e.message); } };
+
+  // ── the door: only with the day's key ──
+  let ENTS = [];
+  const door = (body) => api("/" + ID, { ...body, key: keys()[ID] });
+  async function drawDoor() {
+    let j; try { j = await door({ op: "door" }); } catch (e) { if (e.status === 403) { $("#door").hidden = true; return; } say($("#door-st"), e.message, "bad"); return; }
+    $("#door").hidden = false; D = j; ENTS = j.ents; dirty = false; const c = j.counts;
+    $("#counts").innerHTML = [["Booked", c.booked], ["Walk-ins", c.walkins], ["Waiting", c.waiting], ["At tables", c.atTables], ["Fixed", c.fixed], ["Other", c.advice + c.parts + c.workshop + c.no]].map(([k, v]) => "<span><b>" + v + "</b>" + k + "</span>").join("");
+    $("#close").textContent = j.open ? "Close bookings" : "Open bookings again";
+    if (!$("#p-board").value) $("#p-board").value = j.day.board || (() => { try { return JSON.parse(localStorage.getItem("street:board") || "null") || ""; } catch (e) { return ""; } })();
+    const card = (e, acts) => '<div class="card" data-bid="' + e.bid + '"><div class="h"><b>' + esc(e.name) + " · " + esc(e.device) + "</b><span>" + (e.t ? '<span class="tag">' + e.t + "</span> " : '<span class="tag">walk-in</span> ') + vTag(e.chk) + '</span></div><div class="p">' + esc(e.problem || "") + "</div>" + vWhy(e.chk) + (acts ? '<div class="bar">' + acts + "</div>" : "") + "</div>";
+    const waiting = ENTS.filter((e) => e.arr && !e.done && !e.table).sort((a, b) => a.arr - b.arr);
+    const tblBtns = (e) => Array.from({ length: j.day.tables }, (_, i) => i + 1).filter((n) => !ENTS.some((x) => x.table === n && !x.done)).map((n) => '<button class="btn sm" type="button" data-to="' + n + '">To table ' + n + "</button>").join("") || '<span class="status">Every table is busy.</span>';
+    $("#queue").innerHTML = waiting.length ? waiting.map((e, i) => card(e, '<span class="status">' + (i + 1) + ". here since " + clock(e.arr) + "</span>" + tblBtns(e))).join("") : '<p class="status">Nobody waiting.</p>';
+    $("#tables").innerHTML = Array.from({ length: j.day.tables }, (_, i) => i + 1).map((n) => { const e = ENTS.find((x) => x.table === n && !x.done);
+      if (!e) return '<div class="tbl"><span class="n">Table ' + n + '</span><p class="status">Free.</p></div>';
+      return '<div class="tbl busy" data-bid="' + e.bid + '"><span class="n">Table ' + n + "</span><h3>" + esc(e.name) + " · " + esc(e.device) + "</h3><div class=\"p\">" + esc(e.problem || "") + "</div>" + vTag(e.chk) + vWhy(e.chk) +
+        '<form class="up" data-up="' + e.bid + '"><label>How it went<select class="in" name="out">' + Object.entries(OUT).map(([k, v]) => '<option value="' + k + '">' + esc(v) + "</option>").join("") + "</select></label>" +
+        '<label>What was done, a line each<textarea class="in" name="work" maxlength="1200" placeholder="Replaced the battery"></textarea></label><label>Parts, a line each <span class="status">(optional)</span><textarea class="in" name="parts" maxlength="600" placeholder="01AV422 battery"></textarea></label>' +
+        '<label>A note for them <span class="status">(optional)</span><input class="in" name="note" maxlength="300"></label>' +
+        '<div data-for="fixed"><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" name="pp" checked> Issue a Device Passport</label><div class="grid"><label>Warranty on the work, days<input class="in" name="wd" type="number" min="0" max="3650" value="30"></label><label>Battery health, % <span class="status">(optional)</span><input class="in" name="bat" type="number" min="0" max="100"></label></div><p class="status" style="margin:4px 0 0">Only the workshop\'s own table, signed in, can issue one.</p></div>' +
+        '<div data-for="workshop" hidden><label>Their email, for the workshop <span class="status">(optional)</span><input class="in" name="email" type="email" maxlength="120"></label><p class="status" style="margin:4px 0 0">They get a Workshop Portal link to follow it, with the quote.</p></div>' +
+        '<div class="bar"><button class="btn" type="submit">Done</button><button class="btn ghost sm" type="button" data-back>Back to the queue</button><span class="status" role="status" data-st></span></div></form></div>'; }).join("");
+    const booked = ENTS.filter((e) => e.t && !e.arr).sort((a, b) => (a.t < b.t ? -1 : 1));
+    $("#booked").innerHTML = booked.length ? booked.map((e) => card(e, '<button class="btn sm" type="button" data-here>Here</button>')).join("") : '<p class="status">Nobody.</p>';
+    const done = ENTS.filter((e) => e.done).sort((a, b) => b.done.at - a.done.at);
+    $("#done").innerHTML = done.length ? done.map((e) => '<div class="card" data-bid="' + e.bid + '"><div class="h"><b>' + esc(e.name) + " · " + esc(e.device) + '</b><span class="tag ' + e.done.out + '">' + esc(OUT[e.done.out]) + (e.done.table ? ", table " + e.done.table : "") + "</span></div>" +
+      (e.done.work.length ? '<div class="p">' + esc(e.done.work.join("; ")) + (e.done.parts.length ? " · Parts: " + esc(e.done.parts.join(", ")) : "") + "</div>" : "") +
+      '<div class="bar">' + (e.done.passport ? '<a class="btn ghost sm" href="passport#' + esc(e.done.passport) + '">Device Passport</a>' : "") + (e.done.portal ? '<span class="status">Workshop Portal link sent</span>' : "") + '<button class="btn ghost sm" type="button" data-undo>Undo</button></div></div>').join("") : '<p class="status">Nothing yet.</p>';
+  }
+  const doorAct = async (body, st) => { try { await door(body); await drawDoor(); } catch (e) { if (st) say(st, e.message, "bad"); else alert(e.message); } };
+  $("#door").addEventListener("click", async (ev) => {
+    const t = ev.target, bid = (t.closest("[data-bid]") || {}).dataset?.bid;
+    if (t.matches("[data-to]")) return doorAct({ op: "table", bid, table: +t.dataset.to });
+    if (t.matches("[data-here]")) return doorAct({ op: "arrive", bid });
+    if (t.matches("[data-back]")) return doorAct({ op: "table", bid, table: 0 });
+    if (t.matches("[data-undo]")) return doorAct({ op: "undo", bid });
+  });
+  $("#tables").addEventListener("input", () => { dirty = true; });
+  $("#tables").addEventListener("change", (ev) => { const f = ev.target.closest("form.up"); if (!f || ev.target.name !== "out") return;
+    for (const x of f.querySelectorAll("[data-for]")) x.hidden = x.dataset.for !== ev.target.value; });
+  $("#tables").addEventListener("submit", async (ev) => {
+    const f = ev.target.closest("form.up"); if (!f) return; ev.preventDefault();
+    const e = ENTS.find((x) => x.bid === f.dataset.up), st = f.querySelector("[data-st]"), out = f.out.value, work = lines(f.work.value), parts = lines(f.parts.value), note = f.note.value.trim();
+    if (!e) return; if (out === "fixed" && !work.length) { say(st, "Say what was done.", "bad"); return; }
+    const btn = f.querySelector("button[type=submit]"); btn.disabled = true; const body = { op: "done", bid: e.bid, out, work, parts, note };
+    try {
+      if (out === "fixed" && f.pp.checked) { say(st, "Signing its Device Passport…");
+        const r = await fetch("/api/seal/passport", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ device: e.device, work, parts: parts.map((name) => ({ name })), warrantyDays: f.wd.value === "" ? undefined : +f.wd.value, battery: f.bat.value === "" ? undefined : +f.bat.value, note: [note, "Mended at " + D.day.title + ", " + D.day.place].filter(Boolean).join(". "), date: D.day.date, ref: "RC-" + e.bid.slice(0, 8).toUpperCase() }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 403) throw new Error("Only the workshop's own table, signed in, can issue a Device Passport. Untick it to write this up without one.");
+        if (!r.ok || !j.record) throw new Error(j.error || "the workshop didn't sign it"); body.passport = j.record; }
+      if (out === "workshop") { say(st, "Asking the workshop…"); const email = f.email.value.trim();
+        const r = await fetch("/api/portal/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: e.name, email, service: "repair", what: e.device + (e.problem ? ": " + e.problem : ""), when: "From the Repair Café", msg: "From " + D.day.title + " (" + D.day.date + ", " + D.day.place + "), table " + (e.table || "?") + ". " + (e.problem || "") + (work.length ? "\nTried: " + work.join("; ") : "") + (note ? "\n" + note : "") }) });
+        const j = await r.json().catch(() => ({})); if (!r.ok || !j.link) throw new Error(j.error || "the workshop didn't answer"); body.portal = j.link; }
+      await door(body); dirty = false; await drawDoor();
+    } catch (x) { btn.disabled = false; say(st, String(x.message || x).replace(/^./, (c) => c.toUpperCase()), "bad"); }
+  });
+  $("#f-walk").onsubmit = async (ev) => { ev.preventDefault(); const st = $("#w-st"), secret = hex(16), c = chkFrom($("#w-dev").value, $("#w-prob").value, $("#w-age").value);
+    try { const j = await door({ op: "walkin", name: $("#w-name").value.trim(), device: $("#w-dev").value.trim(), problem: $("#w-prob").value.trim(), chk: c && c.fault ? c : null, tk: await sha(secret) });
+      say(st, $("#w-name").value.trim() + " is in the queue.", "ok"); $("#w-url").textContent = location.origin + "/repair#" + ID + "/b=" + j.ent.bid + "." + secret; $("#w-link").hidden = false;
+      for (const s of ["#w-name", "#w-dev", "#w-prob", "#w-age"]) $(s).value = ""; await drawDoor(); }
+    catch (e) { say(st, e.message, "bad"); } };
+  const copy = async (text, what) => { $("#copied").textContent = text; $("#copied").hidden = false; try { await navigator.clipboard.writeText(text); say($("#door-st"), what + " copied.", "ok"); } catch (e) { say($("#door-st"), what + ": copy it from below."); } };
+  $("#share").onclick = () => copy(location.origin + "/repair#" + ID, "The day's link");
+  $("#helpers").onclick = () => copy(location.origin + "/repair#" + ID + "~" + keys()[ID], "The helpers' link (anyone with it runs the door: give it only to helpers)");
+  $("#refresh").onclick = () => refresh(true);
+  $("#close").onclick = () => doorAct({ op: D.open ? "close" : "reopen" });
+  $("#rm").onclick = async () => { if (!confirm("Take the day down for everyone? Its bookings and write-ups go with it.")) return;
+    try { await door({ op: "remove" }); const k = keys(), s = seen(), m = mineAll(); delete k[ID]; delete s[ID]; delete m[ID]; LS.set("keys", k); LS.set("days", s); LS.set("mine", m); ID = null; location.hash = ""; } catch (e) { alert(e.message); } };
+  // the day's notice on Street Board, with its link; this phone keeps the notice's removal key, as Street Board does
+  $("#f-post").onsubmit = async (ev) => { ev.preventDefault(); const st = $("#door-st"), board = $("#p-board").value.trim().toLowerCase().replace(/\s+/g, "-"), d = D.day;
+    if (!board) { say(st, "Say which street's board.", "bad"); return; }
+    const now = Date.now(), end = new Date(d.date + "T" + d.to + ":00").getTime(), exp = Math.min(Math.max(end, now + 36e5), now + 7 * 864e5 - 6e4);
+    const when = new Date(d.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) + " " + d.from + "–" + d.to, link = " Book a slot: mentifaber.org/repair#" + ID;
+    let text = d.title + ", " + when + " at " + d.place + ": bring something broken."; if (text.length + link.length > 160) text = text.slice(0, 159 - link.length) + "…"; text += link;
+    const k = hex(16), p = { id: hex(6), kind: "offer", text, at: now, exp, dk: await sha(k) };
+    try { const r = await fetch("/api/board/" + encodeURIComponent(board), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ posts: [p] }) }); const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.added) throw new Error(j.error || j.limited || "Street Board didn't take it");
+      try { const mine = JSON.parse(localStorage.getItem("street:mine") || "{}"); mine[p.id] = k; localStorage.setItem("street:mine", JSON.stringify(mine)); } catch (e) {}
+      say(st, "It's on " + board + "'s Street Board" + (end > p.exp ? " for the next 7 days (a notice lasts a week at most: post it again nearer the day)." : " until the day ends."), "ok"); }
+    catch (e) { say(st, String(e.message || e).replace(/^./, (c) => c.toUpperCase()) + ".", "bad"); } };
+
+  // ── which page: #<day>, #<day>~<key> (a helper's link), #<day>/b=<booking>.<secret> (a walk-in's link) ──
+  function route() {
+    const m = /^#([0-9a-f]{12})(?:~([0-9a-f]{32}))?(?:\/b=([0-9a-f]{12})\.([0-9a-f]{32}))?$/.exec(location.hash);
+    if (!m) { ID = null; clearInterval(timer); home(); return; }
+    if (m[2]) { const k = keys(); k[m[1]] = m[2]; LS.set("keys", k); }
+    if (m[3]) { const mm = mineAll(); mm[m[1]] = (mm[m[1]] || []).filter((x) => x.bid !== m[3]).concat({ bid: m[3], secret: m[4] }); LS.set("mine", mm); }
+    if (m[2] || m[3]) history.replaceState(null, "", location.pathname + "#" + m[1]); // the key or secret is kept on this phone, not left in the address bar
+    openDay(m[1]);
+  }
+  addEventListener("hashchange", route); route();
+})();
+</script>
+</body>
+</html>
