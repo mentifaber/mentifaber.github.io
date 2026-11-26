@@ -48,6 +48,10 @@ assert.equal(await sweep(env, deps, at(11, 30)), 0, "3.5 hours: not yet");
 assert.equal(await sweep(env, deps, at(12, 15)), 1, "4 hours without movement in the daytime: the family is told"); assert.deepEqual(pushes, ["https://fcm.googleapis.com/fam"]);
 assert.equal(quietness(mem.get("ci:" + id), at(12, 15)).quietTold, true);
 assert.equal(await sweep(env, deps, at(13)), 0, "once a day");
+// on the real clock: the rooms last saw someone an hour ago, which is the last movement the family was told about (the
+// sweeps above ran on today's clock times, which before 08:00 UTC are still ahead of the real one: a report "after" a
+// future one reads as a burst and is dropped, and movement "before" the one they were told about doesn't clear it)
+{ const x = mem.get("ci:" + id), seen = Date.now() - 36e5; for (const k of Object.keys(x.rooms)) x.rooms[k] = seen; x.quietAt = seen; mem.set("ci:" + id, x); }
 pushes.length = 0; await go("/" + id + "/sense", { t: dev, room: "lounge" });
 assert.deepEqual(pushes, ["https://fcm.googleapis.com/fam"], "movement again after they were told: an all-clear");
 assert.equal(quietness(mem.get("ci:" + id)).quietClear, true);

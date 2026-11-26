@@ -249,6 +249,14 @@
     "added": "2026-11-25"
   },
   {
+    "href": "record.html",
+    "name": "The Home Record",
+    "desc": "A service history for the house: every appliance and device with its receipts, manuals, warranty, Device Passports, Fix or Replace checks and repairs. Hand the whole record to a buyer when the house is sold, or one page when a device is passed on. Kept on your device.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-26"
+  },
+  {
     "href": "bills.html",
     "name": "Bill Watch",
     "desc": "This month's phone, internet, power or insurance bill against last month's: every charge that went up, every new fee and every discount that ended, quoted from the bill, with the questions to ask. Worked out on your device; no bill is sent anywhere.",

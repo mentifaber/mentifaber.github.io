@@ -1,0 +1,15 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "find",
+   "label": "Look something up in the Home Record",
+   "changes": false,
+   "desc": "What the Home Record holds on an appliance or device in the house: its model, when it was bought, its warranty or repair warranty, the last work done and the papers kept with it.",
+   "args": {
+    "thing": "string"
+   },
+   "words": "warranty warranties guarantee serial receipt receipts appliance appliances boiler furnace fridge dishwasher washer dryer oven serviced servicing"
+  }
+ ]
+}
