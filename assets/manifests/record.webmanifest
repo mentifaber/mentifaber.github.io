@@ -1,0 +1,31 @@
+{
+  "id": "/record",
+  "name": "The Home Record",
+  "short_name": "Home Record",
+  "description": "A service history for the house: every appliance and device with its papers, warranty, Device Passports and repairs.",
+  "start_url": "/record.html",
+  "scope": "/record.html",
+  "display": "standalone",
+  "background_color": "#0b0b0d",
+  "theme_color": "#0b0b0d",
+  "icons": [
+    {
+      "src": "../icons/v2/record-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/record-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/record-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

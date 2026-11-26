@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/record">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Home Record · Mentifaber</title>
+<meta name="description" content="A service history for the house: every appliance and device with its receipts, manuals, warranty, Device Passports, Fix or Replace checks and repairs.">
+<meta name="theme-color" content="#0b0b0d">
+<link rel="icon" href="assets/icons/v2/record.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/record-180.png">
+<link rel="manifest" href="assets/manifests/record.webmanifest">
+<style>
+/* The Home Record: a logbook for a house. Each thing in it is a page: what it is, where it came from, what's been done to
+   it and what still covers it, with the papers clipped to the back. Warranties running out are flagged at the front. */
+:root { --bg: #0b0b0d; --sheet: #131318; --card: #1a1a21; --line: #2e2e3a; --vio: #a99cf0; --vio-hi: #d2caff; --ink: #ecebf3; --dim: #9d9bb0; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 880px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--vio); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--vio-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--vio); margin: 24px 0 10px; }
+h3 { font: 600 16px var(--sans); margin: 0 0 6px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0e0e12; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+textarea.in { min-height: 70px; resize: vertical; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 10px; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--vio); background: var(--vio); color: #17122e; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--vio-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.room { margin-top: 14px; } .room > b { font: 500 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.things { display: grid; gap: 8px; margin-top: 6px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.row button.open { all: unset; cursor: pointer; flex: 1 1 200px; min-width: 0; } .row b { display: block; overflow-wrap: anywhere; } .row small { color: var(--dim); }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.ok { color: var(--ok); border-color: var(--ok); } .tag.warn { color: var(--warn); border-color: var(--warn); } .tag.bad { color: var(--bad); border-color: var(--bad); }
+.list { list-style: none; margin: 6px 0 0; padding: 0; } .list li { border-bottom: 1px solid var(--line); padding: 7px 0; font-size: 14.5px; overflow-wrap: anywhere; display: flex; gap: 8px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.list li > span { min-width: 0; } .list small { color: var(--dim); display: block; }
+.lnk { background: none; border: 0; color: var(--dim); font: 13px var(--sans); text-decoration: underline; cursor: pointer; padding: 2px 0; } a.lnk { color: var(--vio-hi); }
+.y { color: var(--ok); } .n { color: var(--bad); }
+.alert { border: 1.5px solid var(--warn); border-radius: 10px; padding: 10px 14px; margin-top: 12px; } .alert b { color: var(--warn); }
+.verdict { border-radius: 10px; padding: 12px 14px; margin-top: 12px; } .verdict.ok { border: 1.5px solid var(--ok); } .verdict.bad { border: 1.5px solid var(--bad); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--vio-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "The Home Record", "description": "A service history for the house: every appliance and device with its receipts, manuals, warranty, Device Passports, Fix or Replace checks and repairs.", "url": "https://mentifaber.org/record", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/record-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · The Home Record</span><a href="./">The workshop</a></div>
+
+  <div id="home">
+    <h1>A service history <span>for the house</span></h1>
+    <p class="lede">Every appliance and device in the house, each with its receipts and manuals, its warranty, the workshop's Device Passports, its Fix or Replace checks and every repair. When the house is sold, hand the buyer the whole record; when a device is passed on, its page goes with it. It's kept on this device; nothing is uploaded.</p>
+    <div class="panel"><label>The house<input class="in" id="h-name" maxlength="120" placeholder="12 Elm Street"></label></div>
+    <div id="due"></div>
+    <div id="rooms"></div>
+    <div class="bar"><button class="btn" id="new" type="button">Add a thing</button><button class="btn ghost" id="from-house" type="button" hidden></button><button class="btn ghost" id="from-fix" type="button" hidden></button></div>
+    <p class="status" id="imp-st" role="status"></p>
+    <h2>Hand it over</h2>
+    <div class="panel"><p style="margin:0">The whole record as one file: every thing, its papers and passports, and a summary anyone can read. The buyer opens it here and has the house's history; each Device Passport in it is checked against the workshop's signature, and each paper against its fingerprint.</p>
+      <div class="bar"><button class="btn" id="export" type="button">Download the whole record</button><label class="btn ghost" style="cursor:pointer">Open a record<input id="open" type="file" accept=".zip,application/zip,.json" hidden></label></div>
+      <div id="open-out" aria-live="polite"></div></div>
+  </div>
+
+  <div id="thing" hidden>
+    <div class="bar" style="margin-top:16px"><button class="btn ghost sm" id="back" type="button">← The house</button></div>
+    <h2 id="t-head">A thing</h2>
+    <div class="panel"><div class="grid">
+      <label>What it is<input class="in" data-f="name" id="t-name" maxlength="80" placeholder="Kitchen fridge"></label>
+      <label>Room<input class="in" data-f="room" id="t-room" maxlength="40" placeholder="Kitchen" list="room-list"></label>
+      <label>Make and model<input class="in" data-f="model" id="t-model" maxlength="80"></label>
+      <label>Serial number<input class="in" data-f="serial" id="t-serial" maxlength="60"></label>
+      <label>Bought<input class="in" data-f="bought" id="t-bought" type="date"></label>
+      <label>Price paid ($)<input class="in" data-f="price" id="t-price" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label>Warranty until<input class="in" data-f="warranty" id="t-warranty" type="date"></label></div>
+      <label style="margin-top:10px">Notes<textarea class="in" data-f="notes" id="t-notes" maxlength="1000" placeholder="Filter changed every 6 months; the water line shutoff is behind it."></textarea></label>
+      <datalist id="room-list"></datalist></div>
+
+    <div class="panel"><h3>Papers</h3><p class="status" style="margin:0">Receipts, manuals, photos of the label. Kept on this device with the record.</p><ul class="list" id="docs"></ul>
+      <div class="bar"><label>It's a<select class="in" id="d-what"><option value="receipt">Receipt</option><option value="manual">Manual</option><option value="photo">Photo</option><option value="other">Something else</option></select></label>
+        <label class="btn ghost" style="cursor:pointer;align-self:flex-end">Add files<input id="d-files" type="file" multiple hidden></label></div></div>
+
+    <div class="panel"><h3>Device Passports</h3><p class="status" style="margin:0">The workshop's signed record of a repair. Paste its link; it's checked against the workshop's signature before it's kept.</p><ul class="list" id="pps"></ul>
+      <form class="bar" id="pp-f"><label style="flex:1 1 240px">The passport link<input class="in" id="pp-in" autocomplete="off" placeholder="https://mentifaber.org/passport#…"></label><button class="btn ghost" type="submit" style="align-self:flex-end">Add it</button></form><p class="status" id="pp-st" role="status"></p></div>
+
+    <div class="panel"><h3>Repairs and service</h3><ul class="list" id="log"></ul>
+      <form class="grid" id="log-f" style="margin-top:8px"><label>When<input class="in" id="l-date" type="date"></label><label>What was done<input class="in" id="l-what" maxlength="160" placeholder="Replaced the door seal"></label><label>Cost ($)<input class="in" id="l-cost" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <button class="btn ghost" type="submit" style="align-self:end">Add it</button></form></div>
+
+    <div class="panel"><h3>Fix or Replace checks</h3><ul class="list" id="checks"></ul><p class="status" id="chk-none">None yet. <a class="lnk" href="fix">Weigh one up in Fix or Replace</a>, then bring it in from the house page.</p></div>
+
+    <div class="bar" style="margin-top:16px"><button class="btn" id="pass" type="button">Pass this one on (its page and papers)</button><button class="btn ghost sm" id="del" type="button">Remove it from the record</button></div>
+  </div>
+</div>
+<script src="assets/seal/verify.js"></script>
+<script src="assets/seal/zip.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const KINDS = { phone: ["Phone", /phone|iphone|pixel|galaxy/], laptop: ["Laptop", /laptop|macbook|notebook|chromebook/], tablet: ["Tablet", /tablet|ipad/], desktop: ["Desktop PC", /desktop|imac|\bpc\b/],
+    console: ["Game console", /console|xbox|playstation|ps5|switch/], tv: ["TV", /\btv\b|television/], printer: ["Printer", /printer/], washer: ["Washer", /washer|washing machine/], dryer: ["Dryer", /dryer/],
+    fridge: ["Fridge", /fridge|refrigerator|freezer/], dishwasher: ["Dishwasher", /dishwasher/], microwave: ["Microwave", /microwave/] };
+  const STAMP = { fix: "Fix it", rep: "Replace it", mid: "Toss-up", war: "Use the warranty" };
+  const WHAT = { receipt: "Receipt", manual: "Manual", photo: "Photo", other: "Paper" };
+  const kindOf = (t) => { t = String(t || "").toLowerCase(); if (/dishwasher/.test(t)) return "dishwasher"; return Object.keys(KINDS).find((k) => KINDS[k][1].test(t)) || ""; };
+  const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const slug = (t) => String(t || "x").normalize("NFKD").replace(/[^\w.-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 40).toLowerCase() || "x";
+  const day = (d) => (d ? new Date(d + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const daysTo = (d) => Math.round((Date.parse(d + "T12:00:00") - Date.now()) / 864e5);
+  const usd = (x) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const size = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
+  const hex = async (data) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const clean = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
+  const isDate = (d) => /^\d{4}-\d\d-\d\d$/.test(d || "");
+
+  // ── the record, in IndexedDB on this device, papers and all ──
+  const db = new Promise((ok, no) => { const r = indexedDB.open("homerecord", 1); r.onupgradeneeded = () => r.result.createObjectStore("things", { keyPath: "id" }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+  const tx = async (mode, fn) => { const x = await db; return new Promise((ok, no) => { const t = x.transaction("things", mode), r = fn(t.objectStore("things")); t.oncomplete = () => ok(r && r.result); t.onerror = () => no(t.error); }); };
+  const all = () => tx("readonly", (s) => s.getAll()).then((x) => x || []).catch(() => []);
+  const put = (t) => { t.updated = Date.now(); return tx("readwrite", (s) => s.put(t)); };
+  const HOME = "home:meta";
+  let things = [], home = { id: HOME, name: "" }, cur = null;
+  const blank = (o = {}) => ({ id: rid(), name: "", kind: "", room: "", model: "", serial: "", bought: "", price: "", warranty: "", notes: "", docs: [], passports: [], checks: [], log: [], created: Date.now(), ...o });
+  const tidy = (t) => ({ ...blank(), ...t, name: clean(t.name, 80), room: clean(t.room, 40), model: clean(t.model, 80), serial: clean(t.serial, 60), bought: isDate(t.bought) ? t.bought : "", warranty: isDate(t.warranty) ? t.warranty : "",
+    price: t.price === "" || t.price == null || !(Number(t.price) >= 0) ? "" : Math.round(Number(t.price) * 100) / 100, notes: String(t.notes || "").slice(0, 1000) });
+
+  // a passport's repair warranty, and the warranty that covers a thing now (its own, or a repair's)
+  const ppUntil = (p) => p.warrantyDays ? new Date(new Date(p.date + "T12:00:00").getTime() + p.warrantyDays * 864e5).toISOString().slice(0, 10) : "";
+  const covers = (t) => [t.warranty ? { until: t.warranty, what: "warranty" } : null, ...t.passports.map((p) => (ppUntil(p) ? { until: ppUntil(p), what: "repair warranty (" + p.ref + ")" } : null))].filter(Boolean).sort((a, b) => b.until.localeCompare(a.until));
+  const cover = (t) => covers(t)[0] || null;
+
+  async function load() { const xs = await all(); home = xs.find((x) => x.id === HOME) || home; things = xs.filter((x) => x.id !== HOME).map(tidy); }
+  async function drawHome() {
+    await load(); $("#h-name").value = home.name || "";
+    // each warranty on its own: a repair's warranty covers the repair, not the rest of the thing
+    const due = things.flatMap((t) => covers(t).map((c) => ({ t, c }))).filter((x) => daysTo(x.c.until) >= 0 && daysTo(x.c.until) <= 60).sort((a, b) => a.c.until.localeCompare(b.c.until));
+    $("#due").innerHTML = due.length ? '<div class="alert" id="due-box"><b>Running out soon</b><ul class="list">' + due.map((x) => "<li><span>" + esc(x.t.name) + "<small>" + esc(x.c.what) + " ends " + esc(day(x.c.until)) + "</small></span><span class=\"tag warn\">" + daysTo(x.c.until) + " days</span></li>").join("") + "</ul></div>" : "";
+    const rooms = new Map(); for (const t of things.slice().sort((a, b) => a.name.localeCompare(b.name))) { const r = t.room || "Around the house"; if (!rooms.has(r)) rooms.set(r, []); rooms.get(r).push(t); }
+    $("#rooms").innerHTML = things.length ? [...rooms.keys()].sort().map((r) => '<div class="room"><b>' + esc(r) + '</b><div class="things">' + rooms.get(r).map(rowOf).join("") + "</div></div>").join("") : '<p class="status" style="margin-top:14px">Nothing in the record yet. Add the boiler, the fridge, the laptop: whatever you\'d want a history of.</p>';
+    // what can be brought in from the House Manual and Fix or Replace on this device
+    const hm = houseEntries(), fx = fixChecks();
+    $("#from-house").hidden = !hm.length; $("#from-house").textContent = "Bring in " + hm.length + " from the House Manual";
+    $("#from-fix").hidden = !fx.length; $("#from-fix").textContent = "Bring in " + fx.length + " Fix or Replace check" + (fx.length === 1 ? "" : "s");
+  }
+  function rowOf(t) {
+    const c = cover(t), d = c ? daysTo(c.until) : null;
+    const tags = (c ? '<span class="tag ' + (d < 0 ? "" : d <= 60 ? "warn" : "ok") + '">' + (d < 0 ? "warranty ended" : "covered to " + esc(day(c.until))) + "</span>" : "") + (t.passports.length ? '<span class="tag ok">' + t.passports.length + " passport" + (t.passports.length === 1 ? "" : "s") + "</span>" : "") +
+      (t.docs.length ? '<span class="tag">' + t.docs.length + " paper" + (t.docs.length === 1 ? "" : "s") + "</span>" : "") + (t.log.length ? '<span class="tag">' + t.log.length + " repair" + (t.log.length === 1 ? "" : "s") + "</span>" : "");
+    return '<div class="row"><button class="open" type="button" data-id="' + esc(t.id) + '"><b>' + esc(t.name || "A thing") + "</b><small>" + esc([t.model, t.bought ? "bought " + day(t.bought) : ""].filter(Boolean).join(" · ") || "no details yet") + '</small></button><div class="tags">' + tags + "</div></div>";
+  }
+  $("#rooms").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) show(things.find((t) => t.id === b.dataset.id)); };
+  $("#h-name").addEventListener("change", async () => { home.name = clean($("#h-name").value, 120); await tx("readwrite", (s) => s.put(home)); });
+  $("#new").onclick = async () => { const t = blank(); await put(t); things.push(t); show(t); $("#t-name").focus(); };
+
+  // ── bringing in what's already on this device ──
+  const houseEntries = () => { let E = []; try { E = JSON.parse(localStorage.getItem("house:v1") || "[]"); } catch (e) {}
+    // private entries (alarm codes, passwords) never come across, and a Wi-Fi entry only if it names a device (a router)
+    return E.filter((e) => e && e.title && !e.priv && (e.kind === "appliance" || (e.kind === "wifi" && e.model) || kindOf(e.title + " " + (e.model || ""))) && !things.some((t) => t.from === "house:" + e.id)); };
+  const fixChecks = () => { let H = []; try { H = JSON.parse(localStorage.getItem("fix:v1") || "[]"); } catch (e) {}
+    return H.filter((h) => h && h.o && KINDS[h.o.kind] && STAMP[h.v] && !things.some((t) => t.checks.some((c) => c.at === h.at))); };
+  $("#from-house").onclick = async () => {
+    let n = 0, pp = 0;
+    for (const e of houseEntries()) { const t = blank({ name: clean(e.title, 80), model: clean(e.model, 80), warranty: isDate(e.warr) ? e.warr : "", notes: (e.kind === "wifi" ? [e.where] : [e.where, e.det]).filter(Boolean).join("\n").slice(0, 1000), kind: kindOf(e.title + " " + e.model), from: "house:" + e.id });
+      const m = /\/passport#([\w.-]+)$/.exec(e.link || ""); if (m) { const p = await passportOf(m[1]); if (p) { t.passports.push(p); pp++; } }
+      await put(t); n++; }
+    $("#imp-st").textContent = "Brought in " + n + " from the House Manual" + (pp ? ", with " + pp + " Device Passport" + (pp === 1 ? "" : "s") + " from their links" : "") + "."; drawHome();
+  };
+  $("#from-fix").onclick = async () => {
+    let into = 0, made = 0;
+    for (const h of fixChecks()) { const c = { at: h.at, o: { kind: h.o.kind, fault: clean(h.o.fault, 20), age: Number(h.o.age) || 0, model: clean(h.o.model, 80) }, v: h.v };
+      const mine = (t) => (c.o.model && (t.model.toLowerCase() === c.o.model.toLowerCase() || t.name.toLowerCase() === c.o.model.toLowerCase())) || (!c.o.model && (t.kind || kindOf(t.name + " " + t.model)) === c.o.kind);
+      let t = things.find(mine); if (!t) { t = blank({ name: c.o.model || KINDS[c.o.kind][0], model: c.o.model, kind: c.o.kind }); things.push(t); made++; } else into++;
+      t.checks.push(c); await put(t); }
+    $("#imp-st").textContent = "Brought in the Fix or Replace checks: " + (into ? into + " onto things already here" : "") + (into && made ? ", " : "") + (made ? made + " as new things" : "") + "."; drawHome();
+  };
+
+  // ── a thing's page ──
+  async function show(t) {
+    if (!t) return; cur = t; $("#home").hidden = true; $("#thing").hidden = false;
+    for (const el of document.querySelectorAll("#thing [data-f]")) el.value = t[el.dataset.f] == null ? "" : t[el.dataset.f];
+    $("#room-list").innerHTML = [...new Set(things.map((x) => x.room).filter(Boolean))].map((r) => '<option value="' + esc(r) + '">').join(""); $("#l-date").value = today(); $("#pp-st").textContent = ""; drawThing();
+  }
+  $("#back").addEventListener("pointerdown", () => document.activeElement && document.activeElement.blur && document.activeElement.blur());
+  $("#back").onclick = () => { cur = null; $("#thing").hidden = true; $("#home").hidden = false; drawHome(); };
+  $("#del").onclick = async () => { if (!cur || !confirm("Remove " + (cur.name || "this") + " and its papers from the record?")) return; const id = cur.id; await tx("readwrite", (s) => s.delete(id)); $("#back").click(); };
+  for (const el of document.querySelectorAll("#thing [data-f]")) el.addEventListener("change", async () => { if (!cur) return; const t = cur; t[el.dataset.f] = el.value; Object.assign(t, tidy(t)); if (el.dataset.f === "name" || el.dataset.f === "model") t.kind = kindOf(t.name + " " + t.model) || t.kind; await put(t); if (cur === t) drawThing(); });
+  const urls = new Map();
+  function drawThing() {
+    const t = cur, c = cover(t); $("#t-head").textContent = (t.name || "A thing") + (c ? " · " + (daysTo(c.until) < 0 ? "warranty ended " : "covered to ") + day(c.until) : "");
+    $("#docs").innerHTML = t.docs.map((d) => { if (!urls.has(d.id)) urls.set(d.id, URL.createObjectURL(d.blob)); return '<li data-d="' + esc(d.id) + '"><span><a class="lnk" href="' + urls.get(d.id) + '" download="' + esc(d.name) + '">' + esc(d.name) + "</a><small>" + esc(WHAT[d.what] || "Paper") + " · " + size(d.bytes) + '</small></span><button class="lnk" type="button" data-act="rm-doc">Remove</button></li>'; }).join("") || '<li class="status">None yet.</li>';
+    $("#pps").innerHTML = t.passports.map((p, i) => '<li><span><span class="y">✓ signed by the workshop</span> · ' + esc(p.device) + " · " + esc(day(p.date)) + "<small>" + esc(p.work.join("; ")) + (ppUntil(p) ? " · repair warranty to " + esc(day(ppUntil(p))) : "") + '</small></span><span><a class="lnk" href="passport#' + esc(p.record) + '">Open it</a> <button class="lnk" type="button" data-act="rm-pp" data-i="' + i + '">Remove</button></span></li>').join("") || '<li class="status">None yet.</li>';
+    $("#log").innerHTML = t.log.slice().sort((a, b) => b.date.localeCompare(a.date)).map((l) => '<li data-l="' + esc(l.id) + '"><span>' + esc(l.what) + "<small>" + esc(day(l.date)) + (l.cost !== "" && l.cost != null ? " · " + esc(usd(l.cost)) : "") + '</small></span><button class="lnk" type="button" data-act="rm-log">Remove</button></li>').join("") || '<li class="status">None yet.</li>';
+    $("#checks").innerHTML = t.checks.map((h) => "<li><span>" + esc(STAMP[h.v]) + "<small>" + esc(new Date(h.at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })) + " · " + esc(KINDS[h.o.kind] ? KINDS[h.o.kind][0] : "") + ", " + esc(h.o.age) + " years old</small></span>" +
+      '<a class="lnk" href="fix#' + esc(h.o.kind) + "/" + esc(h.o.fault) + "/" + esc(h.o.age) + '">Weigh it up again</a></li>').join(""); $("#chk-none").hidden = t.checks.length > 0;
+  }
+  $("#thing").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-act]"); if (!b || !cur) return; const t = cur;
+    if (b.dataset.act === "rm-doc") t.docs = t.docs.filter((d) => d.id !== b.closest("li").dataset.d);
+    else if (b.dataset.act === "rm-pp") t.passports.splice(+b.dataset.i, 1);
+    else if (b.dataset.act === "rm-log") t.log = t.log.filter((l) => l.id !== b.closest("li").dataset.l);
+    else return;
+    await put(t); drawThing();
+  });
+  $("#d-files").addEventListener("change", async (e) => { const t = cur, fs = [...e.target.files]; e.target.value = ""; for (const f of fs) { if (f.size > 25 * 1048576) { alert(f.name + " is over 25 MB."); continue; }
+      t.docs.push({ id: rid(), name: clean(f.name || "paper", 120), type: f.type || "application/octet-stream", bytes: f.size, sha256: await hex(await f.arrayBuffer()), what: $("#d-what").value, blob: f, added: Date.now() }); }
+    await put(t); if (cur === t) drawThing(); });
+  $("#log-f").onsubmit = async (e) => { e.preventDefault(); const what = clean($("#l-what").value, 160); if (!what) return $("#l-what").focus(); const t = cur;
+    t.log.push({ id: rid(), date: isDate($("#l-date").value) ? $("#l-date").value : today(), what, cost: $("#l-cost").value === "" ? "" : Math.round(Number($("#l-cost").value) * 100) / 100 }); $("#l-what").value = ""; $("#l-cost").value = ""; await put(t); drawThing(); };
+
+  // a Device Passport, only if the workshop's signature checks out
+  async function passportOf(record) {
+    try { const v = await WorkshopSeal.check(record); if (!v.good || v.body.kind !== "passport") return null; const d = v.body.data;
+      return { record, ref: clean(d.ref, 40), device: clean(d.device, 120), serial: clean(d.serial, 60), date: isDate(d.date) ? d.date : new Date(v.body.iat).toISOString().slice(0, 10), work: (d.work || []).map((w) => clean(w, 200)).slice(0, 20), warrantyDays: Number(d.warrantyDays) || 0, iat: v.body.iat }; } catch (x) { return null; }
+  }
+  $("#pp-f").onsubmit = async (e) => {
+    e.preventDefault(); const st = $("#pp-st"), t = cur, raw = $("#pp-in").value.trim(), rec = (/#([\w.-]+)$/.exec(raw) || [, raw])[1]; st.className = "status";
+    if (t.passports.some((p) => p.record === rec)) { st.textContent = "That passport is already here."; return; }
+    const p = await passportOf(rec); if (!p) { st.className = "status bad"; st.textContent = "That isn't a genuine Device Passport: its signature doesn't check out, so it wasn't kept."; return; }
+    t.passports.push(p); if (!t.serial && p.serial) t.serial = p.serial; if (!t.log.some((l) => l.ref === p.ref)) t.log.push({ id: rid(), date: p.date, what: "Workshop repair: " + p.work.join("; ").slice(0, 140), cost: "", ref: p.ref });
+    await put(t); $("#pp-in").value = ""; st.className = "status ok"; st.textContent = "Signed by the workshop: added, with the repair in the history."; for (const el of document.querySelectorAll("#thing [data-f]")) el.value = t[el.dataset.f] == null ? "" : t[el.dataset.f]; drawThing();
+  };
+
+  // ── handing it over: one zip, built here ──
+  async function bundle(list, label) {
+    const files = [], enc = new TextEncoder(), out = [];
+    // the zip reader keeps file names, not folders, so each paper's name is unique on its own: thing, its id, the paper's number
+    for (const t of list) { const pre = "papers/" + slug(t.name || "thing") + "-" + t.id.slice(-4) + "-";
+      const docs = []; for (const [k, d] of t.docs.entries()) { const file = pre + String(k + 1).padStart(2, "0") + "-" + slug(d.name); docs.push({ name: d.name, type: d.type, bytes: d.bytes, sha256: d.sha256, what: d.what, file }); files.push({ name: file, data: new Uint8Array(await d.blob.arrayBuffer()) }); }
+      out.push({ id: t.id, name: t.name, kind: t.kind, room: t.room, model: t.model, serial: t.serial, bought: t.bought, price: t.price, warranty: t.warranty, notes: t.notes, docs, passports: t.passports.map((p) => p.record), checks: t.checks, log: t.log.map(({ id, date, what, cost, ref }) => ({ id, date, what, cost, ref })) }); }
+    files.push({ name: "record.json", data: enc.encode(JSON.stringify({ homerecord: 1, home: home.name || "", made: new Date().toISOString(), things: out }, null, 1)) });
+    files.push({ name: "summary.html", data: enc.encode(summary(list)) });
+    files.push({ name: "HOW-TO-OPEN.txt", data: enc.encode("This is " + label + " from the Home Record (mentifaber.org/record).\r\n\r\nTo keep it, open https://mentifaber.org/record, choose \"Open a record\" and choose this zip file. Each Device Passport in it is checked against the Mentifaber workshop's signature, and each paper against the fingerprint it was given. Nothing is uploaded.\r\n\r\nOr open summary.html to read it.\r\n") });
+    return KitZip.zip(files);
+  }
+  function summary(list) {
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(home.name || "The Home Record") + "</title><style>body{font:15px/1.5 system-ui,sans-serif;margin:24px auto;max-width:860px;padding:0 16px;color:#222}h2{margin-top:28px;border-bottom:1px solid #ccc}dt{font-weight:600}dd{margin:0 0 6px}</style></head><body>" +
+      "<h1>" + esc(home.name || "The Home Record") + "</h1><p>A service history from the Home Record, made " + esc(new Date().toLocaleDateString(undefined, { dateStyle: "long" })) + ". Open it at mentifaber.org/record to check its Device Passports against the workshop's signature.</p>" +
+      list.map((t) => { const c = cover(t); return "<h2>" + esc(t.name) + "</h2><dl>" + [["Room", t.room], ["Make and model", t.model], ["Serial", t.serial], ["Bought", day(t.bought) + (t.price !== "" ? " for " + usd(t.price) : "")], ["Covered", c ? c.what + " to " + day(c.until) : ""], ["Notes", t.notes]].filter(([, v]) => v && v.trim()).map(([k, v]) => "<dt>" + k + "</dt><dd>" + esc(v) + "</dd>").join("") + "</dl>" +
+        (t.log.length ? "<b>Repairs and service</b><ul>" + t.log.slice().sort((a, b) => a.date.localeCompare(b.date)).map((l) => "<li>" + esc(day(l.date)) + ": " + esc(l.what) + (l.cost !== "" && l.cost != null ? " (" + esc(usd(l.cost)) + ")" : "") + "</li>").join("") + "</ul>" : "") +
+        (t.passports.length ? "<b>Device Passports</b><ul>" + t.passports.map((p) => '<li><a href="https://mentifaber.org/passport#' + esc(p.record) + '">' + esc(p.ref) + "</a>, " + esc(day(p.date)) + ": " + esc(p.work.join("; ")) + "</li>").join("") + "</ul>" : "") +
+        (t.docs.length ? "<b>Papers</b><ul>" + t.docs.map((d) => "<li>" + esc(WHAT[d.what] || "Paper") + ": " + esc(d.name) + "</li>").join("") + "</ul>" : ""); }).join("") + "</body></html>";
+  }
+  const download = (blob, name) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+  $("#export").onclick = async () => { await load(); if (!things.length) { $("#imp-st").textContent = "There's nothing in the record to hand over yet."; return; } download(await bundle(things, "the record of " + (home.name || "a house")), "home-record-" + slug(home.name || "house") + "-" + today() + ".zip"); };
+  $("#pass").onclick = async () => { const t = cur; download(await bundle([t], "the record of " + (t.name || "a thing")), "home-record-" + slug(t.name || "thing") + "-" + today() + ".zip"); };
+
+  // ── opening a record someone handed over ──
+  $("#open").addEventListener("change", async (e) => {
+    const f = e.target.files[0], out = $("#open-out"); e.target.value = ""; if (!f) return; out.innerHTML = '<p class="status">Opening it…</p>';
+    try {
+      let files = new Map(); if (/\.zip$/i.test(f.name) || f.type === "application/zip") files = await KitZip.unzip(f); else files.set("record.json", new Uint8Array(await f.arrayBuffer()));
+      const raw = files.get("record.json"); if (!raw) throw new Error("There's no record.json in that: choose the zip the Home Record made.");
+      let j; try { j = JSON.parse(new TextDecoder().decode(raw)); } catch (x) { throw new Error("record.json is damaged."); }
+      if (j.homerecord !== 1 || !Array.isArray(j.things)) throw new Error("That isn't a Home Record.");
+      await load(); let n = 0, pOk = 0, pBad = 0, dOk = 0; const bad = [];
+      for (const x of j.things.slice(0, 500)) {
+        const t = tidy({ ...blank(), ...x, id: clean(x.id, 30) || rid(), docs: [], passports: [], checks: Array.isArray(x.checks) ? x.checks.filter((h) => h && h.o && KINDS[h.o.kind] && STAMP[h.v]).slice(0, 30) : [], log: Array.isArray(x.log) ? x.log.slice(0, 200).map((l) => ({ id: clean(l.id, 30) || rid(), date: isDate(l.date) ? l.date : "", what: clean(l.what, 160), cost: l.cost === "" || !(Number(l.cost) >= 0) ? "" : Number(l.cost), ref: clean(l.ref, 40) })).filter((l) => l.what) : [] });
+        for (const rec of (x.passports || []).slice(0, 30)) { const p = await passportOf(String(rec)); if (p) { t.passports.push(p); pOk++; } else { pBad++; bad.push(t.name + ": a passport whose signature doesn't check out"); } }
+        for (const d of (x.docs || []).slice(0, 100)) { const f = String(d.file || ""), data = files.get(f) || files.get(f.split("/").pop()); if (!data) { bad.push(t.name + ": " + clean(d.name, 120) + " is missing"); continue; }
+          if ((await hex(data)) !== d.sha256) { bad.push(t.name + ": " + clean(d.name, 120) + " doesn't match its fingerprint"); continue; }
+          t.docs.push({ id: rid(), name: clean(d.name, 120), type: clean(d.type, 80) || "application/octet-stream", bytes: data.length, sha256: d.sha256, what: WHAT[d.what] ? d.what : "other", blob: new Blob([data], { type: clean(d.type, 80) || "application/octet-stream" }), added: Date.now() }); dOk++; }
+        await put(t); n++; }
+      if (!home.name && j.home) { home.name = clean(j.home, 120); await tx("readwrite", (s) => s.put(home)); }
+      out.innerHTML = '<div class="verdict ' + (bad.length ? "bad" : "ok") + '">' + (bad.length ? "Brought in, with " + bad.length + " thing" + (bad.length === 1 ? "" : "s") + " left out:" : "✓ Brought in, all of it checked.") + " " + n + " thing" + (n === 1 ? "" : "s") + ", " + dOk + " paper" + (dOk === 1 ? "" : "s") + ", " + pOk + " Device Passport" + (pOk === 1 ? "" : "s") + " signed by the workshop." +
+        (bad.length ? '<ul class="list">' + bad.map((x) => '<li class="n">✗ ' + esc(x) + "</li>").join("") + "</ul>" : "") + "</div>";
+      drawHome();
+    } catch (x) { out.innerHTML = '<div class="verdict bad">' + esc(x.message) + "</div>"; }
+  });
+  drawHome();
+
+  // Faber Verbs (declared in tools/site/content/record.json): AutoFaber asks "is the dishwasher still under warranty?"
+  if (window.Faber) Faber.verbs({
+    find: async (a) => {
+      await load(); const q = String(a.thing || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2); const k = kindOf(a.thing);
+      const t = things.map((t) => [q.filter((w) => (t.name + " " + t.model + " " + t.room).toLowerCase().includes(w)).length + (k && t.kind === k ? 2 : 0), t]).filter(([s]) => s > 0).sort((x, y) => y[0] - x[0])[0];
+      if (!t) throw new Error("There's nothing like that in the Home Record on this device.");
+      const x = t[1], c = cover(x), last = x.log.slice().sort((p, q2) => q2.date.localeCompare(p.date))[0];
+      return x.name + (x.model ? " (" + x.model + ")" : "") + ": " + (c ? (daysTo(c.until) < 0 ? "its " + c.what + " ended " : "covered by its " + c.what + " to ") + day(c.until) : "no warranty recorded") + "." + (x.bought ? " Bought " + day(x.bought) + (x.price !== "" ? " for " + usd(x.price) : "") + "." : "") + (last ? " Last work: " + last.what + ", " + day(last.date) + "." : "") + (x.docs.length ? " " + x.docs.length + " paper" + (x.docs.length === 1 ? "" : "s") + " kept with it." : "");
+    },
+  });
+})();
+</script>
+</body>
+</html>
