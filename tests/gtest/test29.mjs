@@ -90,6 +90,28 @@ ok("/store/catalog.json, /store.apk and /store/apk/<id> answer; anything else un
   assert.match(readFileSync(REPO + "/.assetsignore", "utf8"), /^android$/m, "the Android sources and the encrypted key aren't served as site files"); }
 ok("builds mirrored in R2 are served from mentifaber.org itself (APK and HEAD), with the same checks; unmirrored ones still come from GitHub");
 
+// 4c · Cloudflare's free plan: a visit makes at most 50 outside requests, each redirect hop counted (GitHub's release links
+// redirect once). The whole shelf at once ran out partway; with a snapshot, each catalog asks about the stalest few only.
+{ const wanted = SHELF.apps.filter((a) => a.release && a.file && a.status !== "soon"); assert.ok(wanted.length * 2 > 50, "the shelf is past what one visit can ask");
+  const all = Object.fromEntries(wanted.map((a) => [a.release + "/" + a.file + ".json", good(a.id)]));
+  const capped = (seen) => { let used = 0; return async (u) => { used += 2; if (used > 50) throw new Error("Too many subrequests."); return fake(all, seen)(u); }; };
+  c = await S.catalog(SHELF, capped([])); assert.ok(c.apps.filter((a) => a.available).length < wanted.length, "asking about every app at once runs out");
+  let mem = null; const memo = { get: async () => structuredClone(mem), put: async (v) => { mem = structuredClone(v); } };
+  const visits = Math.ceil(wanted.length / S.ASK); let seen4 = [];
+  for (let i = 0; i < visits; i++) { seen4 = []; c = await S.catalog(SHELF, capped(seen4), null, memo); assert.ok(seen4.length <= S.ASK && S.ASK * 2 + 4 <= 50, "within the visit's allowance"); }
+  assert.equal(c.apps.filter((a) => a.available).length, wanted.length, "after " + visits + " visits every built app is offered");
+  assert.deepEqual(Object.keys(mem).sort(), wanted.map((a) => a.id).sort(), "the snapshot holds only the shelf's apps");
+  // the next visit asks about the longest-ago ones; one GitHub can't answer keeps what was known, a 404 takes it down
+  const next = Object.entries(mem).sort((x, y) => x[1].at - y[1].at).slice(0, S.ASK).map((x) => x[0]);
+  const gone = SHELF.apps.find((a) => a.id === next[0]), down = SHELF.apps.find((a) => a.id === next[1]);
+  const all2 = { ...all }; delete all2[gone.release + "/" + gone.file + ".json"]; all2[down.release + "/" + down.file + ".json"] = new Error("refused");
+  seen4 = []; c = await S.catalog(SHELF, fake(all2, seen4), null, memo); assert.deepEqual(seen4.map((u) => u.split("/download/")[1].split("/")[0]).sort(), next.map((id) => SHELF.apps.find((a) => a.id === id).release).sort());
+  assert.equal(c.apps.find((a) => a.id === gone.id).available, false, "a build taken down"); assert.equal(c.apps.find((a) => a.id === down.id).available, true, "GitHub unreachable: still offered");
+  // the snapshot itself failing (the Durable Object down) still gives a catalog, of what it could ask
+  c = await S.catalog(SHELF, fake(all), null, { get: async () => { throw new Error("down"); }, put: async () => { throw new Error("down"); } }); assert.equal(c.apps.filter((a) => a.available).length, S.ASK);
+  assert.match(readFileSync(REPO + "/src/worker.js", "utf8"), /storeRoutes\(req, ctx, undefined, undefined, env\.MODELS, \{ get: \(\) => store\(env\)\.kvGet\("foundry:builds"\)/, "the Worker gives it the Store's snapshot"); }
+ok("within the free plan's 50 requests a visit: each catalog asks GitHub about the stalest " + S.ASK + " apps and keeps the rest from a snapshot; every built app is offered after a few visits; an unreachable GitHub keeps what was known");
+
 // 5 · the Worker routes to it, and the Foundry app is vouched for at mentifaber.org/store
 const w = readFileSync(REPO + "/src/worker.js", "utf8"); assert.match(w, /import \{ store as storeRoutes \} from "\.\/store\.js"/); assert.match(w, /path === "\/store\.apk" \|\| path\.startsWith\("\/store\/"\)/);
 const links = JSON.parse(readFileSync(REPO + "/.well-known/assetlinks.json", "utf8")); assert.deepEqual(links.map((l) => l.target.package_name).sort(), ["org.mentifaber.autofaber", "org.mentifaber.mentiplayer", "org.mentifaber.store", ...SHELF.apps.filter((a) => a.twa).map((a) => a.id)].sort());
