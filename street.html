@@ -64,7 +64,7 @@ code.link { display: block; font: 12px var(--mono); color: var(--dim); overflow-
   </section>
 
   <div id="main" hidden>
-    <div class="net" id="net" role="status"><b id="n-word">Checking…</b><span id="n-board"></span><span id="n-pend"></span><button class="btn ghost sm" type="button" id="switch">Another board</button></div>
+    <div class="net" id="net" role="status"><b id="n-word">Checking…</b><span id="n-board"></span><span id="n-pend"></span><button class="btn ghost sm" type="button" id="switch">Another board</button><a class="btn ghost sm" id="to-lib" href="library">The street's library</a></div>
 
     <form class="panel" id="f">
       <div class="kinds" role="radiogroup" aria-label="What it is">
@@ -158,7 +158,7 @@ code.link { display: block; font: 12px var(--mono); color: var(--dim); overflow-
   addEventListener("online", sync); addEventListener("offline", () => { online = false; draw(); });
   setInterval(() => { if (!document.hidden) sync(); }, 45e3);
 
-  function open(b) { B = b; LS.set("board", B); load(); $("#pick").hidden = true; $("#main").hidden = false; $("#n-board").textContent = "Board " + B; draw(); sync(); }
+  function open(b) { B = b; LS.set("board", B); $("#to-lib").href = "library#b=" + B; load(); $("#pick").hidden = true; $("#main").hidden = false; $("#n-board").textContent = "Board " + B; draw(); sync(); }
   function pick(msg) { $("#main").hidden = true; $("#pick").hidden = false; $("#p-st").textContent = msg || ""; }
   $("#here").onclick = () => { const st = $("#p-st"); st.className = "status"; if (!navigator.geolocation) { st.textContent = "This browser can't tell where it is: use a name."; return; } st.textContent = "Finding where you are…";
     navigator.geolocation.getCurrentPosition((p) => open(geohash(p.coords.latitude, p.coords.longitude)), () => { st.className = "status bad"; st.textContent = "Couldn't get your location: use a name your street agrees on."; }, { timeout: 15000, maximumAge: 6e5 }); };

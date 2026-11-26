@@ -73,6 +73,14 @@
     "added": "2026-11-25"
   },
   {
+    "href": "library.html",
+    "name": "Street Library",
+    "desc": "Borrow the ladder, not buy it: your street's shelf of tools and things neighbours lend each other. Who has what, who has it now and when it's due back, with a sealed photo of its condition when it goes out, so nobody argues when it comes back.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",

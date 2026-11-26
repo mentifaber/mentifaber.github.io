@@ -1,0 +1,31 @@
+{
+  "id": "/library",
+  "name": "Street Library",
+  "short_name": "Street Library",
+  "description": "Your street's shelf of tools and things neighbours lend each other, with a sealed photo of their condition when they go out.",
+  "start_url": "/library.html",
+  "scope": "/library.html",
+  "display": "standalone",
+  "background_color": "#0b0d0a",
+  "theme_color": "#0b0d0a",
+  "icons": [
+    {
+      "src": "../icons/v2/library-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/library-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/library-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
