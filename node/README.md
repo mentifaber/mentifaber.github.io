@@ -18,14 +18,29 @@ internet. When the box has a connection, it swaps the street's notices with ment
   - **With a connection (`--upstream https://mentifaber.org`):** every `--sync` minutes (5 by default) it sends the
     box's notices to the site and brings the site's back. It also keeps the workshop's public seal key, so photos
     sealed earlier still check out offline.
-- **Tested** by `tests/gtest/test74.mjs` and `tests/ui/node-ui.mjs`. Both run the box as its own process, the second
-  with two browser phones that can reach nothing but the box.
+- `mesh.mjs`: the box's radio. With a Meshtastic radio (`--mesh tcp://127.0.0.1:4403` for meshtasticd on the Pi with a
+  LoRa board, or `--mesh /dev/ttyACM0` for one plugged in over USB):
+  - **Out:** the street's new notices go out over the air, once each.
+  - **In:** notices heard from radios and other boxes come onto the box's board, and aren't sent back out.
+  - **The packets** are the ones Street Board's phones already send (`SB1|street|id|kind|at|exp|by|text`, one packet
+    per notice), so a phone with a radio, another box and this box all read each other.
+  - **Ignored:** another street's notices, and plain chat on the channel.
+  - **Reconnecting:** if the radio goes away, the box connects again by itself.
+- **Tested** by `tests/gtest/test74.mjs`, `tests/gtest/test75.mjs` and `tests/ui/node-ui.mjs`. Each runs the box as its
+  own process:
+  - test74 runs it beside a stand-in for the site;
+  - test75 runs it with a stand-in radio speaking the Meshtastic TCP API;
+  - node-ui runs it with two browser phones that can reach nothing but the box.
 
 ## Run it
 
 ```sh
-node node/street-node.mjs --board elm-street --port 8080 --data /var/lib/street-node.json --upstream https://mentifaber.org
+node node/street-node.mjs --board elm-street --port 8080 --data /var/lib/street-node.json --upstream https://mentifaber.org \
+  --mesh tcp://127.0.0.1:4403 --channel 0
 ```
+
+The radio's protobuf messages are the ones the phones' radio code (`assets/ns/radio.js`) already uses with Meshtastic
+radios. The box's bridge hasn't been tried with a real radio yet, only with the stand-in.
 
 The board is the same one the street uses on the site: a name the street agrees on, or the 5-letter place code that
 "Use where I am" gives on Street Board.
@@ -55,8 +70,8 @@ and tried. Check them on real hardware before relying on them.
 
 ## Not yet
 
-- **Node to node:** relaying notices to the next street's box over a Meshtastic radio. Street Board's radio packets
-  already fit one; the bridge is the next piece.
+- **More than one street per box:** a box carries its own street's notices. The mesh itself carries packets on from
+  radio to radio, so the next street's box hears them, but it keeps only its own street's.
 - **Removals across the gap:** a notice taken down on the site isn't yet taken down on the box, or the other way
   round. Removals reach the phones on the same side.
 - **Street Library stays on the box:** its shelf isn't swapped with the site, because only the lender's phone holds
