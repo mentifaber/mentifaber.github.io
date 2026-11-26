@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/library">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Street Library · Mentifaber</title>
+<meta name="description" content="Borrow the ladder, not buy it: a street&#x27;s shelf of tools and things neighbours lend each other.">
+<meta name="theme-color" content="#0b0d0a">
+<link rel="icon" href="assets/icons/v2/library.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/library-180.png">
+<link rel="manifest" href="assets/manifests/library.webmanifest">
+<style>
+/* Street Library: a pegboard in a shared shed. Each thing hangs on its hook with its lender's name; when it's out, a tag
+   says who has it and when it's due back, and the photo of how it left is pinned beside it. */
+:root { --bg: #0b0d0a; --sheet: #131611; --card: #1a1e17; --line: #2f362a; --gold: #d9c26a; --gold-hi: #f1e4a6; --ink: #eef0e8; --dim: #a1a796; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--gold-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin: 24px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0e100c; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--gold); background: var(--gold); color: #231d04; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--gold-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.things { display: grid; gap: 8px; margin-top: 8px; }
+.thing { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; } .thing.mine { border-color: var(--gold); }
+.thing .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; } .thing b { overflow-wrap: anywhere; } .thing small { color: var(--dim); }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.ok { color: var(--ok); border-color: var(--ok); } .tag.out { color: var(--warn); border-color: var(--warn); } .tag.late { color: var(--bad); border-color: var(--bad); }
+.note { color: var(--dim); font-size: 14px; margin-top: 4px; overflow-wrap: anywhere; }
+.asks { list-style: none; margin: 8px 0 0; padding: 0; } .asks li { font-size: 14px; border-top: 1px solid var(--line); padding: 6px 0; overflow-wrap: anywhere; }
+.photos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; } .photos figure { margin: 0; } .photos img { width: 140px; height: 105px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; } .photos figcaption { font-size: 12px; color: var(--dim); margin-top: 3px; max-width: 140px; }
+form.sub { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.y { color: var(--ok); } .n { color: var(--bad); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Street Library", "description": "Borrow the ladder, not buy it: a street's shelf of tools and things neighbours lend each other.", "url": "https://mentifaber.org/library", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/library-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Street Library</span><a href="./">The workshop</a></div>
+  <h1>Borrow the ladder, <span>not buy it</span></h1>
+  <p class="lede">A shelf for your street: the tools and things neighbours will lend, who has each one now and when it's due back. When something goes out, its lender takes a photo of its condition; the workshop seals the photo's fingerprint with the time, so nobody argues about a scratch when it comes back. The photos stay on the lender's phone. It's the same street as your <a href="street" style="color:var(--gold-hi)">Street Board</a>.</p>
+
+  <div id="pick" class="panel"><b>Which street?</b>
+    <div class="bar"><button class="btn" id="here" type="button">Use where I am</button><span class="status">or</span></div>
+    <form class="bar" id="f-name"><label style="flex:1 1 220px">A name your street agrees on<input class="in" id="bname" maxlength="40" placeholder="Elm Street"></label><button class="btn ghost" type="submit" style="align-self:flex-end">Open it</button></form>
+    <p class="status" id="p-st" role="status"></p></div>
+
+  <div id="main" hidden>
+    <div class="bar"><b id="n-board"></b><button class="lnk btn ghost sm" id="change" type="button">Another street</button><span class="status" id="sync" role="status"></span></div>
+    <div class="grid" style="margin-top:8px"><label>Your name, as the street knows you<input class="in" id="me" maxlength="24" placeholder="Ann at no. 12"></label><label>Find something<input class="in" id="q" maxlength="40" placeholder="ladder, drill, gazebo"></label></div>
+    <h2>On the shelf</h2>
+    <div class="things" id="things"></div>
+    <h2>Lend something</h2>
+    <form class="panel" id="f-add"><div class="grid"><label>What it is<input class="in" id="a-what" maxlength="60" required placeholder="Ladder (3 m)"></label><label>A note <span class="status">(optional)</span><input class="in" id="a-note" maxlength="160" placeholder="Aluminium, folding; ask at no. 12"></label></div>
+      <div class="bar"><button class="btn" type="submit">Put it on the shelf</button><span class="status" id="a-st" role="status"></span></div>
+      <p class="status" style="margin:6px 0 0">Only this phone can lend it, mark it back or take it down. Everything on the shelf, and asks to borrow, can be seen by anyone with the street's name.</p></form>
+  </div>
+</div>
+<script src="assets/seal/verify.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("library:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("library:" + k, JSON.stringify(v)); } catch (e) {} } };
+  const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const sha = async (data) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", typeof data === "string" ? new TextEncoder().encode(data) : data))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const pad = (x) => String(x).padStart(2, "0"), ymd = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const nice = (d) => new Date(d + "T12:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const when = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const GH = "0123456789bcdefghjkmnpqrstuvwxyz";
+  function geohash(lat, lon, n = 5) { let a = [-90, 90], o = [-180, 180], out = "", bit = 0, ch = 0, even = true;
+    while (out.length < n) { const r = even ? o : a, v = even ? lon : lat, mid = (r[0] + r[1]) / 2; if (v >= mid) { ch = (ch << 1) | 1; r[0] = mid; } else { ch <<= 1; r[1] = mid; } even = !even; if (++bit === 5) { out += GH[ch]; bit = 0; ch = 0; } } return out; }
+  const boardOk = (b) => /^[0-9bcdefghjkmnpqrstuvwxyz]{5}$/.test(b) || /^[a-z0-9][a-z0-9-]{2,23}$/.test(b);
+  const slug = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24);
+
+  // the condition photos, on this phone only
+  const pdb = new Promise((ok, no) => { const r = indexedDB.open("library", 1); r.onupgradeneeded = () => r.result.createObjectStore("photos"); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+  const photo = { put: async (k, blob) => { const d = await pdb; return new Promise((ok, no) => { const t = d.transaction("photos", "readwrite"); t.objectStore("photos").put(blob, k); t.oncomplete = ok; t.onerror = () => no(t.error); }); },
+    get: async (k) => { const d = await pdb; return new Promise((ok) => { const q = d.transaction("photos").objectStore("photos").get(k); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); } };
+
+  let B = null, items = [], mine = LS.get("mine", {});
+  const keyOf = (id) => (mine[B] || {})[id];
+  async function api(body) { const r = await fetch("/api/library/" + B, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "couldn't reach the workshop"); return j; }
+  const up = (m) => m.charAt(0).toUpperCase() + m.slice(1) + ".";
+
+  // ── which street ──
+  function open(b) { B = b; LS.set("board", B); history.replaceState(null, "", "#b=" + B); $("#pick").hidden = true; $("#main").hidden = false; $("#n-board").textContent = "Street " + B; $("#me").value = LS.get("me", ""); load(); }
+  $("#here").onclick = () => { const st = $("#p-st"); if (!navigator.geolocation) { st.textContent = "This browser can't tell where it is: use a name."; return; } st.className = "status"; st.textContent = "Finding where you are…";
+    navigator.geolocation.getCurrentPosition((p) => open(geohash(p.coords.latitude, p.coords.longitude)), () => { st.className = "status bad"; st.textContent = "Couldn't get your location: use a name your street agrees on."; }, { timeout: 15000, maximumAge: 600000 }); };
+  $("#f-name").onsubmit = (e) => { e.preventDefault(); const b = slug($("#bname").value); if (!boardOk(b)) { $("#p-st").className = "status bad"; $("#p-st").textContent = "A name of 3 to 24 letters and digits."; return; } open(b); };
+  $("#change").onclick = () => { B = null; history.replaceState(null, "", location.pathname); $("#main").hidden = true; $("#pick").hidden = false; };
+  $("#me").addEventListener("change", () => LS.set("me", $("#me").value.trim().slice(0, 24)));
+  $("#q").addEventListener("input", () => draw());
+  async function load() { $("#sync").className = "status"; $("#sync").textContent = "Fetching the shelf…"; try { items = (await api()).items; $("#sync").textContent = ""; } catch (x) { $("#sync").className = "status bad"; $("#sync").textContent = up(x.message); } draw(); }
+
+  // ── the shelf ──
+  function draw() {
+    const today = ymd(new Date()), q = $("#q").value.trim().toLowerCase(), list = items.filter((x) => !q || (x.what + " " + x.note).toLowerCase().includes(q));
+    list.sort((a, b) => (!!keyOf(b.id) - !!keyOf(a.id)) || (!!a.loan - !!b.loan) || a.what.localeCompare(b.what));
+    $("#things").innerHTML = list.length ? list.map((x) => { const m = !!keyOf(x.id), L = x.loan, late = L && L.due < today;
+      const tag = L ? '<span class="tag ' + (late ? "late" : "out") + '">' + (late ? "overdue: " : "") + "with " + esc(L.to) + ", due " + esc(nice(L.due)) + "</span>" : '<span class="tag ok">on the shelf</span>';
+      return '<article class="thing' + (m ? " mine" : "") + '" data-id="' + esc(x.id) + '"><div class="h"><span><b>' + esc(x.what) + "</b> <small>" + (m ? "yours" : x.by ? "lent by " + esc(x.by) : "") + "</small></span>" + tag + "</div>" +
+        (x.note ? '<div class="note">' + esc(x.note) + "</div>" : "") +
+        (L && L.sha ? '<div class="note" data-w="' + esc(x.id) + '">Its condition when it went out ' + esc(when(L.out)) + ": photo sealed…</div>" : "") +
+        (m ? mineTools(x) : '<form class="sub" data-f="ask"><div class="grid"><label>Ask to borrow it<input class="in" name="text" maxlength="120" placeholder="For Saturday; I\'m at no. 4"></label><button class="btn ghost sm" type="submit">Ask</button></div></form>') + "</article>"; }).join("")
+      : '<p class="status">' + (items.length ? "Nothing like that on the shelf." : "Nothing on this street's shelf yet. Start it: what would you lend a neighbour?") + "</p>";
+    for (const x of list) if (x.loan && x.loan.sha) witnessLine(x);
+    for (const x of list) if (keyOf(x.id)) mineLater(x);
+  }
+  const mineTools = (x) => (x.asks.length ? '<ul class="asks">' + x.asks.map((a) => "<li><b>" + esc(a.by) + "</b> asked " + esc(new Date(a.at).toLocaleDateString(undefined, { day: "numeric", month: "short" })) + (a.text ? ": " + esc(a.text) : "") + "</li>").join("") + "</ul>" : "") +
+    (x.loan ? '<div class="photos" data-ph="' + esc(x.id) + '"></div><form class="sub" data-f="back"><div class="grid"><label>Photo of it now <span class="status">(optional)</span><input class="in" type="file" accept="image/*" capture="environment" name="photo"></label><button class="btn sm" type="submit">It\'s back</button></div></form>'
+      : '<form class="sub" data-f="lend"><div class="grid"><label>Lend it to<input class="in" name="to" maxlength="24" required value="' + esc((x.asks[x.asks.length - 1] || {}).by || "") + '"></label><label>Due back<input class="in" type="date" name="due" required value="' + ymd(new Date(Date.now() + 7 * 864e5)) + '"></label>' +
+        '<label>Photo of its condition<input class="in" type="file" accept="image/*" capture="environment" name="photo"></label><button class="btn sm" type="submit">Lend it</button></div></form>') +
+    (x.past.length ? '<div class="note">Lent ' + x.past.length + " time" + (x.past.length === 1 ? "" : "s") + ": " + x.past.slice(0, 3).map((p) => esc(p.to) + " (back " + esc(new Date(p.back).toLocaleDateString(undefined, { day: "numeric", month: "short" })) + ")").join(", ") + "</div>" : "") +
+    '<div class="bar"><button class="lnk btn ghost sm" type="button" data-act="rm">Take it off the shelf</button></div>';
+  // the out photo's Witness record: the workshop's signature on its fingerprint and the time
+  async function witnessLine(x) {
+    const el = document.querySelector('[data-w="' + x.id + '"]'); if (!el) return; let good = false, at = null;
+    try { const v = await WorkshopSeal.check(x.loan.witness || ""); good = v.good && v.body.kind === "witness" && v.body.data.sha256 === x.loan.sha; at = good ? v.body.iat : null; } catch (e) {}
+    el.innerHTML = good ? '<span class="y">✓</span> Its condition when it went out: a photo sealed by the workshop ' + esc(when(at)) + " (the lender has the photo)." : '<span class="n">✗</span> The photo of its condition when it went out has no valid seal.';
+  }
+  // on the lender's phone: the out photo, and the back photo beside it
+  async function mineLater(x) {
+    const el = document.querySelector('[data-ph="' + x.id + '"]'); if (!el || !x.loan) return; const b = await photo.get(x.id + ":" + x.loan.out); if (!b) return;
+    el.innerHTML = '<figure><img alt="How ' + esc(x.what) + ' looked when it went out" src="' + URL.createObjectURL(b) + '"><figcaption>When it went out, ' + esc(when(x.loan.out)) + "</figcaption></figure>";
+  }
+
+  // ── adding, asking, lending, back ──
+  $("#f-add").onsubmit = async (e) => { e.preventDefault(); const st = $("#a-st"), key = hex(16), id = hex(6); st.className = "status";
+    try { const j = await api({ op: "add", item: { id, what: $("#a-what").value.trim(), note: $("#a-note").value.trim(), by: $("#me").value.trim() }, ok: await sha(key) });
+      mine[B] = { ...(mine[B] || {}), [id]: key }; LS.set("mine", mine); items.unshift(j.item); e.target.reset(); st.textContent = "On the shelf."; draw(); }
+    catch (x) { st.className = "status bad"; st.textContent = up(x.message); } };
+  $("#things").addEventListener("submit", async (e) => {
+    e.preventDefault(); const f = e.target, card = f.closest(".thing"), id = card.dataset.id, x = items.find((i) => i.id === id), kind = f.dataset.f, btn = f.querySelector("button"); btn.disabled = true;
+    const say = (t, bad) => { let s = card.querySelector(".status.say"); if (!s) { s = document.createElement("p"); s.className = "status say"; s.setAttribute("role", "status"); card.appendChild(s); } s.className = "status say" + (bad ? " bad" : " ok"); s.textContent = t; };
+    try {
+      if (kind === "ask") { const by = $("#me").value.trim(); if (!by) { btn.disabled = false; $("#me").focus(); return say("Say your name first (at the top), so the lender knows who's asking.", true); }
+        const j = await api({ op: "ask", id, by, text: f.text.value.trim() }); Object.assign(x, j.item); draw(); return say2(id, "Asked. " + (x.by || "The lender") + " will see it here.");
+      }
+      const file = f.photo && f.photo.files[0]; let psha = null, witness = null;
+      if (file) { psha = await sha(await file.arrayBuffer());
+        if (kind === "lend") { const r = await fetch("/api/seal/witness", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sha256: psha, name: file.name, bytes: file.size, note: "Street Library: " + x.what + " lent" }) }), j = await r.json().catch(() => ({})); if (!r.ok || !j.record) throw new Error(j.error || "couldn't seal the photo"); witness = j.record; } }
+      if (kind === "lend") { const j = await api({ op: "lend", id, key: keyOf(id), to: f.to.value.trim(), due: f.due.value, ...(psha ? { sha: psha, witness } : {}) }); if (file) await photo.put(id + ":" + j.item.loan.out, file); Object.assign(x, j.item); draw(); return say2(id, "Lent to " + x.loan.to + "." + (file ? " Its condition photo is sealed." : "")); }
+      if (kind === "back") { const outBlob = await photo.get(id + ":" + x.loan.out), outAt = x.loan.out, j = await api({ op: "back", id, key: keyOf(id), ...(psha ? { sha: psha } : {}) }); Object.assign(x, j.item); draw();
+        const card2 = document.querySelector('.thing[data-id="' + id + '"]');
+        if (outBlob || file) { const d = document.createElement("div"); d.className = "photos"; d.id = "cmp-" + id; d.innerHTML = (outBlob ? '<figure><img alt="When it went out" src="' + URL.createObjectURL(outBlob) + '"><figcaption>When it went out, ' + esc(when(outAt)) + "</figcaption></figure>" : "") + (file ? '<figure><img alt="Now it\'s back" src="' + URL.createObjectURL(file) + '"><figcaption>Back, ' + esc(when(Date.now())) + "</figcaption></figure>" : ""); card2.appendChild(d); }
+        return say2(id, "Back on the shelf." + (outBlob && file ? " Here's how it went out, beside how it came back." : "")); }
+    } catch (x2) { btn.disabled = false; say(up(x2.message), true); }
+  });
+  const say2 = (id, t) => { const card = document.querySelector('.thing[data-id="' + id + '"]'); if (!card) return; const s = document.createElement("p"); s.className = "status say ok"; s.setAttribute("role", "status"); s.textContent = t; card.appendChild(s); };
+  $("#things").addEventListener("click", async (e) => { const b = e.target.closest('[data-act="rm"]'); if (!b) return; const id = b.closest(".thing").dataset.id, x = items.find((i) => i.id === id);
+    if (!confirm("Take " + x.what + " off the shelf?")) return; try { await api({ op: "remove", id, key: keyOf(id) }); items = items.filter((i) => i !== x); delete (mine[B] || {})[id]; LS.set("mine", mine); draw(); } catch (x2) { $("#sync").className = "status bad"; $("#sync").textContent = up(x2.message); } });
+
+  // a link (#b=<street>), the street this phone opened last, or Street Board's street
+  const m = /^#b=([a-z0-9-]{3,24})$/.exec(location.hash), fromStreet = (() => { try { return JSON.parse(localStorage.getItem("street:board") || "null"); } catch (e) { return null; } })();
+  const start = m && boardOk(m[1]) ? m[1] : LS.get("board", null) || fromStreet; if (start && boardOk(start)) open(start);
+})();
+</script>
+</body>
+</html>
