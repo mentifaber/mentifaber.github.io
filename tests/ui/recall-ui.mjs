@@ -48,10 +48,10 @@ try {
   assert.match(await p.textContent("#st"), /1 thing with a recall found/);
   const dw = card("Dishwasher"); assert.match(await dw.textContent(), /1 recall found[\s\S]*Bosch Recalls Dishwashers Due to Fire Hazard[\s\S]*Your model number is listed in this recall\. Recall 24101[\s\S]*Hazard: The control board can overheat[\s\S]*What to do: Stop using it/);
   assert.equal(await dw.locator(".recall a").getAttribute("href"), "https://www.cpsc.gov/Recalls/24101"); assert.equal(await dw.locator(".tag.new").count(), 0, "nothing is new on the first check");
-  assert.match(await card("Samsung Washer").textContent(), /no recalls found/); assert.match(await card("Kettle").textContent(), /add a model number/);
+  assert.match(await card("Samsung Washer").textContent(), /no match: confirm at cpsc\.gov/); assert.doesNotMatch(await p.textContent("body"), /no recalls found/i, "never a promise of no recall"); assert.match(await card("Kettle").textContent(), /add a model number/);
   const out = JSON.stringify(sent); assert.ok(!/Kitchen|Utility|FD9907|0B7Z|Leaks|hunter2|4417|Sentry/.test(out), "only make, model and kind words reached the CPSC: " + out);
   assert.ok(sent.some((x) => x.ProductModel === "SHX878WD5N") && sent.some((x) => x.ProductModel === "WF45T6000AW"));
-  ok("'Check everything': the dishwasher's recall, with its model number listed, the hazard and what to do; the washer clear; the kettle not sent; only make, model and kind words reached the CPSC");
+  ok("'Check everything': the dishwasher's recall, with its model number listed, the hazard and what to do; the washer with no match, never 'no recalls'; the kettle not sent; only make, model and kind words reached the CPSC");
 
   DB = [rec(25033, "2025-09-30", "Bosch Recalls Dishwashers Due to Shock Hazard", "SHX878WD5N", "BSH Home Appliances", "A wire can chafe, posing a shock hazard."), ...DB];
   await p.reload(); await p.waitForSelector(".thing.hit"); await p.click("#all"); await p.waitForFunction(() => /new since last time/.test(document.querySelector("#st").textContent));
