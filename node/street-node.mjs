@@ -8,16 +8,21 @@
 // the box has an internet connection (--upstream), it swaps the street's notices with mentifaber.org every few minutes,
 // and keeps a copy of the workshop's public seal key so condition photos sealed earlier still check out offline.
 //
-//   node node/street-node.mjs --board elm-street [--port 80] [--data street-node.json] [--upstream https://mentifaber.org]
+// With a Meshtastic radio (--mesh tcp://127.0.0.1:4403 for meshtasticd on the Pi, or --mesh /dev/ttyACM0 over USB), the
+// street's notices also go out over the air, and notices heard from radios and other boxes come in (node/mesh.mjs).
 //
-// What it doesn't do yet: relay notices to the next street's node over a mesh radio (the Meshtastic bridge), and the Wi-Fi
-// itself (hostapd and dnsmasq on the Pi; see node/README.md).
+//   node node/street-node.mjs --board elm-street [--port 80] [--data street-node.json] [--upstream https://mentifaber.org]
+//                             [--mesh tcp://127.0.0.1:4403] [--channel 0]
+//
+// What it doesn't do: the Wi-Fi itself (hostapd and dnsmasq on the Pi; see node/README.md).
 import http from "node:http"; import fs from "node:fs"; import path from "node:path"; import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const BOARD = String(arg("board", "")).toLowerCase(), PORT = +arg("port", 80), DATA = path.resolve(arg("data", "street-node.json")), UP = arg("upstream", "").replace(/\/+$/, ""), SYNC_MIN = +arg("sync", 5);
+const MESH = arg("mesh", ""), CH = +arg("channel", 0), MESH_EVERY = +arg("mesh-every", 15); // seconds between looks for new notices to send over the air
 const { board, boardOk } = await import(path.join(ROOT, "src/board.js")), { library } = await import(path.join(ROOT, "src/library.js"));
+const mesh = await import(path.join(ROOT, "node/mesh.mjs"));
 if (!boardOk(BOARD)) { console.error("Say which street: --board elm-street (3 to 24 letters, digits and hyphens) or a 5-letter place code."); process.exit(2); }
 
 // ── the store: what the site keeps in a Durable Object, kept here in one file (written a moment after each change) ──
@@ -30,7 +35,8 @@ const st = {
   kvDel: async (k) => { mem.delete(k); persist(); },
   // one step, so nothing comes between the check and the write (as in the site's Store)
   kvCas: async (k, expect, v) => { const cur = mem.get(k) ?? null; if ((cur ? cur.v || 0 : 0) !== expect) return { ok: false, cur: structuredClone(cur) }; mem.set(k, structuredClone(v)); persist(); return { ok: true }; },
-  hit: async (k, limit, windowMs) => { if (k.endsWith(":upstream")) return true; const now = Date.now(); let r = hits.get(k); if (!r || r.until < now) r = { n: 0, until: now + windowMs }; r.n++; hits.set(k, r); return r.n <= limit; },
+  // the site's and the radio's notices aren't one phone's, so they don't count against a phone's daily limit
+  hit: async (k, limit, windowMs) => { if (k.endsWith(":upstream") || k.endsWith(":mesh")) return true; const now = Date.now(); let r = hits.get(k); if (!r || r.until < now) r = { n: 0, until: now + windowMs }; r.n++; hits.set(k, r); return r.n <= limit; },
 };
 const env = { STORE: { idFromName: () => "main", get: () => st } };
 const json = (b, s = 200, h = {}) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json", ...h } });
@@ -51,7 +57,7 @@ const landing = () => `<!doctype html><html lang="en"><head><meta charset="utf-8
 
 // ── the workshop's public seal key (fetched when there's internet), and the swap with the site ──
 const sync = { at: 0, sent: 0, got: 0, error: null, key: mem.get("node:sealkey") || null };
-const local = (method, p, body) => board(new Request("http://node/api/board/" + BOARD + p, { method, headers: { "content-type": "application/json", "cf-connecting-ip": "upstream" }, body: body ? JSON.stringify(body) : undefined }), env, json).then((r) => r.json());
+const local = (method, p, body, ip = "upstream") => board(new Request("http://node/api/board/" + BOARD + p, { method, headers: { "content-type": "application/json", "cf-connecting-ip": ip }, body: body ? JSON.stringify(body) : undefined }), env, json).then((r) => r.json());
 export async function swap() {
   if (!UP) return sync;
   try {
@@ -65,12 +71,23 @@ export async function swap() {
   return sync;
 }
 
+// ── the radio: notices heard over the air come onto the board; the board's new notices go out, once each ──
+const air = { link: null, sent: new Set(mem.get("node:meshsent") || []) };
+const markSent = (id) => { air.sent.add(id); if (air.sent.size > 2000) air.sent = new Set([...air.sent].slice(-1000)); mem.set("node:meshsent", [...air.sent]); persist(); };
+async function heard(m) { const p = mesh.sbParse(m.text, BOARD); if (!p) return; markSent(p.id); await local("POST", "", { posts: [p] }, "mesh"); } // marked first: it isn't sent back out
+async function sendNew() {
+  if (!air.link || air.link.state !== "on") return;
+  for (const p of (await local("GET", "")).posts.filter((x) => !x.gone && !air.sent.has(x.id)).sort((a, b) => a.at - b.at).slice(0, 10)) {
+    if (!air.link.send(mesh.sbPacket(p, BOARD, 200), CH)) return; markSent(p.id); await new Promise((r) => setTimeout(r, 1200)); }
+}
+if (MESH) { air.link = mesh.connect(MESH, { onText: (m) => heard(m).catch(() => {}), log: (t) => console.log(t) }); setInterval(() => sendNew().catch(() => {}), MESH_EVERY * 1000).unref(); }
+
 async function handle(req, res) {
   const url = new URL(req.url, "http://node"), p = url.pathname, ip = req.socket.remoteAddress || "phone";
   const send = async (r) => { res.writeHead(r.status, Object.fromEntries(r.headers)); res.end(Buffer.from(await r.arrayBuffer())); };
   if (CHECKS.test(p)) { res.writeHead(302, { location: "/", "cache-control": "no-store" }); return res.end(); }
   if (p === "/" || p === "/index.html") { res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(landing()); }
-  if (p === "/api/node") return send(json({ board: BOARD, upstream: UP || null, sync: { at: sync.at || null, sent: sync.sent, got: sync.got, error: sync.error } }));
+  if (p === "/api/node") return send(json({ board: BOARD, upstream: UP || null, sync: { at: sync.at || null, sent: sync.sent, got: sync.got, error: sync.error }, mesh: air.link ? { state: air.link.state, sent: air.link.sent, heard: air.link.got } : null }));
   if (p.startsWith("/api/board/") || p.startsWith("/api/library/")) {
     const chunks = []; for await (const c of req) chunks.push(c); const body = chunks.length ? Buffer.concat(chunks) : undefined;
     const r2 = new Request("http://node" + req.url, { method: req.method, headers: { "content-type": "application/json", "cf-connecting-ip": ip }, body: req.method === "POST" ? body : undefined });
