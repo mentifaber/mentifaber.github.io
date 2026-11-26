@@ -113,6 +113,14 @@
     "added": "2026-11-26"
   },
   {
+    "href": "recall.html",
+    "name": "Recall Watch",
+    "desc": "Is anything in the house recalled? Your Home Record and House Manual checked against the US Consumer Product Safety Commission's recalls, with the hazard and what to do. Only make and model words are sent, never the record.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",

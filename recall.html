@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/recall">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Recall Watch · Mentifaber</title>
+<meta name="description" content="Is anything in the house recalled? The appliances and devices in your Home Record and House Manual.">
+<meta name="theme-color" content="#0e0b0a">
+<link rel="icon" href="assets/icons/v2/recall.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/recall-180.png">
+<link rel="manifest" href="assets/manifests/recall.webmanifest">
+<style>
+/* Recall Watch: the notice pinned up in the shop, red border and all. Each thing in the house gets a tag: checked and
+   clear, or the recall itself with its hazard and what to do, quoted from the notice. */
+:root { --bg: #0e0b0a; --sheet: #171211; --card: #1e1817; --line: #3a2e2b; --acc: #ff9466; --acc-hi: #ffd0b8; --ink: #f3ece9; --dim: #ab9e99; --ok: #8fd18f; --bad: #ff7d6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 880px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--acc-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); margin: 26px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 68ch; } .lede a, .status a, .note a { color: var(--acc-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px var(--sans); color: var(--ink); background: #120e0d; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; margin-top: 4px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #2a0e02; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--acc-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.things { display: grid; gap: 8px; margin-top: 8px; }
+.thing { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; } .thing.hit { border-color: var(--bad); }
+.thing .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; } .thing .nm { font-weight: 700; overflow-wrap: anywhere; }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.ok { color: var(--ok); border-color: var(--ok); } .tag.bad { color: var(--bad); border-color: var(--bad); } .tag.new { color: #2a0e02; background: var(--acc); border-color: var(--acc); }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 8px; margin-top: 6px; } .row .in { padding: 6px 8px; font-size: 14px; }
+.recall { border-left: 3px solid var(--bad); background: var(--sheet); border-radius: 0 8px 8px 0; padding: 8px 12px; margin-top: 8px; }
+.recall.maybe { border-left-color: var(--warn); }
+.recall b { overflow-wrap: anywhere; } .recall p { margin: 4px 0 0; font-size: 14px; overflow-wrap: anywhere; } .recall .k { color: var(--dim); }
+.recall a { color: var(--acc-hi); }
+.note { color: var(--dim); font-size: 14px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--acc-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Recall Watch", "description": "Is anything in the house recalled? The appliances and devices in your Home Record and House Manual.", "url": "https://mentifaber.org/recall", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/recall-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Recall Watch</span><a href="./">The workshop</a></div>
+  <h1>Is anything in the house <span>recalled?</span></h1>
+  <p class="lede">The appliances and devices in your <a href="record">Home Record</a> and <a href="house">House Manual</a>, checked against the US Consumer Product Safety Commission's recalls, with the hazard and what to do, quoted from the recall. Only the make, the model number and what kind of thing it is are sent to check, never the record. Check again any time: new recalls are marked.</p>
+
+  <div class="panel"><div class="bar" style="margin-top:0"><button class="btn" type="button" id="all" disabled>Check everything</button><span class="status" id="st" role="status"></span></div>
+    <p class="note" style="margin:6px 0 0">A recall lists the model numbers it covers, so a model number finds the most. Where a thing has none, its make and what it is are checked together, and a recall found that way says so: check its model numbers against yours.</p></div>
+
+  <h2>In the house</h2>
+  <div class="things" id="things"></div>
+
+  <h2>Check something else</h2>
+  <form class="panel" id="f-one"><div class="grid"><label>Make<input class="in" id="o-make" maxlength="40" placeholder="Bosch"></label><label>Model number<input class="in" id="o-model" maxlength="40" placeholder="SHX878WD5N"></label><label>What it is<input class="in" id="o-kind" maxlength="40" placeholder="dishwasher"></label></div>
+    <div class="bar"><button class="btn" type="submit">Check it</button><span class="status" id="o-st" role="status"></span></div><div id="o-out"></div></form>
+  <p class="note">Recalls come from the CPSC's public recall database (recalls in the United States). A recall not found here may still exist elsewhere: for cars, check NHTSA; for food and medicines, the FDA.</p>
+</div>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("recall:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("recall:" + k, JSON.stringify(v)); } catch (e) {} } };
+  const say = (el, t, cls) => { el.textContent = t || ""; el.className = "status" + (cls ? " " + cls : ""); };
+  const day = (d) => (d ? new Date(d + "T12:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
+  const norm = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const BRANDS = ["Bosch", "Samsung", "LG", "Whirlpool", "GE", "Frigidaire", "Maytag", "KitchenAid", "Kenmore", "Electrolux", "Miele", "Amana", "Haier", "Hotpoint", "Beko", "Indesit", "Apple", "Dell", "HP", "Lenovo", "Asus", "Acer", "Microsoft", "Google", "Amazon", "Sony", "Panasonic", "Philips", "Toshiba", "Sharp", "Vizio", "TCL", "Hisense", "Nintendo", "Dyson", "Shark", "iRobot", "Bissell", "Hoover", "Instant", "Ninja", "Cuisinart", "Breville", "Hamilton Beach", "Black+Decker", "Black & Decker", "DeWalt", "Makita", "Ryobi", "Craftsman", "Honeywell", "Nest", "Ring", "Anker", "Belkin", "Weber", "Traeger", "Peloton", "Graco", "Fisher-Price", "Chicco", "IKEA", "Keurig", "Nespresso", "Delonghi", "De'Longhi", "Rheem", "A.O. Smith", "Carrier", "Trane", "Lennox", "Goodman"];
+  const brandIn = (s) => { const t = " " + String(s || "").toLowerCase() + " "; return BRANDS.find((b) => t.includes(" " + b.toLowerCase() + " ") || t.startsWith(" " + b.toLowerCase())) || ""; };
+  let THINGS = [], busy = false;
+  const meta = LS.get("meta", {}), seen = LS.get("seen", {}), last = LS.get("last", {});
+
+  // ── what's in the house: The Home Record (its IndexedDB, read without changing it) and the House Manual's appliances ──
+  async function homeRecord() {
+    try {
+      if (indexedDB.databases) { const dbs = await indexedDB.databases(); if (!dbs.some((d) => d.name === "homerecord")) return []; }
+      const db = await new Promise((ok, no) => { const r = indexedDB.open("homerecord"); r.onupgradeneeded = () => r.transaction.abort(); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+      if (!db.objectStoreNames.contains("things")) { db.close(); return []; }
+      const xs = await new Promise((ok, no) => { const q = db.transaction("things").objectStore("things").getAll(); q.onsuccess = () => ok(q.result || []); q.onerror = () => no(q.error); }); db.close();
+      return xs.map((t) => ({ key: "rec:" + t.id, name: String(t.name || "").slice(0, 80), model: String(t.model || "").slice(0, 80), from: "The Home Record", link: "record" }));
+    } catch (e) { return []; }
+  }
+  function houseManual() { let E = []; try { E = JSON.parse(localStorage.getItem("house:v1") || "[]"); } catch (e) {}
+    return E.filter((e) => e && e.kind === "appliance" && e.title && !e.priv).map((e) => ({ key: "house:" + e.id, name: String(e.title).slice(0, 80), model: String(e.model || "").slice(0, 80), from: "the House Manual", link: "house" })); }
+  // a thing's make, model number and kind: its model field may start with the make ("Bosch SMS6ZDI48E")
+  function guess(t) { const m = meta[t.key] || {}, b = brandIn(t.model) || brandIn(t.name);
+    let model = t.model; if (b && model.toLowerCase().startsWith(b.toLowerCase())) model = model.slice(b.length).trim();
+    const kind = t.name.replace(new RegExp("^" + b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s+", "i"), "").replace(/\s*\(.*\)$/, "").trim();
+    return { maker: m.maker ?? b, model: m.model ?? (/[0-9]/.test(model) ? model.split(/\s+/).find((w) => /\d/.test(w) && w.length >= 3) || model : ""), kind: m.kind ?? kind }; }
+
+  // ── asking ──
+  async function ask(q) { const u = new URLSearchParams(); for (const k of ["maker", "model", "kind"]) if (q[k]) u.set(k, q[k]);
+    const r = await fetch("/api/recalls?" + u, { cache: "no-store" }), j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "the recall check didn't answer"); return j.recalls || []; }
+  const canAsk = (q) => norm(q.model).length >= 3 || (q.maker && q.maker.length >= 2 && q.kind && q.kind.length >= 3);
+  function recallHtml(r, q, isNew) {
+    const listed = norm(q.model).length >= 3 && r.products.some((p) => norm(p.model).includes(norm(q.model)));
+    const strength = listed ? "Your model number is listed in this recall." : r.why === "model" ? "This recall mentions a model number like yours: check it against the list." : "Same make and kind of thing: check its model numbers against yours.";
+    const models = r.products.map((p) => p.model).filter(Boolean).join("; ");
+    return '<div class="recall' + (listed ? "" : " maybe") + '"><b>' + esc(r.title || "Recall " + r.n) + "</b> " + (isNew ? '<span class="tag new">new</span>' : "") +
+      '<p class="k">' + esc(strength) + " Recall " + esc(r.n) + (r.date ? ", " + esc(day(r.date)) : "") + (r.units ? " · " + esc(r.units) : "") + "</p>" +
+      (r.hazards.length ? "<p><b>Hazard:</b> " + esc(r.hazards.join(" ")) + "</p>" : "") + (r.remedies.length ? "<p><b>What to do:</b> " + esc(r.remedies.join(" ")) + "</p>" : "") +
+      (r.options.length ? "<p><b>Remedy:</b> " + esc(r.options.join(", ")) + "</p>" : "") + (models ? '<p class="k"><b>Models:</b> ' + esc(models.slice(0, 400)) + (models.length > 400 ? "…" : "") + "</p>" : "") +
+      (r.contact ? '<p class="k"><b>Contact:</b> ' + esc(r.contact.slice(0, 300)) + "</p>" : "") + (r.url ? '<p><a href="' + esc(r.url) + '" rel="noopener" target="_blank">The recall notice at cpsc.gov</a></p>' : "") + "</div>"; }
+
+  // ── the list ──
+  function draw() {
+    $("#all").disabled = busy || !THINGS.some((t) => canAsk(guess(t)));
+    $("#things").innerHTML = THINGS.length ? THINGS.map((t) => { const q = guess(t), res = last[t.key];
+      const status = !canAsk(q) ? '<span class="tag">add a model number, or a make</span>' : !res ? '<span class="tag">not checked yet</span>' : res.error ? '<span class="tag bad">couldn\'t check</span>' : res.recalls.length ? '<span class="tag bad">' + res.recalls.length + " recall" + (res.recalls.length === 1 ? "" : "s") + " found</span>" : '<span class="tag ok">no recalls found</span>';
+      return '<div class="thing' + (res && res.recalls && res.recalls.length ? " hit" : "") + '" data-k="' + esc(t.key) + '"><div class="h"><span class="nm">' + esc(t.name) + "</span>" + status + "</div>" +
+        '<div class="row"><label>Make<input class="in" data-f="maker" value="' + esc(q.maker) + '" maxlength="40"></label><label>Model number<input class="in" data-f="model" value="' + esc(q.model) + '" maxlength="40"></label><label>What it is<input class="in" data-f="kind" value="' + esc(q.kind) + '" maxlength="40"></label></div>' +
+        '<div class="bar"><button class="btn ghost sm" type="button" data-check' + (canAsk(q) && !busy ? "" : " disabled") + ">Check it</button><span class=\"status\">From " + esc(t.from) + (res && res.at ? " · checked " + esc(new Date(res.at).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "") + "</span></div>" +
+        (res && res.error ? '<p class="status bad">' + esc(res.error) + "</p>" : "") + (res && res.recalls ? res.recalls.map((r) => recallHtml(r, q, (res.fresh || []).includes(r.n))).join("") : "") + "</div>"; }).join("")
+      : '<p class="status">Nothing in your <a href="record">Home Record</a> or <a href="house">House Manual</a> on this device yet. Add your appliances there, or check one below.</p>';
+  }
+  $("#things").addEventListener("change", (e) => { const f = e.target.dataset.f, k = e.target.closest("[data-k]")?.dataset.k; if (!f || !k) return; (meta[k] = meta[k] || {})[f] = e.target.value.trim(); LS.set("meta", meta); draw(); });
+  async function check(t) {
+    const q = guess(t); if (!canAsk(q)) return;
+    try { const recalls = await ask(q), had = new Set(seen[t.key] || []), fresh = recalls.map((r) => r.n).filter((n) => !had.has(n));
+      last[t.key] = { at: Date.now(), recalls, fresh: (seen[t.key] ? fresh : []) }; seen[t.key] = [...had, ...fresh]; }
+    catch (x) { last[t.key] = { at: Date.now(), error: x.message.replace(/^./, (c) => c.toUpperCase()) + "." }; }
+    LS.set("last", last); LS.set("seen", seen);
+  }
+  $("#things").addEventListener("click", async (e) => { const b = e.target.closest("[data-check]"); if (!b || busy) return; const t = THINGS.find((x) => x.key === b.closest("[data-k]").dataset.k); busy = true; b.textContent = "Checking…"; await check(t); busy = false; draw(); });
+  $("#all").onclick = async () => { busy = true; draw(); const todo = THINGS.filter((t) => canAsk(guess(t)));
+    for (let i = 0; i < todo.length; i++) { say($("#st"), "Checking " + (i + 1) + " of " + todo.length + "…"); await check(todo[i]); }
+    busy = false; const hits = todo.filter((t) => last[t.key] && last[t.key].recalls && last[t.key].recalls.length), newN = todo.reduce((n, t) => n + ((last[t.key] && last[t.key].fresh) || []).length, 0);
+    say($("#st"), hits.length ? hits.length + " thing" + (hits.length === 1 ? "" : "s") + " with a recall found" + (newN ? ", " + newN + " new since last time" : "") + ": see below." : "Checked " + todo.length + ": no recalls found.", hits.length ? "bad" : "ok"); draw(); };
+  $("#f-one").onsubmit = async (e) => { e.preventDefault(); const q = { maker: $("#o-make").value.trim(), model: $("#o-model").value.trim(), kind: $("#o-kind").value.trim() }, st = $("#o-st");
+    if (!canAsk(q)) { say(st, "Give a model number, or a make and what it is.", "bad"); return; } say(st, "Checking…"); $("#o-out").innerHTML = "";
+    try { const rs = await ask(q); say(st, rs.length ? rs.length + " recall" + (rs.length === 1 ? "" : "s") + " found." : "No recalls found for that.", rs.length ? "bad" : "ok"); $("#o-out").innerHTML = rs.map((r) => recallHtml(r, q, false)).join(""); }
+    catch (x) { say(st, x.message.replace(/^./, (c) => c.toUpperCase()) + ".", "bad"); } };
+
+  (async () => { const rec = await homeRecord(), hm = houseManual().filter((h) => !rec.some((r) => r.name.toLowerCase() === h.name.toLowerCase()));
+    THINGS = [...rec, ...hm]; draw(); })();
+
+  // Faber Verbs (tools/site/content/recall.json): AutoFaber asks "has my dishwasher been recalled?"
+  if (window.Faber) Faber.verbs({
+    check: async (a) => { const q = { maker: String(a.make || "").slice(0, 40), model: String(a.model || "").slice(0, 40), kind: String(a.what || "").slice(0, 40) };
+      if (!canAsk(q)) throw new Error("Give a model number, or a make and what kind of thing it is.");
+      const rs = await ask(q); if (!rs.length) return "No CPSC recalls found for " + [q.maker, q.kind, q.model].filter(Boolean).join(" ") + ".";
+      return rs.length + " CPSC recall" + (rs.length === 1 ? "" : "s") + ": " + rs.slice(0, 5).map((r) => r.title + " (" + r.date + ")" + (r.hazards[0] ? ": " + r.hazards[0] : "")).join("; ") + "."; },
+  });
+})();
+</script>
+</body>
+</html>
