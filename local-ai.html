@@ -32,6 +32,7 @@ label.m small { grid-column: 2 / -1; color: var(--dim); } label.m:has(input:chec
 .msgs { display: grid; gap: 12px; }
 .msg { padding: 10px 13px; border-radius: 12px; max-width: 88%; white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg.you { justify-self: end; background: #2a2340; } .msg.ai { justify-self: start; background: var(--panel); border: 1px solid var(--line); }
+.msg .from { display: block; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 13px; color: var(--dim); white-space: normal; } .msg .from b { color: var(--ink); font-weight: 600; }
 form.ask { display: flex; gap: 8px; padding: 10px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); }
 form.ask textarea { flex: 1; min-height: 46px; max-height: 160px; resize: none; font: 400 16px var(--sans); padding: 11px 12px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
 .bad { color: var(--bad); }
@@ -45,6 +46,7 @@ form.ask textarea { flex: 1; min-height: 46px; max-height: 160px; resize: none; 
   <section id="intro">
     <h1>AutoFaber, <span>on this device</span></h1>
     <p class="dim" style="margin-top:8px">A small language model, downloaded once and run on your own device's graphics chip, in this browser tab. No server answers you, nothing you type leaves the device, and once it's downloaded it keeps working when the network doesn't. It's smaller than the online AutoFaber: good for drafting, explaining and thinking out loud, weaker on facts.</p>
+    <p class="dim" style="margin-top:8px" id="kit-note">Even before it's downloaded, or on a device that can't run it, it answers from what's already on this phone: the <a href="blackout" style="color:inherit">Blackout Kit</a>'s guides, your <a href="house" style="color:inherit">House Manual</a> and your street's <a href="street" style="color:inherit">Street Board</a>. Ask below.</p>
   </section>
   <section class="card" id="nogpu" hidden><b class="bad">This browser can't run it.</b><p class="dim">It needs WebGPU: Chrome or Edge on a computer, Chrome on a recent Android phone, or Safari 26 on a recent iPhone, iPad or Mac. <a href="hive" style="color:var(--amber)">The online AutoFaber</a> works everywhere.</p></section>
   <section class="card" id="pick">
@@ -57,7 +59,8 @@ form.ask textarea { flex: 1; min-height: 46px; max-height: 160px; resize: none; 
   </section>
   <section class="msgs" id="msgs" aria-live="polite"></section>
 </div></main>
-<form class="ask" id="ask" hidden><textarea id="q" placeholder="Ask AutoFaber Offline" aria-label="Your message" maxlength="4000"></textarea><button class="btn" type="submit" id="send">Send</button></form>
+<form class="ask" id="ask"><textarea id="q" placeholder="Ask about the guides, your house or your street" aria-label="Your message" maxlength="4000"></textarea><button class="btn" type="submit" id="send">Send</button></form>
+<script src="assets/ai/know.js"></script>
 <script type="module">
 const $ = (id) => document.getElementById(id), esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 const LIB = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.86/+esm"; // pinned; the browser keeps it with the model
@@ -73,18 +76,29 @@ $("go").onclick = async () => {
     const lib = window.__WebLLM || (await import(LIB)); // a test can stand in for the library
     engine = await lib.CreateMLCEngine(model, { initProgressCallback: (p) => { $("prog-b").style.width = Math.round((p.progress || 0) * 100) + "%"; $("prog-t").textContent = p.text || ""; } });
     try { localStorage.setItem("lai:model", model); } catch (e) {}
-    $("pick").hidden = true; $("intro").hidden = true; $("ask").hidden = false; state("running on this device", true); $("q").focus();
+    $("pick").hidden = true; $("intro").hidden = true; state("running on this device", true); $("q").focus();
     add("ai", "Ready. I'm running on this device: nothing you type leaves it. What shall we work on?");
   } catch (e) { $("go").disabled = false; state("couldn't start"); $("prog-t").innerHTML = '<span class="bad">Couldn\'t start: ' + esc(e && e.message ? e.message : e) + ". A smaller model may fit; a connection is needed for the first download.</span>"; }
 };
 function add(who, text) { const el = document.createElement("div"); el.className = "msg " + who; el.textContent = text; $("msgs").appendChild(el); el.scrollIntoView({ block: "end" }); return el; }
+// the notes on this phone that bear on a question (the Blackout Kit's guides, the House Manual, Street Board), and where each came from
+const notesFor = async (q) => (window.OfflineKnow ? OfflineKnow.search(q, await OfflineKnow.gather(), 4) : []);
+const from = (el, notes) => { if (!notes.length) return; const f = document.createElement("span"); f.className = "from"; f.innerHTML = "From this phone: " + notes.map((n) => "<b>" + esc(OfflineKnow.label(n)) + "</b>").join(" · "); el.appendChild(f); };
 $("q").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("ask").requestSubmit(); } });
 $("ask").onsubmit = async (e) => {
-  e.preventDefault(); const text = $("q").value.trim(); if (!text || busy || !engine) return; busy = true; $("send").disabled = true; $("q").value = "";
-  add("you", text); history.push({ role: "user", content: text }); const out = add("ai", "…"); let reply = "";
-  try { const chunks = await engine.chat.completions.create({ messages: history.slice(-13), stream: true, temperature: 0.6, max_tokens: 700 });
+  e.preventDefault(); const text = $("q").value.trim(); if (!text || busy) return; busy = true; $("send").disabled = true; $("q").value = "";
+  add("you", text); const notes = await notesFor(text).catch(() => []);
+  if (!engine) { // no model yet (or none can run here): what's on the phone, as it's written
+    const out = add("ai", notes.length ? "Here's what's on this phone about that:" : "Nothing on this phone matches that." + (can || window.__WebLLM ? " Start a model above for a general answer." : "") + " The Blackout Kit's guides cover water, food, carbon monoxide, the phone's battery and radio.");
+    for (const n of notes) { const d = document.createElement("span"); d.className = "from"; d.innerHTML = "<b>" + esc(OfflineKnow.label(n)) + "</b><br>" + esc(n.text) + (n.where && n.src === "guide" ? " <i>(" + esc(n.where) + ")</i>" : ""); out.appendChild(d); }
+    busy = false; $("send").disabled = false; $("q").focus(); return;
+  }
+  history.push({ role: "user", content: text }); const out = add("ai", "…"); let reply = "";
+  // this turn's notes ride in the system message, so the model answers from them and the conversation stays as it was
+  const sys = SYSTEM + (notes.length ? "\n\nNotes from this phone that may answer it (use them, quote the numbers exactly, and say which note; if they don't answer it, say so):\n" + notes.map((n, i) => "[" + (i + 1) + "] " + OfflineKnow.label(n) + ": " + n.text).join("\n") : "");
+  try { const chunks = await engine.chat.completions.create({ messages: [{ role: "system", content: sys }, ...history.slice(1).slice(-12)], stream: true, temperature: 0.6, max_tokens: 700 });
     for await (const c of chunks) { reply += (c.choices && c.choices[0] && c.choices[0].delta && c.choices[0].delta.content) || ""; out.textContent = reply.replace(/<think>[\s\S]*?(<\/think>|$)/, "").trim() || "…"; }
-    history.push({ role: "assistant", content: reply });
+    history.push({ role: "assistant", content: reply }); from(out, notes);
   } catch (x) { out.innerHTML = '<span class="bad">Something went wrong on the device: ' + esc(x && x.message ? x.message : x) + "</span>"; }
   busy = false; $("send").disabled = false; $("q").focus();
 };
