@@ -54,6 +54,8 @@ ok("the link opens it on Bob's phone; he says who he is and marks the 08:00 dose
 
 // two changes from the same version
 await A.fill("#note-in", "She was tired today; ate well at lunch."); await B.click("summary:has-text('Add a visit')"); await B.fill("#v-date", DAY); await B.fill("#v-who", "Cara"); await B.fill("#v-note", "Bringing the shopping");
+// each phone says "Saved" once its own write has landed (cleared first: Bob's still says it from the dose)
+for (const p of [A, B]) await p.evaluate(() => (document.querySelector("#sync").textContent = ""));
 const v0 = circle()[1].v; await Promise.all([A.click("#note-f button[type=submit]"), B.click("#v-f button[type=submit]")]);
 await A.waitForFunction(() => /Saved/.test(document.querySelector("#sync").textContent)); await B.waitForFunction(() => /Saved/.test(document.querySelector("#sync").textContent));
 assert.equal(circle()[1].v, v0 + 2, "two versions: one change on top of the other");

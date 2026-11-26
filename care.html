@@ -161,7 +161,7 @@ details.edit { margin-top: 10px; } details.edit summary { cursor: pointer; color
   $("#who-list").onclick = (e) => { const b = e.target.closest("[data-n]"); if (b) { me = b.dataset.n; remember(D.person); show(); } };
   $("#who-f").onsubmit = (e) => { e.preventDefault(); const n = clean($("#who-in").value, 40); if (!n) return; me = n; remember(D.person); if (!D.members.includes(n)) change((d) => { if (!d.members.includes(n)) d.members.push(n); }); show(); };
   addEventListener("hashchange", fromHash);
-  function show() { $("#start").hidden = true; $("#who").hidden = true; $("#circle").hidden = false; $("#c-link").textContent = linkOf(); $("#c-ci").value = D.checkin || ""; draw(); checkin(); }
+  function show() { setSync(""); $("#start").hidden = true; $("#who").hidden = true; $("#circle").hidden = false; $("#c-link").textContent = linkOf(); $("#c-ci").value = D.checkin || ""; draw(); checkin(); }
 
   // ── the person's Quiet Check-in, at the top ──
   async function checkin() {
