@@ -19,14 +19,14 @@ const p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.m
 let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);
 
 await p.goto(O + "/blackout"); await p.waitForSelector("#apps li");
-assert.match(await p.textContent("#prep-st"), /0 of 9 ready/);
-assert.equal(await p.$$eval("#apps li", (x) => x.length), 8);
+assert.match(await p.textContent("#prep-st"), /0 of 10 ready/);
+assert.equal(await p.$$eval("#apps li", (x) => x.length), 9);
 assert.match(await p.textContent("body"), /8 drops per gallon[\s\S]*30 minutes[\s\S]*20 feet/);
-ok("the kit lists its eight apps (none ready yet) and the guides: water, food, carbon monoxide, phone, radio");
+ok("the kit lists its nine apps (none ready yet) and the guides: water, food, carbon monoxide, phone, radio");
 
-await p.click("#prep"); await p.waitForFunction(() => /Ready: all 9 parts work offline/.test(document.getElementById("prep-st").textContent), null, { timeout: 60000 });
-assert.equal(await p.$$eval("#apps .st.ok", (x) => x.length), 8);
-ok("\"Make it all work offline\" gets the kit and all eight apps ready");
+await p.click("#prep"); await p.waitForFunction(() => /Ready: all 10 parts work offline/.test(document.getElementById("prep-st").textContent), null, { timeout: 60000 });
+assert.equal(await p.$$eval("#apps .st.ok", (x) => x.length), 9);
+ok("\"Make it all work offline\" gets the kit and all nine apps ready");
 
 await p.click("#locate"); await p.waitForFunction(() => /41\.58680, -93\.62500/.test(document.getElementById("coords").textContent));
 ok("Find me shows the GPS fix and puts it on the map");
@@ -35,11 +35,12 @@ await ctx.setOffline(true);
 await p.reload(); await p.waitForSelector("#apps li");
 await p.waitForFunction(() => document.querySelectorAll(".leaflet-fmLand-pane canvas").length > 0 && document.querySelector(".leaflet-interactive, .leaflet-marker-pane *, .leaflet-overlay-pane svg, .leaflet-overlay-pane canvas"), null, { timeout: 10000 });
 assert.match(await p.textContent("#coords"), /41\.58680, -93\.62500 \(last known\)/);
-assert.match(await p.textContent("#prep-st"), /Ready: all 9/);
+assert.match(await p.textContent("#prep-st"), /Ready: all 10/);
 ok("with the network cut, the kit opens, draws the site's own world map and remembers where you were");
 
 const hp = await ctx.newPage(); await hp.goto(O + "/meshnet-app"); assert.match(await hp.title(), /Hopline/);
-ok("and Hopline, from the kit's list, opens with no network");
+const ic = await ctx.newPage(); await ic.goto(O + "/incase"); assert.match(await ic.title(), /In Case/); await ic.waitForSelector("#people");
+ok("and Hopline and In Case, from the kit's list, open with no network");
 
 // AutoFaber Offline, with no network: its answers come from what's on the phone, the kit's guides and the House Manual
 await hp.evaluate(() => localStorage.setItem("house:v1", JSON.stringify([{ id: "h1", kind: "shutoff", title: "Gas shutoff", where: "Outside, left of the meter: turn the lever a quarter turn", det: "", priv: false }, { id: "h2", kind: "note", title: "Alarm code", where: "4471", priv: true }])));

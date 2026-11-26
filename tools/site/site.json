@@ -65,6 +65,14 @@
     "added": "2026-11-24"
   },
   {
+    "href": "incase.html",
+    "name": "In Case",
+    "desc": "One card per person for when it matters: medicines, allergies, conditions and who to call. It works offline in the Blackout Kit, prints as a wallet card, and opens for paramedics from a QR code only the family holds. Encrypted in your browser.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "street.html",
     "name": "Street Board",
     "desc": "A noticeboard for your street that keeps working in an outage: needs, offers, road news and who's safe. Posts pass phone to phone by a link or over a mesh radio while the network is down, and sync up when it's back.",

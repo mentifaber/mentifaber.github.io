@@ -1,0 +1,15 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "card",
+   "label": "Read someone's emergency card",
+   "changes": false,
+   "desc": "Reads a person's In Case card on this device: allergies, conditions, medicines and who to call.",
+   "args": {
+    "who": "string"
+   },
+   "words": "allergic allergy allergies emergency paramedic paramedics ambulance incase"
+  }
+ ]
+}
