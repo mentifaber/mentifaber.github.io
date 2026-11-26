@@ -31,11 +31,11 @@ try {
   await p.goto("http://localhost:8099/subs.html"); assert.equal(await p.isHidden("#out"), true);
   await p.setInputFiles("#files", [{ name: "june-sept.csv", mimeType: "text/csv", buffer: Buffer.from(A) }, { name: "sept-nov.csv", mimeType: "text/csv", buffer: Buffer.from(B) }]);
   await p.waitForSelector("#out:not([hidden])"); await p.waitForSelector("#subs .card");
-  const names = await p.$$eval("#subs .card .nm", (x) => x.map((e) => e.textContent)); assert.deepEqual([...names].sort(), ["Disneyplus", "Hulu", "Netflix", "Spotify"], "found: " + names);
+  const names = await p.$$eval("#subs .card .nm", (x) => x.map((e) => e.textContent)); assert.deepEqual([...names].sort(), ["Disney+", "Hulu", "Netflix", "Spotify"], "found: " + names);
   assert.equal(names[0], "Netflix", "the dearest first");
   const year = Math.round((17.99 + 11.99 + 7.99 + 13.99) * 12); assert.match(await p.textContent("#sum"), new RegExp("^4charges that come back\\$" + Math.round(year / 12) + "a month\\$" + year.toLocaleString("en-US") + "a year$"));
   const nf = p.locator(".card", { hasText: "Netflix" }); assert.match(await nf.textContent(), /\$17\.99 monthly[\s\S]*\$216 a year · 6 charges since/); assert.match(await nf.textContent(), /Went up from \$15\.49 to \$17\.99 on .* \(16% more\)/);
-  assert.match(await p.textContent("#overlaps"), /3 video streaming subscriptions: Netflix, Disneyplus, Hulu, \$480 a year together/);
+  assert.match(await p.textContent("#overlaps"), /3 video streaming subscriptions: Netflix, Disney\+, Hulu, \$480 a year together/);
   assert.equal(await p.$$eval("#due li", (x) => x.length) >= 3, true); assert.match(await nf.textContent(), /6 charges/, "a charge on both exports counts once");
   ok("two monthly exports together: every charge that comes back with its year's cost, Netflix's rise quoted, three video services flagged, what's due next; groceries, coffee and fuel left out");
 
@@ -52,7 +52,7 @@ try {
   assert.deepEqual(v, []); ok("axe finds nothing on the results, with a letter open");
 
   await p.click("#forget"); assert.equal(await p.isHidden("#out"), true); assert.equal(await p.evaluate(() => localStorage.getItem("subs:last")), null);
-  await p.click("#example"); await p.click("#f button[type=submit]"); await p.waitForSelector("#subs .card"); assert.deepEqual((await p.$$eval("#subs .card .nm", (x) => x.map((e) => e.textContent))).sort(), ["Apple", "Disneyplus", "Hulu", "Netflix", "Planet Fitness", "Spotify"], "not the groceries or fuel");
+  await p.click("#example"); await p.click("#f button[type=submit]"); await p.waitForSelector("#subs .card"); assert.deepEqual((await p.$$eval("#subs .card .nm", (x) => x.map((e) => e.textContent))).sort(), ["Apple (App Store, iCloud)", "Disney+", "Hulu", "Netflix", "Planet Fitness", "Spotify"], "not the groceries or fuel");
   assert.match(await p.textContent("#gone"), /Peloton/, "the example's lapsed one is under Stopped");
   ok("forgetting the sweep; the example finds its subscriptions, and its cancelled gym is under Stopped");
 

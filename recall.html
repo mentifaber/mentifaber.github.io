@@ -110,7 +110,7 @@ label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px v
 
   // ── the list ──
   function draw() {
-    $("#all").disabled = busy || !THINGS.some((t) => canAsk(guess(t)));
+    $("#all").disabled = busy || !THINGS.some((t) => canAsk(guess(t))); $("#all").hidden = !THINGS.length;
     $("#things").innerHTML = THINGS.length ? THINGS.map((t) => { const q = guess(t), res = last[t.key];
       const status = !canAsk(q) ? '<span class="tag">add a model number, or a make</span>' : !res ? '<span class="tag">not checked yet</span>' : res.error ? '<span class="tag bad">couldn\'t check</span>' : res.recalls.length ? '<span class="tag bad">' + res.recalls.length + " recall" + (res.recalls.length === 1 ? "" : "s") + " found</span>" : '<span class="tag">no match: confirm at cpsc.gov</span>';
       return '<div class="thing' + (res && res.recalls && res.recalls.length ? " hit" : "") + '" data-k="' + esc(t.key) + '"><div class="h"><span class="nm">' + esc(t.name) + "</span>" + status + "</div>" +

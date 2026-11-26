@@ -49,7 +49,7 @@ textarea.in { min-height: 130px; resize: vertical; }
 <div class="wrap">
   <div class="top"><span>Mentifaber · Due Dates</span><a href="./">The workshop</a></div>
   <h1>The dates <span>buried in letters</span></h1>
-  <p class="lede">Drop in the letters, renewals and notices. Every date that asks something of you comes out (pay by, renew on, reply before, an appointment, an expiry) with the sentence it's in, ready to add to your calendar as one file. Warranties from <a href="record">The Home Record</a> join the list. It's all worked out on this device: nothing is sent anywhere.</p>
+  <p class="lede">Drop in the letters, renewals and notices. Every date that asks something of you comes out (pay by, renew on, reply before, an appointment, an expiry) with the sentence it's in, ready to add to your calendar as one file. Warranties from <a href="record">The Home Record</a> and the next charge of each subscription <a href="subs">Subscription Sweep</a> found join the list. It's all worked out on this device: nothing is sent anywhere.</p>
 
   <form class="panel" id="f">
     <div class="bar" style="margin-top:0"><label class="btn" style="cursor:pointer;color:#071530">Choose letters (PDF or text)<input id="files" type="file" multiple accept=".pdf,.txt,.text,.eml,.html,application/pdf,text/plain" hidden></label></div>
@@ -64,7 +64,7 @@ textarea.in { min-height: 130px; resize: vertical; }
   <div class="bar" id="acts" hidden><button class="btn" type="button" id="dl">Add to my calendar (.ics)</button><span class="status" id="dl-st" role="status"></span></div>
   <p class="status" id="acts-note" hidden>The file opens in any calendar: Apple, Google, Outlook. Each date gets a reminder: three days before, or a day before an appointment. Untick any you don't want in it.</p>
 
-  <div id="rec-box" hidden><h2>From The Home Record</h2><label class="chk"><input type="checkbox" id="rec-on" checked> Include warranties that run out</label><div class="items" id="rec"></div></div>
+  <div id="rec-box" hidden><h2>From your other apps</h2><label class="chk"><input type="checkbox" id="rec-on" checked> Include warranties and subscription charges</label><div class="items" id="rec"></div></div>
   <div class="bar" style="margin-top:22px"><button class="btn ghost sm" type="button" id="clear">Clear the list</button><span class="status">The list is kept on this device only.</span></div>
 </div>
 <script src="assets/due/dates.js"></script>
@@ -154,7 +154,16 @@ textarea.in { min-height: 130px; resize: vertical; }
       return out.filter((x) => daysTo(x.date) >= 0).map((x) => ({ ...x, on: !off.has(x.id) })).sort((a, b) => a.date.localeCompare(b.date));
     } catch (e) { return []; }
   }
-  draw(); homeRecord().then((r) => { REC = r; draw(); });
+  // Subscription Sweep's subscriptions (what it found, kept on this device): each one's next charge, rolled on by its
+  // cadence if the sweep is old; not one set aside as "not a subscription", nor one that's stopped
+  function subsDue() {
+    try { const R = JSON.parse(localStorage.getItem("subs:last") || "null"), marks = JSON.parse(localStorage.getItem("subs:marks") || "{}"), off = new Set(LS.get("rec-off", [])); if (!R || !Array.isArray(R.subs)) return [];
+      return R.subs.filter((s) => s && !s.lapsed && marks[s.key] !== "not" && s.next > 0 && s.every > 0).map((s) => { let t = s.next; while (t < today()) t += Math.round(s.every) * DAY;
+        const date = new Date(t).toISOString().slice(0, 10), money = "$" + (s.amount / 100).toFixed(2), id = "subs:" + s.key;
+        return { id, date, kind: "pay", label: "Pay", title: s.name + " charges " + money + (marks[s.key] === "cancel" ? " (cancel before this)" : ""), sentence: "", source: "Subscription Sweep", on: !off.has(id) }; }).filter((x) => daysTo(x.date) <= 62); }
+    catch (e) { return []; }
+  }
+  draw(); homeRecord().then((r) => { REC = [...r, ...subsDue()].sort((a, b) => a.date.localeCompare(b.date)); draw(); });
 
   // Faber Verbs (tools/site/content/due.json): AutoFaber asks "any deadlines coming up?"
   if (window.Faber) Faber.verbs({
