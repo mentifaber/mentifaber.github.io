@@ -1,0 +1,31 @@
+{
+  "id": "/skills",
+  "name": "Street Skills",
+  "short_name": "Street Skills",
+  "description": "Who on your street can do what, and an ask goes straight to them.",
+  "start_url": "/skills.html",
+  "scope": "/skills.html",
+  "display": "standalone",
+  "background_color": "#0c0b0e",
+  "theme_color": "#0c0b0e",
+  "icons": [
+    {
+      "src": "../icons/v2/skills-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/skills-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/skills-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

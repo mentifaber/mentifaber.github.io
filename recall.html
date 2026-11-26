@@ -51,6 +51,7 @@ label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px v
   <p class="lede">The appliances and devices in your <a href="record">Home Record</a> and <a href="house">House Manual</a>, checked against the US Consumer Product Safety Commission's recalls, with the hazard and what to do, quoted from the recall. Only the make, the model number and what kind of thing it is are sent to check, never the record. Check again any time: new recalls are marked.</p>
 
   <div class="panel"><div class="bar" style="margin-top:0"><button class="btn" type="button" id="all" disabled>Check everything</button><span class="status" id="st" role="status"></span></div>
+    <p class="note" style="margin:6px 0 0"><b>Being checked:</b> Recall Watch is new and is still being checked against the CPSC&#39;s live list. If it finds no match, that isn&#39;t yet proof there&#39;s no recall: search <a href="https://www.cpsc.gov/Recalls" rel="noopener" target="_blank">cpsc.gov/Recalls</a> to be sure.</p>
     <p class="note" style="margin:6px 0 0">A recall lists the model numbers it covers, so a model number finds the most. Where a thing has none, its make and what it is are checked together, and a recall found that way says so: check its model numbers against yours.</p></div>
 
   <h2>In the house</h2>
@@ -111,7 +112,7 @@ label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px v
   function draw() {
     $("#all").disabled = busy || !THINGS.some((t) => canAsk(guess(t)));
     $("#things").innerHTML = THINGS.length ? THINGS.map((t) => { const q = guess(t), res = last[t.key];
-      const status = !canAsk(q) ? '<span class="tag">add a model number, or a make</span>' : !res ? '<span class="tag">not checked yet</span>' : res.error ? '<span class="tag bad">couldn\'t check</span>' : res.recalls.length ? '<span class="tag bad">' + res.recalls.length + " recall" + (res.recalls.length === 1 ? "" : "s") + " found</span>" : '<span class="tag ok">no recalls found</span>';
+      const status = !canAsk(q) ? '<span class="tag">add a model number, or a make</span>' : !res ? '<span class="tag">not checked yet</span>' : res.error ? '<span class="tag bad">couldn\'t check</span>' : res.recalls.length ? '<span class="tag bad">' + res.recalls.length + " recall" + (res.recalls.length === 1 ? "" : "s") + " found</span>" : '<span class="tag">no match: confirm at cpsc.gov</span>';
       return '<div class="thing' + (res && res.recalls && res.recalls.length ? " hit" : "") + '" data-k="' + esc(t.key) + '"><div class="h"><span class="nm">' + esc(t.name) + "</span>" + status + "</div>" +
         '<div class="row"><label>Make<input class="in" data-f="maker" value="' + esc(q.maker) + '" maxlength="40"></label><label>Model number<input class="in" data-f="model" value="' + esc(q.model) + '" maxlength="40"></label><label>What it is<input class="in" data-f="kind" value="' + esc(q.kind) + '" maxlength="40"></label></div>' +
         '<div class="bar"><button class="btn ghost sm" type="button" data-check' + (canAsk(q) && !busy ? "" : " disabled") + ">Check it</button><span class=\"status\">From " + esc(t.from) + (res && res.at ? " · checked " + esc(new Date(res.at).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "") + "</span></div>" +
@@ -130,10 +131,10 @@ label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px v
   $("#all").onclick = async () => { busy = true; draw(); const todo = THINGS.filter((t) => canAsk(guess(t)));
     for (let i = 0; i < todo.length; i++) { say($("#st"), "Checking " + (i + 1) + " of " + todo.length + "…"); await check(todo[i]); }
     busy = false; const hits = todo.filter((t) => last[t.key] && last[t.key].recalls && last[t.key].recalls.length), newN = todo.reduce((n, t) => n + ((last[t.key] && last[t.key].fresh) || []).length, 0);
-    say($("#st"), hits.length ? hits.length + " thing" + (hits.length === 1 ? "" : "s") + " with a recall found" + (newN ? ", " + newN + " new since last time" : "") + ": see below." : "Checked " + todo.length + ": no recalls found.", hits.length ? "bad" : "ok"); draw(); };
+    say($("#st"), hits.length ? hits.length + " thing" + (hits.length === 1 ? "" : "s") + " with a recall found" + (newN ? ", " + newN + " new since last time" : "") + ": see below." : "Checked " + todo.length + ": no match found here. Recall Watch is still being checked against the CPSC's live list, so search cpsc.gov/Recalls to be sure.", hits.length ? "bad" : ""); draw(); };
   $("#f-one").onsubmit = async (e) => { e.preventDefault(); const q = { maker: $("#o-make").value.trim(), model: $("#o-model").value.trim(), kind: $("#o-kind").value.trim() }, st = $("#o-st");
     if (!canAsk(q)) { say(st, "Give a model number, or a make and what it is.", "bad"); return; } say(st, "Checking…"); $("#o-out").innerHTML = "";
-    try { const rs = await ask(q); say(st, rs.length ? rs.length + " recall" + (rs.length === 1 ? "" : "s") + " found." : "No recalls found for that.", rs.length ? "bad" : "ok"); $("#o-out").innerHTML = rs.map((r) => recallHtml(r, q, false)).join(""); }
+    try { const rs = await ask(q); say(st, rs.length ? rs.length + " recall" + (rs.length === 1 ? "" : "s") + " found." : "No match found here. Search cpsc.gov/Recalls to be sure: Recall Watch is still being checked against the CPSC's live list.", rs.length ? "bad" : ""); $("#o-out").innerHTML = rs.map((r) => recallHtml(r, q, false)).join(""); }
     catch (x) { say(st, x.message.replace(/^./, (c) => c.toUpperCase()) + ".", "bad"); } };
 
   (async () => { const rec = await homeRecord(), hm = houseManual().filter((h) => !rec.some((r) => r.name.toLowerCase() === h.name.toLowerCase()));
@@ -143,7 +144,7 @@ label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px v
   if (window.Faber) Faber.verbs({
     check: async (a) => { const q = { maker: String(a.make || "").slice(0, 40), model: String(a.model || "").slice(0, 40), kind: String(a.what || "").slice(0, 40) };
       if (!canAsk(q)) throw new Error("Give a model number, or a make and what kind of thing it is.");
-      const rs = await ask(q); if (!rs.length) return "No CPSC recalls found for " + [q.maker, q.kind, q.model].filter(Boolean).join(" ") + ".";
+      const rs = await ask(q); if (!rs.length) return "No match found for " + [q.maker, q.kind, q.model].filter(Boolean).join(" ") + " in Recall Watch, which is still being checked against the CPSC's live list: search cpsc.gov/Recalls to be sure.";
       return rs.length + " CPSC recall" + (rs.length === 1 ? "" : "s") + ": " + rs.slice(0, 5).map((r) => r.title + " (" + r.date + ")" + (r.hazards[0] ? ": " + r.hazards[0] : "")).join("; ") + "."; },
   });
 })();

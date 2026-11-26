@@ -17,6 +17,7 @@ import { makers } from "./makers.js";
 import { letters } from "./letters.js";
 import { recalls } from "./recalls.js"; // Recall Watch: the CPSC's recalls for a make and model
 import { repair } from "./repair.js"; // Repair Café: a pop-up repair day's slots, door queue and tables
+import { skills } from "./skills.js"; // Street Skills: what neighbours can do for each other
 import { library } from "./library.js"; // Street Library: neighbours lend each other tools, with the condition photo's fingerprint
 import { care, kitty } from "./care.js"; // Care Circle: a family's shared page for looking after someone, encrypted in the browser
 import { board } from "./board.js"; // Street Board: a neighbourhood noticeboard that keeps working in an outage
@@ -619,6 +620,7 @@ const worker = {
       if (route === "board") return board(req, env, json); // Street Board: posts phones carried while the network was down meet here (src/board.js)
       if (route === "recalls") return recalls(req, env, json); // Recall Watch: only make and model words go out, to the CPSC (src/recalls.js)
       if (route === "repair") return repair(req, env, json); // Repair Café: slots, the door's queue, each fix written up at the table (src/repair.js)
+      if (route === "skills") return skills(req, env, json); // Street Skills: who on the street can do what; thanks counted, never money (src/skills.js)
       if (route === "library") return library(req, env, json); // Street Library: who has what, who has it now, when it's due back (src/library.js)
       if (route === "care") return care(req, env, json); // Care Circle: ciphertext and a version; the site can't read a circle (src/care.js)
       if (route === "kitty") return kitty(req, env, json); // House Kitty: shared costs, sealed in the browser the same way (src/care.js)
