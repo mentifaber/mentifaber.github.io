@@ -33,6 +33,7 @@ textarea.in { min-height: 70px; resize: vertical; }
 .people { display: grid; gap: 8px; margin-top: 8px; }
 .person { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--acc); border-radius: 12px; padding: 12px 14px; }
 .person .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.person .who { font: 700 22px/1.2 var(--sans); margin: 0; color: var(--ink); letter-spacing: 0; text-transform: none; overflow-wrap: anywhere; } .person a { color: var(--acc-hi); }
 .sec { margin-top: 10px; } .sec b.k { display: block; font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 .allergy { color: var(--acc-hi); font-weight: 700; }
 ul.plain { list-style: none; margin: 4px 0 0; padding: 0; } ul.plain li { padding: 3px 0; overflow-wrap: anywhere; }
@@ -133,7 +134,7 @@ ul.plain { list-style: none; margin: 4px 0 0; padding: 0; } ul.plain li { paddin
   function home() {
     $("#home").hidden = false; $("#edit").hidden = $("#view").hidden = true; document.title = "In Case · Mentifaber";
     $("#people").innerHTML = P.length ? P.map((p) => { const shared = !!p.pub, stale = shared && p.pub.sent !== p.updated;
-      return '<div class="person" data-id="' + esc(p.id) + '"><div class="h"><h2 style="margin:0;font:700 20px var(--sans);color:var(--ink)">' + esc(p.name) + '</h2><span class="status">' + (p.updated ? "updated " + esc(nice(p.updated)) : "") + "</span></div>" + cardHtml(p) +
+      return '<div class="person" data-id="' + esc(p.id) + '"><div class="h"><h2 class="who">' + esc(p.name) + '</h2><span class="status">' + (p.updated ? "updated " + esc(nice(p.updated)) : "") + "</span></div>" + cardHtml(p) +
         '<div class="bar"><button class="btn ghost sm" type="button" data-act="edit">Edit</button><button class="btn ghost sm" type="button" data-act="print">Print the wallet card</button>' + (shared ? '<button class="btn ghost sm" type="button" data-act="unshare">Stop sharing</button>' : '<button class="btn sm" type="button" data-act="share">Share for paramedics</button>') + '<button class="lnk" type="button" data-act="rm">Remove</button></div>' +
         (shared ? '<div class="sec"><b class="k">For paramedics</b><div class="bar" style="align-items:flex-start"><div class="qr">' + QR.svg(linkOf(p), { label: "QR code for " + p.name + "'s card" }) + '</div><div style="flex:1 1 220px"><div class="link">' + esc(linkOf(p)) + '</div><p class="status">' + (stale ? "You've changed the card since it was shared. " : "") + 'Anyone with this link or QR code can read the card, and nobody else: the site can\'t. Print it on the wallet card, or keep it on the lock screen.</p>' + (stale ? '<button class="btn sm" type="button" data-act="share">Update the shared card</button>' : "") + "</div></div></div>" : "") +
         '<p class="status" data-st role="status"></p></div>'; }).join("") : '<p class="status">No cards yet. Start with yours.</p>';

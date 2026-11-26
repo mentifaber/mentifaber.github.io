@@ -97,7 +97,13 @@
     const key = w.slice(0, 2).join(" ") || (viaApple ? "apple" : viaGoogle ? "google" : "");
     return key;
   }
-  const pretty = (key) => key.replace(/\b\w/g, (c) => c.toUpperCase());
+  // the names people know them by, where the statement's words don't say it ("disneyplus" is Disney+)
+  const NAMES = { netflix: "Netflix", disneyplus: "Disney+", "disney plus": "Disney+", disney: "Disney+", youtubepremium: "YouTube Premium", "youtube premium": "YouTube Premium", youtube: "YouTube",
+    hulu: "Hulu", spotify: "Spotify", apple: "Apple (App Store, iCloud)", icloud: "iCloud+", "amazon prime": "Amazon Prime", "prime video": "Prime Video", amazon: "Amazon", nytimes: "The New York Times",
+    "now tv": "NOW TV", nowtv: "NOW TV", hbo: "Max", "hbo max": "Max", hbomax: "Max", paramountplus: "Paramount+", "paramount plus": "Paramount+", paramount: "Paramount+", peacock: "Peacock",
+    audible: "Audible", openai: "OpenAI (ChatGPT)", chatgpt: "OpenAI (ChatGPT)", github: "GitHub", xbox: "Xbox", playstation: "PlayStation", psn: "PlayStation", nintendo: "Nintendo",
+    dropbox: "Dropbox", adobe: "Adobe", "google one": "Google One", googleone: "Google One", microsoft: "Microsoft", peloton: "Peloton", patreon: "Patreon", "planet fitness": "Planet Fitness", vodafone: "Vodafone" };
+  const pretty = (key) => NAMES[key] || key.replace(/\b\w/g, (c) => c.toUpperCase());
 
   // ── what kind of thing it is, for overlaps ──
   const KINDS = [["Video streaming", /netflix|hulu|disney|hbo|max\b|paramount|peacock|crunchyroll|youtube premium|youtube tv|apple tv|prime video|sling|fubo|britbox|mubi|discovery|starz|showtime/],

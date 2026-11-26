@@ -701,6 +701,581 @@
       ]
     },
     {
+      "id": "org.mentifaber.blackout",
+      "name": "Blackout Kit",
+      "twa": "/blackout",
+      "release": "blackout-android",
+      "file": "BlackoutKit",
+      "category": "Tools",
+      "tagline": "Get ready while there's still a connection",
+      "description": "Get ready while there's still a connection: mesh and radio messaging, a satellite tracker, your documents and a world map that work offline, where you are by GPS, and plain guides for water, food, heat and power.",
+      "features": [
+        "Mesh and radio messaging with no internet",
+        "Your documents and a world map offline",
+        "Plain guides for water, food, heat and power"
+      ],
+      "icon": "/assets/icons/v2/blackout-512.png",
+      "accent": "#edbf82",
+      "bg": "#0b0906",
+      "web": "/blackout",
+      "page": "/blackout",
+      "shots": [
+        "/assets/previews/blackout.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.incase",
+      "name": "In Case",
+      "twa": "/incase",
+      "release": "incase-android",
+      "file": "InCase",
+      "category": "Health",
+      "tagline": "The card for when it matters",
+      "description": "One card per person for when it matters: medicines, allergies, conditions and who to call. It works offline in the Blackout Kit, prints as a wallet card, and opens for paramedics from a QR code only the family holds. Encrypted in your browser.",
+      "features": [
+        "Medicines, allergies and who to call",
+        "A QR code a paramedic can open",
+        "Prints as a wallet card; works offline"
+      ],
+      "icon": "/assets/icons/v2/incase-512.png",
+      "accent": "#ed8682",
+      "bg": "#0d0b0b",
+      "web": "/incase",
+      "page": "/incase",
+      "shots": [
+        "/assets/previews/incase.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.street",
+      "name": "Street Board",
+      "twa": "/street",
+      "release": "street-android",
+      "file": "StreetBoard",
+      "category": "Communication",
+      "tagline": "A noticeboard that works in an outage",
+      "description": "A noticeboard for your street that keeps working in an outage: needs, offers, road news and who's safe. Posts pass phone to phone by a link or over a mesh radio while the network is down, and sync up when it's back.",
+      "features": [
+        "Needs, offers, road news and who's safe",
+        "Posts pass phone to phone with no network",
+        "Over a mesh radio, miles from any tower"
+      ],
+      "icon": "/assets/icons/v2/street-512.png",
+      "accent": "#edd482",
+      "bg": "#0d0c08",
+      "web": "/street",
+      "page": "/street",
+      "shots": [
+        "/assets/previews/street.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.library",
+      "name": "Street Library",
+      "twa": "/library",
+      "release": "library-android",
+      "file": "StreetLibrary",
+      "category": "Tools",
+      "tagline": "Borrow the ladder, not buy it",
+      "description": "Borrow the ladder, not buy it: your street's shelf of tools and things neighbours lend each other. Who has what, who has it now and when it's due back, with a sealed photo of its condition when it goes out, so nobody argues when it comes back.",
+      "features": [
+        "Who has what, and when it's due back",
+        "A sealed photo of its condition when it goes out",
+        "Asks go straight to the lender"
+      ],
+      "icon": "/assets/icons/v2/library-512.png",
+      "accent": "#eddf82",
+      "bg": "#0b0d0a",
+      "web": "/library",
+      "page": "/library",
+      "shots": [
+        "/assets/previews/library.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.skills",
+      "name": "Street Skills",
+      "twa": "/skills",
+      "release": "skills-android",
+      "file": "StreetSkills",
+      "category": "Communication",
+      "tagline": "What your street can do",
+      "description": "Street Library for what people can do: who on your street can fix a bike, translate a letter, help with a form or sit with the dog, and an ask goes straight to them. Thanks are counted, never money.",
+      "features": [
+        "Who can fix a bike, translate, help with a form",
+        "Ask a neighbour straight from the list",
+        "Thanks are counted, never money"
+      ],
+      "icon": "/assets/icons/v2/skills-512.png",
+      "accent": "#b882ed",
+      "bg": "#0c0b0e",
+      "web": "/skills",
+      "page": "/skills",
+      "shots": [
+        "/assets/previews/skills.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.repair",
+      "name": "Repair Café",
+      "twa": "/repair",
+      "release": "repair-android",
+      "file": "RepairCafe",
+      "category": "Tools",
+      "tagline": "A pop-up repair day for your street",
+      "description": "A pop-up repair day for your street: neighbours book a slot from a Street Board notice, the door keeps the queue with Fix or Replace's verdict on each thing, and every fix from the workshop's table leaves with a Device Passport.",
+      "features": [
+        "Slots booked from a Street Board notice",
+        "The door's queue, with Fix or Replace's verdict",
+        "A Device Passport for every fix"
+      ],
+      "icon": "/assets/icons/v2/repair-512.png",
+      "accent": "#82edb8",
+      "bg": "#0a0d0c",
+      "web": "/repair",
+      "page": "/repair",
+      "shots": [
+        "/assets/previews/repair.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.subs",
+      "name": "Subscription Sweep",
+      "twa": "/subs",
+      "release": "subs-android",
+      "file": "SubscriptionSweep",
+      "category": "Money",
+      "tagline": "Every charge that comes back",
+      "description": "Every charge that comes back, found in your bank or card statement: what each costs a year, which went up, which overlap, what's due next, and a letter to cancel each one. Worked out on your phone; the statement isn't sent anywhere.",
+      "features": [
+        "Found in your bank or card statement",
+        "What each costs a year, and which went up",
+        "A letter to cancel each one"
+      ],
+      "icon": "/assets/icons/v2/subs-512.png",
+      "accent": "#ed8294",
+      "bg": "#0d0b0c",
+      "web": "/subs",
+      "page": "/subs",
+      "shots": [
+        "/assets/previews/subs.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.due",
+      "name": "Due Dates",
+      "twa": "/due",
+      "release": "due-android",
+      "file": "DueDates",
+      "category": "Tools",
+      "tagline": "The dates buried in letters",
+      "description": "The dates buried in letters, renewals and notices: every one that asks something of you (pay by, renew on, reply before, an appointment), with the sentence it's in, added to your calendar as one file. Worked out on your phone.",
+      "features": [
+        "Pay by, renew on, reply before, appointments",
+        "Each with the sentence it came from",
+        "One calendar file, with reminders"
+      ],
+      "icon": "/assets/icons/v2/due-512.png",
+      "accent": "#82a9ed",
+      "bg": "#0b0c0e",
+      "web": "/due",
+      "page": "/due",
+      "shots": [
+        "/assets/previews/due.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.kitty",
+      "name": "House Kitty",
+      "twa": "/kitty",
+      "release": "kitty-android",
+      "file": "HouseKitty",
+      "category": "Money",
+      "tagline": "Shared costs, settled fairly",
+      "description": "Shared costs for housemates, couples and trips: who paid for what, split evenly or by share, and the fewest payments that settle everyone up. Encrypted in your browser with a key only in the kitty's link, so the site can't read it.",
+      "features": [
+        "Split evenly or by share",
+        "The fewest payments that settle everyone up",
+        "Encrypted: the site can't read it"
+      ],
+      "icon": "/assets/icons/v2/kitty-512.png",
+      "accent": "#c2ed82",
+      "bg": "#0b0d0b",
+      "web": "/kitty",
+      "page": "/kitty",
+      "shots": [
+        "/assets/previews/kitty.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.recall",
+      "name": "Recall Watch",
+      "twa": "/recall",
+      "release": "recall-android",
+      "file": "RecallWatch",
+      "category": "Tools",
+      "tagline": "Is anything in the house recalled?",
+      "description": "Is anything in the house recalled? Your Home Record and House Manual checked against the US Consumer Product Safety Commission's recalls, with the hazard and what to do. Only make and model words are sent, never the record.",
+      "features": [
+        "Your appliances checked against CPSC recalls",
+        "The hazard and what to do, quoted",
+        "Only make and model words are sent"
+      ],
+      "icon": "/assets/icons/v2/recall-512.png",
+      "accent": "#ed9782",
+      "bg": "#0e0b0a",
+      "web": "/recall",
+      "page": "/recall",
+      "shots": [
+        "/assets/previews/recall.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.letters",
+      "name": "Sealed Letters",
+      "twa": "/letters",
+      "release": "letters-android",
+      "file": "SealedLetters",
+      "category": "Communication",
+      "tagline": "Letters that open later",
+      "description": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",
+      "features": [
+        "On a date, or if you stop checking in",
+        "The key split among friends you choose",
+        "Encrypted in your browser"
+      ],
+      "icon": "/assets/icons/v2/letters-512.png",
+      "accent": "#ed8d82",
+      "bg": "#120e0b",
+      "web": "/letters",
+      "page": "/letters",
+      "shots": [
+        "/assets/previews/letters.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.localai",
+      "name": "AutoFaber Offline",
+      "twa": "/local-ai",
+      "release": "local-ai-android",
+      "file": "AutoFaberOffline",
+      "category": "AI",
+      "tagline": "AutoFaber with no server at all",
+      "description": "AutoFaber with no server at all: a small language model downloaded once and run on your own device's graphics chip. Nothing you type leaves it, and it keeps working without a network.",
+      "features": [
+        "A small model run on your own device",
+        "Answers from your guides and House Manual",
+        "Keeps working without a network"
+      ],
+      "icon": "/assets/icons/v2/local-ai-512.png",
+      "accent": "#a982ed",
+      "bg": "#0b0a0f",
+      "web": "/local-ai",
+      "page": "/local-ai",
+      "shots": [
+        "/assets/previews/local-ai.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.witness",
+      "name": "Witness",
+      "twa": "/witness",
+      "release": "witness-android",
+      "file": "Witness",
+      "category": "Tools",
+      "tagline": "Prove when a photo was taken",
+      "description": "Prove a photo existed by a given time and hasn't changed since. The photo stays on your phone: only its fingerprint is signed, with the workshop's own clock, and anyone can check it.",
+      "features": [
+        "Only the photo's fingerprint is signed",
+        "The workshop's own clock, not your phone's",
+        "Anyone can check it"
+      ],
+      "icon": "/assets/icons/v2/witness-512.png",
+      "accent": "#82c1ed",
+      "bg": "#0a0d10",
+      "web": "/witness",
+      "page": "/witness",
+      "shots": [
+        "/assets/previews/witness.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.passport",
+      "name": "Device Passport",
+      "twa": "/passport",
+      "release": "passport-android",
+      "file": "DevicePassport",
+      "category": "Tools",
+      "tagline": "A repair history that travels with the device",
+      "description": "A signed record of a repair: the work, the parts and their numbers, battery health and warranty, which travels with the device and anyone can check, including whoever buys it next.",
+      "features": [
+        "The work, the parts and the warranty",
+        "Signed by the workshop",
+        "Anyone can check it, including the next owner"
+      ],
+      "icon": "/assets/icons/v2/passport-512.png",
+      "accent": "#edd182",
+      "bg": "#0d0b08",
+      "web": "/passport",
+      "page": "/passport",
+      "shots": [
+        "/assets/previews/passport.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.house",
+      "name": "House Manual",
+      "twa": "/house",
+      "release": "house-android",
+      "file": "HouseManual",
+      "category": "Tools",
+      "tagline": "Your home's own handbook",
+      "description": "Your home's own handbook: where the shutoffs are, the Wi-Fi, bin days, each appliance with its model and warranty, and who to call. It stays on your device, works offline, and a sitter gets a copy by link.",
+      "features": [
+        "Shutoffs, Wi-Fi, bin days and who to call",
+        "Each appliance with its model and warranty",
+        "A sitter gets a copy by link"
+      ],
+      "icon": "/assets/icons/v2/house-512.png",
+      "accent": "#82edd8",
+      "bg": "#0d0b08",
+      "web": "/house",
+      "page": "/house",
+      "shots": [
+        "/assets/previews/house.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.fix",
+      "name": "Fix or Replace",
+      "twa": "/fix",
+      "release": "fix-android",
+      "file": "FixOrReplace",
+      "category": "Money",
+      "tagline": "A straight answer before you spend",
+      "description": "A straight answer before you spend: what a repair should cost in parts and labour, what the device is worth, and whether to fix it or replace it, with the sums shown and one tap to ask the workshop for a quote.",
+      "features": [
+        "What a repair should cost",
+        "What the device is worth",
+        "Fix it, replace it, or a toss-up"
+      ],
+      "icon": "/assets/icons/v2/fix-512.png",
+      "accent": "#edad82",
+      "bg": "#0c0a09",
+      "web": "/fix",
+      "page": "/fix",
+      "shots": [
+        "/assets/previews/fix.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.care",
+      "name": "Care Circle",
+      "twa": "/care",
+      "release": "care-android",
+      "file": "CareCircle",
+      "category": "Health",
+      "tagline": "Looking after someone, shared",
+      "description": "Looking after someone, shared: medicines and when they're due (and who gave them), appointments, who's visiting when and the family's rota, on one page, with their Quiet Check-in at the top. Encrypted in your browser: the site can't read it.",
+      "features": [
+        "Medicines and when they're due",
+        "Appointments, visits and the rota",
+        "Encrypted: the site can't read it"
+      ],
+      "icon": "/assets/icons/v2/care-512.png",
+      "accent": "#ed9b82",
+      "bg": "#0c0b0a",
+      "web": "/care",
+      "page": "/care",
+      "shots": [
+        "/assets/previews/care.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.record",
+      "name": "The Home Record",
+      "twa": "/record",
+      "release": "record-android",
+      "file": "HomeRecord",
+      "category": "Tools",
+      "tagline": "A service history for the house",
+      "description": "A service history for the house: every appliance and device with its receipts, manuals, warranty, Device Passports, Fix or Replace checks and repairs. Hand the whole record to a buyer when the house is sold, or one page when a device is passed on. Kept on your device.",
+      "features": [
+        "Receipts, manuals and warranties",
+        "Device Passports and repairs",
+        "Handed to the buyer when the house is sold"
+      ],
+      "icon": "/assets/icons/v2/record-512.png",
+      "accent": "#9482ed",
+      "bg": "#0b0b0d",
+      "web": "/record",
+      "page": "/record",
+      "shots": [
+        "/assets/previews/record.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.bills",
+      "name": "Bill Watch",
+      "twa": "/bills",
+      "release": "bills-android",
+      "file": "BillWatch",
+      "category": "Money",
+      "tagline": "What changed on the bill since last month",
+      "description": "This month's phone, internet, power or insurance bill against last month's: every charge that went up, every new fee and every discount that ended, quoted from the bill, with the questions to ask. Worked out on your device; no bill is sent anywhere.",
+      "features": [
+        "Every line that went up, quoted",
+        "New fees and discounts that ended",
+        "The questions to ask the provider"
+      ],
+      "icon": "/assets/icons/v2/bills-512.png",
+      "accent": "#cded82",
+      "bg": "#0b0c09",
+      "web": "/bills",
+      "page": "/bills",
+      "shots": [
+        "/assets/previews/bills.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.movein",
+      "name": "Move-in, Move-out",
+      "twa": "/movein",
+      "release": "movein-android",
+      "file": "MoveInMoveOut",
+      "category": "Tools",
+      "tagline": "A rental's condition, proved twice",
+      "description": "A rental's condition, proved twice: walk each room with photos at move-in and at move-out, each walk sealed with the date by the workshop. See room by room what changed, and turn a deposit dispute into a Claim Kit. The photos stay on your device.",
+      "features": [
+        "Room by room, with photos",
+        "Each walk sealed with the date",
+        "A deposit dispute becomes a Claim Kit"
+      ],
+      "icon": "/assets/icons/v2/movein-512.png",
+      "accent": "#82edbb",
+      "bg": "#0a0d0c",
+      "web": "/movein",
+      "page": "/movein",
+      "shots": [
+        "/assets/previews/movein.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.claim",
+      "name": "Claim Kit",
+      "twa": "/claim",
+      "release": "claim-android",
+      "file": "ClaimKit",
+      "category": "Tools",
+      "tagline": "A dispute, documented",
+      "description": "A dispute, documented: photos, receipts and dated notes in one kit the workshop seals with its clock, and anyone can check nothing in it has changed. For an insurance claim, a deposit dispute or a warranty fight. The files stay on your device.",
+      "features": [
+        "Photos, receipts and dated notes in one kit",
+        "Sealed with the workshop's clock",
+        "Anyone can check nothing changed"
+      ],
+      "icon": "/assets/icons/v2/claim-512.png",
+      "accent": "#ed8982",
+      "bg": "#0d0a0a",
+      "web": "/claim",
+      "page": "/claim",
+      "shots": [
+        "/assets/previews/claim.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.second",
+      "name": "Second Opinion",
+      "twa": "/second",
+      "release": "second-android",
+      "file": "SecondOpinion",
+      "category": "Money",
+      "tagline": "Check any quote before you pay",
+      "description": "Check any quote before you pay: a car repair, a plumber, a roofer. Each line is set against what that part or work typically costs, the sums are checked, and you get the questions worth asking, every line quoted from your document word for word.",
+      "features": [
+        "Each line against what it typically costs",
+        "The sums checked",
+        "The questions worth asking"
+      ],
+      "icon": "/assets/icons/v2/second-512.png",
+      "accent": "#82dfed",
+      "bg": "#0a0c0d",
+      "web": "/second",
+      "page": "/second",
+      "shots": [
+        "/assets/previews/second.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.estate",
+      "name": "Digital Estate",
+      "twa": "/estate",
+      "release": "estate-android",
+      "file": "DigitalEstate",
+      "category": "Tools",
+      "tagline": "Who gets what, when it matters",
+      "description": "Your accounts and devices, and who should get each, sealed as a letter whose key is split among people you choose. It opens only when enough of them come together, and only once your Quiet Check-in has gone quiet. The site can't read it.",
+      "features": [
+        "Your accounts and devices, and who gets each",
+        "The key split among people you choose",
+        "Opens only when your check-in goes quiet"
+      ],
+      "icon": "/assets/icons/v2/estate-512.png",
+      "accent": "#bb82ed",
+      "bg": "#0b0a0d",
+      "web": "/estate",
+      "page": "/estate",
+      "shots": [
+        "/assets/previews/estate.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.checkin",
+      "name": "Quiet Check-in",
+      "twa": "/checkin",
+      "release": "checkin-android",
+      "file": "QuietCheckin",
+      "category": "Health",
+      "tagline": "Knowing someone's okay, without a camera",
+      "description": "For someone who lives alone: one tap a day to say they're OK, and if it doesn't come by their time, the family's phones are told. A smart-home device can check in for them, and away dates pause it. No camera, no microphone, no tracking.",
+      "features": [
+        "One tap a day to say they're OK",
+        "The family told if it doesn't come",
+        "No camera, no microphone, no tracking"
+      ],
+      "icon": "/assets/icons/v2/checkin-512.png",
+      "accent": "#82eda2",
+      "bg": "#f4efe6",
+      "web": "/checkin",
+      "page": "/checkin",
+      "shots": [
+        "/assets/previews/checkin.webp"
+      ]
+    },
+    {
+      "id": "org.mentifaber.skylens",
+      "name": "Sky Lens",
+      "twa": "/skylens",
+      "release": "skylens-android",
+      "file": "SkyLens",
+      "category": "Science",
+      "tagline": "Point your phone up, see what's there",
+      "description": "Point your phone at the sky and see which satellites are there: the ISS, Hubble and the bright ones, drawn over the camera where they really are, with the next ISS pass.",
+      "features": [
+        "Satellites drawn over the camera",
+        "The ISS, Hubble and the bright ones",
+        "The next ISS pass"
+      ],
+      "icon": "/assets/icons/v2/skylens-512.png",
+      "accent": "#82d8ed",
+      "bg": "#000000",
+      "web": "/skylens",
+      "page": "/skylens",
+      "shots": [
+        "/assets/previews/skylens.webp"
+      ]
+    },
+    {
       "id": "org.mentifaber.store",
       "name": "Foundry",
       "dir": "android/store",
