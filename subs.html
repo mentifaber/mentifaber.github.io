@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/subs">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Subscription Sweep · Mentifaber</title>
+<meta name="description" content="Every charge that comes back, found in your bank or card statement: what each costs a year, which went up, which overlap, and a letter to cancel each one.">
+<meta name="theme-color" content="#0d0b0c">
+<link rel="icon" href="assets/icons/v2/subs.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/subs-180.png">
+<link rel="manifest" href="assets/manifests/subs.webmanifest">
+<style>
+/* Subscription Sweep: a statement on the desk, gone over with a red pen. Every charge that comes back is circled, its cost
+   for the year written in the margin, and the ones to cancel are struck through. */
+:root { --bg: #0d0b0c; --sheet: #161214; --card: #1d181a; --line: #3a2f33; --pen: #ff7a8a; --pen-hi: #ffc2ca; --ink: #f1ebec; --dim: #ab9ea2; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 880px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--pen); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--pen-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--pen); margin: 26px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 68ch; } .lede a, .status a { color: var(--pen-hi); }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 15px var(--sans); color: var(--ink); background: #110e0f; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+textarea.in { min-height: 120px; resize: vertical; font: 13px/1.45 var(--mono); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--pen); background: var(--pen); color: #2a0509; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--pen-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.btn[aria-pressed="true"] { background: var(--pen-hi); color: #2a0509; border-color: var(--pen-hi); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.sum { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 6px; } .sum div { font-size: 14px; color: var(--dim); } .sum b { display: block; font: 700 26px var(--sans); color: var(--ink); }
+.sum .save b { color: var(--ok); }
+.cards { display: grid; gap: 8px; margin-top: 8px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.card.cancel { border-color: var(--pen); } .card.cancel .nm { text-decoration: line-through; text-decoration-color: var(--pen); }
+.card .h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; } .card .nm { font-weight: 700; overflow-wrap: anywhere; }
+.card .amt { font: 700 18px var(--sans); } .card .amt small { font: 400 13px var(--sans); color: var(--dim); }
+.meta { font-size: 14px; color: var(--dim); margin-top: 2px; } .meta b { color: var(--ink); font-weight: 600; }
+.tag { font: 11px var(--mono); padding: 3px 7px; border: 1px solid var(--line); border-radius: 99px; color: var(--dim); white-space: nowrap; } .tag.up { color: var(--warn); border-color: var(--warn); } .tag.ov { color: var(--pen-hi); border-color: var(--pen); }
+.rose { color: var(--warn); font-size: 14px; margin-top: 4px; }
+details { margin-top: 6px; font-size: 13px; color: var(--dim); } details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 var(--mono); margin: 6px 0 0; }
+.warn { border-left: 3px solid var(--pen); padding: 8px 12px; background: var(--sheet); border-radius: 0 8px 8px 0; margin-top: 8px; font-size: 15px; }
+ul.due { list-style: none; margin: 6px 0 0; padding: 0; } ul.due li { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding: 6px 0; font-size: 15px; }
+.letter { margin-top: 8px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--pen-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Subscription Sweep", "description": "Every charge that comes back, found in your bank or card statement: what each costs a year, which went up, which overlap, and a letter to cancel each one.", "url": "https://mentifaber.org/subs", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/subs-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Subscription Sweep</span><a href="./">The workshop</a></div>
+  <h1>Every charge <span>that comes back</span></h1>
+  <p class="lede">Drop in a few months of your bank or card statement. Every charge that repeats, weekly, monthly or yearly, is found, with what it costs you a year, which ones went up, which overlap, what's due next, and a letter to cancel each one. It's all worked out on this device: the statement isn't sent anywhere. For the bills that change every month, there's <a href="bills">Bill Watch</a>.</p>
+
+  <form class="panel" id="f">
+    <div class="bar" style="margin-top:0"><label class="btn" style="cursor:pointer;color:#2a0509">Choose statements (CSV or PDF)<input id="files" type="file" multiple accept=".csv,.pdf,.txt,.tsv,text/csv,application/pdf,text/plain" hidden></label><button class="btn ghost" type="button" id="example">Try it with an example</button></div>
+    <label style="margin-top:10px">Or paste the statement<textarea class="in" id="text" placeholder="Your bank's CSV export, or the lines of a statement: a date, what it was, the amount. Three months or more finds the most."></textarea></label>
+    <div class="bar"><button class="btn" type="submit">Sweep it</button><span class="status" id="st" role="status"></span></div>
+    <p class="status" style="margin:6px 0 0">Most banks have "Download transactions" or "Export" as CSV. Three months or more finds the monthly ones; a year finds the yearly ones too.</p>
+  </form>
+
+  <div id="out" hidden>
+    <h2>What comes back</h2>
+    <div class="panel"><div class="sum" id="sum"></div><p class="status" id="sum-note" style="margin:8px 0 0"></p></div>
+    <div id="overlaps"></div>
+    <div id="due-box" hidden><h2>Due in the next month</h2><ul class="due" id="due"></ul></div>
+    <h2>Each one</h2>
+    <div class="grid" style="margin-top:4px"><label>Your name, for the letters<input class="in" id="me" maxlength="60" autocomplete="name"></label><label>The account email, for the letters <span class="status">(optional)</span><input class="in" id="acct" maxlength="80" type="email" autocomplete="email"></label></div>
+    <div class="cards" id="subs"></div>
+    <div id="gone-box" hidden><h2>Stopped</h2><p class="status" style="margin:0">Charged regularly before, but not lately: check they've really stopped.</p><div class="cards" id="gone"></div></div>
+    <div id="not-box" hidden><h2>Not subscriptions</h2><div class="cards" id="not"></div></div>
+    <div class="bar" style="margin-top:20px"><button class="btn ghost sm" type="button" id="forget">Forget this sweep</button><span class="status">Only the charges found are kept on this device, never the statement.</span></div>
+  </div>
+</div>
+<script src="assets/subs/sweep.js"></script>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const LS = { get(k, d) { try { const v = localStorage.getItem("subs:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("subs:" + k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem("subs:" + k); } catch (e) {} } };
+  const S = window.SubSweep, money = (c) => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), whole = (c) => "$" + Math.round(c / 100).toLocaleString("en-US");
+  const day = (t) => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const say = (t, cls) => { $("#st").textContent = t || ""; $("#st").className = "status" + (cls ? " " + cls : ""); };
+  let R = LS.get("last", null), marks = LS.get("marks", {}); // marks: key → "keep" | "cancel" | "not"
+
+  // ── reading statements ──
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFW = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const loadScript = (src) => new Promise((ok, no) => { if (window.pdfjsLib) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("couldn't load the PDF reader")); document.head.appendChild(s); });
+  async function readFile(f) {
+    if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") { await loadScript(PDFJS); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFW; const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let out = "";
+      for (let i = 1; i <= pdf.numPages; i++) { const c = await (await pdf.getPage(i)).getTextContent(); let y = null; for (const x of c.items) { const yy = x.transform ? Math.round(x.transform[5]) : null; out += (y !== null && yy !== y ? "\n" : out && !/\s$/.test(out) ? " " : "") + x.str; y = yy; } out += "\n\n"; }
+      return out; }
+    return await f.text();
+  }
+  // several statements (one per month, say) are read one by one and put together; a charge on two overlapping statements counts once
+  function sweep(texts) {
+    const now = Date.now(), seen = new Set(), tx = [];
+    for (const t of texts) for (const x of S.read(t, { now }).tx) { const k = x.date + "|" + x.amount + "|" + x.desc; if (seen.has(k)) continue; seen.add(k); tx.push(x); }
+    if (!tx.length) throw new Error("No transactions found. A CSV needs a date, a description and an amount column; pasted lines need a date at the start and an amount at the end.");
+    const f = S.find(tx, { now }), span = (Math.max(...tx.map((x) => x.date)) - Math.min(...tx.map((x) => x.date))) / 864e5;
+    return { ...f, at: now, n: tx.length, from: Math.min(...tx.map((x) => x.date)), to: Math.max(...tx.map((x) => x.date)), span };
+  }
+  $("#files").addEventListener("change", async (e) => { const fs = [...e.target.files]; e.target.value = ""; if (!fs.length) return; say("Reading " + fs.length + " file" + (fs.length > 1 ? "s" : "") + "…");
+    try { const texts = []; for (const f of fs) texts.push(await readFile(f)); run(texts); } catch (x) { say("Couldn't read that: " + x.message + ". Paste the statement instead.", "bad"); } });
+  $("#f").onsubmit = (e) => { e.preventDefault(); const t = $("#text").value; if (!t.trim()) { say("Choose a statement or paste one first.", "bad"); return; } run([t]); };
+  function run(texts) { try { R = sweep(texts); LS.set("last", R); say(""); draw(); $("#out").scrollIntoView({ block: "start" }); } catch (x) { say(x.message, "bad"); } }
+
+  // an example: four months of a made-up card statement, ending today
+  $("#example").onclick = () => {
+    const now = new Date(), rows = ["Transaction Date,Description,Amount"], at = (back, d) => { const x = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, d)); return String(x.getUTCMonth() + 1).padStart(2, "0") + "/" + String(x.getUTCDate()).padStart(2, "0") + "/" + x.getUTCFullYear(); };
+    const add = (back, d, desc, amt) => { const x = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, d); if (x <= Date.now()) rows.push(at(back, d) + ',"' + desc + '",' + (-amt).toFixed(2)); };
+    for (let b = 4; b >= 0; b--) { add(b, 3, "NETFLIX.COM 866-579-7172 CA", b > 1 ? 15.49 : 17.99); add(b, 8, "SPOTIFY USA 8775576", 11.99); add(b, 12, "HULU 877-8244858 CA", 7.99); add(b, 15, "PAYPAL *DISNEYPLUS 4029357733", 13.99);
+      add(b, 20, "APPLE.COM/BILL 866-712-7753 CA", 2.99); add(b, 2, "PLANET FITNESS #1234", 24.99); add(b, 6, "WHOLEFDS MKT #10234", [84.12, 131.4, 56.02, 102.77, 73.3][b]); add(b, 11, "SQ *BLUE BOTTLE COFFEE", 5.75); add(b, 14, "SQ *BLUE BOTTLE COFFEE", 5.75); add(b, 21, "SHELL OIL 57444", [41.2, 55.9, 38.05, 61.4, 47.75][b]); }
+    for (let b = 4; b >= 3; b--) add(b, 25, "PELOTON* MEMBERSHIP", 44);
+    $("#text").value = rows.join("\n"); say("An example statement: a made-up card, four months. Sweep it.", "ok"); };
+
+  // ── what was found ──
+  const mark = (k) => marks[k] || null;
+  function card(s) {
+    const m = mark(s.key), ov = R.overlaps.find((o) => o.keys.includes(s.key));
+    const rose = s.rose.length ? s.rose.map((r) => "Went up from " + money(r.from) + " to " + money(r.to) + " on " + day(r.date) + " (" + Math.round((r.to / r.from - 1) * 100) + "% more).").join(" ") : "";
+    return '<div class="card' + (m === "cancel" ? " cancel" : "") + '" data-k="' + esc(s.key) + '"><div class="h"><span class="nm">' + esc(s.name) + '</span><span class="amt">' + money(s.amount) + " <small>" + esc(s.cadence) + "</small></span></div>" +
+      '<div class="meta"><b>' + whole(s.perYear) + " a year</b> · " + s.count + " charges since " + day(s.first) + " · last " + day(s.last) + (s.lapsed ? "" : " · next about " + day(s.next)) + "</div>" +
+      '<div class="bar" style="margin-top:6px">' + (s.kind ? '<span class="tag' + (ov ? " ov" : "") + '">' + esc(s.kind) + (ov ? ": you have " + ov.keys.length : "") + "</span>" : "") + (s.rose.length ? '<span class="tag up">went up</span>' : "") + (s.sure === "likely" ? '<span class="tag">twice so far</span>' : "") + "</div>" +
+      (rose ? '<div class="rose">' + esc(rose) + "</div>" : "") +
+      '<details><summary>The lines on the statement</summary><pre>' + esc(s.lines.join("\n")) + "</pre></details>" +
+      '<div class="bar"><button class="btn ghost sm" type="button" data-m="keep" aria-pressed="' + (m === "keep") + '">Keep it</button><button class="btn ghost sm" type="button" data-m="cancel" aria-pressed="' + (m === "cancel") + '">Cancel it</button><button class="btn ghost sm" type="button" data-m="not" aria-pressed="' + (m === "not") + '">Not a subscription</button></div>' +
+      (m === "cancel" ? '<div class="letter"><label>A letter to send them<textarea class="in" readonly rows="9">' + esc(S.letter(s, { name: $("#me").value, account: $("#acct").value })) + '</textarea></label><div class="bar"><button class="btn sm" type="button" data-copy>Copy the letter</button><span class="status">Send it from their account page, help chat or support email. Cancel before ' + esc(day(s.next)) + " to skip the next charge.</span></div></div>" : "") + "</div>";
+  }
+  function draw() {
+    if (!R) { $("#out").hidden = true; return; } $("#out").hidden = false;
+    const live = R.subs.filter((s) => !s.lapsed && mark(s.key) !== "not"), gone = R.subs.filter((s) => s.lapsed && mark(s.key) !== "not"), not = R.subs.filter((s) => mark(s.key) === "not");
+    const year = live.reduce((n, s) => n + s.perYear, 0), save = live.filter((s) => mark(s.key) === "cancel").reduce((n, s) => n + s.perYear, 0);
+    $("#sum").innerHTML = "<div><b>" + live.length + "</b>charge" + (live.length === 1 ? "" : "s") + " that come back</div><div><b>" + whole(year / 12) + "</b>a month</div><div><b>" + whole(year) + "</b>a year</div>" + (save ? '<div class="save"><b>' + whole(save) + "</b>a year saved by cancelling " + live.filter((s) => mark(s.key) === "cancel").length + "</div>" : "");
+    $("#sum-note").textContent = "From " + R.n + " transactions, " + day(R.from) + " to " + day(R.to) + "." + (R.span < 80 ? " That's under three months: add more to be sure of the monthly ones." : "") + (R.span < 360 ? " Yearly charges show up with a year or more." : "");
+    $("#overlaps").innerHTML = R.overlaps.map((o) => { const ks = o.keys.filter((k) => mark(k) !== "not"); if (ks.length < 2) return ""; const ss = ks.map((k) => R.subs.find((s) => s.key === k));
+      return '<div class="warn"><b>' + ss.length + " " + esc(o.kind.toLowerCase()) + " subscriptions</b>: " + esc(ss.map((s) => s.name).join(", ")) + ", " + whole(ss.reduce((n, s) => n + s.perYear, 0)) + " a year together. Do you use them all?</div>"; }).join("");
+    const due = R.due.map((k) => R.subs.find((s) => s.key === k)).filter((s) => s && mark(s.key) !== "not" && s.next >= Date.now() - 864e5);
+    $("#due-box").hidden = !due.length; $("#due").innerHTML = due.map((s) => "<li><span>" + esc(day(s.next)) + " · " + esc(s.name) + "</span><b>" + money(s.amount) + "</b></li>").join("");
+    $("#subs").innerHTML = live.length ? live.map(card).join("") : '<p class="status">Nothing that comes back regularly was found.</p>';
+    $("#gone-box").hidden = !gone.length; $("#gone").innerHTML = gone.map(card).join("");
+    $("#not-box").hidden = !not.length; $("#not").innerHTML = not.map(card).join("");
+  }
+  $("#out").addEventListener("click", async (e) => { const b = e.target.closest("button"); if (!b) return; const c = b.closest("[data-k]");
+    if (b.dataset.m && c) { const k = c.dataset.k; marks[k] = marks[k] === b.dataset.m ? undefined : b.dataset.m; if (!marks[k]) delete marks[k]; LS.set("marks", marks); draw(); const again = document.querySelector('[data-k="' + CSS.escape(k) + '"] [data-m="' + b.dataset.m + '"]'); if (again) again.focus(); return; }
+    if (b.hasAttribute("data-copy")) { const t = c.querySelector("textarea"); try { await navigator.clipboard.writeText(t.value); b.textContent = "Copied"; } catch (x) { t.select(); b.textContent = "Select and copy it"; } } });
+  for (const id of ["#me", "#acct"]) { $(id).value = LS.get(id.slice(1), ""); $(id).addEventListener("change", () => { LS.set(id.slice(1), $(id).value.trim()); draw(); }); }
+  $("#forget").onclick = () => { R = null; marks = {}; LS.del("last"); LS.del("marks"); draw(); say("Forgotten."); };
+  draw();
+
+  // Faber Verbs (tools/site/content/subs.json): AutoFaber asks "what subscriptions am I paying for?"
+  if (window.Faber) Faber.verbs({
+    list: () => { if (!R) throw new Error("No statement has been swept on this device yet: open Subscription Sweep and drop one in.");
+      const live = R.subs.filter((s) => !s.lapsed && mark(s.key) !== "not"); if (!live.length) return "Nothing that comes back regularly was found in the last statement swept.";
+      return live.length + " charges come back, " + whole(live.reduce((n, s) => n + s.perYear, 0)) + " a year: " + live.map((s) => s.name + " " + money(s.amount) + " " + s.cadence + (s.rose.length ? " (went up)" : "")).join("; ") + "."; },
+  });
+})();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ import { createRequire } from "node:module"; import assert from "node:assert/str
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const REPO = process.argv[2] || path.resolve(new URL("../..", import.meta.url).pathname), DEV = process.argv[3] || "desktop", M = DEV === "mobile";
 const AXE = fs.readFileSync(process.env.AXE || require.resolve("axe-core/axe.min.js"), "utf8");
-const PAGES = ["index.html", "os.html", "services.html", "terms.html", "contact.html", "privacy.html", "hive.html", "checkin.html", "blackout.html", "letters.html", "witness.html", "passport.html", "portal.html", "status.html", "house.html", "fix.html", "claim.html", "second.html", "estate.html", "street.html", "movein.html", "bills.html", "record.html", "care.html", "library.html", "repair.html",
+const PAGES = ["index.html", "os.html", "services.html", "terms.html", "contact.html", "privacy.html", "hive.html", "checkin.html", "blackout.html", "letters.html", "witness.html", "passport.html", "portal.html", "status.html", "house.html", "fix.html", "claim.html", "second.html", "estate.html", "street.html", "movein.html", "bills.html", "record.html", "care.html", "library.html", "repair.html", "subs.html",
   "skylens.html", "makers.html", "local-ai.html", "conflict-atlas-app.html", "orbit-app.html", "crime-dashboard-app.html", "ballast-app.html", "doccrawler-app.html", "watchyourgrass-app.html",
   "omnilogos-app.html", "meshnet-app.html", "shop-app.html"];
 const b = await chromium.launch({ args: ["--no-proxy-server"] }); let n = 0; const ok = (m) => console.log("ok " + ++n + " " + DEV + " " + m);

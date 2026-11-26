@@ -1,0 +1,13 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "list",
+   "label": "List the subscriptions found in your statement",
+   "changes": false,
+   "desc": "Lists every charge that comes back (weekly, monthly or yearly) found in the last bank or card statement swept on this device: what each costs, which went up, and the total a year.",
+   "args": {},
+   "words": "subscription subscriptions recurring renewals renewal netflix spotify streaming membership memberships"
+  }
+ ]
+}

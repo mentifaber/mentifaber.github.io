@@ -89,6 +89,14 @@
     "added": "2026-11-26"
   },
   {
+    "href": "subs.html",
+    "name": "Subscription Sweep",
+    "desc": "Every charge that comes back, found in your bank or card statement: what each costs a year, which went up, which overlap, what's due next, and a letter to cancel each one. Worked out on your phone; the statement isn't sent anywhere.",
+    "status": "live",
+    "cat": "Signals",
+    "added": "2026-11-26"
+  },
+  {
     "href": "letters.html",
     "name": "Sealed Letters",
     "desc": "Letters that open later: on a date, or if you stop checking in. Encrypted in your browser, with the key split among friends you choose, so no company and no single friend can open one early.",

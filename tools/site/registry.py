@@ -25,6 +25,7 @@ GLYPH.update({  # glyphs for apps that never had one
   "second": '<path d="M6 3.5h8.5l3.5 3.5v13.5H6z"/><path d="M14.5 3.5V7H18"/><path d="M8.6 10.5h4.4M8.6 13.5h3"/><circle cx="15.2" cy="16.4" r="2.4"/><path d="M17 18.2l2.2 2.2"/>',
   "library": '<path d="M4 20.5h16"/><path d="M6 20.5V6.5M10 20.5V4.5M14.5 20.5l3.2-14.6 2.8.6-3.2 14"/><path d="M6 9h4M6 16h4"/>',
   "repair": '<path d="M3.5 20.5h17"/><path d="M5.5 20.5v-4h13v4"/><path d="M14.6 4.2a3.4 3.4 0 0 0-4.3 4.3L6 12.8l1.7 1.7 4.3-4.3a3.4 3.4 0 0 0 4.3-4.3l-2 2-1.6-.4-.4-1.6z"/>',
+  "subs": '<path d="M5 3.5h14v17l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6L5 20.5z"/><path d="M8.5 7.5h7"/><path d="M14.9 14.4a2.9 2.9 0 1 1-1.1-2.3"/><path d="M14.4 10.6v1.9h-1.9"/>',
   "care": '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><circle cx="12" cy="11.5" r="2.4"/>',
   "record": '<path d="M5 4.5h11.5a2 2 0 0 1 2 2v13H7a2 2 0 0 1-2-2z"/><path d="M5 17.5a2 2 0 0 1 2-2h11.5"/><path d="M9 9.5l2.2-1.8 2.2 1.8v2.8H9z"/>',
   "bills": '<path d="M6 3.5h12v17l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4-2 1.4z"/><path d="M9 8h6M9 11h6"/><path d="M9.5 16.2l2-2 1.6 1.6 2.4-2.6"/>',
@@ -43,7 +44,7 @@ def _hues():
     s = open(os.path.join(ROOT, "assets/mf.js"), encoding="utf-8").read()
     d = json.loads(re.search(r"const MF_SYS = (\{.*?\});", s, re.S).group(1))
     return {k: v[1] for k, v in d.items()}
-HUE = _hues(); HUE.update({"house": 168, "fix": 24, "claim": 4, "movein": 152, "bills": 78, "record": 250, "care": 14, "library": 52, "repair": 150, "second": 188, "estate": 272, "street": 46, "checkin": 138, "blackout": 34, "passport": 44, "witness": 205, "letters": 6, "skylens": 192, "local-ai": 262, "mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
+HUE = _hues(); HUE.update({"house": 168, "fix": 24, "claim": 4, "movein": 152, "bills": 78, "record": 250, "care": 14, "library": 52, "repair": 150, "subs": 350, "second": 188, "estate": 272, "street": 46, "checkin": 138, "blackout": 34, "passport": 44, "witness": 205, "letters": 6, "skylens": 192, "local-ai": 262, "mentiplayer": 14, "hive": 42, "barycenter": 292, "nullspace": 268, "pilotfish": 190, "tether": 18, "thoughtform": 340, "sideways": 200, "rootcause": 4, "graveyard": 232, "angels": 48, "lexicon": 42, "orbit": 205, "mentifaber": 34, "roku": 36})
 
 CATS = [  # display order on the home page
   ("signals", "Signals & Comms", "Messengers, radios and things that talk without the usual pipes."),
@@ -65,7 +66,7 @@ APP_URL = {
   "crime-dashboard": "crime-dashboard-app.html", "muse": "muse-live.html", "weaver": "weaver-live.html",
   "barycenter": "barycenter-app.html", "nullspace": "nullspace-app.html", "pilotfish": "pilotfish-app.html", "meshnet": "meshnet-app.html", "novarac": "novarac-app.html",
   "tether": "tether-app.html", "thoughtform": "thoughtform-app.html", "graveyard": "graveyard-app.html", "rootcause": "rootcause-app.html", "sideways": "sideways-app.html", "watchyourgrass": "watchyourgrass-app.html",
-  "checkin": "checkin.html", "blackout": "blackout.html", "passport": "passport.html", "house": "house.html", "fix": "fix.html", "claim": "claim.html", "movein": "movein.html", "bills": "bills.html", "record": "record.html", "care": "care.html", "library": "library.html", "repair": "repair.html", "second": "second.html", "estate": "estate.html", "street": "street.html", "witness": "witness.html", "letters": "letters.html", "skylens": "skylens.html", "local-ai": "local-ai.html",
+  "checkin": "checkin.html", "blackout": "blackout.html", "passport": "passport.html", "house": "house.html", "fix": "fix.html", "claim": "claim.html", "movein": "movein.html", "bills": "bills.html", "record": "record.html", "care": "care.html", "library": "library.html", "repair": "repair.html", "subs": "subs.html", "second": "second.html", "estate": "estate.html", "street": "street.html", "witness": "witness.html", "letters": "letters.html", "skylens": "skylens.html", "local-ai": "local-ai.html",
   "mentiplayer": "mentiplayer-app.html", "hive": "hive-app.html", "neural-sim": "neural-sim-v3.html", "worm-eater": "worm-eater-app.html", "pi": "pi-app.html", "sonicveil": "sonicveil-app.html", "doccrawler": "doccrawler-app.html", "shop": "shop-app.html", "conflict-atlas": "conflict-atlas-app.html", "proximity": "proximity-app.html", "monstrosity": "monstrosity-app.html", "duely": "duely-app.html", "phone-mcp": "phone-mcp-app.html", "roku": "roku-app.html", "omnilogos": "omnilogos-app.html", "orbit": "orbit-app.html", "cartograph": "cartograph-app.html",
 }
 def _id(href):

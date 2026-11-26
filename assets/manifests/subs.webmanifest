@@ -1,0 +1,31 @@
+{
+  "id": "/subs",
+  "name": "Subscription Sweep",
+  "short_name": "Subscription Sweep",
+  "description": "Every charge that comes back, found in your bank or card statement, worked out on your phone.",
+  "start_url": "/subs.html",
+  "scope": "/subs.html",
+  "display": "standalone",
+  "background_color": "#0d0b0c",
+  "theme_color": "#0d0b0c",
+  "icons": [
+    {
+      "src": "../icons/v2/subs-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/subs-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/subs-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
