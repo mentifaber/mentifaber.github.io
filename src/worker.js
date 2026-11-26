@@ -15,6 +15,7 @@ import { seal } from "./seal.js"; // the workshop's seal: Device Passports and W
 import { portal, uptimeSweep } from "./portal.js";
 import { makers } from "./makers.js";
 import { letters } from "./letters.js";
+import { care } from "./care.js"; // Care Circle: a family's shared page for looking after someone, encrypted in the browser
 import { board } from "./board.js"; // Street Board: a neighbourhood noticeboard that keeps working in an outage
 import { checkin, sweep as checkinSweep } from "./checkin.js"; // Quiet Check-in: a daily "I'm OK", and the family told if it doesn't come // Sealed Letters: letters that open later, only with the friends chosen // the Workshop Portal: one link per client, one board for the workshop
 import { store as storeRoutes } from "./store.js"; // the Mentifaber Store: its catalog and APK links
@@ -81,6 +82,9 @@ export class Store extends DurableObject {
   async kvGet(k) { return (await this.ctx.storage.get(k)) ?? null; }
   async kvPut(k, v) { await this.ctx.storage.put(k, v); }
   async kvDel(k) { await this.ctx.storage.delete(k); }
+  // compare-and-set on a record's version (v; 0 when there's no record): one call, so nothing can come between the check
+  // and the write (the object's input gate holds other requests while its storage is awaited). Care Circle writes this way.
+  async kvCas(k, expect, v) { const cur = (await this.ctx.storage.get(k)) ?? null; if ((cur ? cur.v : 0) !== expect) return { ok: false, cur }; await this.ctx.storage.put(k, v); return { ok: true }; }
   async kvList(prefix, o) { return [...(await this.ctx.storage.list({ prefix, ...(o || {}) })).entries()]; }
   async usAt(t) { const cur = await this.ctx.storage.getAlarm(); if (!cur || t < cur) await this.ctx.storage.setAlarm(Math.max(t, Date.now() + 300)); }
   async alarm() { await usAlarm(this, { sendPush, PUSH_HOSTS }); }
@@ -610,6 +614,7 @@ const worker = {
       }
       if (route === "checkin") return checkin(req, env, json, { PUSH_HOSTS, sendPush, vapid: () => store(env).vapid() }); // a check-in after the family was told sends them an all-clear
       if (route === "board") return board(req, env, json); // Street Board: posts phones carried while the network was down meet here (src/board.js)
+      if (route === "care") return care(req, env, json); // Care Circle: ciphertext and a version; the site can't read a circle (src/care.js)
       if (route === "letters") return letters(req, env, json); // the encrypted letter and its lock; the site can't read one (src/letters.js)
       if (route === "portal") return portal(req, env, json, !!(await session(req, env, "vigil")), { alert: ownerAlert(env) }); // client links and the workshop's job board (src/portal.js)
       if (route === "makers") return makers(req, env, json, !!(await session(req, env, "vigil")), { alert: ownerAlert(env) }); // other makers' apps for Foundry and FaberOS (src/makers.js)

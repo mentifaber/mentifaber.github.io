@@ -1,0 +1,13 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "today",
+   "label": "What's happening today in the Care Circle",
+   "changes": false,
+   "desc": "Today in the Care Circle on this device: each medicine and dose time and whether it's been given (and by whom), today's appointments and who's visiting.",
+   "args": {},
+   "words": "medicine medicines medication meds tablets pills dose doses given care circle carer caring appointment rota"
+  }
+ ]
+}

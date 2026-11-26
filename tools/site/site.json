@@ -249,6 +249,14 @@
     "added": "2026-11-25"
   },
   {
+    "href": "care.html",
+    "name": "Care Circle",
+    "desc": "Looking after someone, shared: medicines and when they're due (and who gave them), appointments, who's visiting when and the family's rota, on one page, with their Quiet Check-in at the top. Encrypted in your browser: the site can't read it.",
+    "status": "live",
+    "cat": "Tools",
+    "added": "2026-11-26"
+  },
+  {
     "href": "record.html",
     "name": "The Home Record",
     "desc": "A service history for the house: every appliance and device with its receipts, manuals, warranty, Device Passports, Fix or Replace checks and repairs. Hand the whole record to a buyer when the house is sold, or one page when a device is passed on. Kept on your device.",

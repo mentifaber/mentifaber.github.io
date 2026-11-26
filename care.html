@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://mentifaber.org/care">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Care Circle · Mentifaber</title>
+<meta name="description" content="Looking after someone, shared: medicines and when they&#x27;re due, appointments, who&#x27;s visiting when and the family&#x27;s rota, on one page the circle shares.">
+<meta name="theme-color" content="#0c0b0a">
+<link rel="icon" href="assets/icons/v2/care.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icons/v2/care-180.png">
+<link rel="manifest" href="assets/manifests/care.webmanifest">
+<style>
+/* Care Circle: the fridge door for a family looking after someone. Today at the top (have they checked in, which doses
+   are due and who gave them, who's coming), then the lists the circle keeps up together, then the notes they leave. */
+:root { --bg: #0c0b0a; --sheet: #151311; --card: #1c1916; --line: #34302a; --rose: #f0a58a; --rose-hi: #ffd0bd; --ink: #f2eee9; --dim: #a8a096; --ok: #8fd18f; --bad: #ff8a6b; --warn: #e6c25a;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--rose); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.top a { color: var(--dim); text-decoration: none; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.1 var(--sans); margin: 18px 0 6px; } h1 span { color: var(--rose-hi); }
+h2 { font: 600 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--rose); margin: 26px 0 8px; }
+.lede { color: var(--dim); margin: 0 0 14px; max-width: 66ch; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+label { font-size: 14px; color: var(--dim); display: block; } .in { font: 16px var(--sans); color: var(--ink); background: #0f0e0c; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; margin-top: 4px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 10px; align-items: end; }
+.btn { font: 600 15px var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--rose); background: var(--rose); color: #2b130a; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.ghost { background: transparent; color: var(--rose-hi); } .btn.sm { font-size: 14px; padding: 6px 10px; } .btn:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.status { color: var(--dim); font-size: 14px; } .status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.ci { border-radius: 12px; padding: 14px 16px; margin-top: 14px; border: 1.5px solid var(--line); } .ci.ok { border-color: var(--ok); } .ci.late { border-color: var(--bad); } .ci b { font-size: 18px; } .ci small { color: var(--dim); display: block; }
+.list { list-style: none; margin: 0; padding: 0; } .list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; margin-top: 6px; overflow-wrap: anywhere; }
+.list li > span { min-width: 0; flex: 1 1 200px; } .list small { color: var(--dim); display: block; } .list li.over { border-color: var(--bad); } .list li.done { opacity: .75; } .list li.done b::before { content: "✓ "; color: var(--ok); }
+.lnk { background: none; border: 0; color: var(--dim); font: 13px var(--sans); text-decoration: underline; cursor: pointer; padding: 2px 0; }
+details.edit { margin-top: 10px; } details.edit summary { cursor: pointer; color: var(--rose-hi); font-size: 15px; }
+.link { font: 13px var(--mono); background: #0f0e0c; border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; margin-top: 8px; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--rose-hi); outline-offset: 2px; }
+</style>
+<script type="application/ld+json" id="ld-seo">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Care Circle", "description": "Looking after someone, shared: medicines and when they're due, appointments, who's visiting when and the family's rota, on one page the circle shares.", "url": "https://mentifaber.org/care", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web browser, Android", "image": "https://mentifaber.org/assets/icons/v2/care-512.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "@id": "https://mentifaber.org/#anders", "name": "Anders Powell", "url": "https://mentifaber.org/"}, "publisher": {"@type": "Organization", "@id": "https://mentifaber.org/#org", "name": "Mentifaber"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Mentifaber · Care Circle</span><a href="./">The workshop</a></div>
+
+  <div id="start">
+    <h1>Looking after someone, <span>shared</span></h1>
+    <p class="lede">One page for everyone helping: their medicines and when they're due (and who gave them), appointments, who's visiting when, and the rota, with their Quiet Check-in at the top. Nothing for the person to learn: their one big button stays. The circle is encrypted in your browser with a key that lives only in its link, so the site can't read it; whoever has the link is in the circle.</p>
+    <div id="mine"></div>
+    <form class="panel" id="f-new"><b>Start a circle</b>
+      <div class="grid" style="margin-top:8px"><label>Who it's for<input class="in" id="n-person" maxlength="40" placeholder="Gran" required></label><label>Your name<input class="in" id="n-me" maxlength="40" placeholder="Ann" required></label></div>
+      <label style="margin-top:10px">Their Quiet Check-in family link <span class="status">(optional: shows whether they've checked in)</span><input class="in" id="n-ci" maxlength="200" placeholder="https://mentifaber.org/checkin#fam.…"></label>
+      <div class="bar"><button class="btn" type="submit">Start it</button><span class="status" id="n-st" role="status"></span></div></form>
+  </div>
+
+  <div id="who" hidden><div class="panel"><b>Who are you?</b><p class="status" style="margin:4px 0 0">So the circle knows who gave a dose or left a note. It's remembered on this device.</p>
+    <div class="bar" id="who-list"></div><form class="bar" id="who-f"><label style="flex:1 1 200px">Or your name<input class="in" id="who-in" maxlength="40"></label><button class="btn ghost" type="submit" style="align-self:flex-end">That's me</button></form></div></div>
+
+  <div id="circle" hidden>
+    <h1 id="c-title"></h1>
+    <p class="status" id="sync" role="status"></p>
+    <div id="ci"></div>
+
+    <h2>Today</h2>
+    <h3 class="status" style="margin:6px 0 0">Medicines</h3><ul class="list" id="doses"></ul>
+    <div id="today-more"></div>
+
+    <h2>Notes</h2>
+    <form class="bar" id="note-f"><label style="flex:1 1 260px">Leave a note for the circle<input class="in" id="note-in" maxlength="400" placeholder="She was tired today; ate well at lunch."></label><button class="btn ghost" type="submit" style="align-self:flex-end">Leave it</button></form>
+    <ul class="list" id="notes"></ul>
+
+    <h2>What the circle keeps</h2>
+    <div class="panel"><b>Medicines</b><ul class="list" id="meds"></ul>
+      <details class="edit"><summary>Add a medicine</summary><form class="grid" id="med-f" style="margin-top:8px"><label>Medicine<input class="in" id="m-name" maxlength="60" required></label><label>Dose<input class="in" id="m-dose" maxlength="40" placeholder="1 tablet"></label>
+        <label>Times<input class="in" id="m-times" maxlength="60" placeholder="08:00, 20:00" required></label><label>How<input class="in" id="m-with" maxlength="60" placeholder="with food"></label><button class="btn ghost" type="submit">Add it</button></form></details></div>
+    <div class="panel"><b>Appointments</b><ul class="list" id="appts"></ul>
+      <details class="edit"><summary>Add an appointment</summary><form class="grid" id="ap-f" style="margin-top:8px"><label>When<input class="in" id="a-at" type="datetime-local" required></label><label>What<input class="in" id="a-what" maxlength="80" required placeholder="Eye clinic"></label>
+        <label>Where<input class="in" id="a-where" maxlength="80"></label><label>Who's taking them<input class="in" id="a-who" maxlength="40"></label><button class="btn ghost" type="submit">Add it</button></form></details></div>
+    <div class="panel"><b>Visits</b><ul class="list" id="visits"></ul>
+      <details class="edit"><summary>Add a visit</summary><form class="grid" id="v-f" style="margin-top:8px"><label>When<input class="in" id="v-date" type="date" required></label><label>Who<input class="in" id="v-who" maxlength="40" required></label><label>Note<input class="in" id="v-note" maxlength="80" placeholder="Bringing the shopping"></label><button class="btn ghost" type="submit">Add it</button></form></details></div>
+    <div class="panel"><b>The rota</b><ul class="list" id="rota"></ul>
+      <details class="edit"><summary>Add to the rota</summary><form class="grid" id="r-f" style="margin-top:8px"><label>Every<select class="in" id="r-dow"></select></label><label>Who<input class="in" id="r-who" maxlength="40" required></label><label>What<input class="in" id="r-what" maxlength="80" required placeholder="Evening call"></label><button class="btn ghost" type="submit">Add it</button></form></details></div>
+
+    <h2>The circle</h2>
+    <div class="panel"><p style="margin:0">Send this link to the people helping: whoever opens it is in the circle. Keep it like a key.</p><div class="link" id="c-link"></div>
+      <div class="bar"><button class="btn ghost sm" type="button" id="copy">Copy the link</button><span class="status" id="copy-st" role="status"></span></div>
+      <label style="margin-top:10px">Their Quiet Check-in family link<input class="in" id="c-ci" maxlength="200" placeholder="https://mentifaber.org/checkin#fam.…"></label>
+      <div class="bar"><button class="btn ghost sm" type="button" id="leave">Forget it on this device</button><button class="btn ghost sm" type="button" id="del">Delete the circle for everyone</button></div></div>
+  </div>
+</div>
+<script src="assets/os/faber.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const DOW = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+  const clean = (x, n) => String(x == null ? "" : x).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
+  const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pad = (x) => String(x).padStart(2, "0"), ymd = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const nice = (d) => new Date(d + (d.length === 10 ? "T12:00" : "")).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const clock = (ms) => new Date(ms).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  const hexOf = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  // ── the circle's key: in the link's #fragment only; the token the server checks is a one-way hash of it ──
+  let id = null, K = null, key = null, T = null, ver = 0, D = null, me = "";
+  const tokenOf = async (k) => hexOf(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("care-token:" + k))).slice(0, 32);
+  async function useKey(cid, k) { id = cid; key = k; K = await crypto.subtle.importKey("raw", unb64u(k), "AES-GCM", false, ["encrypt", "decrypt"]); T = await tokenOf(k); }
+  const seal = async (obj) => { const iv = crypto.getRandomValues(new Uint8Array(12)), ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, K, new TextEncoder().encode(JSON.stringify(obj))); return { ct: b64u(ct), iv: b64u(iv) }; };
+  const open = async (r) => JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(r.iv) }, K, unb64u(r.ct))));
+  const linkOf = () => location.origin + "/care#c=" + id + "." + key;
+  const api = async (path, body) => { const r = await fetch("/api/care/" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: T, ...body }) } : { headers: { "x-care-token": T } }); return { s: r.status, j: await r.json().catch(() => ({})) }; };
+  const blank = (person, by) => ({ care: 1, person, members: by ? [by] : [], checkin: "", meds: [], given: {}, appts: [], visits: [], rota: [], notes: [] });
+  const tidy = (d) => ({ ...blank(""), ...d, members: (d.members || []).map((m) => clean(m, 40)).filter(Boolean).slice(0, 30) });
+
+  // the circles this device has the links of (just the links: what's in them stays encrypted on the server)
+  const MINE = "care:circles", mine = () => { try { return JSON.parse(localStorage.getItem(MINE) || "[]"); } catch (e) { return []; } };
+  const remember = (person) => { try { const xs = mine().filter((x) => x.id !== id); xs.unshift({ id, key, person }); localStorage.setItem(MINE, JSON.stringify(xs.slice(0, 12))); localStorage.setItem("care:me:" + id, me); } catch (e) {} };
+
+  // every change: applied to the latest circle; if someone else changed it first, applied again on top of theirs
+  let busy = Promise.resolve();
+  const change = (fn) => (busy = busy.then(async () => {
+    for (let tries = 0; tries < 4; tries++) {
+      const next = tidy(structuredClone(D)); fn(next); const { s, j } = await api(id, { v: ver, ...(await seal(next)) });
+      if (s === 200) { D = next; ver = j.v; setSync("Saved " + clock(Date.now()) + "."); draw(); return true; }
+      if (s === 409) { D = tidy(await open(j)); ver = j.v; continue; }
+      setSync(s === 404 ? "This circle doesn't exist any more." : "Couldn't save that: " + (j.error || "no network") + ". It's still here; try again.", true); return false;
+    }
+    setSync("Couldn't save that: the circle kept changing. Try again.", true); return false;
+  }).catch(() => { setSync("Couldn't reach the workshop. Try again when you're online.", true); return false; }));
+  const setSync = (t, bad) => { $("#sync").className = "status" + (bad ? " bad" : ""); $("#sync").textContent = t; };
+  async function pull() { if (!id) return; try { const { s, j } = await api(id); if (s === 200 && j.v !== ver) { D = tidy(await open(j)); ver = j.v; draw(); } else if (s === 404) setSync("This circle doesn't exist any more.", true); } catch (e) {} }
+
+  // ── starting one, opening one ──
+  function drawStart() {
+    const xs = mine(); $("#mine").innerHTML = xs.length ? '<h2>Your circles</h2><ul class="list">' + xs.map((x) => '<li><span><b>' + esc(x.person || "A circle") + '</b></span><a class="btn ghost sm" href="#c=' + esc(x.id) + "." + esc(x.key) + '">Open</a></li>').join("") + "</ul>" : "";
+  }
+  const ciLink = (s) => { const m = /#fam\.([0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String(s || "").trim()); return m ? "https://mentifaber.org/checkin#fam." + m[1] + "." + m[2] : ""; };
+  $("#f-new").onsubmit = async (e) => {
+    e.preventDefault(); const st = $("#n-st"), person = clean($("#n-person").value, 40), by = clean($("#n-me").value, 40), ci = $("#n-ci").value.trim();
+    if (ci && !ciLink(ci)) { st.className = "status bad"; st.textContent = "That isn't a Quiet Check-in family link: it looks like …/checkin#fam.…"; return; }
+    const cid = hexOf(crypto.getRandomValues(new Uint8Array(8))), k = b64u(crypto.getRandomValues(new Uint8Array(32))); await useKey(cid, k);
+    const d = blank(person, by); d.checkin = ciLink(ci); st.className = "status"; st.textContent = "Starting it…";
+    try { const { s, j } = await api(id, { v: 0, ...(await seal(d)) }); if (s !== 200) throw new Error(j.error || "couldn't start it"); D = d; ver = j.v; me = by; remember(person); history.replaceState(null, "", "#c=" + id + "." + key); show(); }
+    catch (x) { st.className = "status bad"; st.textContent = x.message.charAt(0).toUpperCase() + x.message.slice(1) + "."; id = null; }
+  };
+  async function fromHash() {
+    const m = /^#c=([0-9a-f]{16})\.([A-Za-z0-9_-]{43})$/.exec(location.hash); if (!m) { id = null; $("#circle").hidden = $("#who").hidden = true; $("#start").hidden = false; drawStart(); return; }
+    await useKey(m[1], m[2]); setSync("Opening the circle…");
+    try { const { s, j } = await api(id); if (s !== 200) throw new Error(j.error || "couldn't open it"); D = tidy(await open(j)); ver = j.v; }
+    catch (x) { $("#start").hidden = false; $("#circle").hidden = true; $("#n-st").className = "status bad"; $("#n-st").textContent = x.name === "OperationError" ? "That link's key doesn't open this circle." : x.message.charAt(0).toUpperCase() + x.message.slice(1) + "."; id = null; drawStart(); return; }
+    try { me = localStorage.getItem("care:me:" + id) || ""; } catch (e) { me = ""; }
+    if (!me) return askWho(); remember(D.person); show();
+  }
+  function askWho() {
+    $("#start").hidden = true; $("#circle").hidden = true; $("#who").hidden = false;
+    $("#who-list").innerHTML = D.members.map((n) => '<button class="btn ghost" type="button" data-n="' + esc(n) + '">' + esc(n) + "</button>").join("");
+  }
+  $("#who-list").onclick = (e) => { const b = e.target.closest("[data-n]"); if (b) { me = b.dataset.n; remember(D.person); show(); } };
+  $("#who-f").onsubmit = (e) => { e.preventDefault(); const n = clean($("#who-in").value, 40); if (!n) return; me = n; remember(D.person); if (!D.members.includes(n)) change((d) => { if (!d.members.includes(n)) d.members.push(n); }); show(); };
+  addEventListener("hashchange", fromHash);
+  function show() { setSync(""); $("#start").hidden = true; $("#who").hidden = true; $("#circle").hidden = false; $("#c-link").textContent = linkOf(); $("#c-ci").value = D.checkin || ""; draw(); checkin(); }
+
+  // ── the person's Quiet Check-in, at the top ──
+  async function checkin() {
+    const el = $("#ci"), m = /#fam\.([0-9a-f]{16})\.([0-9a-f]{32})$/.exec(D.checkin || ""); if (!m) { el.innerHTML = '<p class="status">Add their Quiet Check-in family link below to see here whether they\'ve checked in today.</p>'; return; }
+    try { const r = await fetch("/api/checkin/" + m[1] + "?t=" + m[2]), j = await r.json(); if (!r.ok) throw new Error(j.error || "");
+      const rooms = j.sensor && j.sensor.rooms && j.sensor.rooms.length ? "Last movement: " + j.sensor.rooms.slice(0, 3).map((x) => x.room + " " + clock(x.at)).join(", ") + "." : "";
+      el.innerHTML = '<div class="ci ' + (j.today ? "ok" : j.late ? "late" : "") + '" id="ci-card"><b>' + esc(j.name || D.person) + (j.today ? " checked in today" : j.away ? " is away until " + esc(nice(j.away)) : j.late ? " hasn't checked in yet, and it's past " + esc(j.by) : " hasn't checked in yet today") + "</b>" +
+        "<small>" + (j.today && j.last ? "At " + esc(clock(j.last)) + (j.via ? ", from the " + esc(j.via) : "") + ". " : j.by ? "Due by " + esc(j.by) + ". " : "") + esc(rooms) + "</small></div>"; }
+    catch (x) { el.innerHTML = '<p class="status bad">Couldn\'t read their Quiet Check-in' + (x.message ? ": " + esc(x.message) : "") + ".</p>"; }
+  }
+
+  // ── drawing the circle ──
+  const doseKey = (m, day, t) => m.id + "|" + day + "|" + t;
+  function draw() {
+    if (!D) return; const now = new Date(), today = ymd(now), hm = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    $("#c-title").innerHTML = esc(D.person || "Someone") + "'s <span>circle</span>";
+    const doses = D.meds.flatMap((m) => m.times.map((t) => ({ m, t }))).sort((a, b) => a.t.localeCompare(b.t));
+    $("#doses").innerHTML = doses.length ? doses.map(({ m, t }) => { const g = D.given[doseKey(m, today, t)], late = !g && t < hm && minutes(hm) - minutes(t) >= 60;
+      return '<li class="' + (g ? "done" : late ? "over" : "") + '"><span><b>' + esc(t) + " · " + esc(m.name) + "</b><small>" + esc([m.dose, m.with].filter(Boolean).join(", ")) + (g ? (m.dose || m.with ? " · " : "") + "given by " + esc(g.by) + " at " + esc(clock(g.at)) : late ? (m.dose || m.with ? " · " : "") + "not given yet" : "") + "</small></span>" +
+        (g ? '<button class="lnk" type="button" data-undo="' + esc(doseKey(m, today, t)) + '">Not given</button>' : '<button class="btn sm" type="button" data-give="' + esc(doseKey(m, today, t)) + '" aria-label="Given: ' + esc(m.name + " at " + t) + '">Given</button>') + "</li>"; }).join("") : '<li class="status">No medicines yet: add them below.</li>';
+    const dow = now.getDay();
+    const todayRota = D.rota.filter((r) => r.dow === dow), visitsToday = D.visits.filter((v) => v.date === today), apptsToday = D.appts.filter((a) => a.at.slice(0, 10) === today);
+    $("#today-more").innerHTML = [apptsToday.length ? "<h3 class=\"status\" style=\"margin:14px 0 0\">Appointments</h3><ul class=\"list\">" + apptsToday.map((a) => "<li><span><b>" + esc(a.at.slice(11, 16)) + " · " + esc(a.what) + "</b><small>" + esc([a.where, a.who ? a.who + " is taking them" : ""].filter(Boolean).join(" · ")) + "</small></span></li>").join("") + "</ul>" : "",
+      visitsToday.length ? "<h3 class=\"status\" style=\"margin:14px 0 0\">Visiting</h3><ul class=\"list\">" + visitsToday.map((v) => "<li><span><b>" + esc(v.who) + "</b><small>" + esc(v.note) + "</small></span></li>").join("") + "</ul>" : "",
+      todayRota.length ? "<h3 class=\"status\" style=\"margin:14px 0 0\">On the rota</h3><ul class=\"list\">" + todayRota.map((r) => "<li><span><b>" + esc(r.who) + "</b><small>" + esc(r.what) + "</small></span></li>").join("") + "</ul>" : ""].join("");
+    $("#notes").innerHTML = D.notes.slice().sort((a, b) => b.at - a.at).slice(0, 20).map((x) => '<li><span>' + esc(x.text) + "<small>" + esc(x.by) + " · " + esc(nice(ymd(new Date(x.at)))) + " " + esc(clock(x.at)) + '</small></span><button class="lnk" type="button" data-rm="notes" data-id="' + esc(x.id) + '">Remove</button></li>').join("");
+    const rm = (list, x) => '<button class="lnk" type="button" data-rm="' + list + '" data-id="' + esc(x.id) + '" aria-label="Remove">Remove</button>';
+    $("#meds").innerHTML = D.meds.map((m) => "<li><span><b>" + esc(m.name) + "</b><small>" + esc([m.dose, m.times.join(", "), m.with].filter(Boolean).join(" · ")) + "</small></span>" + rm("meds", m) + "</li>").join("") || '<li class="status">None yet.</li>';
+    $("#appts").innerHTML = D.appts.filter((a) => a.at.slice(0, 10) >= today).sort((a, b) => a.at.localeCompare(b.at)).map((a) => "<li><span><b>" + esc(nice(a.at.slice(0, 10))) + " " + esc(a.at.slice(11, 16)) + " · " + esc(a.what) + "</b><small>" + esc([a.where, a.who ? a.who + " is taking them" : ""].filter(Boolean).join(" · ")) + "</small></span>" + rm("appts", a) + "</li>").join("") || '<li class="status">None coming up.</li>';
+    $("#visits").innerHTML = D.visits.filter((v) => v.date >= today).sort((a, b) => a.date.localeCompare(b.date)).map((v) => "<li><span><b>" + esc(nice(v.date)) + " · " + esc(v.who) + "</b><small>" + esc(v.note) + "</small></span>" + rm("visits", v) + "</li>").join("") || '<li class="status">None planned.</li>';
+    $("#rota").innerHTML = D.rota.slice().sort((a, b) => ((a.dow + 6) % 7) - ((b.dow + 6) % 7)).map((r) => "<li><span><b>" + esc(DOW[r.dow]) + " · " + esc(r.who) + "</b><small>" + esc(r.what) + "</small></span>" + rm("rota", r) + "</li>").join("") || '<li class="status">Nobody on it yet.</li>';
+  }
+  const minutes = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+  $("#r-dow").innerHTML = [1, 2, 3, 4, 5, 6, 0].map((d) => '<option value="' + d + '">' + DOW[d].slice(0, -1) + "</option>").join("");
+
+  // ── changes ──
+  $("#doses").onclick = (e) => { const g = e.target.closest("[data-give]"), u = e.target.closest("[data-undo]");
+    if (g) change((d) => { if (!d.given[g.dataset.give]) d.given[g.dataset.give] = { by: me, at: Date.now() }; const cut = ymd(new Date(Date.now() - 30 * 864e5)); for (const k of Object.keys(d.given)) if (k.split("|")[1] < cut) delete d.given[k]; });
+    if (u) change((d) => { delete d.given[u.dataset.undo]; }); };
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (!b || !D) return; const list = b.dataset.rm, rid2 = b.dataset.id; if (list !== "notes" && !confirm("Remove it from the circle?")) return; change((d) => { d[list] = d[list].filter((x) => x.id !== rid2); }); });
+  const form = (sel, make, after) => { $(sel).onsubmit = (e) => { e.preventDefault(); const x = make(); if (!x) return; change((d) => after(d, x)); e.target.reset(); }; };
+  form("#med-f", () => { const times = [...new Set($("#m-times").value.split(/[,\s]+/).map((t) => /^(\d{1,2})[:.]?(\d{2})$/.exec(t)).filter(Boolean).map((m) => pad(Math.min(23, +m[1])) + ":" + m[2]).filter((t) => +t.slice(3) < 60))].sort().slice(0, 8);
+    if (!times.length) { alert("Give the times as 08:00, 20:00."); return null; } return { id: rid(), name: clean($("#m-name").value, 60), dose: clean($("#m-dose").value, 40), with: clean($("#m-with").value, 60), times }; }, (d, x) => d.meds.push(x));
+  form("#ap-f", () => /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test($("#a-at").value) ? { id: rid(), at: $("#a-at").value, what: clean($("#a-what").value, 80), where: clean($("#a-where").value, 80), who: clean($("#a-who").value, 40) } : null, (d, x) => d.appts.push(x));
+  form("#v-f", () => /^\d{4}-\d\d-\d\d$/.test($("#v-date").value) ? { id: rid(), date: $("#v-date").value, who: clean($("#v-who").value, 40), note: clean($("#v-note").value, 80) } : null, (d, x) => d.visits.push(x));
+  form("#r-f", () => ({ id: rid(), dow: +$("#r-dow").value, who: clean($("#r-who").value, 40), what: clean($("#r-what").value, 80) }), (d, x) => d.rota.push(x));
+  $("#note-f").onsubmit = (e) => { e.preventDefault(); const text = clean($("#note-in").value, 400); if (!text) return; $("#note-in").value = ""; change((d) => { d.notes.push({ id: rid(), at: Date.now(), by: me, text }); d.notes = d.notes.slice(-200); }); };
+  $("#c-ci").addEventListener("change", () => { const v = $("#c-ci").value.trim(), l = ciLink(v); if (v && !l) { setSync("That isn't a Quiet Check-in family link.", true); return; } change((d) => { d.checkin = l; }).then(checkin); });
+  $("#copy").onclick = async () => { try { await navigator.clipboard.writeText(linkOf()); $("#copy-st").textContent = "Copied."; } catch (e) { $("#copy-st").textContent = "Select the link and copy it."; } };
+  $("#leave").onclick = () => { if (!confirm("Forget this circle on this device? It stays for everyone else; you'll need the link to open it again.")) return; try { localStorage.setItem(MINE, JSON.stringify(mine().filter((x) => x.id !== id))); localStorage.removeItem("care:me:" + id); } catch (e) {} location.hash = ""; };
+  $("#del").onclick = async () => { if (!confirm("Delete " + (D.person || "this") + "'s circle for everyone? Everything in it goes, and nobody's link will open it.")) return; const { s } = await api(id + "/delete", {}); if (s !== 200) return setSync("Couldn't delete it.", true); try { localStorage.setItem(MINE, JSON.stringify(mine().filter((x) => x.id !== id))); } catch (e) {} location.hash = ""; };
+  setInterval(() => { if (document.visibilityState === "visible" && id && D) { pull(); checkin(); draw(); } }, 30000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pull(); });
+  fromHash();
+
+  // Faber Verbs (declared in tools/site/content/care.json): AutoFaber asks "has Gran had her evening tablets?"
+  if (window.Faber) Faber.verbs({
+    today: async () => {
+      const xs = mine(); if (!xs.length) throw new Error("There's no Care Circle on this device.");
+      if (!D) { await useKey(xs[0].id, xs[0].key); const { s, j } = await api(id); if (s !== 200) throw new Error(j.error || "couldn't open the circle"); D = tidy(await open(j)); ver = j.v; }
+      const today = ymd(new Date()), doses = D.meds.flatMap((m) => m.times.map((t) => ({ m, t, g: D.given[doseKey(m, today, t)] }))).sort((a, b) => a.t.localeCompare(b.t));
+      return (D.person || "Their") + "'s day: " + (doses.length ? doses.map((x) => x.t + " " + x.m.name + (x.g ? " (given by " + x.g.by + ")" : " (not given yet)")).join("; ") : "no medicines") + "." +
+        (D.appts.filter((a) => a.at.slice(0, 10) === today).map((a) => " " + a.at.slice(11, 16) + " " + a.what + ".").join("")) + (D.visits.filter((v) => v.date === today).map((v) => " " + v.who + " is visiting.").join(""));
+    },
+  });
+})();
+</script>
+</body>
+</html>
