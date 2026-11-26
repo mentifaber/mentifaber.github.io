@@ -7,7 +7,9 @@
 // K, so T can't give K back). Whoever has the link can read and write the circle; nobody else can, this server included.
 //
 // Writes are optimistic: a write names the version it was made from, and a write from an older version is refused with
-// the current one (409), so the browser can apply its change again on top and nothing a sister just did is lost.
+// the current one (409), so the browser can apply its change again on top and nothing a sister just did is lost. The
+// version is checked and the circle written in one call to the Store (kvCas), so two writes at the same moment from the
+// same version can't both land.
 //   GET    /api/care/<id>  (x-care-token: T)            → { v, ct, iv, at }
 //   POST   /api/care/<id>  { t: T, v, ct, iv }          → { v, at }   v 0 makes the circle; otherwise v must be current
 //   POST   /api/care/<id>/delete { t: T }               → { ok }      the circle is gone for everyone
@@ -26,6 +28,8 @@ export async function care(req, env, json) {
     const t = String(b.t || req.headers.get("x-care-token") || ""); if (!/^[0-9a-f]{32}$/.test(t)) throw err("this link doesn't open a circle", 403);
     const k = "care:" + id, c = await st.kvGet(k), th = await sha(t);
     if (c && !same(th, c.th)) throw err("this link doesn't open that circle", 403);
+    // someone else changed it first: the current circle, for the browser to apply its change on top (or 404 if it's gone)
+    const conflict = (cur) => { if (!cur) throw err("this circle doesn't exist any more", 404); if (!same(th, cur.th)) throw err("this link doesn't open that circle", 403); return json({ error: "someone else changed the circle first", v: cur.v, ct: cur.ct, iv: cur.iv, at: cur.at }, 409); };
 
     if (req.method === "GET" && parts.length === 1) { if (!c) throw err("this circle doesn't exist any more", 404); return json({ v: c.v, ct: c.ct, iv: c.iv, at: c.at }); }
     if (req.method === "POST" && parts[1] === "delete") { if (!c) throw err("this circle doesn't exist any more", 404); await st.kvDel(k); return json({ ok: true }); }
@@ -37,11 +41,14 @@ export async function care(req, env, json) {
       if (!c) {
         if (v !== 0) throw err("this circle doesn't exist any more", 404);
         if (!(await st.hit("care-new:" + ip, CIRCLES_DAY, DAY))) throw err("that's today's " + CIRCLES_DAY + " new circles from this connection", 429);
-        await st.kvPut(k, { th, v: 1, ct, iv, at: now, created: now }); return json({ v: 1, at: now });
+        const r = await st.kvCas(k, 0, { th, v: 1, ct, iv, at: now, created: now }); if (!r.ok) return conflict(r.cur);
+        return json({ v: 1, at: now });
       }
-      if (v !== c.v) return json({ error: "someone else changed the circle first", v: c.v, ct: c.ct, iv: c.iv, at: c.at }, 409);
+      if (v !== c.v) return conflict(c);
       if (!(await st.hit("care-w:" + id, WRITES_DAY, DAY))) throw err("that's today's " + WRITES_DAY + " changes to this circle", 429);
-      const next = { ...c, v: c.v + 1, ct, iv, at: now }; await st.kvPut(k, next); return json({ v: next.v, at: now });
+      // the version is checked again where it's written, in one call: two writes from the same version can't both land
+      const next = { ...c, v: c.v + 1, ct, iv, at: now }, r = await st.kvCas(k, c.v, next); if (!r.ok) return conflict(r.cur);
+      return json({ v: next.v, at: now });
     }
     throw err("not here", 404);
   } catch (e) { return json({ error: String(e.message || e).slice(0, 200) }, e.status || 500); }

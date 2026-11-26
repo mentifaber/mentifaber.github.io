@@ -82,6 +82,9 @@ export class Store extends DurableObject {
   async kvGet(k) { return (await this.ctx.storage.get(k)) ?? null; }
   async kvPut(k, v) { await this.ctx.storage.put(k, v); }
   async kvDel(k) { await this.ctx.storage.delete(k); }
+  // compare-and-set on a record's version (v; 0 when there's no record): one call, so nothing can come between the check
+  // and the write (the object's input gate holds other requests while its storage is awaited). Care Circle writes this way.
+  async kvCas(k, expect, v) { const cur = (await this.ctx.storage.get(k)) ?? null; if ((cur ? cur.v : 0) !== expect) return { ok: false, cur }; await this.ctx.storage.put(k, v); return { ok: true }; }
   async kvList(prefix, o) { return [...(await this.ctx.storage.list({ prefix, ...(o || {}) })).entries()]; }
   async usAt(t) { const cur = await this.ctx.storage.getAlarm(); if (!cur || t < cur) await this.ctx.storage.setAlarm(Math.max(t, Date.now() + 300)); }
   async alarm() { await usAlarm(this, { sendPush, PUSH_HOSTS }); }

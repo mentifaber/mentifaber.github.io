@@ -11,7 +11,7 @@ import { createRequire } from "node:module"; import assert from "node:assert/str
 const require = createRequire(import.meta.url); const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const REPO = process.argv[2] || path.resolve(new URL("../..", import.meta.url).pathname), DEV = process.argv[3] || "desktop", M = DEV === "mobile";
 const { care } = await import(REPO + "/src/care.js"), { checkin } = await import(REPO + "/src/checkin.js");
-const mem = new Map(); const st = { kvGet: async (k) => structuredClone(mem.get(k)) ?? null, kvPut: async (k, v) => { mem.set(k, structuredClone(v)); }, kvDel: async (k) => { mem.delete(k); }, kvList: async () => [], hit: async () => true };
+const mem = new Map(); const st = { kvCas: async (k, expect, v) => { const cur = mem.get(k) ?? null; if ((cur ? cur.v : 0) !== expect) return { ok: false, cur: structuredClone(cur) }; mem.set(k, structuredClone(v)); return { ok: true }; }, kvGet: async (k) => structuredClone(mem.get(k)) ?? null, kvPut: async (k, v) => { mem.set(k, structuredClone(v)); }, kvDel: async (k) => { mem.delete(k); }, kvList: async () => [], hit: async () => true };
 const env = { STORE: { idFromName: (x) => x, get: () => st } }, json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 const ci = await (await checkin(new Request("https://mentifaber.org/api/checkin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Gran", by: "10:00", tz: "UTC" }) }), env, json, {})).json();
 const famLink = "https://mentifaber.org/checkin#fam." + ci.id + "." + ci.fam;
