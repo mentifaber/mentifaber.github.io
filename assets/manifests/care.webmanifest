@@ -1,0 +1,31 @@
+{
+  "id": "/care",
+  "name": "Care Circle",
+  "short_name": "Care Circle",
+  "description": "Looking after someone, shared: medicines, appointments, visits and the rota, with their Quiet Check-in at the top.",
+  "start_url": "/care.html",
+  "scope": "/care.html",
+  "display": "standalone",
+  "background_color": "#0c0b0a",
+  "theme_color": "#0c0b0a",
+  "icons": [
+    {
+      "src": "../icons/v2/care-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/care-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/v2/care-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
