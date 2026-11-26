@@ -1,0 +1,15 @@
+{
+ "own_page": true,
+ "verbs": [
+  {
+   "name": "soon",
+   "label": "What's due in the next few weeks",
+   "changes": false,
+   "desc": "Lists the dates from letters and notices added to Due Dates on this device (pay by, renew on, reply before, appointments, expiries) and The Home Record's warranties, within the next number of days (30 if not said).",
+   "args": {
+    "days": "number"
+   },
+   "words": "deadline deadlines expiry expire expires expiring summons paperwork duedates"
+  }
+ ]
+}
