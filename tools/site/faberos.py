@@ -62,10 +62,10 @@ def manifest():
         })
     system = [
         {"id": "foundry", "name": "Foundry", "desc": "Installs and updates for Mentifaber's Android and iPhone apps, each download checked before it installs.",
-         "cat": "system", "status": "live", "entry": "store.html", "page": "store", "icon": None, "glyph": registry.GLYPH.get("mentifaber"), "hue": 38,
+         "cat": "system", "status": "live", "entry": "store.html", "page": "store", "icon": "assets/icons/v2/store.svg", "glyph": registry.GLYPH.get("mentifaber"), "hue": 38,
          "version": None, "permissions": sorted(BASICS), "platforms": {"web": True, "android": None, "install": True}, "widgets": [], "system": True},
         {"id": "privacy", "name": "Privacy", "desc": "Where what you send goes: conversations, memory, keys, location and models, in one place.",
-         "cat": "system", "status": "live", "entry": "privacy.html", "page": "privacy", "icon": None, "glyph": registry.GLYPH.get("lexicon"), "hue": 38,
+         "cat": "system", "status": "live", "entry": "privacy.html", "page": "privacy", "icon": "assets/icons/v2/privacy.svg", "glyph": registry.GLYPH.get("lexicon"), "hue": 38,
          "version": None, "permissions": [], "platforms": {"web": True, "android": None, "install": False}, "widgets": [], "system": True},
     ]
     out = {"format": "faberos/1", "os": "FaberOS", "version": "0.4",
