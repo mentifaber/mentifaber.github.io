@@ -292,13 +292,67 @@ ART["witness"] = lambda h: f"""
 <g transform="translate(366 352)"><path d="M0 -50L40 -36V-2C40 26 22 44 0 54C-22 44 -40 26 -40 -2V-36Z" fill="url(#G)" {EDGE}/>
 <circle cx="0" cy="2" r="22" fill="none" stroke="#5a3200" stroke-width="6"/><path d="M0 -10V3L9 9" fill="none" stroke="#5a3200" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>"""
 
+# ── icons outside the app registry: FaberOS's own apps, its Privacy page, and private pages ──
+HUE_EXTRA = {"os-about": 38, "os-shelf": 30, "os-routines": 150, "os-settings": 215, "privacy": 196, "angels": 48, "nest": 28}
+
+# About FaberOS: the hexagon the OS is built on, lit from inside
+ART["os-about"] = lambda h: f"""
+<path d="M256 96L394 176V336L256 416 118 336V176Z" fill="url(#D)" {EDGE}/>
+<path d="M256 136L360 196V316L256 376 152 316V196Z" fill="none" stroke="url(#L)" stroke-width="8" stroke-linejoin="round"/>
+<path d="M256 96V136M394 176L360 196M394 336L360 316M256 416V376M118 336L152 316M118 176L152 196" stroke="hsl({h} 90% 72%)" stroke-opacity=".5" stroke-width="4"/>
+<circle cx="256" cy="256" r="58" fill="url(#G)" {EDGE}/>
+<path d="M240 226H276M240 226V288M240 254H268" fill="none" stroke="#5a3200" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>"""
+
+# Shelf: a lit shelf, with the apps a person keeps on it
+ART["os-shelf"] = lambda h: f"""
+<rect x="112" y="112" width="288" height="296" rx="18" fill="url(#D)" {EDGE}/>
+<path d="M128 236H384M128 368H384" stroke="url(#G)" stroke-width="12" stroke-linecap="round"/>
+<g {THIN}><rect x="150" y="150" width="70" height="78" rx="16" fill="url(#L)"/><rect x="232" y="150" width="70" height="78" rx="16" fill="url(#R)"/><rect x="314" y="170" width="54" height="58" rx="14" fill="#9ad8ff"/>
+<rect x="150" y="282" width="54" height="78" rx="14" fill="#c8f0a6"/><rect x="216" y="282" width="70" height="78" rx="16" fill="url(#G)"/><rect x="298" y="282" width="70" height="78" rx="16" fill="url(#M)"/></g>
+<path d="M162 162H208M244 162H290" stroke="#fff" stroke-opacity=".5" stroke-width="5" stroke-linecap="round"/>"""
+
+# Routines: the day's steps going round on their own
+ART["os-routines"] = lambda h: f"""
+<path d="M256 112A144 144 0 0 1 392 208" fill="none" stroke="url(#L)" stroke-width="16" stroke-linecap="round"/><path d="M372 176L394 214 430 190" fill="none" stroke="url(#L)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M256 400A144 144 0 0 1 120 304" fill="none" stroke="url(#L)" stroke-width="16" stroke-linecap="round"/><path d="M140 336L118 298 82 322" fill="none" stroke="url(#L)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="176" y="166" width="160" height="180" rx="18" fill="url(#P)" {EDGE}/>
+{''.join(f'<rect x="196" y="{192 + k * 46}" width="24" height="24" rx="6" fill="{"url(#M)" if k < 2 else "none"}" stroke="hsl({h} 60% 40%)" stroke-width="4"/>' + (f'<path d="M201 {204 + k * 46}L207 {210 + k * 46} 216 {198 + k * 46}" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' if k < 2 else '') + f'<path d="M234 {204 + k * 46}H{316 - k * 14}" stroke="#8a8070" stroke-width="7" stroke-linecap="round" opacity=".7"/>' for k in range(3))}"""
+
+# Settings: the gear that tunes it
+ART["os-settings"] = lambda h: f"""
+<g transform="translate(256 256)"><path d="{''.join(('M' if k == 0 else 'L') + f'{(150 if (k // 2) % 2 == 0 else 116) * __import__("math").cos((k - .5) * __import__("math").pi / 16):.1f} {(150 if (k // 2) % 2 == 0 else 116) * __import__("math").sin((k - .5) * __import__("math").pi / 16):.1f}' for k in range(32))}Z" fill="url(#M)" {EDGE}/>
+<circle r="92" fill="url(#D)" stroke="#fff" stroke-opacity=".3" stroke-width="3"/><circle r="50" fill="url(#L)" {EDGE}/><circle r="20" fill="url(#D)"/>
+<path d="M-112 -40A120 120 0 0 1 -40 -112" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="10" stroke-linecap="round"/></g>"""
+
+# Privacy: the shield, and the keyhole only you have the key to
+ART["privacy"] = lambda h: f"""
+<path d="M256 98L384 146V254C384 330 330 386 256 416C182 386 128 330 128 254V146Z" fill="url(#M)" {EDGE}/>
+<path d="M256 128L356 166V254C356 314 314 360 256 386Z" fill="#fff" opacity=".12"/>
+<circle cx="256" cy="236" r="34" fill="url(#D)"/><path d="M242 256H270L280 324H232Z" fill="url(#D)"/>
+<path d="M162 168L256 132" stroke="#fff" stroke-opacity=".5" stroke-width="8" stroke-linecap="round"/>"""
+
+# Be Not Afraid: wings, and the halo above them
+ART["angels"] = lambda h: f"""
+<ellipse cx="256" cy="134" rx="76" ry="22" fill="none" stroke="url(#G)" stroke-width="12"/><ellipse cx="256" cy="134" rx="76" ry="22" fill="none" stroke="#fff3c4" stroke-opacity=".5" stroke-width="3"/>
+{''.join(f'<path d="M{256 + side * 18} 214C{256 + side * 70} {170 - k * 8} {256 + side * (150 - k * 6)} {184 + k * 30} {256 + side * (176 - k * 20)} {262 + k * 40}C{256 + side * (130 - k * 14)} {250 + k * 36} {256 + side * 70} {262 + k * 22} {256 + side * 18} {300 + k * 10}Z" fill="{"url(#P)" if k == 0 else ("url(#G)" if k == 1 else "url(#L)")}" opacity="{1 - k * .12}" {THIN}/>' for side in (-1, 1) for k in (2, 1, 0))}
+<path d="M256 196C272 230 272 330 256 392C240 330 240 230 256 196Z" fill="#fff8e0" {THIN}/>"""
+
+# The Nest Registry: the nest, an egg waiting in it, tied with a gift's ribbon
+ART["nest"] = lambda h: f"""
+<ellipse cx="256" cy="242" rx="58" ry="74" fill="url(#P)" {EDGE}/><ellipse cx="236" cy="214" rx="14" ry="22" fill="#fff" opacity=".7"/>
+<path d="M256 150L204 118C190 110 178 120 182 136C186 152 206 158 256 150Z" fill="url(#R)" {THIN}/><path d="M256 150L308 118C322 110 334 120 330 136C326 152 306 158 256 150Z" fill="url(#R)" {THIN}/>
+<path d="M248 154L226 196M264 154L286 196" stroke="url(#R)" stroke-width="10" stroke-linecap="round"/><circle cx="256" cy="150" r="13" fill="url(#R)" {THIN}/>
+<path d="M104 280C112 362 176 400 256 400C336 400 400 362 408 280C360 310 152 310 104 280Z" fill="url(#M)" {EDGE}/>
+<g fill="none" stroke="url(#D)" stroke-width="7" stroke-linecap="round" opacity=".8"><path d="M120 300C190 330 320 330 392 300"/><path d="M136 330C200 356 312 356 376 330"/><path d="M166 362C220 380 292 380 346 362"/><path d="M110 286L150 270M402 286L362 270M180 310L210 340M300 316L276 346"/></g>"""
+
 
 SCALE = {"fix": .84, "skills": .88}  # drawn wide: kept inside a round launcher mask
 
 if __name__ == "__main__":
     ids = sys.argv[1:] or sorted(ART)
     for i in ids:
-        body = ART[i](HUE[i])
+        h = HUE_EXTRA.get(i, HUE.get(i))
+        body = ART[i](h)
         if i in SCALE: body = f'<g transform="translate(256 256) scale({SCALE[i]}) translate(-256 -256)">{body}</g>'
-        open(os.path.join(OUT, i + ".svg"), "w").write(frame(HUE[i], body))
+        open(os.path.join(OUT, i + ".svg"), "w").write(frame(h, body))
     print("drew", len(ids))

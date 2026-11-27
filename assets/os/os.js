@@ -23,10 +23,10 @@
 
   // the built-in parts of FaberOS: drawn here, not loaded in a frame
   const SYS = {
-    about: { id: "about", name: "About FaberOS", hue: 38, builtin: true, glyph: '<path d="M12 2.6l8.1 4.7v9.4L12 21.4l-8.1-4.7V7.3z"/><path d="M12 11v5M12 8v.01"/>' },
-    shelf: { id: "shelf", name: "Shelf", hue: 38, builtin: true, glyph: '<path d="M4 6h16M4 12h16M4 18h16"/><path d="M7 3.5v2.5M12 9.5V12M16 15.5V18"/>' },
-    routines: { id: "routines", name: "Routines", hue: 38, builtin: true, glyph: '<path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3L19.5 9"/><path d="M19.5 4.5V9H15"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3L4.5 15"/><path d="M4.5 19.5V15H9"/>' },
-    settings: { id: "settings", name: "Settings", hue: 38, builtin: true, glyph: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>' },
+    about: { id: "about", name: "About FaberOS", hue: 38, builtin: true, icon: "assets/icons/v2/os-about.svg", glyph: '<path d="M12 2.6l8.1 4.7v9.4L12 21.4l-8.1-4.7V7.3z"/><path d="M12 11v5M12 8v.01"/>' },
+    shelf: { id: "shelf", name: "Shelf", hue: 38, builtin: true, icon: "assets/icons/v2/os-shelf.svg", glyph: '<path d="M4 6h16M4 12h16M4 18h16"/><path d="M7 3.5v2.5M12 9.5V12M16 15.5V18"/>' },
+    routines: { id: "routines", name: "Routines", hue: 38, builtin: true, icon: "assets/icons/v2/os-routines.svg", glyph: '<path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3L19.5 9"/><path d="M19.5 4.5V9H15"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3L4.5 15"/><path d="M4.5 19.5V15H9"/>' },
+    settings: { id: "settings", name: "Settings", hue: 38, builtin: true, icon: "assets/icons/v2/os-settings.svg", glyph: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>' },
   };
 
   const tile = (a) => '<span class="tile" style="--h:' + (a.hue == null ? 38 : a.hue) + '" aria-hidden="true">' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="" loading="lazy">' : '<svg viewBox="0 0 24 24">' + (a.glyph || SYS.about.glyph) + "</svg>") + "</span>";
