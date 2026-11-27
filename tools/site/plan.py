@@ -43,10 +43,11 @@ def index_json():
     return json.dumps([{"n": a["name"], "d": a["desc"], "h": href(a), "p": pno(a), "s": STATUS.get(a["status"], a["status"]), "r": NAMES[a["cat"]][0]} for a in ORDER], ensure_ascii=False)
 
 
-def head(title, desc, a=None, og=None):
+def head(title, desc, a=None, og=None, icon=None):  # icon: a site page that has its own art (tools/site/icons) instead of the Mentifaber mark
     own = OWN_ICON.get(a["id"]) if a else None
     if own: icons = f'<link rel="icon" href="{own["fav"]}" sizes="48x48"><link rel="icon" href="{own["tile"]}" sizes="192x192"><link rel="apple-touch-icon" href="{own["apple"]}">'
     elif a: icons = f'<link rel="icon" href="assets/icons/v2/{a["id"]}.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/{a["id"]}-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/icons/v2/{a["id"]}-180.png">'
+    elif icon: icons = f'<link rel="icon" href="assets/icons/v2/{icon}.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/{icon}-48.png" sizes="48x48"><link rel="apple-touch-icon" href="assets/icons/v2/{icon}-180.png">'
     else: icons = '<link rel="icon" href="assets/brand/mark.svg" type="image/svg+xml"><link rel="icon" href="assets/icons/v2/mentifaber-48.png" sizes="48x48"><link rel="apple-touch-icon" href="assets/icons/v2/mentifaber-180.png">'
     man = f'assets/manifests/{a["id"]}.webmanifest' if a and a.get("app") and a["status"] not in NOT_READY | NATIVE else ("assets/manifests/mentifaber.webmanifest" if not a else "")
     name = a["name"] if a else "Mentifaber"
@@ -317,9 +318,9 @@ def page(i):
     return out
 
 
-def plain(file, title, desc, crumb, body, extra="", base=""):
+def plain(file, title, desc, crumb, body, extra="", base="", icon=None):
     """A page that isn't a bench (contact, the 404) on the same sheet: title block, one gold-ruled panel."""
-    page_ = f"""{head(title, desc, og="https://mentifaber.org/assets/brand/og.jpg")}
+    page_ = f"""{head(title, desc, og="https://mentifaber.org/assets/brand/og.jpg", icon=icon)}
 <body class="wk plain-page">
 {titleblock(f'<nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="#" aria-current="page">{crumb}</a></nav>', 0, "—", "")}
 <main class="plain">{body}</main>
@@ -566,7 +567,7 @@ def privacy():
   {rows}
   <p class="fine" style="margin-top:30px">A question about your data, or something here that doesn't match what you see? Write to <a href="mailto:anders@mentifaber.org">anders@mentifaber.org</a>.</p>"""
     css = "<style>.priv{margin:10px 0 0}.priv div{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 18px;padding:10px 0;border-top:1px solid var(--line)}.priv dt{font-weight:600}.priv dd{margin:0;color:var(--ink-2,#c9bc9f)}@media (max-width:620px){.priv div{grid-template-columns:1fr}}</style>"
-    return plain("privacy.html", "Privacy · Mentifaber", "Where what you send goes on Mentifaber: conversations, memory, keys, location and models, said plainly in one place.", "Privacy", body, css)
+    return plain("privacy.html", "Privacy · Mentifaber", "Where what you send goes on Mentifaber: conversations, memory, keys, location and models, said plainly in one place.", "Privacy", body, css, icon="privacy")
 
 
 TERMS_UPDATED = "24 November 2026"
@@ -713,7 +714,7 @@ def lexicon():
   </section>
 </main>"""
     title = "Lexicon · " + ", ".join(t["word"] for t in terms) + " · Mentifaber"
-    page_ = f"""{head(title, "Canonical definitions, etymology and coinage record for the terms coined in the Mentifaber practice: " + ", ".join(t["word"] for t in terms) + ".", og="https://mentifaber.org/assets/brand/og.jpg")}
+    page_ = f"""{head(title, "Canonical definitions, etymology and coinage record for the terms coined in the Mentifaber practice: " + ", ".join(t["word"] for t in terms) + ".", og="https://mentifaber.org/assets/brand/og.jpg", icon="lexicon")}
 <body class="wk lex-page">
 {titleblock('<nav class="tb-crumb" aria-label="Where you are"><a href="./">The workshop</a><a href="#" aria-current="page">Lexicon</a></nav>', 0, "—", "")}
 {body}
